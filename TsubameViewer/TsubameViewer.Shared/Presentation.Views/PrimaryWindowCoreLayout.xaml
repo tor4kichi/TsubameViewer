@@ -1,0 +1,34 @@
+﻿<Page
+    x:Class="TsubameViewer.Presentation.Views.PrimaryWindowCoreLayout"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+  <Grid>
+    <SplitView IsPaneOpen="True">
+      <SplitView.Pane>
+        <ScrollViewer>
+          <ListView>
+            <TextBlock Text="Menu Item" />
+            <TextBlock Text="Menu Item" />
+            <TextBlock Text="Menu Item" />
+            <TextBlock Text="Menu Item" />
+          </ListView>
+        </ScrollViewer>
+      </SplitView.Pane>
+
+      <SplitView.Content>
+        <Grid>
+          <Frame x:Name="ContentFrame" DataContext="{x:Null}" />
+          <Button Height="32" Command="{x:Bind BackCommand}" HorizontalAlignment="Left" Opacity="0.7">
+            <SymbolIcon Symbol="Back" />
+          </Button>
+        </Grid>
+      </SplitView.Content>
+    </SplitView>
+  </Grid>
+</Page>
