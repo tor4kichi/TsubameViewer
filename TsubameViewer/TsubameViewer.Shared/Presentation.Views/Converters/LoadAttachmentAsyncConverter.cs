@@ -12,15 +12,16 @@ namespace TsubameViewer.Presentation.Views.Converters
 {
     public sealed class LoadAttachmentAsyncConverter : IValueConverter
     {
+        static BitmapImage _empty = new BitmapImage();
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             if (value is IImageSource imageSource)
             {
-                return new NotifyTaskCompletion<BitmapImage>(imageSource.GenerateBitmapSourceAsync());
+                return new NotifyTaskCompletion<BitmapImage>(imageSource.GetOrCacheImageAsync());
             }
             else
             {
-                return null;
+                return new NotifyTaskCompletion<BitmapImage>(Task.FromResult(_empty));
             }
         }
 

@@ -26,6 +26,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\StoredFoldersRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\OpenFolderItemCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\OpenImageCollectionPageWithFolderCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\HomePageViewModel.cs" />

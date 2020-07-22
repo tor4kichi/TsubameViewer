@@ -2,6 +2,7 @@
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
+using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -12,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -24,11 +26,12 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    
+
     public sealed class ImageCollectionViewerPageViewModel : ViewModelBase
     {
         private string _currentToken;
@@ -46,26 +49,37 @@ namespace TsubameViewer.Presentation.ViewModels
             private set { SetProperty(ref _Images, value); }
         }
 
-        private IImageSource _CurrentImage;
-        public IImageSource CurrentImage
+        
+        private BitmapImage _CurrentImage;
+        public BitmapImage CurrentImage
         {
             get { return _CurrentImage; }
             private set { SetProperty(ref _CurrentImage, value); }
         }
 
-        private int _currentImageIndex;
+
+        private int _CurrentImageIndex;
         public int CurrentImageIndex
         {
-            get => _currentImageIndex;
-            set => SetProperty(ref _currentImageIndex, value);
+            get => _CurrentImageIndex;
+            set => SetProperty(ref _CurrentImageIndex, value);
         }
-
 
         CompositeDisposable _navigationDisposables;
 
-        public ImageCollectionViewerPageViewModel()
-        {
+        internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
+        private readonly IScheduler _scheduler;
 
+        public ImageCollectionViewerPageViewModel(IScheduler scheduler)
+        {
+            _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
+            for (var i = 0; i < MaxPrefetchImageCount; i++)
+            {
+                _PrefetchImages[i] = new ReactivePropertySlim<IImageSource>();
+            }
+
+            PrefetchImages = _PrefetchImages;
+            _scheduler = scheduler;
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -76,6 +90,7 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
+        BitmapImage _emptyImage = new BitmapImage();
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
@@ -91,9 +106,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     _currentToken = token;
                     _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
 
+                    ClearPrefetchImages();
+
                     Images = null;
-                    CurrentImage = null;
-                    CurrentImageIndex = 0;
+                    CurrentImage = _emptyImage;
+                    _CurrentImageIndex = 0;
 
                     isTokenChanged = true;
                 }
@@ -118,9 +135,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         throw new Exception("token parameter is require for path parameter.");
                     }
 
+                    ClearPrefetchImages();
+
                     Images = null;
-                    CurrentImage = null;
-                    CurrentImageIndex = 0;
+                    CurrentImage = _emptyImage;
+                    _CurrentImageIndex = 0;
 
                     _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
@@ -128,47 +147,55 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
+            // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
+
+
+
+            // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
+
 
             // 以下の場合に表示内容を更新する
             //    1. 表示フォルダが変更された場合
             //    2. 前回の更新が未完了だった場合
             if (isTokenChanged || isPathChanged)
-            {    
+            {
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
+                
+                ResetPrefetchImageRange(_CurrentImageIndex);
             }
 
+            // 表示画像が揃ったら改めてボタンを有効化
+            GoNextImageCommand.RaiseCanExecuteChanged();
+            GoPrevImageCommand.RaiseCanExecuteChanged();
+
+
+            // 画像インデックス更新によるプリフェッチ済み画像への切り替えとプリフェッチ対象の更新
             this.ObserveProperty(x => x.CurrentImageIndex)
-                .Subscribe(async _ =>
+                .Subscribe(async index =>
                 {
-                    if (Images == null || Images.Length <= 1) { return; }
-
-                    _loadingCts?.Cancel();
-                    _loadingCts?.Dispose();
-                    _loadingCts = new CancellationTokenSource();
-                    try
+                    using (await ProcessLock.LockAsync(_leavePageCancellationTokenSource.Token))
                     {
-                        using (await _loadingLock.LockAsync(_loadingCts.Token))
-                        {
-                            foreach (var index in Enumerable.Range(_currentImageIndex, 3))
-                            {
-                                if (Images.Length <= index) { return; }
+                        if (Images == null || Images.Length <= 1) { return; }
 
-                                var image = Images[index];
-                                if (!image.IsImageGenerated)
-                                {
-                                    await Images[index].GenerateBitmapSourceAsync();
-                                }
-                            }
-                        }
+                        UpdatePrefetchImageRange(index);
+
+                        var image = GetPrefetchImage(CurrentPrefetchImageIndex);
+                        CurrentImage = await image.GetOrCacheImageAsync();
+#if DEBUG
+                        Debug.WriteLine($"index: {CurrentImageIndex}, PrefetchIndex: {CurrentPrefetchImageIndex}, ImageName: {image.Name}");
+                        Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
+#endif
                     }
-                    catch (OperationCanceledException) { }
                 })
                 .AddTo(_navigationDisposables);
 
+            
+
             await base.OnNavigatedToAsync(parameters);
         }
+
 
         CancellationTokenSource _loadingCts;
         FastAsyncLock _loadingLock = new FastAsyncLock();
@@ -183,12 +210,9 @@ namespace TsubameViewer.Presentation.ViewModels
         private void ExecuteGoNextImageCommand()
         {
             CurrentImageIndex++;
-            CurrentImage = Images[CurrentImageIndex];
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
-
-            Debug.WriteLine(CurrentImage?.Name);
         }
 
         private bool CanGoNextCommand()
@@ -203,12 +227,9 @@ namespace TsubameViewer.Presentation.ViewModels
         private void ExecuteGoPrevImageCommand()
         {
             CurrentImageIndex--;
-            CurrentImage = Images[CurrentImageIndex];
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
-
-            Debug.WriteLine(CurrentImage?.Name);
         }
 
         private bool CanGoPrevCommand()
@@ -236,13 +257,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         await foreach (var item in result.Images.WithCancellation(ct))
                         {
                             images[index] = item;
-                            index++;
-
                             if (item.Name == file.Name)
                             {
-                                CurrentImage = item;
                                 CurrentImageIndex = index;
                             }
+                            index++;
                         }
 
                         Images = images;                        
@@ -257,7 +276,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     try
                     {
                         Images = result.Images.ToArray();
-                        CurrentImage = Images.FirstOrDefault();
                     }
                     catch (OperationCanceledException)
                     {
@@ -279,7 +297,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     Images = images;
-                    CurrentImage = Images.FirstOrDefault();
                 }
                 catch (OperationCanceledException)
                 { 
@@ -371,13 +388,152 @@ namespace TsubameViewer.Presentation.ViewModels
         */
 
         #endregion
+
+
+
+        #region Prefetch Image
+
+
+        const int MaxPrefetchImageCount = 5; // 必ず奇数
+        const int SwitchTargetIndexSubstraction = 2; // MaxPrefetchImageCount / 2;
+
+        private ReactivePropertySlim<IImageSource>[] _PrefetchImages;
+        public IReadOnlyReactiveProperty<IImageSource>[] PrefetchImages { get; }
+
+        IImageSource GetPrefetchImage(int index)
+        {
+            return _PrefetchImages[index].Value;
+        }
+
+        void SetPrefetchImage(int index, IImageSource image)
+        {
+            _PrefetchImages[index].Value = image;
+
+            Debug.WriteLine($"[Prefetch Image] index: {index}, Name: {image?.Name}");
+        }
+
+        private int _CurrentPrefetchImageIndex;
+        public int CurrentPrefetchImageIndex
+        {
+            get => _CurrentPrefetchImageIndex;
+            set => SetProperty(ref _CurrentPrefetchImageIndex, value);
+        }
+
+        // Note: Image Prefetchとは
+        // 
+        //  　Image切り替え時のチラツキ防止と素早い切替に対応するためのイメージ読み込みの交通整理機能
+        //
+
+        // 
+
+
+        // CurrentImageIndexの切り替わりに反応してCurrentPrefetchImageIndexを切り替える
+        // 同時に、Prefetch範囲から外れるImageと新たにPrefetch範囲に入ったImageを入れ替える
+
+        private void ClearPrefetchImages()
+        {
+            // 一旦全部リセットする
+            foreach (var i in _PrefetchImages)
+            {
+                i.Value = null;
+            }
+        }
+
+        private void ResetPrefetchImageRange(int initialImageIndex)
+        {
+            ClearPrefetchImages();
+
+            // 現在プリフェッチ画像を設定してプリフェッチ画像インデックスを強制通知（前と同一インデックスでも通知する）
+            SetPrefetchImage(SwitchTargetIndexSubstraction, Images.ElementAtOrDefault(initialImageIndex));
+            _CurrentPrefetchImageIndex = SwitchTargetIndexSubstraction;
+            RaisePropertyChanged(nameof(CurrentPrefetchImageIndex));
+
+            // Next方向の画像をプリフェッチ
+            foreach (var i in Enumerable.Range(1, SwitchTargetIndexSubstraction))
+            {
+                var prefetchIndex = SwitchTargetIndexSubstraction + i;
+                var realIndex = initialImageIndex + i;
+                SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
+            }
+
+            // Prev方向の画像をプリフェッチ
+            foreach (var i in Enumerable.Range(1, SwitchTargetIndexSubstraction))
+            {
+                var prefetchIndex = SwitchTargetIndexSubstraction - i;
+                var realIndex = initialImageIndex - i;
+                SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
+            }
+
+            _prevCurrentImageIndex = initialImageIndex;
+        }
+
+        int _prevCurrentImageIndex;
+
+        private void UpdatePrefetchImageRange(int targetImageIndex)
+        {
+            var subtractIndex = targetImageIndex - _prevCurrentImageIndex;
+            if (subtractIndex == 1)
+            {
+                GoNextPrefetchImageRange(targetImageIndex);
+            }
+            else if (subtractIndex == -1)
+            {
+                GoPreviewPrefetchImageRange(targetImageIndex);
+            }
+            else
+            {
+                ResetPrefetchImageRange(targetImageIndex);
+            }
+
+            _prevCurrentImageIndex = targetImageIndex;
+
+            void GoNextPrefetchImageRange(int targetImageIndex)
+            {
+                // プリフェッチ済みの次画像にインデックスを移動
+                var nextPrefetchImageIndex = (_CurrentPrefetchImageIndex + 1) % MaxPrefetchImageCount;
+                var nextPrefetchImage = GetPrefetchImage(nextPrefetchImageIndex);
+                if (nextPrefetchImage == null)
+                {
+                    throw new Exception();
+                }                
+                CurrentPrefetchImageIndex = nextPrefetchImageIndex;
+
+
+                // 新しいプリフェッチ対象の読み込み
+                var switchTargetPrefetchImageIndex = (nextPrefetchImageIndex + SwitchTargetIndexSubstraction) % MaxPrefetchImageCount;
+                var switchTargetPrefetchImageRealIndex = targetImageIndex + SwitchTargetIndexSubstraction;
+                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
+                SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex));
+            }
+
+            void GoPreviewPrefetchImageRange(int targetImageIndex)
+            {
+                // プリフェッチ済みの前画像にインデックスを移動
+                var prevPrefetchImageIndex = (_CurrentPrefetchImageIndex - 1) < 0 ? MaxPrefetchImageCount - 1 : _CurrentPrefetchImageIndex - 1;
+                var prevPrefetchImage = GetPrefetchImage(prevPrefetchImageIndex);
+                if (prevPrefetchImage == null)
+                {
+                    throw new Exception();
+                }
+                CurrentPrefetchImageIndex = prevPrefetchImageIndex;
+
+                // 新しいプリフェッチ対象の読み込み
+                var switchTargetPrefetchImageIndex = (prevPrefetchImageIndex + SwitchTargetIndexSubstraction + 1) % MaxPrefetchImageCount;
+                var switchTargetPrefetchImageRealIndex = targetImageIndex - SwitchTargetIndexSubstraction;
+                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
+                SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex));
+            }
+        }
+
+
+        #endregion
     }
 
 
     public interface IImageSource
     {
         string Name { get; }
-        Task<BitmapImage> GenerateBitmapSourceAsync();
+        Task<BitmapImage> GetOrCacheImageAsync();
         bool IsImageGenerated { get; }
         void CancelLoading();
     }
@@ -386,7 +542,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class ArchiveEntryImageSource : IImageSource, IDisposable
     {
         private MemoryStream _imageStream;
-        private BitmapImage _image;
+        BitmapImage _image;
 
         public ArchiveEntryImageSource(string name, MemoryStream imageStream)
         {
@@ -397,22 +553,22 @@ namespace TsubameViewer.Presentation.ViewModels
         public string Name { get; }
         public bool IsImageGenerated => _image != null;
 
+        
         public void Dispose()
         {
             (_imageStream as IDisposable)?.Dispose();
         }
 
-        public async Task<BitmapImage> GenerateBitmapSourceAsync()
+        public async Task<BitmapImage> GetOrCacheImageAsync()
         {
             if (_image != null) { return _image; }
 
-            _image = new BitmapImage();
             using (var stream = _imageStream.AsRandomAccessStream())
             {
-                await _image.SetSourceAsync(stream);
+                var bitmap = new BitmapImage();
+                bitmap.SetSource(stream);
+                return _image = bitmap;
             }
-            _imageStream = null;
-            return _image;
         }
 
         public void CancelLoading()
@@ -421,77 +577,85 @@ namespace TsubameViewer.Presentation.ViewModels
         }
     }
 
-    public sealed class StorageFileImageSource : IImageSource
+    public sealed class StorageFileImageSource : IImageSource, IDisposable
     {
         private readonly StorageFile _file;
-        private BitmapImage _image;
-
+        
         public StorageFileImageSource(StorageFile file)
         {
             _file = file;
         }
 
+        public void Dispose()
+        {
+        }
+
         public string Name => _file.Name;
         public bool IsImageGenerated => _image != null;
+        BitmapImage _image;
 
-        public async Task<BitmapImage> GenerateBitmapSourceAsync()
+        public async Task<BitmapImage> GetOrCacheImageAsync()
         {
             if (_image != null) { return _image; }
 
-            _image = new BitmapImage();
-            using (var fileStream = await _file.OpenReadAsync())
+            using (var stream = await _file.OpenReadAsync())
             {
-                await _image.SetSourceAsync(fileStream);
+                var bitmap = new BitmapImage();
+                bitmap.SetSource(stream);
+                return _image = bitmap;
             }
-            return _image;
         }
 
         public void CancelLoading()
         {
 
         }
+
     }
 
-    public sealed class ZipArchiveEntryImageSource : IImageSource
+    public sealed class ZipArchiveEntryImageSource : IImageSource, IDisposable
     {
         private readonly ZipArchiveEntry _entry;
-        private BitmapImage _image = null;
-
+        private BitmapImage _image;
         public ZipArchiveEntryImageSource(ZipArchiveEntry entry)
         {
             _entry = entry;
+        }
+
+        public void Dispose()
+        {
+            CancelLoading();
         }
 
         public string Name => _entry.Name;
         public bool IsImageGenerated => _image != null;
 
         static FastAsyncLock _Lock = new FastAsyncLock();
-        CancellationTokenSource _cts;
-        public async Task<BitmapImage> GenerateBitmapSourceAsync()
+        CancellationTokenSource _cts = new CancellationTokenSource();
+        public async Task<BitmapImage> GetOrCacheImageAsync()
         {
-            _cts ??= new CancellationTokenSource();
-            using (await _Lock.LockAsync(_cts.Token))
+            var ct = _cts.Token;
+//            using (await ImageCollectionViewerPageViewModel.ProcessLock.LockAsync(ct))
             {
                 if (_image != null) { return _image; }
 
-                var ct = _cts.Token;
-                using (InMemoryRandomAccessStream ms = new InMemoryRandomAccessStream())
                 using (var entryStream = _entry.Open())
+                using (var memoryStream = entryStream.ToMemoryStream())
                 {
-                    await entryStream.CopyToAsync(ms.AsStream(), ct);
-                    await ms.FlushAsync();
-                    ms.Seek(0);
-                    _image = new BitmapImage();
-                    _image.SetSource(ms);
-                    return _image;
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
+                    return _image = bitmapImage;
                 }
             }
         }
+
 
         public void CancelLoading()
         {
             _cts?.Cancel();
             _cts?.Dispose();
         }
+
+        
     }
 }

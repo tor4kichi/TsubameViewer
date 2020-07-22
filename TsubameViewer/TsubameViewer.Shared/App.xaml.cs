@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.Views;
@@ -103,7 +104,8 @@ namespace TsubameViewer
             var unityContainer = container.GetContainer();
             var thumbnailBarell = MonkeyCache.LiteDB.Barrel.Create(Path.Combine(ApplicationData.Current.LocalFolder.Path, "thumbnail_cache.db"), true);
             unityContainer.RegisterInstance<IBarrel>("ThumbnailBarrel", thumbnailBarell);
-            
+
+            unityContainer.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             
             base.RegisterRequiredTypes(container);
         }

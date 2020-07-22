@@ -85,6 +85,9 @@
     <PackageReference Include="sharpcompress">
       <Version>0.25.1</Version>
     </PackageReference>
+    <PackageReference Include="SkiaSharp.Views.Uno">
+      <Version>2.80.1</Version>
+    </PackageReference>
     <PackageReference Include="Uno.Microsoft.Toolkit.Uwp.UI.Controls">
       <Version>6.1.0-build.71.g38c59ea2a0</Version>
     </PackageReference>
@@ -95,6 +98,9 @@
     <PackageReference Include="Uno.UI.RemoteControl" Version="2.4.0" Condition="'$(Configuration)'=='Debug'" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Filter" Version="1.1.1" />
+    <PackageReference Include="Uno.WindowsStateTriggers">
+      <Version>1.1.1-uno.119</Version>
+    </PackageReference>
     <PackageReference Include="Xamarin.Essentials">
       <Version>1.5.3.2</Version>
     </PackageReference>
