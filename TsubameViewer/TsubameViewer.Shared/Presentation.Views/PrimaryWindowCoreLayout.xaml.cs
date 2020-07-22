@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -24,12 +25,31 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class PrimaryWindowCoreLayout : Page
     {
-        public PrimaryWindowCoreLayout()
+        public PrimaryWindowCoreLayout(PrimaryWindowCoreLayoutViewModel viewModel)
         {
             this.InitializeComponent();
+
+            ContentFrame.Navigated += Frame_Navigated;
+            DataContext = _viewModel = viewModel;
+        }
+
+        private void Frame_Navigated(object sender, NavigationEventArgs e)
+        {
+            IsDisplayMenu = e.SourcePageType != typeof(ImageCollectionViewerPage);
         }
 
 
+
+        public bool IsDisplayMenu
+        {
+            get { return (bool)GetValue(IsDisplayMenuProperty); }
+            set { SetValue(IsDisplayMenuProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsDisplayMenu.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsDisplayMenuProperty =
+            DependencyProperty.Register("IsDisplayMenu", typeof(bool), typeof(PrimaryWindowCoreLayout), new PropertyMetadata(true));
+        private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         IPlatformNavigationService _navigationService;
         public IPlatformNavigationService GetNavigationService()
         {

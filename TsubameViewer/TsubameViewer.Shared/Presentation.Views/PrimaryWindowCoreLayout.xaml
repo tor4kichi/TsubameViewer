@@ -9,7 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Grid>
-    <SplitView IsPaneOpen="True" DisplayMode="Inline">
+    <SplitView x:Name="SplitView" IsPaneOpen="True" DisplayMode="Inline">
       <SplitView.Pane>
         <ScrollViewer>
           <ListView>
@@ -31,4 +31,17 @@
       </SplitView.Content>
     </SplitView>
   </Grid>
+
+  <VisualStateManager.VisualStateGroups>
+    <VisualStateGroup>
+      <VisualState>
+        <VisualState.StateTriggers>
+          <StateTrigger IsActive="{x:Bind IsDisplayMenu, Mode=OneWay}" />
+        </VisualState.StateTriggers>
+        <VisualState.Setters>
+          <Setter Target="SplitView.IsPaneOpen" Value="False" />
+        </VisualState.Setters>
+      </VisualState>
+    </VisualStateGroup>
+  </VisualStateManager.VisualStateGroups>
 </Page>
