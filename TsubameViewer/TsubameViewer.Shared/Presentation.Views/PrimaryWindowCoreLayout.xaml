@@ -9,7 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Grid>
-    <SplitView IsPaneOpen="True">
+    <SplitView IsPaneOpen="True" DisplayMode="Inline">
       <SplitView.Pane>
         <ScrollViewer>
           <ListView>
@@ -23,8 +23,8 @@
 
       <SplitView.Content>
         <Grid>
-          <Frame x:Name="ContentFrame" DataContext="{x:Null}" />
-          <Button Height="32" Command="{x:Bind BackCommand}" HorizontalAlignment="Left" Opacity="0.7">
+          <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="10" />
+          <Button Height="32" Command="{x:Bind BackCommand}" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="1.0">
             <SymbolIcon Symbol="Back" />
           </Button>
         </Grid>

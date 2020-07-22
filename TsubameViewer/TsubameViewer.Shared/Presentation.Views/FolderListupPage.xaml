@@ -11,6 +11,7 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors"
   mc:Ignorable="d"
+  NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
@@ -49,6 +50,11 @@
               IsTapEnabled="False"
               SelectionMode="Single"
               >
+      <ListView.Header>
+        <Grid>
+          <TextBlock Text="{Binding DisplayCurrentPath}" />
+        </Grid>
+      </ListView.Header>
       <ListView.Transitions>
         <TransitionCollection>
           

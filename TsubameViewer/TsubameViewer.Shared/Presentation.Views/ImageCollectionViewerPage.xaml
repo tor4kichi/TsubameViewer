@@ -10,7 +10,8 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
   xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  >
 
   <Page.Resources>
     <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />

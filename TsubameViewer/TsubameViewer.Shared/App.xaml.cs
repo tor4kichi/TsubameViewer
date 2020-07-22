@@ -151,7 +151,8 @@ namespace TsubameViewer
             var unityContainer = Container.GetContainer();
             unityContainer.RegisterInstance("PrimaryWindowNavigationService", ns);
 
-            ns.SetAsWindowContent(Window.Current, true);
+            Window.Current.Content = shell;
+            Window.Current.Activate();
 
             ns.NavigateAsync(nameof(HomePage));
 

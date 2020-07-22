@@ -14,9 +14,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels.Commands;
+using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -46,7 +48,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
 
         public ReactivePropertySlim<FolderViewFirstSort> SelectedFolderViewFirstSort { get; }
-        public OpenFolderItemCommand OpenFolderItemCommand { get; }
 
         IReadOnlyReactiveProperty<QueryOptions> _currentQueryOptions;
 
@@ -61,14 +62,19 @@ namespace TsubameViewer.Presentation.ViewModels
         bool _isCompleteEnumeration = false;
         int _previousEnumerationIndex = 0;
 
+        private string _DisplayCurrentPath;
+        public string DisplayCurrentPath
+        {
+            get { return _DisplayCurrentPath; }
+            set { SetProperty(ref _DisplayCurrentPath, value); }
+        }
+
         public FolderListupPageViewModel(
-            OpenFolderItemCommand openFolderItemCommand
             )
         {
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             SelectedFolderViewFirstSort = new ReactivePropertySlim<FolderViewFirstSort>(FolderViewFirstSort.Folders);
-            OpenFolderItemCommand = openFolderItemCommand;
-
+            
             /*
             _currentQueryOptions = Observable.CombineLatest(
                 SelectedFolderViewFirstSort,
@@ -85,34 +91,24 @@ namespace TsubameViewer.Presentation.ViewModels
                 */
         }
 
-        public override Task<bool> CanNavigateAsync(INavigationParameters parameters)
+        public override async Task<bool> CanNavigateAsync(INavigationParameters parameters)
         {
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.Back)
             {
-                return Task.FromResult(_BackNavigationParameterStack.Any());
+                return await TryBackNavigation();
             }
             else if (mode == NavigationMode.Forward)
             {
-                return Task.FromResult(_ForwardNavigationParameterStack.Any());
+                return await TryForwardNavigation();
             }
 
-            return Task.FromResult(true);
+            return true;
         }
 
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
-            var mode = parameters.GetNavigationMode();
-            if (mode == NavigationMode.New || mode == NavigationMode.Forward)
-            {
-                _BackNavigationParameterStack.Push(_prevNavigationParameters);
-            }
-            else if (mode == NavigationMode.Back)
-            {
-                _ForwardNavigationParameterStack.Push(_prevNavigationParameters);
-            }
-
             _leavePageCancellationTokenSource.Cancel();
             _leavePageCancellationTokenSource.Dispose();
             _leavePageCancellationTokenSource = null;
@@ -120,27 +116,16 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        static Stack<INavigationParameters> _BackNavigationParameterStack = new Stack<INavigationParameters>();
-        static Stack<INavigationParameters> _ForwardNavigationParameterStack = new Stack<INavigationParameters>();
-
-        INavigationParameters _prevNavigationParameters;
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
-            var mode = parameters.GetNavigationMode();
-            if (mode == NavigationMode.Back)
-            {
-                parameters = _BackNavigationParameterStack.Pop();
-            }
-            else if (mode == NavigationMode.Forward)
-            {
-                parameters = _ForwardNavigationParameterStack.Pop();
-            }
+            _navigationService = parameters.GetNavigationService();
 
-            _prevNavigationParameters = parameters;
+
+            var mode = parameters.GetNavigationMode();
 
             _leavePageCancellationTokenSource = new CancellationTokenSource();
 
-            if (mode != NavigationMode.Refresh)
+            if (mode == NavigationMode.New)
             {
                 bool isTokenChanged = false;
                 if (parameters.TryGetValue("token", out string token))
@@ -172,7 +157,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 以下の場合に表示内容を更新する
                 //    1. 表示フォルダが変更された場合
                 //    2. 前回の更新が未完了だった場合
-                if (isTokenChanged || isPathChanged || !_isCompleteEnumeration)
+                if (isTokenChanged || isPathChanged)
                 {
                     if (isTokenChanged)
                     {
@@ -182,39 +167,45 @@ namespace TsubameViewer.Presentation.ViewModels
                         _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
                     }
 
-                    if (isPathChanged)
+                    if (_tokenGettingFolder == null)
                     {
-                        if (_tokenGettingFolder == null)
-                        {
-                            throw new Exception("token parameter is require for path parameter.");
-                        }
-
-
-                        FolderItems.Clear();
-                        _previousEnumerationIndex = 0;
-
-                        _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                        throw new Exception("token parameter is require for path parameter.");
                     }
+
+                    FolderItems.Clear();
+                    _previousEnumerationIndex = 0;
+
+                    _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+
+                    DisplayCurrentPath = _currentFolder.Path;
 
                     await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                 }
+                else if (!_isCompleteEnumeration)
+                {
+                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                }
             }
-            else
+            else if (mode == NavigationMode.Refresh)
             {
                 await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
             }
-            
+            else if (!_isCompleteEnumeration)
+            {
+                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+            }
 
             await base.OnNavigatedToAsync(parameters);
-
-            
         }
 
 
         #region Refresh Item
 
+        static FastAsyncLock _RefreshLock = new FastAsyncLock();
         private async Task RefreshFolderItems(CancellationToken ct)
         {
+            using var _ = await _RefreshLock.LockAsync(ct);
+
             _isCompleteEnumeration = false;
             try
             {
@@ -254,6 +245,7 @@ namespace TsubameViewer.Presentation.ViewModels
             int currentIndex = _previousEnumerationIndex;
             await foreach (var folderItem in itemsResult.AsyncEnumerableItems.WithCancellation(ct))
             {
+                ct.ThrowIfCancellationRequested();
                 var item = new StorageItemViewModel(folderItem, _currentToken);
                 FolderItems.Add(item);
                 _previousEnumerationIndex = currentIndex;
@@ -281,17 +273,127 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        
+
 
         #endregion
 
 
-        #region Commands
+        #region Navigation
 
+        private INavigationService _navigationService;
+
+        List<FolderListupPageParameter> _stack = new List<FolderListupPageParameter>();
+        int CurrentDepth = 0;
+
+        async Task PushCurrentFolderNavigationInfoAndSetNewFolder(StorageItemViewModel folderItemVM)
+        {
+            using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
+
+            _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
+
+            CurrentDepth++;
+            FolderItems.Clear();
+            _previousEnumerationIndex = 0;
+
+            _currentPath = await StorageItemViewModel.GetRawSubtractPath(folderItemVM);
+            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+
+            DisplayCurrentPath = _currentFolder.Path;
+
+            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+            TrimNavigationStackToCurrentDepth();
+        }
+
+        void TrimNavigationStackToCurrentDepth()
+        {
+            var trimTarget = CurrentDepth;
+            while (trimTarget < _stack.Count)
+            {
+                _stack.RemoveAt(_stack.Count - 1);
+            }
+
+        }
+
+        async Task<bool> TryBackNavigation()
+        {
+            _leavePageCancellationTokenSource.Cancel();
+            _leavePageCancellationTokenSource.Dispose();
+            _leavePageCancellationTokenSource = new CancellationTokenSource();
+
+            using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
+
+            if (CurrentDepth == 0) { return true; }
+
+            CurrentDepth--;
+            var prevFolderInfo = _stack.ElementAt(CurrentDepth);
+
+            FolderItems.Clear();
+            _previousEnumerationIndex = 0;
+
+            _currentPath = prevFolderInfo.Path;
+            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+
+            DisplayCurrentPath = _currentFolder.Path;
+
+            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+
+            return false;
+        }
+
+
+        private async Task<bool> TryForwardNavigation()
+        {
+            _leavePageCancellationTokenSource.Cancel();
+            _leavePageCancellationTokenSource.Dispose();
+            _leavePageCancellationTokenSource = new CancellationTokenSource();
+
+            using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
+
+            if (_stack.Count <= CurrentDepth) { return true; }
+
+            CurrentDepth++;
+            var forwardFolderInfo = _stack.ElementAt(CurrentDepth);
+
+            FolderItems.Clear();
+            _previousEnumerationIndex = 0;
+
+            _currentPath = forwardFolderInfo.Path;
+            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+
+            DisplayCurrentPath = _currentFolder.Path;
+
+            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+            return false;
+        }
+
+        DelegateCommand<StorageItemViewModel> _OpenFolderItemCommand;
+        public DelegateCommand<StorageItemViewModel> OpenFolderItemCommand =>
+            _OpenFolderItemCommand ??= new DelegateCommand<StorageItemViewModel>(async (item) => 
+            {
+                if (item.Type == StorageItemTypes.File)
+                {
+                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
+                    var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+
+                }
+                else if (item.Type == StorageItemTypes.Folder)
+                {
+                    PushCurrentFolderNavigationInfoAndSetNewFolder(item);
+                }
+
+            });
 
 
         #endregion
     }
 
+    class FolderListupPageParameter
+    {
+        public string Token { get; set; }
+        public string Path { get; set; }
+    }
     
 }

@@ -28,6 +28,19 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
+        public static async Task<string> GetRawSubtractPath(StorageItemViewModel vm)
+        {
+            var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(vm.Token);
+            if (item is IStorageFolder folder)
+            {
+                return GetSubtractPath(folder, vm.Item);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         private static string GetSubtractPath(IStorageFolder lt, IStorageItem rt)
         {
             if (!rt.Path.StartsWith(lt.Path))

@@ -33,7 +33,7 @@ namespace TsubameViewer.Presentation.Views
         IPlatformNavigationService _navigationService;
         public IPlatformNavigationService GetNavigationService()
         {
-            return _navigationService ??= NavigationService.Create(this.ContentFrame, /*Gestures.Back, Gestures.Forward, */Gestures.Refresh);
+            return _navigationService ??= NavigationService.Create(this.ContentFrame, Gestures.Back, Gestures.Refresh);
         }
 
 
