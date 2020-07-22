@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Presentation.ViewModels.Commands;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Graphics.Imaging;
@@ -70,7 +71,10 @@ namespace TsubameViewer.Presentation.ViewModels
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
         private readonly IScheduler _scheduler;
 
-        public ImageCollectionViewerPageViewModel(IScheduler scheduler)
+        public ImageCollectionViewerPageViewModel(
+            IScheduler scheduler,
+            BackNavigationCommand backNavigationCommand
+            )
         {
             _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
             for (var i = 0; i < MaxPrefetchImageCount; i++)
@@ -80,6 +84,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             PrefetchImages = _PrefetchImages;
             _scheduler = scheduler;
+            BackNavigationCommand = backNavigationCommand;
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -418,6 +423,7 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _CurrentPrefetchImageIndex;
             set => SetProperty(ref _CurrentPrefetchImageIndex, value);
         }
+        public BackNavigationCommand BackNavigationCommand { get; }
 
         // Note: Image Prefetchとは
         // 

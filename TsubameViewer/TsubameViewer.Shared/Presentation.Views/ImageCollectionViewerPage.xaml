@@ -100,5 +100,7 @@
         <SymbolIcon Symbol="Forward" />
       </Button>
     </StackPanel>
+
+    <Button Command="{Binding BackNavigationCommand}" Opacity="0.5" />
   </Grid>
 </Page>

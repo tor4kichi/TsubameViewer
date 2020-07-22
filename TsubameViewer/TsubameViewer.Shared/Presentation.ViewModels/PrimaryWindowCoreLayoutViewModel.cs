@@ -14,5 +14,12 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _eventAggregator = eventAggregator;
         }
+
+        private bool _IsDisplayMenu = true;
+        public bool IsDisplayMenu
+        {
+            get { return _IsDisplayMenu; }
+            set { SetProperty(ref _IsDisplayMenu, value); }
+        }
     }
 }

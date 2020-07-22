@@ -49,6 +49,7 @@ namespace TsubameViewer.Presentation.Views
         // Using a DependencyProperty as the backing store for IsDisplayMenu.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty IsDisplayMenuProperty =
             DependencyProperty.Register("IsDisplayMenu", typeof(bool), typeof(PrimaryWindowCoreLayout), new PropertyMetadata(true));
+
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         IPlatformNavigationService _navigationService;
         public IPlatformNavigationService GetNavigationService()
