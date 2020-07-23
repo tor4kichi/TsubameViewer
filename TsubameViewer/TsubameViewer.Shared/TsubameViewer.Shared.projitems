@@ -31,12 +31,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\OpenFolderItemCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\OpenImageCollectionPageWithFolderCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\HomePageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageCollectionViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CardViewFolderListItem.xaml.cs">
       <DependentUpon>CardViewFolderListItem.xaml</DependentUpon>

@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using Windows.UI.Input;
 using Windows.UI.Xaml;
 
-namespace TsubameViewer.Views.Behaviors
+namespace TsubameViewer.Presentation.Views.Behaviors
 {
-	public class MouseWheelTrigger : Behavior<FrameworkElement>
+	public sealed class MouseWheelTrigger : Behavior<FrameworkElement>
     {
 		public ActionCollection UpActions 
 		{

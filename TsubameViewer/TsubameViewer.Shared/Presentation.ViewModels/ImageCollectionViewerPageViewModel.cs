@@ -75,12 +75,14 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageCollectionViewerPageViewModel(
             IScheduler scheduler,
             ImageCollectionPageSettings imageCollectionSettings,
-            BackNavigationCommand backNavigationCommand
+            BackNavigationCommand backNavigationCommand,
+            ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
             _scheduler = scheduler;
             ImageCollectionSettings = imageCollectionSettings;
             BackNavigationCommand = backNavigationCommand;
+            ToggleFullScreenCommand = toggleFullScreenCommand;
 
             _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
             for (var i = 0; i < MaxPrefetchImageCount; i++)
@@ -94,6 +96,9 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _leavePageCancellationTokenSource.Cancel();
             _navigationDisposables.Dispose();
+
+            // フルスクリーンを終了
+            ApplicationView.GetForCurrentView().ExitFullScreenMode();
 
             base.OnNavigatedFrom(parameters);
         }
@@ -430,6 +435,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
         public ImageCollectionPageSettings ImageCollectionSettings { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
+        public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
 
         // Note: Image Prefetchとは
         // 

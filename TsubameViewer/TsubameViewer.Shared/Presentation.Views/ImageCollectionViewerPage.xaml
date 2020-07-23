@@ -8,7 +8,8 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
-  xmlns:wst="using:WindowsStateTriggers" xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
+  xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   NavigationCacheMode="Enabled"
@@ -87,6 +88,10 @@
           <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{Binding GoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
+
+      <myBehaviour:MouseCenterClickTrigger>
+        <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
+      </myBehaviour:MouseCenterClickTrigger>
     </i:Interaction.Behaviors>
     
     <Image x:Name="Image0" Source="{Binding Result}" DataContext="{Binding PrefetchImages[0].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
