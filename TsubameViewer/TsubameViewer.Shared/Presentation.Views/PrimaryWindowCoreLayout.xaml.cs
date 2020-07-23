@@ -31,11 +31,11 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
-            ContentFrame.Navigated += Frame_Navigated;
             DataContext = _viewModel = viewModel;
 
 
             // Navigation Handling
+            ContentFrame.Navigated += Frame_Navigated;
             SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
@@ -47,6 +47,8 @@ namespace TsubameViewer.Presentation.Views
             IsDisplayMenu = e.SourcePageType != typeof(ImageCollectionViewerPage);
 
             ProcessNavigationHandlingForCurrentPage(e.SourcePageType);
+
+            BackCommand.RaiseCanExecuteChanged();
         }
 
         public bool IsDisplayMenu
@@ -69,7 +71,10 @@ namespace TsubameViewer.Presentation.Views
 
         private DelegateCommand _BackCommand;
         public DelegateCommand BackCommand =>
-            _BackCommand ??= new DelegateCommand(() => _ = _navigationService?.GoBackAsync());
+            _BackCommand ??= new DelegateCommand(
+                () => _ = _navigationService?.GoBackAsync(),
+                () => _navigationService?.CanGoBack() ?? false
+                );
 
 
         #region Back/Forward Navigation

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 
-namespace HohoemaLive.Models.Repository
+namespace TsubameViewer.Models.Repository
 {
     public abstract class LiteDBServiceBase<T>
     {

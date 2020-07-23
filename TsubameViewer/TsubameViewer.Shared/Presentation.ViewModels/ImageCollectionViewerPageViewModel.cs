@@ -19,6 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Repository.Settings;
 using TsubameViewer.Presentation.ViewModels.Commands;
 using Uno.Extensions;
 using Uno.Threading;
@@ -73,18 +74,20 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageCollectionViewerPageViewModel(
             IScheduler scheduler,
+            ImageCollectionPageSettings imageCollectionSettings,
             BackNavigationCommand backNavigationCommand
             )
         {
+            _scheduler = scheduler;
+            ImageCollectionSettings = imageCollectionSettings;
+            BackNavigationCommand = backNavigationCommand;
+
             _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
             for (var i = 0; i < MaxPrefetchImageCount; i++)
             {
                 _PrefetchImages[i] = new ReactivePropertySlim<IImageSource>();
             }
-
             PrefetchImages = _PrefetchImages;
-            _scheduler = scheduler;
-            BackNavigationCommand = backNavigationCommand;
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -425,6 +428,7 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _CurrentPrefetchImageIndex;
             set => SetProperty(ref _CurrentPrefetchImageIndex, value);
         }
+        public ImageCollectionPageSettings ImageCollectionSettings { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
 
         // Note: Image Prefetchとは

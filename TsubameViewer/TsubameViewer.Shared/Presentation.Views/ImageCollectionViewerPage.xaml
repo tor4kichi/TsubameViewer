@@ -8,7 +8,7 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
-  xmlns:wst="using:WindowsStateTriggers"
+  xmlns:wst="using:WindowsStateTriggers" xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   NavigationCacheMode="Enabled"
@@ -63,10 +63,30 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding ImageCollectionSettings.IsReverseMouseWheelBackForward}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MouseWheelUpAction.Command" Value="{Binding GoNextImageCommand}" />
+            <Setter Target="MouseWheelDownAction.Command" Value="{Binding GoPrevImageCommand}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
     </VisualStateManager.VisualStateGroups>
 
     <i:Interaction.Behaviors>
-      <core:EventTriggerBehavior />
+      <myBehaviour:MouseWheelTrigger>
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{Binding GoPrevImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{Binding GoNextImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
     </i:Interaction.Behaviors>
     
     <Image x:Name="Image0" Source="{Binding Result}" DataContext="{Binding PrefetchImages[0].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
@@ -86,7 +106,6 @@
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
           <KeyboardAccelerator Key="LeftButton" />
-
         </Button.KeyboardAccelerators>
 
         <SymbolIcon Symbol="Back" />

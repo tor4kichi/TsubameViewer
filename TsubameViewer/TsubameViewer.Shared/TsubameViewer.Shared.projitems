@@ -26,6 +26,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\LiteDbService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\Settings\ImageCollectionPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Repository\StoredFoldersRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\OpenFolderItemCommand.cs" />
@@ -36,6 +37,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageCollectionViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CardViewFolderListItem.xaml.cs">
       <DependentUpon>CardViewFolderListItem.xaml</DependentUpon>
     </Compile>
@@ -91,9 +93,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Models.Repository\Settings\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Services\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\" />
   </ItemGroup>

@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HohoemaLive.Models.Repository
+namespace TsubameViewer.Models.Repository
 {
     public class FlagsRepositoryBase : BindableBase
     {
