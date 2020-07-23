@@ -103,29 +103,52 @@
     <TextBlock>
       <Run Text="{Binding CurrentImageIndex}" />/<Run Text="{Binding Images.Length}" />
     </TextBlock>
-    
-    <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center"
-                VerticalAlignment="Bottom"
-                >
-      <Button Command="{Binding GoPrevImageCommand}">
+
+    <Grid Margin="0 48 0 32">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="4*" />
+        <ColumnDefinition Width="3*" />
+      </Grid.ColumnDefinitions>
+      <Button Command="{Binding GoPrevImageCommand}"
+              Grid.Column="0"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
           <KeyboardAccelerator Key="LeftButton" />
         </Button.KeyboardAccelerators>
 
-        <SymbolIcon Symbol="Back" />
+        <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+          <SymbolIcon Symbol="Back" />
+        </Border>
+
       </Button>
 
-      <Button Command="{Binding GoNextImageCommand}">
+      <Border Grid.Column="1">
+        
+      </Border>
+
+      <Button Command="{Binding GoNextImageCommand}"
+              Grid.Column="2"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
           <KeyboardAccelerator Key="RightButton" />
 
         </Button.KeyboardAccelerators>
+
         <SymbolIcon Symbol="Forward" />
       </Button>
-    </StackPanel>
-
-    <Button Command="{Binding BackNavigationCommand}" Opacity="0.5" />
+    </Grid>
   </Grid>
 </Page>
