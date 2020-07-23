@@ -49,6 +49,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<FolderViewFirstSort> SelectedFolderViewFirstSort { get; }
 
+        static FastAsyncLock _NavigationLock = new FastAsyncLock();
+
         IReadOnlyReactiveProperty<QueryOptions> _currentQueryOptions;
 
         private string _currentToken;
@@ -104,8 +106,8 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             return true;
+            
         }
-
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
@@ -137,68 +139,74 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (mode == NavigationMode.New)
             {
-                bool isTokenChanged = false;
-                if (parameters.TryGetValue("token", out string token))
+                using (await _NavigationLock.LockAsync(default))
                 {
-                    if (_currentToken != token)
+                    bool isTokenChanged = false;
+                    if (parameters.TryGetValue("token", out string token))
                     {
-                        _currentToken = token;
-                        isTokenChanged = true;
+                        if (_currentToken != token)
+                        {
+                            _currentToken = token;
+                            isTokenChanged = true;
+                        }
                     }
-                }
 #if DEBUG
-                else
-                {
-                    Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
-                }
+                    else
+                    {
+                        Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
+                    }
 #endif
 
-                bool isPathChanged = false;
-                if (parameters.TryGetValue("path", out string path))
-                {
-                    var unescapedPath = Uri.UnescapeDataString(path);
-                    if (_currentPath != unescapedPath)
+                    bool isPathChanged = false;
+                    if (parameters.TryGetValue("path", out string path))
                     {
-                        isPathChanged = true;
-                        _currentPath = unescapedPath;
+                        var unescapedPath = Uri.UnescapeDataString(path);
+                        if (_currentPath != unescapedPath)
+                        {
+                            isPathChanged = true;
+                            _currentPath = unescapedPath;
+                        }
                     }
-                }
 
-                // 以下の場合に表示内容を更新する
-                //    1. 表示フォルダが変更された場合
-                //    2. 前回の更新が未完了だった場合
-                if (isTokenChanged || isPathChanged)
-                {
-                    if (isTokenChanged)
+                    // 以下の場合に表示内容を更新する
+                    //    1. 表示フォルダが変更された場合
+                    //    2. 前回の更新が未完了だった場合
+                    if (isTokenChanged || isPathChanged)
                     {
+                        if (isTokenChanged)
+                        {
+                            FolderItems.Clear();
+                            _previousEnumerationIndex = 0;
+
+                            _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                        }
+
+                        if (_tokenGettingFolder == null)
+                        {
+                            throw new Exception("token parameter is require for path parameter.");
+                        }
+
                         FolderItems.Clear();
                         _previousEnumerationIndex = 0;
 
-                        _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
-                    }
+                        _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
-                    if (_tokenGettingFolder == null)
+                        DisplayCurrentPath = _currentFolder.Path;
+
+                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                    }
+                    else if (!_isCompleteEnumeration)
                     {
-                        throw new Exception("token parameter is require for path parameter.");
+                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                     }
-
-                    FolderItems.Clear();
-                    _previousEnumerationIndex = 0;
-
-                    _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-
-                    DisplayCurrentPath = _currentFolder.Path;
-
-                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                }
-                else if (!_isCompleteEnumeration)
-                {
-                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                 }
             }
             else if (mode == NavigationMode.Refresh)
             {
-                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                using (await _NavigationLock.LockAsync(default))
+                {
+                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                }
             }
             else if (mode == NavigationMode.Forward)
             {
@@ -206,7 +214,10 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             else if (!_isCompleteEnumeration)
             {
-                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                using (await _NavigationLock.LockAsync(default))
+                {
+                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                }
             }
 
             await base.OnNavigatedToAsync(parameters);
@@ -303,36 +314,50 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
 
-            _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
+            using (await _NavigationLock.LockAsync(default))
+            {
+                _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
 
-            CurrentDepth++;
-            FolderItems.Clear();
-            _previousEnumerationIndex = 0;
+                CurrentDepth++;
+                FolderItems.Clear();
+                _previousEnumerationIndex = 0;
 
-            _currentPath = await StorageItemViewModel.GetRawSubtractPath(folderItemVM);
-            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                _currentPath = await StorageItemViewModel.GetRawSubtractPath(folderItemVM);
+                _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
-            DisplayCurrentPath = _currentFolder.Path;
+                DisplayCurrentPath = _currentFolder.Path;
 
-            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
 
-            TrimNavigationStackToCurrentDepth();
+                TrimNavigationStackToCurrentDepth();
+
+                Debug.WriteLine("PushCurrentFolderNavigationInfoAndSetNewFolder: " + CurrentDepth);
+            }
         }
 
-        void PushCurrentFolderNavigationInfoOnBackNavigation()
+        async void PushCurrentFolderNavigationInfoOnBackNavigation()
         {
-            if (!_stack.Any()) 
+            using (await _NavigationLock.LockAsync(default))
+            {
+                if (!_stack.Any())
+                {
+                    _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
+                }
+
+                CurrentDepth--;
+
+                Debug.WriteLine("PushCurrentFolderNavigationInfoOnBackNavigation: " + CurrentDepth);
+            }
+        }
+
+        async void PushCurrentFolderNavigationInfoOnNewOtherNavigation()
+        {
+            using (await _NavigationLock.LockAsync(default))
             {
                 _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
             }
-            
-            CurrentDepth--;
-        }
 
-        void PushCurrentFolderNavigationInfoOnNewOtherNavigation()
-        {
-            _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
-
+            Debug.WriteLine("PushCurrentFolderNavigationInfoOnNewOtherNavigation: " + CurrentDepth);
             //CurrentDepth--;
         }
 
@@ -349,60 +374,70 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task<bool> TryBackNavigation()
         {
-            _leavePageCancellationTokenSource.Cancel();
-            _leavePageCancellationTokenSource.Dispose();
-            _leavePageCancellationTokenSource = new CancellationTokenSource();
+            using (await _NavigationLock.LockAsync(default))
+            {
+                _leavePageCancellationTokenSource.Cancel();
+                _leavePageCancellationTokenSource.Dispose();
+                _leavePageCancellationTokenSource = new CancellationTokenSource();
 
-            using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
+                using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
 
-            if (CurrentDepth == 0) { return true; }
+                if (CurrentDepth == 0) { return true; }
 
-            CurrentDepth--;
-            var prevFolderInfo = _stack.ElementAt(CurrentDepth);
+                CurrentDepth--;
+                var prevFolderInfo = _stack.ElementAt(CurrentDepth);
 
-            FolderItems.Clear();
-            _previousEnumerationIndex = 0;
+                FolderItems.Clear();
+                _previousEnumerationIndex = 0;
 
-            _currentPath = prevFolderInfo.Path;
-            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                _currentPath = prevFolderInfo.Path;
+                _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
-            DisplayCurrentPath = _currentFolder.Path;
+                DisplayCurrentPath = _currentFolder.Path;
 
-            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
 
+                Debug.WriteLine("TryBackNavigation: " + CurrentDepth);
 
-            return false;
+                return false;
+            }
         }
 
 
         private async Task<bool> TryForwardNavigation()
         {
-            _leavePageCancellationTokenSource.Cancel();
-            _leavePageCancellationTokenSource.Dispose();
-            _leavePageCancellationTokenSource = new CancellationTokenSource();
+            using (await _NavigationLock.LockAsync(default))
+            {
+                _leavePageCancellationTokenSource.Cancel();
+                _leavePageCancellationTokenSource.Dispose();
+                _leavePageCancellationTokenSource = new CancellationTokenSource();
 
-            using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
+                using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
 
-            if (CurrentDepth + 1 >= _stack.Count) { return true; }
+                if (CurrentDepth + 1 >= _stack.Count) { return true; }
 
-            CurrentDepth++;
-            var forwardFolderInfo = _stack.ElementAt(CurrentDepth);
+                CurrentDepth++;
+                var forwardFolderInfo = _stack.ElementAt(CurrentDepth);
 
-            FolderItems.Clear();
-            _previousEnumerationIndex = 0;
+                FolderItems.Clear();
+                _previousEnumerationIndex = 0;
 
-            // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
-            _tokenGettingFolder ??= await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(forwardFolderInfo.Token);
-            _currentToken = forwardFolderInfo.Token;
+                // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
+                _tokenGettingFolder ??= await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(forwardFolderInfo.Token);
+                _currentToken = forwardFolderInfo.Token;
 
-            _currentPath = forwardFolderInfo.Path;
-            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                _currentPath = forwardFolderInfo.Path;
+                _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
-            DisplayCurrentPath = _currentFolder.Path;
+                DisplayCurrentPath = _currentFolder.Path;
 
-            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
 
-            return false;
+
+                Debug.WriteLine("TryForwardNavigation: " + CurrentDepth);
+
+                return false;
+            }
         }
 
         DelegateCommand<object> _OpenFolderItemCommand;
