@@ -149,7 +149,7 @@ namespace TsubameViewer
             var shell = Container.Resolve<PrimaryWindowCoreLayout>();
             var ns = shell.GetNavigationService();
             var unityContainer = Container.GetContainer();
-            unityContainer.RegisterInstance("PrimaryWindowNavigationService", ns);
+            unityContainer.RegisterInstance<INavigationService>("PrimaryWindowNavigationService", ns);
 
             Window.Current.Content = shell;
             Window.Current.Activate();

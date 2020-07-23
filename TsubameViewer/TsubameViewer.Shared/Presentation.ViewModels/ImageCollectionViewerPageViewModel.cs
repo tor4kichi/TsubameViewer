@@ -102,73 +102,75 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
-            
-            bool isTokenChanged = false;
-            if (parameters.TryGetValue("token", out string token))
-            {
-                if (_currentToken != token)
-                {
-                    _currentToken = token;
-                    _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
-
-                    ClearPrefetchImages();
-
-                    Images = null;
-                    CurrentImage = _emptyImage;
-                    _CurrentImageIndex = 0;
-
-                    isTokenChanged = true;
-                }
-            }
-#if DEBUG
-            else
-            {
-                Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
-            }
-#endif
-
-            bool isPathChanged = false;
-            if (parameters.TryGetValue("path", out string path))
-            {
-                var unescapedPath = Uri.UnescapeDataString(path);
-                if (_currentPath != unescapedPath)
-                {
-                    _currentPath = unescapedPath;
-
-                    if (_tokenGettingFolder == null)
-                    {
-                        throw new Exception("token parameter is require for path parameter.");
-                    }
-
-                    ClearPrefetchImages();
-
-                    Images = null;
-                    CurrentImage = _emptyImage;
-                    _CurrentImageIndex = 0;
-
-                    _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-
-                    isPathChanged = true;
-                }
-            }
 
             // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
-
-
-            // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
-
-
-            // 以下の場合に表示内容を更新する
-            //    1. 表示フォルダが変更された場合
-            //    2. 前回の更新が未完了だった場合
-            if (isTokenChanged || isPathChanged)
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.New)
             {
-                await RefreshItems(_leavePageCancellationTokenSource.Token);
-                
-                ResetPrefetchImageRange(_CurrentImageIndex);
+                bool isTokenChanged = false;
+                if (parameters.TryGetValue("token", out string token))
+                {
+                    if (_currentToken != token)
+                    {
+                        _currentToken = token;
+                        _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+
+                        ClearPrefetchImages();
+
+                        Images = null;
+                        CurrentImage = _emptyImage;
+                        _CurrentImageIndex = 0;
+
+                        isTokenChanged = true;
+                    }
+                }
+#if DEBUG
+                else
+                {
+                    Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
+                }
+#endif
+
+                bool isPathChanged = false;
+                if (parameters.TryGetValue("path", out string path))
+                {
+                    var unescapedPath = Uri.UnescapeDataString(path);
+                    if (_currentPath != unescapedPath)
+                    {
+                        _currentPath = unescapedPath;
+
+                        if (_tokenGettingFolder == null)
+                        {
+                            throw new Exception("token parameter is require for path parameter.");
+                        }
+
+                        ClearPrefetchImages();
+
+                        Images = null;
+                        CurrentImage = _emptyImage;
+                        _CurrentImageIndex = 0;
+
+                        _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+
+                        isPathChanged = true;
+                    }
+                }
+
+                // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
+
+
+                // 以下の場合に表示内容を更新する
+                //    1. 表示フォルダが変更された場合
+                //    2. 前回の更新が未完了だった場合
+                if (isTokenChanged || isPathChanged)
+                {
+                    await RefreshItems(_leavePageCancellationTokenSource.Token);
+
+                    ResetPrefetchImageRange(_CurrentImageIndex);
+                }
             }
 
             // 表示画像が揃ったら改めてボタンを有効化

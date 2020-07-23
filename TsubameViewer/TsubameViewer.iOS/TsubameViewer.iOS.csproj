@@ -116,6 +116,9 @@
     <BundleResource Include="Resources\Fonts\winjs-symbols.ttf" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="I18NPortable">
+      <Version>1.0.1</Version>
+    </PackageReference>
     <PackageReference Include="LiteDB">
       <Version>5.0.8</Version>
     </PackageReference>

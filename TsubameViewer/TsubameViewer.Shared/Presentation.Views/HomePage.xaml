@@ -50,7 +50,7 @@
               >
       <ListView.Header>
         <CommandBar>
-          <AppBarButton Label="追加" Command="{Binding FolderChoiseCommand}" />
+          <AppBarButton Label="追加" Icon="Add" Command="{Binding FolderChoiseCommand}" />
         </CommandBar>
       </ListView.Header>
       <i:Interaction.Behaviors>

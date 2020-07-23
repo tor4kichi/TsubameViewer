@@ -113,6 +113,16 @@ namespace TsubameViewer.Presentation.ViewModels
             _leavePageCancellationTokenSource.Dispose();
             _leavePageCancellationTokenSource = null;
 
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Back)
+            {
+                PushCurrentFolderNavigationInfoOnBackNavigation();
+            }
+            else if (mode == NavigationMode.New)
+            {
+                PushCurrentFolderNavigationInfoOnNewOtherNavigation();
+            }
+
             base.OnNavigatedFrom(parameters);
         }
 
@@ -189,6 +199,10 @@ namespace TsubameViewer.Presentation.ViewModels
             else if (mode == NavigationMode.Refresh)
             {
                 await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+            }
+            else if (mode == NavigationMode.Forward)
+            {
+                await TryForwardNavigation();
             }
             else if (!_isCompleteEnumeration)
             {
@@ -282,8 +296,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private INavigationService _navigationService;
 
-        List<FolderListupPageParameter> _stack = new List<FolderListupPageParameter>();
-        int CurrentDepth = 0;
+        static List<FolderListupPageParameter> _stack = new List<FolderListupPageParameter>();
+        static int CurrentDepth = 0;
 
         async Task PushCurrentFolderNavigationInfoAndSetNewFolder(StorageItemViewModel folderItemVM)
         {
@@ -305,6 +319,23 @@ namespace TsubameViewer.Presentation.ViewModels
             TrimNavigationStackToCurrentDepth();
         }
 
+        void PushCurrentFolderNavigationInfoOnBackNavigation()
+        {
+            if (!_stack.Any()) 
+            {
+                _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
+            }
+            
+            CurrentDepth--;
+        }
+
+        void PushCurrentFolderNavigationInfoOnNewOtherNavigation()
+        {
+            _stack.Add(new FolderListupPageParameter() { Token = _currentToken, Path = _currentPath });
+
+            //CurrentDepth--;
+        }
+
         void TrimNavigationStackToCurrentDepth()
         {
             var trimTarget = CurrentDepth;
@@ -312,8 +343,9 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _stack.RemoveAt(_stack.Count - 1);
             }
-
         }
+
+
 
         async Task<bool> TryBackNavigation()
         {
@@ -351,13 +383,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
             using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
 
-            if (_stack.Count <= CurrentDepth) { return true; }
+            if (CurrentDepth + 1 >= _stack.Count) { return true; }
 
             CurrentDepth++;
             var forwardFolderInfo = _stack.ElementAt(CurrentDepth);
 
             FolderItems.Clear();
             _previousEnumerationIndex = 0;
+
+            // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
+            _tokenGettingFolder ??= await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(forwardFolderInfo.Token);
+            _currentToken = forwardFolderInfo.Token;
 
             _currentPath = forwardFolderInfo.Path;
             _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
@@ -369,21 +405,23 @@ namespace TsubameViewer.Presentation.ViewModels
             return false;
         }
 
-        DelegateCommand<StorageItemViewModel> _OpenFolderItemCommand;
-        public DelegateCommand<StorageItemViewModel> OpenFolderItemCommand =>
-            _OpenFolderItemCommand ??= new DelegateCommand<StorageItemViewModel>(async (item) => 
+        DelegateCommand<object> _OpenFolderItemCommand;
+        public DelegateCommand<object> OpenFolderItemCommand =>
+            _OpenFolderItemCommand ??= new DelegateCommand<object>(async (item) => 
             {
-                if (item.Type == StorageItemTypes.File)
+                if (item is StorageItemViewModel itemVM)
                 {
-                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+                    if (itemVM.Type == StorageItemTypes.File)
+                    {
+                        var parameters = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
+                        var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
 
+                    }
+                    else if (itemVM.Type == StorageItemTypes.Folder)
+                    {
+                        await PushCurrentFolderNavigationInfoAndSetNewFolder(itemVM);
+                    }
                 }
-                else if (item.Type == StorageItemTypes.Folder)
-                {
-                    PushCurrentFolderNavigationInfoAndSetNewFolder(item);
-                }
-
             });
 
 

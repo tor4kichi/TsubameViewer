@@ -4,19 +4,37 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Presentation.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+  xmlns:i="using:Microsoft.Xaml.Interactivity"
+  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+  xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector"
+  mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
+  <Page.Resources>
+    <ts:TypeBasedTemplateSelector x:Key="MenuItemTemplateSelector">
+      <DataTemplate ts:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.MenuSeparatorViewModel, Converter={StaticResource StringToType}}">
+        <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
+      </DataTemplate>
+      <DataTemplate ts:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.MenuItemViewModel, Converter={StaticResource StringToType}}">
+        <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
+      </DataTemplate>
+    </ts:TypeBasedTemplateSelector> 
+  </Page.Resources>
   <Grid>
     <SplitView x:Name="SplitView" IsPaneOpen="False" DisplayMode="Inline">
       <SplitView.Pane>
         <ScrollViewer>
-          <ListView>
-            <TextBlock Text="Menu Item" />
-            <TextBlock Text="Menu Item" />
-            <TextBlock Text="Menu Item" />
-            <TextBlock Text="Menu Item" />
+          <ListView ItemsSource="{x:Bind _viewModel.MenuItems}"
+                    ItemTemplateSelector="{StaticResource MenuItemTemplateSelector}" 
+                    IsItemClickEnabled="True"
+                    
+                    >
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="ItemClick">
+                <core:InvokeCommandAction Command="{Binding OpenMenuItemCommand}" InputConverter="{StaticResource ItemClickEventArgsConverter}" />
+              </core:EventTriggerBehavior>
+            </i:Interaction.Behaviors>
           </ListView>
         </ScrollViewer>
       </SplitView.Pane>

@@ -11,6 +11,7 @@
   xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  NavigationCacheMode="Enabled"
   >
 
   <Page.Resources>

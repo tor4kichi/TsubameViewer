@@ -4,10 +4,19 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer"
   xmlns:prism="using:Prism.Unity" 
-  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters">
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
+  xmlns:locale="using:TsubameViewer.Locales" 
+  xmlns:templateSelector="using:TsubameViewer.Presentation.Views.TemplateSelector">
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
+
+      <locale:LocalizeConverter x:Key="LocalizeConverter" />
+      <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
+
+      <templateSelector:StringToTypeConverter x:Key="StringToType" />
+
+
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
     </ResourceDictionary>
