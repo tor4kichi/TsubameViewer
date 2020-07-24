@@ -1,6 +1,4 @@
-﻿using SkiaSharp;
-using SkiaSharp.Views.UWP;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;

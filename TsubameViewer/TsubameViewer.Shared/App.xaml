@@ -6,7 +6,11 @@
   xmlns:prism="using:Prism.Unity" 
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
   xmlns:locale="using:TsubameViewer.Locales" 
-  xmlns:templateSelector="using:TsubameViewer.Presentation.Views.TemplateSelector">
+  xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
+  xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters"
+  >
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
@@ -14,12 +18,77 @@
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
-      <templateSelector:StringToTypeConverter x:Key="StringToType" />
+      <ts:StringToTypeConverter x:Key="StringToType" />
 
 
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
+
+
+      <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
+        <uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
+        <uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyCollectionToObjectConverter>
+      
+      <!--  -->
+      <ts:ValueDataTemplateSelector x:Key="FolderItemTemplateSelector"  PropertyName="Type">
+
+        <ts:ValueDataTemplate Value="None">
+          <DataTemplate>
+            <uwpControls:DockPanel>
+              <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
+                <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" />
+                <StackPanel>
+                  <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
+                </StackPanel>
+              </uwpControls:DockPanel>
+              <Border  />
+            </uwpControls:DockPanel>
+          </DataTemplate>
+        </ts:ValueDataTemplate>
+
+        <ts:ValueDataTemplate Value="Folder">
+          <DataTemplate>
+            <uwpControls:DockPanel>
+              <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
+                <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Right" />
+                <StackPanel>
+                  <TextBlock Text="{Binding Name}" />
+                  <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
+                </StackPanel>
+              </uwpControls:DockPanel>
+              <Image />
+            </uwpControls:DockPanel>
+          </DataTemplate>
+        </ts:ValueDataTemplate>
+      </ts:ValueDataTemplateSelector>
+
+
+
+      <ss:ValueBasedStyleSelector x:Key="FolderItemStyleSelector" PropertyName="Type">
+        <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="None" BasedOn="{StaticResource GridViewItemRevealStyle}">
+          <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="VerticalContentAlignment" Value="Stretch" />
+          <Setter Property="Padding" Value="8 0 8 8" />
+          <Setter Property="Margin" Value="6 6" />
+        </Style>
+
+        <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="Folder" BasedOn="{StaticResource GridViewItemRevealStyle}">
+          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="VerticalContentAlignment" Value="Stretch" />
+          <Setter Property="Padding" Value="8 0 8 8" />
+          <Setter Property="Margin" Value="6 6" />
+        </Style>
+      </ss:ValueBasedStyleSelector>
+
+
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

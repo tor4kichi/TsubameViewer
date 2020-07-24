@@ -9,32 +9,33 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
-  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors"
+  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
+  xmlns:wst="using:WindowsStateTriggers" xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
-    <ts:ValueDataTemplateSelector x:Key="FolderItemTemplateSelector"  PropertyName="Type">
+    <ts:ValueDataTemplateSelector x:Key="FileItemTemplateSelector"  PropertyName="Type">
       <ts:ValueDataTemplate Value="File">
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left">
-              <SymbolIcon Symbol="OpenFile" />
+            <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
+              <SymbolIcon Symbol="Pictures" />
             </Border>
             <Border uwpControls:DockPanel.Dock="Bottom">
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
+              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
             </Border>
             <TextBlock Text="{Binding Name}" />
           </uwpControls:DockPanel>
           
         </DataTemplate>
       </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Folder">
+      <ts:ValueDataTemplate Value="Archive">
         <DataTemplate>
           <uwpControls:DockPanel>
             <Border uwpControls:DockPanel.Dock="Left">
-              <SymbolIcon Symbol="Folder" />
+              <SymbolIcon Symbol="Library" />
             </Border>
             <Border uwpControls:DockPanel.Dock="Bottom">
               <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
@@ -44,37 +45,165 @@
         </DataTemplate>
       </ts:ValueDataTemplate>
     </ts:ValueDataTemplateSelector>
+
+    <ss:ValueBasedStyleSelector x:Key="FolderStyleTemplateSelector" PropertyName="Type">
+      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="File">
+        
+      </Style>
+      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="Archive">
+
+      </Style>
+    </ss:ValueBasedStyleSelector>
+
+
+    <ts:ValueDataTemplateSelector x:Key="FileDisplayModeTemplateSelector">
+      <ts:ValueDataTemplate Value="Line">
+        <DataTemplate >
+          <Canvas Height="16" Width="16">
+            <Line X1="0" X2="16" Y1="7"  Y2="7" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+          </Canvas>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Small">
+        <DataTemplate >
+          <Canvas Height="16" Width="16">
+            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+          </Canvas>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Midium">
+        <DataTemplate >
+          <Canvas Height="16" Width="16">
+            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+          </Canvas>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Large">
+        <DataTemplate >
+          <Canvas Height="16" Width="16">
+            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
+          </Canvas>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+    </ts:ValueDataTemplateSelector>
+
   </Page.Resources>
   <Grid>
-    <ListView ItemsSource="{Binding FolderItems}" ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
-              IsTapEnabled="False"
-              SelectionMode="Single"
-              >
-      <ListView.Header>
-        <Grid>
-          <TextBlock Text="{Binding DisplayCurrentPath}" />
-        </Grid>
-      </ListView.Header>
-      <ListView.Transitions>
-        <TransitionCollection>
-          
-        </TransitionCollection>
-      </ListView.Transitions>
-      <i:Interaction.Behaviors>
-        <core:EventTriggerBehavior EventName="DoubleTapped">
-          <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}"
-                                    InputConverter="{StaticResource RoutedEventOriginalSourceConverter}"
-                                    />
-        
-        </core:EventTriggerBehavior>
-      </i:Interaction.Behaviors>
+    <uwpControls:DockPanel>
 
-      <ListView.ItemContainerStyle>
-        <Style TargetType="ListViewItem">
-          <Setter Property="IsDoubleTapEnabled" Value="True" />
-          <Setter Property="IsTapEnabled" Value="False"/> 
-        </Style>
-      </ListView.ItemContainerStyle>
-    </ListView>
+      <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8">
+        <ListView HorizontalAlignment="Right"
+                   ItemsSource="{Binding FileDisplayModeItems}"
+                    SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
+                    ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                  Visibility="Collapsed"
+                    >
+          <ListView.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ListView.ItemsPanel>
+        </ListView>
+
+        <TextBlock Text="{Binding DisplayCurrentPath}" Opacity="0.7" />
+        <HyperlinkButton Content="元のフォルダへ戻る" Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}">
+          
+        </HyperlinkButton>
+
+        
+      </StackPanel>
+
+      <ScrollViewer>
+        <StackPanel>
+          <uwpControls:AdaptiveGridView 
+          x:Name="FoldersAdaptiveGridView"
+          StretchContentForSingleRow="False"
+          OneRowModeEnabled="False"
+          ItemsSource="{Binding FolderItems}" 
+          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
+          ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+          DesiredWidth="360"            
+          ItemHeight="132"
+          IsItemClickEnabled="True"
+          ItemClickCommand="{Binding OpenFolderItemCommand}"
+          IsSynchronizedWithCurrentItem="False"
+          Padding="48 8"
+              >
+            <GridView.Header>
+              <Grid >
+              </Grid>
+
+            </GridView.Header>
+            <i:Interaction.Behaviors>
+            </i:Interaction.Behaviors>
+          </uwpControls:AdaptiveGridView>
+
+          <!-- Files -->
+          <ListView x:Name="FilesListView"
+                 ItemsSource="{Binding FileItems}"
+                  ItemTemplateSelector="{StaticResource FileItemTemplateSelector}"
+                    Padding="48 8"
+                    IsItemClickEnabled="True"
+                  >
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="ItemClick">
+                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource ItemClickEventArgsConverter}" />
+              </core:EventTriggerBehavior>
+            </i:Interaction.Behaviors>
+            <ListView.Header>
+              <Grid>
+                <!-- TODO: 並べ替え -->
+              </Grid>
+            </ListView.Header>
+          </ListView>
+
+        </StackPanel>
+
+
+      </ScrollViewer>
+    </uwpControls:DockPanel>
+    
+    
+
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FolderItems.Count}" EqualTo="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="16 16" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16" />
+            <Setter Target="FilesListView.Padding" Value="8 16" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
   </Grid>
 </Page>

@@ -14,70 +14,6 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
-    <ts:ValueDataTemplateSelector x:Key="FolderItemTemplateSelector"  PropertyName="Type">
-
-      <ts:ValueDataTemplate Value="None">
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
-              <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" />
-              <StackPanel>
-                <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
-              </StackPanel>
-            </uwpControls:DockPanel>
-            <Border  />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:ValueDataTemplate>
-      
-      <ts:ValueDataTemplate Value="Folder">
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
-              <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Right" />
-              <StackPanel>
-                <TextBlock Text="{Binding Name}" />
-                <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
-              </StackPanel>
-            </uwpControls:DockPanel>
-            <Image />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
-
-    <ts:ValueDataTemplateSelector x:Key="FolderDisplayModeTemplateSelector">
-      <ts:ValueDataTemplate Value="MiniPanorama">
-        <DataTemplate >
-          <Border Height="16" Width="32" BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="2" />
-        </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="MangaCover">
-        <DataTemplate >
-          <Border Height="32" Width="20" BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="2" />
-        </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
-
-    
-
-    <ss:ValueBasedStyleSelector x:Key="FolderItemStyleSelector" PropertyName="Type">
-      <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="None" BasedOn="{StaticResource GridViewItemRevealStyle}">
-        <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
-        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="VerticalContentAlignment" Value="Stretch" />
-        <Setter Property="Padding" Value="8 0 8 8" />
-        <Setter Property="Margin" Value="6 6" />
-      </Style>
-
-      <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="Folder" BasedOn="{StaticResource GridViewItemRevealStyle}">
-        <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="VerticalContentAlignment" Value="Stretch" />
-        <Setter Property="Padding" Value="8 0 8 8" />
-        <Setter Property="Margin" Value="6 6" />
-      </Style>
-    </ss:ValueBasedStyleSelector>
     
 
   </Page.Resources>
@@ -99,18 +35,7 @@
               >
       <GridView.Header>
         <Grid HorizontalAlignment="Right">
-          
-          <ListView ItemsSource="{Binding FolderDisplayModeItems}"
-                    SelectedItem="{Binding FolderDisplayMode.Value, Mode=TwoWay}"
-                    ItemTemplateSelector="{StaticResource FolderDisplayModeTemplateSelector}"
-                    >
-            <ListView.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ListView.ItemsPanel>
-          </ListView>
-          
+                    
         </Grid>
           
       </GridView.Header>

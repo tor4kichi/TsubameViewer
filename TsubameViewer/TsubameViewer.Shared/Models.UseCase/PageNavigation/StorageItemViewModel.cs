@@ -3,11 +3,14 @@ using Prism.Navigation;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 
 namespace TsubameViewer.Models.UseCase.PageNavigation
 {
+    using StorageItemTypes = TsubameViewer.Models.Domain.FolderItemListing.StorageItemTypes;
+
     public sealed class StorageItemViewModel : BindableBase
     {
         public static async ValueTask<INavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
@@ -68,13 +71,7 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
         {
             Item = item;
             Token = token;
-            _Type = item switch
-            {
-                StorageFile _ => StorageItemTypes.File,
-                StorageFolder _ => StorageItemTypes.Folder,
-                _ => StorageItemTypes.None
-            };
-
+            _Type = PresentedFileTypesHelper.StorageItemToStorageItemTypes(item);
             _Name = Item.Name;
             _Path = Item.Path;
         }
@@ -106,17 +103,12 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 
 
 
+
         public void Setup(IStorageItem item, string token)
         {
             Item = item;
             Token = token;
-            Type = item switch
-            {
-                StorageFile _ => StorageItemTypes.File,
-                StorageFolder _ => StorageItemTypes.Folder,
-                _ => StorageItemTypes.None
-            };
-
+            Type = PresentedFileTypesHelper.StorageItemToStorageItemTypes(item);
             Name = Item.Name;
             Path = Item.Path;
         }

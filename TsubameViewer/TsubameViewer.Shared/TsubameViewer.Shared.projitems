@@ -23,8 +23,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FoldersDisplayMode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\PresentedFileTypesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />

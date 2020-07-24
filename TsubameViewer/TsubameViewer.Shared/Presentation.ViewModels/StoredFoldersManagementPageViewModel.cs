@@ -40,14 +40,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         CompositeDisposable _navigationDisposables;
 
-        public ReactiveProperty<FolderDisplayMode> FolderDisplayMode { get; }
-
-        public FolderDisplayMode[] FolderDisplayModeItems { get; } = new FolderDisplayMode[] 
-        {
-            Models.Domain.FolderItemListing.FolderDisplayMode.MiniPanorama,
-            Models.Domain.FolderItemListing.FolderDisplayMode.MangaCover,
-        };
-
         bool _foldersInitialized = false;
         public StoredFoldersManagementPageViewModel(
             OpenFolderItemCommand openFolderItemCommand,
@@ -63,8 +55,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _storedFoldersRepository = storedFoldersRepository;
             _eventAggregator = eventAggregator;
             _folderListingSettings = folderListingSettings;
-
-            FolderDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FolderDisplayMode);
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)

@@ -4,9 +4,11 @@ using System.Text;
 
 namespace TsubameViewer.Models.Domain.FolderItemListing
 {
-    public enum FolderDisplayMode
+    public enum FileDisplayMode
     {
-        MiniPanorama,
-        MangaCover,
+        Line,
+        Small,
+        Midium,
+        Large
     }
 }

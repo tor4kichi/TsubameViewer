@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Input;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.UseCase.SourceManagement.Commands;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -33,17 +34,17 @@ namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == Windows.Storage.StorageItemTypes.File)
+                if (item.Type == StorageItemTypes.File || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
                 }
-                else if (item.Type == Windows.Storage.StorageItemTypes.Folder)
+                else if (item.Type == StorageItemTypes.Folder)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
-                else if (item.Type == Windows.Storage.StorageItemTypes.None)
+                else if (item.Type == StorageItemTypes.None)
                 {
                     ((ICommand)_sourceChoiceCommand).Execute(null);
                 }

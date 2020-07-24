@@ -2,6 +2,7 @@
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,7 +14,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.UseCase.PageNavigation;
+using TsubameViewer.Models.UseCase.PageNavigation.Commands;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -22,6 +25,7 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+    using StorageItemTypes = TsubameViewer.Models.Domain.FolderItemListing.StorageItemTypes;
 
     public enum FolderViewFirstSort
     {
@@ -39,13 +43,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class FolderListupPageViewModel : ViewModelBase
     {
-        static readonly string[] SupportedFileExtensions = new[] 
-        {
-            ".png", ".jpg",
-            ".zip"
-        };
-
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
+        public ObservableCollection<StorageItemViewModel> FileItems { get; }
 
         public ReactivePropertySlim<FolderViewFirstSort> SelectedFolderViewFirstSort { get; }
 
@@ -71,12 +70,30 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _DisplayCurrentPath, value); }
         }
 
+        public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
+        public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
+        {
+            Models.Domain.FolderItemListing.FileDisplayMode.Line,
+            Models.Domain.FolderItemListing.FileDisplayMode.Small,
+            Models.Domain.FolderItemListing.FileDisplayMode.Midium,
+            Models.Domain.FolderItemListing.FileDisplayMode.Large,
+        };
+
+        public string FoldersManagementPageName => nameof(Views.StoredFoldersManagementPage);
+
         public FolderListupPageViewModel(
+            FolderListingSettings folderListingSettings,
+            OpenPageCommand openPageCommand
             )
         {
+            _folderListingSettings = folderListingSettings;
+            OpenPageCommand = openPageCommand;
+
             FolderItems = new ObservableCollection<StorageItemViewModel>();
+            FileItems = new ObservableCollection<StorageItemViewModel>();
             SelectedFolderViewFirstSort = new ReactivePropertySlim<FolderViewFirstSort>(FolderViewFirstSort.Folders);
-            
+
+            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
             /*
             _currentQueryOptions = Observable.CombineLatest(
                 SelectedFolderViewFirstSort,
@@ -176,6 +193,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (isTokenChanged)
                         {
                             FolderItems.Clear();
+                            FileItems.Clear();
                             _previousEnumerationIndex = 0;
 
                             _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
@@ -187,6 +205,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         FolderItems.Clear();
+                        FileItems.Clear();
                         _previousEnumerationIndex = 0;
 
                         _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
@@ -261,6 +280,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private async ValueTask RefreshFolderItems(StorageFolder folder, CancellationToken ct)
         {
             FolderItems.Clear();
+            FileItems.Clear();
             var itemsResult = await GetFolderItemsAsync(folder, ct);
             if (itemsResult.ItemsCount == 0)
             {
@@ -272,7 +292,16 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 ct.ThrowIfCancellationRequested();
                 var item = new StorageItemViewModel(folderItem, _currentToken);
-                FolderItems.Add(item);
+                if (folderItem is StorageFolder)
+                {
+                    FolderItems.Add(item);
+                }
+                else if (folderItem is StorageFile file
+                    && PresentedFileTypesHelper.IsSupportedFileExtension(file.FileType)
+                    )
+                {
+                    FileItems.Add(item);
+                }
                 _previousEnumerationIndex = currentIndex;
             }
         }
@@ -320,6 +349,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 CurrentDepth++;
                 FolderItems.Clear();
+                FileItems.Clear();
                 _previousEnumerationIndex = 0;
 
                 _currentPath = await StorageItemViewModel.GetRawSubtractPath(folderItemVM);
@@ -388,6 +418,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 var prevFolderInfo = _stack.ElementAt(CurrentDepth);
 
                 FolderItems.Clear();
+                FileItems.Clear();
                 _previousEnumerationIndex = 0;
 
                 _currentPath = prevFolderInfo.Path;
@@ -420,6 +451,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 var forwardFolderInfo = _stack.ElementAt(CurrentDepth);
 
                 FolderItems.Clear();
+                FileItems.Clear();
                 _previousEnumerationIndex = 0;
 
                 // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
@@ -441,6 +473,8 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         DelegateCommand<object> _OpenFolderItemCommand;
+        private readonly FolderListingSettings _folderListingSettings;
+
         public DelegateCommand<object> OpenFolderItemCommand =>
             _OpenFolderItemCommand ??= new DelegateCommand<object>(async (item) => 
             {
@@ -458,6 +492,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             });
+
+        public OpenPageCommand OpenPageCommand { get; }
 
 
         #endregion

@@ -9,14 +9,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         public FolderListingSettings()
         {
-            _FolderDisplayMode = Read(FolderDisplayMode.MangaCover, nameof(FolderDisplayMode));
+            _FileDisplayMode = Read(FileDisplayMode.Line, nameof(FileDisplayMode));
         }
 
-        private FolderDisplayMode _FolderDisplayMode;
-        public FolderDisplayMode FolderDisplayMode
+        private FileDisplayMode _FileDisplayMode;
+        public FileDisplayMode FileDisplayMode
         {
-            get { return _FolderDisplayMode; }
-            set { SetProperty(ref _FolderDisplayMode, value); }
+            get { return _FileDisplayMode; }
+            set { SetProperty(ref _FileDisplayMode, value); }
         }
     }
 }
