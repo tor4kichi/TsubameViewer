@@ -114,11 +114,13 @@ namespace TsubameViewer
 
         public override void RegisterTypes(IContainerRegistry container)
         {
-            container.RegisterSingleton<Models.Repository.Settings.ImageCollectionPageSettings>();
+            container.RegisterSingleton<Models.Domain.ImageView.ImageCollectionPageSettings>();
 
-            container.RegisterForNavigation<HomePage>();
+            container.RegisterForNavigation<StoredFoldersManagementPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageCollectionViewerPage>();
+            container.RegisterForNavigation<CollectionPage>();
+            container.RegisterForNavigation<SettingsPage>();
         }
 
         public override Task OnStartAsync(StartArgs args)
@@ -148,6 +150,27 @@ namespace TsubameViewer
 
         public override void OnInitialized()
         {
+            // ローカリゼーション用のライブラリを初期化
+            try
+            {
+                I18NPortable.I18N.Current
+#if DEBUG
+                    //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
+                    .SetNotFoundSymbol("🍣")
+#endif
+                    .SetFallbackLocale("ja")
+                    .Init(GetType().Assembly);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
+
+            Resources["Strings"] = I18NPortable.I18N.Current;
+
+
+
+
             var shell = Container.Resolve<PrimaryWindowCoreLayout>();
             var ns = shell.GetNavigationService();
             var unityContainer = Container.GetContainer();
@@ -156,7 +179,7 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            ns.NavigateAsync(nameof(HomePage));
+            ns.NavigateAsync(nameof(StoredFoldersManagementPage));
 
             base.OnInitialized();
         }

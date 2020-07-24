@@ -1,0 +1,2 @@
+﻿StoredFoldersManagementPage = フォルダー
+CollectionPage = コレクション

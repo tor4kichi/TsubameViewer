@@ -19,6 +19,7 @@
 
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
+      <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

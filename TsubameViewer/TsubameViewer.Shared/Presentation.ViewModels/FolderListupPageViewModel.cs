@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Presentation.ViewModels.Commands;
+using TsubameViewer.Models.UseCase.PageNavigation;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;

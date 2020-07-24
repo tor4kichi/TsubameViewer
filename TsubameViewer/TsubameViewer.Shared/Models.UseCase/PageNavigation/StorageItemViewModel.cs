@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 
-namespace TsubameViewer.Presentation.ViewModels
+namespace TsubameViewer.Models.UseCase.PageNavigation
 {
     public sealed class StorageItemViewModel : BindableBase
     {

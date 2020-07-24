@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TsubameViewer.Models.Repository
+namespace TsubameViewer.Models.Infrastructure
 {
     public sealed class AppFlagsRepository : FlagsRepositoryBase
     {

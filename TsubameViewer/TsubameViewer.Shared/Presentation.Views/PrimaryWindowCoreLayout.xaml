@@ -8,6 +8,8 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity"
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector"
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -20,42 +22,86 @@
         <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
       </DataTemplate>
     </ts:TypeBasedTemplateSelector> 
+   
   </Page.Resources>
   <Grid>
-    <SplitView x:Name="SplitView" IsPaneOpen="False" DisplayMode="Inline">
-      <SplitView.Pane>
-        <ScrollViewer>
-          <ListView ItemsSource="{x:Bind _viewModel.MenuItems}"
-                    ItemTemplateSelector="{StaticResource MenuItemTemplateSelector}" 
-                    IsItemClickEnabled="True"
-                    
+    <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
+                      IsBackButtonVisible="Collapsed"
+                      IsSettingsVisible="False"
+                    x:Name="MyNavigtionView"
+                      >
+      <i:Interaction.Behaviors>
+        <core:EventTriggerBehavior EventName="ItemInvoked">
+          <core:InvokeCommandAction Command="{Binding OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
+        </core:EventTriggerBehavior>
+      </i:Interaction.Behaviors>
+      <NavigationView.MenuItemTemplate>
+        <DataTemplate>
+          <NavigationViewItem Content="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
+        </DataTemplate>
+      </NavigationView.MenuItemTemplate>
+      <NavigationView.AutoSuggestBox>
+        <AutoSuggestBox PlaceholderText="作品タイトル、作者の検索" 
+                            QueryIcon="Find"
+                            VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        x:Name="AutoSuggestBox"
+                        Padding="0"
+                        Width="196"
+                            />
+      </NavigationView.AutoSuggestBox>
+      <NavigationView.PaneFooter>
+        <CommandBar x:Name="MenuRightCommandBar"
+                    DefaultLabelPosition="Right"
+                    Background="Transparent"
                     >
-            <i:Interaction.Behaviors>
-              <core:EventTriggerBehavior EventName="ItemClick">
-                <core:InvokeCommandAction Command="{Binding OpenMenuItemCommand}" InputConverter="{StaticResource ItemClickEventArgsConverter}" />
-              </core:EventTriggerBehavior>
-            </i:Interaction.Behaviors>
-          </ListView>
-        </ScrollViewer>
-      </SplitView.Pane>
+          <CommandBar.PrimaryCommands>
+            <AppBarButton Label="インポート" Icon="Import" Command="{Binding SourceChoiceCommand}" />
+          </CommandBar.PrimaryCommands>
+          <CommandBar.SecondaryCommands>
+            <AppBarButton Label="最新の情報に更新" Icon="Refresh" Command="{Binding RefreshNavigationCommand}" />
+            <AppBarButton Label="設定" Icon="Setting" Command="{Binding OpenPageCommand}" CommandParameter="SettingsPage"/>
+          </CommandBar.SecondaryCommands>
+        </CommandBar>
+      </NavigationView.PaneFooter>
 
-      <SplitView.Content>
-        <Grid>
-          <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="10" />
-          <Button Height="32" Command="{x:Bind BackCommand}" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="1.0">
-            <SymbolIcon Symbol="Back" />
-          </Button>
-        </Grid>
-      </SplitView.Content>
-    </SplitView>
+      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="10" />
+    </NavigationView>
+
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsDisplayMenu, Mode=OneWay}" />
+            <AdaptiveTrigger MinWindowWidth="1060" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SplitView.IsPaneOpen" Value="True" />
+            <Setter Target="MenuRightCommandBar.MaxWidth" Value="480" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="820" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MenuRightCommandBar.MaxWidth" Value="320" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MenuRightCommandBar.MaxWidth" Value="240" />
+            <Setter Target="MenuRightCommandBar.Margin" Value="16 0 24 0" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MenuRightCommandBar.MaxWidth" Value="48" />
+            <Setter Target="MenuRightCommandBar.Margin" Value="16 0 24 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

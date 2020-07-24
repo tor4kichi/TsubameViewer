@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -33,7 +34,6 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _viewModel = viewModel;
 
-
             // Navigation Handling
             ContentFrame.Navigated += Frame_Navigated;
             SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
@@ -42,24 +42,44 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+        private Type[] MenuPaneHiddenPageTypes = new Type[] 
+        {
+            typeof(Views.ImageCollectionViewerPage),
+            typeof(SettingsPage),
+        };
+
+        private Type[] CanGoBackPageTypes = new Type[] 
+        {
+            typeof(Views.FolderListupPage),
+            typeof(Views.ImageCollectionViewerPage),
+            typeof(SettingsPage),
+        };
+
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
-            IsDisplayMenu = e.SourcePageType != typeof(ImageCollectionViewerPage);
-
-            ProcessNavigationHandlingForCurrentPage(e.SourcePageType);
-
             BackCommand.RaiseCanExecuteChanged();
-        }
 
-        public bool IsDisplayMenu
-        {
-            get { return (bool)GetValue(IsDisplayMenuProperty); }
-            set { SetValue(IsDisplayMenuProperty, value); }
-        }
+            MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Any(x => x == e.SourcePageType);
+            if (MyNavigtionView.IsPaneVisible)
+            {
+                var sourcePageTypeName = e.SourcePageType.Name;
+                if (e.SourcePageType == typeof(FolderListupPage))
+                {
+                    sourcePageTypeName = nameof(Views.StoredFoldersManagementPage);
+                }
+                var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
+                if (selectedMeuItemVM != null)
+                {
+                    MyNavigtionView.SelectedItem = selectedMeuItemVM;
+                }
+            }
 
-        // Using a DependencyProperty as the backing store for IsDisplayMenu.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty IsDisplayMenuProperty =
-            DependencyProperty.Register("IsDisplayMenu", typeof(bool), typeof(PrimaryWindowCoreLayout), new PropertyMetadata(true));
+            SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
+                CanGoBackPageTypes.Contains(e.SourcePageType)
+                ? AppViewBackButtonVisibility.Visible
+                : AppViewBackButtonVisibility.Collapsed
+                ;
+        }
 
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         IPlatformNavigationService _navigationService;
@@ -79,18 +99,6 @@ namespace TsubameViewer.Presentation.Views
 
         #region Back/Forward Navigation
 
-
-        Type[] NavigationHistoryResetPageTypes = new[]
-        {
-            typeof(HomePage)
-        };
-
-        void ProcessNavigationHandlingForCurrentPage(Type newPageType)
-        {
-            if (NavigationHistoryResetPageTypes.Any(x => newPageType == x))
-            {
-            }
-        }
 
 
         private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
@@ -151,7 +159,7 @@ namespace TsubameViewer.Presentation.Views
         bool HandleBackRequest()
         {
             var currentPageType = ContentFrame.Content?.GetType();
-            if (currentPageType != null && NavigationHistoryResetPageTypes.Any(x => currentPageType == x))
+            if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
             {
                 Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
                 return false;

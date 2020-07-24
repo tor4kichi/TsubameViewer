@@ -5,6 +5,8 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.UseCase.PageNavigation.Commands;
+using TsubameViewer.Models.UseCase.SourceManagement.Commands;
 using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.ViewModels
@@ -17,16 +19,21 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public List<object> MenuItems { get;  }
         public PrimaryWindowCoreLayoutViewModel(
-            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy
+            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
+            SourceChoiceCommand sourceChoiceCommand,
+            RefreshNavigationCommand refreshNavigationCommand,
+            OpenPageCommand openPageCommand
             )
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.HomePage) },
-                new MenuSeparatorViewModel(),
-                new MenuItemViewModel() { PageType = nameof(Views.HomePage) }
+                new MenuItemViewModel() { PageType = nameof(Views.StoredFoldersManagementPage) },
+                new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
             _navigationServiceLazy = navigationServiceLazy;
+            SourceChoiceCommand = sourceChoiceCommand;
+            RefreshNavigationCommand = refreshNavigationCommand;
+            OpenPageCommand = openPageCommand;
         }
 
         private bool _IsDisplayMenu = true;
@@ -46,6 +53,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     _navigationService.NavigateAsync(menuItem.PageType);
                 }
             });
+
+        public SourceChoiceCommand SourceChoiceCommand { get; }
+        public RefreshNavigationCommand RefreshNavigationCommand { get; }
+        public OpenPageCommand OpenPageCommand { get; }
     }
 
 

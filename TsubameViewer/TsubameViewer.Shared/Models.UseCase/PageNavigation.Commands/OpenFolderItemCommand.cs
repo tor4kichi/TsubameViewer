@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using Windows.UI.Xaml.Media.Animation;
 
-namespace TsubameViewer.Presentation.ViewModels.Commands
+namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
 {
     public sealed class OpenFolderItemCommand : DelegateCommandBase
     {
@@ -28,12 +28,12 @@ namespace TsubameViewer.Presentation.ViewModels.Commands
                 if (item.Type == Windows.Storage.StorageItemTypes.File)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == Windows.Storage.StorageItemTypes.Folder)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
             }
         }

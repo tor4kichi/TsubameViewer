@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.Infrastructure;
 
-namespace TsubameViewer.Models.Repository.Settings
+namespace TsubameViewer.Models.Domain.ImageView
 {
     public sealed class ImageCollectionPageSettings : FlagsRepositoryBase
     {
