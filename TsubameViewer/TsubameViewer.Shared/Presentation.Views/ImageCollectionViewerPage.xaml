@@ -100,7 +100,7 @@
     <Image x:Name="Image3" Source="{Binding Result}" DataContext="{Binding PrefetchImages[3].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
     <Image x:Name="Image4" Source="{Binding Result}" DataContext="{Binding PrefetchImages[4].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
     
-    <TextBlock>
+    <TextBlock Visibility="Collapsed">
       <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
     </TextBlock>
 

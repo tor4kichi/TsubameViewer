@@ -69,9 +69,16 @@ namespace TsubameViewer.Presentation.ViewModels
             set => SetProperty(ref _CurrentImageIndex, value);
         }
 
+        private string _ParentFolderOrArchiveName;
+        public string ParentFolderOrArchiveName
+        {
+            get { return _ParentFolderOrArchiveName; }
+            set { SetProperty(ref _ParentFolderOrArchiveName, value); }
+        }
 
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
 
+        private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
 
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
@@ -99,6 +106,8 @@ namespace TsubameViewer.Presentation.ViewModels
             DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim();
+
+            _appView = ApplicationView.GetForCurrentView();
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -108,6 +117,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // フルスクリーンを終了
             ApplicationView.GetForCurrentView().ExitFullScreenMode();
+
+            _appView.Title = String.Empty;
+            ParentFolderOrArchiveName = String.Empty;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -203,6 +215,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         if (Images == null || Images.Length <= 1) { return; }
 
+                        // タイトル
+                        _appView.Title = $"{Images[index].Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
+
+                        // プリフェッチ範囲更新
                         UpdatePrefetchImageRange(index);
 
                         var image = GetPrefetchImage(CurrentPrefetchImageIndex);
@@ -293,6 +309,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     catch (OperationCanceledException)
                     {
                     }
+
+                    ParentFolderOrArchiveName = parentFolder.Name;
                 }
                 else
                 {
@@ -305,6 +323,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         result.diposable.Dispose();
                     }
+
+                    ParentFolderOrArchiveName = file.Name;
                 }
             }
             else if (_currentFolderItem is StorageFolder folder)
