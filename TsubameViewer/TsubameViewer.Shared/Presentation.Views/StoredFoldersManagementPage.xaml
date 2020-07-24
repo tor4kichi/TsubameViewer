@@ -9,65 +9,148 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:i="using:Microsoft.Xaml.Interactivity"
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+  xmlns:wst="using:WindowsStateTriggers" xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
     <ts:ValueDataTemplateSelector x:Key="FolderItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="File">
+
+      <ts:ValueDataTemplate Value="None">
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left">
-              <SymbolIcon Symbol="OpenFile" />
-            </Border>
-            <Border uwpControls:DockPanel.Dock="Bottom">
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
-            </Border>
-            <TextBlock Text="{Binding Name}" />
+            <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
+              <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" />
+              <StackPanel>
+                <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
+              </StackPanel>
+            </uwpControls:DockPanel>
+            <Border  />
           </uwpControls:DockPanel>
-
         </DataTemplate>
       </ts:ValueDataTemplate>
+      
       <ts:ValueDataTemplate Value="Folder">
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left">
-              <SymbolIcon Symbol="Folder" />
-            </Border>
-            <Border uwpControls:DockPanel.Dock="Bottom">
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
-            </Border>
-            <TextBlock Text="{Binding Name}" />
+            <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
+              <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Right" />
+              <StackPanel>
+                <TextBlock Text="{Binding Name}" />
+                <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
+              </StackPanel>
+            </uwpControls:DockPanel>
+            <Image />
           </uwpControls:DockPanel>
         </DataTemplate>
       </ts:ValueDataTemplate>
     </ts:ValueDataTemplateSelector>
+
+    <ts:ValueDataTemplateSelector x:Key="FolderDisplayModeTemplateSelector">
+      <ts:ValueDataTemplate Value="MiniPanorama">
+        <DataTemplate >
+          <Border Height="16" Width="32" BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="2" />
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="MangaCover">
+        <DataTemplate >
+          <Border Height="32" Width="20" BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="2" />
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+    </ts:ValueDataTemplateSelector>
+
+    
+
+    <ss:ValueBasedStyleSelector x:Key="FolderItemStyleSelector" PropertyName="Type">
+      <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="None" BasedOn="{StaticResource GridViewItemRevealStyle}">
+        <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="8 0 8 8" />
+        <Setter Property="Margin" Value="6 6" />
+      </Style>
+
+      <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="Folder" BasedOn="{StaticResource GridViewItemRevealStyle}">
+        <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="8 0 8 8" />
+        <Setter Property="Margin" Value="6 6" />
+      </Style>
+    </ss:ValueBasedStyleSelector>
+    
+
   </Page.Resources>
   <Grid>
 
-    <ListView ItemsSource="{Binding Folders}" 
-              ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+    <uwpControls:AdaptiveGridView 
+      x:Name="FoldersAdaptiveGridView"
+      StretchContentForSingleRow="False"
+      OneRowModeEnabled="False"
+      ItemsSource="{Binding Folders}" 
+      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
+      ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+      DesiredWidth="360"            
+      ItemHeight="132"
+      IsItemClickEnabled="True"
+      ItemClickCommand="{Binding OpenFolderItemCommand}"
+      IsSynchronizedWithCurrentItem="False"
+      Padding="48 16"
               >
-      <ListView.Header>
-        <Grid>
+      <GridView.Header>
+        <Grid HorizontalAlignment="Right">
+          
+          <ListView ItemsSource="{Binding FolderDisplayModeItems}"
+                    SelectedItem="{Binding FolderDisplayMode.Value, Mode=TwoWay}"
+                    ItemTemplateSelector="{StaticResource FolderDisplayModeTemplateSelector}"
+                    >
+            <ListView.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+          </ListView>
           
         </Grid>
-      </ListView.Header>
+          
+      </GridView.Header>
       <i:Interaction.Behaviors>
-        <core:EventTriggerBehavior EventName="DoubleTapped">
-          <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}"
-                                    InputConverter="{StaticResource RoutedEventOriginalSourceConverter}"
-                                    />
-        </core:EventTriggerBehavior>
       </i:Interaction.Behaviors>
+    </uwpControls:AdaptiveGridView>
 
-      <ListView.ItemContainerStyle>
-        <Style TargetType="ListViewItem">
-          <Setter Property="IsDoubleTapEnabled" Value="True" />
-        </Style>
-      </ListView.ItemContainerStyle>
-      
-      
-    </ListView>
+    <VisualStateManager.VisualStateGroups>
+
+
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FolderDisplayMode.Value}" EqualTo="MangaCover" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.DesiredWidth" Value="172" />
+            <Setter Target="FoldersAdaptiveGridView.ItemHeight" Value="240" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+
   </Grid>
 </Page>

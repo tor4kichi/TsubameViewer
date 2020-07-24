@@ -1,7 +1,9 @@
-﻿using Prism.Commands;
+﻿using I18NPortable;
+using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
+using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -10,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceManagement;
 using TsubameViewer.Models.UseCase.PageNavigation;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
@@ -30,18 +33,28 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private readonly StoredFoldersRepository _storedFoldersRepository;
         private readonly IEventAggregator _eventAggregator;
+        private readonly FolderListingSettings _folderListingSettings;
 
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
 
         CompositeDisposable _navigationDisposables;
 
+        public ReactiveProperty<FolderDisplayMode> FolderDisplayMode { get; }
+
+        public FolderDisplayMode[] FolderDisplayModeItems { get; } = new FolderDisplayMode[] 
+        {
+            Models.Domain.FolderItemListing.FolderDisplayMode.MiniPanorama,
+            Models.Domain.FolderItemListing.FolderDisplayMode.MangaCover,
+        };
+
         bool _foldersInitialized = false;
         public StoredFoldersManagementPageViewModel(
             OpenFolderItemCommand openFolderItemCommand,
             SourceChoiceCommand sourceChoiceCommand,
             StoredFoldersRepository storedFoldersRepository,
-            IEventAggregator eventAggregator
+            IEventAggregator eventAggregator,
+            FolderListingSettings folderListingSettings
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
@@ -49,6 +62,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _storedFoldersRepository = storedFoldersRepository;
             _eventAggregator = eventAggregator;
+            _folderListingSettings = folderListingSettings;
+
+            FolderDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FolderDisplayMode);
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
@@ -58,6 +74,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _foldersInitialized = true;
 
+                Folders.Add(new StorageItemViewModel() { });
                 await foreach (var item in _storedFoldersRepository.GetStoredFolderItems())
                 {
                     Folders.Add(new StorageItemViewModel(item.item, item.token));

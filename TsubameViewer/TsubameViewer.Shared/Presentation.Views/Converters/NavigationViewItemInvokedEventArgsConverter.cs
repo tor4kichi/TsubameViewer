@@ -13,7 +13,7 @@ namespace TsubameViewer.Presentation.Views.Converters
         {
             if (value is NavigationViewItemInvokedEventArgs args)
             {
-                return args.InvokedItemContainer.DataContext;
+                return args.InvokedItemContainer?.DataContext ?? args.InvokedItem;
             }
             else
             {

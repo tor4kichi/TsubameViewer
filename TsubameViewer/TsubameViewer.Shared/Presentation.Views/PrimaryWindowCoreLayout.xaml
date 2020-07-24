@@ -21,15 +21,17 @@
       <DataTemplate ts:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.MenuItemViewModel, Converter={StaticResource StringToType}}">
         <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
       </DataTemplate>
-    </ts:TypeBasedTemplateSelector> 
-   
+    </ts:TypeBasedTemplateSelector>
+
+    <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
   </Page.Resources>
   <Grid>
     <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
-                      IsBackButtonVisible="Collapsed"
-                      IsSettingsVisible="False"
+                    IsBackButtonVisible="Collapsed"
+                    IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
                       >
+      
       <i:Interaction.Behaviors>
         <core:EventTriggerBehavior EventName="ItemInvoked">
           <core:InvokeCommandAction Command="{Binding OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
