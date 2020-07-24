@@ -101,7 +101,7 @@
     <Image x:Name="Image4" Source="{Binding Result}" DataContext="{Binding PrefetchImages[4].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
     
     <TextBlock>
-      <Run Text="{Binding CurrentImageIndex}" />/<Run Text="{Binding Images.Length}" />
+      <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
     </TextBlock>
 
     <Grid Margin="0 48 0 32">

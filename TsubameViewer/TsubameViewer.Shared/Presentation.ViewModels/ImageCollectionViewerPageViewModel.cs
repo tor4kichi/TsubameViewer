@@ -15,6 +15,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -68,6 +69,9 @@ namespace TsubameViewer.Presentation.ViewModels
             set => SetProperty(ref _CurrentImageIndex, value);
         }
 
+
+        public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
+
         CompositeDisposable _navigationDisposables;
 
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
@@ -91,6 +95,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 _PrefetchImages[i] = new ReactivePropertySlim<IImageSource>();
             }
             PrefetchImages = _PrefetchImages;
+
+            DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)
+                .Select(x => x + 1)
+                .ToReadOnlyReactivePropertySlim();
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -233,7 +241,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool CanGoNextCommand()
         {
-            return CurrentImageIndex < Images?.Length;
+            return CurrentImageIndex + 1 < Images?.Length;
         }
 
         private DelegateCommand _GoPrevImageCommand;
