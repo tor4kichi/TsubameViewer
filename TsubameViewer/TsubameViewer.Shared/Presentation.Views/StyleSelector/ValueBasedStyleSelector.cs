@@ -81,7 +81,7 @@ namespace TsubameViewer.Presentation.Views.StyleSelector
             }
 
 
-            // compare values, and choose template
+            // compare values, and choose style
             if (value != null)
             {
                 bool valueIsString = value is string;

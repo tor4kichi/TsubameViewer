@@ -68,7 +68,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StoredFoldersManagementPage.xaml.cs">
       <DependentUpon>StoredFoldersManagementPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\ValueDataStyleSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\ValueBasedStyleSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\TypeBasedTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\ValueDataTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListupPage.xaml.cs">
