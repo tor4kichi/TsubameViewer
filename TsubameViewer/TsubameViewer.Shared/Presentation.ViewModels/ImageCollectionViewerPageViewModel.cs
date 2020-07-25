@@ -22,6 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageView;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
@@ -87,15 +88,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
         private readonly IScheduler _scheduler;
+        private readonly ImageCollectionManager _imageCollectionManager;
 
         public ImageCollectionViewerPageViewModel(
             IScheduler scheduler,
+            ImageCollectionManager imageCollectionManager,
             ImageCollectionPageSettings imageCollectionSettings,
             BackNavigationCommand backNavigationCommand,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
             _scheduler = scheduler;
+            _imageCollectionManager = imageCollectionManager;
             ImageCollectionSettings = imageCollectionSettings;
             BackNavigationCommand = backNavigationCommand;
             ToggleFullScreenCommand = toggleFullScreenCommand;
@@ -155,7 +159,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         ClearPrefetchImages();
 
-                        Images = null;
+                        Images = default;
                         CurrentImage = _emptyImage;
                         _CurrentImageIndex = 0;
 
@@ -184,7 +188,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         ClearPrefetchImages();
 
-                        Images = null;
+                        Images = default;
                         CurrentImage = _emptyImage;
                         _CurrentImageIndex = 0;
 
@@ -287,167 +291,25 @@ namespace TsubameViewer.Presentation.ViewModels
 
         #region Refresh ImageCollection
 
-        CompositeDisposable _ImageEnumerationDisposer;
+        IDisposable _ImageEnumerationDisposer;
 
         private async Task RefreshItems(CancellationToken ct)
         {
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            if (_currentFolderItem is StorageFile file)
+            var result = await _imageCollectionManager.GetImageSources(_currentFolderItem);
+            if (result != null)
             {
-                if (PresentedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                {
-                    var parentFolder = await file.GetParentAsync();
-                    // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
-                    var result = await Task.Run(async () => await GetImagesFromFolderAsync(parentFolder, ct));
-                    try
-                    {
-                        var images = new IImageSource[result.ItemsCount];
-                        int index = 0;
-                        await foreach (var item in result.Images.WithCancellation(ct))
-                        {
-                            images[index] = item;
-                            if (item.Name == file.Name)
-                            {
-                                CurrentImageIndex = index;
-                            }
-                            index++;
-                        }
-
-                        Images = images;                        
-                    }
-                    catch (OperationCanceledException)
-                    {
-                    }
-
-                    ParentFolderOrArchiveName = parentFolder.Name;
-                }
-                else if (PresentedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                {
-
-                    var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
-                    try
-                    {
-                        Images = result.Images.ToArray();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        result.diposable.Dispose();
-                    }
-
-                    _ImageEnumerationDisposer = new CompositeDisposable();
-                    _ImageEnumerationDisposer.Add(result.diposable);
-
-                    ParentFolderOrArchiveName = file.Name;
-                }
-            }
-            else if (_currentFolderItem is StorageFolder folder)
-            {
-                var result = await Task.Run(async () => await GetImagesFromFolderAsync(folder, ct));
-                try
-                {
-                    var images = new IImageSource[result.ItemsCount];
-                    int index = 0;
-                    await foreach (var item in result.Images.WithCancellation(ct))
-                    {
-                        images[index] = item;
-                        index++;
-                    }
-
-                    Images = images;
-                }
-                catch (OperationCanceledException)
-                { 
-                }
+                Images = result.Images;
+                CurrentImageIndex = result.FirstSelectedIndex;
+                _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
+                ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
             }
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
         }
-
-        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetImagesFromFolderAsync(StorageFolder storageFolder, CancellationToken ct)
-        {
-#if WINDOWS_UWP
-            var query = storageFolder.CreateItemQuery();
-            var itemsCount = await query.GetItemCountAsync();
-            return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));
-#else
-            return (itemsCount, AsyncEnumerableImages(
-#endif
-        }
-#if WINDOWS_UWP
-        async IAsyncEnumerable<IImageSource> AsyncEnumerableImages(uint count, StorageItemQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
-        {
-            await foreach (var item in FolderHelper.GetEnumerator(queryResult, count, ct))
-            {
-                yield return new StorageFileImageSource(item as StorageFile);
-            }
-        }
-#else
-                
-#endif
-    
-
-        private async Task<(uint ItemsCount, IDisposable diposable, IEnumerable<IImageSource> Images)> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
-        {
-            var result = file.FileType switch 
-            {
-                ".zip" => GetImagesFromZipFile((await file.OpenReadAsync()).AsStreamForRead()),
-                ".rar" => GetImagesFromRarFile((await file.OpenReadAsync()).AsStreamForRead()),
-                ".pdf" => await GetImagesFromPdfFileAsync(file),
-                _ => throw new NotSupportedException("not supported file type: " + file.FileType),
-            };
-
-            return (result.ItemsCount, result.disposable, result.Images);
-        }
-
-
-        private (uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromZipFile(Stream stream)
-        {
-            var disposable = new CompositeDisposable();
-            var zipArchive = new ZipArchive(stream)
-                .AddTo(disposable);
-
-            var supportedEntries = zipArchive.Entries
-                .Where(x => PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
-                .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
-                .OrderBy(x => x.Name)
-                .ToImmutableArray();
-
-            return ((uint)supportedEntries.Length, disposable, supportedEntries);
-        }
-
-        
-        private (uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromRarFile(Stream stream)
-        {
-            var disposable = new CompositeDisposable();
-            var rarArchive = RarArchive.Open(stream)
-                .AddTo(disposable);
-
-            var supportedEntries = rarArchive.Entries
-                .Where(x => PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new RarArchiveEntryImageSource(x))
-                .OrderBy(x => x.Name)
-                .ToImmutableArray();
-
-            return ((uint)supportedEntries.Length, disposable, supportedEntries);
-        }
-
-        private async Task<(uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images)> GetImagesFromPdfFileAsync(StorageFile file)
-        {
-            var disposable = new CompositeDisposable();
-            var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
-
-            var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
-                .Select(x => pdfDocument.GetPage((uint)x))
-                .Select(x => (IImageSource)new PdfPageImageSource(x))
-                .OrderBy(x => x.Name)
-                .ToImmutableArray();
-
-            return (pdfDocument.PageCount, disposable, supportedEntries);
-        }
-
 
 
         #endregion
@@ -596,213 +458,5 @@ namespace TsubameViewer.Presentation.ViewModels
     }
 
 
-    public interface IImageSource
-    {
-        string Name { get; }
-        Task<BitmapImage> GetOrCacheImageAsync();
-        bool IsImageGenerated { get; }
-        void CancelLoading();
-    }
-
-
-    public sealed class ArchiveEntryImageSource : IImageSource, IDisposable
-    {
-        private MemoryStream _imageStream;
-        BitmapImage _image;
-
-        public ArchiveEntryImageSource(string name, MemoryStream imageStream)
-        {
-            Name = name;
-            _imageStream = imageStream;
-        }
-
-        public string Name { get; }
-        public bool IsImageGenerated => _image != null;
-
-        
-        public void Dispose()
-        {
-            (_imageStream as IDisposable)?.Dispose();
-        }
-
-        public async Task<BitmapImage> GetOrCacheImageAsync()
-        {
-            if (_image != null) { return _image; }
-
-            using (var stream = _imageStream.AsRandomAccessStream())
-            {
-                var bitmap = new BitmapImage();
-                bitmap.SetSource(stream);
-                return _image = bitmap;
-            }
-        }
-
-        public void CancelLoading()
-        {
-
-        }
-    }
-
-    public sealed class StorageFileImageSource : IImageSource, IDisposable
-    {
-        private readonly StorageFile _file;
-        
-        public StorageFileImageSource(StorageFile file)
-        {
-            _file = file;
-        }
-
-        public void Dispose()
-        {
-        }
-
-        public string Name => _file.Name;
-        public bool IsImageGenerated => _image != null;
-        BitmapImage _image;
-
-        public async Task<BitmapImage> GetOrCacheImageAsync()
-        {
-            if (_image != null) { return _image; }
-
-            using (var stream = await _file.OpenReadAsync())
-            {
-                var bitmap = new BitmapImage();
-                bitmap.SetSource(stream);
-                return _image = bitmap;
-            }
-        }
-
-        public void CancelLoading()
-        {
-
-        }
-
-    }
-
-    public sealed class ZipArchiveEntryImageSource : IImageSource, IDisposable
-    {
-        private readonly ZipArchiveEntry _entry;
-        public ZipArchiveEntryImageSource(ZipArchiveEntry entry)
-        {
-            _entry = entry;
-        }
-
-        public void Dispose()
-        {
-            CancelLoading();
-        }
-
-        public string Name => _entry.Name;
-        public bool IsImageGenerated => _image != null;
-        
-        private BitmapImage _image;
-        CancellationTokenSource _cts = new CancellationTokenSource();
-        public async Task<BitmapImage> GetOrCacheImageAsync()
-        {
-            var ct = _cts.Token;
-            {
-                if (_image != null) { return _image; }
-
-                using (var entryStream = _entry.Open())
-                using (var memoryStream = entryStream.ToMemoryStream())
-                {
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    return _image = bitmapImage;
-                }
-            }
-        }
-
-
-        public void CancelLoading()
-        {
-            _cts?.Cancel();
-            _cts?.Dispose();
-        }
-    }
-
-    public sealed class RarArchiveEntryImageSource : IImageSource, IDisposable
-    {
-        private readonly RarArchiveEntry _entry;
-
-        public RarArchiveEntryImageSource(RarArchiveEntry entry)
-        {
-            _entry = entry;
-        }
-
-        public string Name => _entry.Key;
-        public bool IsImageGenerated => _image != null;
-
-        CancellationTokenSource _cts = new CancellationTokenSource();
-        private BitmapImage _image;
-        public async Task<BitmapImage> GetOrCacheImageAsync()
-        {
-            var ct = _cts.Token;
-            {
-                if (_image != null) { return _image; }
-
-                using (var entryStream = _entry.OpenEntryStream())
-                using (var memoryStream = entryStream.ToMemoryStream())
-                {
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    return _image = bitmapImage;
-                }
-            }
-        }
-
-        public void CancelLoading()
-        {
-            _cts?.Cancel();
-            _cts?.Dispose();
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)_cts).Dispose();
-        }
-    }
-
-
-    public sealed class PdfPageImageSource : IImageSource
-    {
-        private readonly PdfPage _pdfPage;
-
-        public PdfPageImageSource(PdfPage pdfPage)
-        {
-            _pdfPage = pdfPage;
-            Name = (_pdfPage.Index + 1).ToString();
-        }
-
-        public string Name { get; } 
-        public bool IsImageGenerated => _image != null;
-
-        CancellationTokenSource _cts = new CancellationTokenSource();
-        private BitmapImage _image;
-
-
-        public async Task<BitmapImage> GetOrCacheImageAsync()
-        {
-            var ct = _cts.Token;
-            {
-                if (_image != null) { return _image; }
-
-                using (var memoryStream = new InMemoryRandomAccessStream())
-                {
-                    await _pdfPage.RenderToStreamAsync(memoryStream);
-                    await memoryStream.FlushAsync();
-                    memoryStream.Seek(0);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream);
-                    return _image = bitmapImage;
-                }
-            }
-        }
-
-        public void CancelLoading()
-        {
-            throw new NotImplementedException();
-        }
-    }
 
 }

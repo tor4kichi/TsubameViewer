@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Models.Domain.ImageView;
 using Windows.Storage;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media.Imaging;

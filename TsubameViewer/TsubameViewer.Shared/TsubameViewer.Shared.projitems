@@ -25,12 +25,17 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\PresentedFileTypesHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\StorageItemTypes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\PdfPageImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\RarArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\StorageFileImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\ZipArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\PresentedFileTypesHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageVIew\ImageCollectionPageSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageCollectionPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceManagement\StoredFoldersRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\RefreshNavigationCommand.cs" />
@@ -40,7 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\OpenImageCollectionPageWithFolderCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\CollectionPageViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SettingsPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\StoredFoldersManagementPageViewModel.cs" />

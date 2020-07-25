@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows.Input;
-using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.UseCase.SourceManagement.Commands;
 using Windows.UI.Xaml.Media.Animation;
 

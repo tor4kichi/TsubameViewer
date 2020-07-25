@@ -1,0 +1,72 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.Storage.Search;
+using Windows.UI.Xaml.Media.Imaging;
+
+namespace TsubameViewer.Models.Domain.ImageView.ImageSource
+{
+    public sealed class StorageFileImageSource : IImageSource, IDisposable
+    {
+        public static async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetImagesFromFolderAsync(StorageFolder storageFolder, CancellationToken ct)
+        {
+#if WINDOWS_UWP
+            var query = storageFolder.CreateItemQuery();
+            var itemsCount = await query.GetItemCountAsync();
+            return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));
+#else
+            return (itemsCount, AsyncEnumerableImages(
+#endif
+        }
+#if WINDOWS_UWP
+        private static async IAsyncEnumerable<IImageSource> AsyncEnumerableImages(uint count, StorageItemQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            await foreach (var item in FolderHelper.GetEnumerator(queryResult, count, ct))
+            {
+                yield return new StorageFileImageSource(item as StorageFile);
+            }
+        }
+#else
+                
+#endif
+
+
+
+        private readonly StorageFile _file;
+
+        public StorageFileImageSource(StorageFile file)
+        {
+            _file = file;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public string Name => _file.Name;
+        public bool IsImageGenerated => _image != null;
+        BitmapImage _image;
+
+        public async Task<BitmapImage> GetOrCacheImageAsync()
+        {
+            if (_image != null) { return _image; }
+
+            using (var stream = await _file.OpenReadAsync())
+            {
+                var bitmap = new BitmapImage();
+                bitmap.SetSource(stream);
+                return _image = bitmap;
+            }
+        }
+
+        public void CancelLoading()
+        {
+
+        }
+
+    }
+}

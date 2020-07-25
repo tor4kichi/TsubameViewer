@@ -4,31 +4,43 @@ using System.Linq;
 using System.Text;
 using Windows.Storage;
 
-namespace TsubameViewer.Models.Domain.FolderItemListing
+namespace TsubameViewer.Models.Domain
 {
-    public static class PresentedFileTypesHelper
+    public static class SupportedFileTypesHelper
     {
-        static PresentedFileTypesHelper()
+        static SupportedFileTypesHelper()
         {
-            SupportedFileExtensions = SupportedArchiveFileExtensions.Concat(SupportedImageFileExtensions).ToHashSet();
+            SupportedArchiveFileExtensions = new string[]
+            {
+                ZipFileType,
+                RarFileType,
+                PdfFileType,
+            }
+            .SelectMany(x => new[] { x, x.ToUpper() })
+            .ToHashSet();
+
+            SupportedImageFileExtensions = new string[]
+            {
+                JpgFileType,
+                PngFileType,
+            }
+            .SelectMany(x => new[] { x, x.ToUpper() })
+            .ToHashSet();
         }
 
-        public static readonly HashSet<string> SupportedFileExtensions;
+        public const string ZipFileType = ".zip";
+        public const string RarFileType = ".rar";
+        public const string PdfFileType = ".pdf";
 
+        public const string JpgFileType = ".jpg";
+        public const string PngFileType = ".png";
 
-        public static readonly HashSet<string> SupportedArchiveFileExtensions = new HashSet<string>
-        {
-            ".zip", ".rar", ".pdf", 
-        };
-
-        public static readonly HashSet<string> SupportedImageFileExtensions = new HashSet<string>
-        {
-            ".png", ".jpg",
-        };
+        static readonly HashSet<string> SupportedArchiveFileExtensions;
+        static readonly HashSet<string> SupportedImageFileExtensions;
 
         public static bool IsSupportedFileExtension(string fileType)
         {
-            return SupportedFileExtensions.Contains(fileType);
+            return SupportedImageFileExtensions.Contains(fileType) || SupportedArchiveFileExtensions.Contains(fileType);
         }
 
         public static bool IsSupportedArchiveFileExtension(string fileType)

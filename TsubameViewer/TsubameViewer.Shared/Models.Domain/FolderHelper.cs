@@ -11,7 +11,7 @@ using Windows.Storage;
 using Windows.Storage.Search;
 #endif
 
-namespace TsubameViewer.Presentation.ViewModels
+namespace TsubameViewer.Models.Domain
 {
     public static class FolderHelper
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TsubameViewer.Models.Domain.FolderItemListing
+namespace TsubameViewer.Models.Domain
 {
     public enum StorageItemTypes
     {

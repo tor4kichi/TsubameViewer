@@ -14,6 +14,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.UseCase.PageNavigation;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
@@ -25,7 +26,7 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    using StorageItemTypes = TsubameViewer.Models.Domain.FolderItemListing.StorageItemTypes;
+    using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
     public enum FolderViewFirstSort
     {
@@ -327,7 +328,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     FolderItems.Add(item);
                 }
                 else if (folderItem is StorageFile file
-                    && PresentedFileTypesHelper.IsSupportedFileExtension(file.FileType)
+                    && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType)
                     )
                 {
                     FileItems.Add(item);

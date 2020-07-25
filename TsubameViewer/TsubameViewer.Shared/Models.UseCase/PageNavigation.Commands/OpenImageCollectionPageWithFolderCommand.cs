@@ -3,7 +3,7 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain;
 using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
