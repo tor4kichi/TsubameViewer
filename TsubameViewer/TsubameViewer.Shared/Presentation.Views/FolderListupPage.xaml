@@ -17,7 +17,7 @@
 
   <Page.Resources>
     <ts:ValueDataTemplateSelector x:Key="FileItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="File">
+      <ts:ValueDataTemplate Value="Image">
         <DataTemplate>
           <uwpControls:DockPanel>
             <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
@@ -47,7 +47,7 @@
     </ts:ValueDataTemplateSelector>
 
     <ss:ValueBasedStyleSelector x:Key="FolderStyleTemplateSelector" PropertyName="Type">
-      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="File">
+      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="Image">
         
       </Style>
       <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="Archive">

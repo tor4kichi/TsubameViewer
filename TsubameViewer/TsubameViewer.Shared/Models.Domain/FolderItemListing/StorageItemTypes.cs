@@ -8,7 +8,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         None,
         Folder,
-        File,
+        Image,
         Archive,
     }
 }

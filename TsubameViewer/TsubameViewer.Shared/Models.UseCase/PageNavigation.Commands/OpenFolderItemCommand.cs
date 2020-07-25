@@ -34,7 +34,7 @@ namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.File || item.Type == StorageItemTypes.Archive)
+                if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());

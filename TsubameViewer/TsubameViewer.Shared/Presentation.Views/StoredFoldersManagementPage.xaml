@@ -64,17 +64,6 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FolderDisplayMode.Value}" EqualTo="MangaCover" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.DesiredWidth" Value="172" />
-            <Setter Target="FoldersAdaptiveGridView.ItemHeight" Value="240" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
 
   </Grid>

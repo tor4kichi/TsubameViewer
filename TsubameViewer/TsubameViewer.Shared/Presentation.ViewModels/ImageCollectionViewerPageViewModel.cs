@@ -394,7 +394,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(disposable);
 
             var supportedEntries = zipArchive.Entries
-                .Where(x => IsSuppotedImageFileName(x.FullName))
+                .Where(x => Models.Domain.FolderItemListing.PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
                 .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
                 .OrderBy(x => x.Name)
                 .ToImmutableArray();
@@ -402,14 +402,6 @@ namespace TsubameViewer.Presentation.ViewModels
             return ((uint)supportedEntries.Length, disposable, supportedEntries);
         }
 
-
-        private static bool IsSuppotedImageFileName(string name)
-        {
-            if (name.EndsWith(".jpg")) { return true; }
-            if (name.EndsWith(".png")) { return true; }
-
-            return false;
-        }
         /*
         private async Task<(uint ItemsCount, CompositeDisposable disposable, IEnumerable<IImageSource> Images)> GetImagesFromFileAsync(StorageFile file)
         {
