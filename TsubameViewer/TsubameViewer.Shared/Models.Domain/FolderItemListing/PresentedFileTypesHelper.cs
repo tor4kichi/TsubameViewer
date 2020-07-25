@@ -18,7 +18,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public static readonly HashSet<string> SupportedArchiveFileExtensions = new HashSet<string>
         {
-            ".zip", ".rar",
+            ".zip", ".rar", ".pdf", 
         };
 
         public static readonly HashSet<string> SupportedImageFileExtensions = new HashSet<string>

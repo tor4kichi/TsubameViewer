@@ -28,6 +28,7 @@ using TsubameViewer.Models.UseCase.PageNavigation.Commands;
 using TsubameViewer.Models.UseCase.ViewManagement.Commands;
 using Uno.Extensions;
 using Uno.Threading;
+using Windows.Data.Pdf;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -324,6 +325,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (PresentedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                 {
+
                     var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
                     try
                     {
@@ -387,12 +389,13 @@ namespace TsubameViewer.Presentation.ViewModels
 #endif
     
 
-        private async Task<(uint ItemsCount, CompositeDisposable diposable, IEnumerable<IImageSource> Images)> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
+        private async Task<(uint ItemsCount, IDisposable diposable, IEnumerable<IImageSource> Images)> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
         {
             var result = file.FileType switch 
             {
                 ".zip" => GetImagesFromZipFile((await file.OpenReadAsync()).AsStreamForRead()),
                 ".rar" => GetImagesFromRarFile((await file.OpenReadAsync()).AsStreamForRead()),
+                ".pdf" => await GetImagesFromPdfFileAsync(file),
                 _ => throw new NotSupportedException("not supported file type: " + file.FileType),
             };
 
@@ -400,7 +403,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        private (uint ItemsCount, CompositeDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromZipFile(Stream stream)
+        private (uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromZipFile(Stream stream)
         {
             var disposable = new CompositeDisposable();
             var zipArchive = new ZipArchive(stream)
@@ -416,7 +419,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         
-        private (uint ItemsCount, CompositeDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromRarFile(Stream stream)
+        private (uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromRarFile(Stream stream)
         {
             var disposable = new CompositeDisposable();
             var rarArchive = RarArchive.Open(stream)
@@ -431,8 +434,20 @@ namespace TsubameViewer.Presentation.ViewModels
             return ((uint)supportedEntries.Length, disposable, supportedEntries);
         }
 
+        private async Task<(uint ItemsCount, IDisposable disposable, IEnumerable<IImageSource> Images)> GetImagesFromPdfFileAsync(StorageFile file)
+        {
+            var disposable = new CompositeDisposable();
+            var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
 
-        
+            var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
+                .Select(x => pdfDocument.GetPage((uint)x))
+                .Select(x => (IImageSource)new PdfPageImageSource(x))
+                .OrderBy(x => x.Name)
+                .ToImmutableArray();
+
+            return (pdfDocument.PageCount, disposable, supportedEntries);
+        }
+
 
 
         #endregion
@@ -747,4 +762,47 @@ namespace TsubameViewer.Presentation.ViewModels
             ((IDisposable)_cts).Dispose();
         }
     }
+
+
+    public sealed class PdfPageImageSource : IImageSource
+    {
+        private readonly PdfPage _pdfPage;
+
+        public PdfPageImageSource(PdfPage pdfPage)
+        {
+            _pdfPage = pdfPage;
+            Name = (_pdfPage.Index + 1).ToString();
+        }
+
+        public string Name { get; } 
+        public bool IsImageGenerated => _image != null;
+
+        CancellationTokenSource _cts = new CancellationTokenSource();
+        private BitmapImage _image;
+
+
+        public async Task<BitmapImage> GetOrCacheImageAsync()
+        {
+            var ct = _cts.Token;
+            {
+                if (_image != null) { return _image; }
+
+                using (var memoryStream = new InMemoryRandomAccessStream())
+                {
+                    await _pdfPage.RenderToStreamAsync(memoryStream);
+                    await memoryStream.FlushAsync();
+                    memoryStream.Seek(0);
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.SetSource(memoryStream);
+                    return _image = bitmapImage;
+                }
+            }
+        }
+
+        public void CancelLoading()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }
