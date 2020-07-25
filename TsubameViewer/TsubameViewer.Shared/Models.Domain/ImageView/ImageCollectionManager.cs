@@ -19,11 +19,9 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageView
 {
-    public interface IImageSource
+    public interface IImageSource : IImageGenerater
     {
         string Name { get; }
-        Task<BitmapImage> GetOrCacheImageAsync();
-        bool IsImageGenerated { get; }
     }
 
 

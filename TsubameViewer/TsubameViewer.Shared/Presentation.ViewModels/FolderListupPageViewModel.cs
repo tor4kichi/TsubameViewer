@@ -101,10 +101,10 @@ namespace TsubameViewer.Presentation.ViewModels
         public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
         public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
         {
-            Models.Domain.FolderItemListing.FileDisplayMode.Line,
-            Models.Domain.FolderItemListing.FileDisplayMode.Small,
-            Models.Domain.FolderItemListing.FileDisplayMode.Midium,
             Models.Domain.FolderItemListing.FileDisplayMode.Large,
+            Models.Domain.FolderItemListing.FileDisplayMode.Midium,
+            Models.Domain.FolderItemListing.FileDisplayMode.Small,
+            Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
 
         public string FoldersManagementPageName => nameof(Views.StoredFoldersManagementPage);
@@ -136,6 +136,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .ToReadOnlyReactivePropertySlim();
                 */
+            FileDisplayMode.Subscribe(x =>
+            {
+                StorageItemViewModel.CurrentFileDisplayMode = x;
+            });
         }
 
         public override async Task<bool> CanNavigateAsync(INavigationParameters parameters)

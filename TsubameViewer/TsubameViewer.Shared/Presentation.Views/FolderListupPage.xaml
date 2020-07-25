@@ -10,12 +10,28 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
-  xmlns:wst="using:WindowsStateTriggers" xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
+  xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
+  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing"
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
+
+    <x:Double x:Key="SmallImageWidth">96</x:Double>
+    <x:Double x:Key="SmallImageHeight">96</x:Double>
+
+    <x:Double x:Key="MidiumImageWidth">180</x:Double>
+    <x:Double x:Key="MidiumImageHeight">180</x:Double>
+
+    <x:Double x:Key="LargeImageWidth">300</x:Double>
+    <x:Double x:Key="LargeImageHeight">426</x:Double>
+    
+    
+    <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />
+
     <ts:ValueDataTemplateSelector x:Key="FileItemTemplateSelector"  PropertyName="Type">
       <ts:ValueDataTemplate Value="Image">
         <DataTemplate>
@@ -34,13 +50,70 @@
       <ts:ValueDataTemplate Value="Archive">
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left">
+            <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
               <SymbolIcon Symbol="Library" />
             </Border>
             <Border uwpControls:DockPanel.Dock="Bottom">
               <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
             </Border>
             <TextBlock Text="{Binding Name}" />
+          </uwpControls:DockPanel>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+    </ts:ValueDataTemplateSelector>
+
+    <ts:ValueDataTemplateSelector x:Key="SmallThumbnailFileItemTemplateSelector"  PropertyName="Type">
+      <ts:ValueDataTemplate Value="Image">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
+          </uwpControls:DockPanel>
+
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Archive">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
+          </uwpControls:DockPanel>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+    </ts:ValueDataTemplateSelector>
+
+    <ts:ValueDataTemplateSelector x:Key="MidiumThumbnailFileItemTemplateSelector"  PropertyName="Type">
+      <ts:ValueDataTemplate Value="Image">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
+          </uwpControls:DockPanel>
+
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Archive">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
+          </uwpControls:DockPanel>
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+    </ts:ValueDataTemplateSelector>
+
+    <ts:ValueDataTemplateSelector x:Key="LargeThumbnailFileItemTemplateSelector"  PropertyName="Type">
+      <ts:ValueDataTemplate Value="Image">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
+          </uwpControls:DockPanel>
+
+        </DataTemplate>
+      </ts:ValueDataTemplate>
+      <ts:ValueDataTemplate Value="Archive">
+        <DataTemplate>
+          <uwpControls:DockPanel>
+            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
+            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
       </ts:ValueDataTemplate>
@@ -105,8 +178,15 @@
                    ItemsSource="{Binding FileDisplayModeItems}"
                     SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
                     ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
-                  Visibility="Collapsed"
+                  Visibility="Visible"
+                  SelectionMode="Single"
+                  SingleSelectionFollowsFocus="False"
                     >
+          <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+              <Setter Property="MinWidth" Value="32" />
+            </Style>
+          </ListView.ItemContainerStyle>
           <ListView.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Orientation="Horizontal" />
@@ -125,18 +205,18 @@
       <ScrollViewer>
         <StackPanel>
           <uwpControls:AdaptiveGridView 
-          x:Name="FoldersAdaptiveGridView"
-          StretchContentForSingleRow="False"
-          OneRowModeEnabled="False"
-          ItemsSource="{Binding FolderItems}" 
-          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
-          ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-          DesiredWidth="360"            
-          ItemHeight="132"
-          IsItemClickEnabled="True"
-          ItemClickCommand="{Binding OpenFolderItemCommand}"
-          IsSynchronizedWithCurrentItem="False"
-          Padding="48 8"
+              x:Name="FoldersAdaptiveGridView"
+              StretchContentForSingleRow="False"
+              OneRowModeEnabled="False"
+              ItemsSource="{Binding FolderItems}" 
+              ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
+              ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+              DesiredWidth="360"            
+              ItemHeight="132"
+              IsItemClickEnabled="True"
+              ItemClickCommand="{Binding OpenFolderItemCommand}"
+              IsSynchronizedWithCurrentItem="False"
+              Padding="48 8"
               >
             <GridView.Header>
               <Grid >
@@ -148,23 +228,23 @@
           </uwpControls:AdaptiveGridView>
 
           <!-- Files -->
-          <ListView x:Name="FilesListView"
-                 ItemsSource="{Binding FileItems}"
-                  ItemTemplateSelector="{StaticResource FileItemTemplateSelector}"
-                    Padding="48 8"
-                    IsItemClickEnabled="True"
-                  >
-            <i:Interaction.Behaviors>
-              <core:EventTriggerBehavior EventName="ItemClick">
-                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource ItemClickEventArgsConverter}" />
-              </core:EventTriggerBehavior>
-            </i:Interaction.Behaviors>
-            <ListView.Header>
+          <uwpControls:AdaptiveGridView 
+            x:Name="FilesListView"
+            ItemsSource="{Binding FileItems}"
+            ItemTemplateSelector="{StaticResource FileItemTemplateSelector}"
+            Padding="48 8"
+            IsItemClickEnabled="True"
+            DesiredWidth="320"            
+            ItemHeight="40"
+            ItemClickCommand="{Binding OpenFolderItemCommand}"
+            >
+            
+            <GridView.Header>
               <Grid>
                 <!-- TODO: 並べ替え -->
               </Grid>
-            </ListView.Header>
-          </ListView>
+            </GridView.Header>
+          </uwpControls:AdaptiveGridView>
 
         </StackPanel>
 
@@ -175,6 +255,8 @@
     
 
     <VisualStateManager.VisualStateGroups>
+      
+      <!-- フォルダアイテムが無い時のフォルダリストの非表示切り替え -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -185,6 +267,8 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      
+      <!-- 画面サイズによる表示切り替え -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -201,6 +285,40 @@
             <Setter Target="HeaderLayout.Margin" Value="16 16" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16" />
             <Setter Target="FilesListView.Padding" Value="8 16" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- ファイルの表示方法切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Small" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource SmallThumbnailFileItemTemplateSelector}" />
+            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource SmallImageWidth}" />
+            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource SmallImageHeight}" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Midium" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource MidiumThumbnailFileItemTemplateSelector}" />
+            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource MidiumImageWidth}" />
+            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource MidiumImageHeight}" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Large" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource LargeThumbnailFileItemTemplateSelector}" />
+            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource LargeImageWidth}" />
+            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource LargeImageHeight}" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

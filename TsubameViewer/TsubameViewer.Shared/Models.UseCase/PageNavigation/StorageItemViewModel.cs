@@ -2,17 +2,24 @@
 using Prism.Navigation;
 using System;
 using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.UseCase.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public sealed class StorageItemViewModel : BindableBase
+    public sealed class StorageItemViewModel : BindableBase, IImageGenerater
     {
+        public static FileDisplayMode CurrentFileDisplayMode { get; set; }
+
+        #region Navigation Parameters
+
         public static async ValueTask<INavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
         {
             var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(vm.Token);
@@ -53,6 +60,8 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 
             return rt.Path.Substring(lt.Path.Length);
         }
+
+        #endregion
 
 
 
@@ -102,8 +111,6 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
         }
 
 
-
-
         public void Setup(IStorageItem item, string token)
         {
             Item = item;
@@ -111,6 +118,51 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             Name = Item.Name;
             Path = Item.Path;
+        }
+
+        public bool IsImageGenerated => throw new NotImplementedException();
+        public async Task<BitmapImage> GenerateBitmapImageAsync()
+        {
+            if (this.Item is StorageFile file)
+            {
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
+                {
+                    using (var stream = await file.OpenReadAsync())
+                    {
+                        var image = new BitmapImage();
+                        image.DecodePixelWidth = CurrentFileDisplayMode switch
+                        {
+                            FileDisplayMode.Line => 1,
+                            FileDisplayMode.Small => 96,
+                            FileDisplayMode.Midium => 180,
+                            FileDisplayMode.Large => 300,
+                            _ => throw new NotSupportedException()
+                        };
+                        image.SetSource(stream);
+                        return image;
+                    }
+                }
+                else
+                {
+                    using (var thumbnail = await file.GetThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.DocumentsView))
+                    {
+                        var image = new BitmapImage();
+                        image.SetSource(thumbnail);
+                        return image;
+                    }
+                }
+            }
+            else if (this.Item is StorageFolder folder)
+            {
+                using (var thumbnail = await folder.GetThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.PicturesView))
+                {
+                    var image = new BitmapImage();
+                    image.SetSource(thumbnail);
+                    return image;
+                }
+            }
+
+            return new BitmapImage();
         }
     }
 }

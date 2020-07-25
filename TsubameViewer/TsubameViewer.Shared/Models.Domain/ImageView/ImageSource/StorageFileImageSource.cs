@@ -51,7 +51,7 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public bool IsImageGenerated => _image != null;
         BitmapImage _image;
 
-        public async Task<BitmapImage> GetOrCacheImageAsync()
+        public async Task<BitmapImage> GenerateBitmapImageAsync()
         {
             if (_image != null) { return _image; }
 

@@ -48,7 +48,7 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
 
         CancellationTokenSource _cts = new CancellationTokenSource();
         private BitmapImage _image;
-        public async Task<BitmapImage> GetOrCacheImageAsync()
+        public async Task<BitmapImage> GenerateBitmapImageAsync()
         {
             var ct = _cts.Token;
             {

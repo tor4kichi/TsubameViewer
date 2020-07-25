@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using TsubameViewer.Models.Domain.ImageView;
+using TsubameViewer.Models.Domain;
 using Windows.Storage;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media.Imaging;
@@ -15,9 +15,9 @@ namespace TsubameViewer.Presentation.Views.Converters
         static BitmapImage _empty = new BitmapImage();
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is IImageSource imageSource)
+            if (value is IImageGenerater imageSource)
             {
-                return new NotifyTaskCompletion<BitmapImage>(imageSource.GetOrCacheImageAsync());
+                return new NotifyTaskCompletion<BitmapImage>(imageSource.GenerateBitmapImageAsync());
             }
             else
             {

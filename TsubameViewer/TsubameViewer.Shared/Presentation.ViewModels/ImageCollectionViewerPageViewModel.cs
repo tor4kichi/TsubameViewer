@@ -232,7 +232,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         UpdatePrefetchImageRange(index);
 
                         var image = GetPrefetchImage(CurrentPrefetchImageIndex);
-                        CurrentImage = await image.GetOrCacheImageAsync();
+                        CurrentImage = await image.GenerateBitmapImageAsync();
 #if DEBUG
                         Debug.WriteLine($"index: {CurrentImageIndex}, PrefetchIndex: {CurrentPrefetchImageIndex}, ImageName: {image.Name}");
                         Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
