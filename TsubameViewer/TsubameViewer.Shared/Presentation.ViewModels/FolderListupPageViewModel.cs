@@ -43,6 +43,33 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class FolderListupPageViewModel : ViewModelBase
     {
+        // Note: FolderListupPage内でフォルダ階層のコントロールをしている
+        // フォルダ階層の移動はNavigationServiceを通さずにページ内で完結してる
+        // 
+
+        DelegateCommand<object> _OpenFolderItemCommand;
+        public DelegateCommand<object> OpenFolderItemCommand =>
+            _OpenFolderItemCommand ??= new DelegateCommand<object>(async (item) =>
+            {
+                if (item is StorageItemViewModel itemVM)
+                {
+                    if (itemVM.Type == StorageItemTypes.File || itemVM.Type == StorageItemTypes.Archive)
+                    {
+                        var parameters = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
+                        var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+                    }
+                    else if (itemVM.Type == StorageItemTypes.Folder)
+                    {
+                        await PushCurrentFolderNavigationInfoAndSetNewFolder(itemVM);
+                    }
+                }
+            });
+
+        private readonly FolderListingSettings _folderListingSettings;
+        public OpenPageCommand OpenPageCommand { get; }
+
+
+
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> FileItems { get; }
 
@@ -88,7 +115,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
-
+            
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItems = new ObservableCollection<StorageItemViewModel>();
             SelectedFolderViewFirstSort = new ReactivePropertySlim<FolderViewFirstSort>(FolderViewFirstSort.Folders);
@@ -156,6 +183,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (mode == NavigationMode.New)
             {
+                // 
+                CurrentDepth = 0;
+
                 using (await _NavigationLock.LockAsync(default))
                 {
                     bool isTokenChanged = false;
@@ -471,29 +501,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 return false;
             }
         }
-
-        DelegateCommand<object> _OpenFolderItemCommand;
-        private readonly FolderListingSettings _folderListingSettings;
-
-        public DelegateCommand<object> OpenFolderItemCommand =>
-            _OpenFolderItemCommand ??= new DelegateCommand<object>(async (item) => 
-            {
-                if (item is StorageItemViewModel itemVM)
-                {
-                    if (itemVM.Type == StorageItemTypes.File)
-                    {
-                        var parameters = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
-                        var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
-
-                    }
-                    else if (itemVM.Type == StorageItemTypes.Folder)
-                    {
-                        await PushCurrentFolderNavigationInfoAndSetNewFolder(itemVM);
-                    }
-                }
-            });
-
-        public OpenPageCommand OpenPageCommand { get; }
 
 
         #endregion
