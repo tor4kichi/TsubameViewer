@@ -8,6 +8,7 @@ using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -392,7 +393,13 @@ namespace TsubameViewer.Presentation.ViewModels
             var zipArchive = new ZipArchive(stream)
                 .AddTo(disposable);
 
-            return ((uint)zipArchive.Entries.Count, disposable, zipArchive.Entries.Where(x => IsSuppotedImageFileName(x.FullName)).Select(x => (IImageSource)new ZipArchiveEntryImageSource(x)));
+            var supportedEntries = zipArchive.Entries
+                .Where(x => IsSuppotedImageFileName(x.FullName))
+                .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
+                .OrderBy(x => x.Name)
+                .ToImmutableArray();
+
+            return ((uint)supportedEntries.Length, disposable, supportedEntries);
         }
 
 
