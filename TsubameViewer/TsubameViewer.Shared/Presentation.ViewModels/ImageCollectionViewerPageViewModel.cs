@@ -4,6 +4,7 @@ using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
+using SharpCompress.Archives.Rar;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
@@ -21,6 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageView;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
 using TsubameViewer.Models.UseCase.ViewManagement.Commands;
@@ -115,6 +117,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _leavePageCancellationTokenSource.Cancel();
             _navigationDisposables.Dispose();
+            _ImageEnumerationDisposer?.Dispose();
+            _ImageEnumerationDisposer = null;
 
             // フルスクリーンを終了
             ApplicationView.GetForCurrentView().ExitFullScreenMode();
@@ -282,11 +286,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         #region Refresh ImageCollection
 
+        CompositeDisposable _ImageEnumerationDisposer;
+
         private async Task RefreshItems(CancellationToken ct)
         {
+            _ImageEnumerationDisposer?.Dispose();
+            _ImageEnumerationDisposer = null;
+
             if (_currentFolderItem is StorageFile file)
             {
-                if (file.FileType == ".jpg" || file.FileType == ".png")
+                if (PresentedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
                     var parentFolder = await file.GetParentAsync();
                     // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
@@ -313,7 +322,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     ParentFolderOrArchiveName = parentFolder.Name;
                 }
-                else
+                else if (PresentedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                 {
                     var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
                     try
@@ -324,6 +333,9 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         result.diposable.Dispose();
                     }
+
+                    _ImageEnumerationDisposer = new CompositeDisposable();
+                    _ImageEnumerationDisposer.Add(result.diposable);
 
                     ParentFolderOrArchiveName = file.Name;
                 }
@@ -380,6 +392,7 @@ namespace TsubameViewer.Presentation.ViewModels
             var result = file.FileType switch 
             {
                 ".zip" => GetImagesFromZipFile((await file.OpenReadAsync()).AsStreamForRead()),
+                ".rar" => GetImagesFromRarFile((await file.OpenReadAsync()).AsStreamForRead()),
                 _ => throw new NotSupportedException("not supported file type: " + file.FileType),
             };
 
@@ -394,7 +407,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(disposable);
 
             var supportedEntries = zipArchive.Entries
-                .Where(x => Models.Domain.FolderItemListing.PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
+                .Where(x => PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
                 .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
                 .OrderBy(x => x.Name)
                 .ToImmutableArray();
@@ -402,33 +415,25 @@ namespace TsubameViewer.Presentation.ViewModels
             return ((uint)supportedEntries.Length, disposable, supportedEntries);
         }
 
-        /*
-        private async Task<(uint ItemsCount, CompositeDisposable disposable, IEnumerable<IImageSource> Images)> GetImagesFromFileAsync(StorageFile file)
+        
+        private (uint ItemsCount, CompositeDisposable disposable, IEnumerable<IImageSource> Images) GetImagesFromRarFile(Stream stream)
         {
             var disposable = new CompositeDisposable();
-            try
-            {
-                var stream = await file.OpenStreamForReadAsync()
-                    .AddTo(disposable);
-                var reader = ReaderFactory.Open(stream)
-                    .AddTo(disposable);
-                
-                while (!reader.MoveToNextEntry())
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-            }
-            catch (OperationCanceledException)
-            {
+            var rarArchive = RarArchive.Open(stream)
+                .AddTo(disposable);
 
-            }
-            catch
-            {
-                disposable.Dispose();
-                throw;
-            }
+            var supportedEntries = rarArchive.Entries
+                .Where(x => PresentedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .Select(x => (IImageSource)new RarArchiveEntryImageSource(x))
+                .OrderBy(x => x.Name)
+                .ToImmutableArray();
+
+            return ((uint)supportedEntries.Length, disposable, supportedEntries);
         }
-        */
+
+
+        
+
 
         #endregion
 
@@ -662,7 +667,6 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class ZipArchiveEntryImageSource : IImageSource, IDisposable
     {
         private readonly ZipArchiveEntry _entry;
-        private BitmapImage _image;
         public ZipArchiveEntryImageSource(ZipArchiveEntry entry)
         {
             _entry = entry;
@@ -675,13 +679,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string Name => _entry.Name;
         public bool IsImageGenerated => _image != null;
-
-        static FastAsyncLock _Lock = new FastAsyncLock();
+        
+        private BitmapImage _image;
         CancellationTokenSource _cts = new CancellationTokenSource();
         public async Task<BitmapImage> GetOrCacheImageAsync()
         {
             var ct = _cts.Token;
-//            using (await ImageCollectionViewerPageViewModel.ProcessLock.LockAsync(ct))
             {
                 if (_image != null) { return _image; }
 
@@ -701,7 +704,47 @@ namespace TsubameViewer.Presentation.ViewModels
             _cts?.Cancel();
             _cts?.Dispose();
         }
+    }
 
-        
+    public sealed class RarArchiveEntryImageSource : IImageSource, IDisposable
+    {
+        private readonly RarArchiveEntry _entry;
+
+        public RarArchiveEntryImageSource(RarArchiveEntry entry)
+        {
+            _entry = entry;
+        }
+
+        public string Name => _entry.Key;
+        public bool IsImageGenerated => _image != null;
+
+        CancellationTokenSource _cts = new CancellationTokenSource();
+        private BitmapImage _image;
+        public async Task<BitmapImage> GetOrCacheImageAsync()
+        {
+            var ct = _cts.Token;
+            {
+                if (_image != null) { return _image; }
+
+                using (var entryStream = _entry.OpenEntryStream())
+                using (var memoryStream = entryStream.ToMemoryStream())
+                {
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
+                    return _image = bitmapImage;
+                }
+            }
+        }
+
+        public void CancelLoading()
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_cts).Dispose();
+        }
     }
 }
