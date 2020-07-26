@@ -430,6 +430,9 @@ namespace TsubameViewer.Presentation.ViewModels
         private void UpdatePrefetchImageRange(int targetImageIndex)
         {
             var subtractIndex = targetImageIndex - _prevCurrentImageIndex;
+            
+            if (subtractIndex == 0) { return; }
+            
             if (subtractIndex == 1)
             {
                 GoNextPrefetchImageRange(targetImageIndex);
