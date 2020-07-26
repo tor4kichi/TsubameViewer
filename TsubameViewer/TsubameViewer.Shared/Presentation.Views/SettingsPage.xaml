@@ -13,42 +13,47 @@
     <x:Double x:Key="GroupSpacing">48</x:Double>
     <x:Double x:Key="ItemsSpacing">24</x:Double>
 
-    <tt:TypeBasedTemplateSelector x:Key="SettingItemTemplateSelector">
-      <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.IToggleSwitchSettingItemViewModel, Converter={StaticResource StringToType}}">
-        <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
-          <ToggleSwitch IsOn="{Binding ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" />
-          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
-        </uwpControls:DockPanel>
-      </DataTemplate>
+    <tt:SettingsItemTemplateSelector x:Key="SettingItemTemplateSelector">
+      <tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
+        <DataTemplate>
+          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+            <ToggleSwitch IsOn="{Binding ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" />
+            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
+          </uwpControls:DockPanel>
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
 
       <!-- アプリに記録されたフォルダ -->
-      <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.StoredFoldersSettingItemViewModel, Converter={StaticResource StringToType}}">
-        <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
-          <ItemsControl ItemsSource="{Binding Folders}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
-                  <uwpControls:DockPanel>
-                    <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
-                    <StackPanel>
-                      <TextBlock Text="{Binding FolderName}" />
-                      <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </uwpControls:DockPanel>
+      <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
+        <DataTemplate>
+          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+            <ItemsControl ItemsSource="{Binding Folders}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                    <uwpControls:DockPanel>
+                      <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
+                      <StackPanel>
+                        <TextBlock Text="{Binding FolderName}" />
+                        <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </uwpControls:DockPanel>
 
-                  <Button.Flyout>
-                    <MenuFlyout>
-                      <MenuFlyoutItem Text="{Binding Source=RemoveStoredFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
-                    </MenuFlyout>
-                  </Button.Flyout>
-                </Button>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          
-        </uwpControls:DockPanel>
-      </DataTemplate>
-    </tt:TypeBasedTemplateSelector>
+                    <Button.Flyout>
+                      <MenuFlyout>
+                        <MenuFlyoutItem Text="{Binding Source=RemoveStoredFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+          </uwpControls:DockPanel>
+        </DataTemplate>
+
+      </tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
+    </tt:SettingsItemTemplateSelector>
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
@@ -67,7 +72,7 @@
           </ItemsControl.ItemsPanel>
           
           <ItemsControl.ItemTemplate>
-            <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.SettingsGroupViewModel, Converter={StaticResource StringToType}}">
+            <DataTemplate>
               <StackPanel Spacing="16">
                 <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
                 <ItemsControl ItemsSource="{Binding Items}"

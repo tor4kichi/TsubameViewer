@@ -28,11 +28,11 @@
 
     <x:Double x:Key="LargeImageWidth">300</x:Double>
     <x:Double x:Key="LargeImageHeight">426</x:Double>
-    
-    
 
-    <ts:ValueDataTemplateSelector x:Key="FileItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="Image">
+
+
+    <ts:FolderItemTemplateSelector x:Key="FileItemTemplateSelector">
+      <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
             <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
@@ -45,8 +45,8 @@
           </uwpControls:DockPanel>
           
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Archive">
+      </ts:FolderItemTemplateSelector.Image>
+      <ts:FolderItemTemplateSelector.Archive>
         <DataTemplate>
           <uwpControls:DockPanel>
             <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
@@ -58,78 +58,69 @@
             <TextBlock Text="{Binding Name}" />
           </uwpControls:DockPanel>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
+      </ts:FolderItemTemplateSelector.Archive>
+    </ts:FolderItemTemplateSelector>
 
-    <ts:ValueDataTemplateSelector x:Key="SmallThumbnailFileItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="Image">
+    <ts:FolderItemTemplateSelector x:Key="SmallThumbnailFileItemTemplateSelector">
+      <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Archive">
+      </ts:FolderItemTemplateSelector.Image>
+      <ts:FolderItemTemplateSelector.Archive>
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
+      </ts:FolderItemTemplateSelector.Archive>
+    </ts:FolderItemTemplateSelector>
 
-    <ts:ValueDataTemplateSelector x:Key="MidiumThumbnailFileItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="Image">
+    <ts:FolderItemTemplateSelector x:Key="MidiumThumbnailFileItemTemplateSelector">
+      <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Archive">
+      </ts:FolderItemTemplateSelector.Image>
+      <ts:FolderItemTemplateSelector.Archive>
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
+      </ts:FolderItemTemplateSelector.Archive>
+    </ts:FolderItemTemplateSelector>
 
-    <ts:ValueDataTemplateSelector x:Key="LargeThumbnailFileItemTemplateSelector"  PropertyName="Type">
-      <ts:ValueDataTemplate Value="Image">
+    <ts:FolderItemTemplateSelector x:Key="LargeThumbnailFileItemTemplateSelector">
+      <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Archive">
+      </ts:FolderItemTemplateSelector.Image>
+      <ts:FolderItemTemplateSelector.Archive>
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
             <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
-
-    <ss:ValueBasedStyleSelector x:Key="FolderStyleTemplateSelector" PropertyName="Type">
-      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="Image">
-        
-      </Style>
-      <Style TargetType="ListViewItem" ss:ValueBasedStyleSelectorExtension.Value="Archive">
-
-      </Style>
-    </ss:ValueBasedStyleSelector>
+      </ts:FolderItemTemplateSelector.Archive>
+    </ts:FolderItemTemplateSelector>
 
 
-    <ts:ValueDataTemplateSelector x:Key="FileDisplayModeTemplateSelector">
-      <ts:ValueDataTemplate Value="Line">
+    <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
+      <ts:FileDisplayModeTemplateSelector.Line>
         <DataTemplate >
           <StackPanel Spacing="2">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
@@ -140,8 +131,8 @@
                   />
           </StackPanel>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Small">
+      </ts:FileDisplayModeTemplateSelector.Line>
+      <ts:FileDisplayModeTemplateSelector.Small>
         <DataTemplate >
           <Grid>
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
@@ -159,8 +150,8 @@
 
           </Grid>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Midium">
+      </ts:FileDisplayModeTemplateSelector.Small>
+      <ts:FileDisplayModeTemplateSelector.Midium>
         <DataTemplate >
           <Grid>
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
@@ -178,15 +169,15 @@
                   />
           </Grid>
         </DataTemplate>
-      </ts:ValueDataTemplate>
-      <ts:ValueDataTemplate Value="Large">
+      </ts:FileDisplayModeTemplateSelector.Midium>
+      <ts:FileDisplayModeTemplateSelector.Large>
         <DataTemplate >
           <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
         </DataTemplate>
-      </ts:ValueDataTemplate>
-    </ts:ValueDataTemplateSelector>
+      </ts:FileDisplayModeTemplateSelector.Large>
+    </ts:FileDisplayModeTemplateSelector>
 
   </Page.Resources>
   <Grid>
@@ -228,8 +219,8 @@
               StretchContentForSingleRow="False"
               OneRowModeEnabled="False"
               ItemsSource="{Binding FolderItems}" 
-              ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
-              ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+              ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
+            ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
               DesiredWidth="360"            
               ItemHeight="132"
               IsItemClickEnabled="True"
@@ -312,7 +303,11 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Small" />
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Small</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource SmallThumbnailFileItemTemplateSelector}" />
@@ -322,7 +317,11 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Midium" />
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Midium</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource MidiumThumbnailFileItemTemplateSelector}" />
@@ -332,7 +331,11 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}" EqualTo="Large" />
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Large</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource LargeThumbnailFileItemTemplateSelector}" />

@@ -75,15 +75,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StoredFoldersManagementPage.xaml.cs">
       <DependentUpon>StoredFoldersManagementPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\ValueBasedStyleSelector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\TypeBasedTemplateSelector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\ValueDataTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FolderItemTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListupPage.xaml.cs">
       <DependentUpon>FolderListupPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\PrimaryWindowCoreLayout.xaml.cs">
       <DependentUpon>PrimaryWindowCoreLayout.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\MenuItemTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)MainPage.xaml">
@@ -133,7 +135,7 @@
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Services\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Locales\ja-JP.txt" />

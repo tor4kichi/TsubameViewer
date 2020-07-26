@@ -14,14 +14,18 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
-    <ts:TypeBasedTemplateSelector x:Key="MenuItemTemplateSelector">
-      <DataTemplate ts:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.MenuSeparatorViewModel, Converter={StaticResource StringToType}}">
-        <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
-      </DataTemplate>
-      <DataTemplate ts:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.MenuItemViewModel, Converter={StaticResource StringToType}}">
-        <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
-      </DataTemplate>
-    </ts:TypeBasedTemplateSelector>
+    <ts:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
+      <ts:MenuItemTemplateSelector.MenuSeparator>
+        <DataTemplate>
+          <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
+        </DataTemplate>
+      </ts:MenuItemTemplateSelector.MenuSeparator>
+      <ts:MenuItemTemplateSelector.MenuItem>
+        <DataTemplate>
+          <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
+        </DataTemplate>
+      </ts:MenuItemTemplateSelector.MenuItem>
+    </ts:MenuItemTemplateSelector>
 
     <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
   </Page.Resources>

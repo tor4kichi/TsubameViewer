@@ -18,9 +18,6 @@
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
-      <ts:StringToTypeConverter x:Key="StringToType" />
-
-
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
@@ -37,9 +34,9 @@
       </uwpConv:EmptyCollectionToObjectConverter>
       
       <!--  -->
-      <ts:ValueDataTemplateSelector x:Key="FolderItemTemplateSelector"  PropertyName="Type">
+      <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" >
 
-        <ts:ValueDataTemplate Value="None">
+        <ts:FolderItemTemplateSelector.AddNewFolder>
           <DataTemplate>
             <uwpControls:DockPanel>
               <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
@@ -51,9 +48,9 @@
               <Border  />
             </uwpControls:DockPanel>
           </DataTemplate>
-        </ts:ValueDataTemplate>
+        </ts:FolderItemTemplateSelector.AddNewFolder>
 
-        <ts:ValueDataTemplate Value="Folder">
+        <ts:FolderItemTemplateSelector.Folder>
           <DataTemplate>
             <uwpControls:DockPanel>
               <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
@@ -69,28 +66,31 @@
                      />
             </uwpControls:DockPanel>
           </DataTemplate>
-        </ts:ValueDataTemplate>
-      </ts:ValueDataTemplateSelector>
+        </ts:FolderItemTemplateSelector.Folder>
+      </ts:FolderItemTemplateSelector>
 
 
 
-      <ss:ValueBasedStyleSelector x:Key="FolderItemStyleSelector" PropertyName="Type">
-        <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="None" BasedOn="{StaticResource GridViewItemRevealStyle}">
-          <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="8 0 8 8" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-
-        <Style TargetType="GridViewItem" ss:ValueBasedStyleSelectorExtension.Value="Folder" BasedOn="{StaticResource GridViewItemRevealStyle}">
-          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="8 0 8 8" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:ValueBasedStyleSelector>
+      <ss:FolderItemStyleSelector x:Key="FolderItemStyleSelector">
+        <ss:FolderItemStyleSelector.AddNewFolder>
+          <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+            <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8 0 8 8" />
+            <Setter Property="Margin" Value="6 6" />
+          </Style>
+        </ss:FolderItemStyleSelector.AddNewFolder>
+        <ss:FolderItemStyleSelector.Folder>
+          <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+            <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8 0 8 8" />
+            <Setter Property="Margin" Value="6 6" />
+          </Style>
+        </ss:FolderItemStyleSelector.Folder>
+      </ss:FolderItemStyleSelector>
 
 
     </ResourceDictionary>
