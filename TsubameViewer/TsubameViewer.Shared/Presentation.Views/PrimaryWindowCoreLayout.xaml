@@ -60,11 +60,11 @@
                     Background="Transparent"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="インポート" Icon="Import" Command="{Binding SourceChoiceCommand}" />
+            <AppBarButton Label="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" Icon="NewFolder" Command="{Binding SourceChoiceCommand}" />
           </CommandBar.PrimaryCommands>
           <CommandBar.SecondaryCommands>
-            <AppBarButton Label="最新の情報に更新" Icon="Refresh" Command="{Binding RefreshNavigationCommand}" />
-            <AppBarButton Label="設定" Icon="Setting" Command="{Binding OpenPageCommand}" CommandParameter="SettingsPage"/>
+            <AppBarButton Label="{Binding Source=RefreshLatest, Converter={StaticResource LocalizeConverter}}" Icon="Refresh" Command="{Binding RefreshNavigationCommand}" />
+            <AppBarButton Label="{Binding Source=Settings, Converter={StaticResource LocalizeConverter}}" Icon="Setting" Command="{Binding OpenPageCommand}" CommandParameter="SettingsPage"/>
           </CommandBar.SecondaryCommands>
         </CommandBar>
       </NavigationView.PaneFooter>

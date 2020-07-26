@@ -25,7 +25,7 @@
   <Grid>
     <uwpControls:DockPanel>
       <Grid uwpControls:DockPanel.Dock="Top" Margin="32 16">
-        <TextBlock Text="設定" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" />
       </Grid>
 
       <ScrollViewer>

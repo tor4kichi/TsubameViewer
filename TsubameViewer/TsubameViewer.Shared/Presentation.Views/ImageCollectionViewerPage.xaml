@@ -117,6 +117,7 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
@@ -140,6 +141,7 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />

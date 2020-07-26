@@ -1,4 +1,5 @@
-﻿using Prism.Mvvm;
+﻿using I18NPortable;
+using Prism.Mvvm;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -23,12 +24,12 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 new SettingsGroupViewModel
                 {
-                    Label = "サムネイル表示設定",
+                    Label = "ThumbnailImageSettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("画像ファイルのサムネイルを表示", _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("圧縮ファイルのサムネイルを表示", _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("フォルダのサムネイルを表示", _folderListingSettings, x => x.IsFolderThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayImageFileThubnail".Translate(), _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayArchiveFileThubnail".Translate(), _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayFolderThubnail".Translate(), _folderListingSettings, x => x.IsFolderThumbnailEnabled),
                     }
                 }
             };

@@ -1,2 +1,28 @@
-﻿StoredFoldersManagementPage = フォルダー
+﻿
+#### PrimaryWindowCoreLayout
+
+AddNewFolder = フォルダを追加
+Import = インポート
+RefreshLatest = 最新の情報に更新
+Settings = 設定
+
+StoredFoldersManagementPage = フォルダー
 CollectionPage = コレクション
+
+
+#### SettingsPage
+
+SettingsPageTitle = 設定
+
+
+ThumbnailImageSettings = サムネイル表示設定
+IsDisplayImageFileThubnail = 画像ファイルのサムネイルを表示
+IsDisplayArchiveFileThubnail = 圧縮ファイルのサムネイルを表示
+IsDisplayFolderThubnail = フォルダのサムネイルを表示
+
+
+#### FolderListupPage
+
+ReturnRootFolderPage = 元のフォルダへ戻る
+
+SortMethod = 並べ替え
