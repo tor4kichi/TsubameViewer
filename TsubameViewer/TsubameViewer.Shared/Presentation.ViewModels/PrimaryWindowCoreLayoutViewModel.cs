@@ -28,7 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels
             MenuItems = new List<object>
             {
                 new MenuItemViewModel() { PageType = nameof(Views.StoredFoldersManagementPage) },
-                new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
+                //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
             _navigationServiceLazy = navigationServiceLazy;
             SourceChoiceCommand = sourceChoiceCommand;

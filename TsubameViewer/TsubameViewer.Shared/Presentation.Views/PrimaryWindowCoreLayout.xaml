@@ -42,6 +42,7 @@
           <NavigationViewItem Content="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
         </DataTemplate>
       </NavigationView.MenuItemTemplate>
+      <!--
       <NavigationView.AutoSuggestBox>
         <AutoSuggestBox PlaceholderText="作品タイトル、作者の検索" 
                             QueryIcon="Find"
@@ -52,6 +53,7 @@
                         Width="196"
                             />
       </NavigationView.AutoSuggestBox>
+      -->
       <NavigationView.PaneFooter>
         <CommandBar x:Name="MenuRightCommandBar"
                     DefaultLabelPosition="Right"

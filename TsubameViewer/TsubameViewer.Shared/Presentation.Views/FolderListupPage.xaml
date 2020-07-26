@@ -131,39 +131,59 @@
     <ts:ValueDataTemplateSelector x:Key="FileDisplayModeTemplateSelector">
       <ts:ValueDataTemplate Value="Line">
         <DataTemplate >
-          <Canvas Height="16" Width="16">
-            <Line X1="0" X2="16" Y1="7"  Y2="7" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-          </Canvas>
+          <StackPanel Spacing="2">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                  />
+          </StackPanel>
         </DataTemplate>
       </ts:ValueDataTemplate>
       <ts:ValueDataTemplate Value="Small">
         <DataTemplate >
-          <Canvas Height="16" Width="16">
-            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-          </Canvas>
+          <Grid>
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="5"
+                    Canvas.Left="2"
+                    
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    Canvas.Top="2"
+                  />
+
+          </Grid>
         </DataTemplate>
       </ts:ValueDataTemplate>
       <ts:ValueDataTemplate Value="Midium">
         <DataTemplate >
-          <Canvas Height="16" Width="16">
-            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-          </Canvas>
+          <Grid>
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                  HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                  />
+          </Grid>
         </DataTemplate>
       </ts:ValueDataTemplate>
       <ts:ValueDataTemplate Value="Large">
         <DataTemplate >
-          <Canvas Height="16" Width="16">
-            <Line X1="0"  X2="16" Y1="0"  Y2="0"  Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="16" Y1="16" Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="0"  X2="0"  Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-            <Line X1="16" X2="16" Y1="0"  Y2="16" Stroke="{ThemeResource ApplicationForegroundThemeBrush}" />
-          </Canvas>
+          <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
         </DataTemplate>
       </ts:ValueDataTemplate>
     </ts:ValueDataTemplateSelector>
