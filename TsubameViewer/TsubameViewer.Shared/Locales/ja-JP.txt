@@ -1,4 +1,10 @@
 ﻿
+#### General
+
+Cancel = キャンセル
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = フォルダを追加
@@ -14,6 +20,10 @@ CollectionPage = コレクション
 
 SettingsPageTitle = 設定
 
+StoredFolderManagementSettings = アプリに取り込んだフォルダの管理
+RemoveStoredFolderFromApp = アプリから取り除く
+ConfirmRemoveStoredFolderFromAppWithFolderName  = {0} をアプリから取り除いてもよろしいですか？
+ConfirmRemoveStoredFolderFromAppDescription = この除去操作は指定フォルダやフォルダ内アイテムには一切影響しません。\n解除した指定フォルダは、いつでもアプリに再登録できます。
 
 ThumbnailImageSettings = サムネイル表示設定
 IsDisplayImageFileThubnail = 画像ファイルのサムネイルを表示

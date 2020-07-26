@@ -20,6 +20,34 @@
           <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
         </uwpControls:DockPanel>
       </DataTemplate>
+
+      <!-- アプリに記録されたフォルダ -->
+      <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.StoredFoldersSettingItemViewModel, Converter={StaticResource StringToType}}">
+        <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+          <ItemsControl ItemsSource="{Binding Folders}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                  <uwpControls:DockPanel>
+                    <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
+                    <StackPanel>
+                      <TextBlock Text="{Binding FolderName}" />
+                      <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </uwpControls:DockPanel>
+
+                  <Button.Flyout>
+                    <MenuFlyout>
+                      <MenuFlyoutItem Text="{Binding Source=RemoveStoredFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          
+        </uwpControls:DockPanel>
+      </DataTemplate>
     </tt:TypeBasedTemplateSelector>
   </Page.Resources>
   <Grid>

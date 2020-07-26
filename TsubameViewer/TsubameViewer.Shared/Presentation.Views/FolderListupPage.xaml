@@ -194,9 +194,9 @@
 
       <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8">
         <ListView HorizontalAlignment="Right"
-                   ItemsSource="{Binding FileDisplayModeItems}"
-                    SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
-                    ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                  ItemsSource="{Binding FileDisplayModeItems}"
+                  SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
+                  ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                   Visibility="Visible"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"

@@ -22,6 +22,20 @@ namespace TsubameViewer.Models.Domain.SourceManagement
         public sealed class AddedEvent : PubSubEvent<AddedEventArgs> { }
 
 
+
+        public sealed class RemovedEventArgs
+        {
+            internal RemovedEventArgs() { }
+
+            public string Token { get; set; }
+        }
+
+        public sealed class RemovedEvent : PubSubEvent<RemovedEventArgs> { }
+
+
+
+
+
         private readonly IEventAggregator _eventAggregator;
 
         public StoredFoldersRepository(IEventAggregator eventAggregator)
@@ -32,8 +46,11 @@ namespace TsubameViewer.Models.Domain.SourceManagement
         public string AddFolder(IStorageItem storageItem)
         {
             var token = Guid.NewGuid().ToString();
+#if WINDOWS_UWP
             StorageApplicationPermissions.FutureAccessList.AddOrReplace(token, storageItem);
-            
+#else
+            throw new NotImplementedException();
+#endif
             _eventAggregator.GetEvent<AddedEvent>().Publish(new AddedEventArgs() 
             {
                 Token = token,
@@ -41,6 +58,16 @@ namespace TsubameViewer.Models.Domain.SourceManagement
             });
 
             return token;
+        }
+
+        public void RemoveFolder(string token)
+        {
+#if WINDOWS_UWP
+            StorageApplicationPermissions.FutureAccessList.Remove(token);
+#else
+            throw new NotImplementedException();
+#endif
+            _eventAggregator.GetEvent<RemovedEvent>().Publish(new RemovedEventArgs() { Token = token });
         }
 
         public async IAsyncEnumerable<(IStorageItem item, string token)> GetStoredFolderItems([EnumeratorCancellation] CancellationToken ct = default)
@@ -54,6 +81,7 @@ namespace TsubameViewer.Models.Domain.SourceManagement
             }
 #else
             // TODO: GetStoredFolderItems() UWP以外での対応
+            throw new NotImplementedException();
 #endif
         }
 
