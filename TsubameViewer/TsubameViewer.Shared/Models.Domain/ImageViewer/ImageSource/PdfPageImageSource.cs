@@ -24,7 +24,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
                 .Select(x => pdfDocument.GetPage((uint)x))
                 .Select(x => (IImageSource)new PdfPageImageSource(x))
-                .OrderBy(x => x.Name)
                 .ToArray();
 
             return new ImageCollectionManager.GetImagesFromArchiveResult()
