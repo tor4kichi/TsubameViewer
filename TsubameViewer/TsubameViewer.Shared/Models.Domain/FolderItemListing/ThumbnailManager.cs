@@ -102,7 +102,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var archiveStream = await file.OpenStreamForReadAsync())
             using (var zipArchive = new ZipArchive(archiveStream))
             {
-                var archiveImageItem = zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
+                var archiveImageItem = zipArchive.Entries.AsParallel().OrderBy(x=> x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
                 if (archiveImageItem == null) { return false; }
 
                 using (var inputStream = archiveImageItem.Open())
@@ -120,16 +120,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var archiveStream = await file.OpenAsync(FileAccessMode.Read))
             using (var rarArchive = RarArchive.Open(archiveStream.AsStreamForRead()))
             {
-                RarArchiveEntry archiveImageItem = null;
-                foreach (var entry in rarArchive.Entries)
-                {
-                    if (SupportedFileTypesHelper.IsSupportedImageFileExtension(entry.Key))
-                    {
-                        archiveImageItem = entry;
-                        break;
-                    }
-                }
-                
+                var archiveImageItem = rarArchive.Entries.AsParallel().OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));                
                 if (archiveImageItem == null) { return false; }
 
                 using (var inputStream = archiveImageItem.OpenEntryStream())

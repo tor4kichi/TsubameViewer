@@ -27,6 +27,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageView;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
 using TsubameViewer.Models.UseCase.ViewManagement.Commands;
+using Uno;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Data.Pdf;
@@ -42,7 +43,7 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace TsubameViewer.Presentation.ViewModels
 {
 
-    public sealed class ImageCollectionViewerPageViewModel : ViewModelBase
+    public sealed class ImageCollectionViewerPageViewModel : ViewModelBase, IDestructible
     {
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
@@ -86,6 +87,8 @@ namespace TsubameViewer.Presentation.ViewModels
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
         private readonly ImageCollectionManager _imageCollectionManager;
 
+        CompositeDisposable _disposables = new CompositeDisposable();
+
         public ImageCollectionViewerPageViewModel(
             ImageCollectionManager imageCollectionManager,
             ImageCollectionPageSettings imageCollectionSettings,
@@ -99,22 +102,43 @@ namespace TsubameViewer.Presentation.ViewModels
             _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
             for (var i = 0; i < MaxPrefetchImageCount; i++)
             {
-                _PrefetchImages[i] = new ReactivePropertySlim<IImageSource>();
+                _PrefetchImages[i] = new ReactivePropertySlim<IImageSource>()
+                    .AddTo(_disposables);
             }
             PrefetchImages = _PrefetchImages;
 
             DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)
                 .Select(x => x + 1)
-                .ToReadOnlyReactivePropertySlim();
+                .ToReadOnlyReactivePropertySlim()
+                .AddTo(_disposables);
 
-            CanvasWidth = new ReactiveProperty<double>();
-            CanvasHeight = new ReactiveProperty<double>();
+            CanvasWidth = new ReactiveProperty<double>()
+                .AddTo(_disposables);
+            CanvasHeight = new ReactiveProperty<double>()
+                .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
         }
 
+
+        public void Destroy()
+        {
+            _disposables.Dispose();
+        }
+
+
+
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
+            ClearPrefetchImages();
+
+            if (Images?.Any() ?? false)
+            {
+                var images = Images.ToArray();
+                Images = null;
+                images.AsParallel().ForAll(x => (x as IDisposable)?.Dispose());
+            }
+
             _leavePageCancellationTokenSource.Cancel();
             _navigationDisposables.Dispose();
             _ImageEnumerationDisposer?.Dispose();
@@ -144,11 +168,16 @@ namespace TsubameViewer.Presentation.ViewModels
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New)
             {
-                bool isTokenChanged = false;
+                // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
+
+
                 if (parameters.TryGetValue("token", out string token))
                 {
                     if (_currentToken != token)
                     {
+                        _currentPath = null;
+                        _currentFolderItem = null;
+
                         _currentToken = token;
                         _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
 
@@ -156,8 +185,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         Images = default;
                         _CurrentImageIndex = 0;
-
-                        isTokenChanged = true;
                     }
                 }
 #if DEBUG
@@ -167,7 +194,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
 #endif
 
-                bool isPathChanged = false;
                 if (parameters.TryGetValue("path", out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
@@ -186,23 +212,18 @@ namespace TsubameViewer.Presentation.ViewModels
                         _CurrentImageIndex = 0;
 
                         _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-
-                        isPathChanged = true;
                     }
                 }
+            }
 
-                // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
+            // 以下の場合に表示内容を更新する
+            //    1. 表示フォルダが変更された場合
+            //    2. 前回の更新が未完了だった場合
+            if (_tokenGettingFolder != null || _currentFolderItem != null)
+            {
+                await RefreshItems(_leavePageCancellationTokenSource.Token);
 
-
-                // 以下の場合に表示内容を更新する
-                //    1. 表示フォルダが変更された場合
-                //    2. 前回の更新が未完了だった場合
-                if (isTokenChanged || isPathChanged)
-                {
-                    await RefreshItems(_leavePageCancellationTokenSource.Token);
-
-                    await ResetPrefetchImageRange(_CurrentImageIndex);
-                }
+                await ResetPrefetchImageRange(_CurrentImageIndex);
             }
 
             // 表示画像が揃ったら改めてボタンを有効化
@@ -460,7 +481,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 _ = SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex)).ConfigureAwait(false);
             }
         }
-
 
         #endregion
     }

@@ -49,7 +49,9 @@ namespace TsubameViewer.Models.Domain.ImageView
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
                     // Note: 親フォルダへのアクセス権限無い場合が想定されるが
-                    // 　　　アプリとしてユーザーに選択可能としているのはフォルダのみなので無視できる
+                    // 　　　アプリとしてユーザーに選択可能としているのはフォルダのみなので無視できる？
+                    
+                    // TODO: 外部からアプリに画像が渡された時、親フォルダへのアクセス権が無いケースに対応する
                     var parentFolder = await file.GetParentAsync();
                     
                     // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
