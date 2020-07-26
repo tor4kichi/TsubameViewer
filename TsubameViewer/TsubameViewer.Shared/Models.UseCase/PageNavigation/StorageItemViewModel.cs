@@ -65,8 +65,11 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 
 
 
-        public StorageItemViewModel() 
+        public StorageItemViewModel(ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
         {
+            _thumbnailManager = thumbnailManager;
+            _folderListingSettings = folderListingSettings;
+
 #if WINDOWS_UWP
             if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
             {
@@ -76,7 +79,8 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 #endif
         }
 
-        public StorageItemViewModel(IStorageItem item, string token)
+        public StorageItemViewModel(IStorageItem item, string token, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
+             : this(thumbnailManager, folderListingSettings)
         {
             Item = item;
             Token = token;
@@ -104,6 +108,9 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 
 
         private StorageItemTypes _Type;
+        private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
+
         public StorageItemTypes Type
         {
             get { return _Type; }
@@ -123,11 +130,13 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
         public bool IsImageGenerated => throw new NotImplementedException();
         public async Task<BitmapImage> GenerateBitmapImageAsync()
         {
-            if (this.Item is StorageFile file)
+            if (Item is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    using (var stream = await file.OpenReadAsync())
+                    if (!_folderListingSettings.IsImageFileThumbnailEnabled) { return null; }
+
+                    using (var stream = await file.OpenStreamForReadAsync())
                     {
                         var image = new BitmapImage();
                         image.DecodePixelWidth = CurrentFileDisplayMode switch
@@ -138,28 +147,30 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
                             FileDisplayMode.Large => 300,
                             _ => throw new NotSupportedException()
                         };
-                        image.SetSource(stream);
+                        image.SetSource(stream.AsRandomAccessStream());
                         return image;
                     }
                 }
-                else
+                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                 {
-                    using (var thumbnail = await file.GetThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.DocumentsView))
-                    {
-                        var image = new BitmapImage();
-                        image.SetSource(thumbnail);
-                        return image;
-                    }
-                }
-            }
-            else if (this.Item is StorageFolder folder)
-            {
-                using (var thumbnail = await folder.GetThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.PicturesView))
-                {
-                    var image = new BitmapImage();
-                    image.SetSource(thumbnail);
+                    if (!_folderListingSettings.IsArchiveFileThumbnailEnabled) { return null; }
+
+                    var uri = await _thumbnailManager.GetArchiveThumbnailAsync(file);
+                    if (uri == null) { return null; }
+                    var image = new BitmapImage(uri);
+                    image.DecodePixelWidth = 320;
                     return image;
                 }
+            }
+            else if (Item is StorageFolder folder)
+            {
+                if (!_folderListingSettings.IsFolderThumbnailEnabled) { return null; }
+
+                var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
+                if (uri == null) { return null; }
+                var image = new BitmapImage(uri);
+                image.DecodePixelWidth = 320;
+                return image;
             }
 
             return new BitmapImage();

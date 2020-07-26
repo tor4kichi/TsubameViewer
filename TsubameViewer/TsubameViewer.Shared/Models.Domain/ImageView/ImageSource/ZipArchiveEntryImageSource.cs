@@ -18,8 +18,8 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult>
             GetImagesFromZipFileAsync(StorageFile file)
         {
-            var stream = await file.OpenReadAsync();
-            var zipArchive = new ZipArchive(stream.AsStreamForRead());
+            var stream = await file.OpenStreamForReadAsync();
+            var zipArchive = new ZipArchive(stream);
 
             var supportedEntries = zipArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))

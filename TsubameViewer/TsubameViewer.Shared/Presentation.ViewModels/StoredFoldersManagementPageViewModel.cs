@@ -31,10 +31,11 @@ namespace TsubameViewer.Presentation.ViewModels
     {
         public ObservableCollection<StorageItemViewModel> Folders { get; }
 
+        private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly StoredFoldersRepository _storedFoldersRepository;
         private readonly IEventAggregator _eventAggregator;
-        private readonly FolderListingSettings _folderListingSettings;
-
+        
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
 
@@ -42,11 +43,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         bool _foldersInitialized = false;
         public StoredFoldersManagementPageViewModel(
+            ThumbnailManager thumbnailManager,
+            FolderListingSettings folderListingSettings,
             OpenFolderItemCommand openFolderItemCommand,
             SourceChoiceCommand sourceChoiceCommand,
             StoredFoldersRepository storedFoldersRepository,
-            IEventAggregator eventAggregator,
-            FolderListingSettings folderListingSettings
+            IEventAggregator eventAggregator            
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
@@ -54,6 +56,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _storedFoldersRepository = storedFoldersRepository;
             _eventAggregator = eventAggregator;
+            _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
         }
 
@@ -64,17 +67,17 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _foldersInitialized = true;
 
-                Folders.Add(new StorageItemViewModel() { });
+                Folders.Add(new StorageItemViewModel(_thumbnailManager, _folderListingSettings) { });
                 await foreach (var item in _storedFoldersRepository.GetStoredFolderItems())
                 {
-                    Folders.Add(new StorageItemViewModel(item.item, item.token));
+                    Folders.Add(new StorageItemViewModel(item.item, item.token, _thumbnailManager, _folderListingSettings));
                 }
             }
 
             _eventAggregator.GetEvent<StoredFoldersRepository.AddedEvent>()
                 .Subscribe(args => 
                 {
-                    Folders.Add(new StorageItemViewModel(args.StorageItem, args.Token));
+                    Folders.Add(new StorageItemViewModel(args.StorageItem, args.Token, _thumbnailManager, _folderListingSettings));
                 })
                 .AddTo(_navigationDisposables);
 

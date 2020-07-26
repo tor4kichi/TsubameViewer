@@ -30,7 +30,6 @@
     <x:Double x:Key="LargeImageHeight">426</x:Double>
     
     
-    <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />
 
     <ts:ValueDataTemplateSelector x:Key="FileItemTemplateSelector"  PropertyName="Type">
       <ts:ValueDataTemplate Value="Image">

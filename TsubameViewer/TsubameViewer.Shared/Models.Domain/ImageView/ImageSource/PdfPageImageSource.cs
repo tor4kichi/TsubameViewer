@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -33,6 +34,8 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
             };
         }
 
+        
+
         private readonly PdfPage _pdfPage;
 
         public PdfPageImageSource(PdfPage pdfPage)
@@ -54,13 +57,14 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
             {
                 if (_image != null) { return _image; }
 
-                using (var memoryStream = new InMemoryRandomAccessStream())
+                using (var memoryStream = new MemoryStream())
+                using (var streamWrite = new StreamWriter(memoryStream))
                 {
-                    await _pdfPage.RenderToStreamAsync(memoryStream);
+                    await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream());
                     await memoryStream.FlushAsync();
-                    memoryStream.Seek(0);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream);
+                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
                     return _image = bitmapImage;
                 }
             }

@@ -35,8 +35,8 @@ namespace TsubameViewer.Models.Domain
         public const string JpgFileType = ".jpg";
         public const string PngFileType = ".png";
 
-        static readonly HashSet<string> SupportedArchiveFileExtensions;
-        static readonly HashSet<string> SupportedImageFileExtensions;
+        public static readonly HashSet<string> SupportedArchiveFileExtensions;
+        public static readonly HashSet<string> SupportedImageFileExtensions;
 
         public static bool IsSupportedFileExtension(string fileType)
         {

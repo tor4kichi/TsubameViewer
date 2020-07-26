@@ -66,6 +66,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             });
 
+        private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         public OpenPageCommand OpenPageCommand { get; }
 
@@ -110,10 +111,12 @@ namespace TsubameViewer.Presentation.ViewModels
         public string FoldersManagementPageName => nameof(Views.StoredFoldersManagementPage);
 
         public FolderListupPageViewModel(
+            ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand
             )
         {
+            _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             
@@ -326,7 +329,7 @@ namespace TsubameViewer.Presentation.ViewModels
             await foreach (var folderItem in itemsResult.AsyncEnumerableItems.WithCancellation(ct))
             {
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, _currentToken);
+                var item = new StorageItemViewModel(folderItem, _currentToken, _thumbnailManager, _folderListingSettings);
                 if (folderItem is StorageFolder)
                 {
                     FolderItems.Add(item);

@@ -24,6 +24,7 @@
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
+      <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />
 
 
       <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
@@ -62,7 +63,10 @@
                   <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
                 </StackPanel>
               </uwpControls:DockPanel>
-              <Image />
+              <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}"
+                     Stretch="UniformToFill"
+                     VerticalAlignment="Center"
+                     />
             </uwpControls:DockPanel>
           </DataTemplate>
         </ts:ValueDataTemplate>

@@ -7,15 +7,15 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="226a0938-d2a4-47e3-a3b9-6a820081ce68"
-    Publisher="CN=tor4k"
+    Name="18803tor4kichi.TsubameViewer"
+    Publisher="CN=DFF1CEA0-5963-4197-8676-6105C5E8CE4B"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="86a1997b-c223-4ff6-9b9e-32114102a95b" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="37bb45e3-5324-4790-b288-51560417bde3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>TsubameViewer</DisplayName>
-    <PublisherDisplayName>TsubameViewer</PublisherDisplayName>
+    <PublisherDisplayName>tor4kichi</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 

@@ -18,8 +18,8 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> 
             GetImagesFromRarFileAsync(StorageFile file)
         {
-            var stream = await file.OpenReadAsync();
-            var rarArchive = RarArchive.Open(stream.AsStreamForRead());
+            var stream = await file.OpenStreamForReadAsync();
+            var rarArchive = RarArchive.Open(stream);
 
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))

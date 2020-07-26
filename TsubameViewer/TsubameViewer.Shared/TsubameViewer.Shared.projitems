@@ -25,6 +25,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\IImageGenerater.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\RarArchiveEntryImageSource.cs" />
