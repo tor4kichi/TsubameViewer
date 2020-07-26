@@ -4,13 +4,59 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Presentation.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector"
+  mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+  <Page.Resources>
 
+    <x:Double x:Key="SettingItemWidth">400</x:Double>
+    <x:Double x:Key="GroupSpacing">48</x:Double>
+    <x:Double x:Key="ItemsSpacing">24</x:Double>
+
+    <tt:TypeBasedTemplateSelector x:Key="SettingItemTemplateSelector">
+      <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.IToggleSwitchSettingItemViewModel, Converter={StaticResource StringToType}}">
+        <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+          <ToggleSwitch IsOn="{Binding ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" />
+          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
+        </uwpControls:DockPanel>
+      </DataTemplate>
+    </tt:TypeBasedTemplateSelector>
+  </Page.Resources>
   <Grid>
-    <ScrollViewer>
-      <TextBlock Text="TODO* 設定ページ" />
-    </ScrollViewer>
+    <uwpControls:DockPanel>
+      <Grid uwpControls:DockPanel.Dock="Top" Margin="32 16">
+        <TextBlock Text="設定" Style="{StaticResource SubtitleTextBlockStyle}" />
+      </Grid>
+
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding SettingGroups}"
+                      Margin="32 16"
+                      >
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="{StaticResource GroupSpacing}" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          
+          <ItemsControl.ItemTemplate>
+            <DataTemplate tt:DataTemplate.TargetType="{Binding Source=TsubameViewer.Presentation.ViewModels.SettingsGroupViewModel, Converter={StaticResource StringToType}}">
+              <StackPanel Spacing="16">
+                <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <ItemsControl ItemsSource="{Binding Items}"
+                        ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
+                              HorizontalAlignment="Left"
+                        >
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Spacing="{StaticResource ItemsSpacing}" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </uwpControls:DockPanel>
   </Grid>
 </Page>
