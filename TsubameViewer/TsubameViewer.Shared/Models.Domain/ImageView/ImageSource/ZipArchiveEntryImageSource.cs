@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings.Extensions;
+﻿using Prism.Mvvm;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -15,7 +16,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageView.ImageSource
 {
-    public sealed class ZipArchiveEntryImageSource : IImageSource, IDisposable
+    public sealed class ZipArchiveEntryImageSource : BindableBase, IImageSource, IDisposable
     {
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult>
             GetImagesFromZipFileAsync(StorageFile file)
@@ -55,20 +56,38 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public string Name => _entry.Name;
         public bool IsImageGenerated => _image != null;
 
+
         private BitmapImage _image;
+        public BitmapImage Image
+        {
+            get { return _image; }
+            private set { SetProperty(ref _image, value); }
+        }
+
+        public void ClearImage()
+        {
+            Image = null;
+        }
+
         CancellationTokenSource _cts = new CancellationTokenSource();
-        public async Task<BitmapImage> GenerateBitmapImageAsync()
+        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
         {
             var ct = _cts.Token;
             {
-                if (_image != null) { return _image; }
-
                 using (var entryStream = _entry.Open())
                 using (var memoryStream = entryStream.ToMemoryStream())
                 {
                     var bitmapImage = new BitmapImage();
                     bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    return _image = bitmapImage;
+                    if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+                    {
+                        bitmapImage.DecodePixelHeight = canvasHeight;
+                    }
+                    else
+                    {
+                        bitmapImage.DecodePixelWidth = canvasWidth;
+                    }
+                    return Image = bitmapImage;
                 }
             }
         }

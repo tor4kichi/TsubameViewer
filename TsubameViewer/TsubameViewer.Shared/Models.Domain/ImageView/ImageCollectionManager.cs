@@ -1,8 +1,10 @@
-﻿using Reactive.Bindings.Extensions;
+﻿using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -19,9 +21,13 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageView
 {
-    public interface IImageSource : IImageGenerater
+    public interface IImageSource : INotifyPropertyChanged
     {
         string Name { get; }
+        BitmapImage Image { get; }
+        void ClearImage();
+
+        Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight);
     }
 
 

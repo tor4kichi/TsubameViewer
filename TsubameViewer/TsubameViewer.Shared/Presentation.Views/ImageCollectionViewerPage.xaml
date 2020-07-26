@@ -10,6 +10,7 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   NavigationCacheMode="Enabled"
@@ -18,7 +19,7 @@
   <Page.Resources>
     <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />
   </Page.Resources>
-  <Grid>
+  <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True">
 
     <VisualStateManager.VisualStateGroups>
       <!-- 画像の表示切替 -->
@@ -92,14 +93,24 @@
       <myBehaviour:MouseCenterClickTrigger>
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
+
+      <core:EventTriggerBehavior EventName="Loaded">
+        <core:ChangePropertyAction TargetObject="{Binding CanvasWidth}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+      </core:EventTriggerBehavior>
+      <core:EventTriggerBehavior EventName="SizeChanged">
+        <core:ChangePropertyAction TargetObject="{Binding CanvasWidth}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+        <core:InvokeCommandAction Command="{Binding SizeChangedCommand}" />
+      </core:EventTriggerBehavior>
     </i:Interaction.Behaviors>
-    
-    <Image x:Name="Image0" Source="{Binding Result}" DataContext="{Binding PrefetchImages[0].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
-    <Image x:Name="Image1" Source="{Binding Result}" DataContext="{Binding PrefetchImages[1].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
-    <Image x:Name="Image2" Source="{Binding Result}" DataContext="{Binding PrefetchImages[2].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
-    <Image x:Name="Image3" Source="{Binding Result}" DataContext="{Binding PrefetchImages[3].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
-    <Image x:Name="Image4" Source="{Binding Result}" DataContext="{Binding PrefetchImages[4].Value, Converter={StaticResource LoadAttachmentAsyncConverter}}" Opacity="0.0" />
-    
+
+    <Image x:Name="Image0" Source="{Binding PrefetchImages[0].Value.Image}" Opacity="0.0" />
+    <Image x:Name="Image1" Source="{Binding PrefetchImages[1].Value.Image}" Opacity="0.0" />
+    <Image x:Name="Image2" Source="{Binding PrefetchImages[2].Value.Image}" Opacity="0.0" />
+    <Image x:Name="Image3" Source="{Binding PrefetchImages[3].Value.Image}" Opacity="0.0" />
+    <Image x:Name="Image4" Source="{Binding PrefetchImages[4].Value.Image}" Opacity="0.0" />
+
     <TextBlock Visibility="Collapsed">
       <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
     </TextBlock>

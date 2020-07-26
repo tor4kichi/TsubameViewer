@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Prism.Mvvm;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -10,7 +11,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageView.ImageSource
 {
-    public sealed class StorageFileImageSource : IImageSource, IDisposable
+    public sealed class StorageFileImageSource : BindableBase, IImageSource, IDisposable
     {
         public static async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetImagesFromFolderAsync(StorageFolder storageFolder, CancellationToken ct)
         {
@@ -49,17 +50,34 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
 
         public string Name => _file.Name;
         public bool IsImageGenerated => _image != null;
-        BitmapImage _image;
 
-        public async Task<BitmapImage> GenerateBitmapImageAsync()
+        private BitmapImage _image;
+        public BitmapImage Image
         {
-            if (_image != null) { return _image; }
+            get { return _image; }
+            private set { SetProperty(ref _image, value); }
+        }
 
+        public void ClearImage()
+        {
+            Image = null;
+        }
+
+        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
+        {
             using (var stream = await _file.OpenReadAsync())
             {
-                var bitmap = new BitmapImage();
-                bitmap.SetSource(stream);
-                return _image = bitmap;
+                var bitmapImage = new BitmapImage();
+                bitmapImage.SetSource(stream);
+                if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+                {
+                    bitmapImage.DecodePixelHeight = canvasHeight;
+                }
+                else
+                {
+                    bitmapImage.DecodePixelWidth = canvasWidth;
+                }
+                return Image = bitmapImage;
             }
         }
 

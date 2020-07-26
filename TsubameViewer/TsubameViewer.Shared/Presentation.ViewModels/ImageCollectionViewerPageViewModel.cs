@@ -30,6 +30,7 @@ using TsubameViewer.Models.UseCase.ViewManagement.Commands;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Data.Pdf;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -58,15 +59,6 @@ namespace TsubameViewer.Presentation.ViewModels
             private set { SetProperty(ref _Images, value); }
         }
 
-        
-        private BitmapImage _CurrentImage;
-        public BitmapImage CurrentImage
-        {
-            get { return _CurrentImage; }
-            private set { SetProperty(ref _CurrentImage, value); }
-        }
-
-
         private int _CurrentImageIndex;
         public int CurrentImageIndex
         {
@@ -83,25 +75,25 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
 
+        public ReactiveProperty<double> CanvasWidth { get; }
+        public ReactiveProperty<double> CanvasHeight { get; }
+
         private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
 
+        public ImageCollectionPageSettings ImageCollectionSettings { get; }
+
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
-        private readonly IScheduler _scheduler;
         private readonly ImageCollectionManager _imageCollectionManager;
 
         public ImageCollectionViewerPageViewModel(
-            IScheduler scheduler,
             ImageCollectionManager imageCollectionManager,
             ImageCollectionPageSettings imageCollectionSettings,
-            BackNavigationCommand backNavigationCommand,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
-            _scheduler = scheduler;
             _imageCollectionManager = imageCollectionManager;
             ImageCollectionSettings = imageCollectionSettings;
-            BackNavigationCommand = backNavigationCommand;
             ToggleFullScreenCommand = toggleFullScreenCommand;
 
             _PrefetchImages = new ReactivePropertySlim<IImageSource>[MaxPrefetchImageCount];
@@ -114,6 +106,9 @@ namespace TsubameViewer.Presentation.ViewModels
             DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim();
+
+            CanvasWidth = new ReactiveProperty<double>();
+            CanvasHeight = new ReactiveProperty<double>();
 
             _appView = ApplicationView.GetForCurrentView();
         }
@@ -160,7 +155,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         ClearPrefetchImages();
 
                         Images = default;
-                        CurrentImage = _emptyImage;
                         _CurrentImageIndex = 0;
 
                         isTokenChanged = true;
@@ -189,7 +183,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         ClearPrefetchImages();
 
                         Images = default;
-                        CurrentImage = _emptyImage;
                         _CurrentImageIndex = 0;
 
                         _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
@@ -208,7 +201,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     await RefreshItems(_leavePageCancellationTokenSource.Token);
 
-                    ResetPrefetchImageRange(_CurrentImageIndex);
+                    await ResetPrefetchImageRange(_CurrentImageIndex);
                 }
             }
 
@@ -231,11 +224,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         // プリフェッチ範囲更新
                         UpdatePrefetchImageRange(index);
 
-                        var image = GetPrefetchImage(CurrentPrefetchImageIndex);
-                        CurrentImage = await image.GenerateBitmapImageAsync();
 #if DEBUG
+                        var image = GetPrefetchImage(CurrentPrefetchImageIndex);
+                        var currentImage = await image.GenerateBitmapImageAsync((int)CanvasWidth.Value, (int)CanvasHeight.Value);
                         Debug.WriteLine($"index: {CurrentImageIndex}, PrefetchIndex: {CurrentPrefetchImageIndex}, ImageName: {image.Name}");
-                        Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
+                        Debug.WriteLine($"w={currentImage?.PixelWidth:F2}, h={currentImage?.PixelHeight:F2}");
 #endif
                     }
                 })
@@ -252,6 +245,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         #region Commands
+
+        public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>
@@ -318,7 +313,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         #region Prefetch Image
 
-
         const int MaxPrefetchImageCount = 5; // 必ず奇数
         const int SwitchTargetIndexSubstraction = 2; // MaxPrefetchImageCount / 2;
 
@@ -330,9 +324,29 @@ namespace TsubameViewer.Presentation.ViewModels
             return _PrefetchImages[index].Value;
         }
 
-        void SetPrefetchImage(int index, IImageSource image)
+
+        private DelegateCommand _SizeChangedCommand;
+        public DelegateCommand SizeChangedCommand =>
+            _SizeChangedCommand ??= new DelegateCommand(() => 
+            {
+                if (!(Images?.Any() ?? false)) { return; }
+
+                _ = ResetPrefetchImageRange(CurrentImageIndex);
+            });
+
+        async Task SetPrefetchImage(int index, IImageSource image)
         {
+            // 入れ替え前のプリフェッチ画像は破棄させる
+            _PrefetchImages[index].Value?.ClearImage();
+
+            // プリフェッチ画像を設定し
             _PrefetchImages[index].Value = image;
+
+            // 非同期で画像読み込みを開始
+            if (image != null)
+            {
+                await image.GenerateBitmapImageAsync((int)CanvasWidth.Value, (int)CanvasHeight.Value);
+            }
 
             Debug.WriteLine($"[Prefetch Image] index: {index}, Name: {image?.Name}");
         }
@@ -343,17 +357,11 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _CurrentPrefetchImageIndex;
             set => SetProperty(ref _CurrentPrefetchImageIndex, value);
         }
-        public ImageCollectionPageSettings ImageCollectionSettings { get; }
-        public BackNavigationCommand BackNavigationCommand { get; }
-        public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
 
         // Note: Image Prefetchとは
         // 
-        //  　Image切り替え時のチラツキ防止と素早い切替に対応するためのイメージ読み込みの交通整理機能
+        //  　Image切り替え時のチラツキ防止と素早い切替に対応するための先行読み込みを管理する仕組み
         //
-
-        // 
-
 
         // CurrentImageIndexの切り替わりに反応してCurrentPrefetchImageIndexを切り替える
         // 同時に、Prefetch範囲から外れるImageと新たにPrefetch範囲に入ったImageを入れ替える
@@ -363,16 +371,17 @@ namespace TsubameViewer.Presentation.ViewModels
             // 一旦全部リセットする
             foreach (var i in _PrefetchImages)
             {
+                i.Value?.ClearImage();
                 i.Value = null;
             }
         }
 
-        private void ResetPrefetchImageRange(int initialImageIndex)
+        private async Task ResetPrefetchImageRange(int initialImageIndex)
         {
             ClearPrefetchImages();
 
             // 現在プリフェッチ画像を設定してプリフェッチ画像インデックスを強制通知（前と同一インデックスでも通知する）
-            SetPrefetchImage(SwitchTargetIndexSubstraction, Images.ElementAtOrDefault(initialImageIndex));
+            await SetPrefetchImage(SwitchTargetIndexSubstraction, Images.ElementAtOrDefault(initialImageIndex));
             _CurrentPrefetchImageIndex = SwitchTargetIndexSubstraction;
             RaisePropertyChanged(nameof(CurrentPrefetchImageIndex));
 
@@ -381,7 +390,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var prefetchIndex = SwitchTargetIndexSubstraction + i;
                 var realIndex = initialImageIndex + i;
-                SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
+                await SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
             }
 
             // Prev方向の画像をプリフェッチ
@@ -389,7 +398,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var prefetchIndex = SwitchTargetIndexSubstraction - i;
                 var realIndex = initialImageIndex - i;
-                SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
+                await SetPrefetchImage(prefetchIndex, Images.ElementAtOrDefault(realIndex));
             }
 
             _prevCurrentImageIndex = initialImageIndex;
@@ -410,7 +419,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             else
             {
-                ResetPrefetchImageRange(targetImageIndex);
+                _ = ResetPrefetchImageRange(targetImageIndex).ConfigureAwait(false);
             }
 
             _prevCurrentImageIndex = targetImageIndex;
@@ -426,12 +435,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 }                
                 CurrentPrefetchImageIndex = nextPrefetchImageIndex;
 
-
                 // 新しいプリフェッチ対象の読み込み
+                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
                 var switchTargetPrefetchImageIndex = (nextPrefetchImageIndex + SwitchTargetIndexSubstraction) % MaxPrefetchImageCount;
                 var switchTargetPrefetchImageRealIndex = targetImageIndex + SwitchTargetIndexSubstraction;
-                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
-                SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex));
+                 _ = SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex)).ConfigureAwait(false);
             }
 
             void GoPreviewPrefetchImageRange(int targetImageIndex)
@@ -446,10 +454,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 CurrentPrefetchImageIndex = prevPrefetchImageIndex;
 
                 // 新しいプリフェッチ対象の読み込み
+                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
                 var switchTargetPrefetchImageIndex = (prevPrefetchImageIndex + SwitchTargetIndexSubstraction + 1) % MaxPrefetchImageCount;
                 var switchTargetPrefetchImageRealIndex = targetImageIndex - SwitchTargetIndexSubstraction;
-                // プリフェッチ対象に実際のインデックス位置となる画像を設定（範囲外の場合はnullで埋める）
-                SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex));
+                _ = SetPrefetchImage(switchTargetPrefetchImageIndex, Images.ElementAtOrDefault(switchTargetPrefetchImageRealIndex)).ConfigureAwait(false);
             }
         }
 
