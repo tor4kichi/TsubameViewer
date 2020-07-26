@@ -115,6 +115,7 @@ namespace TsubameViewer
         public override void RegisterTypes(IContainerRegistry container)
         {
             container.RegisterSingleton<Models.Domain.ImageView.ImageCollectionPageSettings>();
+            container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
 
             container.RegisterForNavigation<StoredFoldersManagementPage>();
             container.RegisterForNavigation<FolderListupPage>();

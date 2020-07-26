@@ -111,6 +111,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string FoldersManagementPageName => nameof(Views.StoredFoldersManagementPage);
 
+
+        static bool _LastIsImageFileThumbnailEnabled;
+        static bool _LastIsArchiveFileThumbnailEnabled;
+        static bool _LastIsFolderThumbnailEnabled;
+
         public FolderListupPageViewModel(
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
@@ -176,6 +181,10 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 PushCurrentFolderNavigationInfoOnNewOtherNavigation();
             }
+
+            _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
+            _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
+            _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -274,7 +283,11 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 await TryForwardNavigation();
             }
-            else if (!_isCompleteEnumeration)
+            else if (!_isCompleteEnumeration
+                || _LastIsImageFileThumbnailEnabled != _folderListingSettings.IsImageFileThumbnailEnabled
+                || _LastIsArchiveFileThumbnailEnabled != _folderListingSettings.IsArchiveFileThumbnailEnabled
+                || _LastIsFolderThumbnailEnabled != _folderListingSettings.IsFolderThumbnailEnabled
+                )
             {
                 using (await _NavigationLock.LockAsync(default))
                 {
