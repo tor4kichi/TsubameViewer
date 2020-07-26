@@ -19,6 +19,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using Uno.Disposables;
+using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -148,6 +149,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FileDisplayMode.Subscribe(x =>
             {
                 StorageItemViewModel.CurrentFileDisplayMode = x;
+                FileItems.ForEach(x => x.ClearImage());
             });
         }
 
@@ -181,6 +183,8 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 PushCurrentFolderNavigationInfoOnNewOtherNavigation();
             }
+
+            FileItems.ForEach(x => x.ClearImage());
 
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
             _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;

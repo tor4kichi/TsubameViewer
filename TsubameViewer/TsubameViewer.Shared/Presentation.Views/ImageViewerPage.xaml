@@ -17,7 +17,6 @@
   >
 
   <Page.Resources>
-    <myConv:LoadAttachmentAsyncConverter x:Key="LoadAttachmentAsyncConverter" />
   </Page.Resources>
   <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True">
 

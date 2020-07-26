@@ -65,7 +65,7 @@
       <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
@@ -74,7 +74,7 @@
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
       </ts:FolderItemTemplateSelector.Archive>
@@ -84,7 +84,7 @@
       <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
@@ -93,7 +93,7 @@
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
       </ts:FolderItemTemplateSelector.Archive>
@@ -103,7 +103,7 @@
       <ts:FolderItemTemplateSelector.Image>
         <DataTemplate>
           <uwpControls:DockPanel>
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
           </uwpControls:DockPanel>
 
         </DataTemplate>
@@ -112,7 +112,7 @@
         <DataTemplate>
           <uwpControls:DockPanel>
             <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Result}" DataContext="{Binding Converter={StaticResource LoadAttachmentAsyncConverter}}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
+            <Image Source="{Binding Image}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
           </uwpControls:DockPanel>
         </DataTemplate>
       </ts:FolderItemTemplateSelector.Archive>
@@ -212,33 +212,8 @@
         
       </StackPanel>
 
-      <ScrollViewer>
-        <StackPanel>
-          <uwpControls:AdaptiveGridView 
-              x:Name="FoldersAdaptiveGridView"
-              StretchContentForSingleRow="False"
-              OneRowModeEnabled="False"
-              ItemsSource="{Binding FolderItems}" 
-              ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
-            ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-              DesiredWidth="360"            
-              ItemHeight="132"
-              IsItemClickEnabled="True"
-              ItemClickCommand="{Binding OpenFolderItemCommand}"
-              IsSynchronizedWithCurrentItem="False"
-              Padding="48 8"
-              >
-            <GridView.Header>
-              <Grid >
-              </Grid>
-
-            </GridView.Header>
-            <i:Interaction.Behaviors>
-            </i:Interaction.Behaviors>
-          </uwpControls:AdaptiveGridView>
-
-          <!-- Files -->
-          <uwpControls:AdaptiveGridView 
+      <!-- Files -->
+      <uwpControls:AdaptiveGridView 
             x:Name="FilesListView"
             ItemsSource="{Binding FileItems}"
             ItemTemplateSelector="{StaticResource FileItemTemplateSelector}"
@@ -248,18 +223,48 @@
             ItemHeight="40"
             ItemClickCommand="{Binding OpenFolderItemCommand}"
             >
-            
-            <GridView.Header>
-              <Grid>
-                <!-- TODO: 並べ替え -->
-              </Grid>
-            </GridView.Header>
-          </uwpControls:AdaptiveGridView>
 
-        </StackPanel>
+        <GridView.Header>
+          <StackPanel>
+            <uwpControls:AdaptiveGridView 
+                    x:Name="FoldersAdaptiveGridView"
+                    StretchContentForSingleRow="False"
+                    OneRowModeEnabled="False"
+                    ItemsSource="{Binding FolderItems}" 
+                    ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
+                  ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+                    DesiredWidth="360"            
+                    ItemHeight="132"
+                    IsItemClickEnabled="True"
+                    ItemClickCommand="{Binding OpenFolderItemCommand}"
+                    IsSynchronizedWithCurrentItem="False"
+                    >
+              <GridView.Header>
+                <Grid >
+                </Grid>
 
+              </GridView.Header>
+              <i:Interaction.Behaviors>
+                <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+                  <core:CallMethodAction MethodName="Initialize" />
+                </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+              </i:Interaction.Behaviors>
+            </uwpControls:AdaptiveGridView>
+          </StackPanel>
+        </GridView.Header>
 
-      </ScrollViewer>
+        <i:Interaction.Behaviors>
+          <myBehaior:ListViewBaseFirstAppearTriggerBehavior x:Name="FirstAppearBehavior">
+            <core:CallMethodAction MethodName="Initialize" />
+          </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+
+          <core:DataTriggerBehavior Binding="{Binding FileDisplayMode.Value}" Value="{x:Null}" ComparisonCondition="NotEqual">
+            <core:CallMethodAction TargetObject="{x:Bind FirstAppearBehavior}" MethodName="Clear" />
+          </core:DataTriggerBehavior>
+
+        </i:Interaction.Behaviors>
+      </uwpControls:AdaptiveGridView>
+
     </uwpControls:DockPanel>
     
     

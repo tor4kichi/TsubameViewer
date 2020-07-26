@@ -54,13 +54,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml.cs">
       <DependentUpon>CollectionPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ItemClickEventArgsConverter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\LoadAttachmentAsyncConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageViewerPage.xaml.cs">

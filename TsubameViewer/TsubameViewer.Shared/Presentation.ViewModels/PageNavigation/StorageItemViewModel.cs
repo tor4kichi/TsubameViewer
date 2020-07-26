@@ -1,6 +1,7 @@
 ﻿using Prism.Mvvm;
 using Prism.Navigation;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -108,6 +109,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _Path, value); }
         }
 
+        private BitmapImage _image;
+        public BitmapImage Image
+        {
+            get { return _image; }
+            private set { SetProperty(ref _image, value); }
+        }
+
 
         private StorageItemTypes _Type;
         private readonly ThumbnailManager _thumbnailManager;
@@ -132,10 +140,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private static FastAsyncLock _lock = new FastAsyncLock();
 
-        public bool IsImageGenerated => throw new NotImplementedException();
         public async Task<BitmapImage> GenerateBitmapImageAsync()
         {
             using var releaser = await _lock.LockAsync(_cts.Token);
+            
+            if (Image != null) { return Image; }
+
             if (Item is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
@@ -154,7 +164,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                             _ => throw new NotSupportedException()
                         };
                         image.SetSource(stream.AsRandomAccessStream());
-                        return image;
+                        return Image = image;
                     }
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
@@ -165,7 +175,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     if (uri == null) { return null; }
                     var image = new BitmapImage(uri);
                     image.DecodePixelWidth = 320;
-                    return image;
+                    return Image = image;
                 }
             }
             else if (Item is StorageFolder folder)
@@ -176,10 +186,31 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 if (uri == null) { return null; }
                 var image = new BitmapImage(uri);
                 image.DecodePixelWidth = 320;
-                return image;
+                return Image = image;
             }
 
-            return new BitmapImage();
+            return Image = new BitmapImage();
+        }
+
+
+        public void ClearImage()
+        {
+#if DEBUG
+            if (Image == null)
+            {
+                Debug.WriteLine("Thumbnail Cancel: " + Name);
+            }
+#endif
+
+            _cts.Cancel();
+            Image = null;
+            _cts = new CancellationTokenSource();
+        }
+
+        public void Initialize()
+        {
+            Debug.WriteLine("Thumbnail Load: " + Name);
+            _ = GenerateBitmapImageAsync();
         }
 
         public void Dispose()

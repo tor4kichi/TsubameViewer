@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain
 {
-    public interface IImageGenerater
+    public interface IImageGenerater : INotifyPropertyChanged
     {
-        bool IsImageGenerated { get; }
-
-        Task<BitmapImage> GenerateBitmapImageAsync();
+        BitmapImage Image { get; }
     }
 }

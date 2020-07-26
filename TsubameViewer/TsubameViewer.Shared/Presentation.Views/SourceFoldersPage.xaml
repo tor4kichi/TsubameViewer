@@ -10,6 +10,7 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity"
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -40,6 +41,9 @@
           
       </GridView.Header>
       <i:Interaction.Behaviors>
+        <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+          <core:CallMethodAction MethodName="Initialize" />
+        </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
       </i:Interaction.Behaviors>
     </uwpControls:AdaptiveGridView>
 

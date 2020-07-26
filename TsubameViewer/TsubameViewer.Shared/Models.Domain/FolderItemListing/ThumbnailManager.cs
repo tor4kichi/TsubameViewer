@@ -52,15 +52,16 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
                 ? code
-                : _FilePathToHashCodeStringMap[item.Path] = item.Path.GetHashCode().ToString()
+                : _FilePathToHashCodeStringMap[item.Path] = new String(item.Path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
                 ;
         }
 
         private string GetStorageItemId(StorageFolder item)
         {
+            
             return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
                 ? code
-                : _FilePathToHashCodeStringMap[item.Path] = item.Path.GetHashCode().ToString()
+                : _FilePathToHashCodeStringMap[item.Path] = new String(item.Path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
                 ;
         }
 
