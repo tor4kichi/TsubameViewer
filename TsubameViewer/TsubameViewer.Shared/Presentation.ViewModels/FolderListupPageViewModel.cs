@@ -18,6 +18,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.UseCase.PageNavigation;
 using TsubameViewer.Models.UseCase.PageNavigation.Commands;
+using Uno.Disposables;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -158,7 +159,6 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             return true;
-            
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -228,10 +228,17 @@ namespace TsubameViewer.Presentation.ViewModels
                     //    2. 前回の更新が未完了だった場合
                     if (isTokenChanged || isPathChanged)
                     {
-                        if (isTokenChanged)
                         {
+                            var fileItems = FileItems.ToArray();
+                            var folderItems = FolderItems.ToArray();
                             FolderItems.Clear();
                             FileItems.Clear();
+                            fileItems.AsParallel().ForAll(x => x.Dispose());
+                            folderItems.AsParallel().ForAll(x => x.Dispose());
+                        }
+
+                        if (isTokenChanged)
+                        {
                             _previousEnumerationIndex = 0;
 
                             _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
@@ -242,8 +249,6 @@ namespace TsubameViewer.Presentation.ViewModels
                             throw new Exception("token parameter is require for path parameter.");
                         }
 
-                        FolderItems.Clear();
-                        FileItems.Clear();
                         _previousEnumerationIndex = 0;
 
                         _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
@@ -287,6 +292,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private async Task RefreshFolderItems(CancellationToken ct)
         {
             using var _ = await _RefreshLock.LockAsync(ct);
+
 
             _isCompleteEnumeration = false;
             try

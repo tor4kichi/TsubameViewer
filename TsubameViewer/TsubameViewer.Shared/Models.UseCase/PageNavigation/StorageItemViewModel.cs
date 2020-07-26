@@ -3,9 +3,11 @@ using Prism.Navigation;
 using System;
 using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
@@ -14,7 +16,7 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public sealed class StorageItemViewModel : BindableBase, IImageGenerater
+    public sealed class StorageItemViewModel : BindableBase, IImageGenerater, IDisposable
     {
         public static FileDisplayMode CurrentFileDisplayMode { get; set; }
 
@@ -127,9 +129,13 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
             Path = Item.Path;
         }
 
+        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private static FastAsyncLock _lock = new FastAsyncLock();
+
         public bool IsImageGenerated => throw new NotImplementedException();
         public async Task<BitmapImage> GenerateBitmapImageAsync()
         {
+            using var releaser = await _lock.LockAsync(_cts.Token);
             if (Item is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
@@ -174,6 +180,12 @@ namespace TsubameViewer.Models.UseCase.PageNavigation
             }
 
             return new BitmapImage();
+        }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            _cts.Dispose();
         }
     }
 }
