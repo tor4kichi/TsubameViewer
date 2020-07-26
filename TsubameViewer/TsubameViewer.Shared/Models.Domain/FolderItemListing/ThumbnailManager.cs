@@ -9,8 +9,10 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reactive;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
+using Uno.Threading;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -42,7 +44,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return ApplicationData.Current.TemporaryFolder;
         }
 
-        
+        SemaphoreSlim _writeerLock = new SemaphoreSlim(2, 2);
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
@@ -64,36 +66,45 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<Uri> GetArchiveThumbnailAsync(StorageFile file)
         {
-            var itemId = GetStorageItemId(file);
-            if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
+            await _writeerLock.WaitAsync();
+
+            try
             {
-                var cachedFile = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                return new Uri(cachedFile.Path, UriKind.Absolute);
-            }
-            else
-            {
-                var tempFolder = await GetTempFolderAsync();
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                try
+                var itemId = GetStorageItemId(file);
+                if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
                 {
-                    using (var thumbnailWriteStream = await thumbnailFile.OpenStreamForWriteAsync())
+                    var cachedFile = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
+                    return new Uri(cachedFile.Path, UriKind.Absolute);
+                }
+                else
+                {
+                    var tempFolder = await GetTempFolderAsync();
+                    var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
+                    try
                     {
-                        var result = await (file.FileType switch
+                        using (var thumbnailWriteStream = await thumbnailFile.OpenStreamForWriteAsync())
                         {
-                            SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                            SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                            SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                            _ => throw new NotSupportedException(),
-                        });
-                        if (!result) { return null; }
+                            var result = await (file.FileType switch
+                            {
+                                SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
+                                SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
+                                SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
+                                _ => throw new NotSupportedException(),
+                            });
+                            if (!result) { return null; }
+                        }
+                        return new Uri(thumbnailFile.Path);
                     }
-                    return new Uri(thumbnailFile.Path);
+                    catch
+                    {
+                        await thumbnailFile.DeleteAsync();
+                        return null;
+                    }
                 }
-                catch
-                {
-                    await thumbnailFile.DeleteAsync();
-                    return null;
-                }
+            }
+            finally
+            {
+                _writeerLock.Release();
             }
         }
 
