@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Reactive.Bindings.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +20,11 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult>
             GetImagesFromZipFileAsync(StorageFile file)
         {
-            var stream = await file.OpenStreamForReadAsync();
-            var zipArchive = new ZipArchive(stream);
+            CompositeDisposable disposables = new CompositeDisposable();
+            var stream = await file.OpenStreamForReadAsync()
+                .AddTo(disposables);
+            var zipArchive = new ZipArchive(stream)
+                .AddTo(disposables);
 
             var supportedEntries = zipArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
@@ -31,7 +36,7 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
             return new ImageCollectionManager.GetImagesFromArchiveResult()
             {
                 ItemsCount = (uint)supportedEntries.Length,
-                Disposer = zipArchive,
+                Disposer = disposables,
                 Images = supportedEntries,
             };
         }

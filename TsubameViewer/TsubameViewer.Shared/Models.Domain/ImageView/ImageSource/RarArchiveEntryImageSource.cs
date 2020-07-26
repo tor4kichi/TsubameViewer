@@ -1,9 +1,11 @@
-﻿using SharpCompress.Archives.Rar;
+﻿using Reactive.Bindings.Extensions;
+using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reactive.Disposables;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,8 +20,11 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> 
             GetImagesFromRarFileAsync(StorageFile file)
         {
-            var stream = await file.OpenStreamForReadAsync();
-            var rarArchive = RarArchive.Open(stream);
+            CompositeDisposable disposables = new CompositeDisposable();
+            var stream = await file.OpenStreamForReadAsync()
+                .AddTo(disposables);
+            var rarArchive = RarArchive.Open(stream)
+                .AddTo(disposables);
 
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
@@ -30,7 +35,7 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
             return new ImageCollectionManager.GetImagesFromArchiveResult() 
             {
                 ItemsCount = (uint)supportedEntries.Length,
-                Disposer = rarArchive,
+                Disposer = disposables,
                 Images = supportedEntries,
             };
         }
