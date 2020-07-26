@@ -2,17 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using TsubameViewer.Models.Domain.SourceManagement;
+using TsubameViewer.Models.Domain.SourceFolders;
 
-namespace TsubameViewer.Models.UseCase.SourceManagement.Commands
+namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 {
     public sealed class SourceChoiceCommand : DelegateCommandBase
     {
-        private readonly StoredFoldersRepository _storedFoldersRepository;
+        private readonly SourceFoldersRepository _SourceFoldersRepository;
 
-        public SourceChoiceCommand(StoredFoldersRepository storedFoldersRepository)
+        public SourceChoiceCommand(SourceFoldersRepository SourceFoldersRepository)
         {
-            _storedFoldersRepository = storedFoldersRepository;
+            _SourceFoldersRepository = SourceFoldersRepository;
         }
         protected override bool CanExecute(object parameter)
         {
@@ -30,7 +30,7 @@ namespace TsubameViewer.Models.UseCase.SourceManagement.Commands
 
             if (seletedFolder == null) { return; }
 
-            _storedFoldersRepository.AddFolder(seletedFolder);
+            _SourceFoldersRepository.AddFolder(seletedFolder);
         }
     }
 }

@@ -7,9 +7,9 @@ using System.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 
-namespace TsubameViewer.Models.Domain.SourceManagement
+namespace TsubameViewer.Models.Domain.SourceFolders
 {
-    public sealed class StoredFoldersRepository
+    public sealed class SourceFoldersRepository
     {
         public sealed class AddedEventArgs
         {
@@ -38,7 +38,7 @@ namespace TsubameViewer.Models.Domain.SourceManagement
 
         private readonly IEventAggregator _eventAggregator;
 
-        public StoredFoldersRepository(IEventAggregator eventAggregator)
+        public SourceFoldersRepository(IEventAggregator eventAggregator)
         {
             _eventAggregator = eventAggregator;
         }
@@ -70,7 +70,7 @@ namespace TsubameViewer.Models.Domain.SourceManagement
             _eventAggregator.GetEvent<RemovedEvent>().Publish(new RemovedEventArgs() { Token = token });
         }
 
-        public async IAsyncEnumerable<(IStorageItem item, string token)> GetStoredFolderItems([EnumeratorCancellation] CancellationToken ct = default)
+        public async IAsyncEnumerable<(IStorageItem item, string token)> GetSourceFolders([EnumeratorCancellation] CancellationToken ct = default)
         {
 #if WINDOWS_UWP
             var myItems = StorageApplicationPermissions.FutureAccessList.Entries;
@@ -80,7 +80,7 @@ namespace TsubameViewer.Models.Domain.SourceManagement
                 yield return (await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token), item.Token);
             }
 #else
-            // TODO: GetStoredFolderItems() UWP以外での対応
+            // TODO: GetSourceFolders() UWP以外での対応
             throw new NotImplementedException();
 #endif
         }

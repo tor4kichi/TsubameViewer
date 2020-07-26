@@ -44,14 +44,14 @@ namespace TsubameViewer.Presentation.Views
 
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
         {
-            typeof(Views.ImageCollectionViewerPage),
+            typeof(Views.ImageViewerPage),
             typeof(SettingsPage),
         };
 
         private Type[] CanGoBackPageTypes = new Type[] 
         {
             typeof(Views.FolderListupPage),
-            typeof(Views.ImageCollectionViewerPage),
+            typeof(Views.ImageViewerPage),
             typeof(SettingsPage),
         };
 
@@ -65,7 +65,7 @@ namespace TsubameViewer.Presentation.Views
                 var sourcePageTypeName = e.SourcePageType.Name;
                 if (e.SourcePageType == typeof(FolderListupPage))
                 {
-                    sourcePageTypeName = nameof(Views.StoredFoldersManagementPage);
+                    sourcePageTypeName = nameof(Views.SourceFoldersPage);
                 }
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)

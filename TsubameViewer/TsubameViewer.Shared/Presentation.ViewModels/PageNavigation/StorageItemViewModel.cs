@@ -12,7 +12,7 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace TsubameViewer.Models.UseCase.PageNavigation
+namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 

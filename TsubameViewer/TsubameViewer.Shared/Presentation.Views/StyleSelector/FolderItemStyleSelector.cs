@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.UseCase.PageNavigation;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 

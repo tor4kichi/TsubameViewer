@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 
-namespace TsubameViewer.Models.Domain.ImageView
+namespace TsubameViewer.Models.Domain.ImageViewer
 {
-    public sealed class ImageCollectionPageSettings : FlagsRepositoryBase
+    public sealed class ImageViewerPageSettings : FlagsRepositoryBase
     {
-        public ImageCollectionPageSettings()
+        public ImageViewerPageSettings()
         {
             _IsReverseMouseWheelBackForward = Read(false, nameof(IsReverseMouseWheelBackForward));
         }

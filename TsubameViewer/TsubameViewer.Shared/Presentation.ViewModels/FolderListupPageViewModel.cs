@@ -16,8 +16,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using TsubameViewer.Models.UseCase.PageNavigation;
-using TsubameViewer.Models.UseCase.PageNavigation.Commands;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using Uno.Disposables;
 using Uno.Threading;
 using Windows.Storage;
@@ -58,7 +58,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (itemVM.Type == StorageItemTypes.Image || itemVM.Type == StorageItemTypes.Archive)
                     {
                         var parameters = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
-                        var result = await _navigationService.NavigateAsync(nameof(Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+                        var result = await _navigationService.NavigateAsync(nameof(Views.ImageViewerPage), parameters, new DrillInNavigationTransitionInfo());
                     }
                     else if (itemVM.Type == StorageItemTypes.Folder)
                     {
@@ -109,7 +109,7 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
 
-        public string FoldersManagementPageName => nameof(Views.StoredFoldersManagementPage);
+        public string FoldersManagementPageName => nameof(Views.SourceFoldersPage);
 
 
         static bool _LastIsImageFileThumbnailEnabled;

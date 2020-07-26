@@ -10,7 +10,7 @@ using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Text;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using TsubameViewer.Models.Domain.SourceManagement;
+using TsubameViewer.Models.Domain.SourceFolders;
 using Windows.Storage;
 using Windows.UI.Popups;
 
@@ -19,25 +19,25 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class SettingsPageViewModel : ViewModelBase
     {
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly StoredFoldersRepository _storedFoldersRepository;
+        private readonly SourceFoldersRepository _SourceFoldersRepository;
 
         public SettingsGroupViewModel[] SettingGroups { get; }
 
         public SettingsPageViewModel(
             FolderListingSettings folderListingSettings,
-            StoredFoldersRepository storedFoldersRepository
+            SourceFoldersRepository SourceFoldersRepository
             )
         {
             _folderListingSettings = folderListingSettings;
-            _storedFoldersRepository = storedFoldersRepository;
+            _SourceFoldersRepository = SourceFoldersRepository;
             SettingGroups = new[]
             {
                 new SettingsGroupViewModel
                 {
-                    Label = "StoredFolderManagementSettings".Translate(),
+                    Label = "SourceFoldersSettings".Translate(),
                     Items =
                     {
-                        new StoredFoldersSettingItemViewModel(_storedFoldersRepository),
+                        new StoredFoldersSettingItemViewModel(_SourceFoldersRepository),
                     }
                 },
                 new SettingsGroupViewModel
@@ -67,13 +67,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBase
     {
-        private readonly StoredFoldersRepository _storedFoldersRepository;
+        private readonly SourceFoldersRepository _SourceFoldersRepository;
 
         public ObservableCollection<StoredFolderViewModel> Folders { get; }
 
-        public StoredFoldersSettingItemViewModel(StoredFoldersRepository storedFoldersRepository)
+        public StoredFoldersSettingItemViewModel(SourceFoldersRepository SourceFoldersRepository)
         {
-            _storedFoldersRepository = storedFoldersRepository;
+            _SourceFoldersRepository = SourceFoldersRepository;
             Folders = new ObservableCollection<StoredFolderViewModel>();
 
             Init();
@@ -81,9 +81,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async void Init()
         {
-            await foreach (var item in _storedFoldersRepository.GetStoredFolderItems())
+            await foreach (var item in _SourceFoldersRepository.GetSourceFolders())
             {
-                Folders.Add(new StoredFolderViewModel(_storedFoldersRepository, this)
+                Folders.Add(new StoredFolderViewModel(_SourceFoldersRepository, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -101,12 +101,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class StoredFolderViewModel
     {
-        private readonly StoredFoldersRepository _storedFoldersRepository;
+        private readonly SourceFoldersRepository _SourceFoldersRepository;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
 
-        public StoredFolderViewModel(StoredFoldersRepository storedFoldersRepository, StoredFoldersSettingItemViewModel parentVM)
+        public StoredFolderViewModel(SourceFoldersRepository SourceFoldersRepository, StoredFoldersSettingItemViewModel parentVM)
         {
-            _storedFoldersRepository = storedFoldersRepository;
+            _SourceFoldersRepository = SourceFoldersRepository;
             _parentVM = parentVM;
         }
 
@@ -121,13 +121,13 @@ namespace TsubameViewer.Presentation.ViewModels
             _DeleteStoredFolderCommand ??= new DelegateCommand(async () => 
             {
                 var dialog = new MessageDialog(
-                    "ConfirmRemoveStoredFolderFromAppDescription".Translate(),
-                    $"ConfirmRemoveStoredFolderFromAppWithFolderName".Translate(FolderName)
+                    "ConfirmRemoveSourceFolderFromAppDescription".Translate(),
+                    $"ConfirmRemoveSourceFolderFromAppWithFolderName".Translate(FolderName)
                     );
 
-                dialog.Commands.Add(new UICommand("RemoveStoredFolderFromApp".Translate(), _ => 
+                dialog.Commands.Add(new UICommand("RemoveSourceFolderFromApp".Translate(), _ => 
                 {
-                    _storedFoldersRepository.RemoveFolder(Token);
+                    _SourceFoldersRepository.RemoveFolder(Token);
                     _parentVM.RemoveItem(this);
                 }));
 

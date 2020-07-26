@@ -13,10 +13,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using TsubameViewer.Models.Domain.SourceManagement;
-using TsubameViewer.Models.UseCase.PageNavigation;
-using TsubameViewer.Models.UseCase.PageNavigation.Commands;
-using TsubameViewer.Models.UseCase.SourceManagement.Commands;
+using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Uno.Disposables;
 using Windows.Storage;
 #if WINDOWS_UWP
@@ -27,13 +27,13 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     // TODO: アクセス履歴対応
 
-    public sealed class StoredFoldersManagementPageViewModel : ViewModelBase
+    public sealed class SourceFoldersPageViewModel : ViewModelBase
     {
         public ObservableCollection<StorageItemViewModel> Folders { get; }
 
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly StoredFoldersRepository _storedFoldersRepository;
+        private readonly SourceFoldersRepository _SourceFoldersRepository;
         private readonly IEventAggregator _eventAggregator;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -42,19 +42,19 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _navigationDisposables;
 
         bool _foldersInitialized = false;
-        public StoredFoldersManagementPageViewModel(
+        public SourceFoldersPageViewModel(
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenFolderItemCommand openFolderItemCommand,
             SourceChoiceCommand sourceChoiceCommand,
-            StoredFoldersRepository storedFoldersRepository,
+            SourceFoldersRepository SourceFoldersRepository,
             IEventAggregator eventAggregator            
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
             OpenFolderItemCommand = openFolderItemCommand;
             SourceChoiceCommand = sourceChoiceCommand;
-            _storedFoldersRepository = storedFoldersRepository;
+            _SourceFoldersRepository = SourceFoldersRepository;
             _eventAggregator = eventAggregator;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
@@ -68,13 +68,13 @@ namespace TsubameViewer.Presentation.ViewModels
                 _foldersInitialized = true;
 
                 Folders.Add(new StorageItemViewModel(_thumbnailManager, _folderListingSettings) { });
-                await foreach (var item in _storedFoldersRepository.GetStoredFolderItems())
+                await foreach (var item in _SourceFoldersRepository.GetSourceFolders())
                 {
                     Folders.Add(new StorageItemViewModel(item.item, item.token, _thumbnailManager, _folderListingSettings));
                 }
             }
 
-            _eventAggregator.GetEvent<StoredFoldersRepository.AddedEvent>()
+            _eventAggregator.GetEvent<SourceFoldersRepository.AddedEvent>()
                 .Subscribe(args => 
                 {
                     Folders.Add(new StorageItemViewModel(args.StorageItem, args.Token, _thumbnailManager, _folderListingSettings));

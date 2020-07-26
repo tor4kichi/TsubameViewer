@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using Unity.Attributes;
 
-namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
+namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class RefreshNavigationCommand : DelegateCommandBase
     {

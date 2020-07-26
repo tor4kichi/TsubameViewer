@@ -1,11 +1,10 @@
 ﻿using Prism.Mvvm;
-using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
-using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Text;
@@ -15,26 +14,27 @@ using Uno.Extensions;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace TsubameViewer.Models.Domain.ImageView.ImageSource
+namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class RarArchiveEntryImageSource : BindableBase, IImageSource, IDisposable
+    public sealed class ZipArchiveEntryImageSource : BindableBase, IImageSource, IDisposable
     {
-        public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> 
-            GetImagesFromRarFileAsync(StorageFile file)
+        public static async Task<ImageCollectionManager.GetImagesFromArchiveResult>
+            GetImagesFromZipFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
                 .AddTo(disposables);
-            var rarArchive = RarArchive.Open(stream)
+            var zipArchive = new ZipArchive(stream)
                 .AddTo(disposables);
 
-            var supportedEntries = rarArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new RarArchiveEntryImageSource(x))
+            var supportedEntries = zipArchive.Entries
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
+                .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
-            return new ImageCollectionManager.GetImagesFromArchiveResult() 
+
+            return new ImageCollectionManager.GetImagesFromArchiveResult()
             {
                 ItemsCount = (uint)supportedEntries.Length,
                 Disposer = disposables,
@@ -42,18 +42,20 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
             };
         }
 
-
-        private readonly RarArchiveEntry _entry;
-
-        public RarArchiveEntryImageSource(RarArchiveEntry entry)
+        private readonly ZipArchiveEntry _entry;
+        public ZipArchiveEntryImageSource(ZipArchiveEntry entry)
         {
             _entry = entry;
         }
 
-        public string Name => _entry.Key;
+        void IDisposable.Dispose()
+        {
+            _cts.Dispose();
+        }
+
+        public string Name => _entry.Name;
         public bool IsImageGenerated => _image != null;
 
-        CancellationTokenSource _cts = new CancellationTokenSource();
 
         private BitmapImage _image;
         public BitmapImage Image
@@ -66,12 +68,13 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
         {
             Image = null;
         }
-        
+
+        CancellationTokenSource _cts = new CancellationTokenSource();
         public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
         {
             var ct = _cts.Token;
             {
-                using (var entryStream = _entry.OpenEntryStream())
+                using (var entryStream = _entry.Open())
                 using (var memoryStream = entryStream.ToMemoryStream())
                 {
                     var bitmapImage = new BitmapImage();
@@ -87,17 +90,6 @@ namespace TsubameViewer.Models.Domain.ImageView.ImageSource
                     return Image = bitmapImage;
                 }
             }
-        }
-
-        public void CancelLoading()
-        {
-            _cts?.Cancel();
-            _cts?.Dispose();
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)_cts).Dispose();
         }
     }
 }

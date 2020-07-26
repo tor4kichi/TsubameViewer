@@ -13,7 +13,7 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace TsubameViewer.Models.Domain.ImageView.ImageSource
+namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class PdfPageImageSource : BindableBase, IImageSource, IDisposable
     {

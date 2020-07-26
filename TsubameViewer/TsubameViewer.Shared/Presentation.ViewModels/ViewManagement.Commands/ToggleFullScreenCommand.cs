@@ -5,7 +5,7 @@ using System.Text;
 using Windows.UI.ViewManagement;
 using Xamarin.Essentials;
 
-namespace TsubameViewer.Models.UseCase.ViewManagement.Commands
+namespace TsubameViewer.Presentation.Views.ViewManagement.Commands
 {
     public sealed class ToggleFullScreenCommand : DelegateCommandBase
     {

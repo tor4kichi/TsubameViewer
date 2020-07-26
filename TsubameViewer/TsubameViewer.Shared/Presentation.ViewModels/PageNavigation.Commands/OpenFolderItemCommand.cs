@@ -6,10 +6,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.UseCase.SourceManagement.Commands;
+using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Windows.UI.Xaml.Media.Animation;
 
-namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
+namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenFolderItemCommand : DelegateCommandBase
     {
@@ -37,7 +37,7 @@ namespace TsubameViewer.Models.UseCase.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageCollectionViewerPage), parameters, new DrillInNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {

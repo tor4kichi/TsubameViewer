@@ -27,38 +27,35 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\IImageGenerater.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\PdfPageImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\RarArchiveEntryImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\StorageFileImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageSource\ZipArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageFileImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ZipArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\PresentedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageCollectionManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageView\ImageCollectionPageSettings.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceManagement\StoredFoldersRepository.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\OpenPageCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\RefreshNavigationCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\SourceManagement.Commands\SourceChoiceCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\BackNavigationCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\OpenFolderItemCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation.Commands\OpenImageCollectionPageWithFolderCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceFoldersRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageCollectionPageWithFolderCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\CollectionPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SettingsPageViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\StoredFoldersManagementPageViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageCollectionViewerPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFoldersPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CardViewFolderListItem.xaml.cs">
-      <DependentUpon>CardViewFolderListItem.xaml</DependentUpon>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml.cs">
       <DependentUpon>CollectionPage.xaml</DependentUpon>
     </Compile>
@@ -66,14 +63,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\LoadAttachmentAsyncConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageCollectionViewerPage.xaml.cs">
-      <DependentUpon>ImageCollectionViewerPage.xaml</DependentUpon>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageViewerPage.xaml.cs">
+      <DependentUpon>ImageViewerPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StoredFoldersManagementPage.xaml.cs">
-      <DependentUpon>StoredFoldersManagementPage.xaml</DependentUpon>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceFoldersPage.xaml.cs">
+      <DependentUpon>SourceFoldersPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
@@ -92,10 +89,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\CardViewFolderListItem.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -104,7 +97,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageCollectionViewerPage.xaml">
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageViewerPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -116,7 +109,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\StoredFoldersManagementPage.xaml">
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceFoldersPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -129,11 +122,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\SourceManagement.Commands\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\ViewManagement.Commands\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\PageNavigation\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Services\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\" />
   </ItemGroup>

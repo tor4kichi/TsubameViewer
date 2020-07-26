@@ -9,7 +9,7 @@ using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace TsubameViewer.Models.Domain.ImageView.ImageSource
+namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class StorageFileImageSource : BindableBase, IImageSource, IDisposable
     {

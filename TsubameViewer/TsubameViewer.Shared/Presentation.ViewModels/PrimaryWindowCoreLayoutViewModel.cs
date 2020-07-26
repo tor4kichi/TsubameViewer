@@ -5,8 +5,8 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using TsubameViewer.Models.UseCase.PageNavigation.Commands;
-using TsubameViewer.Models.UseCase.SourceManagement.Commands;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.ViewModels
@@ -27,7 +27,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.StoredFoldersManagementPage) },
+                new MenuItemViewModel() { PageType = nameof(Views.SourceFoldersPage) },
                 //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
             _navigationServiceLazy = navigationServiceLazy;

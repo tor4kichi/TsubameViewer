@@ -13,13 +13,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Models.Domain.ImageView.ImageSource;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.UI.Xaml.Media.Imaging;
 
-namespace TsubameViewer.Models.Domain.ImageView
+namespace TsubameViewer.Models.Domain.ImageViewer
 {
     public interface IImageSource : INotifyPropertyChanged
     {

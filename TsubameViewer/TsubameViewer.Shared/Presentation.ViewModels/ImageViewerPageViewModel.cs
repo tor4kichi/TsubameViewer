@@ -24,9 +24,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using TsubameViewer.Models.Domain.ImageView;
-using TsubameViewer.Models.UseCase.PageNavigation.Commands;
-using TsubameViewer.Models.UseCase.ViewManagement.Commands;
+using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using Uno;
 using Uno.Extensions;
 using Uno.Threading;
@@ -43,7 +43,7 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace TsubameViewer.Presentation.ViewModels
 {
 
-    public sealed class ImageCollectionViewerPageViewModel : ViewModelBase, IDestructible
+    public sealed class ImageViewerPageViewModel : ViewModelBase, IDestructible
     {
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
@@ -82,16 +82,16 @@ namespace TsubameViewer.Presentation.ViewModels
         private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
 
-        public ImageCollectionPageSettings ImageCollectionSettings { get; }
+        public ImageViewerPageSettings ImageCollectionSettings { get; }
 
         internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
         private readonly ImageCollectionManager _imageCollectionManager;
 
         CompositeDisposable _disposables = new CompositeDisposable();
 
-        public ImageCollectionViewerPageViewModel(
+        public ImageViewerPageViewModel(
             ImageCollectionManager imageCollectionManager,
-            ImageCollectionPageSettings imageCollectionSettings,
+            ImageViewerPageSettings imageCollectionSettings,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {

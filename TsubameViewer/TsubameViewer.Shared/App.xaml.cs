@@ -13,7 +13,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.Views;
 using Unity;
@@ -114,12 +113,12 @@ namespace TsubameViewer
 
         public override void RegisterTypes(IContainerRegistry container)
         {
-            container.RegisterSingleton<Models.Domain.ImageView.ImageCollectionPageSettings>();
+            container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerPageSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
 
-            container.RegisterForNavigation<StoredFoldersManagementPage>();
+            container.RegisterForNavigation<SourceFoldersPage>();
             container.RegisterForNavigation<FolderListupPage>();
-            container.RegisterForNavigation<ImageCollectionViewerPage>();
+            container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
         }
@@ -180,7 +179,7 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            ns.NavigateAsync(nameof(StoredFoldersManagementPage));
+            ns.NavigateAsync(nameof(SourceFoldersPage));
 
             base.OnInitialized();
         }
