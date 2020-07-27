@@ -65,7 +65,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 ;
         }
 
-        public async Task<Uri> GetArchiveThumbnailAsync(StorageFile file)
+        public async Task<StorageFile> GetArchiveThumbnailAsync(StorageFile file)
         {
             await _writeerLock.WaitAsync();
 
@@ -74,8 +74,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 var itemId = GetStorageItemId(file);
                 if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
                 {
-                    var cachedFile = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                    return new Uri(cachedFile.Path, UriKind.Absolute);
+                    return await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
                 }
                 else
                 {
@@ -94,7 +93,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             });
                             if (!result) { return null; }
                         }
-                        return new Uri(thumbnailFile.Path);
+                        return thumbnailFile;
                     }
                     catch
                     {

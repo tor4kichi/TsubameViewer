@@ -160,22 +160,22 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .ToReadOnlyReactivePropertySlim();
                 */
+            StorageItemViewModel.CurrentFileDisplayMode = _folderListingSettings.FileDisplayMode;
+
             FileDisplayMode.Subscribe(async x =>
             {
-                var items = FileItems.ToArray();
-                FileItems.Clear();
-
-                StorageItemViewModel.CurrentFileDisplayMode = x;
-                FileItems.ForEach(x => x.ClearImage());
-                /*if (FileItems.Any())
+                if (FileItems.Any())
                 {
-                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                    var items = FileItems.ToArray();
+                    FileItems.Clear();
+
+                    StorageItemViewModel.CurrentFileDisplayMode = x;
+                    FileItems.ForEach(x => x.ClearImage());
+
+                    await Task.Delay(100);
+
+                    FileItems.AddRange(items);
                 }
-                */
-
-                await Task.Delay(100);
-
-                FileItems.AddRange(items);
             });
         }
 

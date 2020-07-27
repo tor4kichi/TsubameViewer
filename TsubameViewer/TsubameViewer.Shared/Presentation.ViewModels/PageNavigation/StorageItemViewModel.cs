@@ -3,6 +3,7 @@ using Prism.Navigation;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -155,14 +156,28 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     using (var stream = await file.OpenStreamForReadAsync())
                     {
                         var image = new BitmapImage();
-                        image.DecodePixelWidth = CurrentFileDisplayMode switch
+                        if (image.PixelWidth > image.PixelHeight)
                         {
-                            FileDisplayMode.Line => 1,
-                            FileDisplayMode.Small => 96,
-                            FileDisplayMode.Midium => 180,
-                            FileDisplayMode.Large => 300,
-                            _ => throw new NotSupportedException()
-                        };
+                            image.DecodePixelHeight = CurrentFileDisplayMode switch
+                            {
+                                FileDisplayMode.Line => 1,
+                                FileDisplayMode.Small => 96,
+                                FileDisplayMode.Midium => 180,
+                                FileDisplayMode.Large => 426,
+                                _ => throw new NotSupportedException()
+                            };
+                        }
+                        else
+                        {
+                            image.DecodePixelWidth = CurrentFileDisplayMode switch
+                            {
+                                FileDisplayMode.Line => 1,
+                                FileDisplayMode.Small => 96,
+                                FileDisplayMode.Midium => 180,
+                                FileDisplayMode.Large => 300,
+                                _ => throw new NotSupportedException()
+                            };
+                        }
                         image.SetSource(stream.AsRandomAccessStream());
                         return Image = image;
                     }
@@ -171,10 +186,36 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 {
                     if (!_folderListingSettings.IsArchiveFileThumbnailEnabled) { return null; }
 
-                    var uri = await _thumbnailManager.GetArchiveThumbnailAsync(file);
-                    if (uri == null) { return null; }
-                    var image = new BitmapImage(uri);
-                    image.DecodePixelWidth = 320;
+                    var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(file);
+                    if (thumbnailFile == null) { return null; }
+                    var image = new BitmapImage();
+                    using (var stream = await thumbnailFile.OpenStreamForReadAsync())
+                    {
+                        image.SetSource(stream.AsRandomAccessStream());
+                    }
+
+                    if (image.PixelWidth > image.PixelHeight)
+                    {
+                        image.DecodePixelHeight = CurrentFileDisplayMode switch
+                        {
+                            FileDisplayMode.Line => 1,
+                            FileDisplayMode.Small => 96,
+                            FileDisplayMode.Midium => 180,
+                            FileDisplayMode.Large => 426,
+                            _ => throw new NotSupportedException()
+                        };
+                    }
+                    else
+                    {
+                        image.DecodePixelWidth = CurrentFileDisplayMode switch
+                        {
+                            FileDisplayMode.Line => 1,
+                            FileDisplayMode.Small => 96,
+                            FileDisplayMode.Midium => 180,
+                            FileDisplayMode.Large => 300,
+                            _ => throw new NotSupportedException()
+                        };
+                    }
                     return Image = image;
                 }
             }
@@ -207,7 +248,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _cts = new CancellationTokenSource();
         }
 
-        private FileDisplayMode _prevFileDisplayMode;
+        private FileDisplayMode? _prevFileDisplayMode;
 
         public void Initialize()
         {
@@ -220,8 +261,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     return;
                 }
 
+                Image = null;
+
                 Debug.WriteLine("Thumbnail Load: " + Name);
                 _ = GenerateBitmapImageAsync();
+                _prevFileDisplayMode = CurrentFileDisplayMode;
             }
         }
 
