@@ -348,10 +348,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private DelegateCommand _SizeChangedCommand;
         public DelegateCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new DelegateCommand(() => 
+            _SizeChangedCommand ??= new DelegateCommand(async () => 
             {
                 if (!(Images?.Any() ?? false)) { return; }
 
+                await Task.Delay(50);
                 _ = ResetPrefetchImageRange(CurrentImageIndex);
             });
 
