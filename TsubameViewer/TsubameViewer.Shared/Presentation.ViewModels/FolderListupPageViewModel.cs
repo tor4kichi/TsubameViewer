@@ -221,6 +221,9 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _navigationService = parameters.GetNavigationService();
 
+            // Note: ファイル表示用のItemsRepeaterのItemTemplateが
+            // VisualStateによって変更されるのを待つ
+            await Task.Delay(50);
 
             var mode = parameters.GetNavigationMode();
 

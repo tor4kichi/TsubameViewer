@@ -191,7 +191,6 @@
                                   ElementIndexChanged="OnElementIndexChanged"
                                   ElementClearing="OnElementClearing"
                                   ItemTemplate="{StaticResource LineFileItemTemplate}"
-                                 
                                   >
               <winUI:ItemsRepeater.Layout>
                 <uwpControls:WrapLayout x:Name="FileItemsRepeaterWrapLayout" Orientation="Horizontal" 
