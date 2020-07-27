@@ -191,14 +191,19 @@
                                   ElementIndexChanged="OnElementIndexChanged"
                                   ElementClearing="OnElementClearing"
                                   ItemTemplate="{StaticResource LineFileItemTemplate}"
+                                 
                                   >
               <winUI:ItemsRepeater.Layout>
                 <uwpControls:WrapLayout x:Name="FileItemsRepeaterWrapLayout" Orientation="Horizontal" 
-                                        HorizontalSpacing="12" VerticalSpacing="12"
-                                        
+                                        HorizontalSpacing="12" VerticalSpacing="12"                                        
                                         />
               </winUI:ItemsRepeater.Layout>
 
+              <i:Interaction.Behaviors>
+                <core:EventTriggerBehavior EventName="DoubleTapped">
+                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                </core:EventTriggerBehavior>
+              </i:Interaction.Behaviors>
               
             </winUI:ItemsRepeater>
             
