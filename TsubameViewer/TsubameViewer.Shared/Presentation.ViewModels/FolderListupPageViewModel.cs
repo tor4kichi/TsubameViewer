@@ -184,8 +184,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 PushCurrentFolderNavigationInfoOnNewOtherNavigation();
             }
 
-            FileItems.ForEach(x => x.ClearImage());
-
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
             _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
             _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;

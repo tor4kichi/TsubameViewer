@@ -47,7 +47,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProjectGuid>{226A0938-D2A4-47E3-A3B9-6A820081CE68}</ProjectGuid>
+    <ProjectGuid>{5FBC541B-2286-4708-A559-B4C0A7042215}</ProjectGuid>
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TsubameViewer</RootNamespace>
