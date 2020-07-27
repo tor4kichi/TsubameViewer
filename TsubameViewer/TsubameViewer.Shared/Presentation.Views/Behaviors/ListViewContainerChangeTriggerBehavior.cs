@@ -31,13 +31,20 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         protected override void OnAttached()
         {
-            AssociatedObject.ChoosingItemContainer += AssociatedObject_ChoosingItemContainer;
+            if (AssociatedObject != null)
+            {
+                AssociatedObject.ChoosingItemContainer += AssociatedObject_ChoosingItemContainer;
+            }
+
             base.OnAttached();
         }
 
         protected override void OnDetaching()
         {
-            AssociatedObject.ChoosingItemContainer -= AssociatedObject_ChoosingItemContainer;
+            if (AssociatedObject != null)
+            {
+                AssociatedObject.ChoosingItemContainer -= AssociatedObject_ChoosingItemContainer;
+            }
             _map.Clear();
             base.OnDetaching();
         }

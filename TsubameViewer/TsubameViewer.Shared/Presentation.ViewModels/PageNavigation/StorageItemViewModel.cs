@@ -66,8 +66,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         #endregion
 
-
-
         public StorageItemViewModel(ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
         {
             _thumbnailManager = thumbnailManager;
@@ -81,6 +79,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             }
 #endif
         }
+
+        public StorageItemViewModel() { }
 
         public StorageItemViewModel(IStorageItem item, string token, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
              : this(thumbnailManager, folderListingSettings)
@@ -207,10 +207,22 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _cts = new CancellationTokenSource();
         }
 
+        private FileDisplayMode _prevFileDisplayMode;
+
         public void Initialize()
         {
-            Debug.WriteLine("Thumbnail Load: " + Name);
-            _ = GenerateBitmapImageAsync();
+            if (Type != StorageItemTypes.Image 
+                || CurrentFileDisplayMode != FileDisplayMode.Line 
+                )
+            {
+                if (Image != null && _prevFileDisplayMode == CurrentFileDisplayMode)
+                {
+                    return;
+                }
+
+                Debug.WriteLine("Thumbnail Load: " + Name);
+                _ = GenerateBitmapImageAsync();
+            }
         }
 
         public void Dispose()

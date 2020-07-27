@@ -150,6 +150,9 @@ namespace TsubameViewer
 
         public override void OnInitialized()
         {
+#if WINDOWS_UWP
+            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
+#endif
             // ローカリゼーション用のライブラリを初期化
             try
             {

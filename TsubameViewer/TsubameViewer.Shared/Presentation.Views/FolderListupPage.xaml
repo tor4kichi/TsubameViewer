@@ -13,7 +13,11 @@
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
-  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing"
+  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
+  xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
+  xmlns:winuiDebug="using:Microsoft.Toolkit.Uwp.UI.ControlsCustom"
+  xmlns:contract7Present="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract,7)"
+  xmlns:contract7NotPresent="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractNotPresent(Windows.Foundation.UniversalApiContract,7)" xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -30,94 +34,35 @@
     <x:Double x:Key="LargeImageHeight">426</x:Double>
 
 
+    <DataTemplate x:Key="DummyTemplate">
+      <Border Height="20" Width="20" />
+    </DataTemplate>
 
-    <ts:FolderItemTemplateSelector x:Key="FileItemTemplateSelector">
-      <ts:FolderItemTemplateSelector.Image>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
-              <SymbolIcon Symbol="Pictures" />
-            </Border>
-            <Border uwpControls:DockPanel.Dock="Bottom">
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
-            </Border>
-            <TextBlock Text="{Binding Name}" />
-          </uwpControls:DockPanel>
-          
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Image>
-      <ts:FolderItemTemplateSelector.Archive>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <Border uwpControls:DockPanel.Dock="Left" Margin="0 0 12 0">
-              <SymbolIcon Symbol="Library" />
-            </Border>
-            <Border uwpControls:DockPanel.Dock="Bottom">
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
-            </Border>
-            <TextBlock Text="{Binding Name}" />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Archive>
-    </ts:FolderItemTemplateSelector>
+    <DataTemplate x:Key="LineFileItemTemplate">
+      <StackPanel Orientation="Horizontal" Width="240">
+        <StackPanel>
+          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
+        </StackPanel>
+      </StackPanel>
+    </DataTemplate >
 
-    <ts:FolderItemTemplateSelector x:Key="SmallThumbnailFileItemTemplateSelector">
-      <ts:FolderItemTemplateSelector.Image>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <Image Source="{Binding Image}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
-          </uwpControls:DockPanel>
+    <DataTemplate x:Key="SmallThumbnailFileItemTemplate">
+      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" />
+    </DataTemplate>
 
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Image>
-      <ts:FolderItemTemplateSelector.Archive>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Image}" Width="{StaticResource SmallImageWidth}" Height="{StaticResource SmallImageHeight}" />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Archive>
-    </ts:FolderItemTemplateSelector>
+    <DataTemplate x:Key="MidiumThumbnailFileItemTemplate">
+      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" />
+    </DataTemplate>
 
-    <ts:FolderItemTemplateSelector x:Key="MidiumThumbnailFileItemTemplateSelector">
-      <ts:FolderItemTemplateSelector.Image>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <Image Source="{Binding Image}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
-          </uwpControls:DockPanel>
+    <DataTemplate x:Key="LargeThumbnailFileItemTemplate">
+      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" />
+    </DataTemplate>
 
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Image>
-      <ts:FolderItemTemplateSelector.Archive>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Image}" Width="{StaticResource MidiumImageWidth}" Height="{StaticResource MidiumImageHeight}" />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Archive>
-    </ts:FolderItemTemplateSelector>
 
-    <ts:FolderItemTemplateSelector x:Key="LargeThumbnailFileItemTemplateSelector">
-      <ts:FolderItemTemplateSelector.Image>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <Image Source="{Binding Image}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
-          </uwpControls:DockPanel>
 
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Image>
-      <ts:FolderItemTemplateSelector.Archive>
-        <DataTemplate>
-          <uwpControls:DockPanel>
-            <TextBlock Text="{Binding Name}" uwpControls:DockPanel.Dock="Bottom" />
-            <Image Source="{Binding Image}" Width="{StaticResource LargeImageWidth}" Height="{StaticResource LargeImageHeight}" />
-          </uwpControls:DockPanel>
-        </DataTemplate>
-      </ts:FolderItemTemplateSelector.Archive>
-    </ts:FolderItemTemplateSelector>
-
+    
+    
 
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
       <ts:FileDisplayModeTemplateSelector.Line>
@@ -212,62 +157,55 @@
         
       </StackPanel>
 
-      <!-- Files -->
-      <uwpControls:AdaptiveGridView 
-            x:Name="FilesListView"
-            ItemsSource="{Binding FileItems}"
-            ItemTemplateSelector="{StaticResource FileItemTemplateSelector}"
-            Padding="48 8"
-            IsItemClickEnabled="True"
-            DesiredWidth="320"            
-            ItemHeight="40"
-            ItemClickCommand="{Binding OpenFolderItemCommand}"
-            >
-
+      <uwpControls:AdaptiveGridView ItemsSource="{Binding FolderItems}"
+                          x:Name="FoldersAdaptiveGridView"
+                          StretchContentForSingleRow="False"
+                          OneRowModeEnabled="False"
+                          VerticalAlignment="Top"
+                          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
+                          ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+                          DesiredWidth="360"            
+                          ItemHeight="132"
+                          IsItemClickEnabled="True"
+                          ItemClickCommand="{Binding OpenFolderItemCommand}"
+                          IsSynchronizedWithCurrentItem="False"
+                                    Padding="48 8 48 32"
+                          >
         <GridView.Header>
-          <StackPanel>
-            <uwpControls:AdaptiveGridView 
-                    x:Name="FoldersAdaptiveGridView"
-                    StretchContentForSingleRow="False"
-                    OneRowModeEnabled="False"
-                    ItemsSource="{Binding FolderItems}" 
-                    ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
-                  ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-                    DesiredWidth="360"            
-                    ItemHeight="132"
-                    IsItemClickEnabled="True"
-                    ItemClickCommand="{Binding OpenFolderItemCommand}"
-                    IsSynchronizedWithCurrentItem="False"
-                    >
-              <GridView.Header>
-                <Grid >
-                </Grid>
-
-              </GridView.Header>
-              <i:Interaction.Behaviors>
-                <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-                  <core:CallMethodAction MethodName="Initialize" />
-                </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-              </i:Interaction.Behaviors>
-            </uwpControls:AdaptiveGridView>
-          </StackPanel>
+          <Grid >
+          </Grid>
         </GridView.Header>
-
         <i:Interaction.Behaviors>
-          <myBehaior:ListViewBaseFirstAppearTriggerBehavior x:Name="FirstAppearBehavior">
+          <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
             <core:CallMethodAction MethodName="Initialize" />
           </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-
-          <core:DataTriggerBehavior Binding="{Binding FileDisplayMode.Value}" Value="{x:Null}" ComparisonCondition="NotEqual">
-            <core:CallMethodAction TargetObject="{x:Bind FirstAppearBehavior}" MethodName="Clear" />
-          </core:DataTriggerBehavior>
-
         </i:Interaction.Behaviors>
-      </uwpControls:AdaptiveGridView>
 
+        <GridView.Footer>
+          
+          <StackPanel Margin="0 8 0 0">
+            
+            <winUI:ItemsRepeater x:Name="FileItemsRepeater"
+                                  ItemsSource="{Binding FileItems}"
+                                  ElementPrepared="OnElementPrepared"
+                                  ElementIndexChanged="OnElementIndexChanged"
+                                  ElementClearing="OnElementClearing"
+                                  ItemTemplate="{StaticResource LineFileItemTemplate}"
+                                  >
+              <winUI:ItemsRepeater.Layout>
+                <uwpControls:WrapLayout x:Name="FileItemsRepeaterWrapLayout" Orientation="Horizontal" 
+                                        HorizontalSpacing="12" VerticalSpacing="12"
+                                        
+                                        />
+              </winUI:ItemsRepeater.Layout>
+
+              
+            </winUI:ItemsRepeater>
+            
+          </StackPanel>
+        </GridView.Footer>
+      </uwpControls:AdaptiveGridView>
     </uwpControls:DockPanel>
-    
-    
 
     <VisualStateManager.VisualStateGroups>
       
@@ -278,13 +216,22 @@
             <wst:EqualsStateTrigger Value="{Binding FolderItems.Count}" EqualTo="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Visibility" Value="Collapsed" />
+            
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
       
       <!-- 画面サイズによる表示切り替え -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="140 16" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 8 140 32" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <AdaptiveTrigger MinWindowWidth="610" />
@@ -298,13 +245,13 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="HeaderLayout.Margin" Value="16 16" />
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16" />
-            <Setter Target="FilesListView.Padding" Value="8 16" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 8 8 32" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
       
       <!-- ファイルの表示方法切り替え -->
+
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -315,9 +262,9 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource SmallThumbnailFileItemTemplateSelector}" />
-            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource SmallImageWidth}" />
-            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource SmallImageHeight}" />
+            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource SmallThumbnailFileItemTemplate}" />
+            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="6" />
+            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="6" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -329,9 +276,11 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource MidiumThumbnailFileItemTemplateSelector}" />
-            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource MidiumImageWidth}" />
-            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource MidiumImageHeight}" />
+            
+            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource MidiumThumbnailFileItemTemplate}" />
+            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="12" />
+            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="12" />
+            
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -343,12 +292,14 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FilesListView.ItemTemplateSelector" Value="{StaticResource LargeThumbnailFileItemTemplateSelector}" />
-            <Setter Target="FilesListView.DesiredWidth" Value="{StaticResource LargeImageWidth}" />
-            <Setter Target="FilesListView.ItemHeight" Value="{StaticResource LargeImageHeight}" />
+            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource LargeThumbnailFileItemTemplate}" />
+            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="12" />
+            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="12" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      
     </VisualStateManager.VisualStateGroups>
+      
   </Grid>
 </Page>

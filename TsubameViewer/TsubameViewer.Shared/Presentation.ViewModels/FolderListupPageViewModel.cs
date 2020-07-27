@@ -77,6 +77,8 @@ namespace TsubameViewer.Presentation.ViewModels
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> FileItems { get; }
 
+        public FolderItemsGroupBase[] Groups { get; }
+
         public ReactivePropertySlim<FolderViewFirstSort> SelectedFolderViewFirstSort { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
@@ -126,10 +128,22 @@ namespace TsubameViewer.Presentation.ViewModels
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
-            
+
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItems = new ObservableCollection<StorageItemViewModel>();
             SelectedFolderViewFirstSort = new ReactivePropertySlim<FolderViewFirstSort>(FolderViewFirstSort.Folders);
+
+            Groups = new FolderItemsGroupBase[]
+            {
+                new FolderFolderItemsGroup()
+                {
+                    Items = FolderItems,
+                },
+                new FileFolderItemsGroup()
+                { 
+                    Items = FileItems
+                }
+            };
 
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
             /*
@@ -146,10 +160,22 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .ToReadOnlyReactivePropertySlim();
                 */
-            FileDisplayMode.Subscribe(x =>
+            FileDisplayMode.Subscribe(async x =>
             {
+                var items = FileItems.ToArray();
+                FileItems.Clear();
+
                 StorageItemViewModel.CurrentFileDisplayMode = x;
                 FileItems.ForEach(x => x.ClearImage());
+                /*if (FileItems.Any())
+                {
+                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                }
+                */
+
+                await Task.Delay(100);
+
+                FileItems.AddRange(items);
             });
         }
 
@@ -533,6 +559,20 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         #endregion
+    }
+
+    public abstract class FolderItemsGroupBase
+    {
+        public ObservableCollection<StorageItemViewModel> Items { get; set; }
+    }
+    public sealed class FolderFolderItemsGroup : FolderItemsGroupBase
+    {
+
+    }
+
+    public sealed class FileFolderItemsGroup : FolderItemsGroupBase
+    {
+
     }
 
     class FolderListupPageParameter

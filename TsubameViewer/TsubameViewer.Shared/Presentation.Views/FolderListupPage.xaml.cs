@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Microsoft.UI.Xaml.Controls;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -25,6 +28,31 @@ namespace TsubameViewer.Presentation.Views
         public FolderListupPage()
         {
             this.InitializeComponent();
+        }
+
+        private void OnElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+        {
+            if ((args.Element as FrameworkElement)?.DataContext is StorageItemViewModel itemVM)
+            {
+                itemVM.Initialize();
+                Debug.WriteLine("OnElementPrepared" + itemVM.Name);
+            }
+        }
+
+        private void OnElementIndexChanged(ItemsRepeater sender, ItemsRepeaterElementIndexChangedEventArgs args)
+        {
+            if ((args.Element as FrameworkElement)?.DataContext is StorageItemViewModel itemVM)
+            {
+                Debug.WriteLine("OnElementIndexChanged" + itemVM.Name);
+            }
+        }
+
+        private void OnElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
+        {
+            if ((args.Element as FrameworkElement)?.DataContext is StorageItemViewModel itemVM)
+            {
+                Debug.WriteLine("OnElementClearing : " + itemVM.Name);
+            }
         }
     }
 }

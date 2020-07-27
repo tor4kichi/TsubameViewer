@@ -74,6 +74,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FolderItemTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListupPage.xaml.cs">
       <DependentUpon>FolderListupPage.xaml</DependentUpon>
