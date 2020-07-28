@@ -53,7 +53,43 @@
         </DataTemplate>
 
       </tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
+
+      <tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
+        <DataTemplate>
+          <Grid Width="{StaticResource SettingItemWidth}">
+            <TextBlock Text="{Binding Label}" />
+            <TextBlock Text="{Binding Text.Value}" HorizontalAlignment="Right" />
+          </Grid>
+          
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
+
+      <tt:SettingsItemTemplateSelector.ButtonSettingItem>
+        <DataTemplate>
+          <Button Content="{Binding Label, Mode=OneTime}" Command="{Binding ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
+                  HorizontalAlignment="Right"
+                  />
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.ButtonSettingItem>
     </tt:SettingsItemTemplateSelector>
+
+
+    <DataTemplate x:Key="SettingsGroupTemplate">
+      <StackPanel Spacing="16">
+        <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <ItemsControl ItemsSource="{Binding Items}"
+                        ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
+                              HorizontalAlignment="Left"
+                        >
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Spacing="{StaticResource ItemsSpacing}" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+    
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
@@ -62,33 +98,43 @@
       </Grid>
 
       <ScrollViewer>
-        <ItemsControl ItemsSource="{Binding SettingGroups}"
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding SettingGroups}"
+                        ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                       >
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Spacing="{StaticResource GroupSpacing}" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="{StaticResource GroupSpacing}" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+          </ItemsControl>
+
+          <!-- AdvancedSetting -->
+          <uwpControls:Expander Margin="32 64 32 32" Visibility="Collapsed">
+            <uwpControls:Expander.Header>
+              <TextBlock Text="{Binding Source=AdvancedSettings, Converter={StaticResource LocalizeConverter}}"
+                     Style="{StaticResource SubtitleTextBlockStyle}"
+                     />
+            </uwpControls:Expander.Header>
+
+            <ItemsControl ItemsSource="{Binding AdvancedSettingGroups}"
+                        ItemTemplate="{StaticResource SettingsGroupTemplate}"
+                      Margin="32 16"
+                          HorizontalAlignment="Left"
+                      >
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="{StaticResource GroupSpacing}" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </uwpControls:Expander>
+
           
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <StackPanel Spacing="16">
-                <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                <ItemsControl ItemsSource="{Binding Items}"
-                        ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
-                              HorizontalAlignment="Left"
-                        >
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <StackPanel Spacing="{StaticResource ItemsSpacing}" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                </ItemsControl>
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        </StackPanel>
+        
+        
       </ScrollViewer>
     </uwpControls:DockPanel>
   </Grid>

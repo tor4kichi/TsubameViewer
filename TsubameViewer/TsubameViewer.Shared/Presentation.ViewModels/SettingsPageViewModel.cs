@@ -1,19 +1,27 @@
 ﻿using I18NPortable;
 using Prism.Commands;
 using Prism.Mvvm;
+using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Views.Converters;
 using Windows.Storage;
 using Windows.UI.Popups;
+using Windows.UI.Xaml.Controls;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -22,18 +30,25 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceFoldersRepository _SourceFoldersRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
+        private readonly ThumbnailManager _thumbnailManager;
 
         public SettingsGroupViewModel[] SettingGroups { get; }
+        public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
         public SettingsPageViewModel(
             FolderListingSettings folderListingSettings,
             SourceFoldersRepository SourceFoldersRepository,
-            ImageViewerSettings imageViewerPageSettings
+            ImageViewerSettings imageViewerPageSettings,
+            ThumbnailManager thumbnailManager
             )
         {
             _folderListingSettings = folderListingSettings;
             _SourceFoldersRepository = SourceFoldersRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
+            _thumbnailManager = thumbnailManager;
+
+            _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
+            _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
 
             SettingGroups = new[]
             {
@@ -50,9 +65,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "ThumbnailImageSettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayImageFileThubnail".Translate(), _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayArchiveFileThubnail".Translate(), _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayFolderThubnail".Translate(), _folderListingSettings, x => x.IsFolderThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayArchiveFileThubnail".Translate(), _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayImageFileThubnail".Translate(), _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
+                        new UpdatableTextSettingItemViewModel("ThumbnailCacheSize".Translate(), _ThumbnailImagesCacheSizeText),
+                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => _ = DeleteThumnnailsAsync()),
                     }
                 },
                 new SettingsGroupViewModel
@@ -63,8 +80,69 @@ namespace TsubameViewer.Presentation.ViewModels
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_Button".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_Button),
                     }
-                }
+                },
             };
+
+            AdvancedSettingGroups = new[]
+            {
+                new SettingsGroupViewModel
+                {
+                    /*
+                    Label = "ThumbnailImageSettings".Translate(),
+                    Items =
+                    {
+                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => _ = DeleteThumnnailsAsync()),
+                        new UpdatableTextSettingItemViewModel("ThumbnailCacheSize".Translate(), _ThumbnailImagesCacheSizeText)
+                    }
+                    */
+                },
+            };
+        }
+
+        private async Task DeleteThumnnailsAsync()
+        {
+            _ThumbnailImagesCacheSizeText.Value = string.Empty;
+
+            _IsThumbnailDeleteButtonActive.Value = false;
+            await _thumbnailManager.DeleteAllThumnnailsAsync();
+
+            var folder = await ThumbnailManager.GetTempFolderAsync();
+            var files = await folder.GetFilesAsync();
+            ulong size = 0;
+            foreach (var file in files)
+            {
+                var prop = await file.GetBasicPropertiesAsync();
+                size += prop.Size;
+            }
+
+            _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
+        }
+
+        ReactiveProperty<bool> _IsThumbnailDeleteButtonActive;
+        ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
+
+
+        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+        {
+            _IsThumbnailDeleteButtonActive.Value = true;
+
+            var folder = await ThumbnailManager.GetTempFolderAsync();
+            var files = await folder.GetFilesAsync();
+            ulong size = 0;
+            foreach (var file in files)
+            {
+                var prop = await file.GetBasicPropertiesAsync();
+                size += prop.Size;
+            }
+            _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
+
+            // base.OnNavigatedToAsync(parameters);
+        }
+
+        private static string ToUserFiendlyFileSizeText(ulong size)
+        {
+            var conv = new ToKMGTPEZYConverter();
+            return (string)conv.Convert(size, typeof(string), null, CultureInfo.CurrentCulture.Name);
         }
     }
 
@@ -172,5 +250,40 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveProperty<bool> ValueContainer { get; }
         public string Label { get; }
+    }
+
+    public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase
+    {
+        public string Label { get; }
+        public IReadOnlyReactiveProperty<string> Text { get; }
+        public UpdatableTextSettingItemViewModel(string label, IObservable<string> textObservable)
+        {
+            Label = label;
+            Text = textObservable.ToReadOnlyReactivePropertySlim();
+        }
+    }
+
+    public class ButtonSettingItemViewModel : SettingItemViewModelBase
+    {
+        private readonly Action _buttonAction;
+
+        public ButtonSettingItemViewModel(string label, Action buttonAction)
+        {
+            Label = label;
+            _buttonAction = buttonAction;
+            ActionCommand = new ReactiveCommand();
+            ActionCommand.Subscribe(_ => _buttonAction());
+        }
+
+        public ButtonSettingItemViewModel(string label, Action buttonAction, IObservable<bool> canExecuteObservable)
+        {
+            Label = label;
+            _buttonAction = buttonAction;
+            ActionCommand = canExecuteObservable.ToReactiveCommand();
+            ActionCommand.Subscribe(_ => _buttonAction());
+        }
+
+        public string Label { get; }
+        public ReactiveCommand ActionCommand { get; }
     }
 }

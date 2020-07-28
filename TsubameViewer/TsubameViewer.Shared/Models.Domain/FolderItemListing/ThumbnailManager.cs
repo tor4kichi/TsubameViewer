@@ -40,9 +40,23 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
         }
 
-        private static async ValueTask<StorageFolder> GetTempFolderAsync()
+        public static async ValueTask<StorageFolder> GetTempFolderAsync()
         {
             return ApplicationData.Current.TemporaryFolder;
+        }
+
+
+        public async Task DeleteAllThumnnailsAsync()
+        {
+            await Task.Run(async () =>
+            {
+                var tempFolder = await GetTempFolderAsync();
+                var files = await tempFolder.GetFilesAsync();
+                foreach (var file in files)
+                {
+                    await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                }
+            });
         }
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();

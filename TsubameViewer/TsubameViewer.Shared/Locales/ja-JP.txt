@@ -19,6 +19,7 @@ CollectionPage = コレクション
 #### SettingsPage
 
 SettingsPageTitle = 設定
+AdvancedSettings = 詳細設定
 
 SourceFoldersSettings = アプリに取り込んだフォルダの管理
 RemoveSourceFolderFromApp = アプリから取り除く
@@ -29,6 +30,11 @@ ThumbnailImageSettings = サムネイル表示設定
 IsDisplayImageFileThubnail = 画像ファイルのサムネイルを表示
 IsDisplayArchiveFileThubnail = 圧縮ファイルのサムネイルを表示
 IsDisplayFolderThubnail = フォルダのサムネイルを表示
+DeleteThumbnailCache = サムネイル画像のキャッシュを全て削除
+ThumbnailCacheSize = 画像キャッシュ済みのストレージ容量
+ProcessingThumbnailCache = 削除操作を処理中
+
+
 
 ImageViewerSettings = 画像ビューワーの設定
 IsReverseImageFliping_MouseWheel = ページ送りを逆にする（マウスホイール）

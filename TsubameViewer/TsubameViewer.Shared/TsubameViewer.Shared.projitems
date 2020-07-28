@@ -64,6 +64,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ItemClickEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ToKMGTPEZYConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageViewerPage.xaml.cs">
       <DependentUpon>ImageViewerPage.xaml</DependentUpon>
     </Compile>
