@@ -71,11 +71,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 bitmapImage.SetSource(stream);
                 if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
                 {
-                    bitmapImage.DecodePixelHeight = canvasHeight;
+                    if (bitmapImage.PixelHeight > canvasHeight)
+                    {
+                        bitmapImage.DecodePixelHeight = canvasHeight;
+                    }
                 }
                 else
                 {
-                    bitmapImage.DecodePixelWidth = canvasWidth;
+                    if (bitmapImage.PixelWidth > canvasWidth)
+                    {
+                        bitmapImage.DecodePixelWidth = canvasWidth;
+                    }
                 }
                 return Image = bitmapImage;
             }

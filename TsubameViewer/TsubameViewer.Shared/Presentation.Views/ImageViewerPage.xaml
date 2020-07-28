@@ -21,50 +21,6 @@
   <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True">
 
     <VisualStateManager.VisualStateGroups>
-      <!-- 画像の表示切替 -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentPrefetchImageIndex}" EqualTo="0" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image0.Opacity" Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentPrefetchImageIndex}" EqualTo="1" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image1.Opacity" Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentPrefetchImageIndex}" EqualTo="2" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image2.Opacity" Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentPrefetchImageIndex}" EqualTo="3" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image3.Opacity" Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentPrefetchImageIndex}" EqualTo="4" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image4.Opacity" Value="1.0" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -104,11 +60,7 @@
       </core:EventTriggerBehavior>
     </i:Interaction.Behaviors>
 
-    <Image x:Name="Image0" Source="{Binding PrefetchImages[0].Value.Image}" Opacity="0.0" />
-    <Image x:Name="Image1" Source="{Binding PrefetchImages[1].Value.Image}" Opacity="0.0" />
-    <Image x:Name="Image2" Source="{Binding PrefetchImages[2].Value.Image}" Opacity="0.0" />
-    <Image x:Name="Image3" Source="{Binding PrefetchImages[3].Value.Image}" Opacity="0.0" />
-    <Image x:Name="Image4" Source="{Binding PrefetchImages[4].Value.Image}" Opacity="0.0" />
+    <Image x:Name="Image" Source="{Binding CurrentImage}" />
 
     <TextBlock Visibility="Collapsed">
       <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
