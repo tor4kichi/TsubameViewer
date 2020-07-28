@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Presentation.Views;
 using Unity;
 using Windows.ApplicationModel;
@@ -175,8 +176,12 @@ namespace TsubameViewer
 
             Resources["Strings"] = I18NPortable.I18N.Current;
 
-
-
+            Resources["SmallImageWidth"] = ListingImageConstants.SmallFileThumbnailImageWidth;
+            Resources["SmallImageHeight"] = ListingImageConstants.SmallFileThumbnailImageHeight;
+            Resources["MidiumImageWidth"] = ListingImageConstants.MidiumFileThumbnailImageWidth;
+            Resources["MidiumImageHeight"] = ListingImageConstants.MidiumFileThumbnailImageHeight;
+            Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
+            Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
 
             var shell = Container.Resolve<PrimaryWindowCoreLayout>();
             var ns = shell.GetNavigationService();

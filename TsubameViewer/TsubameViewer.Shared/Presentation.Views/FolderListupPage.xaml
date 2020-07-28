@@ -23,14 +23,8 @@
 
   <Page.Resources>
 
-    <x:Double x:Key="SmallImageWidth">96</x:Double>
-    <x:Double x:Key="SmallImageHeight">96</x:Double>
-
-    <x:Double x:Key="MidiumImageWidth">180</x:Double>
-    <x:Double x:Key="MidiumImageHeight">180</x:Double>
-
-    <x:Double x:Key="LargeImageWidth">300</x:Double>
-    <x:Double x:Key="LargeImageHeight">426</x:Double>
+    <!-- SmallImageWidth 等の定数はApp.xaml.csで設定している -->
+    <!-- その定数自体は Models.Domain/FolderItemListing/ListingImageConstants.cs で定義している -->
 
 
     <DataTemplate x:Key="DummyTemplate">

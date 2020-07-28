@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Uno.Threading;
 using Windows.Data.Pdf;
+using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
@@ -44,6 +45,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return ApplicationData.Current.TemporaryFolder;
         }
 
+
         SemaphoreSlim _writeerLock = new SemaphoreSlim(2, 2);
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
@@ -69,6 +71,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             await _writeerLock.WaitAsync();
 
+            var tempFolder = await GetTempFolderAsync();
             try
             {
                 var itemId = GetStorageItemId(file);
@@ -78,28 +81,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 }
                 else
                 {
-                    var tempFolder = await GetTempFolderAsync();
                     var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                    try
-                    {
-                        using (var thumbnailWriteStream = await thumbnailFile.OpenStreamForWriteAsync())
-                        {
-                            var result = await (file.FileType switch
-                            {
-                                SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                                SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                                SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, thumbnailWriteStream),
-                                _ => throw new NotSupportedException(),
-                            });
-                            if (!result) { return null; }
-                        }
-                        return thumbnailFile;
-                    }
-                    catch
-                    {
-                        await thumbnailFile.DeleteAsync();
-                        return null;
-                    }
+                    return await GenerateThumbnailImageAsync(file, thumbnailFile);
                 }
             }
             finally
@@ -108,6 +91,64 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+
+        private Task<StorageFile> GenerateThumbnailImageAsync(StorageFile file, StorageFile outputFile)
+        {
+            return Task.Run(async () => 
+            {
+                try
+                {
+                    using (var stream = new InMemoryRandomAccessStream())
+                    {
+                        var result = await (file.FileType switch
+                        {
+                            SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            _ => throw new NotSupportedException(file.FileType)
+                        });
+
+                        if (!result) { return null; }
+
+                        var decoder = await BitmapDecoder.CreateAsync(stream);
+                        using (var memStream = new InMemoryRandomAccessStream())
+                        {
+                            var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
+
+                            // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
+                            var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / decoder.PixelHeight;
+                            encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
+                            encoder.BitmapTransform.ScaledHeight = ListingImageConstants.LargeFileThumbnailImageHeight;
+                            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+                            await encoder.FlushAsync();
+
+                            memStream.Seek(0);
+                            using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite))
+                            {
+                                await RandomAccessStream.CopyAsync(memStream, fileStream);
+                            }
+                        }
+                    }
+                    return outputFile;
+                }
+                catch
+                {
+                    await outputFile.DeleteAsync();
+                    return null;
+                }
+            });
+        }
+
+        private static async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
+        {
+            using (var fileStream = await file.OpenStreamForReadAsync())
+            {
+                await RandomAccessStream.CopyAsync(fileStream.AsRandomAccessStream(), outputStream.AsOutputStream());
+                return true;
+            }
+        }
         private static async Task<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
         {
             using (var archiveStream = await file.OpenStreamForReadAsync())
@@ -172,13 +213,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 var file = files[0];
                 var tempFolder = await GetTempFolderAsync();
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                using (var readStream = await file.OpenStreamForReadAsync())
-                using (var outputStream = await thumbnailFile.OpenStreamForWriteAsync())
-                {
-                    await readStream.CopyToAsync(outputStream);
-                    await outputStream.FlushAsync();
-                }
-
+                await GenerateThumbnailImageAsync(file, thumbnailFile);
                 return new Uri(thumbnailFile.Path);
 #else
                 return null;

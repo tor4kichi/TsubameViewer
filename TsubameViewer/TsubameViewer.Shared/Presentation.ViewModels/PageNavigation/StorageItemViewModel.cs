@@ -161,9 +161,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                             image.DecodePixelHeight = CurrentFileDisplayMode switch
                             {
                                 FileDisplayMode.Line => 1,
-                                FileDisplayMode.Small => 96,
-                                FileDisplayMode.Midium => 180,
-                                FileDisplayMode.Large => 426,
+                                FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
+                                FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
+                                FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
                                 _ => throw new NotSupportedException()
                             };
                         }
@@ -172,9 +172,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                             image.DecodePixelWidth = CurrentFileDisplayMode switch
                             {
                                 FileDisplayMode.Line => 1,
-                                FileDisplayMode.Small => 96,
-                                FileDisplayMode.Midium => 180,
-                                FileDisplayMode.Large => 300,
+                                FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageWidth,
+                                FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageWidth,
+                                FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageWidth,
                                 _ => throw new NotSupportedException()
                             };
                         }
@@ -199,9 +199,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                         image.DecodePixelHeight = CurrentFileDisplayMode switch
                         {
                             FileDisplayMode.Line => 1,
-                            FileDisplayMode.Small => 96,
-                            FileDisplayMode.Midium => 180,
-                            FileDisplayMode.Large => 426,
+                            FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
+                            FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
+                            FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
                             _ => throw new NotSupportedException()
                         };
                     }
@@ -210,9 +210,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                         image.DecodePixelWidth = CurrentFileDisplayMode switch
                         {
                             FileDisplayMode.Line => 1,
-                            FileDisplayMode.Small => 96,
-                            FileDisplayMode.Midium => 180,
-                            FileDisplayMode.Large => 300,
+                            FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageWidth,
+                            FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageWidth,
+                            FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageWidth,
                             _ => throw new NotSupportedException()
                         };
                     }
