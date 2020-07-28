@@ -15,7 +15,6 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
   xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
-  xmlns:winuiDebug="using:Microsoft.Toolkit.Uwp.UI.ControlsCustom"
   xmlns:contract7Present="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract,7)"
   xmlns:contract7NotPresent="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractNotPresent(Windows.Foundation.UniversalApiContract,7)" xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   mc:Ignorable="d"
