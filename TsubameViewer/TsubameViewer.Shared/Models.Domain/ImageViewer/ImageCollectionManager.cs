@@ -21,11 +21,9 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
-    public interface IImageSource : INotifyPropertyChanged
+    public interface IImageSource 
     {
         string Name { get; }
-        BitmapImage Image { get; }
-        void ClearImage();
 
         Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight);
     }

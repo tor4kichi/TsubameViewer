@@ -15,7 +15,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class PdfPageImageSource : BindableBase, IImageSource, IDisposable
+    public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> GetImagesFromPdfFileAsync(StorageFile file)
         {
@@ -45,21 +45,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
         public string Name { get; }
-        public bool IsImageGenerated => _image != null;
 
         CancellationTokenSource _cts = new CancellationTokenSource();
-        
-        private BitmapImage _image;
-        public BitmapImage Image
-        {
-            get { return _image; }
-            private set { SetProperty(ref _image, value); }
-        }
-
-        public void ClearImage()
-        {
-            Image = null;
-        }
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
         {
@@ -87,7 +74,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                             bitmapImage.DecodePixelWidth = canvasWidth;
                         }
                     }
-                    return Image = bitmapImage;
+                    return bitmapImage;
                 }
             }
         }

@@ -17,7 +17,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class RarArchiveEntryImageSource : BindableBase, IImageSource, IDisposable
+    public sealed class RarArchiveEntryImageSource : IImageSource, IDisposable
     {
         public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> 
             GetImagesFromRarFileAsync(StorageFile file)
@@ -51,21 +51,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
         public string Name => _entry.Key;
-        public bool IsImageGenerated => _image != null;
 
         CancellationTokenSource _cts = new CancellationTokenSource();
-
-        private BitmapImage _image;
-        public BitmapImage Image
-        {
-            get { return _image; }
-            private set { SetProperty(ref _image, value); }
-        }
-
-        public void ClearImage()
-        {
-            Image = null;
-        }
         
         public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
         {
@@ -90,7 +77,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                             bitmapImage.DecodePixelWidth = canvasWidth;
                         }
                     }
-                    return Image = bitmapImage;
+                    return bitmapImage;
                 }
             }
         }

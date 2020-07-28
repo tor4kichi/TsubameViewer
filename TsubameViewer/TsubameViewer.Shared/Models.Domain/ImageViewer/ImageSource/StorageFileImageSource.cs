@@ -11,7 +11,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class StorageFileImageSource : BindableBase, IImageSource, IDisposable
+    public sealed class StorageFileImageSource : IImageSource, IDisposable
     {
         public static async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetImagesFromFolderAsync(StorageFolder storageFolder, CancellationToken ct)
         {
@@ -49,20 +49,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
         public string Name => _file.Name;
-        public bool IsImageGenerated => _image != null;
-
-        private BitmapImage _image;
-        public BitmapImage Image
-        {
-            get { return _image; }
-            private set { SetProperty(ref _image, value); }
-        }
-
-        public void ClearImage()
-        {
-            Image = null;
-        }
-
+        
         public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
         {
             using (var stream = await _file.OpenReadAsync())
@@ -83,7 +70,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                         bitmapImage.DecodePixelWidth = canvasWidth;
                     }
                 }
-                return Image = bitmapImage;
+                return bitmapImage;
             }
         }
 
