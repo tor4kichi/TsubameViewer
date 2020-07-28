@@ -53,6 +53,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private CancellationTokenSource _leavePageCancellationTokenSource;
 
+        IDisposable _ImageEnumerationDisposer;
+
         private IImageSource[] _Images;
         public IImageSource[] Images
         {
@@ -92,7 +94,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerPageSettings ImageCollectionSettings { get; }
 
-        internal static readonly Uno.Threading.AsyncLock ProcessLock = new Uno.Threading.AsyncLock();
         private readonly ImageCollectionManager _imageCollectionManager;
 
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -224,24 +225,20 @@ namespace TsubameViewer.Presentation.ViewModels
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
-
-            // 画像インデックス更新によるプリフェッチ済み画像への切り替えとプリフェッチ対象の更新
+            // 画像更新
             this.ObserveProperty(x => x.CurrentImageIndex)
                 .Subscribe(async index =>
                 {
-                    using (await ProcessLock.LockAsync(_leavePageCancellationTokenSource.Token))
-                    {
-                        if (Images == null || Images.Length <= 1) { return; }
+                    if (Images == null || Images.Length == 0) { return; }
 
-                        var imageSource = Images[index];
-                        CurrentImage = await imageSource.GenerateBitmapImageAsync((int)CanvasWidth.Value, (int)CanvasHeight.Value);
+                    var imageSource = Images[index];
+                    CurrentImage = await imageSource.GenerateBitmapImageAsync((int)CanvasWidth.Value, (int)CanvasHeight.Value);
 
-                        // タイトル
-                        _appView.Title = $"{imageSource.Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
+                    // タイトル
+                    _appView.Title = $"{imageSource.Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
 #if DEBUG
-                        Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
+                    Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
 #endif
-                    }
                 })
                 .AddTo(_navigationDisposables);
 
@@ -249,8 +246,23 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        CancellationTokenSource _loadingCts;
-        FastAsyncLock _loadingLock = new FastAsyncLock();
+        private async Task RefreshItems(CancellationToken ct)
+        {
+            _ImageEnumerationDisposer?.Dispose();
+            _ImageEnumerationDisposer = null;
+
+            var result = await _imageCollectionManager.GetImageSources(_currentFolderItem);
+            if (result != null)
+            {
+                Images = result.Images;
+                CurrentImageIndex = result.FirstSelectedIndex;
+                _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
+                ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
+            }
+
+            GoNextImageCommand.RaiseCanExecuteChanged();
+            GoPrevImageCommand.RaiseCanExecuteChanged();
+        }
 
 
         #region Commands
@@ -291,46 +303,21 @@ namespace TsubameViewer.Presentation.ViewModels
             return CurrentImageIndex > 0 && Images?.Length > 0;
         }
 
-        #endregion
-
-        #region Refresh ImageCollection
-
-        IDisposable _ImageEnumerationDisposer;
-
-        private async Task RefreshItems(CancellationToken ct)
-        {
-            _ImageEnumerationDisposer?.Dispose();
-            _ImageEnumerationDisposer = null;
-
-            var result = await _imageCollectionManager.GetImageSources(_currentFolderItem);
-            if (result != null)
-            {
-                Images = result.Images;
-                CurrentImageIndex = result.FirstSelectedIndex;
-                _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
-                ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
-            }
-
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
-        }
-
-
-        #endregion
-
-
 
 
         private DelegateCommand _SizeChangedCommand;
         public DelegateCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new DelegateCommand(async () => 
+            _SizeChangedCommand ??= new DelegateCommand(async () =>
             {
                 if (!(Images?.Any() ?? false)) { return; }
 
                 await Task.Delay(50);
-                
+
                 RaisePropertyChanged(nameof(CurrentImageIndex));
             });
+
+
+        #endregion
 
     }
 
