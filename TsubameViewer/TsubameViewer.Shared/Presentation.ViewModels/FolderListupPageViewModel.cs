@@ -494,8 +494,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using (await _NavigationLock.LockAsync(default))
             {
-                _leavePageCancellationTokenSource.Cancel();
-                _leavePageCancellationTokenSource.Dispose();
+                _leavePageCancellationTokenSource?.Cancel();
+                _leavePageCancellationTokenSource?.Dispose();
                 _leavePageCancellationTokenSource = new CancellationTokenSource();
 
                 using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token)) { }
