@@ -10,7 +10,8 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   NavigationCacheMode="Enabled"
@@ -22,6 +23,8 @@
 
 
     <i:Interaction.Behaviors>
+      
+      <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger>
         <myBehaviour:MouseWheelTrigger.UpActions>
           <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{Binding GoPrevImageCommand}" />
@@ -30,11 +33,19 @@
           <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{Binding GoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
-
       <myBehaviour:MouseCenterClickTrigger>
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
+      
+      <!-- GamePad Input-->
+      <uiNavigation:UINavigationTriggerBehavior Kind="Left" IsRequireFocus="True">
+        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior Kind="Right" IsRequireFocus="True">
+        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoNextImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
 
+      <!-- Image sizing -->
       <core:EventTriggerBehavior EventName="Loaded">
         <core:ChangePropertyAction TargetObject="{Binding CanvasWidth}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
         <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
@@ -44,6 +55,8 @@
         <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
         <core:InvokeCommandAction Command="{Binding SizeChangedCommand}" />
       </core:EventTriggerBehavior>
+
+
     </i:Interaction.Behaviors>
 
 
@@ -125,6 +138,10 @@
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.Command" Value="{Binding GoNextImageCommand}" />
             <Setter Target="RightPageMoveButton.Command" Value="{Binding GoPrevImageCommand}" />
+
+            <Setter Target="GamePadLeftAction.Command" Value="{Binding GoNextImageCommand}" />
+            <Setter Target="GamePadRightAction.Command" Value="{Binding GoPrevImageCommand}" />
+
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

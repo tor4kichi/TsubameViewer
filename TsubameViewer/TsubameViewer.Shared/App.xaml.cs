@@ -48,6 +48,8 @@ namespace TsubameViewer
             this.InitializeComponent();
             this.Suspending += OnSuspending;
             UnhandledException += App_UnhandledException;
+
+            RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
         }
 
         private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)

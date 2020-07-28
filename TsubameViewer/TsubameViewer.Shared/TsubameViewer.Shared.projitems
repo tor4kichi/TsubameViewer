@@ -56,6 +56,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
@@ -87,6 +88,9 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\MenuItemTemplateSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\UINavigationButtons.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\UINavigationManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\UINavigationTrigger.cs" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)MainPage.xaml">

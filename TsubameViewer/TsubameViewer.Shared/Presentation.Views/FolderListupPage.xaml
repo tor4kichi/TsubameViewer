@@ -16,7 +16,9 @@
   xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
   xmlns:contract7Present="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract,7)"
-  xmlns:contract7NotPresent="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractNotPresent(Windows.Foundation.UniversalApiContract,7)" xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
+  xmlns:contract7NotPresent="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractNotPresent(Windows.Foundation.UniversalApiContract,7)"
+  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
@@ -54,34 +56,48 @@
       <Setter Property="Margin" Value="6 6" />
     </Style>
 
+    
+    
+    
+    <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
+               UserControlによるカーソル移動サポートを有効化している -->
+    
+    
     <DataTemplate x:Key="LineFileItemTemplate">
-      <Border>
-        <StackPanel Orientation="Horizontal" Width="240">
-          <StackPanel>
-            <TextBlock Text="{Binding Name}" />
-            <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
-          </StackPanel>
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True">
+        <StackPanel Padding="6" Width="240">
+          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding DateCreated}" FontSize="12" Opacity="0.6" />
         </StackPanel>
-      </Border>
+      </UserControl>
     </DataTemplate >
 
     <DataTemplate x:Key="SmallThumbnailFileItemTemplate">
-      <Border>
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True">
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
         <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
-      </Border>
+      </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="MidiumThumbnailFileItemTemplate">
-      <Border>
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True">
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
         <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
-      </Border>
+      </UserControl>
     </DataTemplate>
 
 
     <DataTemplate x:Key="LargeThumbnailFileItemTemplate">
-      <Border>
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True">
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
         <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
-      </Border>
+      </UserControl>
     </DataTemplate>
 
 
@@ -162,6 +178,8 @@
                   Visibility="Visible"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
+                  x:Name="FileDisplayModeItemsListVIew"
+                  XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
                     >
           <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
@@ -176,7 +194,11 @@
         </ListView>
 
         <TextBlock Text="{Binding DisplayCurrentPath}" Opacity="0.7" />
-        <HyperlinkButton Content="元のフォルダへ戻る" Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}">
+        <HyperlinkButton x:Name="ReturnSourceFolderPageButton"
+                         Content="{Binding Source=ReturnSourceFolderPageButton, Converter={StaticResource LocalizeConverter}}" 
+                         Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}"
+                         XYFocusRight="{x:Bind FileDisplayModeItemsListVIew}"
+                         >
           
         </HyperlinkButton>
 
@@ -196,6 +218,8 @@
                           ItemClickCommand="{Binding OpenFolderItemCommand}"
                           IsSynchronizedWithCurrentItem="False"
                                     Padding="48 8 48 32"
+                                    SelectionMode="None"
+                                    XYFocusDownNavigationStrategy="NavigationDirectionDistance"
                           >
         <GridView.Header>
           <Grid >
@@ -255,6 +279,7 @@
                                   ElementIndexChanged="OnElementIndexChanged"
                                   ElementClearing="OnElementClearing"
                                   ItemTemplate="{StaticResource LineFileItemTemplate}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                   >
               <winUI:ItemsRepeater.Layout>
                 <uwpControls:WrapLayout x:Name="FileItemsRepeaterWrapLayout" Orientation="Horizontal" 
@@ -262,12 +287,19 @@
                                         />
               </winUI:ItemsRepeater.Layout>
 
+
               <i:Interaction.Behaviors>
                 <core:EventTriggerBehavior EventName="Tapped">
                   <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
                 </core:EventTriggerBehavior>
+                <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                  <uiNavigation:BypassToCurrentFocusElementAction>
+                    <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                  </uiNavigation:BypassToCurrentFocusElementAction>
+                </uiNavigation:UINavigationTriggerBehavior>
+
               </i:Interaction.Behaviors>
-              
+
             </winUI:ItemsRepeater>
             
           </StackPanel>

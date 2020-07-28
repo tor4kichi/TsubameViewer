@@ -43,7 +43,7 @@ IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タ
 
 #### FolderListupPage
 
-ReturnRootFolderPage = 元のフォルダへ戻る
+ReturnSourceFolderPageButton = 元のフォルダへ戻る
 
 FileSortTitle = 並べ替え
 FileSortType.TitleAscending = ファイル名（昇順）

@@ -27,7 +27,7 @@
       <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
         <DataTemplate>
           <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
-            <ItemsControl ItemsSource="{Binding Folders}">
+            <ItemsControl ItemsSource="{Binding Folders}" IsTabStop="False">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
@@ -80,6 +80,7 @@
         <ItemsControl ItemsSource="{Binding Items}"
                         ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
                               HorizontalAlignment="Left"
+                      IsTabStop="False"
                         >
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -102,6 +103,7 @@
           <ItemsControl ItemsSource="{Binding SettingGroups}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
+                        IsTabStop="False"
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
@@ -122,6 +124,7 @@
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                           HorizontalAlignment="Left"
+                          IsTabStop="False"
                       >
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>

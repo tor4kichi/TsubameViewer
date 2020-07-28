@@ -33,7 +33,6 @@ namespace TsubameViewer.Presentation.Views
             this.InitializeComponent();
         }
 
-
         private void OnElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
             if ((args.Element as FrameworkElement)?.DataContext is StorageItemViewModel itemVM)
@@ -71,6 +70,11 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+        }
+
+        private void FileItem_AButton(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+
         }
 
     }
