@@ -226,7 +226,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
                 if (uri == null) { return null; }
                 var image = new BitmapImage(uri);
-                image.DecodePixelWidth = 320;
                 return Image = image;
             }
 
