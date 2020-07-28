@@ -171,14 +171,14 @@
 
       <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8 48 0"
                   Padding="8 0">
-        <ListView HorizontalAlignment="Right"
+        <ListView x:Name="FileDisplayModeItemsListView"
+          HorizontalAlignment="Right"
                   ItemsSource="{Binding FileDisplayModeItems}"
                   SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
                   ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                   Visibility="Visible"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
-                  x:Name="FileDisplayModeItemsListVIew"
                   XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
                     >
           <ListView.ItemContainerStyle>
@@ -197,7 +197,7 @@
         <HyperlinkButton x:Name="ReturnSourceFolderPageButton"
                          Content="{Binding Source=ReturnSourceFolderPageButton, Converter={StaticResource LocalizeConverter}}" 
                          Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}"
-                         XYFocusRight="{x:Bind FileDisplayModeItemsListVIew}"
+                         XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
                          >
           
         </HyperlinkButton>
@@ -235,7 +235,7 @@
           
           <StackPanel Margin="8 16 8 0">
 
-            <StackPanel Orientation="Horizontal" Margin="0 16">
+            <StackPanel x:Name="FilesActionLayout" Orientation="Horizontal" Margin="0 16">
               <TextBlock VerticalAlignment="Center">
                 <Run Text="{Binding Source=FileSortTitle, Converter={StaticResource LocalizeConverter}}" />:
               </TextBlock>
@@ -334,6 +334,20 @@
         </VisualState>
       </VisualStateGroup>
       
+      <!-- ファイルアイテムが無い時のファイル並び変えを非表示切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding FileItems.Count}" EqualTo="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FilesActionLayout.Visibility" Value="Collapsed" />
+            <Setter Target="FileDisplayModeItemsListView.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
       <!-- 画面サイズによる表示切り替え -->
       <VisualStateGroup>
         <VisualState>
