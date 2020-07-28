@@ -142,6 +142,10 @@ namespace TsubameViewer
                     Windows.UI.Xaml.Window.Current.Activate();
                 }
             }
+            else if (args.Arguments is FileActivatedEventArgs fileActivatedEventArgs)
+            {
+                OnFileActivated(fileActivatedEventArgs);
+            }
 
             return base.OnStartAsync(args);
         }
@@ -256,5 +260,14 @@ namespace TsubameViewer
 #endif
         }
 
+
+
+        private void OnFileActivated(FileActivatedEventArgs args)
+        {
+            // TODO: Handle file activation
+            // The number of files received is args.Files.Size
+            // The name of the first file is args.Files[0].Name
+            //args.NeighboringFilesQuery
+        }
     }
 }
