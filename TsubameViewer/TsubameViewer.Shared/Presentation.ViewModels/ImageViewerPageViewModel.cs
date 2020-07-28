@@ -92,7 +92,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
 
-        public ImageViewerPageSettings ImageCollectionSettings { get; }
+        public ImageViewerSettings ImageViewerSettings { get; }
 
         private readonly ImageCollectionManager _imageCollectionManager;
 
@@ -100,12 +100,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerPageViewModel(
             ImageCollectionManager imageCollectionManager,
-            ImageViewerPageSettings imageCollectionSettings,
+            ImageViewerSettings imageCollectionSettings,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
             _imageCollectionManager = imageCollectionManager;
-            ImageCollectionSettings = imageCollectionSettings;
+            ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
 
             DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)

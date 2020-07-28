@@ -20,20 +20,6 @@
   </Page.Resources>
   <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True">
 
-    <VisualStateManager.VisualStateGroups>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding ImageCollectionSettings.IsReverseMouseWheelBackForward}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="MouseWheelUpAction.Command" Value="{Binding GoNextImageCommand}" />
-            <Setter Target="MouseWheelDownAction.Command" Value="{Binding GoPrevImageCommand}" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-    </VisualStateManager.VisualStateGroups>
 
     <i:Interaction.Behaviors>
       <myBehaviour:MouseWheelTrigger>
@@ -60,6 +46,7 @@
       </core:EventTriggerBehavior>
     </i:Interaction.Behaviors>
 
+
     <Image x:Name="Image" Source="{Binding CurrentImage}" />
 
     <TextBlock Visibility="Collapsed">
@@ -72,7 +59,8 @@
         <ColumnDefinition Width="4*" />
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
-      <Button Command="{Binding GoPrevImageCommand}"
+      <Button x:Name="LeftPageMoveButton"
+        Command="{Binding GoPrevImageCommand}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -96,7 +84,8 @@
         
       </Border>
 
-      <Button Command="{Binding GoNextImageCommand}"
+      <Button x:Name="RightPageMoveButton"
+        Command="{Binding GoNextImageCommand}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -114,5 +103,33 @@
         <SymbolIcon Symbol="Forward" />
       </Button>
     </Grid>
+
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MouseWheelUpAction.Command" Value="{Binding GoNextImageCommand}" />
+            <Setter Target="MouseWheelDownAction.Command" Value="{Binding GoPrevImageCommand}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding ImageViewerSettings.IsReverseImageFliping_Button}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.Command" Value="{Binding GoNextImageCommand}" />
+            <Setter Target="RightPageMoveButton.Command" Value="{Binding GoPrevImageCommand}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+    </VisualStateManager.VisualStateGroups>
+
   </Grid>
 </Page>

@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Text;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
 using Windows.Storage;
 using Windows.UI.Popups;
@@ -20,16 +21,20 @@ namespace TsubameViewer.Presentation.ViewModels
     {
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceFoldersRepository _SourceFoldersRepository;
+        private readonly ImageViewerSettings _imageViewerPageSettings;
 
         public SettingsGroupViewModel[] SettingGroups { get; }
 
         public SettingsPageViewModel(
             FolderListingSettings folderListingSettings,
-            SourceFoldersRepository SourceFoldersRepository
+            SourceFoldersRepository SourceFoldersRepository,
+            ImageViewerSettings imageViewerPageSettings
             )
         {
             _folderListingSettings = folderListingSettings;
             _SourceFoldersRepository = SourceFoldersRepository;
+            _imageViewerPageSettings = imageViewerPageSettings;
+
             SettingGroups = new[]
             {
                 new SettingsGroupViewModel
@@ -48,6 +53,15 @@ namespace TsubameViewer.Presentation.ViewModels
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayImageFileThubnail".Translate(), _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayArchiveFileThubnail".Translate(), _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayFolderThubnail".Translate(), _folderListingSettings, x => x.IsFolderThumbnailEnabled),
+                    }
+                },
+                new SettingsGroupViewModel
+                {
+                    Label = "ImageViewerSettings".Translate(),
+                    Items =
+                    {
+                        new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
+                        new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_Button".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_Button),
                     }
                 }
             };

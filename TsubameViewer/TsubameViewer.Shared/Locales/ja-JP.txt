@@ -30,9 +30,17 @@ IsDisplayImageFileThubnail = 画像ファイルのサムネイルを表示
 IsDisplayArchiveFileThubnail = 圧縮ファイルのサムネイルを表示
 IsDisplayFolderThubnail = フォルダのサムネイルを表示
 
+ImageViewerSettings = 画像ビューワーの設定
+IsReverseImageFliping_MouseWheel = ページ送りを逆にする（マウスホイール）
+IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タップ）
+
 
 #### FolderListupPage
 
 ReturnRootFolderPage = 元のフォルダへ戻る
 
 SortMethod = 並べ替え
+
+
+#### ImageViewerPage
+
