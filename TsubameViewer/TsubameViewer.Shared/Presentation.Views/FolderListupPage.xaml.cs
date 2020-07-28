@@ -16,6 +16,8 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Microsoft.Toolkit.Uwp.UI.Animations.Effects;
+using Microsoft.Toolkit.Uwp.UI.Animations;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -30,6 +32,7 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
         }
+
 
         private void OnElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
@@ -55,5 +58,20 @@ namespace TsubameViewer.Presentation.Views
                 Debug.WriteLine("OnElementClearing : " + itemVM.Name);
             }
         }
+
+        private void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            var item = sender as FrameworkElement;
+            item.Scale(1.020f, 1.020f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
+                .Start();
+        }
+
+        private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            var item = sender as FrameworkElement;
+            item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
+                .Start();
+        }
+
     }
 }

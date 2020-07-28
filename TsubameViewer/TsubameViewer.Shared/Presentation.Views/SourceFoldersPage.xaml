@@ -54,7 +54,7 @@
 
     <ss:FolderItemStyleSelector x:Key="FolderItemStyleSelector">
       <ss:FolderItemStyleSelector.AddNewFolder>
-        <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+        <Style TargetType="GridViewItem">
           <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
           <Setter Property="HorizontalContentAlignment" Value="Stretch" />
           <Setter Property="VerticalContentAlignment" Value="Stretch" />
@@ -63,7 +63,7 @@
         </Style>
       </ss:FolderItemStyleSelector.AddNewFolder>
       <ss:FolderItemStyleSelector.Folder>
-        <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+        <Style TargetType="GridViewItem">
           <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
           <Setter Property="HorizontalContentAlignment" Value="Stretch" />
           <Setter Property="VerticalContentAlignment" Value="Stretch" />

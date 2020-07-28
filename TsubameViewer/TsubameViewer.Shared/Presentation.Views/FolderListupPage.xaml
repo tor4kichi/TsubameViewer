@@ -19,7 +19,9 @@
   xmlns:contract7NotPresent="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractNotPresent(Windows.Foundation.UniversalApiContract,7)" xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  
+  >
 
   <Page.Resources>
 
@@ -44,38 +46,42 @@
       </uwpControls:DockPanel>
     </DataTemplate>
 
-    <Style x:Key="FolderStyle" TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+    <Style x:Key="FolderStyle" TargetType="GridViewItem">
       <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
       <Setter Property="Padding" Value="0 0 0 0" />
       <Setter Property="Margin" Value="6 6" />
     </Style>
-    
-    
-    
-    
-
 
     <DataTemplate x:Key="LineFileItemTemplate">
-      <StackPanel Orientation="Horizontal" Width="240">
-        <StackPanel>
-          <TextBlock Text="{Binding Name}" />
-          <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
+      <Border>
+        <StackPanel Orientation="Horizontal" Width="240">
+          <StackPanel>
+            <TextBlock Text="{Binding Name}" />
+            <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.6" />
+          </StackPanel>
         </StackPanel>
-      </StackPanel>
+      </Border>
     </DataTemplate >
 
     <DataTemplate x:Key="SmallThumbnailFileItemTemplate">
-      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" />
+      <Border>
+        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </Border>
     </DataTemplate>
 
     <DataTemplate x:Key="MidiumThumbnailFileItemTemplate">
-      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" />
+      <Border>
+        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </Border>
     </DataTemplate>
 
+
     <DataTemplate x:Key="LargeThumbnailFileItemTemplate">
-      <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" />
+      <Border>
+        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </Border>
     </DataTemplate>
 
 
@@ -218,7 +224,7 @@
               </winUI:ItemsRepeater.Layout>
 
               <i:Interaction.Behaviors>
-                <core:EventTriggerBehavior EventName="DoubleTapped">
+                <core:EventTriggerBehavior EventName="Tapped">
                   <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
                 </core:EventTriggerBehavior>
               </i:Interaction.Behaviors>
@@ -286,7 +292,6 @@
       </VisualStateGroup>
       
       <!-- ファイルの表示方法切り替え -->
-
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -311,11 +316,9 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            
             <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource MidiumThumbnailFileItemTemplate}" />
             <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="12" />
             <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="12" />
-            
           </VisualState.Setters>
         </VisualState>
         <VisualState>
