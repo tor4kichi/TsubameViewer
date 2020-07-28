@@ -32,67 +32,6 @@
         </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyCollectionToObjectConverter>
 
-
-      <DataTemplate x:Key="FolderTemplate">
-        <StackPanel Width="360">
-          <Image Source="{Binding Image}"
-                     Stretch="UniformToFill"
-                     VerticalAlignment="Center"
-                 Width="360"
-                 Height="92"
-                     />
-          <Grid Height="40">
-            <StackPanel>
-              <TextBlock Text="{Binding Name}" />
-              <TextBlock Text="{Binding Path}" FontSize="12" Opacity="0.7" />
-            </StackPanel>
-            <SymbolIcon Symbol="Folder" HorizontalAlignment="Right" />
-          </Grid>
-        </StackPanel>
-      </DataTemplate>
-
-      <DataTemplate x:Key="AddNewFolderTemplate">
-        <uwpControls:DockPanel>
-          <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
-            <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" />
-            <StackPanel>
-              <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
-            </StackPanel>
-          </uwpControls:DockPanel>
-          <Border  />
-        </uwpControls:DockPanel>
-      </DataTemplate>
-
-      <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
-                                     Folder="{StaticResource FolderTemplate}"
-                                     AddNewFolder="{StaticResource AddNewFolderTemplate}"
-                                     >
-      </ts:FolderItemTemplateSelector>
-
-
-
-      <ss:FolderItemStyleSelector x:Key="FolderItemStyleSelector">
-        <ss:FolderItemStyleSelector.AddNewFolder>
-          <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
-            <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="VerticalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="8 0 8 8" />
-            <Setter Property="Margin" Value="6 6" />
-          </Style>
-        </ss:FolderItemStyleSelector.AddNewFolder>
-        <ss:FolderItemStyleSelector.Folder>
-          <Style TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
-            <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="VerticalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="8 0 8 8" />
-            <Setter Property="Margin" Value="6 6" />
-          </Style>
-        </ss:FolderItemStyleSelector.Folder>
-      </ss:FolderItemStyleSelector>
-
-
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

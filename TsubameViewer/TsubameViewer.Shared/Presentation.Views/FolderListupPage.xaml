@@ -27,9 +27,35 @@
     <!-- その定数自体は Models.Domain/FolderItemListing/ListingImageConstants.cs で定義している -->
 
 
-    <DataTemplate x:Key="DummyTemplate">
-      <Border Height="20" Width="20" />
+    <DataTemplate x:Key="FolderTemplate">
+      <uwpControls:DockPanel>
+        
+        <Grid Height="52" Margin="12 0" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0 0 40 0" VerticalAlignment="Center" />
+          <SymbolIcon Symbol="Folder" Height="40" Width="40" VerticalAlignment="Center"  HorizontalAlignment="Right"
+                    />
+        </Grid>
+
+        <Image Source="{Binding Image}"
+               Stretch="UniformToFill"
+               VerticalAlignment="Center"
+               Height="80"
+               />
+      </uwpControls:DockPanel>
     </DataTemplate>
+
+    <Style x:Key="FolderStyle" TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemRevealStyle}">
+      <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="0 0 0 0" />
+      <Setter Property="Margin" Value="6 6" />
+    </Style>
+    
+    
+    
+    
+
 
     <DataTemplate x:Key="LineFileItemTemplate">
       <StackPanel Orientation="Horizontal" Width="240">
@@ -155,8 +181,8 @@
                           StretchContentForSingleRow="False"
                           OneRowModeEnabled="False"
                           VerticalAlignment="Top"
-                          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"  
-                          ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+                          ItemTemplate="{StaticResource FolderTemplate}"
+                          ItemContainerStyle="{StaticResource FolderStyle}"
                           DesiredWidth="360"            
                           ItemHeight="132"
                           IsItemClickEnabled="True"
