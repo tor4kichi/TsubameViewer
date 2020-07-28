@@ -22,7 +22,13 @@ namespace TsubameViewer.Models.Domain
             SupportedImageFileExtensions = new string[]
             {
                 JpgFileType,
+                JpegFileType,
                 PngFileType,
+                BmpFileType,
+                GifFileType,
+                TifFileType,
+                TiffFileType,
+                SvgFileType,
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
@@ -33,7 +39,14 @@ namespace TsubameViewer.Models.Domain
         public const string PdfFileType = ".pdf";
 
         public const string JpgFileType = ".jpg";
+        public const string JpegFileType = ".jpeg";
         public const string PngFileType = ".png";
+        public const string BmpFileType = ".bmp";
+        public const string GifFileType = ".gif";
+        public const string TifFileType = ".tif";
+        public const string TiffFileType = ".tiff";
+        public const string SvgFileType = ".svg";
+
 
         public static readonly HashSet<string> SupportedArchiveFileExtensions;
         public static readonly HashSet<string> SupportedImageFileExtensions;

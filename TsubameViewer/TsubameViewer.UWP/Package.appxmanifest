@@ -49,6 +49,10 @@
               <uap:FileType ContentType="application/zip">.zip</uap:FileType>
               <uap:FileType ContentType="application/vnd.rar">.rar</uap:FileType>
               <uap:FileType ContentType="application/pdf">.pdf</uap:FileType>
+              <uap:FileType ContentType="image/bmp">.bmp</uap:FileType>
+              <uap:FileType ContentType="image/tiff">.tif</uap:FileType>
+              <uap:FileType ContentType="image/tiff">.tiff</uap:FileType>
+              <uap:FileType ContentType="image/svg+xml">.svg</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
