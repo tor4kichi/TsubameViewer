@@ -30,7 +30,7 @@
             <ItemsControl ItemsSource="{Binding Folders}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
                     <uwpControls:DockPanel>
                       <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
                       <StackPanel>
@@ -39,12 +39,12 @@
                       </StackPanel>
                     </uwpControls:DockPanel>
 
-                    <Button.Flyout>
-                      <MenuFlyout>
+                    <DropDownButton.Flyout>
+                      <MenuFlyout Placement="BottomEdgeAlignedRight">
                         <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
                       </MenuFlyout>
-                    </Button.Flyout>
-                  </Button>
+                    </DropDownButton.Flyout>
+                  </DropDownButton>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

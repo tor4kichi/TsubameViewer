@@ -153,7 +153,8 @@
   <Grid>
     <uwpControls:DockPanel>
 
-      <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8">
+      <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8 48 0"
+                  Padding="8 0">
         <ListView HorizontalAlignment="Right"
                   ItemsSource="{Binding FileDisplayModeItems}"
                   SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
@@ -208,7 +209,45 @@
 
         <GridView.Footer>
           
-          <StackPanel Margin="0 8 0 0">
+          <StackPanel Margin="8 16 8 0">
+
+            <StackPanel Orientation="Horizontal" Margin="0 16">
+              <TextBlock VerticalAlignment="Center">
+                <Run Text="{Binding Source=FileSortTitle, Converter={StaticResource LocalizeConverter}}" />:
+              </TextBlock>
+              <DropDownButton x:Name="FileSortButton" 
+                            Content="{Binding SelectedFileSortType.Value, Converter={StaticResource LocalizeConverter}}"
+                            Padding="8"
+                            Background="Transparent"
+                              Height="40"
+                            >
+                <DropDownButton.Flyout>
+                  <MenuFlyout>
+                    <MenuFlyoutItem Text="{Binding Source=FileSortType.UpdateTimeDecending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                      <MenuFlyoutItem.CommandParameter>
+                        <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                      </MenuFlyoutItem.CommandParameter>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{Binding Source=FileSortType.UpdateTimeAscending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                      <MenuFlyoutItem.CommandParameter>
+                        <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                      </MenuFlyoutItem.CommandParameter>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{Binding Source=FileSortType.TitleAscending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                      <MenuFlyoutItem.CommandParameter>
+                        <models:FileSortType>TitleAscending</models:FileSortType>
+                      </MenuFlyoutItem.CommandParameter>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{Binding Source=FileSortType.TitleDecending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                      <MenuFlyoutItem.CommandParameter>
+                        <models:FileSortType>TitleDecending</models:FileSortType>
+                      </MenuFlyoutItem.CommandParameter>
+                    </MenuFlyoutItem>
+                  </MenuFlyout>
+                </DropDownButton.Flyout>
+              </DropDownButton>
+            </StackPanel>
+            
             
             <winUI:ItemsRepeater x:Name="FileItemsRepeater"
                                   ItemsSource="{Binding FileItems}"
@@ -246,6 +285,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Opacity" Value="0.0" />
+            <Setter Target="FileSortButton.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -285,7 +325,7 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="HeaderLayout.Margin" Value="16 16" />
+            <Setter Target="HeaderLayout.Margin" Value="8 16" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 8 8 32" />
           </VisualState.Setters>
         </VisualState>

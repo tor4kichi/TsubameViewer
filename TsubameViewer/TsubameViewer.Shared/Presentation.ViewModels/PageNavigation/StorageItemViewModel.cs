@@ -87,6 +87,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
              : this(thumbnailManager, folderListingSettings)
         {
             Item = item;
+            _DateCreated = item.DateCreated;
             Token = token;
             _Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             _Name = Item.Name;
@@ -111,6 +112,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             get { return _Path; }
             set { SetProperty(ref _Path, value); }
         }
+
+        private DateTimeOffset _DateCreated;
+        public DateTimeOffset DateCreated
+        {
+            get { return _DateCreated; }
+            set { SetProperty(ref _DateCreated, value); }
+        }
+
+
 
         private BitmapImage _image;
         public BitmapImage Image
@@ -138,6 +148,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             Name = Item.Name;
             Path = Item.Path;
+            DateCreated = Item.DateCreated;
         }
 
         private CancellationTokenSource _cts = new CancellationTokenSource();

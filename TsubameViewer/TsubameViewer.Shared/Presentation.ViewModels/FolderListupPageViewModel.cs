@@ -30,19 +30,7 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public enum FolderViewFirstSort
-    {
-        Folders,
-        Files
-    }
-
-    public enum FolderViewOtherSort
-    {
-        TitleAscending,
-        TitleDecending,
-        UpdateTimeAscending,
-        UpdateTimeDecending,
-    }
+    
 
     public sealed class FolderListupPageViewModel : ViewModelBase
     {
@@ -94,7 +82,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public FolderItemsGroupBase[] Groups { get; }
 
-        public ReactivePropertySlim<FolderViewFirstSort> SelectedFolderViewFirstSort { get; }
+        public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
 
@@ -109,7 +97,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
 
         bool _isCompleteEnumeration = false;
-        int _previousEnumerationIndex = 0;
 
         private string _DisplayCurrentPath;
         public string DisplayCurrentPath
@@ -146,7 +133,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItems = new ObservableCollection<StorageItemViewModel>();
-            SelectedFolderViewFirstSort = new ReactivePropertySlim<FolderViewFirstSort>(FolderViewFirstSort.Folders);
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
 
             Groups = new FolderItemsGroupBase[]
             {
@@ -195,7 +182,15 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 await Task.Delay(100);
 
-                FileItems.AddRange(items);
+                var sortedFileItems = SelectedFileSortType.Value switch
+                {
+                    FileSortType.TitleAscending => items.OrderBy(x => x.Name),
+                    FileSortType.TitleDecending => items.OrderByDescending(x => x.Name),
+                    FileSortType.UpdateTimeAscending => items.OrderBy(x => x.DateCreated),
+                    FileSortType.UpdateTimeDecending => items.OrderByDescending(x => x.DateCreated),
+                    _ => throw new NotSupportedException(),
+                };
+                FileItems.AddRange(sortedFileItems);
             }
         }
 
@@ -317,8 +312,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             if (isTokenChanged)
                             {
-                                _previousEnumerationIndex = 0;
-
                                 _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
                             }
 
@@ -326,8 +319,6 @@ namespace TsubameViewer.Presentation.ViewModels
                             {
                                 throw new Exception("token parameter is require for path parameter.");
                             }
-
-                            _previousEnumerationIndex = 0;
 
                             _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
@@ -424,7 +415,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 return;
             }
 
-            int currentIndex = _previousEnumerationIndex;
+            List<StorageItemViewModel> unsortedFileItems = new List<StorageItemViewModel>();
             await foreach (var folderItem in itemsResult.AsyncEnumerableItems.WithCancellation(ct))
             {
                 ct.ThrowIfCancellationRequested();
@@ -437,10 +428,19 @@ namespace TsubameViewer.Presentation.ViewModels
                     && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType)
                     )
                 {
-                    FileItems.Add(item);
+                    unsortedFileItems.Add(item);
                 }
-                _previousEnumerationIndex = currentIndex;
             }
+
+            var sortedFileItems = SelectedFileSortType.Value switch
+            {
+                FileSortType.TitleAscending => unsortedFileItems.OrderBy(x => x.Name),
+                FileSortType.TitleDecending => unsortedFileItems.OrderByDescending(x => x.Name),
+                FileSortType.UpdateTimeAscending => unsortedFileItems.OrderBy(x => x.DateCreated),
+                FileSortType.UpdateTimeDecending => unsortedFileItems.OrderByDescending(x => x.DateCreated),
+                _ => throw new NotSupportedException(),
+            };
+            FileItems.AddRange(sortedFileItems);
         }
 
 
@@ -491,8 +491,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 FolderItems.Clear();
                 FileItems.Clear();
                 
-                _previousEnumerationIndex = 0;
-
                 _currentPath = await StorageItemViewModel.GetRawSubtractPath(folderItemVM);
                 _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
@@ -563,8 +561,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 CurrentDepth--;
                 var prevFolderInfo = _stack.ElementAt(CurrentDepth);
 
-                _previousEnumerationIndex = 0;
-
                 _currentPath = prevFolderInfo.Path;
                 _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
 
@@ -599,7 +595,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 FolderItems.Clear();
                 FileItems.Clear();
-                _previousEnumerationIndex = 0;
 
                 // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
                 _tokenGettingFolder ??= await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(forwardFolderInfo.Token);
@@ -618,6 +613,36 @@ namespace TsubameViewer.Presentation.ViewModels
                 return false;
             }
         }
+
+
+        #endregion
+
+        #region FileSortType
+
+        private DelegateCommand<object> _ChangeFileSortCommand;
+        public DelegateCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort => 
+            {
+                FileSortType? sortType = null;
+                if (sort is int num)
+                {
+                    sortType = (FileSortType)num;
+                }
+                else if (sort is FileSortType sortTypeExact)
+                {
+                    sortType = sortTypeExact;
+                }
+
+                if (sortType.HasValue)
+                {
+                    SelectedFileSortType.Value = sortType.Value;
+
+                    using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token))
+                    {
+                        await SoftRefreshItems();
+                    }
+                }
+            });
 
 
         #endregion

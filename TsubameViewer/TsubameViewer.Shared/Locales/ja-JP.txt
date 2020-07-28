@@ -45,7 +45,12 @@ IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タ
 
 ReturnRootFolderPage = 元のフォルダへ戻る
 
-SortMethod = 並べ替え
+FileSortTitle = 並べ替え
+FileSortType.TitleAscending = ファイル名（昇順）
+FileSortType.TitleDecending = ファイル名（降順）
+FileSortType.UpdateTimeAscending = 古い順
+FileSortType.UpdateTimeDecending = 新しい順
+
 
 
 #### ImageViewerPage
