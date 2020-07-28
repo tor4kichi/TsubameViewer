@@ -16,7 +16,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public static async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetImagesFromFolderAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder.CreateItemQuery();
+            var query = storageFolder.CreateFileQuery();
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));
 #else
@@ -24,7 +24,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 #endif
         }
 #if WINDOWS_UWP
-        private static async IAsyncEnumerable<IImageSource> AsyncEnumerableImages(uint count, StorageItemQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
+        private static async IAsyncEnumerable<IImageSource> AsyncEnumerableImages(uint count, StorageFileQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
         {
             await foreach (var item in FolderHelper.GetEnumerator(queryResult, count, ct))
             {
