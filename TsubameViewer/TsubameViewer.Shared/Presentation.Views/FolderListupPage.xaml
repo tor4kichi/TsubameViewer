@@ -206,6 +206,18 @@
 
     <VisualStateManager.VisualStateGroups>
       
+      <!-- 表示内容切替中の全体の表示切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding NowProcessing}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Opacity" Value="0.0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!-- フォルダアイテムが無い時のフォルダリストの非表示切り替え -->
       <VisualStateGroup>
         <VisualState>

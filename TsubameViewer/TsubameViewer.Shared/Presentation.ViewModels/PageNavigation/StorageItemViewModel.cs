@@ -91,6 +91,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             _Name = Item.Name;
             _Path = Item.Path;
+
+            _cancellationToken = _cts.Token;
         }
 
         public IStorageItem Item { get; private set; }
@@ -139,12 +141,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
-        private static FastAsyncLock _lock = new FastAsyncLock();
+        private CancellationToken _cancellationToken;
+        private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
 
-        public async Task<BitmapImage> GenerateBitmapImageAsync()
+        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
-            using var releaser = await _lock.LockAsync(_cts.Token);
-            
             if (Image != null) { return Image; }
 
             if (Item is StorageFile file)
@@ -156,6 +157,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     using (var stream = await file.OpenStreamForReadAsync())
                     {
                         var image = new BitmapImage();
+                        image.SetSource(stream.AsRandomAccessStream());
                         if (image.PixelWidth > image.PixelHeight)
                         {
                             image.DecodePixelHeight = CurrentFileDisplayMode switch
@@ -178,7 +180,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                                 _ => throw new NotSupportedException()
                             };
                         }
-                        image.SetSource(stream.AsRandomAccessStream());
                         return Image = image;
                     }
                 }
@@ -245,11 +246,21 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _cts.Cancel();
             Image = null;
             _cts = new CancellationTokenSource();
+            _cancellationToken = _cts.Token;
         }
+
+        public void StopImageLoading()
+        {
+            _cts.Cancel();
+            _cts = new CancellationTokenSource();
+            _cancellationToken = _cts.Token;
+        }
+
+        private bool _isAppearingRequestButLoadingCancelled;
 
         private FileDisplayMode? _prevFileDisplayMode;
 
-        public void Initialize()
+        public async void Initialize()
         {
             if (Type != StorageItemTypes.Image 
                 || CurrentFileDisplayMode != FileDisplayMode.Line 
@@ -262,9 +273,40 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                 Image = null;
 
-                Debug.WriteLine("Thumbnail Load: " + Name);
-                _ = GenerateBitmapImageAsync();
-                _prevFileDisplayMode = CurrentFileDisplayMode;
+                _isAppearingRequestButLoadingCancelled = false;
+                try
+                {
+                    _cancellationToken.ThrowIfCancellationRequested();
+
+                    await _loadinLock.WaitAsync(_cancellationToken);
+
+                    _cancellationToken.ThrowIfCancellationRequested();
+
+                    try
+                    {
+                        await GenerateBitmapImageAsync(_cancellationToken);
+                    }
+                    finally
+                    {
+                        _loadinLock.Release();
+                    }
+
+                    Debug.WriteLine("Thumbnail Load: " + Name);
+                    _prevFileDisplayMode = CurrentFileDisplayMode;
+                }
+                catch (OperationCanceledException)
+                {
+                    _isAppearingRequestButLoadingCancelled = true;
+                    return;
+                }
+            }
+        }
+
+        public void RestoreThumbnailLoadingTask()
+        {
+            if (_isAppearingRequestButLoadingCancelled)
+            {
+                Initialize();
             }
         }
 

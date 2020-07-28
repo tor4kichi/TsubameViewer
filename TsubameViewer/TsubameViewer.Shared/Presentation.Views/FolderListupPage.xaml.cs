@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;

@@ -45,9 +45,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return ApplicationData.Current.TemporaryFolder;
         }
 
-
-        SemaphoreSlim _writeerLock = new SemaphoreSlim(2, 2);
-
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
         private string GetStorageItemId(StorageFile item)
@@ -67,27 +64,18 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 ;
         }
 
-        public async Task<StorageFile> GetArchiveThumbnailAsync(StorageFile file)
+        public async Task<StorageFile> GetArchiveThumbnailAsync(StorageFile file, CancellationToken ct = default)
         {
-            await _writeerLock.WaitAsync();
-
             var tempFolder = await GetTempFolderAsync();
-            try
+            var itemId = GetStorageItemId(file);
+            if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
             {
-                var itemId = GetStorageItemId(file);
-                if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
-                {
-                    return await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                }
-                else
-                {
-                    var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                    return await GenerateThumbnailImageAsync(file, thumbnailFile);
-                }
+                return await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
             }
-            finally
+            else
             {
-                _writeerLock.Release();
+                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
+                return await GenerateThumbnailImageAsync(file, thumbnailFile);
             }
         }
 
