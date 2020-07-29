@@ -89,6 +89,7 @@
       ItemClickCommand="{Binding OpenFolderItemCommand}"
       IsSynchronizedWithCurrentItem="False"
       Padding="48 16"
+      SelectionMode="None"
               >
       <GridView.Header>
         <Grid HorizontalAlignment="Right">
@@ -105,9 +106,16 @@
 
     <VisualStateManager.VisualStateGroups>
 
-
-
+      <!-- 画面サイズによる表示切り替え -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 16 140 32" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <AdaptiveTrigger MinWindowWidth="610" />
@@ -120,10 +128,11 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16 8 32" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      
     </VisualStateManager.VisualStateGroups>
 
   </Grid>
