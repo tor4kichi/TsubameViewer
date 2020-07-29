@@ -122,7 +122,6 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Large,
             Models.Domain.FolderItemListing.FileDisplayMode.Midium,
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
-            Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
 
         public string FoldersManagementPageName => nameof(Views.SourceFoldersPage);
@@ -159,7 +158,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             };
 
+
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
+
             /*
             _currentQueryOptions = Observable.CombineLatest(
                 SelectedFolderViewFirstSort,
@@ -174,45 +175,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .ToReadOnlyReactivePropertySlim();
                 */
-            StorageItemViewModel.CurrentFileDisplayMode = _folderListingSettings.FileDisplayMode;
 
-            FileDisplayMode.Subscribe(async x =>
-            {
-                await SoftRefreshItems();
-            });
-        }
-
-        private async Task SoftRefreshItems()
-        {
-            if (FileItems.Any())
-            {
-                var items = FileItems.ToArray();
-                FileItems.Clear();
-
-                StorageItemViewModel.CurrentFileDisplayMode = FileDisplayMode.Value;
-                FileItems.Reverse().ForEach(x => x.ClearImage());
-
-                await Task.Delay(100);
-
-                var sortedFileItems = SelectedFileSortType.Value switch
-                {
-                    FileSortType.TitleAscending => items.OrderBy(x => x.Name),
-                    FileSortType.TitleDecending => items.OrderByDescending(x => x.Name),
-                    FileSortType.UpdateTimeAscending => items.OrderBy(x => x.DateCreated),
-                    FileSortType.UpdateTimeDecending => items.OrderByDescending(x => x.DateCreated),
-                    _ => throw new NotSupportedException(),
-                };
-
-                foreach (var item in sortedFileItems)
-                {
-                    await item.InitializeAsync(default);
-                }
-
-                using (FileItemsView.DeferRefresh())
-                {
-                    FileItems.AddRange(sortedFileItems);
-                }
-            }
         }
 
         public override async Task<bool> CanNavigateAsync(INavigationParameters parameters)
@@ -353,6 +316,10 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                         }
+                        else
+                        {
+                            HasFileItem = FileItems.Any();
+                        }
                     }
                 }
                 else if (mode == NavigationMode.Refresh)
@@ -453,7 +420,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType)
                     )
                 {
-                    await item.InitializeAsync(ct);
                     unsortedFileItems.Add(item);
                 }
             }
@@ -670,9 +636,30 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token))
                     {
-                        await SoftRefreshItems();
+                        if (FileItems.Any())
+                        {
+                            var items = FileItems.ToArray();
+                            FileItems.Clear();
+                            FileItems.Reverse().ForEach(x => x.ClearImage());
+
+                            var sortedFileItems = SelectedFileSortType.Value switch
+                            {
+                                FileSortType.TitleAscending => items.OrderBy(x => x.Name),
+                                FileSortType.TitleDecending => items.OrderByDescending(x => x.Name),
+                                FileSortType.UpdateTimeAscending => items.OrderBy(x => x.DateCreated),
+                                FileSortType.UpdateTimeDecending => items.OrderByDescending(x => x.DateCreated),
+                                _ => throw new NotSupportedException(),
+                            };
+
+                            using (FileItemsView.DeferRefresh())
+                            {
+                                FileItems.AddRange(sortedFileItems);
+                            }
+                        }
+
+                        RaisePropertyChanged(nameof(FileItems));
                     }
-                }
+               }
             });
 
 

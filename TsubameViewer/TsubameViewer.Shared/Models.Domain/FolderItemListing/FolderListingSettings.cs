@@ -9,7 +9,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         public FolderListingSettings()
         {
-            _FileDisplayMode = Read(FileDisplayMode.Line, nameof(FileDisplayMode));
+            _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
             _IsImageFileThumbnailEnabled = Read(true, nameof(IsImageFileThumbnailEnabled));
             _IsArchiveFileThumbnailEnabled = Read(true, nameof(IsArchiveFileThumbnailEnabled));
             _IsFolderThumbnailEnabled = Read(true, nameof(IsFolderThumbnailEnabled));

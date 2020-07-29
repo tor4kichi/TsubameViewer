@@ -41,9 +41,43 @@ namespace TsubameViewer.Presentation.Views
 
             Loaded += FolderListupPage_Loaded;
             _ViewPortChangeThrottling = new BehaviorSubject<Unit>(Unit.Default);
-            FileItemsRepeater.BringIntoViewRequested += FileItemsRepeater_BringIntoViewRequested;
-           
+
+            FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
         }
+
+        private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+        {
+            if (args.Element is FrameworkElement fe
+                && fe.DataContext is StorageItemViewModel itemVM
+                )
+            {
+                itemVM.Initialize();
+//                Debug.WriteLine("FileItemsRepeater_ElementPrepared: " + itemVM.Name);
+            }
+        }
+
+        private void FileItemsRepeater_ElementIndexChanged(ItemsRepeater sender, ItemsRepeaterElementIndexChangedEventArgs args)
+        {
+            if (args.Element is FrameworkElement fe
+                && fe.DataContext is StorageItemViewModel itemVM
+                )
+            {
+                Debug.WriteLine("FileItemsRepeater_ElementIndexChanged: " + itemVM.Name);
+            }
+        }
+
+        private void FileItemsRepeater_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
+        {
+            if (args.Element is FrameworkElement fe
+                && fe.DataContext is StorageItemViewModel itemVM
+                )
+            {
+                Debug.WriteLine("FileItemsRepeater_ElementClearing: " + itemVM.Name);
+            }
+        }
+
 
         private void FileItemsRepeater_BringIntoViewRequested(UIElement sender, BringIntoViewRequestedEventArgs args)
         {
@@ -83,19 +117,19 @@ namespace TsubameViewer.Presentation.Views
 
         private void FileItem_EffectiveViewportChanged(FrameworkElement sender, EffectiveViewportChangedEventArgs args)
         {
-            if (_nowThrottling)
+//            if (_nowThrottling)
             {
-                _ViewPortChangeThrottling.OnNext(Unit.Default);
-                return;
+//                _ViewPortChangeThrottling.OnNext(Unit.Default);
+//                return;
             }
 
-            if (_PageVM.NowProcessing) { return; }
+//            if (_PageVM.NowProcessing) { return; }
 
             if (args.BringIntoViewDistanceY < (sender.ActualHeight + 80))
             {
                 var itemVM = sender.DataContext as ViewModels.PageNavigation.StorageItemViewModel;
                 itemVM.Initialize();
-//                Debug.WriteLine($"Item: {sender.Tag} has {sender.ActualHeight - args.BringIntoViewDistanceY} pixels within the viewport");
+                Debug.WriteLine($"Item: {sender.Tag} has {sender.ActualHeight - args.BringIntoViewDistanceY} pixels within the viewport");
             }
             else
             {

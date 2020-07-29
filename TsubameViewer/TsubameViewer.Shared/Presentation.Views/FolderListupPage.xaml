@@ -23,7 +23,6 @@
   mc:Ignorable="d"
   NavigationCacheMode="Enabled"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-  
   >
 
   <Page.Resources>
@@ -144,62 +143,37 @@
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
     
-    
-    <DataTemplate x:Key="LineFileItemTemplate">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" EffectiveViewportChanged="FileItem_EffectiveViewportChanged" Tag="{Binding Name}">
-        <StackPanel Padding="6" Width="240">
-          <TextBlock Text="{Binding Name}" />
-          <TextBlock Text="{Binding DateCreated, Converter={StaticResource DateTimeToStringConverter}}" FontSize="12" Opacity="0.6" />
-        </StackPanel>
-      </UserControl>
-    </DataTemplate >
-
-    <DataTemplate x:Key="SmallThumbnailFileItemTemplate">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" EffectiveViewportChanged="FileItem_EffectiveViewportChanged" Tag="{Binding Name}" MinWidth="{Binding ImageWidth}">
+    <DataTemplate x:Key="FileItemTemplate_Small">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" >
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
 
-    <DataTemplate x:Key="MidiumThumbnailFileItemTemplate">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" EffectiveViewportChanged="FileItem_EffectiveViewportChanged" Tag="{Binding Name}" MinWidth="{Binding ImageWidth}">
+    <DataTemplate x:Key="FileItemTemplate_Midium">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
-
-
-    <DataTemplate x:Key="LargeThumbnailFileItemTemplate">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" EffectiveViewportChanged="FileItem_EffectiveViewportChanged" Tag="{Binding Name}" MinWidth="{Binding ImageWidth}">
+    <DataTemplate x:Key="FileItemTemplate_Large">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
-
-
-
     
-    
+
+
+
 
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
-      <ts:FileDisplayModeTemplateSelector.Line>
-        <DataTemplate >
-          <StackPanel Spacing="2">
-            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
-                  Height="5" Width="13"
-                  />
-            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
-                  Height="5" Width="13"
-                  />
-          </StackPanel>
-        </DataTemplate>
-      </ts:FileDisplayModeTemplateSelector.Line>
       <ts:FileDisplayModeTemplateSelector.Small>
         <DataTemplate >
           <Grid>
@@ -352,18 +326,16 @@
             </DropDownButton>
           </StackPanel>
 
-
-          <winUI:ItemsRepeater x:Name="FileItemsRepeater"
+          <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                   ItemsSource="{Binding FileItemsView}"
-                                  ItemTemplate="{StaticResource LineFileItemTemplate}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout x:Name="FileItemsRepeaterWrapLayout" Orientation="Horizontal" 
-                                        HorizontalSpacing="12" VerticalSpacing="12"                                        
-                                        />
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6" />
             </winUI:ItemsRepeater.Layout>
-
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
@@ -374,7 +346,52 @@
                   <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
 
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
+                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Midium}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
+                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Large}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
           </winUI:ItemsRepeater>
@@ -468,9 +485,7 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource SmallThumbnailFileItemTemplate}" />
-            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="6" />
-            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="6" />
+            <Setter Target="FileItemsRepeater_Small.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -482,9 +497,7 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource MidiumThumbnailFileItemTemplate}" />
-            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="12" />
-            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="12" />
+            <Setter Target="FileItemsRepeater_Midium.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -496,9 +509,7 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FileItemsRepeater.ItemTemplate" Value="{StaticResource LargeThumbnailFileItemTemplate}" />
-            <Setter Target="FileItemsRepeaterWrapLayout.HorizontalSpacing" Value="12" />
-            <Setter Target="FileItemsRepeaterWrapLayout.VerticalSpacing" Value="12" />
+            <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

@@ -6,7 +6,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 {
     public enum FileDisplayMode
     {
-        Line,
         Small,
         Midium,
         Large
