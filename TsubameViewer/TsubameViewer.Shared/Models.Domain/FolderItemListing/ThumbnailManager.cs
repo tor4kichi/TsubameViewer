@@ -4,6 +4,7 @@ using MonkeyCache;
 using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -14,6 +15,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Uno.Threading;
 using Windows.Data.Pdf;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -24,21 +26,24 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 {
     public sealed class ThumbnailManager
     {
-        public static async Task DeleteAllThumbnailCacheAsync()
-        {
-            var cacheFolder = await GetTempFolderAsync();
-            var files = await cacheFolder.GetFilesAsync();
-            foreach (var file in files)
-            {
-                await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
-            }
-        }
+        private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
 
 
         public ThumbnailManager(
+            ThumbnailImageInfoRepository thumbnailImageInfoRepository 
             )
         {
+            _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
         }
+
+
+        public ThumbnailSize? GetThubmnailOriginalSize(StorageFile file)
+        {
+            return _thumbnailImageInfoRepository.GetSize(file.Path);
+        }
+
+
+
 
         public static async ValueTask<StorageFolder> GetTempFolderAsync()
         {
@@ -50,6 +55,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             await Task.Run(async () =>
             {
+                var deleteCount = _thumbnailImageInfoRepository.DeleteAll();
+                Debug.WriteLine("Delete Thubmnail Db : " + deleteCount);
+
                 var tempFolder = await GetTempFolderAsync();
                 var files = await tempFolder.GetFilesAsync();
                 foreach (var file in files)
@@ -124,6 +132,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         using (var memStream = new InMemoryRandomAccessStream())
                         {
                             var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
+
+                            // サムネイルサイズ情報を記録
+                            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                            {
+                                Path = file.Path,
+                                ImageWidth = decoder.PixelWidth,
+                                ImageHeight = decoder.PixelHeight
+                            });
 
                             // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
                             var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / decoder.PixelHeight;
@@ -228,6 +244,53 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return null;
 #endif
             }
+        }
+
+
+        public class ThumbnailImageInfo
+        {
+            [BsonId]
+            public string Path { get; set; }
+
+            [BsonField]
+            public uint ImageWidth { get; set; }
+
+            [BsonField]
+            public uint ImageHeight { get; set; }            
+        }
+
+        public class ThumbnailImageInfoRepository : LiteDBServiceBase<ThumbnailImageInfo>
+        {
+            public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
+            {
+
+            }
+
+
+            public ThumbnailSize? GetSize(string path)
+            {
+                var thumbInfo = _collection.FindById(path);
+                return thumbInfo != null 
+                    ? new ThumbnailSize()
+                    {
+                        Width = thumbInfo.ImageWidth,
+                        Height = thumbInfo.ImageHeight,
+                    }
+                    : default(ThumbnailSize?)
+                    ;
+            }
+
+
+            public int DeleteAll()
+            {
+                return _collection.DeleteAll();
+            }
+        }
+
+        public struct ThumbnailSize
+        {
+            public uint Width { get; set; }
+            public uint Height { get; set; }
         }
     }
 }

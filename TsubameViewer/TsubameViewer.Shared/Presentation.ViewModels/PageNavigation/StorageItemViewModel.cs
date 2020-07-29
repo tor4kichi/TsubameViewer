@@ -92,8 +92,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             _Name = Item.Name;
             _Path = Item.Path;
-
-            _cancellationToken = _cts.Token;
         }
 
         public IStorageItem Item { get; private set; }
@@ -120,7 +118,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _DateCreated, value); }
         }
 
-
+        private uint _ImageWidth = 32; // ItemsRepeaterのレイアウト計算バグ回避のため1以上で初期化
+        public uint ImageWidth
+        {
+            get { return _ImageWidth; }
+            private set { SetProperty(ref _ImageWidth, value); }
+        }
 
         private BitmapImage _image;
         public BitmapImage Image
@@ -151,47 +154,38 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             DateCreated = Item.DateCreated;
         }
 
-        private CancellationTokenSource _cts = new CancellationTokenSource();
-        private CancellationToken _cancellationToken;
+        private CancellationTokenSource _cts;
         private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
-            if (Image != null) { return Image; }
-
             if (Item is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
                     if (!_folderListingSettings.IsImageFileThumbnailEnabled) { return null; }
 
-                    using (var stream = await file.OpenStreamForReadAsync())
+                    //var image = new BitmapImage(new Uri(file.Path, UriKind.Absolute));
+
+                    var requestSize = CurrentFileDisplayMode switch
+                    {
+                        FileDisplayMode.Line => 1,
+                        FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
+                        FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
+                        FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
+                        _ => throw new NotSupportedException()
+                    };
+
+                    if (requestSize < ImageWidth)
+                    {
+                        requestSize = (int)ImageWidth;
+                    }
+
+                    using (var thumbImage = await file.GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, (uint)requestSize))
                     {
                         var image = new BitmapImage();
-                        image.SetSource(stream.AsRandomAccessStream());
-                        if (image.PixelWidth > image.PixelHeight)
-                        {
-                            image.DecodePixelHeight = CurrentFileDisplayMode switch
-                            {
-                                FileDisplayMode.Line => 1,
-                                FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight,
-                                FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight,
-                                FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight,
-                                _ => throw new NotSupportedException()
-                            };
-                        }
-                        else
-                        {
-                            image.DecodePixelWidth = CurrentFileDisplayMode switch
-                            {
-                                FileDisplayMode.Line => 1,
-                                FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageWidth,
-                                FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageWidth,
-                                FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageWidth,
-                                _ => throw new NotSupportedException()
-                            };
-                        }
-                        return Image = image;
+                        image.SetSource(thumbImage);
+                        return image;
                     }
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
@@ -201,9 +195,24 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(file);
                     if (thumbnailFile == null) { return null; }
                     var image = new BitmapImage();
+
                     using (var stream = await thumbnailFile.OpenStreamForReadAsync())
                     {
                         image.SetSource(stream.AsRandomAccessStream());
+                    }
+
+                    if (ImageWidth == 0)
+                    {
+                        var ratio = CurrentFileDisplayMode switch
+                        {
+                            FileDisplayMode.Line => 1,
+                            FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight / (float)image.PixelHeight,
+                            FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight / (float)image.PixelHeight,
+                            FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight / (float)image.PixelHeight,
+                            _ => throw new NotSupportedException(),
+                        };
+
+                        ImageWidth = (uint)Math.Floor(image.PixelWidth * ratio);
                     }
 
                     if (image.PixelWidth > image.PixelHeight)
@@ -228,7 +237,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                             _ => throw new NotSupportedException()
                         };
                     }
-                    return Image = image;
+
+                    return image;
                 }
             }
             else if (Item is StorageFolder folder)
@@ -238,12 +248,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
                 if (uri == null) { return null; }
                 var image = new BitmapImage(uri);
-                return Image = image;
+                return image;
             }
 
-            return Image = new BitmapImage();
+            return new BitmapImage();
         }
 
+        
 
         public void ClearImage()
         {
@@ -254,61 +265,113 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             }
 #endif
 
-            _cts.Cancel();
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
             Image = null;
-            _cts = new CancellationTokenSource();
-            _cancellationToken = _cts.Token;
         }
 
         public void StopImageLoading()
         {
-            _cts.Cancel();
-            _cts = new CancellationTokenSource();
-            _cancellationToken = _cts.Token;
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
 
         private FileDisplayMode? _prevFileDisplayMode;
 
+        bool isInitialized = false;
         public async void Initialize()
         {
-            if (Type != StorageItemTypes.Image 
-                || CurrentFileDisplayMode != FileDisplayMode.Line 
-                )
+            if (isInitialized) { return; }
+
+            try
             {
-                if (Image != null && _prevFileDisplayMode == CurrentFileDisplayMode)
-                {
-                    return;
-                }
+                isInitialized = true;
+                _cts?.Cancel();
+                _cts?.Dispose();
+                _cts = new CancellationTokenSource();
 
-                Image = null;
+                var ct = _cts.Token;
+                ct.ThrowIfCancellationRequested();
 
-                _isAppearingRequestButLoadingCancelled = false;
+                await _loadinLock.WaitAsync(ct);
+
                 try
                 {
-                    _cancellationToken.ThrowIfCancellationRequested();
-
-                    await _loadinLock.WaitAsync(_cancellationToken);
-
-                    _cancellationToken.ThrowIfCancellationRequested();
-
-                    try
+                    if (Type == StorageItemTypes.Image
+                        && CurrentFileDisplayMode == FileDisplayMode.Line
+                        )
                     {
-                        await GenerateBitmapImageAsync(_cancellationToken);
-                    }
-                    finally
-                    {
-                        _loadinLock.Release();
+                        return;
                     }
 
-                    Debug.WriteLine("Thumbnail Load: " + Name);
-                    _prevFileDisplayMode = CurrentFileDisplayMode;
+                    if (Image != null && _prevFileDisplayMode == CurrentFileDisplayMode)
+                    {
+                        return;
+                    }
+
+                    ct.ThrowIfCancellationRequested();
+
+                    _isAppearingRequestButLoadingCancelled = false;
+
+                    Image = await GenerateBitmapImageAsync(ct);
                 }
-                catch (OperationCanceledException)
+                finally
                 {
-                    _isAppearingRequestButLoadingCancelled = true;
-                    return;
+                    _loadinLock.Release();
+                }
+
+                Debug.WriteLine("Thumbnail Load: " + Name);
+                _prevFileDisplayMode = CurrentFileDisplayMode;
+            }
+            catch (OperationCanceledException)
+            {
+                isInitialized = false;
+                _isAppearingRequestButLoadingCancelled = true;
+                return;
+            }
+        }
+
+        public async Task InitializeAsync(CancellationToken ct)
+        {
+            isInitialized = false;
+            if (Type == StorageItemTypes.Image)
+            {
+                using (var thubm = await (Item as StorageFile).GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, ListingImageConstants.MidiumFileThumbnailImageHeight).AsTask(ct))
+                {
+                    var ratio = CurrentFileDisplayMode switch
+                    {
+                        FileDisplayMode.Line => 1,
+                        FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight / (float)thubm.OriginalHeight,
+                        FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight / (float)thubm.OriginalHeight,
+                        FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight / (float)thubm.OriginalHeight,
+                        _ => throw new NotSupportedException(),
+                    };
+
+                    ImageWidth = (uint)Math.Floor(thubm.OriginalWidth * ratio);
+                }
+            }
+            else if (Type == StorageItemTypes.Archive)
+            {
+                var size = _thumbnailManager.GetThubmnailOriginalSize(Item as StorageFile);
+                if (size.HasValue)
+                {
+                    var thumbHeight = size.Value.Height;
+                    var thumbWidth = size.Value.Width;
+
+                    var ratio = CurrentFileDisplayMode switch
+                    {
+                        FileDisplayMode.Line => 1,
+                        FileDisplayMode.Small => ListingImageConstants.SmallFileThumbnailImageHeight / (float)thumbHeight,
+                        FileDisplayMode.Midium => ListingImageConstants.MidiumFileThumbnailImageHeight / (float)thumbHeight,
+                        FileDisplayMode.Large => ListingImageConstants.LargeFileThumbnailImageHeight / (float)thumbHeight,
+                        _ => throw new NotSupportedException(),
+                    };
+
+                    ImageWidth = (uint)Math.Floor(thumbWidth * ratio);
                 }
             }
         }
@@ -323,8 +386,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void Dispose()
         {
-            _cts.Cancel();
-            _cts.Dispose();
+            _cts?.Cancel();
+            _cts?.Dispose();
         }
     }
 }

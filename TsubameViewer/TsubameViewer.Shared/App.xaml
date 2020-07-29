@@ -21,7 +21,7 @@
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
-      
+      <myConv:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
 
       <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
         <uwpConv:EmptyCollectionToObjectConverter.EmptyValue>

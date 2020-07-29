@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Uwp.UI;
+using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -80,6 +81,16 @@ namespace TsubameViewer.Presentation.ViewModels
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> FileItems { get; }
 
+        public AdvancedCollectionView FileItemsView { get; }
+
+        private bool _HasFileItem;
+        public bool HasFileItem
+        {
+            get { return _HasFileItem; }
+            set { SetProperty(ref _HasFileItem, value); }
+        }
+
+
         public FolderItemsGroupBase[] Groups { get; }
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
@@ -133,6 +144,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItems = new ObservableCollection<StorageItemViewModel>();
+            FileItemsView = new AdvancedCollectionView(FileItems);
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
 
             Groups = new FolderItemsGroupBase[]
@@ -190,7 +202,16 @@ namespace TsubameViewer.Presentation.ViewModels
                     FileSortType.UpdateTimeDecending => items.OrderByDescending(x => x.DateCreated),
                     _ => throw new NotSupportedException(),
                 };
-                FileItems.AddRange(sortedFileItems);
+
+                foreach (var item in sortedFileItems)
+                {
+                    await item.InitializeAsync(default);
+                }
+
+                using (FileItemsView.DeferRefresh())
+                {
+                    FileItems.AddRange(sortedFileItems);
+                }
             }
         }
 
@@ -260,6 +281,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (mode == NavigationMode.New)
                 {
+                    HasFileItem = false;
+
                     // PageのNavigationCache = "Enabled"としているため
                     // FolderListupPage（及びViewModel） は一つのインスタンスが使い回される
                     // そのため内部にページスタックを表現するためのDepthなどがある
@@ -334,6 +357,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (mode == NavigationMode.Refresh)
                 {
+                    HasFileItem = false;
                     using (await _NavigationLock.LockAsync(default))
                     {
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
@@ -341,6 +365,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (mode == NavigationMode.Forward)
                 {
+                    HasFileItem = false;
                     await TryForwardNavigation();
                 }
                 else if (!_isCompleteEnumeration
@@ -428,6 +453,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType)
                     )
                 {
+                    await item.InitializeAsync(ct);
                     unsortedFileItems.Add(item);
                 }
             }
@@ -440,7 +466,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 FileSortType.UpdateTimeDecending => unsortedFileItems.OrderByDescending(x => x.DateCreated),
                 _ => throw new NotSupportedException(),
             };
-            FileItems.AddRange(sortedFileItems);
+            using (FileItemsView.DeferRefresh())
+            {
+                FileItems.AddRange(sortedFileItems);
+            }
+
+            HasFileItem = FileItems.Any();
         }
 
 
