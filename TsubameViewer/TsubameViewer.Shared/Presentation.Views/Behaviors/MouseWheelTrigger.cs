@@ -53,6 +53,20 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 				typeof(MouseWheelTrigger),
 				new PropertyMetadata(null));
 
+
+
+        public bool HookToWindow
+        {
+            get { return (bool)GetValue(HookToWindowProperty); }
+            set { SetValue(HookToWindowProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for HookToWindow.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty HookToWindowProperty =
+            DependencyProperty.Register("HookToWindow", typeof(bool), typeof(MouseWheelTrigger), new PropertyMetadata(false));
+
+
+
         protected override void OnAttached()
         {
             this.Register();
@@ -70,11 +84,10 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 			if (fe == null) { return; }
 			fe.Unloaded += this.Fe_Unloaded;
 
-
-			if (AssociatedObject is UIElement)
+			if (AssociatedObject is UIElement && !HookToWindow)
 			{
 				var ui = AssociatedObject as UIElement;
-				ui.PointerWheelChanged += Ui_PointerWheelChanged; ;
+				ui.PointerWheelChanged += Ui_PointerWheelChanged;
 			}
 			else
 			{
@@ -129,7 +142,6 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 			fe.Unloaded -= this.Fe_Unloaded;
 
 			Window.Current.CoreWindow.PointerWheelChanged -= CoreWindow_PointerWheelChanged;
-
 		}
 
 
