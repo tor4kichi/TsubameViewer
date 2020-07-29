@@ -28,16 +28,24 @@
             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <SymbolIcon Symbol="Folder" HorizontalAlignment="Right" Height="40" Width="40" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
         </Grid>
       </StackPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="AddNewFolderTemplate">
-      <uwpControls:DockPanel Margin="8">
-        <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom">
-          <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" />
-          <StackPanel>
+      <uwpControls:DockPanel>
+        <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="52" Margin="12 0">
+          <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
+            <SymbolIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.30" ScaleY="1.30" CenterX="12" CenterY="12" />
+            </SymbolIcon.RenderTransform>
+          </SymbolIcon>
+          <StackPanel VerticalAlignment="Center">
             <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
           </StackPanel>
         </uwpControls:DockPanel>
