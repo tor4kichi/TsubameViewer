@@ -18,6 +18,10 @@
   <Page.Resources>
     <DataTemplate x:Key="FolderTemplate">
       <StackPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+        
         <Image Source="{Binding Image}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
@@ -39,6 +43,10 @@
 
     <DataTemplate x:Key="AddNewFolderTemplate">
       <uwpControls:DockPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
+        </ToolTipService.ToolTip>
+        
         <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="52" Margin="12 0">
           <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
             <SymbolIcon.RenderTransform>
@@ -55,6 +63,10 @@
 
     <DataTemplate x:Key="ImageFileTemplate">
       <StackPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+        
         <Image Source="{Binding Image}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
@@ -76,6 +88,10 @@
     
     <DataTemplate x:Key="ArchiveFileTemplate">
       <StackPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+        
         <Image Source="{Binding Image}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
@@ -124,6 +140,24 @@
           <Setter Property="Margin" Value="6 6" />
         </Style>
       </ss:FolderItemStyleSelector.Folder>
+      <ss:FolderItemStyleSelector.Image>
+        <Style TargetType="GridViewItem">
+          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="VerticalContentAlignment" Value="Stretch" />
+          <Setter Property="Padding" Value="0 0 0 0" />
+          <Setter Property="Margin" Value="6 6" />
+        </Style>
+      </ss:FolderItemStyleSelector.Image>
+      <ss:FolderItemStyleSelector.Archive>
+        <Style TargetType="GridViewItem">
+          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+          <Setter Property="VerticalContentAlignment" Value="Stretch" />
+          <Setter Property="Padding" Value="0 0 0 0" />
+          <Setter Property="Margin" Value="6 6" />
+        </Style>
+      </ss:FolderItemStyleSelector.Archive>
     </ss:FolderItemStyleSelector>
 
 

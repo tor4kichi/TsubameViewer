@@ -111,7 +111,11 @@
 
     <DataTemplate x:Key="FolderTemplate">
       <uwpControls:DockPanel>
-        
+
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+
         <Grid Height="52" Margin="12 0" uwpControls:DockPanel.Dock="Bottom">
           <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0 0 40 0" VerticalAlignment="Center" />
           <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0">
