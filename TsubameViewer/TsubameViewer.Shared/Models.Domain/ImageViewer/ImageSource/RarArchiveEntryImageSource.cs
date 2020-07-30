@@ -1,4 +1,5 @@
-﻿using Prism.Mvvm;
+﻿using Hnx8.ReadJEnc;
+using Prism.Mvvm;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;
@@ -28,10 +29,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             var rarArchive = RarArchive.Open(stream)
                 .AddTo(disposables);
 
+            
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .OrderBy(x => x.Key)
                 .Select(x => (IImageSource)new RarArchiveEntryImageSource(x))
-                .OrderBy(x => x.Name)
                 .ToArray();
 
             return new ImageCollectionManager.GetImagesFromArchiveResult() 

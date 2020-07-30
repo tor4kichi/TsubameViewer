@@ -1,4 +1,5 @@
-﻿using Prism.Mvvm;
+﻿using Hnx8.ReadJEnc;
+using Prism.Mvvm;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Common;
 using System;
@@ -31,11 +32,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 .AddTo(disposables);
 
             var supportedEntries = zipArchive.Entries
+                .OrderBy(x => x.FullName)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
                 .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
-                .OrderBy(x => x.Name)
                 .ToArray();
-
 
             return new ImageCollectionManager.GetImagesFromArchiveResult()
             {
@@ -56,7 +56,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             
         }
 
-        public string Name => _entry.Name;
+        public string Name => _entry.FullName;
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {

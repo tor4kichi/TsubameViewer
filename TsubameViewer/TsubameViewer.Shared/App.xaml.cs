@@ -53,6 +53,8 @@ namespace TsubameViewer
             UnhandledException += App_UnhandledException;
 
             RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
+
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 
         private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
