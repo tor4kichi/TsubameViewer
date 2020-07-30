@@ -436,6 +436,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 FileSortType.UpdateTimeDecending => unsortedFileItems.OrderByDescending(x => x.DateCreated),
                 _ => throw new NotSupportedException(),
             };
+
+
             using (FileItemsView.DeferRefresh())
             {
                 FileItems.AddRange(sortedFileItems);

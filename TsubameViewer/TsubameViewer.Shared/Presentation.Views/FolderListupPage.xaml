@@ -140,41 +140,35 @@
       <Setter Property="Padding" Value="0 0 0 0" />
       <Setter Property="Margin" Value="6 6" />
     </Style>
-
-    
-    
     
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
     
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" >
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource SmallImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource MidiumImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" >
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Height="{StaticResource LargeImageHeight}" MinWidth="32" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
-    
-
-
 
 
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
@@ -290,7 +284,6 @@
                 <core:CallMethodAction MethodName="Initialize" />
               </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
             </i:Interaction.Behaviors>
-
           </uwpControls:AdaptiveGridView>
 
           <StackPanel x:Name="FilesActionLayout" Orientation="Horizontal" Margin="0 16" Visibility="Collapsed">
@@ -338,7 +331,8 @@
                                Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6" />
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
+                                      />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>
