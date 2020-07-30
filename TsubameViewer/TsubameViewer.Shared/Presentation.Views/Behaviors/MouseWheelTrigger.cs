@@ -9,6 +9,9 @@ using Windows.UI.Xaml;
 
 namespace TsubameViewer.Presentation.Views.Behaviors
 {
+	// Note: IsHitTestVisible="True" Background="Transparent" が無いと
+	//		 マウススクロールが反応しない問題が発生する
+
 	public sealed class MouseWheelTrigger : Behavior<FrameworkElement>
     {
 		public ActionCollection UpActions 
@@ -54,19 +57,6 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 				new PropertyMetadata(null));
 
 
-
-        public bool HookToWindow
-        {
-            get { return (bool)GetValue(HookToWindowProperty); }
-            set { SetValue(HookToWindowProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for HookToWindow.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty HookToWindowProperty =
-            DependencyProperty.Register("HookToWindow", typeof(bool), typeof(MouseWheelTrigger), new PropertyMetadata(false));
-
-
-
         protected override void OnAttached()
         {
             this.Register();
@@ -84,7 +74,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 			if (fe == null) { return; }
 			fe.Unloaded += this.Fe_Unloaded;
 
-			if (AssociatedObject is UIElement && !HookToWindow)
+			if (AssociatedObject is UIElement)
 			{
 				var ui = AssociatedObject as UIElement;
 				ui.PointerWheelChanged += Ui_PointerWheelChanged;

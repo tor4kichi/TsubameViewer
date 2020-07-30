@@ -19,7 +19,13 @@
 
   <Page.Resources>
   </Page.Resources>
-  <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True">
+
+  <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
+             マウススクロールが反応しない問題が発生する 
+  -->
+  <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+        IsHitTestVisible="True" Background="Transparent"
+        >
 
 
     <i:Interaction.Behaviors>
