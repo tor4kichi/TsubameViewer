@@ -50,26 +50,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public string Name => _file.Name;
         
-        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
+        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
-            using (var stream = await _file.OpenReadAsync())
+            using (var stream = await _file.OpenReadAsync().AsTask(ct))
             {
                 var bitmapImage = new BitmapImage();
-                bitmapImage.SetSource(stream);
-                if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-                {
-                    if (bitmapImage.PixelHeight > canvasHeight)
-                    {
-                        bitmapImage.DecodePixelHeight = canvasHeight;
-                    }
-                }
-                else
-                {
-                    if (bitmapImage.PixelWidth > canvasWidth)
-                    {
-                        bitmapImage.DecodePixelWidth = canvasWidth;
-                    }
-                }
+                await bitmapImage.SetSourceAsync(stream).AsTask(ct);
+
+                ct.ThrowIfCancellationRequested();
+
                 return bitmapImage;
             }
         }

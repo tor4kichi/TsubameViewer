@@ -1,5 +1,6 @@
 ﻿using Prism.Mvvm;
 using Reactive.Bindings.Extensions;
+using SharpCompress.Common;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -12,7 +13,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Uno.Extensions;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
+
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
@@ -50,37 +53,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         void IDisposable.Dispose()
         {
-            _cts.Dispose();
+            
         }
 
         public string Name => _entry.Name;
 
-        CancellationTokenSource _cts = new CancellationTokenSource();
-        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
+        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
-            var ct = _cts.Token;
+            using (var entryStream = _entry.Open())
+            using (var memoryStream = entryStream.ToMemoryStream())
             {
-                using (var entryStream = _entry.Open())
-                using (var memoryStream = entryStream.ToMemoryStream())
-                {
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-                    {
-                        if (bitmapImage.PixelHeight > canvasHeight)
-                        {
-                            bitmapImage.DecodePixelHeight = canvasHeight;
-                        }
-                    }
-                    else
-                    {
-                        if (bitmapImage.PixelWidth > canvasWidth)
-                        {
-                            bitmapImage.DecodePixelWidth = canvasWidth;
-                        }
-                    }
-                    return bitmapImage;
-                }
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                return bitmapImage;
             }
         }
     }

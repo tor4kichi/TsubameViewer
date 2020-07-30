@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ListingImageConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\IImageGenerater.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\IImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageFileImageSource.cs" />

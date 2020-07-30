@@ -250,11 +250,48 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (Images == null || Images.Length == 0) { return; }
 
-                    var imageSource = Images[index];
-                    CurrentImage = await imageSource.GenerateBitmapImageAsync((int)CanvasWidth.Value, (int)CanvasHeight.Value);
+                    _imageLoadingCts?.Cancel();
+                    _imageLoadingCts?.Dispose();
+                    _imageLoadingCts = new CancellationTokenSource();
 
-                    // タイトル
-                    _appView.Title = $"{imageSource.Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
+                    var ct = _imageLoadingCts.Token;
+                    try
+                    {
+                        using (await _imageLoadingLock.LockAsync(ct))
+                        {
+                            var imageSource = Images[index];
+                            _appView.Title = $"{imageSource.Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
+
+                            await Task.Delay(1);
+
+                            if (ct.IsCancellationRequested) { return; }
+
+                            var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
+
+                            // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
+                            var canvasWidth = (int)CanvasWidth.Value;
+                            var canvasHeight = (int)CanvasHeight.Value;
+                            if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+                            {
+                                if (bitmapImage.PixelHeight > canvasHeight)
+                                {
+                                    bitmapImage.DecodePixelHeight = canvasHeight;
+                                }
+                            }
+                            else
+                            {
+                                if (bitmapImage.PixelWidth > canvasWidth)
+                                {
+                                    bitmapImage.DecodePixelWidth = canvasWidth;
+                                }
+                            }
+
+                            if (ct.IsCancellationRequested) { return; }
+
+                            CurrentImage = bitmapImage;
+                        }
+                    }
+                    catch (OperationCanceledException) { }
 #if DEBUG
                     Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
 #endif
@@ -264,6 +301,8 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
+        CancellationTokenSource _imageLoadingCts;
+        FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private async Task RefreshItems(CancellationToken ct)
         {

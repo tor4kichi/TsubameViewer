@@ -46,36 +46,23 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public string Name { get; }
 
-        CancellationTokenSource _cts = new CancellationTokenSource();
-
-        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
+        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct = default)
         {
-            var ct = _cts.Token;
+            using (var memoryStream = new MemoryStream())
+            using (var streamWrite = new StreamWriter(memoryStream))
             {
-                using (var memoryStream = new MemoryStream())
-                using (var streamWrite = new StreamWriter(memoryStream))
-                {
-                    await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream());
-                    await memoryStream.FlushAsync();
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-                    {
-                        if (bitmapImage.PixelHeight > canvasHeight)
-                        {
-                            bitmapImage.DecodePixelHeight = canvasHeight;
-                        }
-                    }
-                    else
-                    {
-                        if (bitmapImage.PixelWidth > canvasWidth)
-                        {
-                            bitmapImage.DecodePixelWidth = canvasWidth;
-                        }
-                    }
-                    return bitmapImage;
-                }
+                await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                await memoryStream.FlushAsync();
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
+                return bitmapImage;
             }
         }
 

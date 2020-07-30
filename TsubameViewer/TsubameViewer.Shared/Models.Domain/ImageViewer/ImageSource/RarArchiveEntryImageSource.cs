@@ -54,31 +54,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         CancellationTokenSource _cts = new CancellationTokenSource();
         
-        public async Task<BitmapImage> GenerateBitmapImageAsync(int canvasWidth, int canvasHeight)
+        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
-            var ct = _cts.Token;
+            using (var entryStream = _entry.OpenEntryStream())
+            using (var memoryStream = entryStream.ToMemoryStream())
             {
-                using (var entryStream = _entry.OpenEntryStream())
-                using (var memoryStream = entryStream.ToMemoryStream())
-                {
-                    var bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                    if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-                    {
-                        if (bitmapImage.PixelHeight > canvasHeight)
-                        {
-                            bitmapImage.DecodePixelHeight = canvasHeight;
-                        }
-                    }
-                    else
-                    {
-                        if (bitmapImage.PixelWidth > canvasWidth)
-                        {
-                            bitmapImage.DecodePixelWidth = canvasWidth;
-                        }
-                    }
-                    return bitmapImage;
-                }
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                ct.ThrowIfCancellationRequested();
+                
+                return bitmapImage;
             }
         }
 
