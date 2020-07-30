@@ -57,6 +57,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
+            var frame = (Frame)sender;
             BackCommand.RaiseCanExecuteChanged();
 
             MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Any(x => x == e.SourcePageType);
@@ -65,7 +66,7 @@ namespace TsubameViewer.Presentation.Views
                 var sourcePageTypeName = e.SourcePageType.Name;
                 if (e.SourcePageType == typeof(FolderListupPage))
                 {
-                    sourcePageTypeName = nameof(Views.SourceFoldersPage);
+                    sourcePageTypeName = nameof(Views.SourceStorageItemsPage);
                 }
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
@@ -74,11 +75,23 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
 
+            // 画像ビューワーページはバックスタックに一つしか積まれないようにする
+            if (e.SourcePageType == typeof(Views.ImageViewerPage))
+            {
+                var lastNavigatedPageEntry = frame.BackStack.ElementAtOrDefault(1);
+                if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.ImageViewerPage))
+                {
+                    frame.BackStack.RemoveAt(1);
+                }
+            }
+
             SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
                 CanGoBackPageTypes.Contains(e.SourcePageType)
                 ? AppViewBackButtonVisibility.Visible
                 : AppViewBackButtonVisibility.Collapsed
                 ;
+
+            // TODO: 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
         }
 
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;

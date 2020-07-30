@@ -12,7 +12,7 @@ Import = インポート
 RefreshLatest = 最新の情報に更新
 Settings = 設定
 
-SourceFoldersPage = フォルダー
+SourceStorageItemsPage = フォルダー
 CollectionPage = コレクション
 
 
@@ -24,7 +24,7 @@ AdvancedSettings = 詳細設定
 SourceFoldersSettings = アプリに取り込んだフォルダの管理
 RemoveSourceFolderFromApp = アプリから取り除く
 ConfirmRemoveSourceFolderFromAppWithFolderName  = {0} をアプリから取り除いてもよろしいですか？
-ConfirmRemoveSourceFolderFromAppDescription = この除去操作は指定フォルダやフォルダ内アイテムには一切影響しません。\n解除した指定フォルダは、いつでもアプリに再登録できます。
+ConfirmRemoveSourceFolderFromAppDescription = この除去操作によって指定フォルダやフォルダ内アイテムが削除されることはありません。\nアプリから取り除いたフォルダは、いつでもアプリに再登録できます。
 
 ThumbnailImageSettings = サムネイル表示設定
 IsDisplayImageFileThubnail = 画像ファイルのサムネイルを表示
@@ -39,6 +39,14 @@ ProcessingThumbnailCache = 削除操作を処理中
 ImageViewerSettings = 画像ビューワーの設定
 IsReverseImageFliping_MouseWheel = ページ送りを逆にする（マウスホイール）
 IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タップ）
+
+
+#### SourceStorageItemsPage
+
+Folders = フォルダ
+Files = ファイル
+
+
 
 
 #### FolderListupPage

@@ -28,7 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class SettingsPageViewModel : ViewModelBase
     {
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly SourceFoldersRepository _SourceFoldersRepository;
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
@@ -37,13 +37,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public SettingsPageViewModel(
             FolderListingSettings folderListingSettings,
-            SourceFoldersRepository SourceFoldersRepository,
+            SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
             ThumbnailManager thumbnailManager
             )
         {
             _folderListingSettings = folderListingSettings;
-            _SourceFoldersRepository = SourceFoldersRepository;
+            _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
             _thumbnailManager = thumbnailManager;
 
@@ -57,7 +57,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "SourceFoldersSettings".Translate(),
                     Items =
                     {
-                        new StoredFoldersSettingItemViewModel(_SourceFoldersRepository),
+                        new StoredFoldersSettingItemViewModel(_sourceStorageItemsRepository),
                     }
                 },
                 new SettingsGroupViewModel
@@ -159,13 +159,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBase
     {
-        private readonly SourceFoldersRepository _SourceFoldersRepository;
+        private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
         public ObservableCollection<StoredFolderViewModel> Folders { get; }
 
-        public StoredFoldersSettingItemViewModel(SourceFoldersRepository SourceFoldersRepository)
+        public StoredFoldersSettingItemViewModel(SourceStorageItemsRepository SourceStorageItemsRepository)
         {
-            _SourceFoldersRepository = SourceFoldersRepository;
+            _SourceStorageItemsRepository = SourceStorageItemsRepository;
             Folders = new ObservableCollection<StoredFolderViewModel>();
 
             Init();
@@ -173,9 +173,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async void Init()
         {
-            await foreach (var item in _SourceFoldersRepository.GetSourceFolders())
+            await foreach (var item in _SourceStorageItemsRepository.GetSourceFolders())
             {
-                Folders.Add(new StoredFolderViewModel(_SourceFoldersRepository, this)
+                Folders.Add(new StoredFolderViewModel(_SourceStorageItemsRepository, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -193,12 +193,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class StoredFolderViewModel
     {
-        private readonly SourceFoldersRepository _SourceFoldersRepository;
+        private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
 
-        public StoredFolderViewModel(SourceFoldersRepository SourceFoldersRepository, StoredFoldersSettingItemViewModel parentVM)
+        public StoredFolderViewModel(SourceStorageItemsRepository SourceStorageItemsRepository, StoredFoldersSettingItemViewModel parentVM)
         {
-            _SourceFoldersRepository = SourceFoldersRepository;
+            _SourceStorageItemsRepository = SourceStorageItemsRepository;
             _parentVM = parentVM;
         }
 
@@ -219,7 +219,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 dialog.Commands.Add(new UICommand("RemoveSourceFolderFromApp".Translate(), _ => 
                 {
-                    _SourceFoldersRepository.RemoveFolder(Token);
+                    _SourceStorageItemsRepository.RemoveFolder(Token);
                     _parentVM.RemoveItem(this);
                 }));
 

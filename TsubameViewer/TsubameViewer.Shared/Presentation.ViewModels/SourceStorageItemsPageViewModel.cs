@@ -27,13 +27,14 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     // TODO: アクセス履歴対応
 
-    public sealed class SourceFoldersPageViewModel : ViewModelBase
+    public sealed class SourceStorageItemsPageViewModel : ViewModelBase
     {
         public ObservableCollection<StorageItemViewModel> Folders { get; }
+        public ObservableCollection<StorageItemViewModel> Files { get; }
 
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly SourceFoldersRepository _SourceFoldersRepository;
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IEventAggregator _eventAggregator;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -41,23 +42,40 @@ namespace TsubameViewer.Presentation.ViewModels
 
         CompositeDisposable _navigationDisposables;
 
+        public SourceItemsGroup[] Groups { get; }
+
         bool _foldersInitialized = false;
-        public SourceFoldersPageViewModel(
+        public SourceStorageItemsPageViewModel(
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenFolderItemCommand openFolderItemCommand,
             SourceChoiceCommand sourceChoiceCommand,
-            SourceFoldersRepository SourceFoldersRepository,
+            SourceStorageItemsRepository sourceStorageItemsRepository,
             IEventAggregator eventAggregator            
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
+            Files = new ObservableCollection<StorageItemViewModel>();
             OpenFolderItemCommand = openFolderItemCommand;
             SourceChoiceCommand = sourceChoiceCommand;
-            _SourceFoldersRepository = SourceFoldersRepository;
+            _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _eventAggregator = eventAggregator;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
+
+            Groups = new[]
+            {
+                new SourceItemsGroup
+                {
+                    GroupId = "Folders",
+                    Items = Folders,
+                },
+                new SourceItemsGroup
+                {
+                    GroupId = "Files",
+                    Items = Files,
+                },
+            };
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
@@ -67,17 +85,31 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _foldersInitialized = true;
 
-                Folders.Add(new StorageItemViewModel(_thumbnailManager, _folderListingSettings) { });
-                await foreach (var item in _SourceFoldersRepository.GetSourceFolders())
+                Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings) { });
+                await foreach (var item in _sourceStorageItemsRepository.GetSourceFolders())
                 {
-                    Folders.Add(new StorageItemViewModel(item.item, item.token, _thumbnailManager, _folderListingSettings));
+                    if (item.item is StorageFolder)
+                    {
+                        Folders.Add(new StorageItemViewModel(item.item, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }
+                    else if (item.item is StorageFile)
+                    {
+                        Files.Add(new StorageItemViewModel(item.item, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }                        
                 }
             }
 
-            _eventAggregator.GetEvent<SourceFoldersRepository.AddedEvent>()
+            _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
                 .Subscribe(args => 
                 {
-                    Folders.Add(new StorageItemViewModel(args.StorageItem, args.Token, _thumbnailManager, _folderListingSettings));
+                    if (args.StorageItem is StorageFolder)
+                    {
+                        Folders.Insert(0, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }
+                    else if (args.StorageItem is StorageFile)
+                    {
+                        Files.Insert(0, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }
                 })
                 .AddTo(_navigationDisposables);
 
@@ -90,5 +122,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
             base.OnNavigatedFrom(parameters);
         }
+    }
+
+    public sealed class SourceItemsGroup
+    {
+        public string GroupId { get; set; }
+        public ObservableCollection<StorageItemViewModel> Items { get; set; }
     }
 }

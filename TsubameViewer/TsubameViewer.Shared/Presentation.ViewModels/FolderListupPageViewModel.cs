@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using Uno.Disposables;
@@ -72,6 +73,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             });
 
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         public OpenPageCommand OpenPageCommand { get; }
@@ -124,7 +126,7 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
         };
 
-        public string FoldersManagementPageName => nameof(Views.SourceFoldersPage);
+        public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
 
         static bool _LastIsImageFileThumbnailEnabled;
@@ -132,11 +134,13 @@ namespace TsubameViewer.Presentation.ViewModels
         static bool _LastIsFolderThumbnailEnabled;
 
         public FolderListupPageViewModel(
+            SourceStorageItemsRepository sourceStorageItemsRepository,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand
             )
         {
+            _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
@@ -298,7 +302,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             if (isTokenChanged)
                             {
-                                _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                                _tokenGettingFolder = await _sourceStorageItemsRepository.GetFolderAsync(token);
                             }
 
                             if (_tokenGettingFolder == null)
@@ -411,7 +415,7 @@ namespace TsubameViewer.Presentation.ViewModels
             await foreach (var folderItem in itemsResult.AsyncEnumerableItems.WithCancellation(ct))
             {
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, _currentToken, _thumbnailManager, _folderListingSettings);
+                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings);
                 if (folderItem is StorageFolder)
                 {
                     FolderItems.Add(item);
@@ -594,7 +598,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 FileItems.Clear();
 
                 // 別ページからフォワードしてきた場合に_tokenGettingFolderが空になっている場合がある
-                _tokenGettingFolder ??= await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(forwardFolderInfo.Token);
+                _tokenGettingFolder ??= await _sourceStorageItemsRepository.GetFolderAsync(forwardFolderInfo.Token);
                 _currentToken = forwardFolderInfo.Token;
 
                 _currentPath = forwardFolderInfo.Path;

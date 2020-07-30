@@ -14,7 +14,9 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Views;
 using Unity;
 using Windows.ApplicationModel;
@@ -22,6 +24,7 @@ using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -118,8 +121,8 @@ namespace TsubameViewer
         {
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
-
-            container.RegisterForNavigation<SourceFoldersPage>();
+            
+            container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<CollectionPage>();
@@ -147,7 +150,7 @@ namespace TsubameViewer
             }
             else if (args.Arguments is FileActivatedEventArgs fileActivatedEventArgs)
             {
-                OnFileActivated(fileActivatedEventArgs);
+                OnFileActivated_Internal(fileActivatedEventArgs);
             }
 
             return base.OnStartAsync(args);
@@ -193,7 +196,7 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            ns.NavigateAsync(nameof(SourceFoldersPage));
+            ns.NavigateAsync(nameof(SourceStorageItemsPage));
 
             base.OnInitialized();
         }
@@ -268,13 +271,32 @@ namespace TsubameViewer
         }
 
 
-
-        private void OnFileActivated(FileActivatedEventArgs args)
+        void OnFileActivated_Internal(FileActivatedEventArgs args)
         {
-            // TODO: Handle file activation
-            // The number of files received is args.Files.Size
-            // The name of the first file is args.Files[0].Name
-            //args.NeighboringFilesQuery
+            // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
+            var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
+            string token = null;
+            foreach (var item in args.Files)
+            {
+                if (item is StorageFile file)
+                {
+                    if (!SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
+                    {
+                        continue;
+                    }
+                }
+
+                var fileToken = sourceStroageItemsRepo.AddFolder(item, SourceOriginConstants.FileActivation);
+                token ??= fileToken;
+            }
+
+            // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
+            // TODO: FileActivationで開いた画像ビューワーページのバックナビゲーション先をSourceStorageItemsPageにする？
+            if (token != null)
+            {
+                var ns = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+                ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
+            }
         }
     }
 }

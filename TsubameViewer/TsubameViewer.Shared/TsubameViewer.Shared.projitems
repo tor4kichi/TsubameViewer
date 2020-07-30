@@ -33,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageFileImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ZipArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceOriginConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SupportedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
@@ -52,11 +53,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SettingsPageViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFoldersPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\DateTimetoStringConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceStorageItemsPage.xaml.cs">
+      <DependentUpon>SourceStorageItemsPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
@@ -73,9 +77,6 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceFoldersPage.xaml.cs">
-      <DependentUpon>SourceFoldersPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
@@ -118,7 +119,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceFoldersPage.xaml">
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceStorageItemsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

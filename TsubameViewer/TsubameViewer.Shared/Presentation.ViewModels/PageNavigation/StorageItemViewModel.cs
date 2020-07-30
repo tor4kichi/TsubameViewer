@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.SourceFolders;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -25,7 +26,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public static async ValueTask<INavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
         {
-            var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(vm.Token);
+            var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
                 var path = GetSubtractPath(folder, vm.Item);
@@ -43,7 +44,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public static async Task<string> GetRawSubtractPath(StorageItemViewModel vm)
         {
-            var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(vm.Token);
+            var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
                 return GetSubtractPath(folder, vm.Item);
@@ -64,10 +65,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             return rt.Path.Substring(lt.Path.Length);
         }
 
+
+        internal async Task<IStorageItem> GetTokenStorageItem()
+        {
+            var item = await _sourceStorageItemsRepository.GetStorageItemAsync(Token);
+            return item.item;
+        }
+
         #endregion
 
-        public StorageItemViewModel(ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
+        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
         {
+            _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
 
@@ -82,8 +91,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IStorageItem item, string token, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
-             : this(thumbnailManager, folderListingSettings)
+        public StorageItemViewModel(IStorageItem item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
+             : this(sourceStorageItemsRepository, thumbnailManager, folderListingSettings)
         {
             Item = item;
             _DateCreated = item.DateCreated;
@@ -125,6 +134,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
         private StorageItemTypes _Type;
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
 

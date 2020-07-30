@@ -1,5 +1,5 @@
 ﻿<Page
-    x:Class="TsubameViewer.Presentation.Views.SourceFoldersPage"
+    x:Class="TsubameViewer.Presentation.Views.SourceStorageItemsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Presentation.Views"
@@ -28,7 +28,7 @@
             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0">
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
             <FontIcon.RenderTransform>
               <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
             </FontIcon.RenderTransform>
@@ -53,9 +53,54 @@
       </uwpControls:DockPanel>
     </DataTemplate>
 
+    <DataTemplate x:Key="ImageFileTemplate">
+      <StackPanel>
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+        <Grid Height="52" Margin="12 0">
+          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70B;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+        </Grid>
+      </StackPanel>
+    </DataTemplate>
+    
+    <DataTemplate x:Key="ArchiveFileTemplate">
+      <StackPanel>
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+        <Grid Height="52" Margin="12 0">
+          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+        </Grid>
+      </StackPanel>
+    </DataTemplate>
+
+
     <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
                                      Folder="{StaticResource FolderTemplate}"
                                      AddNewFolder="{StaticResource AddNewFolderTemplate}"
+                                   Archive="{StaticResource ArchiveFileTemplate}"
+                                   Image="{StaticResource ImageFileTemplate}"
                                      >
     </ts:FolderItemTemplateSelector>
 
@@ -80,31 +125,52 @@
         </Style>
       </ss:FolderItemStyleSelector.Folder>
     </ss:FolderItemStyleSelector>
-    
+
+
+    <CollectionViewSource x:Key="ItemsCollectionViewSource" 
+                          Source="{Binding Groups}"
+                          IsSourceGrouped="True"
+                          ItemsPath="Items"
+                          />
+
+
+
   </Page.Resources>
   <Grid>
 
     <uwpControls:AdaptiveGridView 
-      x:Name="FoldersAdaptiveGridView"
-      StretchContentForSingleRow="False"
-      OneRowModeEnabled="False"
-      ItemsSource="{Binding Folders}" 
-      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
-      ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-      DesiredWidth="360"            
-      ItemHeight="132"
-      IsItemClickEnabled="True"
-      ItemClickCommand="{Binding OpenFolderItemCommand}"
-      IsSynchronizedWithCurrentItem="False"
-      Padding="48 16"
-      SelectionMode="None"
+            x:Name="FoldersAdaptiveGridView"
+            StretchContentForSingleRow="False"
+            OneRowModeEnabled="False"
+            ItemsSource="{Binding Source={StaticResource ItemsCollectionViewSource}}" 
+            ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
+            ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+            DesiredWidth="360"            
+            ItemHeight="132"
+            IsItemClickEnabled="True"
+            ItemClickCommand="{Binding OpenFolderItemCommand}"
+            IsSynchronizedWithCurrentItem="False"
+            Padding="48 16"
+            SelectionMode="None"
               >
+      
       <GridView.Header>
         <Grid HorizontalAlignment="Right">
-                    
+
         </Grid>
-          
+
       </GridView.Header>
+
+      <GridView.GroupStyle>
+        <GroupStyle HidesIfEmpty="True"
+                    >
+          <GroupStyle.HeaderTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding GroupId, Converter={StaticResource LocalizeConverter}}" />
+            </DataTemplate>
+          </GroupStyle.HeaderTemplate>
+        </GroupStyle>
+      </GridView.GroupStyle>
       <i:Interaction.Behaviors>
         <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
           <core:CallMethodAction MethodName="Initialize" />

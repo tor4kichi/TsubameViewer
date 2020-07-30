@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using Uno;
@@ -94,16 +95,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerSettings ImageViewerSettings { get; }
 
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
 
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
+            SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
+            _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
@@ -180,7 +184,17 @@ namespace TsubameViewer.Presentation.ViewModels
                         _currentFolderItem = null;
 
                         _currentToken = token;
-                        _tokenGettingFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+
+                        var storageItem = await _sourceStorageItemsRepository.GetStorageItemAsync(token);
+                        var item = storageItem.item;
+
+                        _tokenGettingFolder = item as StorageFolder;
+
+                        // ファイルアクティベーションなど
+                        if (item is StorageFile file)
+                        {
+                            _currentFolderItem = file;
+                        }
 
                         Images = default;
                         _CurrentImageIndex = 0;
@@ -199,16 +213,21 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (_currentPath != unescapedPath)
                     {
                         _currentPath = unescapedPath;
-
                         if (_tokenGettingFolder == null)
                         {
-                            throw new Exception("token parameter is require for path parameter.");
+                            // token がファイルを指す場合は _currentFolderItem を通じて表示する
+                            if (_currentFolderItem.Name != unescapedPath)
+                            {
+                                throw new Exception("token parameter is require for path parameter.");
+                            }
+                        }
+                        else
+                        {
+                            _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
                         }
 
                         Images = default;
                         _CurrentImageIndex = 0;
-
-                        _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
                     }
                 }
             }
