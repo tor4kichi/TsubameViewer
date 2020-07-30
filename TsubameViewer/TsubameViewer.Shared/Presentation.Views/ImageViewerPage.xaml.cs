@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Uwp.UI.Animations;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,6 +33,23 @@ namespace TsubameViewer.Presentation.Views
         public ImageViewerPage()
         {
             this.InitializeComponent();
+
+            Loaded += ImageViewerPage_Loaded;
+        }
+
+        private async void ImageViewerPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            using (var cts = new CancellationTokenSource(5000))
+            {
+                Image.Opacity = 0.0;
+                while (Image.Source == null)
+                {
+                    await Task.Delay(50, cts.Token);
+                }
+
+                Image.Fade(1.0f, 175f)
+                    .Start();
+            }
         }
     }
 }
