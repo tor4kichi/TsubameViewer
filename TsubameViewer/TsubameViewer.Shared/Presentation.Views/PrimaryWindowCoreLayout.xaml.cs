@@ -178,7 +178,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{forwardNavItem.PageName}");
                     var parameters = MakeNavigationParameter(forwardNavItem.Parameters);
-                    ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
+                    ContentFrame.ForwardStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
                     ForwardParametersStack.Add(parameters);
                     Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + forwardNavItem.PageName);
                 }
