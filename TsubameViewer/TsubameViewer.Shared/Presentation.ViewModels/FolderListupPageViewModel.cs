@@ -56,7 +56,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
-        public ObservableCollection<StorageItemViewModel> FileItems { get; }
+        public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
+        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
 
         public AdvancedCollectionView FileItemsView { get; }
 
@@ -122,8 +123,10 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
-            FileItems = new ObservableCollection<StorageItemViewModel>();
-            FileItemsView = new AdvancedCollectionView(FileItems);
+            ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
+            ImageFileItems = new ObservableCollection<StorageItemViewModel>();
+
+            FileItemsView = new AdvancedCollectionView(ImageFileItems);
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
 
             Groups = new FolderItemsGroupBase[]
@@ -134,7 +137,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 },
                 new FileFolderItemsGroup()
                 { 
-                    Items = FileItems
+                    Items = ArchiveFileItems
                 }
             };
 
@@ -174,7 +177,8 @@ namespace TsubameViewer.Presentation.ViewModels
             _leavePageCancellationTokenSource?.Dispose();
             _leavePageCancellationTokenSource = null;
 
-            FileItems.Reverse().ForEach(x => x.StopImageLoading());
+            ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
+            ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
             FolderItems.Reverse().ForEach(x => x.StopImageLoading());
 
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
@@ -248,12 +252,15 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (isTokenChanged || isPathChanged)
                         {
                             {
-                                var fileItems = FileItems.ToArray();
-                                var folderItems = FolderItems.ToArray();
+                                var items = new[] { FolderItems, ArchiveFileItems, ImageFileItems }
+                                    .SelectMany(x => x)
+                                    .ToArray();
+                                
                                 FolderItems.Clear();
-                                FileItems.Clear();
-                                fileItems.AsParallel().ForAll(x => x.Dispose());
-                                folderItems.AsParallel().ForAll(x => x.Dispose());
+                                ArchiveFileItems.Clear();
+                                ImageFileItems.Clear();
+
+                                items.AsParallel().ForAll(x => x.Dispose());
                             }
 
                             if (isTokenChanged)
@@ -278,7 +285,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                         else
                         {
-                            HasFileItem = FileItems.Any();
+                            HasFileItem = ImageFileItems.Any();
                         }
                     }
                 }
@@ -304,7 +311,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 else
                 {
                     // 前回読み込みキャンセルしていたものを改めて読み込むように
-                    FileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
+                    ImageFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
+                    ArchiveFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                     FolderItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                 }
             }
@@ -355,7 +363,8 @@ namespace TsubameViewer.Presentation.ViewModels
         private async ValueTask RefreshFolderItems(StorageFolder folder, CancellationToken ct)
         {
             FolderItems.Clear();
-            FileItems.Clear();
+            ArchiveFileItems.Clear();
+            ImageFileItems.Clear();
             var itemsResult = await GetFolderItemsAsync(folder, ct);
             if (itemsResult.ItemsCount == 0)
             {
@@ -371,12 +380,18 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     FolderItems.Add(item);
                 }
-                else if (folderItem is StorageFile file
-                    && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType)
-                    )
+                else if (folderItem is StorageFile file)
                 {
-                    unsortedFileItems.Add(item);
+                    if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
+                    {
+                        unsortedFileItems.Add(item);
+                    }
+                    else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                    {
+                        ArchiveFileItems.Add(item);
+                    }
                 }
+                
             }
 
             var sortedFileItems = SelectedFileSortType.Value switch
@@ -391,10 +406,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
             using (FileItemsView.DeferRefresh())
             {
-                FileItems.AddRange(sortedFileItems);
+                ImageFileItems.AddRange(sortedFileItems);
             }
 
-            HasFileItem = FileItems.Any();
+            HasFileItem = ImageFileItems.Any();
         }
 
 
@@ -450,11 +465,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token))
                     {
-                        if (FileItems.Any())
+                        if (ImageFileItems.Any())
                         {
-                            var items = FileItems.ToArray();
-                            FileItems.Clear();
-                            FileItems.Reverse().ForEach(x => x.ClearImage());
+                            var items = ImageFileItems.ToArray();
+                            ImageFileItems.Clear();
+                            ImageFileItems.Reverse().ForEach(x => x.ClearImage());
 
                             var sortedFileItems = SelectedFileSortType.Value switch
                             {
@@ -467,11 +482,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             using (FileItemsView.DeferRefresh())
                             {
-                                FileItems.AddRange(sortedFileItems);
+                                ImageFileItems.AddRange(sortedFileItems);
                             }
                         }
 
-                        RaisePropertyChanged(nameof(FileItems));
+                        RaisePropertyChanged(nameof(ImageFileItems));
                     }
                }
             });

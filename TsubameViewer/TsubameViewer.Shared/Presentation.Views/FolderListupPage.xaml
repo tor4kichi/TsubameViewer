@@ -133,6 +133,38 @@
       </uwpControls:DockPanel>
     </DataTemplate>
 
+    <DataTemplate x:Key="ArchiveFileTemplate">
+      <StackPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+        <Grid Height="52" Margin="12 0">
+          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+        </Grid>
+      </StackPanel>
+    </DataTemplate>
+
+    <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
+                                     Folder="{StaticResource FolderTemplate}"
+                                   Archive="{StaticResource ArchiveFileTemplate}"
+                                     >
+    </ts:FolderItemTemplateSelector>
+
+
+
     <Style x:Key="FolderStyle" TargetType="GridViewItem">
       <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -140,7 +172,15 @@
       <Setter Property="Padding" Value="0 0 0 0" />
       <Setter Property="Margin" Value="6 6" />
     </Style>
-    
+
+
+    <CollectionViewSource x:Key="FolderAndArchiveItems"
+                          Source="{Binding Groups}"
+                          IsSourceGrouped="True"
+                          ItemsPath="Items"
+                          />
+
+
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
     
@@ -161,6 +201,7 @@
         <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
     </DataTemplate>
+    
     <DataTemplate x:Key="FileItemTemplate_Large">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" >
         <ToolTipService.ToolTip>
@@ -260,12 +301,12 @@
       </StackPanel>
       <ScrollViewer>
         <StackPanel x:Name="ContentRootStackPanel" Margin="48 8 48 32">
-          <uwpControls:AdaptiveGridView ItemsSource="{Binding FolderItems}"
+          <uwpControls:AdaptiveGridView ItemsSource="{Binding Source={StaticResource FolderAndArchiveItems}}"
                           x:Name="FoldersAdaptiveGridView"
                           StretchContentForSingleRow="False"
                           OneRowModeEnabled="False"
                           VerticalAlignment="Top"
-                          ItemTemplate="{StaticResource FolderTemplate}"
+                          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
                           ItemContainerStyle="{StaticResource FolderStyle}"
                           DesiredWidth="360"            
                           ItemHeight="132"
