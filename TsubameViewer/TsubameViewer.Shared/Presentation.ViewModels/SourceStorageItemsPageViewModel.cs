@@ -104,7 +104,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (args.StorageItem is StorageFolder)
                     {
-                        Folders.Insert(0, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                        // 追加用ボタンの次に配置するための 1
+                        Folders.Insert(1, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }
                     else if (args.StorageItem is StorageFile)
                     {
