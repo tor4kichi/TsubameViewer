@@ -91,17 +91,7 @@ namespace TsubameViewer.Presentation.Views
                     frame.BackStack.RemoveAt(1);
                 }
             }
-
             
-            if (!_isFirstNavigation)
-            {
-                _Prev = PrimaryWindowCoreLayout.CurrentNavigationParameters;
-                _ = StoreNaviagtionParameterDelayed(e);
-            }
-
-            _isFirstNavigation = false;
-
-
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
             SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
@@ -111,12 +101,36 @@ namespace TsubameViewer.Presentation.Views
                 ;
 
             // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
-            if (isCanGoBackPage)
+            if (!isCanGoBackPage)
             {
-                var oldCacheSize = ContentFrame.CacheSize;
-                ContentFrame.CacheSize = 0;
-                ContentFrame.CacheSize = oldCacheSize;
+                ContentFrame.BackStack.Clear();
+                BackParametersStack.Clear();
+
+                _ = StoreNaviagtionParameterDelayed(e);
             }
+            else if (!_isFirstNavigation)
+            {
+                // 順序重要
+                _Prev = PrimaryWindowCoreLayout.CurrentNavigationParameters;
+
+                if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
+                {
+                    ForwardParametersStack.Clear();
+                    var parameters = new NavigationParameters();
+                    if (_Prev != null)
+                    {
+                        foreach (var pair in _Prev)
+                        {
+                            parameters.Add(pair.Key, pair.Value);
+                        }
+                    }
+                    BackParametersStack.Add(parameters);
+                }
+
+                _ = StoreNaviagtionParameterDelayed(e);
+            }
+
+            _isFirstNavigation = false;
         }
 
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
@@ -207,19 +221,6 @@ namespace TsubameViewer.Presentation.Views
         async Task StoreNaviagtionParameterDelayed(NavigationEventArgs e)
         {
             await Task.Delay(50);
-            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
-            {
-                ForwardParametersStack.Clear();
-                var parameters = new NavigationParameters();
-                if (_Prev != null)
-                {
-                    foreach (var pair in _Prev)
-                    {
-                        parameters.Add(pair.Key, pair.Value);
-                    }
-                }
-                BackParametersStack.Add(parameters);
-            }
 
             // ナビゲーション状態の保存
             Debug.WriteLine("[NavvigationRestore] Save CurrentPage: " + ContentFrame.CurrentSourcePageType.Name);
@@ -287,6 +288,10 @@ namespace TsubameViewer.Presentation.Views
                     ;
 
                 return true;
+            }
+            else
+            {
+                _navigationService.NavigateAsync(nameof(Views.SourceStorageItemsPage));
             }
 
             return false;
