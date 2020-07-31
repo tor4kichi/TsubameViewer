@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -17,6 +18,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
@@ -59,7 +61,7 @@ namespace TsubameViewer.Presentation.Views
         private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
         private List<INavigationParameters> ForwardParametersStack = new List<INavigationParameters>();
 
-        bool _isFirstNavigation = false;
+        bool _isFirstNavigation = true;
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             var frame = (Frame)sender;
@@ -100,8 +102,6 @@ namespace TsubameViewer.Presentation.Views
             _isFirstNavigation = false;
 
 
-
-
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
             SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
@@ -117,8 +117,6 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.CacheSize = 0;
                 ContentFrame.CacheSize = oldCacheSize;
             }
-
-            
         }
 
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
@@ -140,6 +138,64 @@ namespace TsubameViewer.Presentation.Views
 
 
 
+        public async Task RestoreNavigationStack()
+        {
+            var navigationManager = _viewModel.RestoreNavigationManager;
+            var currentEntry = navigationManager.GetCurrentNavigationEntry();
+            if (currentEntry == null) 
+            {
+                Debug.WriteLine("[NavvigationRestore] skip restore page.");
+                await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                return;
+            }
+
+            var result = await _navigationService.NavigateAsync(currentEntry.PageName, MakeNavigationParameter(currentEntry.Parameters));
+            if (!result.Success)
+            {
+                await Task.Delay(50);
+                Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
+                await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                return;
+            }
+
+            Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
+
+            {
+                var backStack = navigationManager.GetBackNavigationEntries();
+                foreach (var backNavItem in backStack)
+                {
+                    var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{backNavItem.PageName}");
+                    var parameters = MakeNavigationParameter(backNavItem.Parameters);
+                    ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
+                    BackParametersStack.Add(parameters);
+                    Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + backNavItem.PageName);
+                }
+            }
+
+            {
+                var forwardStack = navigationManager.GetForwardNavigationEntries();
+                foreach (var forwardNavItem in forwardStack)
+                {
+                    var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{forwardNavItem.PageName}");
+                    var parameters = MakeNavigationParameter(forwardNavItem.Parameters);
+                    ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
+                    ForwardParametersStack.Add(parameters);
+                    Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + forwardNavItem.PageName);
+                }
+            }
+        }
+
+        static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
+        {
+            var np = new NavigationParameters();
+            if (parameters == null) { return np; }
+            foreach (var item in parameters)
+            {
+                np.Add(item.Key, item.Value);
+            }
+
+            return np;
+        }
         
         public static INavigationParameters CurrentNavigationParameters { get; set; }
 
@@ -164,7 +220,40 @@ namespace TsubameViewer.Presentation.Views
                 }
                 BackParametersStack.Add(parameters);
             }
+
+            // ナビゲーション状態の保存
+            Debug.WriteLine("[NavvigationRestore] Save CurrentPage: " + ContentFrame.CurrentSourcePageType.Name);
+            _viewModel.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, CurrentNavigationParameters));
+            {
+                PageEntry[] backNavigationPageEntries = new PageEntry[BackParametersStack.Count];
+                for (var backStackIndex = 0; backStackIndex < BackParametersStack.Count; backStackIndex++)
+                {
+                    var parameters = BackParametersStack[backStackIndex];
+                    var stackEntry = ContentFrame.BackStack[backStackIndex];
+                    backNavigationPageEntries[backStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
+                    Debug.WriteLine("[NavvigationRestore] Save BackStackPage: " + backNavigationPageEntries[backStackIndex].PageName);
+                }
+                _viewModel.RestoreNavigationManager.SetBackNavigationEntries(backNavigationPageEntries);
+            }
+            {
+                PageEntry[] forwardNavigationPageEntries = new PageEntry[ForwardParametersStack.Count];
+                for (var forwardStackIndex = 0; forwardStackIndex < ForwardParametersStack.Count; forwardStackIndex++)
+                {
+                    var parameters = ForwardParametersStack[forwardStackIndex];
+                    var stackEntry = ContentFrame.ForwardStack[forwardStackIndex];
+                    forwardNavigationPageEntries[forwardStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
+                    Debug.WriteLine("[NavvigationRestore] Save ForwardStackPage: " + forwardNavigationPageEntries[forwardStackIndex].PageName);
+                }
+                _viewModel.RestoreNavigationManager.SetForwardNavigationEntries(forwardNavigationPageEntries);
+            }
+
         }
+
+        static PageEntry MakePageEnetry(Type pageType, INavigationParameters parameters)
+        {
+            return new PageEntry(pageType.Name, parameters);
+        }
+
 
         bool HandleBackRequest()
         {

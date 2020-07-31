@@ -198,8 +198,8 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            ns.NavigateAsync(nameof(SourceStorageItemsPage));
-
+            _ = shell.RestoreNavigationStack();
+            
             base.OnInitialized();
         }
 
