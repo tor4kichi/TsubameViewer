@@ -43,7 +43,6 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-
     public sealed class ImageViewerPageViewModel : ViewModelBase, IDestructible
     {
         private string _currentToken;
@@ -112,7 +111,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
 
-            DisplayCurrentImageIndex = this.ObserveProperty(x => CurrentImageIndex)
+            DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim()
                 .AddTo(_disposables);
@@ -123,6 +122,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
+
+
+            
         }
 
 
@@ -160,6 +162,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         BitmapImage _emptyImage = new BitmapImage();
 
+        public override void OnNavigatingTo(INavigationParameters parameters)
+        {
+            Views.PrimaryWindowCoreLayout.CurrentNavigationParameters = parameters;
+
+            base.OnNavigatingTo(parameters);
+        }
+
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _navigationDisposables = new CompositeDisposable();
@@ -171,7 +180,10 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
             var mode = parameters.GetNavigationMode();
-            if (mode == NavigationMode.New)
+            if (mode == NavigationMode.New
+                || mode == NavigationMode.Back
+                || mode == NavigationMode.Forward
+                )
             {
                 // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
 
@@ -333,7 +345,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            CurrentImageIndex++;
+            CurrentImageIndex += 1;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -350,7 +362,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            CurrentImageIndex--;
+            CurrentImageIndex -= 1;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();

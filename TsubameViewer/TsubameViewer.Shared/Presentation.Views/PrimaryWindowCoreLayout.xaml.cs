@@ -55,6 +55,11 @@ namespace TsubameViewer.Presentation.Views
             typeof(SettingsPage),
         };
 
+
+        private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
+        private List<INavigationParameters> ForwardParametersStack = new List<INavigationParameters>();
+
+        bool _isFirstNavigation = false;
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             var frame = (Frame)sender;
@@ -85,13 +90,35 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
 
+            
+            if (!_isFirstNavigation)
+            {
+                _Prev = PrimaryWindowCoreLayout.CurrentNavigationParameters;
+                _ = StoreNaviagtionParameterDelayed(e);
+            }
+
+            _isFirstNavigation = false;
+
+
+
+
+            // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
+            var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
             SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
-                CanGoBackPageTypes.Contains(e.SourcePageType)
+                isCanGoBackPage
                 ? AppViewBackButtonVisibility.Visible
                 : AppViewBackButtonVisibility.Collapsed
                 ;
 
-            // TODO: 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
+            // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
+            if (isCanGoBackPage)
+            {
+                var oldCacheSize = ContentFrame.CacheSize;
+                ContentFrame.CacheSize = 0;
+                ContentFrame.CacheSize = oldCacheSize;
+            }
+
+            
         }
 
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
@@ -100,7 +127,6 @@ namespace TsubameViewer.Presentation.Views
         {
             return _navigationService ??= NavigationService.Create(this.ContentFrame, Gestures.Refresh);
         }
-
 
         private DelegateCommand _BackCommand;
         public DelegateCommand BackCommand =>
@@ -112,6 +138,101 @@ namespace TsubameViewer.Presentation.Views
 
         #region Back/Forward Navigation
 
+
+
+        
+        public static INavigationParameters CurrentNavigationParameters { get; set; }
+
+
+
+
+        private INavigationParameters _Prev;
+
+        async Task StoreNaviagtionParameterDelayed(NavigationEventArgs e)
+        {
+            await Task.Delay(50);
+            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
+            {
+                ForwardParametersStack.Clear();
+                var parameters = new NavigationParameters();
+                if (_Prev != null)
+                {
+                    foreach (var pair in _Prev)
+                    {
+                        parameters.Add(pair.Key, pair.Value);
+                    }
+                }
+                BackParametersStack.Add(parameters);
+            }
+        }
+
+        bool HandleBackRequest()
+        {
+            var currentPageType = ContentFrame.Content?.GetType();
+            if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
+            {
+                Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
+                return false;
+            }
+
+            if (_navigationService.CanGoBack())
+            {
+                var backNavigationParameters = BackParametersStack.ElementAtOrDefault(BackParametersStack.Count - 1);
+                {
+                    var last = BackParametersStack.Last();
+                    var current = CurrentNavigationParameters;    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+                    var parameters = new NavigationParameters();
+                    if (current != null)
+                    {
+                        foreach (var pair in current)
+                        {
+                            parameters.Add(pair.Key, pair.Value);
+                        }
+                    }
+                    BackParametersStack.Remove(last);
+                    ForwardParametersStack.Add(parameters);
+                }
+                _ = backNavigationParameters == null
+                    ? _navigationService.GoBackAsync()
+                    : _navigationService.GoBackAsync(backNavigationParameters)
+                    ;
+
+                return true;
+            }
+
+            return false;
+        }
+
+
+        bool HandleForwardRequest()
+        {
+            if (_navigationService.CanGoForward())
+            {
+                var forwardNavigationParameters = ForwardParametersStack.Last();
+                {
+                    var last = ForwardParametersStack.Last();
+                    var current = CurrentNavigationParameters; // GoForwardAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+                    var parameters = new NavigationParameters();
+                    if (current != null)
+                    {
+                        foreach (var pair in current)
+                        {
+                            parameters.Add(pair.Key, pair.Value);
+                        }
+                    }
+                    ForwardParametersStack.Remove(last);
+                    BackParametersStack.Add(parameters);
+                }
+                _ = forwardNavigationParameters == null
+                   ? _navigationService.GoForwardAsync()
+                   : _navigationService.GoForwardAsync(forwardNavigationParameters)
+                   ;
+
+                return true;
+            }
+
+            return false;
+        }
 
 
         private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
@@ -169,35 +290,9 @@ namespace TsubameViewer.Presentation.Views
             e.Handled = true;
         }
 
-        bool HandleBackRequest()
-        {
-            var currentPageType = ContentFrame.Content?.GetType();
-            if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
-            {
-                Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
-                return false;
-            }
-
-            if (_navigationService.CanGoBack())
-            {
-                _ = _navigationService.GoBackAsync();
-                return true;
-            }
-
-            return false;
-        }
 
 
-        bool HandleForwardRequest()
-        {
-            if (_navigationService.CanGoForward())
-            {
-                _ = _navigationService.GoForwardAsync();
-                return true;
-            }
 
-            return false;
-        }
 
 
         #endregion

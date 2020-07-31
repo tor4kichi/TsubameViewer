@@ -74,7 +74,7 @@
         </CommandBar>
       </NavigationView.PaneFooter>
 
-      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="10" />
+      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="2" />
     </NavigationView>
 
     <VisualStateManager.VisualStateGroups>

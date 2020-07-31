@@ -13,7 +13,9 @@
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  NavigationCacheMode="Enabled"
+  >
 
   <Page.Resources>
     <DataTemplate x:Key="FolderTemplate">

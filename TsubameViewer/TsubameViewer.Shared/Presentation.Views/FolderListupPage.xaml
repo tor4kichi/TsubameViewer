@@ -20,8 +20,8 @@
   xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
-  mc:Ignorable="d"
   NavigationCacheMode="Enabled"
+  mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
 
@@ -275,6 +275,9 @@
                                     SelectionMode="None"
                                     XYFocusDownNavigationStrategy="NavigationDirectionDistance"
                           >
+            <GridView.ItemContainerTransitions>
+              <TransitionCollection />
+            </GridView.ItemContainerTransitions>
             <GridView.Header>
               <Grid >
               </Grid>
@@ -408,7 +411,7 @@
             <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ContentRootStackPanel.Opacity" Value="0.0" />
+            <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
             <Setter Target="FileSortButton.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
