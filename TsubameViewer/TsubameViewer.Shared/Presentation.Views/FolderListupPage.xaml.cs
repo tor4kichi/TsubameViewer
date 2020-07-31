@@ -27,6 +27,7 @@ using Reactive.Bindings.Extensions;
 using Uno.Extensions;
 using Uno.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Presentation.ViewModels;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -68,6 +69,34 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+        }
+
+        private void MenuFlyout_Opened(object sender, object e)
+        {
+            var flyout = sender as FlyoutBase;
+            var pageVM = DataContext as FolderListupPageViewModel;
+            if (flyout.Target is ContentControl content)
+            {
+                var itemVM = (content.DataContext as StorageItemViewModel) ?? content.Content as StorageItemViewModel;
+                if (itemVM == null)
+                {
+                    flyout.Hide();
+                    return;
+                }
+
+                OpenImageViewerItem.Visibility = itemVM.Type == Models.Domain.StorageItemTypes.Folder ? Visibility.Visible : Visibility.Collapsed;
+                OpenImageViewerItem.CommandParameter = itemVM;
+                OpenImageViewerItem.Command = pageVM.AltOpenFolderItemCommand;
+                
+                OpenListupItem.Visibility = itemVM.Type == Models.Domain.StorageItemTypes.Archive ? Visibility.Visible : Visibility.Collapsed;
+                OpenListupItem.CommandParameter = itemVM; 
+                OpenListupItem.Command = pageVM.AltOpenFolderItemCommand;
+            }
+            else
+            {
+                flyout.Hide();
+                return;
+            }
         }
     }
 }

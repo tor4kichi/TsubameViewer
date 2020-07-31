@@ -209,7 +209,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         Images = default;
-                        _CurrentImageIndex = 0;
+                        CurrentImageIndex = 0;
                     }
                 }
 #if DEBUG
@@ -239,7 +239,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         Images = default;
-                        _CurrentImageIndex = 0;
+                        CurrentImageIndex = 0;
                     }
                 }
             }
@@ -250,6 +250,26 @@ namespace TsubameViewer.Presentation.ViewModels
             if (_tokenGettingFolder != null || _currentFolderItem != null)
             {
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
+            }
+
+            // 新規表示のときだけページ指定パラメータを処理する
+            if (mode == NavigationMode.New)
+            {
+                if (parameters.TryGetValue("pageName", out string pageName))
+                {
+                    var unescapedPageName = Uri.UnescapeDataString(pageName);
+                    var firstSelectItem = Images.FirstOrDefault(x => x.Name == unescapedPageName);
+                    if (firstSelectItem != null)
+                    {
+                        CurrentImageIndex = Images.IndexOf(firstSelectItem);
+                    }
+                }
+
+                // TODO: FileSortTypeを受け取って表示順の入れ替えに対応するべきか否か
+                //if (parameters.TryGetValue("sort", out string sortMethod))
+                {
+
+                }
             }
 
             // 表示画像が揃ったら改めてボタンを有効化
@@ -321,7 +341,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            var result = await _imageCollectionManager.GetImageSources(_currentFolderItem);
+            var result = await _imageCollectionManager.GetImageSourcesAsync(_currentFolderItem);
             if (result != null)
             {
                 Images = result.Images;

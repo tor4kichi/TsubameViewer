@@ -22,33 +22,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class ZipArchiveEntryImageSource : IImageSource, IDisposable
     {
-        public static async Task<ImageCollectionManager.GetImagesFromArchiveResult>
-            GetImagesFromZipFileAsync(StorageFile file)
-        {
-            CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var zipArchive = new ZipArchive(stream)
-                .AddTo(disposables);
-
-            var supportedEntries = zipArchive.Entries
-                .OrderBy(x => x.FullName)
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
-                .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x))
-                .ToArray();
-
-            return new ImageCollectionManager.GetImagesFromArchiveResult()
-            {
-                ItemsCount = (uint)supportedEntries.Length,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
-        }
-
         private readonly ZipArchiveEntry _entry;
-        public ZipArchiveEntryImageSource(ZipArchiveEntry entry)
+        public ZipArchiveEntryImageSource(ZipArchiveEntry entry, IStorageItem storageItem)
         {
             _entry = entry;
+            StorageItem = storageItem;
         }
 
         void IDisposable.Dispose()
@@ -57,6 +35,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
         public string Name => _entry.FullName;
+        public DateTime DateCreated => _entry.LastWriteTime.DateTime;
+
+        public IStorageItem StorageItem { get; }
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
@@ -67,6 +48,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
                 var bitmapImage = new BitmapImage();
                 await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                return bitmapImage;
+            }
+        }
+
+        public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
+        {
+            using (var entryStream = _entry.Open())
+            using (var memoryStream = entryStream.ToMemoryStream())
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
 
                 return bitmapImage;
             }

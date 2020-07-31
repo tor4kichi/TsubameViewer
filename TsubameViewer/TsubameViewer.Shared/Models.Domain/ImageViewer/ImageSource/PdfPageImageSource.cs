@@ -17,34 +17,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
-        public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> GetImagesFromPdfFileAsync(StorageFile file)
-        {
-            var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
-
-            var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
-                .Select(x => pdfDocument.GetPage((uint)x))
-                .Select(x => (IImageSource)new PdfPageImageSource(x))
-                .ToArray();
-
-            return new ImageCollectionManager.GetImagesFromArchiveResult()
-            {
-                ItemsCount = pdfDocument.PageCount,
-                Disposer = Disposable.Empty,
-                Images = supportedEntries,
-            };
-        }
-
-        
-
         private readonly PdfPage _pdfPage;
 
-        public PdfPageImageSource(PdfPage pdfPage)
+        public PdfPageImageSource(PdfPage pdfPage, IStorageItem storageItem)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
+            DateCreated = storageItem.DateCreated.DateTime;
+            StorageItem = storageItem;
         }
 
         public string Name { get; }
+        public DateTime DateCreated { get; }
+        public IStorageItem StorageItem { get; }
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct = default)
         {
@@ -66,9 +51,33 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
         }
 
+        public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
+        {
+            using (var memoryStream = new MemoryStream())
+            using (var streamWrite = new StreamWriter(memoryStream))
+            {
+                await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                await memoryStream.FlushAsync();
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
+
+                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
+
+                return bitmapImage;
+            }
+        }
+
         public void Dispose()
         {
             ((IDisposable)_pdfPage).Dispose();
         }
+
     }
 }

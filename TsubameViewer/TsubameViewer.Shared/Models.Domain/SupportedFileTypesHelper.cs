@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 
 namespace TsubameViewer.Models.Domain
@@ -83,5 +85,18 @@ namespace TsubameViewer.Models.Domain
                 _ => StorageItemTypes.None
             };
         }
+
+        public static StorageItemTypes StorageItemToStorageItemTypes(IImageSource item)
+        {
+            return item switch
+            {
+                StorageItemImageSource storageItem => storageItem.ItemTypes,
+                PdfPageImageSource _ => StorageItemTypes.Image,
+                ZipArchiveEntryImageSource _ => StorageItemTypes.Image,
+                RarArchiveEntryImageSource _ => StorageItemTypes.Image,
+                _ => StorageItemTypes.None
+            };
+        }
+
     }
 }

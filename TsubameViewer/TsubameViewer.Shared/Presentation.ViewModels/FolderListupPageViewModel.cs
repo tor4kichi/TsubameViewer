@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
@@ -48,12 +49,13 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowProcessing, value); }
         }
 
+        private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
-
+        public AltOpenFolderItemCommand AltOpenFolderItemCommand { get; }
 
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
@@ -81,7 +83,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private StorageFolder _tokenGettingFolder;
 
         private string _currentPath;
-        private StorageFolder _currentFolder;
+        private IStorageItem _currentItem;
 
         private CancellationTokenSource _leavePageCancellationTokenSource;
 
@@ -110,18 +112,22 @@ namespace TsubameViewer.Presentation.ViewModels
         static bool _LastIsFolderThumbnailEnabled;
 
         public FolderListupPageViewModel(
+            ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand,
-            OpenFolderItemCommand openFolderItemCommand
+            OpenFolderItemCommand openFolderItemCommand,
+            AltOpenFolderItemCommand altOpenFolderItemCommand
             )
         {
+            _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
+            AltOpenFolderItemCommand = altOpenFolderItemCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
@@ -273,9 +279,9 @@ namespace TsubameViewer.Presentation.ViewModels
                                 throw new Exception("token parameter is require for path parameter.");
                             }
 
-                            _currentFolder = (StorageFolder)await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-
-                            DisplayCurrentPath = _currentFolder.Path;
+                            var currentPathItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                            _currentItem = currentPathItem;
+                            DisplayCurrentPath = _currentItem.Path;
 
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                         }
@@ -336,10 +342,15 @@ namespace TsubameViewer.Presentation.ViewModels
             _isCompleteEnumeration = false;
             try
             {
-                if (_currentFolder != null)
+                if (_currentItem is StorageFolder folder)
                 {
-                    Debug.WriteLine(_currentFolder.Path);
-                    await RefreshFolderItems(_currentFolder, ct);
+                    Debug.WriteLine(folder.Path);
+                    await RefreshFolderItems(folder, ct);
+                }
+                else if (_currentItem is StorageFile file)
+                {
+                    Debug.WriteLine(file.Path);
+                    await RefreshFolderItems(file, ct);
                 }
                 else if (_tokenGettingFolder != null)
                 {
@@ -360,38 +371,35 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         
-        private async ValueTask RefreshFolderItems(StorageFolder folder, CancellationToken ct)
+        private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
         {
             FolderItems.Clear();
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
-            var itemsResult = await GetFolderItemsAsync(folder, ct);
-            if (itemsResult.ItemsCount == 0)
+            var result = await _imageCollectionManager.GetImageSourcesAsync(storageItem, ct);
+
+            if (result.Images?.Any() != true)
             {
                 return;
             }
 
             List<StorageItemViewModel> unsortedFileItems = new List<StorageItemViewModel>();
-            await foreach (var folderItem in itemsResult.AsyncEnumerableItems.WithCancellation(ct))
+            foreach (var folderItem in result.Images)
             {
                 ct.ThrowIfCancellationRequested();
                 var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings);
-                if (folderItem is StorageFolder)
+                if (item.Type == StorageItemTypes.Folder)
                 {
                     FolderItems.Add(item);
                 }
-                else if (folderItem is StorageFile file)
+                else if (item.Type == StorageItemTypes.Image)
                 {
-                    if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                    {
-                        unsortedFileItems.Add(item);
-                    }
-                    else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                    {
-                        ArchiveFileItems.Add(item);
-                    }
+                    unsortedFileItems.Add(item);
                 }
-                
+                else if (item.Type == StorageItemTypes.Archive)
+                {
+                    ArchiveFileItems.Add(item);
+                }
             }
 
             var sortedFileItems = SelectedFileSortType.Value switch
@@ -412,25 +420,6 @@ namespace TsubameViewer.Presentation.ViewModels
             HasFileItem = ImageFileItems.Any();
         }
 
-
-        private async ValueTask<(uint ItemsCount, IAsyncEnumerable<IStorageItem> AsyncEnumerableItems)> GetFolderItemsAsync(StorageFolder folder, CancellationToken ct)
-        {
-#if WINDOWS_UWP
-            var storageFolder = (StorageFolder)folder;
-            var query = storageFolder.CreateItemQuery();
-            var itemsCount = await query.GetItemCountAsync().AsTask(ct);            
-            return (itemsCount, FolderHelper.GetEnumerator(query, itemsCount, ct));
-#else
-            var options = new EnumerationOptions() 
-            {
-                AttributesToSkip = System.IO.FileAttributes.ReadOnly,
-            };
-            var items = Directory.EnumerateFileSystemEntries(folder.Path, "*", options);
-
-            var count = (uint)items.Count();
-            return (count, GetEnumerator(folder, items, ct));
-#endif
-        }
 
         #endregion
 

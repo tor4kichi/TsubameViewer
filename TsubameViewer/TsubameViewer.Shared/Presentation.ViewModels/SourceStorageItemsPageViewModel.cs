@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
@@ -88,13 +89,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings) { });
                 await foreach (var item in _sourceStorageItemsRepository.GetSourceFolders())
                 {
-                    if (item.item is StorageFolder)
+                    var storageItemImageSource = new StorageItemImageSource(item.item, _thumbnailManager);
+                    if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
-                        Folders.Add(new StorageItemViewModel(item.item, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                        Folders.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }
-                    else if (item.item is StorageFile)
+                    else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
+                        || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
+                        )
                     {
-                        Files.Add(new StorageItemViewModel(item.item, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                        Files.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }                        
                 }
             }
@@ -102,14 +106,17 @@ namespace TsubameViewer.Presentation.ViewModels
             _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
                 .Subscribe(args => 
                 {
-                    if (args.StorageItem is StorageFolder)
+                    var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _thumbnailManager);
+                    if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
                         // 追加用ボタンの次に配置するための 1
-                        Folders.Insert(1, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                        Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }
-                    else if (args.StorageItem is StorageFile)
+                    else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
+                        || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
+                        )
                     {
-                        Files.Insert(0, new StorageItemViewModel(args.StorageItem, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                        Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }
                 })
                 .AddTo(_navigationDisposables);

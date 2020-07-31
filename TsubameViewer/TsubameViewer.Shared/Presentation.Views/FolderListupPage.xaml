@@ -259,7 +259,7 @@
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
-
+    
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
@@ -314,8 +314,15 @@
                           ItemClickCommand="{Binding OpenFolderItemCommand}"
                           IsSynchronizedWithCurrentItem="False"
                                     SelectionMode="None"
-                                    XYFocusDownNavigationStrategy="NavigationDirectionDistance"
+                                    XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
                           >
+            <GridView.ContextFlyout>
+              <MenuFlyout x:Name="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
+                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="画像ビューワーで開く" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
+                <MenuFlyoutItem x:Name="OpenListupItem" Text="圧縮ファイルの内容を一覧表示" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
+              </MenuFlyout>
+            </GridView.ContextFlyout>
+            
             <GridView.ItemContainerTransitions>
               <TransitionCollection />
             </GridView.ItemContainerTransitions>

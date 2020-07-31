@@ -9,6 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using Uno.Threading;
 using Windows.Storage;
@@ -19,9 +21,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public sealed class StorageItemViewModel : BindableBase, IImageGenerater, IDisposable
+    public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
-
         #region Navigation Parameters
 
         public static async ValueTask<INavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
@@ -29,17 +30,25 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
-                var path = GetSubtractPath(folder, vm.Item);
-                return new NavigationParameters(("token", vm.Token), ("path", Uri.EscapeDataString(path)));
+                var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm._item.StorageItem));
+                if (vm._item is ZipArchiveEntryImageSource
+                    || vm._item is PdfPageImageSource
+                    || vm._item is RarArchiveEntryImageSource
+                    )
+                {
+                    return new NavigationParameters(("token", vm.Token), ("path", escapedPath), ("pageName", Uri.EscapeDataString(vm.Name)));
+                }
+                else
+                {
+                    return new NavigationParameters(("token", vm.Token), ("path", escapedPath));
+                }
             }
             else if (item is IStorageFile file)
             {
                 return new NavigationParameters(("token", vm.Token), ("path", Uri.EscapeDataString(file.Name)));
             }
-            else
-            {
-                throw new NotSupportedException();
-            }
+
+            throw new NotSupportedException();
         }
 
         public static async Task<string> GetRawSubtractPath(StorageItemViewModel vm)
@@ -47,12 +56,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
-                return GetSubtractPath(folder, vm.Item);
+                if (vm._item is StorageItemImageSource storageItemImageSource)
+                {
+                    return GetSubtractPath(folder, storageItemImageSource.StorageItem);
+                }
             }
-            else
-            {
-                throw new NotSupportedException();
-            }
+
+            throw new NotSupportedException();
         }
 
         private static string GetSubtractPath(IStorageFolder lt, IStorageItem rt)
@@ -74,6 +84,36 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         #endregion
 
+
+        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
+        private readonly IImageSource _item;
+
+
+
+        public string Token { get; }
+
+        public string Name { get; }
+
+        
+        public string Path { get; }
+
+        public DateTimeOffset DateCreated { get; }
+
+        private BitmapImage _image;
+        public BitmapImage Image
+        {
+            get { return _image; }
+            private set { SetProperty(ref _image, value); }
+        }
+
+        public StorageItemTypes Type { get; }
+
+        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
+
+
         public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -84,126 +124,29 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
             {
                 // Load design-time books.
-                _Name = "テスト";
+                Name = "テスト";
             }
 #endif
         }
 
+
+
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IStorageItem item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
+        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
              : this(sourceStorageItemsRepository, thumbnailManager, folderListingSettings)
         {
-            Item = item;
-            _DateCreated = item.DateCreated;
+            _item = item;
+            DateCreated = _item.DateCreated;
+            
             Token = token;
-            _Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
-            _Name = Item.Name;
-            _Path = Item.Path;
-        }
-
-        public IStorageItem Item { get; private set; }
-        public string Token { get; private set; }
-
-        private string _Name;
-        public string Name
-        {
-            get { return _Name; }
-            set { SetProperty(ref _Name, value); }
-        }
-
-        private string _Path;
-        public string Path
-        {
-            get { return _Path; }
-            set { SetProperty(ref _Path, value); }
-        }
-
-        private DateTimeOffset _DateCreated;
-        public DateTimeOffset DateCreated
-        {
-            get { return _DateCreated; }
-            set { SetProperty(ref _DateCreated, value); }
-        }
-
-        private BitmapImage _image;
-        public BitmapImage Image
-        {
-            get { return _image; }
-            private set { SetProperty(ref _image, value); }
-        }
-
-        private StorageItemTypes _Type;
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly ThumbnailManager _thumbnailManager;
-        private readonly FolderListingSettings _folderListingSettings;
-
-        public StorageItemTypes Type
-        {
-            get { return _Type; }
-            private set { SetProperty(ref _Type, value); }
-        }
-
-
-        public void Setup(IStorageItem item, string token)
-        {
-            Item = item;
-            Token = token;
+            Name = _item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-        }
-
-        private CancellationTokenSource _cts = new CancellationTokenSource();
-        private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
-
-        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
-        {
-            if (Item is StorageFile file)
+            if (item is StorageItemImageSource storageItemImageSource)
             {
-                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                {
-                    if (!_folderListingSettings.IsImageFileThumbnailEnabled) { return null; }
-
-                    //var image = new BitmapImage(new Uri(file.Path, UriKind.Absolute));
-                    using (var thumbImage = await file.GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, (uint)ListingImageConstants.LargeFileThumbnailImageHeight))
-                    {
-                        var image = new BitmapImage();
-                        image.SetSource(thumbImage);
-                        return image;
-                    }
-                }
-                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                {
-                    if (!_folderListingSettings.IsArchiveFileThumbnailEnabled) { return null; }
-
-                    var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(file);
-                    if (thumbnailFile == null) { return null; }
-                    var image = new BitmapImage();
-
-                    using (var stream = await thumbnailFile.OpenStreamForReadAsync())
-                    {
-                        image.SetSource(stream.AsRandomAccessStream());
-                    }
-
-                    return image;
-                }
+                Path = storageItemImageSource.Path;
             }
-            else if (Item is StorageFolder folder)
-            {
-                if (!_folderListingSettings.IsFolderThumbnailEnabled) { return null; }
-
-                var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
-                if (uri == null) { return null; }
-                var image = new BitmapImage(uri);
-                return image;
-            }
-
-            return new BitmapImage();
         }
-
-        
 
         public void ClearImage()
         {
@@ -232,7 +175,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
+            if (_item == null) { return; }
             if (_isInitialized) { return; }
+
+            if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
+            if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
+            if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
 
             try
             {
@@ -253,8 +201,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     ct.ThrowIfCancellationRequested();
 
                     _isAppearingRequestButLoadingCancelled = false;
-
-                    Image = await GenerateBitmapImageAsync(ct);
+                    Image = await _item.GenerateThumbnailBitmapImageAsync(ct);
                 }
                 finally
                 {

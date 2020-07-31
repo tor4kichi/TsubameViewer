@@ -10,7 +10,5 @@ namespace TsubameViewer.Models.Domain
         Folder,
         Image,
         Archive,
-
-        FixItemsRepeaterExceptionWithGetHeightDummy
     }
 }

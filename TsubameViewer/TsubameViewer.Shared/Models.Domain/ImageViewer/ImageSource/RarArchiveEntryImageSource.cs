@@ -20,39 +20,21 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class RarArchiveEntryImageSource : IImageSource, IDisposable
     {
-        public static async Task<ImageCollectionManager.GetImagesFromArchiveResult> 
-            GetImagesFromRarFileAsync(StorageFile file)
-        {
-            CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var rarArchive = RarArchive.Open(stream)
-                .AddTo(disposables);
-
-            
-            var supportedEntries = rarArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .OrderBy(x => x.Key)
-                .Select(x => (IImageSource)new RarArchiveEntryImageSource(x))
-                .ToArray();
-
-            return new ImageCollectionManager.GetImagesFromArchiveResult() 
-            {
-                ItemsCount = (uint)supportedEntries.Length,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
-        }
-
-
         private readonly RarArchiveEntry _entry;
 
-        public RarArchiveEntryImageSource(RarArchiveEntry entry)
+        public RarArchiveEntryImageSource(RarArchiveEntry entry, IStorageItem storageItem)
         {
             _entry = entry;
+            StorageItem = storageItem;
+            DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
         }
 
+        public IStorageItem StorageItem { get; }
+
+
         public string Name => _entry.Key;
+
+        public DateTime DateCreated { get; }
 
         CancellationTokenSource _cts = new CancellationTokenSource();
         
@@ -81,6 +63,25 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public void Dispose()
         {
             ((IDisposable)_cts).Dispose();
+        }
+
+
+        public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
+        {
+            using (var entryStream = _entry.OpenEntryStream())
+            using (var memoryStream = entryStream.ToMemoryStream())
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var bitmapImage = new BitmapImage();
+                await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
+
+                return bitmapImage;
+            }
         }
     }
 }
