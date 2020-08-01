@@ -106,6 +106,12 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.BackStack.Clear();
                 BackParametersStack.Clear();
 
+                if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
+                {
+                    ContentFrame.ForwardStack.Clear();
+                    ForwardParametersStack.Clear();
+                }
+
                 _ = StoreNaviagtionParameterDelayed();
             }
             else if (!_isFirstNavigation)
@@ -163,7 +169,9 @@ namespace TsubameViewer.Presentation.Views
 
             try
             {
-                var result = await _navigationService.NavigateAsync(currentEntry.PageName, MakeNavigationParameter(currentEntry.Parameters));
+                var parameters = MakeNavigationParameter(currentEntry.Parameters);
+                parameters.Add("__restored", string.Empty);
+                var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters);
                 if (!result.Success)
                 {
                     await Task.Delay(50);

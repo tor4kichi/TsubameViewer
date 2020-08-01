@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
@@ -96,21 +97,22 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
-
+        private readonly BookmarkManager _bookmarkManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
-            ToggleFullScreenCommand toggleFullScreenCommand
+            ToggleFullScreenCommand toggleFullScreenCommand,
+            BookmarkManager bookmarkManager
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
-
+            _bookmarkManager = bookmarkManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim()
@@ -197,7 +199,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         _currentToken = token;
 
-
                         var item = await _sourceStorageItemsRepository.GetItemAsync(token);
 
                         _tokenGettingFolder = item as StorageFolder;
@@ -252,8 +253,27 @@ namespace TsubameViewer.Presentation.ViewModels
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
 
-            // 新規表示のときだけページ指定パラメータを処理する
-            if (mode == NavigationMode.New)
+            // 表示する画像を決める
+            if (mode == NavigationMode.Forward 
+                || parameters.ContainsKey("__restored") 
+                || (mode == NavigationMode.New && !parameters.ContainsKey("pageName"))
+                )
+            {
+                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_currentFolderItem.Path);
+                if (bookmarkPageName != null)
+                {
+                    for (var i = 0; i < Images.Length; i++)
+                    {
+                        if (Images[i].Name == bookmarkPageName)
+                        {
+                            CurrentImageIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (mode == NavigationMode.New && parameters.ContainsKey("pageName")
+                )
             {
                 if (parameters.TryGetValue("pageName", out string pageName))
                 {
@@ -321,6 +341,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             if (ct.IsCancellationRequested) { return; }
 
                             CurrentImage = bitmapImage;
+
+                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name);
                         }
                     }
                     catch (OperationCanceledException) { }
