@@ -205,6 +205,11 @@
               <TextBlock Text="{Binding GroupId, Converter={StaticResource LocalizeConverter}}" />
             </DataTemplate>
           </GroupStyle.HeaderTemplate>
+          <GroupStyle.HeaderContainerStyle>
+            <Style TargetType="GridViewHeaderItem">
+              <Setter Property="IsTabStop" Value="False" />
+            </Style>
+          </GroupStyle.HeaderContainerStyle>
         </GroupStyle>
       </GridView.GroupStyle>
       <i:Interaction.Behaviors>

@@ -30,10 +30,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
-                var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm._item.StorageItem));
-                if (vm._item is ZipArchiveEntryImageSource
-                    || vm._item is PdfPageImageSource
-                    || vm._item is RarArchiveEntryImageSource
+                var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm.Item.StorageItem));
+                if (vm.Item is ZipArchiveEntryImageSource
+                    || vm.Item is PdfPageImageSource
+                    || vm.Item is RarArchiveEntryImageSource
                     )
                 {
                     return new NavigationParameters(("token", vm.Token), ("path", escapedPath), ("pageName", Uri.EscapeDataString(vm.Name)));
@@ -56,7 +56,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
             {
-                if (vm._item is StorageItemImageSource storageItemImageSource)
+                if (vm.Item is StorageItemImageSource storageItemImageSource)
                 {
                     return GetSubtractPath(folder, storageItemImageSource.StorageItem);
                 }
@@ -88,7 +88,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly IImageSource _item;
+        public IImageSource Item { get; }
 
 
 
@@ -136,11 +136,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
              : this(sourceStorageItemsRepository, thumbnailManager, folderListingSettings)
         {
-            _item = item;
-            DateCreated = _item.DateCreated;
+            Item = item;
+            DateCreated = Item.DateCreated;
             
             Token = token;
-            Name = _item.Name;
+            Name = Item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             if (item is StorageItemImageSource storageItemImageSource)
             {
@@ -175,7 +175,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
-            if (_item == null) { return; }
+            if (Item == null) { return; }
             if (_isInitialized) { return; }
 
             if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
@@ -201,7 +201,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     ct.ThrowIfCancellationRequested();
 
                     _isAppearingRequestButLoadingCancelled = false;
-                    Image = await _item.GenerateThumbnailBitmapImageAsync(ct);
+                    Image = await Item.GenerateThumbnailBitmapImageAsync(ct);
                 }
                 finally
                 {

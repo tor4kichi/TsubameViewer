@@ -20,10 +20,13 @@
   xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
-  NavigationCacheMode="Enabled"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
+  
+  <!-- NavigaitonCacheMode = Enabled にすると
+    ItemsRepeaterの中身が残る？ためキャッシュは利用していない
+  -->
 
   <Page.Resources>
 
@@ -315,6 +318,7 @@
                           IsSynchronizedWithCurrentItem="False"
                                     SelectionMode="None"
                                     XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
+                                        IsTabStop="False"
                           >
             <GridView.ContextFlyout>
               <MenuFlyout x:Name="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">

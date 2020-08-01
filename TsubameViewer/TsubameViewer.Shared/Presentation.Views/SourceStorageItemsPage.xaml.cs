@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -25,6 +26,23 @@ namespace TsubameViewer.Presentation.Views
         public SourceStorageItemsPage()
         {
             this.InitializeComponent();
+        }
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+
+            await Task.Delay(500);
+
+            if (FoldersAdaptiveGridView.Items.Any())
+            {
+                var firstItem = FoldersAdaptiveGridView.Items.First();
+                var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+                if (itemContainer != null)
+                {
+                    itemContainer.Focus(FocusState.Keyboard);
+                }
+            }
         }
     }
 }
