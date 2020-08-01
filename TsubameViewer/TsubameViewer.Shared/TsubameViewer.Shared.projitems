@@ -29,7 +29,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ListingImageConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\IImageGenerater.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\IImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
@@ -131,9 +130,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Assets\SharedAssets.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <PRIResource Include="$(MSBuildThisFileDirectory)Strings\en\Resources.resw" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
