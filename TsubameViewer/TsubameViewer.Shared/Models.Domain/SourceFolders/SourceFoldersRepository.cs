@@ -46,10 +46,24 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             _eventAggregator = eventAggregator;
         }
 
-        public string AddFolder(IStorageItem storageItem, string metadata = null)
+        public async Task<string> AddFolderAsync(IStorageItem storageItem, string metadata)
         {
-            var token = Guid.NewGuid().ToString();
+
 #if WINDOWS_UWP
+            string token = null;
+
+            foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
+            {
+                var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                if (item.Path == storageItem.Path)
+                {
+                    token = entry.Token;
+                    break;
+                }
+            }
+
+            token ??= Guid.NewGuid().ToString();
+
             if (metadata != null)
             {
                 StorageApplicationPermissions.FutureAccessList.AddOrReplace(token, storageItem, metadata);

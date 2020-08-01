@@ -273,7 +273,7 @@ namespace TsubameViewer
         }
 
 
-        void OnFileActivated_Internal(FileActivatedEventArgs args)
+        async void OnFileActivated_Internal(FileActivatedEventArgs args)
         {
             // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
             var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
@@ -288,7 +288,7 @@ namespace TsubameViewer
                     }
                 }
 
-                var fileToken = sourceStroageItemsRepo.AddFolder(item, SourceOriginConstants.FileActivation);
+                var fileToken = await sourceStroageItemsRepo.AddFolderAsync(item, SourceOriginConstants.FileActivation);
                 token ??= fileToken;
             }
 
@@ -297,7 +297,7 @@ namespace TsubameViewer
             if (token != null)
             {
                 var ns = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
+                var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
             }
         }
     }

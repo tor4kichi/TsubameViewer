@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
@@ -19,6 +20,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Uno.Disposables;
+using Uno.Extensions.Specialized;
 using Windows.Storage;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
@@ -82,6 +84,18 @@ namespace TsubameViewer.Presentation.ViewModels
             _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
                 .Subscribe(args =>
                 {
+                    var existInFolders = Folders.FirstOrDefault(x => x.Token == args.Token);
+                    if (existInFolders != null)
+                    {
+                        Folders.Remove(existInFolders);
+                    }
+
+                    var existInFiles = Files.FirstOrDefault(x => x.Token == args.Token);
+                    if (existInFiles != null)
+                    {
+                        Files.Remove(existInFiles);
+                    }
+
                     var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _thumbnailManager);
                     if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
