@@ -4,7 +4,6 @@
 Cancel = キャンセル
 
 
-
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = フォルダを追加
@@ -46,6 +45,7 @@ IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タ
 Folders = フォルダ
 RecentlyUsedFiles = 最近見たファイル
 
+SelectSourceFolder = TsubameViewerにフォルダを追加
 
 
 #### FolderListupPage

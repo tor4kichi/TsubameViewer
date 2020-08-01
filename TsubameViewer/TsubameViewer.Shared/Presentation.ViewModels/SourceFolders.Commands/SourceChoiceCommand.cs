@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using I18NPortable;
+using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -24,7 +25,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
             var picker = new Windows.Storage.Pickers.FolderPicker();
             picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;
             picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads;
-            picker.CommitButtonText = "選択"; // TODO: 選択 -> i18n
+            picker.CommitButtonText = "SelectSourceFolder".Translate(); 
             picker.FileTypeFilter.Add("*");
             var seletedFolder = await picker.PickSingleFolderAsync();
 
