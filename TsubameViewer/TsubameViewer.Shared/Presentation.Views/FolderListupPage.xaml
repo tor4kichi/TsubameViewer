@@ -183,14 +183,31 @@
                           ItemsPath="Items"
                           />
 
-
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
+
+    <DataTemplate x:Key="FileItemTemplate_Line">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240"
+                   >
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        </ToolTipService.ToolTip>
+        <Grid Background="{ThemeResource SystemBaseLowColor}" Padding="12 6">
+          <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
+            <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
+            <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
+            
+          </StackPanel>
+
+          <SymbolIcon Symbol="OpenFile" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        </Grid>
+      </UserControl>
+    </DataTemplate>
     
     <DataTemplate x:Key="FileItemTemplate_Small">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48">
         <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
         <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
@@ -199,7 +216,7 @@
     <DataTemplate x:Key="FileItemTemplate_Midium">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80">
         <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
         <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
@@ -208,7 +225,7 @@
     <DataTemplate x:Key="FileItemTemplate_Large">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" >
         <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
         <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
       </UserControl>
@@ -216,6 +233,20 @@
 
 
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
+      <ts:FileDisplayModeTemplateSelector.Line>
+        <DataTemplate >
+          <Grid Height="13">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    VerticalAlignment="Top"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                  VerticalAlignment="Bottom"
+                  />
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Line>
       <ts:FileDisplayModeTemplateSelector.Small>
         <DataTemplate >
           <Grid>
@@ -379,6 +410,30 @@
           </StackPanel>
 
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
+                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Line}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
+                                      />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+          
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                   ItemsSource="{Binding FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
@@ -486,12 +541,36 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{Binding HasFileItem}" />
-            
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FilesActionLayout.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- ファイルアイテムの表示方法切替
+      　　１．画像ファイルのサムネイル表示を無効にしてる場合は強制で表示切替UIを非表示
+      　　２．ファイルアイテムが無い時は非表示　
+      -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding IsRestrictImageFileThumbnail}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <x:Boolean>True</x:Boolean>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding HasFileItem}" />
             <!-- Note: ファイルの表示方法切替の時に 0になると一瞬表示が消えてしまう -->
             <!--<wst:EqualsStateTrigger Value="{Binding FileItems.Count}" EqualTo="0" />-->
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FilesActionLayout.Visibility" Value="Visible" />
             <Setter Target="FileDisplayModeItemsListView.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
@@ -529,6 +608,21 @@
       
       <!-- ファイルの表示方法切り替え -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            
+            <StateTrigger IsActive="{Binding IsRestrictImageFileThumbnail}" />
+            
+            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Line</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Line.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">

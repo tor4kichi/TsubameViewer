@@ -96,12 +96,20 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _DisplayCurrentPath, value); }
         }
 
+        private bool _IsRestrictImageFileThumbnail;
+        public bool IsRestrictImageFileThumbnail
+        {
+            get { return _IsRestrictImageFileThumbnail; }
+            set { SetProperty(ref _IsRestrictImageFileThumbnail, value); }
+        }
+
         public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
         public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
         {
             Models.Domain.FolderItemListing.FileDisplayMode.Large,
             Models.Domain.FolderItemListing.FileDisplayMode.Midium,
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
+            Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
 
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
@@ -203,7 +211,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
-            _navigationService = parameters.GetNavigationService();            
+            _navigationService = parameters.GetNavigationService();
+            
+            IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
 
             NowProcessing = true;
             try
