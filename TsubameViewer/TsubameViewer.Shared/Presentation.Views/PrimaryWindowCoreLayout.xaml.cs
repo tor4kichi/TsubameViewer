@@ -127,6 +127,8 @@ namespace TsubameViewer.Presentation.Views
                     {
                         foreach (var pair in _Prev)
                         {
+                            if (pair.Key == "__restored") { continue; }
+
                             parameters.Add(pair.Key, pair.Value);
                         }
                     }

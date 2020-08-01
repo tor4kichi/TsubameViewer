@@ -81,6 +81,17 @@ namespace TsubameViewer.Presentation.ViewModels
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_Button".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_Button),
                     }
                 },
+                new SettingsGroupViewModel
+                {
+                    Label = "GeneralUISettings".Translate(),
+                    Items =
+                    {
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsForceEnableXYNavigation".Translate(), _folderListingSettings, x => x.IsForceEnableXYNavigation)
+                        { 
+                            IsVisible = Xamarin.Essentials.DeviceInfo.Idiom != Xamarin.Essentials.DeviceIdiom.TV
+                        },
+                    }
+                },
             };
 
             AdvancedSettingGroups = new[]
@@ -148,10 +159,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public abstract class SettingItemViewModelBase
     {
-
+        public bool IsVisible { get; set; } = true;
     }
+
     public sealed class SettingsGroupViewModel 
     {
+        public bool IsVisible => Items?.Any(x => x.IsVisible) ?? false;
+
         public string Label { get; set; }
         public List<SettingItemViewModelBase> Items { get; set; } = new List<SettingItemViewModelBase>();
     }

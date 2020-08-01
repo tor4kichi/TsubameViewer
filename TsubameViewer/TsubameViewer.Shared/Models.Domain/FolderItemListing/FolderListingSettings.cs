@@ -13,6 +13,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _IsImageFileThumbnailEnabled = Read(true, nameof(IsImageFileThumbnailEnabled));
             _IsArchiveFileThumbnailEnabled = Read(true, nameof(IsArchiveFileThumbnailEnabled));
             _IsFolderThumbnailEnabled = Read(true, nameof(IsFolderThumbnailEnabled));
+
+            _IsForceEnableXYNavigation = Read(false, nameof(IsForceEnableXYNavigation));
         }
 
         private FileDisplayMode _FileDisplayMode;
@@ -43,5 +45,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             set { SetProperty(ref _IsFolderThumbnailEnabled, value); }
         }
 
+        private bool _IsForceEnableXYNavigation;
+        public bool IsForceEnableXYNavigation
+        {
+            get { return _IsForceEnableXYNavigation; }
+            set { SetProperty(ref _IsForceEnableXYNavigation, value); }
+        }
     }
 }

@@ -39,6 +39,10 @@ ImageViewerSettings = 画像ビューワーの設定
 IsReverseImageFliping_MouseWheel = ページ送りを逆にする（マウスホイール）
 IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タップ）
 
+GeneralUISettings = 操作設定
+IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
+
+
 
 #### SourceStorageItemsPage
 

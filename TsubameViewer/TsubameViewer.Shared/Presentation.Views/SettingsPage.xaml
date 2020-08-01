@@ -16,7 +16,7 @@
     <tt:SettingsItemTemplateSelector x:Key="SettingItemTemplateSelector">
       <tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
         <DataTemplate>
-          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
             <ToggleSwitch IsOn="{Binding ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" />
             <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
           </uwpControls:DockPanel>
@@ -82,7 +82,7 @@
 
       <tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
         <DataTemplate>
-          <Grid Width="{StaticResource SettingItemWidth}">
+          <Grid Width="{StaticResource SettingItemWidth}" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
             <TextBlock Text="{Binding Label}" />
             <TextBlock Text="{Binding Text.Value}" HorizontalAlignment="Right" />
           </Grid>
@@ -94,6 +94,7 @@
         <DataTemplate>
           <Button Content="{Binding Label, Mode=OneTime}" Command="{Binding ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
                   HorizontalAlignment="Right"
+                  Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                   />
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ButtonSettingItem>
@@ -101,7 +102,7 @@
 
 
     <DataTemplate x:Key="SettingsGroupTemplate">
-      <StackPanel Spacing="16">
+      <StackPanel Spacing="16" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
         <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
         <ItemsControl ItemsSource="{Binding Items}"
                         ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"

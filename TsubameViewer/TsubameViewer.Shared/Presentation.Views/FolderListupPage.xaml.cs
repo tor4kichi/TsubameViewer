@@ -44,13 +44,7 @@ namespace TsubameViewer.Presentation.Views
 
             FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
             FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
-
-            // 初期フォーカス設定
-            this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
-            this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;            
         }
 
         #region 初期フォーカス設定
@@ -59,41 +53,48 @@ namespace TsubameViewer.Presentation.Views
         {
             base.OnNavigatedTo(e);
 
-            if (FoldersAdaptiveGridView.Items.Any())
+            var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
+            if (settings.IsForceEnableXYNavigation
+                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                )
             {
-                var firstItem = FoldersAdaptiveGridView.Items.First();
-                var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                itemContainer.Focus(FocusState.Keyboard);
-            }
-            else if (FileItemsRepeater_Small.ItemsSource != null && FileItemsRepeater_Small.Visibility == Visibility.Visible)
-            {
-                var item = FileItemsRepeater_Small.FindDescendant<Control>();
-                item?.Focus(FocusState.Keyboard);
-            }
-            else if (FileItemsRepeater_Midium.ItemsSource != null && FileItemsRepeater_Midium.Visibility == Visibility.Visible)
-            {
-                var item = FileItemsRepeater_Midium.FindDescendant<Control>();
-                item?.Focus(FocusState.Keyboard);
-            }
-            else if (FileItemsRepeater_Large.ItemsSource != null && FileItemsRepeater_Large.Visibility == Visibility.Visible)
-            {
-                var item = FileItemsRepeater_Large.FindDescendant<Control>();
-                item?.Focus(FocusState.Keyboard);
-            }
-            else
-            {
-                ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-                
-                this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-                this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                if (FoldersAdaptiveGridView.Items.Any())
+                {
+                    var firstItem = FoldersAdaptiveGridView.Items.First();
+                    var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+                    itemContainer.Focus(FocusState.Keyboard);
+                }
+                else if (FileItemsRepeater_Small.ItemsSource != null && FileItemsRepeater_Small.Visibility == Visibility.Visible)
+                {
+                    var item = FileItemsRepeater_Small.FindDescendant<Control>();
+                    item?.Focus(FocusState.Keyboard);
+                }
+                else if (FileItemsRepeater_Midium.ItemsSource != null && FileItemsRepeater_Midium.Visibility == Visibility.Visible)
+                {
+                    var item = FileItemsRepeater_Midium.FindDescendant<Control>();
+                    item?.Focus(FocusState.Keyboard);
+                }
+                else if (FileItemsRepeater_Large.ItemsSource != null && FileItemsRepeater_Large.Visibility == Visibility.Visible)
+                {
+                    var item = FileItemsRepeater_Large.FindDescendant<Control>();
+                    item?.Focus(FocusState.Keyboard);
+                }
+                else
+                {
+                    ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
 
-                this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
-                this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
+                    this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                    this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                    this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+
+                    this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
+                    this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                }
             }
+            
         }
 
         private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)

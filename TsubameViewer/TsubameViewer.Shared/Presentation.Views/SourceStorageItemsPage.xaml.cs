@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using TsubameViewer.Presentation.ViewModels;
+using Uno;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -34,13 +36,19 @@ namespace TsubameViewer.Presentation.Views
 
             await Task.Delay(500);
 
-            if (FoldersAdaptiveGridView.Items.Any())
+            var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
+            if (settings.IsForceEnableXYNavigation
+                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                )
             {
-                var firstItem = FoldersAdaptiveGridView.Items.First();
-                var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                if (itemContainer != null)
+                if (FoldersAdaptiveGridView.Items.Any())
                 {
-                    itemContainer.Focus(FocusState.Keyboard);
+                    var firstItem = FoldersAdaptiveGridView.Items.First();
+                    var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+                    if (itemContainer != null)
+                    {
+                        itemContainer.Focus(FocusState.Keyboard);
+                    }
                 }
             }
         }
