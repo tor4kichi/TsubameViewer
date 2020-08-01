@@ -31,10 +31,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             if (item is IStorageFolder folder)
             {
                 var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm.Item.StorageItem));
-                if (vm.Item is ZipArchiveEntryImageSource
-                    || vm.Item is PdfPageImageSource
-                    || vm.Item is RarArchiveEntryImageSource
-                    )
+                if (vm.Type == StorageItemTypes.Image)
                 {
                     return new NavigationParameters(("token", vm.Token), ("path", escapedPath), ("pageName", Uri.EscapeDataString(vm.Name)));
                 }
