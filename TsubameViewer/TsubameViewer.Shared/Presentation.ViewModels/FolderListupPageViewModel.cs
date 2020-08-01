@@ -412,19 +412,15 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
-            var sortedFileItems = SelectedFileSortType.Value switch
-            {
-                FileSortType.TitleAscending => unsortedFileItems.OrderBy(x => x.Name),
-                FileSortType.TitleDecending => unsortedFileItems.OrderByDescending(x => x.Name),
-                FileSortType.UpdateTimeAscending => unsortedFileItems.OrderBy(x => x.DateCreated),
-                FileSortType.UpdateTimeDecending => unsortedFileItems.OrderByDescending(x => x.DateCreated),
-                _ => throw new NotSupportedException(),
-            };
-
-
+            
             using (FileItemsView.DeferRefresh())
             {
-                ImageFileItems.AddRange(sortedFileItems);
+                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
+
+                FileItemsView.SortDescriptions.Clear();
+                FileItemsView.SortDescriptions.Add(sortDescription);
+
+                ImageFileItems.AddRange(unsortedFileItems);
             }
 
             HasFileItem = ImageFileItems.Any();
@@ -443,6 +439,19 @@ namespace TsubameViewer.Presentation.ViewModels
         #endregion
 
         #region FileSortType
+
+
+        public static SortDescription ToSortDescription(FileSortType fileSortType)
+        {
+            return fileSortType switch
+            {
+                FileSortType.TitleAscending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending),
+                FileSortType.TitleDecending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending),
+                FileSortType.UpdateTimeAscending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending),
+                FileSortType.UpdateTimeDecending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending),
+                _ => throw new NotSupportedException(),
+            };
+        }
 
         private DelegateCommand<object> _ChangeFileSortCommand;
         public DelegateCommand<object> ChangeFileSortCommand =>
@@ -466,22 +475,14 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         if (ImageFileItems.Any())
                         {
-                            var items = ImageFileItems.ToArray();
-                            ImageFileItems.Clear();
-                            ImageFileItems.Reverse().ForEach(x => x.ClearImage());
-
-                            var sortedFileItems = SelectedFileSortType.Value switch
-                            {
-                                FileSortType.TitleAscending => items.OrderBy(x => x.Name),
-                                FileSortType.TitleDecending => items.OrderByDescending(x => x.Name),
-                                FileSortType.UpdateTimeAscending => items.OrderBy(x => x.DateCreated),
-                                FileSortType.UpdateTimeDecending => items.OrderByDescending(x => x.DateCreated),
-                                _ => throw new NotSupportedException(),
-                            };
-
                             using (FileItemsView.DeferRefresh())
                             {
-                                ImageFileItems.AddRange(sortedFileItems);
+                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
+
+                                FileItemsView.SortDescriptions.Clear();
+                                FileItemsView.SortDescriptions.Add(sortDescription);
+
+                                //ImageFileItems.AddRange(sortedFileItems);
                             }
                         }
 
