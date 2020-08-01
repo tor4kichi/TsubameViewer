@@ -161,16 +161,16 @@ namespace TsubameViewer.Presentation.Views
         public async Task RestoreNavigationStack()
         {
             var navigationManager = _viewModel.RestoreNavigationManager;
-            var currentEntry = navigationManager.GetCurrentNavigationEntry();
-            if (currentEntry == null) 
-            {
-                Debug.WriteLine("[NavvigationRestore] skip restore page.");
-                await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
-                return;
-            }
-
             try
             {
+                var currentEntry = navigationManager.GetCurrentNavigationEntry();
+                if (currentEntry == null)
+                {
+                    Debug.WriteLine("[NavvigationRestore] skip restore page.");
+                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                    return;
+                }
+
                 var parameters = MakeNavigationParameter(currentEntry.Parameters);
                 parameters.Add("__restored", string.Empty);
                 var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters);
@@ -181,9 +181,13 @@ namespace TsubameViewer.Presentation.Views
                     await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
                     return;
                 }
+
+                Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
             }
             catch
             {
+                Debug.WriteLine("[NavvigationRestore] failed restore current page. ");
+
                 BackParametersStack.Clear();
                 ForwardParametersStack.Clear();
                 ContentFrame.BackStack.Clear();
@@ -194,7 +198,6 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
 
             {
                 var backStack = navigationManager.GetBackNavigationEntries();
