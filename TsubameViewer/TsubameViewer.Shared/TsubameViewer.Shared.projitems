@@ -36,6 +36,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageFileImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ZipArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceOriginConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SupportedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />

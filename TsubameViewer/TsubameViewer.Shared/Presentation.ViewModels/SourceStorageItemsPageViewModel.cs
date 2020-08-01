@@ -76,7 +76,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 },
                 new SourceItemsGroup
                 {
-                    GroupId = "Files",
+                    GroupId = "RecentlyUsedFiles",
                     Items = Files,
                 },
             };
@@ -110,6 +110,23 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 })
                 .AddTo(_disposables);
+
+            _eventAggregator.GetEvent<SourceStorageItemsRepository.RemovedEvent>()
+                .Subscribe(args =>
+                {
+                    var existInFolders = Folders.FirstOrDefault(x => x.Token == args.Token);
+                    if (existInFolders != null)
+                    {
+                        Folders.Remove(existInFolders);
+                    }
+
+                    var existInFiles = Files.FirstOrDefault(x => x.Token == args.Token);
+                    if (existInFiles != null)
+                    {
+                        Files.Remove(existInFiles);
+                    }
+                })
+                .AddTo(_disposables);
         }
 
         
@@ -122,23 +139,35 @@ namespace TsubameViewer.Presentation.ViewModels
                 _foldersInitialized = true;
 
                 Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings) { });
-                await foreach (var item in _sourceStorageItemsRepository.GetSourceFolders())
+                await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                 {
                     var storageItemImageSource = new StorageItemImageSource(item.item, _thumbnailManager);
                     if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
                         Folders.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
                     }
-                    else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
+                    else
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+
+                await foreach (var item in _sourceStorageItemsRepository.GetTemporaryItems())
+                {
+                    var storageItemImageSource = new StorageItemImageSource(item.item, _thumbnailManager);
+                    if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
                         || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
                         )
                     {
                         Files.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
-                    }                        
+                    }
+                    else
+                    {
+                        throw new NotSupportedException();
+                    }
                 }
             }
 
-            
             await base.OnNavigatedToAsync(parameters);
         }
 

@@ -30,7 +30,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (seletedFolder == null) { return; }
 
-            await _SourceStorageItemsRepository.AddFolderAsync(seletedFolder, SourceOriginConstants.ChoiceDialog);
+            await _SourceStorageItemsRepository.AddItemPersistantAsync(seletedFolder, SourceOriginConstants.ChoiceDialog);
         }
     }
 }

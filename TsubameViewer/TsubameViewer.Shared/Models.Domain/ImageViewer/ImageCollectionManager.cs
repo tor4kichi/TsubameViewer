@@ -54,20 +54,27 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     var parentFolder = await file.GetParentAsync();
                     
                     // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
-                    var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
+                    var result = await Task.Run(async () => await GetFolderImagesAsync(file, parentFolder, ct));
                     try
                     {
                         var images = new IImageSource[result.ItemsCount];
-                        int index = 0;
                         int firstSelectedIndex = 0;
-                        await foreach (var item in result.Images.WithCancellation(ct))
-                        {
-                            images[index] = item;
-                            if (item.Name == file.Name)
+                        if (result.Images != null)
+                        { 
+                            int index = 0;
+                            await foreach (var item in result.Images?.WithCancellation(ct))
                             {
-                                firstSelectedIndex = index;
+                                images[index] = item;
+                                if (item.Name == file.Name)
+                                {
+                                    firstSelectedIndex = index;
+                                }
+                                index++;
                             }
-                            index++;
+                        }
+                        else
+                        {
+                            images = new IImageSource[] { new StorageItemImageSource(file, _thumbnailManager) };
                         }
 
                         return new ImageCollectionResult()     
@@ -75,7 +82,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                             Images = images,
                             ItemsEnumeratorDisposer = Disposable.Empty,
                             FirstSelectedIndex = firstSelectedIndex,
-                            ParentFolderOrArchiveName = parentFolder.Name
+                            ParentFolderOrArchiveName = parentFolder?.Name
                         };
                     }
                     catch (OperationCanceledException)
@@ -169,10 +176,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 #endif
 
 
-        public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFolder storageFolder, CancellationToken ct)
+        public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFile file, StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder.CreateFileQuery();
+            var query = storageFolder?.CreateFileQuery();
+            if (query == null) { return (0, null); }
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));
 #else

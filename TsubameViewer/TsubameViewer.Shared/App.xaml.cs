@@ -123,7 +123,7 @@ namespace TsubameViewer
         {
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
-            
+
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
@@ -199,7 +199,7 @@ namespace TsubameViewer
             Window.Current.Activate();
 
             _ = shell.RestoreNavigationStack();
-            
+
             base.OnInitialized();
         }
 
@@ -286,10 +286,14 @@ namespace TsubameViewer
                     {
                         continue;
                     }
-                }
+                    else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
+                    {
+                        NeighboringFilesQueryCache.AddNeighboringFilesQuery(file.Path, args.NeighboringFilesQuery);
+                    }
 
-                var fileToken = await sourceStroageItemsRepo.AddFolderAsync(item, SourceOriginConstants.FileActivation);
-                token ??= fileToken;
+                    var fileToken = await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
+                    token ??= fileToken;
+                }
             }
 
             // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く

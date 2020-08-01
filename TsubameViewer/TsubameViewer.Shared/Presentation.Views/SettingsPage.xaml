@@ -26,11 +26,11 @@
       <!-- アプリに記録されたフォルダ -->
       <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
         <DataTemplate>
-          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}">
+          <StackPanel Width="{StaticResource SettingItemWidth}" Spacing="16">
             <ItemsControl ItemsSource="{Binding Folders}" IsTabStop="False">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 6">
                     <uwpControls:DockPanel>
                       <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
                       <StackPanel>
@@ -49,7 +49,33 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-          </uwpControls:DockPanel>
+            <TextBlock Text="{Binding Source=RecentlyUsedFiles, Converter={StaticResource LocalizeConverter}}" 
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       />
+
+            <ItemsControl ItemsSource="{Binding TempFiles}" IsTabStop="False">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 8">
+                    <uwpControls:DockPanel>
+                      <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
+                      <StackPanel>
+                        <TextBlock Text="{Binding FolderName}" />
+                        <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </uwpControls:DockPanel>
+
+                    <DropDownButton.Flyout>
+                      <MenuFlyout Placement="BottomEdgeAlignedRight">
+                        <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
+                      </MenuFlyout>
+                    </DropDownButton.Flyout>
+                  </DropDownButton>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+          </StackPanel>
         </DataTemplate>
 
       </tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>

@@ -197,8 +197,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         _currentToken = token;
 
-                        var storageItem = await _sourceStorageItemsRepository.GetStorageItemAsync(token);
-                        var item = storageItem.item;
+
+                        var item = await _sourceStorageItemsRepository.GetItemAsync(token);
 
                         _tokenGettingFolder = item as StorageFolder;
 

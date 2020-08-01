@@ -78,8 +78,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         internal async Task<IStorageItem> GetTokenStorageItem()
         {
-            var item = await _sourceStorageItemsRepository.GetStorageItemAsync(Token);
-            return item.item;
+            return await _sourceStorageItemsRepository.GetItemAsync(Token);
         }
 
         #endregion

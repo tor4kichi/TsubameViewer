@@ -106,7 +106,7 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.BackStack.Clear();
                 BackParametersStack.Clear();
 
-                _ = StoreNaviagtionParameterDelayed(e);
+                _ = StoreNaviagtionParameterDelayed();
             }
             else if (!_isFirstNavigation)
             {
@@ -127,7 +127,7 @@ namespace TsubameViewer.Presentation.Views
                     BackParametersStack.Add(parameters);
                 }
 
-                _ = StoreNaviagtionParameterDelayed(e);
+                _ = StoreNaviagtionParameterDelayed();
             }
 
             _isFirstNavigation = false;
@@ -150,8 +150,6 @@ namespace TsubameViewer.Presentation.Views
 
         #region Back/Forward Navigation
 
-
-
         public async Task RestoreNavigationStack()
         {
             var navigationManager = _viewModel.RestoreNavigationManager;
@@ -163,11 +161,25 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            var result = await _navigationService.NavigateAsync(currentEntry.PageName, MakeNavigationParameter(currentEntry.Parameters));
-            if (!result.Success)
+            try
             {
-                await Task.Delay(50);
-                Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
+                var result = await _navigationService.NavigateAsync(currentEntry.PageName, MakeNavigationParameter(currentEntry.Parameters));
+                if (!result.Success)
+                {
+                    await Task.Delay(50);
+                    Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
+                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                    return;
+                }
+            }
+            catch
+            {
+                BackParametersStack.Clear();
+                ForwardParametersStack.Clear();
+                ContentFrame.BackStack.Clear();
+                ContentFrame.ForwardStack.Clear();
+
+                await StoreNaviagtionParameterDelayed();
                 await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
                 return;
             }
@@ -218,7 +230,7 @@ namespace TsubameViewer.Presentation.Views
 
         private INavigationParameters _Prev;
 
-        async Task StoreNaviagtionParameterDelayed(NavigationEventArgs e)
+        async Task StoreNaviagtionParameterDelayed()
         {
             await Task.Delay(50);
 

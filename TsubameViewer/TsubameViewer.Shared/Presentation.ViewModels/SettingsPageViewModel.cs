@@ -162,20 +162,33 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
         public ObservableCollection<StoredFolderViewModel> Folders { get; }
+        public ObservableCollection<StoredFolderViewModel> TempFiles { get; }
 
         public StoredFoldersSettingItemViewModel(SourceStorageItemsRepository SourceStorageItemsRepository)
         {
             _SourceStorageItemsRepository = SourceStorageItemsRepository;
             Folders = new ObservableCollection<StoredFolderViewModel>();
+            TempFiles = new ObservableCollection<StoredFolderViewModel>();
 
             Init();
         }
 
         async void Init()
         {
-            await foreach (var item in _SourceStorageItemsRepository.GetSourceFolders())
+            await foreach (var item in _SourceStorageItemsRepository.GetParsistantItems())
             {
                 Folders.Add(new StoredFolderViewModel(_SourceStorageItemsRepository, this)
+                {
+                    Item = item.item,
+                    FolderName = item.item.Name,
+                    Path = item.item.Path,
+                    Token = item.token,
+                });
+            }
+
+            await foreach (var item in _SourceStorageItemsRepository.GetTemporaryItems())
+            {
+                TempFiles.Add(new StoredFolderViewModel(_SourceStorageItemsRepository, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -188,6 +201,7 @@ namespace TsubameViewer.Presentation.ViewModels
         internal void RemoveItem(StoredFolderViewModel childVM)
         {
             Folders.Remove(childVM);
+            TempFiles.Remove(childVM);
         }
     }
 
@@ -212,6 +226,10 @@ namespace TsubameViewer.Presentation.ViewModels
         public DelegateCommand DeleteStoredFolderCommand =>
             _DeleteStoredFolderCommand ??= new DelegateCommand(async () => 
             {
+                _SourceStorageItemsRepository.RemoveFolder(Token);
+                _parentVM.RemoveItem(this);
+
+                /*
                 var dialog = new MessageDialog(
                     "ConfirmRemoveSourceFolderFromAppDescription".Translate(),
                     $"ConfirmRemoveSourceFolderFromAppWithFolderName".Translate(FolderName)
@@ -228,6 +246,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 dialog.DefaultCommandIndex = 0;
 
                 var result = await dialog.ShowAsync();
+                */
             });
     }
 
