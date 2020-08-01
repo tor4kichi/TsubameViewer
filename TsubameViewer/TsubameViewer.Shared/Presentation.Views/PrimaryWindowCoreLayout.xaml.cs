@@ -172,7 +172,10 @@ namespace TsubameViewer.Presentation.Views
                 }
 
                 var parameters = MakeNavigationParameter(currentEntry.Parameters);
-                parameters.Add("__restored", string.Empty);
+                if (!parameters.ContainsKey("__restored"))
+                {
+                    parameters.Add("__restored", string.Empty);
+                }
                 var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters);
                 if (!result.Success)
                 {
