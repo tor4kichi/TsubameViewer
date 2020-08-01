@@ -28,7 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     // TODO: アクセス履歴対応
 
-    public sealed class SourceStorageItemsPageViewModel : ViewModelBase
+    public sealed class SourceStorageItemsPageViewModel : ViewModelBase, IDisposable
     {
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> Files { get; }
@@ -41,6 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
 
+        CompositeDisposable _disposables = new CompositeDisposable();
         CompositeDisposable _navigationDisposables;
 
         public SourceItemsGroup[] Groups { get; }
@@ -77,7 +78,27 @@ namespace TsubameViewer.Presentation.ViewModels
                     Items = Files,
                 },
             };
+
+            _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
+                .Subscribe(args =>
+                {
+                    var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _thumbnailManager);
+                    if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
+                    {
+                        // 追加用ボタンの次に配置するための 1
+                        Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }
+                    else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
+                        || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
+                        )
+                    {
+                        Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
+                    }
+                })
+                .AddTo(_disposables);
         }
+
+        
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
@@ -103,24 +124,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
-            _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
-                .Subscribe(args => 
-                {
-                    var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _thumbnailManager);
-                    if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
-                    {
-                        // 追加用ボタンの次に配置するための 1
-                        Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
-                    }
-                    else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
-                        || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
-                        )
-                    {
-                        Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));
-                    }
-                })
-                .AddTo(_navigationDisposables);
-
+            
             await base.OnNavigatedToAsync(parameters);
         }
 
@@ -129,6 +133,11 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationDisposables?.Dispose();
 
             base.OnNavigatedFrom(parameters);
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_disposables).Dispose();
         }
     }
 
