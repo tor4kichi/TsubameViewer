@@ -14,6 +14,8 @@ namespace TsubameViewer.Presentation.Views.StyleSelector
         public Style Folder { get; set; }
         public Style Image { get; set; }
         public Style Archive { get; set; }
+        public Style EBook { get; set; }
+
 
         protected override Style SelectStyleCore(object item, DependencyObject container)
         {
@@ -25,6 +27,7 @@ namespace TsubameViewer.Presentation.Views.StyleSelector
                     StorageItemTypes.Folder => Folder,
                     StorageItemTypes.Image => Image,
                     StorageItemTypes.Archive => Archive,
+                    StorageItemTypes.EBook => EBook,
                     _ => throw new NotSupportedException()
                 };
             }

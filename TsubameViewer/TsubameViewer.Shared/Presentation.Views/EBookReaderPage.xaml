@@ -1,0 +1,59 @@
+﻿<Page
+  x:Name="PageRoot"
+    x:Class="TsubameViewer.Presentation.Views.EBookReaderPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:i="using:Microsoft.Xaml.Interactivity" 
+  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+  xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+  <Grid>
+
+    <i:Interaction.Behaviors>
+      <core:DataTriggerBehavior Binding="{Binding PageHtml}" Value="{x:Null}" ComparisonCondition="NotEqual">
+        <core:CallMethodAction TargetObject="{Binding ElementName=PageRoot}" MethodName="RefreshPage" />
+      </core:DataTriggerBehavior>
+
+      <!-- Mouse Input-->
+      
+      <myBehaviour:MouseWheelTrigger>
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{Binding GoPrevImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{Binding GoNextImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
+      
+      <myBehaviour:MouseCenterClickTrigger>
+        <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
+      </myBehaviour:MouseCenterClickTrigger>
+
+      <!-- GamePad Input-->
+      <uiNavigation:UINavigationTriggerBehavior Kind="Left" IsRequireFocus="True">
+        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior Kind="Right" IsRequireFocus="True">
+        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoNextImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      
+    </i:Interaction.Behaviors>
+
+    <WebView x:Name="WebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+             ScrollViewer.VerticalScrollBarVisibility="Hidden"
+             ScrollViewer.VerticalScrollMode="Disabled"
+             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+             >
+      
+    </WebView>
+    
+    
+  </Grid>
+</Page>

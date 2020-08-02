@@ -53,6 +53,7 @@
               <uap:FileType ContentType="image/tiff">.tif</uap:FileType>
               <uap:FileType ContentType="image/tiff">.tiff</uap:FileType>
               <uap:FileType ContentType="image/svg+xml">.svg</uap:FileType>
+              <uap:FileType ContentType="application/epub+zip">.epub</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>

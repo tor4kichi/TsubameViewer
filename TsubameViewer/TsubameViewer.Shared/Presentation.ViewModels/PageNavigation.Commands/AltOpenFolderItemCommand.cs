@@ -43,6 +43,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }
+                else if (item.Type == StorageItemTypes.EBook)
+                {
+                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                }
                 else if (item.Type == StorageItemTypes.None)
                 {
                     

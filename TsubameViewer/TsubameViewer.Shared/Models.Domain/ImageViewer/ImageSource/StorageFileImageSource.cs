@@ -79,9 +79,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                         return image;
                     }
                 }
-                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                    || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
+                    )
                 {
-
                     var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(file);
                     if (thumbnailFile == null) { return null; }
                     var image = new BitmapImage();
@@ -96,7 +97,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
             else if (StorageItem is StorageFolder folder)
             {
-
                 var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
                 if (uri == null) { return null; }
                 var image = new BitmapImage(uri);

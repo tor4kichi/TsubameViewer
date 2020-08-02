@@ -59,6 +59,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
+        public ObservableCollection<StorageItemViewModel> EBookFileItems { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
 
         public AdvancedCollectionView FileItemsView { get; }
@@ -138,6 +139,7 @@ namespace TsubameViewer.Presentation.ViewModels
             AltOpenFolderItemCommand = altOpenFolderItemCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
+            EBookFileItems = new ObservableCollection<StorageItemViewModel>();
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
@@ -152,7 +154,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 new FileFolderItemsGroup()
                 { 
                     Items = ArchiveFileItems
-                }
+                },
+                new FileFolderItemsGroup()
+                {
+                    Items = EBookFileItems
+                },
             };
 
 
@@ -193,6 +199,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
             ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
+            EBookFileItems.Reverse().ForEach(x => x.StopImageLoading());
             FolderItems.Reverse().ForEach(x => x.StopImageLoading());
 
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
@@ -268,12 +275,13 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (isTokenChanged || isPathChanged)
                         {
                             {
-                                var items = new[] { FolderItems, ArchiveFileItems, ImageFileItems }
+                                var items = new[] { FolderItems, ArchiveFileItems, EBookFileItems, ImageFileItems }
                                     .SelectMany(x => x)
                                     .ToArray();
                                 
                                 FolderItems.Clear();
                                 ArchiveFileItems.Clear();
+                                EBookFileItems.Clear();
                                 ImageFileItems.Clear();
 
                                 items.AsParallel().ForAll(x => x.Dispose());
@@ -329,6 +337,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     // 前回読み込みキャンセルしていたものを改めて読み込むように
                     ImageFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                     ArchiveFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
+                    EBookFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                     FolderItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                 }
             }
@@ -386,6 +395,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderItems.Clear();
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
+            EBookFileItems.Clear();
             var result = await _imageCollectionManager.GetImageSourcesAsync(storageItem, ct);
 
             if (result.Images?.Any() != true)
@@ -409,6 +419,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 else if (item.Type == StorageItemTypes.Archive)
                 {
                     ArchiveFileItems.Add(item);
+                }
+                else if (item.Type == StorageItemTypes.EBook)
+                {
+                    EBookFileItems.Add(item);
                 }
             }
 

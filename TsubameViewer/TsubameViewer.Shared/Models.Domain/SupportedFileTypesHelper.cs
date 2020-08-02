@@ -34,6 +34,13 @@ namespace TsubameViewer.Models.Domain
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
+
+            SupportedEBookFileExtensions = new string[]
+            {
+                EPubFileType,
+            }
+            .SelectMany(x => new[] { x, x.ToUpper() })
+            .ToHashSet();
         }
 
         public const string ZipFileType = ".zip";
@@ -49,9 +56,12 @@ namespace TsubameViewer.Models.Domain
         public const string TiffFileType = ".tiff";
         public const string SvgFileType = ".svg";
 
+        public const string EPubFileType = ".epub";
+
 
         public static readonly HashSet<string> SupportedArchiveFileExtensions;
         public static readonly HashSet<string> SupportedImageFileExtensions;
+        public static readonly HashSet<string> SupportedEBookFileExtensions;
 
         public static bool IsSupportedFileExtension(string fileType)
         {
@@ -69,10 +79,17 @@ namespace TsubameViewer.Models.Domain
             else { return SupportedImageFileExtensions.Any(x => fileNameOrExtension.EndsWith(x)); }
         }
 
+        public static bool IsSupportedEBookFileExtension(string fileNameOrExtension)
+        {
+            if (SupportedEBookFileExtensions.Contains(fileNameOrExtension)) { return true; }
+            else { return SupportedEBookFileExtensions.Any(x => fileNameOrExtension.EndsWith(x)); }
+        }
+
         private static StorageItemTypes FileExtensionToStorageItemType(string fileType)
         {
             if (IsSupportedArchiveFileExtension(fileType)) { return StorageItemTypes.Archive; }
             else if (IsSupportedImageFileExtension(fileType)) { return StorageItemTypes.Image; }
+            else if (IsSupportedEBookFileExtension(fileType)) { return StorageItemTypes.EBook; }
             else { return StorageItemTypes.None; }
         }
 

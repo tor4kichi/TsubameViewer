@@ -104,6 +104,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
                         || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
+                        || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.EBook
                         )
                     {
                         Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings));

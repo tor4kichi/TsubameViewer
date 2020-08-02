@@ -127,6 +127,7 @@ namespace TsubameViewer
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
+            container.RegisterForNavigation<EBookReaderPage>();
             container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
         }
@@ -278,6 +279,7 @@ namespace TsubameViewer
             // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
             var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
             string token = null;
+            Models.Domain.StorageItemTypes storageItemTypes = Models.Domain.StorageItemTypes.None;
             foreach (var item in args.Files)
             {
                 if (item is StorageFile file)
@@ -289,10 +291,16 @@ namespace TsubameViewer
                     else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                     {
                         NeighboringFilesQueryCache.AddNeighboringFilesQuery(file.Path, args.NeighboringFilesQuery);
+                        storageItemTypes = Models.Domain.StorageItemTypes.Image;
+                    }
+                    else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
+                    {
+                        storageItemTypes = Models.Domain.StorageItemTypes.EBook;
                     }
 
                     var fileToken = await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
-                    token ??= fileToken;
+                    token = fileToken;
+                    break;
                 }
             }
 
@@ -301,7 +309,16 @@ namespace TsubameViewer
             if (token != null)
             {
                 var ns = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
+                if (storageItemTypes == Models.Domain.StorageItemTypes.Image
+                    || storageItemTypes == Models.Domain.StorageItemTypes.Archive
+                    )
+                {
+                    var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
+                }
+                else if (storageItemTypes == Models.Domain.StorageItemTypes.EBook)
+                {
+                    var result = await ns.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), ("token", token));
+                }
             }
         }
     }

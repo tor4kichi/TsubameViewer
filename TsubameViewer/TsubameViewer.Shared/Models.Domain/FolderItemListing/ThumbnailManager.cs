@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Uno.Threading;
+using VersOne.Epub;
 using Windows.Data.Pdf;
 using Windows.Foundation;
 using Windows.Graphics.Imaging;
@@ -123,6 +124,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             _ => throw new NotSupportedException(file.FileType)
                         });
 
@@ -246,6 +248,18 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+        public async Task<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
+        {
+            using var fileStream = await file.OpenStreamForReadAsync();
+
+            var epubBook = await EpubReader.ReadBookAsync(fileStream);
+
+            if (epubBook.CoverImage.Length == 0) { throw new Exception(); }
+
+            await outputStream.WriteAsync(epubBook.CoverImage, 0, epubBook.CoverImage.Length);
+
+            return true;
+        }
 
         public class ThumbnailImageInfo
         {

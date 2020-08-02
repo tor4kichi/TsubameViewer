@@ -47,6 +47,7 @@ namespace TsubameViewer.Presentation.Views
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
         {
             typeof(Views.ImageViewerPage),
+            typeof(Views.EBookReaderPage),
             typeof(SettingsPage),
         };
 
@@ -54,6 +55,7 @@ namespace TsubameViewer.Presentation.Views
         {
             typeof(Views.FolderListupPage),
             typeof(Views.ImageViewerPage),
+            typeof(Views.EBookReaderPage),
             typeof(SettingsPage),
         };
 
@@ -91,7 +93,16 @@ namespace TsubameViewer.Presentation.Views
                     frame.BackStack.RemoveAt(1);
                 }
             }
-            
+            else if (e.SourcePageType == typeof(Views.EBookReaderPage))
+            {
+                var lastNavigatedPageEntry = frame.BackStack.ElementAtOrDefault(1);
+                if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.EBookReaderPage))
+                {
+                    frame.BackStack.RemoveAt(1);
+                }
+            }
+
+
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
             SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =

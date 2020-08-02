@@ -34,6 +34,7 @@ using Uno.Extensions;
 using Uno.Threading;
 using Windows.Data.Pdf;
 using Windows.Foundation;
+using Windows.Foundation.Metadata;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
@@ -44,6 +45,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+    [AllowForWeb]
     public sealed class ImageViewerPageViewModel : ViewModelBase, IDestructible
     {
         private string _currentToken;
@@ -124,9 +126,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
-
-
-            
         }
 
 
@@ -376,6 +375,10 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
         }
 
+        public void Test()
+        {
+            Debug.WriteLine("Test Called!");
+        }
 
         #region Commands
 
