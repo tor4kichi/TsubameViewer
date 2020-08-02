@@ -25,10 +25,10 @@
       
       <myBehaviour:MouseWheelTrigger>
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{Binding GoPrevImageCommand}" />
+          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{Binding GoNextImageCommand}" />
+          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       
@@ -38,10 +38,10 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoPrevImageCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{x:Bind InnerGoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoNextImageCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       
     </i:Interaction.Behaviors>
