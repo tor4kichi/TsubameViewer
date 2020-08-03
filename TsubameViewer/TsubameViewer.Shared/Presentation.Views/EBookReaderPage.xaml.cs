@@ -36,6 +36,13 @@ namespace TsubameViewer.Presentation.Views
             WebView.FrameNavigationStarting += WebView_FrameNavigationStarting;
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
             WebView.SizeChanged += WebView_SizeChanged;
+
+            this.Loaded += PageMoveButtonEnablingWorkaround_EBookReaderPage_Loaded;
+        }
+
+        private void PageMoveButtonEnablingWorkaround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.LeftPageMoveButton.Focus(FocusState.Programmatic);
         }
 
         private void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -71,15 +78,26 @@ namespace TsubameViewer.Presentation.Views
             var pageHeight = await GetPageHeight();
             ResetHeightCulc(scroolableHeight, pageHeight);
 
+            if (isFirstLoaded)
+            {
+                isFirstLoaded = false;
+
+                _innerCurrentPage = Math.Min((DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex, _innerPageCount - 1);
+                SetScrollPosition();
+            }
+
             if (_nowGoPrevLoading)
             {
                 _nowGoPrevLoading = false;
                 _innerCurrentPage = _innerPageCount - 1;
+                (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 SetScrollPosition();
             }
             WebView.Opacity = 1.0;
-
         }
+
+        bool isFirstLoaded = true;
+
 
         const int MarginHeight = 24; 
         const int GapHeight = 48;
@@ -170,6 +188,7 @@ namespace TsubameViewer.Presentation.Views
             if (_innerCurrentPage + 1 < _innerPageCount)
             {
                 _innerCurrentPage++;
+                (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
                 SetScrollPosition();
             }
@@ -179,10 +198,8 @@ namespace TsubameViewer.Presentation.Views
                 if (pageVM.GoNextImageCommand.CanExecute())
                 {
                     _innerCurrentPage = 0;
-                    using (var cts = new CancellationTokenSource(3000))
-                    {
-                        pageVM.GoNextImageCommand.Execute();
-                    }
+                    (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
+                    pageVM.GoNextImageCommand.Execute();
                 }
             }
         }
@@ -196,6 +213,7 @@ namespace TsubameViewer.Presentation.Views
             if (_innerCurrentPage > 0)
             {
                 _innerCurrentPage--;
+                (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
                 SetScrollPosition();
             }
@@ -205,12 +223,9 @@ namespace TsubameViewer.Presentation.Views
                 if (pageVM.GoPrevImageCommand.CanExecute())
                 {
                     _innerCurrentPage = 0;
-                    using (var cts = new CancellationTokenSource(3000))
-                    {
-                        _nowGoPrevLoading = true;
-
-                        pageVM.GoPrevImageCommand.Execute();
-                    }
+                    (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
+                    _nowGoPrevLoading = true;
+                    pageVM.GoPrevImageCommand.Execute();
                 }
             }
 

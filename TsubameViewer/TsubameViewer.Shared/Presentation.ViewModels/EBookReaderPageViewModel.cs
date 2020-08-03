@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
@@ -41,7 +42,12 @@ namespace TsubameViewer.Presentation.ViewModels
             set => SetProperty(ref _CurrentImageIndex, value);
         }
 
-
+        private int _InnerCurrentImageIndex;
+        public int InnerCurrentImageIndex
+        {
+            get => _InnerCurrentImageIndex;
+            set => SetProperty(ref _InnerCurrentImageIndex, value);
+        }
 
 
         EpubBook _currentBook;
@@ -57,13 +63,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly BookmarkManager _bookmarkManager;
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            BookmarkManager bookmarkManager,
             ToggleFullScreenCommand toggleFullScreenCommand
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _bookmarkManager = bookmarkManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
         }
 
@@ -159,17 +168,60 @@ namespace TsubameViewer.Presentation.ViewModels
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
 
+            // 表示する画像を決める
+            if (mode == NavigationMode.Forward
+                || parameters.ContainsKey("__restored")
+                || (mode == NavigationMode.New && !parameters.ContainsKey("pageName"))
+                )
+            {
+                var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
+                if (bookmark.pageName != null)
+                {
+                    for (var i = 0; i < _currentBook.ReadingOrder.Count; i++)
+                    {
+                        if (_currentBook.ReadingOrder[i].FileName == bookmark.pageName)
+                        {
+                            CurrentImageIndex = i;
+                            InnerCurrentImageIndex = bookmark.innerPageIndex;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (mode == NavigationMode.New && parameters.ContainsKey("pageName")
+                )
+            {
+                if (parameters.TryGetValue("pageName", out string pageName))
+                {
+                    var unescapedPageName = Uri.UnescapeDataString(pageName);
+                    var firstSelectItem = _currentBook.ReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                    if (firstSelectItem != null)
+                    {
+                        CurrentImageIndex = _currentBook.ReadingOrder.IndexOf(firstSelectItem);
+                    }
+                }
+            }
+
+            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
+                .Subscribe(innerPageIndex => 
+                {
+                    var currentPage = _currentBook.ReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    if (currentPage == null) { return; }
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
+                })
+                .AddTo(_navigationDisposables);
+
             // ページの切り替え
             this.ObserveProperty(x => x.CurrentImageIndex)
                 .Subscribe(index => 
                 {
-                    var html = _currentBook.ReadingOrder.ElementAtOrDefault(index);
-                    if (html == null) { throw new IndexOutOfRangeException(); }
+                    var currentPage = _currentBook.ReadingOrder.ElementAtOrDefault(index);
+                    if (currentPage == null) { throw new IndexOutOfRangeException(); }
 
-                    Debug.WriteLine(html.FileName);
+                    Debug.WriteLine(currentPage.FileName);
 
                     var xmlDoc = new XmlDocument();
-                    xmlDoc.LoadXml(html.Content);
+                    xmlDoc.LoadXml(currentPage.Content);
 
                     var root = xmlDoc.DocumentElement;
                     Stack<XmlNode> _nodes = new Stack<XmlNode>();
@@ -245,6 +297,9 @@ namespace TsubameViewer.Presentation.ViewModels
                         xmlTextWriter.Flush();
                         PageHtml = stringWriter.GetStringBuilder().ToString();
                     }
+
+                    // ブックマークに登録
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);
                 })
                 .AddTo(_navigationDisposables);
 

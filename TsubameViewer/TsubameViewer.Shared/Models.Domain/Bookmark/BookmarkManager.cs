@@ -27,9 +27,20 @@ namespace TsubameViewer.Models.Domain.Bookmark
             return _bookmarkRepository.GetBookmarkPageName(path);
         }
 
+        public (string pageName, int innerPageIndex) GetBookmarkedPageNameAndIndex(string path)
+        {
+            return _bookmarkRepository.GetBookmarkPageNameAndIndex(path);
+        }
+
+
         public void AddBookmark(string path, string pageName)
         {
             _bookmarkRepository.AddorReplace(path, pageName);
+        }
+
+        public void AddBookmark(string path, string pageName, int innerPageIndex)
+        {
+            _bookmarkRepository.AddorReplace(path, pageName, innerPageIndex);
         }
 
         public void RemoveBookmark(string path)
@@ -51,6 +62,13 @@ namespace TsubameViewer.Models.Domain.Bookmark
                 return bookmark?.PageName;
             }
 
+            public (string pageName, int pageInnerIndex) GetBookmarkPageNameAndIndex(string path)
+            {
+                var bookmark = _collection.FindOne(x => x.Path == path);
+                if (bookmark == null) { return default; }
+                return (bookmark.PageName, bookmark.InnerPageIndex);
+            }
+
             public bool IsBookmarked(string path)
             {
                 var bookmark = _collection.FindOne(x => x.Path == path);
@@ -64,16 +82,17 @@ namespace TsubameViewer.Models.Domain.Bookmark
                 return bookmark != null;
             }
 
-            public void AddorReplace(string path, string bookmarkPageName)
+            public void AddorReplace(string path, string bookmarkPageName, int innerPageIndex = 0)
             {
                 var bookmark = _collection.FindOne(x => x.Path == path);
                 if (bookmark == null)
                 {
-                    _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName });
+                    _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName, InnerPageIndex = innerPageIndex });
                 }
                 else
                 {
                     bookmark.PageName = bookmarkPageName;
+                    bookmark.InnerPageIndex = innerPageIndex;
                     _collection.Update(bookmark);
                 }
             }
@@ -96,5 +115,8 @@ namespace TsubameViewer.Models.Domain.Bookmark
 
         [BsonField]
         public string PageName { get; set; }
+
+        [BsonField]
+        public int InnerPageIndex { get; set; } 
     }
 }

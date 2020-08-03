@@ -12,8 +12,12 @@
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  >
 
+  <!-- TODO: WebViewへのTheme適用 -->
+  
+  
   <Grid>
 
     <i:Interaction.Behaviors>
@@ -50,10 +54,65 @@
              ScrollViewer.VerticalScrollBarVisibility="Hidden"
              ScrollViewer.VerticalScrollMode="Disabled"
              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+             IsTapEnabled="False"
+             IsHitTestVisible="False"
+             IsAccessKeyScope="False"
+             AllowFocusOnInteraction="False"
              >
       
     </WebView>
-    
-    
+
+    <Grid Margin="0 48 0 32" IsHitTestVisible="True" Background="Transparent">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="4*" />
+        <ColumnDefinition Width="3*" />
+      </Grid.ColumnDefinitions>
+      <Button x:Name="LeftPageMoveButton"
+        Command="{x:Bind InnerGoPrevImageCommand}"
+              Grid.Column="0"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Left" />
+          <KeyboardAccelerator Key="LeftButton" />
+        </Button.KeyboardAccelerators>
+
+        <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+          <SymbolIcon Symbol="Back" />
+        </Border>
+
+      </Button>
+
+      <Border Grid.Column="1">
+
+      </Border>
+
+      <Button x:Name="RightPageMoveButton"
+        Command="{x:Bind InnerGoNextImageCommand}"
+              Grid.Column="2"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Right" />
+          <KeyboardAccelerator Key="RightButton" />
+
+        </Button.KeyboardAccelerators>
+
+        <SymbolIcon Symbol="Forward" />
+      </Button>
+    </Grid>
+
+
   </Grid>
 </Page>
