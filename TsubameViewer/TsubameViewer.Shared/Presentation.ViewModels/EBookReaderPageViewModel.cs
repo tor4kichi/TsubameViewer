@@ -227,95 +227,98 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     Debug.WriteLine(currentPage.FileName);
 
-                    var xmlDoc = new XmlDocument();
-                    var pageContentText = await currentPage.ReadContentAsync();
-                    xmlDoc.LoadXml(pageContentText);
-
-                    var root = xmlDoc.DocumentElement;
-
-                    Stack<XmlNode> _nodes = new Stack<XmlNode>();
-                    _nodes.Push(root);
-                    while (_nodes.Any())
+                    PageHtml = await Task.Run(async () =>
                     {
-                        var node = _nodes.Pop();
+                        var xmlDoc = new XmlDocument();
+                        var pageContentText = await currentPage.ReadContentAsync();
+                        xmlDoc.LoadXml(pageContentText);
 
-                        if (node.Name == "head")
-                        {
-                            var cssNode = xmlDoc.CreateElement("style");
-                            var typeAttr = xmlDoc.CreateAttribute("type");
-                            typeAttr.Value = "text/css";
-                            cssNode.Attributes.Append(typeAttr);
-                            cssNode.InnerText = _AppCSS;
-                            node.AppendChild(cssNode);
-                        }
+                        var root = xmlDoc.DocumentElement;
 
-                        // 画像リソースの埋め込み
+                        Stack<XmlNode> _nodes = new Stack<XmlNode>();
+                        _nodes.Push(root);
+                        while (_nodes.Any())
                         {
-                            XmlAttribute imageSourceAttr = null;
-                            if (node.Name == "img")
+                            var node = _nodes.Pop();
+
+                            if (node.Name == "head")
                             {
-                                imageSourceAttr = node.Attributes["src"];
+                                var cssNode = xmlDoc.CreateElement("style");
+                                var typeAttr = xmlDoc.CreateAttribute("type");
+                                typeAttr.Value = "text/css";
+                                cssNode.Attributes.Append(typeAttr);
+                                cssNode.InnerText = _AppCSS;
+                                node.AppendChild(cssNode);
                             }
-                            else if (node.Name == "image")
+
+                            // 画像リソースの埋め込み
                             {
-                                imageSourceAttr = node.Attributes["href"] ?? node.Attributes["xlink:href"];
-                            }
-                            if (imageSourceAttr != null)
-                            {
-                                foreach (var image in _currentBook.Content.Images)
+                                XmlAttribute imageSourceAttr = null;
+                                if (node.Name == "img")
                                 {
-                                    if (imageSourceAttr.Value.EndsWith(image.Key))
+                                    imageSourceAttr = node.Attributes["src"];
+                                }
+                                else if (node.Name == "image")
+                                {
+                                    imageSourceAttr = node.Attributes["href"] ?? node.Attributes["xlink:href"];
+                                }
+                                if (imageSourceAttr != null)
+                                {
+                                    foreach (var image in _currentBook.Content.Images)
                                     {
-                                        var base64Image = Convert.ToBase64String(await image.Value.ReadContentAsBytesAsync());
-                                        var sb = new StringBuilder();
-                                        sb.Append("data:");
-                                        sb.Append(image.Value.ContentMimeType);
-                                        sb.Append(";base64,");
-                                        sb.Append(base64Image);
-                                        imageSourceAttr.Value = sb.ToString();
+                                        if (imageSourceAttr.Value.EndsWith(image.Key))
+                                        {
+                                            var base64Image = Convert.ToBase64String(await image.Value.ReadContentAsBytesAsync());
+                                            var sb = new StringBuilder();
+                                            sb.Append("data:");
+                                            sb.Append(image.Value.ContentMimeType);
+                                            sb.Append(";base64,");
+                                            sb.Append(base64Image);
+                                            imageSourceAttr.Value = sb.ToString();
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        // cssの埋め込み
-                        {
-                            if (node.Name == "link"
-                                && node.Attributes["type"]?.Value == "text/css"
-                            )
+                            // cssの埋め込み
                             {
-                                var hrefAttr = node.Attributes["href"];
-                                if (hrefAttr != null)
+                                if (node.Name == "link"
+                                    && node.Attributes["type"]?.Value == "text/css"
+                                )
                                 {
-                                    var hrefValue = hrefAttr.Value.Split("/").Last();
-                                    if (_currentBook.Content.Css.TryGetValue(hrefValue, out var cssContent))
+                                    var hrefAttr = node.Attributes["href"];
+                                    if (hrefAttr != null)
                                     {
-                                        var parent = node.ParentNode;
-                                        parent.RemoveChild(node);
-                                        var styleNode = xmlDoc.CreateElement("style");
-                                        var typeAttr = xmlDoc.CreateAttribute("type");
-                                        typeAttr.Value = cssContent.ContentMimeType;
-                                        styleNode.Attributes.Append(typeAttr);
-                                        styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
-                                        parent.AppendChild(styleNode);
+                                        var hrefValue = hrefAttr.Value.Split("/").Last();
+                                        if (_currentBook.Content.Css.TryGetValue(hrefValue, out var cssContent))
+                                        {
+                                            var parent = node.ParentNode;
+                                            parent.RemoveChild(node);
+                                            var styleNode = xmlDoc.CreateElement("style");
+                                            var typeAttr = xmlDoc.CreateAttribute("type");
+                                            typeAttr.Value = cssContent.ContentMimeType;
+                                            styleNode.Attributes.Append(typeAttr);
+                                            styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
+                                            parent.AppendChild(styleNode);
+                                        }
                                     }
                                 }
                             }
+
+                            foreach (var child in node.ChildNodes)
+                            {
+                                _nodes.Push(child as XmlNode);
+                            }
                         }
 
-                        foreach (var child in node.ChildNodes)
+                        using (var stringWriter = new StringWriter())
+                        using (var xmlTextWriter = XmlWriter.Create(stringWriter))
                         {
-                            _nodes.Push(child as XmlNode);
+                            xmlDoc.WriteTo(xmlTextWriter);
+                            xmlTextWriter.Flush();
+                            return stringWriter.GetStringBuilder().ToString();
                         }
-                    }
-
-                    using (var stringWriter = new StringWriter())
-                    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-                    {
-                        xmlDoc.WriteTo(xmlTextWriter);
-                        xmlTextWriter.Flush();
-                        PageHtml = stringWriter.GetStringBuilder().ToString();
-                    }
+                    });
 
                     // ブックマークに登録
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);

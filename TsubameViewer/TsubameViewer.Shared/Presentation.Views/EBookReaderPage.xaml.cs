@@ -50,17 +50,10 @@ namespace TsubameViewer.Presentation.Views
             WebView.WebResourceRequested += WebView_WebResourceRequested;
             
             WebView.FrameNavigationStarting += WebView_FrameNavigationStarting;
-            WebView.ContentLoading += WebView_ContentLoading;
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
             WebView.SizeChanged += WebView_SizeChanged;
 
             Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
-            WebView.Opacity = 0.0f;
-        }
-
-        private void WebView_ContentLoading(WebView sender, WebViewContentLoadingEventArgs args)
-        {
-            
         }
 
 
@@ -82,25 +75,18 @@ namespace TsubameViewer.Presentation.Views
             WebView.Refresh();
         }
 
-        
+        bool _Domloaded;
+        bool isFirstLoaded = true;
 
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             _Domloaded = true;
 
-            // 縦書きかをチェック
-            var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
-                window.getComputedStyle(document.body).getPropertyValue('writing-mode')
-                " });
-            Debug.WriteLine(writingModeString);
-
-            await WebView.InvokeScriptAsync("eval", new[] { "let markar = document.createElement('div'); markar.id = 'mark_last'; document.body.appendChild(markar);" });
-
             //
             // 段組みレイアウトについて
             // column-countを1以上に指定してやると単純にそれだけの段に分かれた表示にできるが
             // 例えば縦書きなら横幅をViewPortサイズに限定することで縦長の段組みを描画できる
-            // 縦に等間隔に並んだページに対してページ幅と同等のスクロール量 * ページ数を設定することで
+            // 縦に等間隔に並んだページに対してページ高さと同等のスクロール量をページ毎に設定することで
             // ページ送りを表現している。
             //
 
@@ -111,12 +97,25 @@ namespace TsubameViewer.Presentation.Views
             // １ページ分のスクロール量を求める。としたいんだけど、
             // Borderか何かの2ピクセルのズレが出ているのでマジックナンバー気味だけど補正して１ページのスクロール量としている。
             // 
+            // 参考： https://stackoverflow.com/questions/6989306/how-to-get-css3-multi-column-count-in-javascript
 
+            // 縦書きかをチェック
+            var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
+                window.getComputedStyle(document.body).getPropertyValue('writing-mode')
+                " });
+            Debug.WriteLine(writingModeString);
+
+            await WebView.InvokeScriptAsync("eval", new[] { "let markar = document.createElement('div'); markar.id = 'mark_last'; document.body.appendChild(markar);" });
 
             IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-lr";
             if (IsVerticalLayout)
             {
-                await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeVertialSupportBodyStyle() });
+                // heightを指定しないと overflow: hidden; が機能しない
+                // width: 98vwとすることで表示領域の98%に幅を限定する
+                // column-countは表示領域に対して分割数の上限
+                // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
+                // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロール幅が足りず、前のページが一部入り込んだスクロールになってしまう
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
 
                 var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetTop.toString();" }));
                 Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
@@ -127,9 +126,8 @@ namespace TsubameViewer.Presentation.Views
             }
             else
             {
-                await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeHorizontalSupportBodyStyle() });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
 
-                // TODO: lr レイアウトのページ送りに対応する
                 var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetLeft.toString();" }));
                 Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
                 var scrollableSize = await GetScrollableWidth();
@@ -160,46 +158,17 @@ namespace TsubameViewer.Presentation.Views
 
             WebView.Opacity = 1.0;
         }
-
-        bool isFirstLoaded = true;
-
-        const int Horizontal_GapWidth = 0; //36;
-        const int Horizontal_HeightMargin = 24;
-        string MakeWritingModeHorizontalSupportBodyStyle()
-        {
-            return $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"";
-        }
-
-
-        const int Vertical_MarginHeight = 24; 
-        const int Vertical_GapHeight = 0;
-        
-        string MakeWritingModeVertialSupportBodyStyle()
-        {
-            // heightを指定しないと overflow: hidden; が機能しない
-            // width: 98vwとすることで表示領域の98%に幅を限定する
-            // column-countは表示領域に対して分割数の上限
-            // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
-            // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロールが詰まる
-            return $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"";
-        }
+      
 
         void ResetSizeCulc(double webViewScrollableSize, double pageSize)
         {
             _webViewScrollableSize = (int)webViewScrollableSize;
             var div = _webViewScrollableSize / (pageSize);
             var mod = _webViewScrollableSize % pageSize;
-            if (IsVerticalLayout)
-            {
-                _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
-            }
-            else
-            {
-                _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
-            }
+            _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
             _onePageScrollSize = pageSize;
 
-            Debug.WriteLine($"WebViewHeight: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollHeight: {_onePageScrollSize}");
+            Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
         }
 
 
@@ -235,24 +204,16 @@ namespace TsubameViewer.Presentation.Views
 
         private async Task<double> GetScrollTop()
         {
+            // Note: writing-mode:vertical-rlが指定されてるとページオフセットの値が上下左右で入れ替わる挙動があるのでpageXOffsetから取得している
             var scrollTop = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
             return double.TryParse(scrollTop, out var value) ? value : 0;
         }
 
-        bool _Domloaded;
 
 
         private async void SetScrollPosition()
         {
-            double position = 0.0;
-            if (_innerCurrentPage == 0)
-            {
-                position = 0;
-            }
-            else
-            {
-                position = _innerCurrentPage * _onePageScrollSize;
-            }
+            double position = _innerCurrentPage * _onePageScrollSize;
 
             // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
             await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({position}, 0);" });
