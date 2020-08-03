@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
+using Uno;
 using Uno.Threading;
 using VersOne.Epub;
 using Windows.Data.Pdf;
@@ -252,11 +253,23 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             using var fileStream = await file.OpenStreamForReadAsync();
 
-            var epubBook = await EpubReader.ReadBookAsync(fileStream);
+            var epubBook = await EpubReader.OpenBookAsync(fileStream);
 
-            if (epubBook.CoverImage.Length == 0) { throw new Exception(); }
-
-            await outputStream.WriteAsync(epubBook.CoverImage, 0, epubBook.CoverImage.Length);
+            var cover = await epubBook.ReadCoverAsync();
+            if (cover != null)
+            {
+                await outputStream.WriteAsync(cover, 0, cover.Length);
+            }
+            else if (epubBook.Content.Images.Any())
+            {
+                var firstImage = epubBook.Content.Images.First().Value;
+                var bytes = await firstImage.ReadContentAsync();
+                await outputStream.WriteAsync(bytes, 0, bytes.Length);
+            }
+            else
+            {
+                throw new Exception();
+            }
 
             return true;
         }

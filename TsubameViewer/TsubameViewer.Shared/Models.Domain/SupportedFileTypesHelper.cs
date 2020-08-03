@@ -65,7 +65,10 @@ namespace TsubameViewer.Models.Domain
 
         public static bool IsSupportedFileExtension(string fileType)
         {
-            return SupportedImageFileExtensions.Contains(fileType) || SupportedArchiveFileExtensions.Contains(fileType);
+            return SupportedImageFileExtensions.Contains(fileType) 
+                || SupportedArchiveFileExtensions.Contains(fileType)
+                || SupportedEBookFileExtensions.Contains(fileType)
+                ;
         }
 
         public static bool IsSupportedArchiveFileExtension(string fileType)

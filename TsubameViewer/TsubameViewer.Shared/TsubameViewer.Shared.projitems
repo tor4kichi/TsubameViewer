@@ -136,10 +136,10 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\app.css" />
     <Content Include="$(MSBuildThisFileDirectory)Assets\SharedAssets.md" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)Assets\EPub\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />

@@ -27,6 +27,8 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class EBookReaderPageViewModel : ViewModelBase
     {
+        string _AppCSS;
+
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
 
@@ -50,7 +52,8 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        EpubBook _currentBook;
+        EpubBookRef _currentBook;
+        List<EpubTextContentFileRef> _currentBookReadingOrder;
 
         private string _PageHtml;
         public string PageHtml
@@ -60,7 +63,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         CompositeDisposable _navigationDisposables;
-
+        
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
@@ -85,6 +88,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables.Dispose();
             _navigationDisposables = null;
+
+            _readingSessionDisposer.Dispose();
+            _readingSessionDisposer = null;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -165,6 +171,7 @@ namespace TsubameViewer.Presentation.ViewModels
             
             if (_tokenGettingFolder != null || _currentFolderItem != null)
             {
+                _AppCSS = await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
 
@@ -177,9 +184,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
                 if (bookmark.pageName != null)
                 {
-                    for (var i = 0; i < _currentBook.ReadingOrder.Count; i++)
+                    for (var i = 0; i < _currentBookReadingOrder.Count; i++)
                     {
-                        if (_currentBook.ReadingOrder[i].FileName == bookmark.pageName)
+                        if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
                         {
                             CurrentImageIndex = i;
                             InnerCurrentImageIndex = bookmark.innerPageIndex;
@@ -194,10 +201,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (parameters.TryGetValue("pageName", out string pageName))
                 {
                     var unescapedPageName = Uri.UnescapeDataString(pageName);
-                    var firstSelectItem = _currentBook.ReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                    var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
                     if (firstSelectItem != null)
                     {
-                        CurrentImageIndex = _currentBook.ReadingOrder.IndexOf(firstSelectItem);
+                        CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
                     }
                 }
             }
@@ -205,7 +212,7 @@ namespace TsubameViewer.Presentation.ViewModels
             this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
                 .Subscribe(innerPageIndex => 
                 {
-                    var currentPage = _currentBook.ReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { return; }
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
                 })
@@ -213,22 +220,34 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // ページの切り替え
             this.ObserveProperty(x => x.CurrentImageIndex)
-                .Subscribe(index => 
+                .Subscribe(async index => 
                 {
-                    var currentPage = _currentBook.ReadingOrder.ElementAtOrDefault(index);
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(index);
                     if (currentPage == null) { throw new IndexOutOfRangeException(); }
 
                     Debug.WriteLine(currentPage.FileName);
 
                     var xmlDoc = new XmlDocument();
-                    xmlDoc.LoadXml(currentPage.Content);
+                    var pageContentText = await currentPage.ReadContentAsync();
+                    xmlDoc.LoadXml(pageContentText);
 
                     var root = xmlDoc.DocumentElement;
+
                     Stack<XmlNode> _nodes = new Stack<XmlNode>();
                     _nodes.Push(root);
                     while (_nodes.Any())
                     {
                         var node = _nodes.Pop();
+
+                        if (node.Name == "head")
+                        {
+                            var cssNode = xmlDoc.CreateElement("style");
+                            var typeAttr = xmlDoc.CreateAttribute("type");
+                            typeAttr.Value = "text/css";
+                            cssNode.Attributes.Append(typeAttr);
+                            cssNode.InnerText = _AppCSS;
+                            node.AppendChild(cssNode);
+                        }
 
                         // 画像リソースの埋め込み
                         {
@@ -247,7 +266,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                 {
                                     if (imageSourceAttr.Value.EndsWith(image.Key))
                                     {
-                                        var base64Image = Convert.ToBase64String(image.Value.Content);
+                                        var base64Image = Convert.ToBase64String(await image.Value.ReadContentAsBytesAsync());
                                         var sb = new StringBuilder();
                                         sb.Append("data:");
                                         sb.Append(image.Value.ContentMimeType);
@@ -277,7 +296,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                         var typeAttr = xmlDoc.CreateAttribute("type");
                                         typeAttr.Value = cssContent.ContentMimeType;
                                         styleNode.Attributes.Append(typeAttr);
-                                        styleNode.InnerText = cssContent.Content;
+                                        styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
                                         parent.AppendChild(styleNode);
                                     }
                                 }
@@ -306,13 +325,21 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
+        CompositeDisposable _readingSessionDisposer;
 
         private async Task RefreshItems(CancellationToken ct)
         {
-            using var fileStream = await _currentFolderItem.OpenStreamForReadAsync();
+            _readingSessionDisposer?.Dispose();
+            _readingSessionDisposer = new CompositeDisposable();
 
-            var epubBook = await EpubReader.ReadBookAsync(fileStream);
+            var fileStream = await _currentFolderItem.OpenStreamForReadAsync()
+                .AddTo(_readingSessionDisposer);
+
+            var epubBook = await EpubReader.OpenBookAsync(fileStream)
+                .AddTo(_readingSessionDisposer);
+
             _currentBook = epubBook;
+            _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
 
             Debug.WriteLine(epubBook.Title);
 
@@ -349,7 +376,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool CanGoNextCommand()
         {
-            return _currentBook?.ReadingOrder.Count > CurrentImageIndex + 1;
+            return _currentBookReadingOrder?.Count > CurrentImageIndex + 1;
         }
 
         private DelegateCommand _GoPrevImageCommand;
@@ -366,7 +393,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool CanGoPrevCommand()
         {
-            return _currentBook?.ReadingOrder.Count >= 2 && CurrentImageIndex > 0;
+            return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
         }
 
 

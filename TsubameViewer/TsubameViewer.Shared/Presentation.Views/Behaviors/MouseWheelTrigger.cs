@@ -57,6 +57,21 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 				new PropertyMetadata(null));
 
 
+
+
+        public bool IsEnabled
+        {
+            get { return (bool)GetValue(IsEnabledProperty); }
+            set { SetValue(IsEnabledProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsEnabled.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsEnabledProperty =
+            DependencyProperty.Register("IsEnabled", typeof(bool), typeof(MouseWheelTrigger), new PropertyMetadata(true));
+
+
+
+
         protected override void OnAttached()
         {
             this.Register();
@@ -87,6 +102,8 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
 		private void Ui_PointerWheelChanged(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs args)
 		{
+			if (!IsEnabled) { return; }
+
 			var pointer = args.GetCurrentPoint(null);
 			
 			if (pointer.Properties.MouseWheelDelta > 0)
@@ -104,6 +121,8 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
 		private void CoreWindow_PointerWheelChanged(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.PointerEventArgs args)
 		{
+			if (!IsEnabled) { return; }
+
 			var pointer = args.CurrentPoint;
 
 			

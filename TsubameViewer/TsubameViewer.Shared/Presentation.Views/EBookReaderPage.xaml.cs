@@ -27,6 +27,21 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class EBookReaderPage : Page
     {
+
+
+        public bool IsVerticalLayout
+        {
+            get { return (bool)GetValue(IsVerticalLayoutProperty); }
+            set { SetValue(IsVerticalLayoutProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsVerticalLayout.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsVerticalLayoutProperty =
+            DependencyProperty.Register("IsVerticalLayout", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(false));
+
+
+
+
         public EBookReaderPage()
         {
             this.InitializeComponent();
@@ -37,11 +52,12 @@ namespace TsubameViewer.Presentation.Views
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
             WebView.SizeChanged += WebView_SizeChanged;
 
-            this.Loaded += PageMoveButtonEnablingWorkaround_EBookReaderPage_Loaded;
+            Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
         }
 
-        private void PageMoveButtonEnablingWorkaround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
+        private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
         {
+            // Note: WebViewにフォーカスがあるとWebViewより前面にあるボタンが押せないバグのワークアラウンド
             this.LeftPageMoveButton.Focus(FocusState.Programmatic);
         }
 
@@ -68,15 +84,33 @@ namespace TsubameViewer.Presentation.Views
             SetScrollPosition();
             */
         }
-
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             _Domloaded = true;
-            await WebView.InvokeScriptAsync("eval", new[] { MakeBodyStyle() });
 
-            var scroolableHeight = await GetScrollableHeight();
-            var pageHeight = await GetPageHeight();
-            ResetHeightCulc(scroolableHeight, pageHeight);
+            // 縦書きかをチェック
+            var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
+                window.getComputedStyle(document.body).getPropertyValue('writing-mode')
+                " });
+            Debug.WriteLine(writingModeString);
+
+            IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-rl";
+            if (IsVerticalLayout)
+            {
+                await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeVertialSupportBodyStyle() });
+
+                ResetSizeCulc(await GetScrollableHeight(), await GetPageHeight());
+            }
+            else
+            {
+                await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeHorizontalSupportBodyStyle() });
+                
+                ResetSizeCulc(await GetScrollableWidth(), await GetPageWidth());
+            }      
+            
+            // TODO: lr レイアウトのページ送りに対応する
+
+
 
             if (isFirstLoaded)
             {
@@ -98,11 +132,18 @@ namespace TsubameViewer.Presentation.Views
 
         bool isFirstLoaded = true;
 
+        const int Horizontal_GapWidth = 48;
 
-        const int MarginHeight = 24; 
-        const int GapHeight = 48;
+        string MakeWritingModeHorizontalSupportBodyStyle()
+        {
+            return $"document.body.style = \"overflow: hidden;  max-height:{WebView.ActualHeight}px; column-count: 1; column-gap: {Horizontal_GapWidth}px; column-rule-width: 0px; margin: 0px {Vertical_MarginHeight}px; \"";
+        }
+
+
+        const int Vertical_MarginHeight = 24; 
+        const int Vertical_GapHeight = 48;
         
-        string MakeBodyStyle()
+        string MakeWritingModeVertialSupportBodyStyle()
         {          
             // heightを指定しないと overflow: hidden; が機能しない
             // width: 98vwとすることで表示領域の98%に幅を限定する
@@ -110,41 +151,64 @@ namespace TsubameViewer.Presentation.Views
             // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
             // TODO: body要素ではmarginやpaddingが機能しない
             // TODO: column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロールが詰まる
-            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}px; width: {WebView.ActualWidth}px; column-count: 1; column-gap: {GapHeight}px; column-rule-width: 0px; margin-top: {MarginHeight}px; margin-bottom: {MarginHeight}px;\"";
+            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}px; width: {WebView.ActualWidth}px; column-count: 1; column-gap: {Vertical_GapHeight}px; column-rule-width: 0px; margin-top: {Vertical_MarginHeight}px; margin-bottom: {Vertical_MarginHeight}px;\"";
 //            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}; column-count: 1;\"";
 
         }
 
-        void ResetHeightCulc(double webViewHeight, double pageHeight)
+        void ResetSizeCulc(double webViewScrollableSize, double pageSize)
         {
-            _webViewInsideHeight = (int)webViewHeight;
-            var div = _webViewInsideHeight / (pageHeight);
-            var mod = _webViewInsideHeight % (int)pageHeight;
-            _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
-            _onePageScrollHeight = pageHeight;
+            _webViewScrollableSize = (int)webViewScrollableSize;
+            var div = _webViewScrollableSize / (pageSize);
+            var mod = _webViewScrollableSize % (int)pageSize;
+            if (IsVerticalLayout)
+            {
+                _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
+            }
+            else
+            {
+                _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
+            }
+            _onePageScrollSize = pageSize;
 
-
-            Debug.WriteLine($"WebViewHeight: {_webViewInsideHeight}, pageCount: {_innerPageCount}, onePageScrollHeight: {_onePageScrollHeight}");
+            Debug.WriteLine($"WebViewHeight: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollHeight: {_onePageScrollSize}");
         }
 
 
+        private async Task<double> GetScrollableWidth()
+        {
+            var widthText = await WebView.InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollWidth, document.documentElement.scrollWidth,document.body.offsetWidth, document.documentElement.offsetWidth,document.body.clientWidth, document.documentElement.clientWidth).toString();" });
+            return double.TryParse(widthText, out var value) ? value : 0;
+        }
 
         private async Task<double> GetScrollableHeight()
         {
             var heightText = await WebView.InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollHeight, document.documentElement.scrollHeight,document.body.offsetHeight, document.documentElement.offsetHeight,document.body.clientHeight, document.documentElement.clientHeight).toString();" });
-            return double.TryParse(heightText, out var height) ? height : 0;
+            return double.TryParse(heightText, out var value) ? value : 0;
+        }
+
+        private async Task<double> GetPageWidth()
+        {
+            var widthText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerWidth.toString()" });
+            return double.TryParse(widthText, out var value) ? value : 0;
         }
 
         private async Task<double> GetPageHeight()
         {
             var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerHeight.toString()" });
-            return double.TryParse(heightText, out var height) ? height : 0;
+            return double.TryParse(heightText, out var value) ? value : 0;
+        }
+
+        private async Task<double> GetScrollLeft()
+        {
+            var XOffsetText = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
+            return double.TryParse(XOffsetText, out var value) ? value : 0;
         }
 
         private async Task<double> GetScrollTop()
         {
-            var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
-            return double.TryParse(heightText, out var height) ? height : 0;
+            var scrollTop = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
+            return double.TryParse(scrollTop, out var value) ? value : 0;
         }
 
         bool _Domloaded;
@@ -152,33 +216,37 @@ namespace TsubameViewer.Presentation.Views
 
         private async void SetScrollPosition()
         {
-            double positionTop = 0.0;
+            double position = 0.0;
             if (_innerCurrentPage == 0)
             {
-                positionTop = 0;
+                position = 0;
             }
             else
             {
-                positionTop = _innerCurrentPage * _onePageScrollHeight;
+                position = _innerCurrentPage * _onePageScrollSize;
             }
-            
-            _ = _nowVerticalLayout
-//                ? await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollLeft = {(int)positionTop}" })
-                ? await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({positionTop}, 0);" })
-                : await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollTop = {positionTop}" })
-                ;
 
-            var top = await GetScrollTop();
-            Debug.WriteLine(top);
+            // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
+            await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({position}, 0);" });
+
+#if DEBUG
+            if (IsVerticalLayout)
+            {
+                Debug.WriteLine(await GetScrollTop());
+            }
+            else
+            {
+                Debug.WriteLine(await GetScrollLeft());
+            }
+#endif
         }
 
         bool _nowGoPrevLoading = false;
 
-        bool _nowVerticalLayout = true;
         int _innerCurrentPage;
         int _innerPageCount;
-        int _webViewInsideHeight;
-        double _onePageScrollHeight;
+        int _webViewScrollableSize;
+        double _onePageScrollSize;
         private DelegateCommand _InnerGoNextImageCommand;
         public DelegateCommand InnerGoNextImageCommand =>
             _InnerGoNextImageCommand ?? (_InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand));

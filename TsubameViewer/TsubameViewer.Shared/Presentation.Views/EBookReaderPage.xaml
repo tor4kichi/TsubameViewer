@@ -26,8 +26,8 @@
       </core:DataTriggerBehavior>
 
       <!-- Mouse Input-->
-      
-      <myBehaviour:MouseWheelTrigger>
+
+      <myBehaviour:MouseWheelTrigger x:Name="PageMoveMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
           <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
@@ -62,7 +62,11 @@
       
     </WebView>
 
-    <Grid Margin="0 48 0 32" IsHitTestVisible="True" Background="Transparent">
+    <Grid x:Name="UIContainer"
+          IsHitTestVisible="True" 
+          Background="Transparent"
+          Margin="0 48 0 32" 
+          >
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
         <ColumnDefinition Width="4*" />
@@ -113,6 +117,17 @@
       </Button>
     </Grid>
 
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsVerticalLayout, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
 
   </Grid>
 </Page>
