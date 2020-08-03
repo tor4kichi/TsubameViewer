@@ -38,109 +38,140 @@ namespace TsubameViewer.Presentation.Views
             WebView.SizeChanged += WebView_SizeChanged;
         }
 
-        string DisableScrollingJs = @"function RemoveScrolling()
-                              {
-                                  var styleElement = document.createElement('style');
-                                  var styleText = 'html, body{ touch-action: none; overflow: hidden; }';
-                                  var headElements = document.getElementsByTagName('head');
-                                  styleElement.type = 'text/css';
-                                  if (headElements.length == 1)
-                                  {
-                                      headElements[0].appendChild(styleElement);
-                                  }
-                                  else if (document.head)
-                                  {
-                                      document.head.appendChild(styleElement);
-                                  }
-                                  if (styleElement.styleSheet)
-                                  {
-                                      styleElement.styleSheet.cssText = styleText;
-                                  }
-                              }; RemoveScrolling();";
-
-        private async void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (!_Domloaded) { return; }
 
+            WebView.Opacity = 0.0;
+            RefreshPage();
+
+            // TODO: リサイズ後のページ位置の再計算
+            // リサイズ前の表示ページ位置の総ページ数との割合から近似ページ数を割り出して適用する？
+
+            /*
             // TODO: WebView_SizeChangedで 一旦Opacity=0.0にしてレイアウト崩れを見せないようにする？
 
-            // heightを指定しないと overflow: hidden; が機能しない
-            // width: 98vwとすることで表示領域の98%に幅を限定する
-            // column-countは表示領域に対して分割数の上限。
-            await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}; margin-top: 1rem; column-count: 2; margin-bottom: 1rem;column-gap: 2.5rem; \"" });
+            await WebView.InvokeScriptAsync("eval", new[] { MakeBodyStyle() });
 
-            var height = await GetScrollHeight();
-            _webViewInsideHeight = height;
-            _innerPageCount = Math.Max((int)Math.Floor(_webViewInsideHeight / WebView.ActualHeight), 1);
-            _onePageScrollHeight = Math.Floor(_webViewInsideHeight / (double)_innerPageCount);
+            var scroolableHeight = await GetScrollableHeight();
+            var pageHeight = await GetPageHeight();
+            ResetHeightCulc(scroolableHeight, pageHeight);
 
-
-            Debug.WriteLine($"WebViewHeight: {_webViewInsideHeight}, pageCount: {_innerPageCount}, onePageScrollHeight: {_onePageScrollHeight}");
             // WebViewリサイズ後に表示スクロール位置を再設定
-            SetScrollPosition(_innerCurrentPage * _onePageScrollHeight);
+            SetScrollPosition();
+            */
         }
 
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             _Domloaded = true;
-            await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}; margin-top: 1rem; column-count: 2; margin-bottom: 1rem;column-gap: 2.5rem; \"" });
-            await WebView.InvokeScriptAsync("eval", new[] { DisableScrollingJs });
+            await WebView.InvokeScriptAsync("eval", new[] { MakeBodyStyle() });
 
-            var height = await GetScrollHeight();
-            _webViewInsideHeight = height;
-            _innerPageCount = Math.Max((int)Math.Floor(_webViewInsideHeight / WebView.ActualHeight), 1);
-            _onePageScrollHeight = Math.Floor(_webViewInsideHeight / (double)_innerPageCount);
+            var scroolableHeight = await GetScrollableHeight();
+            var pageHeight = await GetPageHeight();
+            ResetHeightCulc(scroolableHeight, pageHeight);
+
+            if (_nowGoPrevLoading)
+            {
+                _nowGoPrevLoading = false;
+                _innerCurrentPage = _innerPageCount - 1;
+                SetScrollPosition();
+            }
+            WebView.Opacity = 1.0;
+
+        }
+
+        const int MarginHeight = 24; 
+        const int GapHeight = 48;
+        
+        string MakeBodyStyle()
+        {          
+            // heightを指定しないと overflow: hidden; が機能しない
+            // width: 98vwとすることで表示領域の98%に幅を限定する
+            // column-countは表示領域に対して分割数の上限
+            // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
+            // TODO: body要素ではmarginやpaddingが機能しない
+            // TODO: column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロールが詰まる
+            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}px; width: {WebView.ActualWidth}px; column-count: 1; column-gap: {GapHeight}px; column-rule-width: 0px; margin-top: {MarginHeight}px; margin-bottom: {MarginHeight}px;\"";
+//            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}; column-count: 1;\"";
+
+        }
+
+        void ResetHeightCulc(double webViewHeight, double pageHeight)
+        {
+            _webViewInsideHeight = (int)webViewHeight;
+            var div = _webViewInsideHeight / (pageHeight);
+            var mod = _webViewInsideHeight % (int)pageHeight;
+            _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
+            _onePageScrollHeight = pageHeight;
+
 
             Debug.WriteLine($"WebViewHeight: {_webViewInsideHeight}, pageCount: {_innerPageCount}, onePageScrollHeight: {_onePageScrollHeight}");
-            if (_DomLoadedTaskCompletioinSource != null)
-            {
-                _DomLoadedTaskCompletioinSource.SetResult(0);
-            }
-            else
-            {
-                // 表示位置の初期設定が必要ならここで行なう
-                // SetScrollPosition(_innerCurrentPage * _onePageScrollHeight);
-            }
         }
 
 
-        private async Task<int> GetScrollHeight()
+
+        private async Task<double> GetScrollableHeight()
         {
-            var heightText = _nowVerticalLayout
-                ? await WebView.InvokeScriptAsync("eval", new[] { "document.body.scrollWidth.toString()" })
-                : await WebView.InvokeScriptAsync("eval", new[] { "document.body.scrollHeight.toString()" })
-                ;
-            return int.TryParse(heightText, out var height) ? height : 0;
+            var heightText = await WebView.InvokeScriptAsync("eval", new[] { "Math.max(document.body.scrollHeight, document.documentElement.scrollHeight,document.body.offsetHeight, document.documentElement.offsetHeight,document.body.clientHeight, document.documentElement.clientHeight).toString();" });
+            return double.TryParse(heightText, out var height) ? height : 0;
+        }
+
+        private async Task<double> GetPageHeight()
+        {
+            var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerHeight.toString()" });
+            return double.TryParse(heightText, out var height) ? height : 0;
+        }
+
+        private async Task<double> GetScrollTop()
+        {
+            var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
+            return double.TryParse(heightText, out var height) ? height : 0;
         }
 
         bool _Domloaded;
 
 
-        private async void SetScrollPosition(double positionTop)
+        private async void SetScrollPosition()
         {
+            double positionTop = 0.0;
+            if (_innerCurrentPage == 0)
+            {
+                positionTop = 0;
+            }
+            else
+            {
+                positionTop = _innerCurrentPage * _onePageScrollHeight;
+            }
+            
             _ = _nowVerticalLayout
-                ? await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollLeft = {(int)positionTop}" })
-                : await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollTop = {(int)positionTop}" })
+//                ? await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollLeft = {(int)positionTop}" })
+                ? await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({positionTop}, 0);" })
+                : await WebView.InvokeScriptAsync("eval", new[] { $"document.body.scrollTop = {positionTop}" })
                 ;
+
+            var top = await GetScrollTop();
+            Debug.WriteLine(top);
         }
+
+        bool _nowGoPrevLoading = false;
 
         bool _nowVerticalLayout = true;
         int _innerCurrentPage;
         int _innerPageCount;
         int _webViewInsideHeight;
         double _onePageScrollHeight;
-        TaskCompletionSource<int> _DomLoadedTaskCompletioinSource;
         private DelegateCommand _InnerGoNextImageCommand;
         public DelegateCommand InnerGoNextImageCommand =>
             _InnerGoNextImageCommand ?? (_InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand));
 
-        async void ExecuteGoNextCommand()
+        void ExecuteGoNextCommand()
         {
             if (_innerCurrentPage + 1 < _innerPageCount)
             {
                 _innerCurrentPage++;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-                SetScrollPosition(_innerCurrentPage * _onePageScrollHeight);
+                SetScrollPosition();
             }
             else
             {
@@ -150,14 +181,7 @@ namespace TsubameViewer.Presentation.Views
                     _innerCurrentPage = 0;
                     using (var cts = new CancellationTokenSource(3000))
                     {
-                        _DomLoadedTaskCompletioinSource = new TaskCompletionSource<int>();
                         pageVM.GoNextImageCommand.Execute();
-
-                        await _DomLoadedTaskCompletioinSource.Task;
-
-                        // 現在ページの設定
-                        _innerCurrentPage = 0;
-                        // 次ページの頭が表示できればいいので特に何もしない
                     }
                 }
             }
@@ -167,13 +191,13 @@ namespace TsubameViewer.Presentation.Views
         public DelegateCommand InnerGoPrevImageCommand =>
             _InnerGoPrevImageCommand ?? (_InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand));
 
-        async void ExecuteGoPrevCommand()
+        void ExecuteGoPrevCommand()
         {
             if (_innerCurrentPage > 0)
             {
                 _innerCurrentPage--;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-                SetScrollPosition(_innerCurrentPage * _onePageScrollHeight);
+                SetScrollPosition();
             }
             else
             {
@@ -183,15 +207,9 @@ namespace TsubameViewer.Presentation.Views
                     _innerCurrentPage = 0;
                     using (var cts = new CancellationTokenSource(3000))
                     {
-                        _DomLoadedTaskCompletioinSource = new TaskCompletionSource<int>();
+                        _nowGoPrevLoading = true;
+
                         pageVM.GoPrevImageCommand.Execute();
-
-                        await _DomLoadedTaskCompletioinSource.Task;
-
-                        // 現在ページの設定
-                        _innerCurrentPage = _innerPageCount - 1;
-                        // 前ページの最後尾ページにスクロールする
-                        SetScrollPosition(_innerCurrentPage * _onePageScrollHeight);
                     }
                 }
             }
