@@ -12,7 +12,7 @@
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="White"
   >
 
   <!-- TODO: WebViewへのTheme適用 -->
@@ -58,6 +58,7 @@
              IsHitTestVisible="False"
              IsAccessKeyScope="False"
              AllowFocusOnInteraction="False"
+             Margin="24"
              >
       
     </WebView>

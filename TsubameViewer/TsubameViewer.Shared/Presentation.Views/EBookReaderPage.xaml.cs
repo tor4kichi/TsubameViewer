@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Uwp.UI.Animations;
+using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,11 +50,21 @@ namespace TsubameViewer.Presentation.Views
             WebView.WebResourceRequested += WebView_WebResourceRequested;
             
             WebView.FrameNavigationStarting += WebView_FrameNavigationStarting;
+            WebView.ContentLoading += WebView_ContentLoading;
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
             WebView.SizeChanged += WebView_SizeChanged;
 
             Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
+            WebView.Opacity = 0.0f;
         }
+
+        private void WebView_ContentLoading(WebView sender, WebViewContentLoadingEventArgs args)
+        {
+            
+        }
+
+
+
 
         private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -66,24 +77,13 @@ namespace TsubameViewer.Presentation.Views
             if (!_Domloaded) { return; }
 
             WebView.Opacity = 0.0;
-            RefreshPage();
 
-            // TODO: リサイズ後のページ位置の再計算
-            // リサイズ前の表示ページ位置の総ページ数との割合から近似ページ数を割り出して適用する？
-
-            /*
-            // TODO: WebView_SizeChangedで 一旦Opacity=0.0にしてレイアウト崩れを見せないようにする？
-
-            await WebView.InvokeScriptAsync("eval", new[] { MakeBodyStyle() });
-
-            var scroolableHeight = await GetScrollableHeight();
-            var pageHeight = await GetPageHeight();
-            ResetHeightCulc(scroolableHeight, pageHeight);
-
-            // WebViewリサイズ後に表示スクロール位置を再設定
-            SetScrollPosition();
-            */
+            // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+            WebView.Refresh();
         }
+
+        
+
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             _Domloaded = true;
@@ -94,23 +94,53 @@ namespace TsubameViewer.Presentation.Views
                 " });
             Debug.WriteLine(writingModeString);
 
-            IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-rl";
+            await WebView.InvokeScriptAsync("eval", new[] { "let markar = document.createElement('div'); markar.id = 'mark_last'; document.body.appendChild(markar);" });
+
+            //
+            // 段組みレイアウトについて
+            // column-countを1以上に指定してやると単純にそれだけの段に分かれた表示にできるが
+            // 例えば縦書きなら横幅をViewPortサイズに限定することで縦長の段組みを描画できる
+            // 縦に等間隔に並んだページに対してページ幅と同等のスクロール量 * ページ数を設定することで
+            // ページ送りを表現している。
+            //
+
+            //
+            // サイズ計算について
+            // まず、bodyの最後尾に位置計算用のマーカー要素を追加して、
+            // そのマーカー要素のページ先頭からの相対位置と、ページ全体のスクロール可能な範囲の差から
+            // １ページ分のスクロール量を求める。としたいんだけど、
+            // Borderか何かの2ピクセルのズレが出ているのでマジックナンバー気味だけど補正して１ページのスクロール量としている。
+            // 
+
+
+            IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-lr";
             if (IsVerticalLayout)
             {
                 await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeVertialSupportBodyStyle() });
 
-                ResetSizeCulc(await GetScrollableHeight(), await GetPageHeight());
+                var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetTop.toString();" }));
+                Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
+                var scrollableSize = await GetScrollableHeight();
+                var pageSize = await GetPageHeight();
+                var onePageSize = scrollableSize - markerPositionLeft + 16;
+                ResetSizeCulc(scrollableSize + 2, markerPositionLeft < pageSize ? scrollableSize + 2 : onePageSize);
             }
             else
             {
                 await WebView.InvokeScriptAsync("eval", new[] { MakeWritingModeHorizontalSupportBodyStyle() });
-                
-                ResetSizeCulc(await GetScrollableWidth(), await GetPageWidth());
-            }      
-            
-            // TODO: lr レイアウトのページ送りに対応する
 
+                // TODO: lr レイアウトのページ送りに対応する
+                var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetLeft.toString();" }));
+                Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
+                var scrollableSize = await GetScrollableWidth();
+                var pageSize = await GetPageWidth();
+                var onePageSize = scrollableSize - markerPositionLeft + 16;
+                ResetSizeCulc(scrollableSize + 2, markerPositionLeft < pageSize ? scrollableSize + 2 : onePageSize);
+            }
 
+            // TODO: ePub）lr レイアウトのページ送りに対応する
+
+            // TODO: ePub）p（パラグラフ）が無い場合に、画像のみのページと仮定して、xaml側で設定してる余白を非表示に切り替えたい
 
             if (isFirstLoaded)
             {
@@ -127,40 +157,38 @@ namespace TsubameViewer.Presentation.Views
                 (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 SetScrollPosition();
             }
+
             WebView.Opacity = 1.0;
         }
 
         bool isFirstLoaded = true;
 
-        const int Horizontal_GapWidth = 48;
-
+        const int Horizontal_GapWidth = 0; //36;
+        const int Horizontal_HeightMargin = 24;
         string MakeWritingModeHorizontalSupportBodyStyle()
         {
-            return $"document.body.style = \"overflow: hidden;  max-height:{WebView.ActualHeight}px; column-count: 1; column-gap: {Horizontal_GapWidth}px; column-rule-width: 0px; margin: 0px {Vertical_MarginHeight}px; \"";
+            return $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"";
         }
 
 
         const int Vertical_MarginHeight = 24; 
-        const int Vertical_GapHeight = 48;
+        const int Vertical_GapHeight = 0;
         
         string MakeWritingModeVertialSupportBodyStyle()
-        {          
+        {
             // heightを指定しないと overflow: hidden; が機能しない
             // width: 98vwとすることで表示領域の98%に幅を限定する
             // column-countは表示領域に対して分割数の上限
             // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
-            // TODO: body要素ではmarginやpaddingが機能しない
-            // TODO: column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロールが詰まる
-            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}px; width: {WebView.ActualWidth}px; column-count: 1; column-gap: {Vertical_GapHeight}px; column-rule-width: 0px; margin-top: {Vertical_MarginHeight}px; margin-bottom: {Vertical_MarginHeight}px;\"";
-//            return $"document.body.style = \"width: 98vw; overflow: hidden; max-height: {WebView.ActualHeight}; column-count: 1;\"";
-
+            // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロールが詰まる
+            return $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"";
         }
 
         void ResetSizeCulc(double webViewScrollableSize, double pageSize)
         {
             _webViewScrollableSize = (int)webViewScrollableSize;
             var div = _webViewScrollableSize / (pageSize);
-            var mod = _webViewScrollableSize % (int)pageSize;
+            var mod = _webViewScrollableSize % pageSize;
             if (IsVerticalLayout)
             {
                 _innerPageCount = Math.Max((int)(mod == 0 ? div : div + 1), 1);
