@@ -110,11 +110,12 @@ namespace TsubameViewer.Presentation.Views
             IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-lr";
             if (IsVerticalLayout)
             {
-                // heightを指定しないと overflow: hidden; が機能しない
-                // width: 98vwとすることで表示領域の98%に幅を限定する
-                // column-countは表示領域に対して分割数の上限
-                // column-rule-widthはデフォルトでmidiumのため高さ計算のために0pxにする
                 // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロール幅が足りず、前のページが一部入り込んだスクロールになってしまう
+
+                // heightを指定しないと overflow: hidden; が機能しない
+                // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
+                // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
+                // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
                 await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
 
                 var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetTop.toString();" }));
@@ -126,7 +127,8 @@ namespace TsubameViewer.Presentation.Views
             }
             else
             {
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
+                // Note: "width:{WebView.ActualWidth - 8}"の-8は右側の見切れ対策
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
 
                 var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetLeft.toString();" }));
                 Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
@@ -145,7 +147,7 @@ namespace TsubameViewer.Presentation.Views
                 isFirstLoaded = false;
 
                 _innerCurrentPage = Math.Min((DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex, _innerPageCount - 1);
-                SetScrollPosition();
+                await SetScrollPositionAsync();
             }
 
             if (_nowGoPrevLoading)
@@ -153,7 +155,9 @@ namespace TsubameViewer.Presentation.Views
                 _nowGoPrevLoading = false;
                 _innerCurrentPage = _innerPageCount - 1;
                 (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
-                SetScrollPosition();
+
+                //await Task.Delay(100);
+                await SetScrollPositionAsync();
             }
 
             WebView.Opacity = 1.0;
@@ -211,7 +215,7 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private async void SetScrollPosition()
+        private async Task SetScrollPositionAsync()
         {
             double position = _innerCurrentPage * _onePageScrollSize;
 
@@ -247,7 +251,7 @@ namespace TsubameViewer.Presentation.Views
                 _innerCurrentPage++;
                 (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-                SetScrollPosition();
+                _ = SetScrollPositionAsync();
             }
             else
             {
@@ -272,7 +276,7 @@ namespace TsubameViewer.Presentation.Views
                 _innerCurrentPage--;
                 (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                 Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-                SetScrollPosition();
+                _ = SetScrollPositionAsync();
             }
             else
             {
