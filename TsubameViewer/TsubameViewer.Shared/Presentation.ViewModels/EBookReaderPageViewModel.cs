@@ -23,6 +23,7 @@ using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using VersOne.Epub;
 using Windows.Security.Cryptography;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.Web.Http;
 
 namespace TsubameViewer.Presentation.ViewModels
@@ -40,6 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private string _currentPath;
         private StorageFile _currentFolderItem;
 
+        private ApplicationView _appView;
 
 
         private int _CurrentImageIndex;
@@ -55,6 +57,14 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _InnerCurrentImageIndex;
             set => SetProperty(ref _InnerCurrentImageIndex, value);
         }
+
+        private int _InnerImageTotalCount;
+        public int InnerImageTotalCount
+        {
+            get => _InnerImageTotalCount;
+            set => SetProperty(ref _InnerImageTotalCount, value);
+        }
+
 
 
         EpubBookRef _currentBook;
@@ -87,6 +97,8 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             ThemeSettings = themeSettings;
+
+            _appView = ApplicationView.GetForCurrentView();
         }
 
 
@@ -101,6 +113,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _readingSessionDisposer.Dispose();
             _readingSessionDisposer = null;
+
+            _appView.Title = string.Empty;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -221,15 +235,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-
-            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
-                .Subscribe(innerPageIndex => 
-                {
-                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-                    if (currentPage == null) { return; }
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
-                })
-                .AddTo(_navigationDisposables);
 
             // ページの切り替え
             new[] 
@@ -360,6 +365,34 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     // ブックマークに登録
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);
+
+                    // タイトルを更新
+                    _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)}";
+
+                })
+                .AddTo(_navigationDisposables);
+
+            // ブックマーク更新
+            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
+                .Subscribe(innerPageIndex =>
+                {
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    if (currentPage == null) { return; }
+
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
+                })
+                .AddTo(_navigationDisposables);
+
+            // タイトル表示の更新
+            this.ObserveProperty(x => x.InnerCurrentImageIndex)
+                .Subscribe(async innerPageIndex =>
+                {
+                    await Task.Delay(150);
+
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    if (currentPage == null) { return; }
+
+                    _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)} ({InnerCurrentImageIndex + 1}/{InnerImageTotalCount})";
                 })
                 .AddTo(_navigationDisposables);
 

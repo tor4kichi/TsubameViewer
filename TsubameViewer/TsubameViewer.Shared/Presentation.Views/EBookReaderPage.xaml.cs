@@ -43,6 +43,33 @@ namespace TsubameViewer.Presentation.Views
         public static readonly DependencyProperty IsVerticalLayoutProperty =
             DependencyProperty.Register("IsVerticalLayout", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(false));
 
+        
+        public bool WithSeparetePage
+        {
+            get { return (bool)GetValue(WithSeparetePageProperty); }
+            set { SetValue(WithSeparetePageProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for WithSeparetePage.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty WithSeparetePageProperty =
+            DependencyProperty.Register("WithSeparetePage", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(false));
+
+
+
+
+        public bool NowOnlyImageView
+        {
+            get { return (bool)GetValue(NowOnlyImageViewProperty); }
+            set { SetValue(NowOnlyImageViewProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for NowOnlyImageView.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty NowOnlyImageViewProperty =
+            DependencyProperty.Register("NowOnlyImageView", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(false));
+
+
+
+
 
 
         FastAsyncLock _domUpdateLock = new FastAsyncLock();
@@ -117,25 +144,20 @@ namespace TsubameViewer.Presentation.Views
             };
             Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
 
-
+            var columnCount = !WithSeparetePage ? 1 : 2;
             if (IsVerticalLayout)
             {
-                // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロール幅が足りず、前のページが一部入り込んだスクロールになってしまう
-
                 // heightを指定しないと overflow: hidden; が機能しない
                 // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
                 // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
                 // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });                
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; \"" });                
             }
             else
             {
                 // Note: -8は下側と右側の見切れ対策
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: 1; column-rule-width: 0px; \"" });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; \"" });
             }
-
-
-
 
             // TODO: ePub）lr レイアウトのページ送りに対応する
 
@@ -197,6 +219,11 @@ namespace TsubameViewer.Presentation.Views
                     _innerPageCount = 1;
                     _onePageScrollSize = heroPageHeight;
                     _webViewScrollableSize = heroPageHeight;
+
+                    // 1ページに収まってる場合は画像のみのページかどうかをチェックする
+                    var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
+                    NowOnlyImageView = pCount == 0;
+                    Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
                 }
                 else
                 {
@@ -205,6 +232,8 @@ namespace TsubameViewer.Presentation.Views
                     _innerPageCount = pageScrollPositions.Length;
                     _onePageScrollSize = heroPageHeight;
                     _webViewScrollableSize = pageScrollPositions.Last() + heroPageHeight;
+
+                    NowOnlyImageView = false;
                 }
 
                 Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
@@ -227,23 +256,28 @@ namespace TsubameViewer.Presentation.Views
                 isFirstLoaded = false;
 
                 _innerCurrentPage = Math.Min((DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex, _innerPageCount - 1);
+
                 await SetScrollPositionAsync();
 
                 WebView.Fade(1.0f, 150).Start();
+            }
+            else if (_nowGoPrevLoading)
+            {
+                _nowGoPrevLoading = false;
+
+                _innerCurrentPage = _innerPageCount - 1;
+
+                await SetScrollPositionAsync();
+
+                WebView.Fade(1.0f, 75).Start();
             }
             else
             {
                 WebView.Fade(1.0f, 75).Start();
             }
 
-            if (_nowGoPrevLoading)
-            {
-                _nowGoPrevLoading = false;
-                _innerCurrentPage = _innerPageCount - 1;
-                (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
-
-                await SetScrollPositionAsync();
-            }
+            (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = _innerPageCount;
+            (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
         }
 
 
