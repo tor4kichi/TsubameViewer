@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace TsubameViewer.Models.Infrastructure
 {
@@ -24,10 +25,21 @@ namespace TsubameViewer.Models.Infrastructure
             return _LocalStorageHelper.Read<T>(propertyName, @default);
         }
 
+        protected Task<T> ReadFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
+        {
+            return _LocalStorageHelper.ReadFileAsync(propertyName, value);
+        }
+
         protected void Save<T>(T value, [CallerMemberName] string propertyName = null)
         {
             _LocalStorageHelper.Save(propertyName, value);
         }
+
+        protected Task<StorageFile> SaveFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
+        {
+            return _LocalStorageHelper.SaveFileAsync(propertyName, value);
+        }
+
         protected void Save<T>(T? value, [CallerMemberName] string propertyName = null)
             where T : struct
         {

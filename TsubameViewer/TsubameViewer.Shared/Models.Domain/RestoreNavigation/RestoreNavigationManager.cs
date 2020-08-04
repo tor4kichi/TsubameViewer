@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 
 namespace TsubameViewer.Models.Domain.RestoreNavigation
@@ -26,24 +27,24 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
             return _navigationStackRepository.GetCurrentNavigationEntry();
         }
 
-        public void SetBackNavigationEntries(IEnumerable<PageEntry> entries)
+        public Task SetBackNavigationEntriesAsync(IEnumerable<PageEntry> entries)
         {
-            _navigationStackRepository.SetBackNavigationEntries(entries.ToArray());
+            return _navigationStackRepository.SetBackNavigationEntriesAsync(entries.ToArray());
         }
 
-        public void SetForwardNavigationEntries(IEnumerable<PageEntry> entries)
+        public Task SetForwardNavigationEntriesAsync(IEnumerable<PageEntry> entries)
         {
-            _navigationStackRepository.SetForwardNavigationEntries(entries.ToArray());
+            return _navigationStackRepository.SetForwardNavigationEntriesAsync(entries.ToArray());
         }
 
-        public PageEntry[] GetBackNavigationEntries()
+        public Task<PageEntry[]> GetBackNavigationEntriesAsync()
         {
-            return _navigationStackRepository.GetBackNavigationEntries();
+            return _navigationStackRepository.GetBackNavigationEntriesAsync();
         }
 
-        public PageEntry[] GetForwardNavigationEntries()
+        public Task<PageEntry[]> GetForwardNavigationEntriesAsync()
         {
-            return _navigationStackRepository.GetForwardNavigationEntries();
+            return _navigationStackRepository.GetForwardNavigationEntriesAsync();
         }
 
 
@@ -73,30 +74,30 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
                 Save(bytes, CurrentNavigationEntryName);
             }
 
-            public PageEntry[] GetBackNavigationEntries()
+            public async Task<PageEntry[]> GetBackNavigationEntriesAsync()
             {
-                var json = Read<byte[]>(null, BackNavigationEntriesName);
+                var json = await ReadFileAsync<byte[]>(null, BackNavigationEntriesName);
                 if (json == null) { return new PageEntry[0]; }
                 return JsonSerializer.Deserialize<PageEntry[]>(json);
             }
 
-            public void SetBackNavigationEntries(PageEntry[] entries)
+            public async Task SetBackNavigationEntriesAsync(PageEntry[] entries)
             {
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(entries);
-                Save(bytes, BackNavigationEntriesName);
+                await SaveFileAsync(bytes, BackNavigationEntriesName);
             }
 
-            public PageEntry[] GetForwardNavigationEntries()
+            public async Task<PageEntry[]> GetForwardNavigationEntriesAsync()
             {
-                var json = Read<byte[]>(null, ForwardNavigationEntriesName);
+                var json = await ReadFileAsync<byte[]>(null, ForwardNavigationEntriesName);
                 if (json == null) { return new PageEntry[0]; }
                 return JsonSerializer.Deserialize<PageEntry[]>(json);
             }
 
-            public void SetForwardNavigationEntries(PageEntry[] entries)
+            public async Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
             {
                 var bytes = JsonSerializer.SerializeToUtf8Bytes(entries);
-                Save(bytes, ForwardNavigationEntriesName);
+                await SaveFileAsync(bytes, ForwardNavigationEntriesName);
             }
         }
     }

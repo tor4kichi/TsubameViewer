@@ -214,7 +214,7 @@ namespace TsubameViewer.Presentation.Views
 
 
             {
-                var backStack = navigationManager.GetBackNavigationEntries();
+                var backStack = await navigationManager.GetBackNavigationEntriesAsync();
                 foreach (var backNavItem in backStack)
                 {
                     var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{backNavItem.PageName}");
@@ -226,7 +226,7 @@ namespace TsubameViewer.Presentation.Views
             }
 
             {
-                var forwardStack = navigationManager.GetForwardNavigationEntries();
+                var forwardStack = await navigationManager.GetForwardNavigationEntriesAsync();
                 foreach (var forwardNavItem in forwardStack)
                 {
                     var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{forwardNavItem.PageName}");
@@ -273,7 +273,7 @@ namespace TsubameViewer.Presentation.Views
                     backNavigationPageEntries[backStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
                     Debug.WriteLine("[NavvigationRestore] Save BackStackPage: " + backNavigationPageEntries[backStackIndex].PageName);
                 }
-                _viewModel.RestoreNavigationManager.SetBackNavigationEntries(backNavigationPageEntries);
+                await _viewModel.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
             {
                 PageEntry[] forwardNavigationPageEntries = new PageEntry[ForwardParametersStack.Count];
@@ -284,7 +284,7 @@ namespace TsubameViewer.Presentation.Views
                     forwardNavigationPageEntries[forwardStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
                     Debug.WriteLine("[NavvigationRestore] Save ForwardStackPage: " + forwardNavigationPageEntries[forwardStackIndex].PageName);
                 }
-                _viewModel.RestoreNavigationManager.SetForwardNavigationEntries(forwardNavigationPageEntries);
+                await _viewModel.RestoreNavigationManager.SetForwardNavigationEntriesAsync(forwardNavigationPageEntries);
             }
 
         }
