@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
@@ -15,6 +16,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Models.Domain.EBook;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
@@ -28,6 +30,9 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class EBookReaderPageViewModel : ViewModelBase
     {
         string _AppCSS;
+        string _LightThemeCss;
+        string _DarkThemeCss;
+
 
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
@@ -67,16 +72,21 @@ namespace TsubameViewer.Presentation.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
+        public ThemeSettings ThemeSettings { get; }
+
+        public IReadOnlyList<int> RootFontSizeItems { get; } = Enumerable.Range(10, 32).ToList();
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
-            ToggleFullScreenCommand toggleFullScreenCommand
+            ToggleFullScreenCommand toggleFullScreenCommand,
+            ThemeSettings themeSettings
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
+            ThemeSettings = themeSettings;
         }
 
 
@@ -104,6 +114,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            _AppCSS ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
+            _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
+            _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
+
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var mode = parameters.GetNavigationMode();
@@ -171,7 +185,6 @@ namespace TsubameViewer.Presentation.ViewModels
             
             if (_tokenGettingFolder != null || _currentFolderItem != null)
             {
-                _AppCSS = await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
 
@@ -219,15 +232,25 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_navigationDisposables);
 
             // ページの切り替え
-            this.ObserveProperty(x => x.CurrentImageIndex)
-                .Subscribe(async index => 
+            new[] 
+            {
+                this.ObserveProperty(x => x.CurrentImageIndex).ToUnit(),
+                ThemeSettings.ObserveProperty(x => x.RootFontSizeInPixel, isPushCurrentValueAtFirst: false).ToUnit(),
+            }
+            .Merge().Subscribe(async _ => 
                 {
-                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(index);
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { throw new IndexOutOfRangeException(); }
 
                     Debug.WriteLine(currentPage.FileName);
 
-                    PageHtml = await Task.Run(async () =>
+                    ApplicationTheme theme = ThemeSettings.Theme;
+                    if (theme == ApplicationTheme.Default)
+                    {
+                        theme = ThemeSettings.GetSystemTheme();
+                    }
+
+                        PageHtml = await Task.Run(async () =>
                     {
                         var xmlDoc = new XmlDocument();
                         var pageContentText = await currentPage.ReadContentAsync();
@@ -241,14 +264,29 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             var node = _nodes.Pop();
 
+                            if (node.Name == "html")
+                            {
+                                var style = node.Attributes["style"];
+                                if (style == null)
+                                {
+                                    style = xmlDoc.CreateAttribute("style");
+                                    node.Attributes.Append(style);
+                                }
+                                style.Value = $"font-size:{ThemeSettings.RootFontSizeInPixel}px;";
+                            }
+
                             if (node.Name == "head")
                             {
-                                var cssNode = xmlDoc.CreateElement("style");
-                                var typeAttr = xmlDoc.CreateAttribute("type");
-                                typeAttr.Value = "text/css";
-                                cssNode.Attributes.Append(typeAttr);
-                                cssNode.InnerText = _AppCSS;
-                                node.AppendChild(cssNode);
+                                var cssItems = new[] { _AppCSS, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                                foreach (var css in cssItems)
+                                {
+                                    var cssNode = xmlDoc.CreateElement("style");
+                                    var typeAttr = xmlDoc.CreateAttribute("type");
+                                    typeAttr.Value = "text/css";
+                                    cssNode.Attributes.Append(typeAttr);
+                                    cssNode.InnerText = css;
+                                    node.AppendChild(cssNode);
+                                }
                             }
 
                             // 画像リソースの埋め込み

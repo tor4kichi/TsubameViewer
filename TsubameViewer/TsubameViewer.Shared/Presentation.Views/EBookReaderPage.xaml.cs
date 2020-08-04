@@ -1,5 +1,7 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
+using Newtonsoft.Json;
 using Prism.Commands;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +11,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
+using Uno.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -42,6 +45,8 @@ namespace TsubameViewer.Presentation.Views
 
 
 
+        FastAsyncLock _domUpdateLock = new FastAsyncLock();
+
 
         public EBookReaderPage()
         {
@@ -54,10 +59,12 @@ namespace TsubameViewer.Presentation.Views
             WebView.SizeChanged += WebView_SizeChanged;
 
             Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
+
+            WebView.Opacity = 0.0;
+#if DEBUG
+            FontSizeSettingComboBox.Visibility = Visibility.Visible;
+#endif
         }
-
-
-
 
         private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -65,11 +72,15 @@ namespace TsubameViewer.Presentation.Views
             this.LeftPageMoveButton.Focus(FocusState.Programmatic);
         }
 
-        private void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
+
+
+        private async void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
+            using var _ = await _domUpdateLock.LockAsync(default);
+
             if (!_Domloaded) { return; }
 
-            WebView.Opacity = 0.0;
+            WebView.Fade(0, 75);
 
             // リサイズしたら再描画しないとレイアウトが崩れるっぽい
             WebView.Refresh();
@@ -80,6 +91,8 @@ namespace TsubameViewer.Presentation.Views
 
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
+            using var _ = await _domUpdateLock.LockAsync(default);
+
             _Domloaded = true;
 
             //
@@ -90,24 +103,21 @@ namespace TsubameViewer.Presentation.Views
             // ページ送りを表現している。
             //
 
-            //
-            // サイズ計算について
-            // まず、bodyの最後尾に位置計算用のマーカー要素を追加して、
-            // そのマーカー要素のページ先頭からの相対位置と、ページ全体のスクロール可能な範囲の差から
-            // １ページ分のスクロール量を求める。としたいんだけど、
-            // Borderか何かの2ピクセルのズレが出ているのでマジックナンバー気味だけど補正して１ページのスクロール量としている。
-            // 
-            // 参考： https://stackoverflow.com/questions/6989306/how-to-get-css3-multi-column-count-in-javascript
-
             // 縦書きかをチェック
             var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
                 window.getComputedStyle(document.body).getPropertyValue('writing-mode')
                 " });
-            Debug.WriteLine(writingModeString);
+            IsVerticalLayout = writingModeString switch
+            {
+                "vertical-rl" => true,
+                "vertical-lr" => true,
+                "sideways-rl" => true,
+                "sideways-lr" => true,
+                _ => false,
+            };
+            Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
 
-            await WebView.InvokeScriptAsync("eval", new[] { "let markar = document.createElement('div'); markar.id = 'mark_last'; document.body.appendChild(markar);" });
 
-            IsVerticalLayout = writingModeString == "vertical-rl" || writingModeString == "vertical-lr";
             if (IsVerticalLayout)
             {
                 // TODO: ePub）column-countが2以上の時、分割数がページ数で割り切れない場合にページ終端のスクロール幅が足りず、前のページが一部入り込んだスクロールになってしまう
@@ -116,31 +126,101 @@ namespace TsubameViewer.Presentation.Views
                 // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
                 // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
                 // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
-
-                var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetTop.toString();" }));
-                Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
-                var scrollableSize = await GetScrollableHeight();
-                var pageSize = await GetPageHeight();
-                var onePageSize = scrollableSize - markerPositionLeft + 16;
-                ResetSizeCulc(scrollableSize + 2, markerPositionLeft < pageSize ? scrollableSize + 2 : onePageSize);
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });                
             }
             else
             {
-                // Note: "width:{WebView.ActualWidth - 8}"の-8は右側の見切れ対策
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight}px; column-count: 1; column-rule-width: 0px; \"" });
-
-                var markerPositionLeft = double.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.getElementById('mark_last').offsetLeft.toString();" }));
-                Debug.WriteLine("markerPositionLeft: " + markerPositionLeft);
-                var scrollableSize = await GetScrollableWidth();
-                var pageSize = await GetPageWidth();
-                var onePageSize = scrollableSize - markerPositionLeft + 16;
-                ResetSizeCulc(scrollableSize + 2, markerPositionLeft < pageSize ? scrollableSize + 2 : onePageSize);
+                // Note: -8は下側と右側の見切れ対策
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: 1; column-rule-width: 0px; \"" });
             }
+
+
+
 
             // TODO: ePub）lr レイアウトのページ送りに対応する
 
             // TODO: ePub）p（パラグラフ）が無い場合に、画像のみのページと仮定して、xaml側で設定してる余白を非表示に切り替えたい
+
+            //
+            // １ページの高さを求める
+            // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
+            // 章のタイトルなどズレているものもあるため、
+            // アプリ側でスクロール基準位置として使えない値を切り落とす。
+            // 先頭からいくつか候補の値をピックアップして、
+            // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
+            // 
+            {
+                string offsetText = IsVerticalLayout ? "offsetTop" : "offsetLeft";
+                var sizeList = await WebView.InvokeScriptAsync("eval", new[]
+                {
+                    $@"
+                    const pList = document.querySelectorAll('p, div, img, span');
+                    const heightArray = [];
+                    var count = 0;
+                    for (var i = 0; i < pList.length; i++)
+                    {{
+                        const elementScrollTop = pList[i].{offsetText};
+                        if (elementScrollTop == null) {{ continue; }}
+
+                        if (heightArray.length == 0)
+                        {{
+                            heightArray.push(elementScrollTop);
+                        }}
+                        else if (heightArray[count] != elementScrollTop)
+                        {{
+                            heightArray.push(elementScrollTop);
+                            count++;
+                        }}                        
+                    }}
+                    JSON.stringify(heightArray);
+                    "
+                });
+                Debug.WriteLine(sizeList);
+                var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct().Select(x => IsVerticalLayout ? x : x - 8).ToArray();
+                const int candidateSampleCount = 5;
+                const int compareSampleCount = 10;
+                int heroPageHeight = -1;
+                int heroHitCount = -1;
+                foreach (var candidatePageSize in sizeItems.Skip(1).Take(candidateSampleCount))
+                {
+                    var hitCount = sizeItems.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
+                    if (hitCount > heroHitCount)
+                    {
+                        heroPageHeight = candidatePageSize;
+                        heroHitCount = hitCount;
+                    }
+                }
+
+                var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
+                if (pageRealSize > heroPageHeight)
+                {
+                    _innerPageCount = 1;
+                    _onePageScrollSize = heroPageHeight;
+                    _webViewScrollableSize = heroPageHeight;
+                }
+                else
+                {
+                    var pageScrollPositions = sizeItems.Where(x => x % heroPageHeight == 0).ToArray();
+
+                    _innerPageCount = pageScrollPositions.Length;
+                    _onePageScrollSize = heroPageHeight;
+                    _webViewScrollableSize = pageScrollPositions.Last() + heroPageHeight;
+                }
+
+                Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
+
+                // ページ最後尾にスクロール用の余白を作る
+                // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
+                await WebView.InvokeScriptAsync("eval", new[]
+                {
+                    $@"
+                    for (var i = 0; i < 100; i++)
+                    {{
+                        document.body.appendChild(document.createElement('p'));
+                    }}
+                    "
+                });
+            }
 
             if (isFirstLoaded)
             {
@@ -148,6 +228,12 @@ namespace TsubameViewer.Presentation.Views
 
                 _innerCurrentPage = Math.Min((DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex, _innerPageCount - 1);
                 await SetScrollPositionAsync();
+
+                WebView.Fade(1.0f, 150).Start();
+            }
+            else
+            {
+                WebView.Fade(1.0f, 75).Start();
             }
 
             if (_nowGoPrevLoading)
@@ -156,13 +242,10 @@ namespace TsubameViewer.Presentation.Views
                 _innerCurrentPage = _innerPageCount - 1;
                 (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
 
-                //await Task.Delay(100);
                 await SetScrollPositionAsync();
             }
-
-            WebView.Opacity = 1.0;
         }
-      
+
 
         void ResetSizeCulc(double webViewScrollableSize, double pageSize)
         {
@@ -258,6 +341,8 @@ namespace TsubameViewer.Presentation.Views
                 var pageVM = DataContext as EBookReaderPageViewModel;
                 if (pageVM.GoNextImageCommand.CanExecute())
                 {
+                    WebView.Fade(0, 50).Start();
+
                     _innerCurrentPage = 0;
                     (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                     pageVM.GoNextImageCommand.Execute();
@@ -283,6 +368,8 @@ namespace TsubameViewer.Presentation.Views
                 var pageVM = DataContext as EBookReaderPageViewModel;
                 if (pageVM.GoPrevImageCommand.CanExecute())
                 {
+                    WebView.Fade(0, 50).Start();
+
                     _innerCurrentPage = 0;
                     (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = _innerCurrentPage;
                     _nowGoPrevLoading = true;

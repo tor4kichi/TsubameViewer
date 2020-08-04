@@ -12,13 +12,12 @@
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
-    Background="White"
   >
 
   <!-- TODO: WebViewへのTheme適用 -->
-  
-  
-  <Grid>
+
+
+  <Grid Background="{ThemeResource SystemColorBackgroundColor}">
 
     <i:Interaction.Behaviors>
       <core:DataTriggerBehavior Binding="{Binding PageHtml}" Value="{x:Null}" ComparisonCondition="NotEqual">
@@ -59,6 +58,7 @@
              IsAccessKeyScope="False"
              AllowFocusOnInteraction="False"
              Margin="24"
+             DefaultBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
              >
       
     </WebView>
@@ -116,7 +116,16 @@
 
         <SymbolIcon Symbol="Forward" />
       </Button>
+
     </Grid>
+    <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding ThemeSettings.RootFontSizeInPixel, Mode=TwoWay}" 
+                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Opacity="0.5"
+                x:Name="FontSizeSettingComboBox"
+                Visibility="Collapsed"
+                >
+
+    </ComboBox>
 
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>

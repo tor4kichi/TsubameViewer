@@ -40,6 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SupportedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\ThemeSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
@@ -137,9 +138,12 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\app.css" />
+    <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\DarkTheme.css" />
+    <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\LightTheme.css" />
     <Content Include="$(MSBuildThisFileDirectory)Assets\SharedAssets.md" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />
