@@ -199,11 +199,12 @@ namespace TsubameViewer.Presentation.Views
                 });
                 Debug.WriteLine(sizeList);
                 var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct().Select(x => IsVerticalLayout ? x : x - 8).ToArray();
+                var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
                 const int candidateSampleCount = 5;
                 const int compareSampleCount = 10;
                 int heroPageHeight = -1;
                 int heroHitCount = -1;
-                foreach (var candidatePageSize in sizeItems.Skip(1).Take(candidateSampleCount))
+                foreach (var candidatePageSize in sizeItems.Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount))
                 {
                     var hitCount = sizeItems.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
                     if (hitCount > heroHitCount)
@@ -213,7 +214,6 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }
 
-                var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
                 if (pageRealSize > heroPageHeight)
                 {
                     _innerPageCount = 1;
