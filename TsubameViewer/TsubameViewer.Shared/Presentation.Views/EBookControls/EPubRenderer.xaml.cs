@@ -147,6 +147,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             if (e.NewValue is string newPageHtml)
             {
+                _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
                 _this.WebView.NavigateToString(newPageHtml);
             }
             else
@@ -162,17 +163,47 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             WebView.NavigationStarting += WebView_NavigationStarting;
             WebView.NavigationCompleted += WebView_NavigationCompleted;
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
-            WebView.SizeChanged += WebView_SizeChanged;
+
+            Loaded += EPubRenderer_Loaded;
+            Unloaded += EPubRenderer_Unloaded;
         }
 
-        private void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+        private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
         {
-            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);
+            Window.Current.SizeChanged -= Current_SizeChanged;
         }
 
-        private void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
+        {
+            Window.Current.SizeChanged += Current_SizeChanged;
+        }
+
+        private async void Current_SizeChanged(object sender, Windows.UI.Core.WindowSizeChangedEventArgs e)
         {
             ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
+
+            using var _ = await _domUpdateLock.LockAsync(default);
+
+            // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
+            await Task.Delay(100);
+
+            // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+            WebView.Refresh();
+
+            await Task.Delay(100);
+        }
+
+
+
+        private async void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
+        }
+
+        private async void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
+            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);            
         }
 
         public event EventHandler ContentRefreshStarting;
@@ -192,14 +223,16 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             return _innerCurrentPage + 1 < _innerPageCount;
         }
 
-        public void GoNext()
+        public async void GoNext()
         {
+            using var _ = await _domUpdateLock.LockAsync(default);
+
             if (!CanGoNext()) { throw new Exception(); }
 
             _innerCurrentPage++;
             CurrentInnerPage = _innerCurrentPage;
             Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-            _ = SetScrollPositionAsync();
+            await SetScrollPositionAsync();
         }
 
 
@@ -208,14 +241,16 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             return _innerCurrentPage > 0;
         }
 
-        public void GoPreview()
+        public async void GoPreview()
         {
+            using var _ = await _domUpdateLock.LockAsync(default);
+
             if (!CanGoPreview()) { throw new Exception(); }
 
             _innerCurrentPage--;
             CurrentInnerPage = _innerCurrentPage;
             Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-            _ = SetScrollPositionAsync();
+            await SetScrollPositionAsync();
         }
 
 
@@ -225,13 +260,9 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         }
 
 
-        bool _Domloaded;
-
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             using var _ = await _domUpdateLock.LockAsync(default);
-
-            _Domloaded = true;
 
             //
             // 段組みレイアウトについて
@@ -378,15 +409,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             CurrentInnerPage = _innerCurrentPage;
         }
 
-        private async void WebView_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            using var _ = await _domUpdateLock.LockAsync(default);
-
-            if (!_Domloaded) { return; }
-
-            // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-            WebView.Refresh();
-        }
 
 
 
@@ -400,11 +422,11 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 #if DEBUG
             if (IsVerticalLayout)
             {
-                Debug.WriteLine(await GetScrollTop());
+                Debug.WriteLine("ScrollPosition: " + await GetScrollTop());
             }
             else
             {
-                Debug.WriteLine(await GetScrollLeft());
+                Debug.WriteLine("ScrollPosition: " + await GetScrollLeft());
             }
 #endif
         }
@@ -442,7 +464,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         private async Task<double> GetScrollTop()
         {
             // Note: writing-mode:vertical-rlが指定されてるとページオフセットの値が上下左右で入れ替わる挙動があるのでpageXOffsetから取得している
-            var scrollTop = await WebView.InvokeScriptAsync("eval", new[] { "window.pageXOffset.toString()" });
+            var scrollTop = await WebView.InvokeScriptAsync("eval", new[] { "window.pageYOffset.toString()" });
             return double.TryParse(scrollTop, out var value) ? value : 0;
         }
 

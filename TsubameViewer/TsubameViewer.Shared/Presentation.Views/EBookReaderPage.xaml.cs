@@ -97,7 +97,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void WebView_ContentRefreshStarting(object sender, EventArgs e)
         {
-            WebView.Fade(0, 75).Start();
+            WebView.Opacity = 0.0;
         }
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
