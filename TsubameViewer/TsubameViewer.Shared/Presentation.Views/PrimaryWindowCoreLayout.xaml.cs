@@ -1,5 +1,6 @@
 ﻿using Prism.Commands;
 using Prism.Navigation;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Core;
@@ -41,8 +43,12 @@ namespace TsubameViewer.Presentation.Views
             SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
             Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
             Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
+
+            _backNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<BackNavigationRequestEvent>()
+                .Subscribe(() => HandleBackRequest(), keepSubscriberReferenceAlive: true);                
         }
 
+        IDisposable _backNavigationEventSubscriber;
 
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
         {

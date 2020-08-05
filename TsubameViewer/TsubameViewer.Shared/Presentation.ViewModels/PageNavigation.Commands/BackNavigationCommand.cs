@@ -1,4 +1,5 @@
 ﻿using Prism.Commands;
+using Prism.Events;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -9,22 +10,21 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class BackNavigationCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService => _lazyNavigationService.Value;
-        private readonly Lazy<INavigationService> _lazyNavigationService;
+        private readonly IEventAggregator _eventAggregator;
 
-        public BackNavigationCommand([Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> lazyNavigationService)
+        public BackNavigationCommand(IEventAggregator eventAggregator)
         {
-            _lazyNavigationService = lazyNavigationService;
+            _eventAggregator = eventAggregator;
         }
 
         protected override bool CanExecute(object parameter)
         {
-            return _navigationService.CanGoBack();
+            return true;
         }
 
         protected override void Execute(object parameter)
         {
-            _ = _navigationService.GoBackAsync();
+            _eventAggregator.GetEvent<BackNavigationRequestEvent>().Publish();
         }
     }
 }

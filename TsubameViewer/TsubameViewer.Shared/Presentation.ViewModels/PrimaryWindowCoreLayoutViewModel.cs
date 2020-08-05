@@ -21,6 +21,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public List<object> MenuItems { get;  }
         public PrimaryWindowCoreLayoutViewModel(
             [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
+            IEventAggregator eventAggregator,
             RestoreNavigationManager restoreNavigationManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
@@ -33,6 +34,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
             _navigationServiceLazy = navigationServiceLazy;
+            EventAggregator = eventAggregator;
             RestoreNavigationManager = restoreNavigationManager;
             SourceChoiceCommand = sourceChoiceCommand;
             RefreshNavigationCommand = refreshNavigationCommand;
@@ -57,6 +59,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             });
 
+        public IEventAggregator EventAggregator { get; }
         public RestoreNavigationManager RestoreNavigationManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }

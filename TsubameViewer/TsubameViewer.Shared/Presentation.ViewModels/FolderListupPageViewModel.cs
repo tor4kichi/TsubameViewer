@@ -257,12 +257,10 @@ namespace TsubameViewer.Presentation.ViewModels
                                 isTokenChanged = true;
                             }
                         }
-#if DEBUG
                         else
                         {
-                            Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
+                            throw new Exception("required 'token' parameter in FolderListupPage navigation.");
                         }
-#endif
 
                         bool isPathChanged = false;
                         if (parameters.TryGetValue("path", out string path))

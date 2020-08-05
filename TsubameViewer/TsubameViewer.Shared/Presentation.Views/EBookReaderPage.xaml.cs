@@ -15,8 +15,11 @@ using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.Views.EBookControls;
 using Uno.Threading;
+using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -41,9 +44,10 @@ namespace TsubameViewer.Presentation.Views
             Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
 #if DEBUG
-            FontSizeSettingComboBox.Visibility = Visibility.Visible;
+            DebugPanel.Visibility = Visibility.Visible;
 #endif
 
+            
 
 
             WebView.ContentRefreshStarting += WebView_ContentRefreshStarting;
@@ -53,6 +57,40 @@ namespace TsubameViewer.Presentation.Views
 
             WebView.Loaded += WebView_Loaded;
             WebView.Unloaded += WebView_Unloaded;
+        }
+
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            // https://docs.microsoft.com/ja-jp/windows/uwp/design/shell/title-bar
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = true;
+
+            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x3f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0xaf, 0xff, 0xff, 0xff);
+            
+            base.OnNavigatedTo(e);
+        }
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = null;
+            appView.TitleBar.ButtonHoverBackgroundColor = null;
+            appView.TitleBar.ButtonInactiveBackgroundColor = null;
+            appView.TitleBar.ButtonPressedBackgroundColor = null;
+
+            base.OnNavigatingFrom(e);
         }
 
 
@@ -102,14 +140,14 @@ namespace TsubameViewer.Presentation.Views
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
         {
-            WebView.Fade(1.0f, 75).Start();
+            WebView.Fade(1.0f, 100).Start();
         }
 
         private DelegateCommand _InnerGoNextImageCommand;
         public DelegateCommand InnerGoNextImageCommand =>
             _InnerGoNextImageCommand ?? (_InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand));
 
-        void ExecuteGoNextCommand()
+        async void ExecuteGoNextCommand()
         {
             if (WebView.CanGoNext())
             {
@@ -121,9 +159,9 @@ namespace TsubameViewer.Presentation.Views
                 var pageVM = DataContext as EBookReaderPageViewModel;
                 if (pageVM.GoNextImageCommand.CanExecute())
                 {
-                    WebView.Fade(0, 50).Start();
-
-                    WebView.PreservedCurrentInnerPageIndex = 0;
+                    await WebView.Fade(0, 50).StartAsync();
+                    
+                    WebView.PrepareGoNext();
                     pageVM.GoNextImageCommand.Execute();
                 }
             }
@@ -133,7 +171,7 @@ namespace TsubameViewer.Presentation.Views
         public DelegateCommand InnerGoPrevImageCommand =>
             _InnerGoPrevImageCommand ?? (_InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand));
 
-        void ExecuteGoPrevCommand()
+        async void ExecuteGoPrevCommand()
         {
             if (WebView.CanGoPreview())
             {
@@ -144,9 +182,9 @@ namespace TsubameViewer.Presentation.Views
                 var pageVM = DataContext as EBookReaderPageViewModel;
                 if (pageVM.GoPrevImageCommand.CanExecute())
                 {
-                    WebView.Fade(0, 50).Start();
+                    await WebView.Fade(0, 50).StartAsync();
 
-                    WebView.PreservedCurrentInnerPageIndex = int.MaxValue;
+                    WebView.PrepareGoPreview();
                     pageVM.GoPrevImageCommand.Execute();
                 }
             }

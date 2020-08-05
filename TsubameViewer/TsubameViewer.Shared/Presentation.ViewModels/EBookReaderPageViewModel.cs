@@ -1,6 +1,7 @@
 ﻿using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
+using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,13 +19,12 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.EBook;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using VersOne.Epub;
-using Windows.Security.Cryptography;
 using Windows.Storage;
-using Windows.UI.ViewManagement;
-using Windows.Web.Http;
+using Windows.UI.Core;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -35,14 +34,11 @@ namespace TsubameViewer.Presentation.ViewModels
         string _LightThemeCss;
         string _DarkThemeCss;
 
-
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
 
         private string _currentPath;
         private StorageFile _currentFolderItem;
-
-        private ApplicationView _appView;
 
 
         private int _CurrentImageIndex;
@@ -51,6 +47,9 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _CurrentImageIndex;
             set => SetProperty(ref _CurrentImageIndex, value);
         }
+
+        public IReadOnlyReactiveProperty<int> DisplayInnerCurrentImageIndex { get; }
+
 
         private int _InnerCurrentImageIndex;
         public int InnerCurrentImageIndex
@@ -78,6 +77,28 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _PageHtml, value); }
         }
 
+        private string _title;
+        public string Title
+        {
+            get { return _title; }
+            set { SetProperty(ref _title, value); }
+        }
+
+
+        private DelegateCommand _ResetEBookReaderSettingsCommand;
+        public DelegateCommand ResetEBookReaderSettingsCommand =>
+            _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new DelegateCommand(ExecuteResetEBookReaderSettingsCommand));
+
+        void ExecuteResetEBookReaderSettingsCommand()
+        {
+            EBookReaderSettings.RootFontSizeInPixel = EBookReaderSettings.DefaultRootFontSizeInPixel;
+            EBookReaderSettings.LetterSpacingInPixel = EBookReaderSettings.DefaultLetterSpacingInPixel;
+            EBookReaderSettings.LineHeightInNoUnit = EBookReaderSettings.DefaultLineHeightInNoUnit;
+            EBookReaderSettings.RubySizeInPixel = EBookReaderSettings.DefaultRubySizeInPixel;
+        }
+
+
+
         CompositeDisposable _navigationDisposables;
         
         private CancellationTokenSource _leavePageCancellationTokenSource;
@@ -85,24 +106,31 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly IScheduler _scheduler;
 
-        public EBookReaderSettings ThemeSettings { get; }
-
-        public IReadOnlyList<int> RootFontSizeItems { get; } = Enumerable.Range(10, 32).ToList();
+        public EBookReaderSettings EBookReaderSettings { get; }
+        public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
+        public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Range(1, 40).Select(x => x - 10).Select(x => (double)x).ToList();
+        public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
+        public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(1, 50).Select(x => (double)x).ToList();
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
-            ToggleFullScreenCommand toggleFullScreenCommand,
             EBookReaderSettings themeSettings,
-            IScheduler scheduler
+            IScheduler scheduler,
+            ToggleFullScreenCommand toggleFullScreenCommand,
+            BackNavigationCommand backNavigationCommand
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
-            ThemeSettings = themeSettings;
+            BackNavigationCommand = backNavigationCommand;
+            EBookReaderSettings = themeSettings;
             _scheduler = scheduler;
-            _appView = ApplicationView.GetForCurrentView();
+
+            DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
+                .Select(x => x + 1)
+                .ToReadOnlyReactivePropertySlim();
         }
 
 
@@ -118,7 +146,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _readingSessionDisposer.Dispose();
             _readingSessionDisposer = null;
 
-            _appView.Title = string.Empty;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -244,16 +271,19 @@ namespace TsubameViewer.Presentation.ViewModels
             new[] 
             {
                 this.ObserveProperty(x => x.CurrentImageIndex).ToUnit(),
-                ThemeSettings.ObserveProperty(x => x.RootFontSizeInPixel, isPushCurrentValueAtFirst: false).ToUnit(),
+                EBookReaderSettings.PropertyChangedAsObservable().ToUnit(),
             }
-            .Merge().Subscribe(async _ => 
+            .Merge()
+            .Throttle(TimeSpan.FromMilliseconds(10), _scheduler)
+            .Subscribe(async _ => 
                 {
+                    
                     var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { throw new IndexOutOfRangeException(); }
 
                     Debug.WriteLine(currentPage.FileName);
 
-                    ApplicationTheme theme = ThemeSettings.Theme;
+                    ApplicationTheme theme = EBookReaderSettings.Theme;
                     if (theme == ApplicationTheme.Default)
                     {
                         theme = EBookReaderSettings.GetSystemTheme();
@@ -281,12 +311,23 @@ namespace TsubameViewer.Presentation.ViewModels
                                     style = xmlDoc.CreateAttribute("style");
                                     node.Attributes.Append(style);
                                 }
-                                style.Value = $"font-size:{ThemeSettings.RootFontSizeInPixel}px;";
+                                style.Value = $"font-size:{EBookReaderSettings.RootFontSizeInPixel}px;";
                             }
 
                             if (node.Name == "head")
                             {
-                                var cssItems = new[] { _AppCSS, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                                string settingsCss = 
+$@"
+body, p, span {{ 
+    letter-spacing: {EBookReaderSettings.LetterSpacingInPixel}px !important; 
+    line-height: {EBookReaderSettings.LineHeightInNoUnit} !important;
+}}
+rt {{ 
+    font-size: {EBookReaderSettings.RubySizeInPixel}px !important; 
+}}
+";
+
+                                var cssItems = new[] { _AppCSS, settingsCss, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
                                 foreach (var css in cssItems)
                                 {
                                     var cssNode = xmlDoc.CreateElement("style");
@@ -371,8 +412,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);
 
                     // タイトルを更新
-                    _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)}";
-
+                    Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)}";
                 })
                 .AddTo(_navigationDisposables);
 
@@ -384,26 +424,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (currentPage == null) { return; }
 
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
-                })
-                .AddTo(_navigationDisposables);
-
-            // タイトル表示の更新
-            new[]
-            {
-                this.ObserveProperty(x => x.InnerCurrentImageIndex).ToUnit(),
-                this.ObserveProperty(x => x.InnerImageTotalCount).ToUnit()
-            }
-            .Merge()
-            .Throttle(TimeSpan.FromSeconds(0.1))
-                .Subscribe(_ =>
-                {
-                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-                    if (currentPage == null) { return; }
-
-                    _scheduler.Schedule(() => 
-                    {
-                        _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)} ({InnerCurrentImageIndex + 1}/{InnerImageTotalCount})";
-                    });                    
                 })
                 .AddTo(_navigationDisposables);
 
@@ -437,6 +457,7 @@ namespace TsubameViewer.Presentation.ViewModels
         #region Commands
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
+        public BackNavigationCommand BackNavigationCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>

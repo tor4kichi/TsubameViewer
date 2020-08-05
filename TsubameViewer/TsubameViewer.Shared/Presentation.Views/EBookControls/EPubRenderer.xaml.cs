@@ -182,31 +182,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
 
-            // 更新後のページ表示位置の再計算
-            // 現在ページの割合を求めて、更新後に近い割合のページ数を表示する
-            var oldPageCount = _innerPageCount;
-            var oldCurrentPageIndex = _innerCurrentPage;
-            double oldPageInPercentage = _innerCurrentPage / (double)_innerPageCount;
-            async void WebView_NavigationCompleted1(WebView sender, WebViewNavigationCompletedEventArgs args)
-            {
-                using (await _domUpdateLock.LockAsync(default))
-                {
-                    WebView.NavigationCompleted -= WebView_NavigationCompleted1;
-
-                    var newPageCount = _innerPageCount;
-                    var newCurrentPageIndex = _innerCurrentPage;
-
-                    _innerCurrentPage = (int)Math.Floor(_innerPageCount * oldPageInPercentage);
-                    CurrentInnerPage = _innerCurrentPage;
-                    await SetScrollPositionAsync();
-
-                    Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
-                }
-            }
-
-            WebView.NavigationCompleted -= WebView_NavigationCompleted1;
-            WebView.NavigationCompleted += WebView_NavigationCompleted1;
-
             using (await _domUpdateLock.LockAsync(default))
             {
                 // リサイズしたら再描画しないとレイアウトが崩れるっぽい
@@ -283,9 +258,28 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         }
 
 
+        public void PrepareGoNext()
+        {
+            PreservedCurrentInnerPageIndex = 0;
+            _isGoNextOrPreview = true;
+        }
+
+        public void PrepareGoPreview()
+        {
+            PreservedCurrentInnerPageIndex = int.MaxValue;
+            _isGoNextOrPreview = true;
+        }
+
+        private bool _isGoNextOrPreview;
+
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             using var _ = await _domUpdateLock.LockAsync(default);
+
+            var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
+            var oldCurrentPageIndex = _innerCurrentPage;
+            double oldPageInPercentage = _innerCurrentPage / (double)_innerPageCount;
+
 
             //
             // 段組みレイアウトについて
@@ -419,12 +413,25 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             if (isFirstContent)
             {
                 isFirstContent = false;
+
                 _innerCurrentPage = Math.Clamp(FirstApproachingPageIndex, 0, _innerPageCount - 1);
+            }
+            else if (!_isGoNextOrPreview) // Refresh
+            {
+                var newPageCount = _innerPageCount;
+                var newCurrentPageIndex = _innerCurrentPage;
+
+                _innerCurrentPage = (int)Math.Round(_innerPageCount * oldPageInPercentage);
+
+                Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
             }
             else
             {
                 _innerCurrentPage = Math.Min(PreservedCurrentInnerPageIndex, _innerPageCount - 1);
             }
+
+            _isGoNextOrPreview = false;
+
 
             await SetScrollPositionAsync();
 

@@ -50,6 +50,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\AltOpenFolderItemCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BackNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
@@ -155,7 +156,6 @@
     <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Services\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\" />

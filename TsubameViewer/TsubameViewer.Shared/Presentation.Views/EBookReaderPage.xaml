@@ -11,12 +11,82 @@
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
-  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls"
+  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   mc:Ignorable="d"
   >
 
   <!-- TODO: WebViewへのTheme適用 -->
 
+  <Page.Resources>
+
+    <DataTemplate x:Key="PixelUnitTextTemplate">
+      <TextBlock>
+        <Run Text="{Binding}" />px
+      </TextBlock>
+    </DataTemplate>
+    
+    <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True">
+      <StackPanel Spacing="16" HorizontalAlignment="Right">
+        <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
+                  Header="文字の大きさ"
+                  HorizontalAlignment="Right"
+                  HorizontalContentAlignment="Right"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：18px" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{Binding LeffterSpacingItems}" SelectedItem="{Binding EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
+                  Header="文字の間隔"
+                  HorizontalAlignment="Right"
+                  HorizontalContentAlignment="Right"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：0px" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{Binding LineHeightItems}" SelectedItem="{Binding EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
+                  Header="行間の幅"
+                  HorizontalAlignment="Right"
+                  HorizontalContentAlignment="Right"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：1.5 (単位なし)" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{Binding RubySizeItems}" SelectedItem="{Binding EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
+                  Header="ふりがなの文字の大きさ"
+                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Right"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：12px" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+        <Button Content="設定をリセットする" 
+                HorizontalAlignment="Stretch"
+                Command="{Binding ResetEBookReaderSettingsCommand}"
+                />
+      </StackPanel>
+    </Flyout>
+  </Page.Resources>
 
   <Grid Background="{ThemeResource SystemColorBackgroundColor}">
 
@@ -54,12 +124,42 @@
              IsHitTestVisible="False"
              IsAccessKeyScope="False"
              AllowFocusOnInteraction="False"
-             Margin="24"
+             Margin="24 48 24 24"
              PageBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
              >
       
     </eBookControls:EPubRenderer>
 
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75">
+      <uwpControls:DockPanel>
+        <Button Command="{Binding BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
+          <SymbolIcon Symbol="Back">
+            <SymbolIcon.RenderTransform>
+              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+            </SymbolIcon.RenderTransform>
+          </SymbolIcon>
+        </Button>
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
+          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
+            <SymbolIcon Symbol="Setting" />
+          </Button>
+          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
+        </StackPanel>
+
+
+        <uwpControls:DockPanel Padding="8 0" x:Name="DraggableTitleBarArea_Desktop">
+          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="12" Margin="8 0 0 0">
+            <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
+          </TextBlock>
+          
+          <TextBlock  Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
+
+          </TextBlock>
+        </uwpControls:DockPanel>
+      </uwpControls:DockPanel>
+    </Grid>
+    
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
           Background="Transparent"
@@ -115,14 +215,16 @@
       </Button>
 
     </Grid>
-    <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding ThemeSettings.RootFontSizeInPixel, Mode=TwoWay}" 
-                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+    
+    
+
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                 Opacity="0.5"
-                x:Name="FontSizeSettingComboBox"
+                x:Name="DebugPanel"
                 Visibility="Collapsed"
                 >
-
-    </ComboBox>
+    </StackPanel>
+    
 
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>
@@ -131,7 +233,7 @@
             <StateTrigger IsActive="{x:Bind WebView.NowOnlyImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="WebView.Margin" Value="0" />
+            <Setter Target="WebView.Margin" Value="0 48 0 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
