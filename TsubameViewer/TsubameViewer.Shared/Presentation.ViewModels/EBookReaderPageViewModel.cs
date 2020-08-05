@@ -421,15 +421,6 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
         }
 
-        public HttpResponseMessage ResolveWebResourceRequest(Uri requestUri)
-        {
-            Debug.WriteLine("WebView: " + requestUri.OriginalString);
-
-            return new HttpResponseMessage(HttpStatusCode.NotFound);
-        }
-
-
-
 
 
         #region Commands

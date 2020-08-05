@@ -63,6 +63,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\DateTimetoStringConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookControls\EPubRenderer.xaml.cs">
+      <DependentUpon>EPubRenderer.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookReaderPage.xaml.cs">
       <DependentUpon>EBookReaderPage.xaml</DependentUpon>
     </Compile>
@@ -108,6 +111,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookControls\EPubRenderer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

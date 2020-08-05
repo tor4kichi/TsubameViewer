@@ -11,6 +11,7 @@
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls"
   mc:Ignorable="d"
   >
 
@@ -20,10 +21,7 @@
   <Grid Background="{ThemeResource SystemColorBackgroundColor}">
 
     <i:Interaction.Behaviors>
-      <core:DataTriggerBehavior Binding="{Binding PageHtml}" Value="{x:Null}" ComparisonCondition="NotEqual">
-        <core:CallMethodAction TargetObject="{Binding ElementName=PageRoot}" MethodName="RefreshPage" />
-      </core:DataTriggerBehavior>
-
+      
       <!-- Mouse Input-->
 
       <myBehaviour:MouseWheelTrigger x:Name="PageMoveMouseWheelTrigger">
@@ -49,19 +47,18 @@
       
     </i:Interaction.Behaviors>
 
-    <WebView x:Name="WebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-             ScrollViewer.VerticalScrollBarVisibility="Hidden"
-             ScrollViewer.VerticalScrollMode="Disabled"
-             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+    <eBookControls:EPubRenderer x:Name="WebView"
+                                PageHtml="{Binding PageHtml}"
+                                FirstApproachingPageIndex="{Binding InnerCurrentImageIndex, Mode=OneWay}"
              IsTapEnabled="False"
              IsHitTestVisible="False"
              IsAccessKeyScope="False"
              AllowFocusOnInteraction="False"
              Margin="24"
-             DefaultBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
+             PageBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
              >
       
-    </WebView>
+    </eBookControls:EPubRenderer>
 
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
@@ -131,17 +128,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsVerticalLayout, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind NowOnlyImageView, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind WebView.NowOnlyImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="WebView.Margin" Value="0" />
