@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -82,6 +83,8 @@ namespace TsubameViewer.Presentation.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly IScheduler _scheduler;
+
         public EBookReaderSettings ThemeSettings { get; }
 
         public IReadOnlyList<int> RootFontSizeItems { get; } = Enumerable.Range(10, 32).ToList();
@@ -90,14 +93,15 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
-            EBookReaderSettings themeSettings
+            EBookReaderSettings themeSettings,
+            IScheduler scheduler
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             ThemeSettings = themeSettings;
-
+            _scheduler = scheduler;
             _appView = ApplicationView.GetForCurrentView();
         }
 
@@ -384,15 +388,22 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_navigationDisposables);
 
             // タイトル表示の更新
-            this.ObserveProperty(x => x.InnerCurrentImageIndex)
-                .Subscribe(async innerPageIndex =>
+            new[]
+            {
+                this.ObserveProperty(x => x.InnerCurrentImageIndex).ToUnit(),
+                this.ObserveProperty(x => x.InnerImageTotalCount).ToUnit()
+            }
+            .Merge()
+            .Throttle(TimeSpan.FromSeconds(0.1))
+                .Subscribe(_ =>
                 {
-                    await Task.Delay(150);
-
                     var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { return; }
 
-                    _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)} ({InnerCurrentImageIndex + 1}/{InnerImageTotalCount})";
+                    _scheduler.Schedule(() => 
+                    {
+                        _appView.Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)} ({InnerCurrentImageIndex + 1}/{InnerImageTotalCount})";
+                    });                    
                 })
                 .AddTo(_navigationDisposables);
 

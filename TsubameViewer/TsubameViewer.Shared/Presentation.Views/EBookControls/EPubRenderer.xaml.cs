@@ -182,17 +182,40 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
 
-            using var _ = await _domUpdateLock.LockAsync(default);
+            // 更新後のページ表示位置の再計算
+            // 現在ページの割合を求めて、更新後に近い割合のページ数を表示する
+            var oldPageCount = _innerPageCount;
+            var oldCurrentPageIndex = _innerCurrentPage;
+            double oldPageInPercentage = _innerCurrentPage / (double)_innerPageCount;
+            async void WebView_NavigationCompleted1(WebView sender, WebViewNavigationCompletedEventArgs args)
+            {
+                using (await _domUpdateLock.LockAsync(default))
+                {
+                    WebView.NavigationCompleted -= WebView_NavigationCompleted1;
 
-            // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-            await Task.Delay(100);
+                    var newPageCount = _innerPageCount;
+                    var newCurrentPageIndex = _innerCurrentPage;
 
-            // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-            WebView.Refresh();
+                    _innerCurrentPage = (int)Math.Floor(_innerPageCount * oldPageInPercentage);
+                    CurrentInnerPage = _innerCurrentPage;
+                    await SetScrollPositionAsync();
 
-            await Task.Delay(100);
+                    Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
+                }
+            }
+
+            WebView.NavigationCompleted -= WebView_NavigationCompleted1;
+            WebView.NavigationCompleted += WebView_NavigationCompleted1;
+
+            using (await _domUpdateLock.LockAsync(default))
+            {
+                // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+                WebView.Refresh();
+
+                // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
+                await Task.Delay(200);
+            }
         }
-
 
 
         private async void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
@@ -208,7 +231,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         public event EventHandler ContentRefreshStarting;
         public event EventHandler ContentRefreshComplete;
-
+        
         FastAsyncLock _domUpdateLock = new FastAsyncLock();
 
         bool isFirstContent = true;
