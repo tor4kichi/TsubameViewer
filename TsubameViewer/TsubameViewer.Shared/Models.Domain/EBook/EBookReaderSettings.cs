@@ -5,9 +5,9 @@ using TsubameViewer.Models.Infrastructure;
 
 namespace TsubameViewer.Models.Domain.EBook
 {
-    public sealed class ThemeSettings : FlagsRepositoryBase
+    public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
-        public ThemeSettings()
+        public EBookReaderSettings()
         {
             _Theme = Read(ApplicationTheme.Default, nameof(Theme));
             _RootFontSizeInPixel = Read(24, nameof(RootFontSizeInPixel));

@@ -40,7 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SupportedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\ThemeSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\EBookReaderSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AppFlagsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />

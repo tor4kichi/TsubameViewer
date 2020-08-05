@@ -82,7 +82,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
-        public ThemeSettings ThemeSettings { get; }
+        public EBookReaderSettings ThemeSettings { get; }
 
         public IReadOnlyList<int> RootFontSizeItems { get; } = Enumerable.Range(10, 32).ToList();
 
@@ -90,7 +90,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
-            ThemeSettings themeSettings
+            EBookReaderSettings themeSettings
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -252,10 +252,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     ApplicationTheme theme = ThemeSettings.Theme;
                     if (theme == ApplicationTheme.Default)
                     {
-                        theme = ThemeSettings.GetSystemTheme();
+                        theme = EBookReaderSettings.GetSystemTheme();
                     }
 
-                        PageHtml = await Task.Run(async () =>
+                    PageHtml = await Task.Run(async () =>
                     {
                         var xmlDoc = new XmlDocument();
                         var pageContentText = await currentPage.ReadContentAsync();
