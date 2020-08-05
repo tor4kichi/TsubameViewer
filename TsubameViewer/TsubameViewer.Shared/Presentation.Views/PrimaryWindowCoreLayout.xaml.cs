@@ -66,6 +66,8 @@ namespace TsubameViewer.Presentation.Views
         bool _isFirstNavigation = true;
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
+            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
+
             var frame = (Frame)sender;
             BackCommand.RaiseCanExecuteChanged();
 
@@ -166,6 +168,11 @@ namespace TsubameViewer.Presentation.Views
                 () => _navigationService?.CanGoBack() ?? false
                 );
 
+        private DelegateCommand _RefreshCommand;
+        public DelegateCommand RefreshCommand =>
+            _RefreshCommand ??= new DelegateCommand(
+                () => _ = _navigationService?.RefreshAsync()
+                );
 
         #region Back/Forward Navigation
 
@@ -250,8 +257,19 @@ namespace TsubameViewer.Presentation.Views
             return np;
         }
         
-        public static INavigationParameters CurrentNavigationParameters { get; set; }
+        public static void SetCurrentNavigationParameters(INavigationParameters parameters)
+        {
+            if (parameters.GetNavigationMode() == Prism.Navigation.NavigationMode.Refresh) { return; }
 
+            CurrentNavigationParameters = parameters;
+        }
+
+        public static INavigationParameters CurrentNavigationParameters { get; private set; }
+
+        public static NavigationParameters GetCurrentNavigationParameter()
+        {
+            return CurrentNavigationParameters?.Clone() ?? new NavigationParameters();
+        }
 
 
 
@@ -309,15 +327,7 @@ namespace TsubameViewer.Presentation.Views
                 var backNavigationParameters = BackParametersStack.ElementAtOrDefault(BackParametersStack.Count - 1);
                 {
                     var last = BackParametersStack.Last();
-                    var current = CurrentNavigationParameters;    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                    var parameters = new NavigationParameters();
-                    if (current != null)
-                    {
-                        foreach (var pair in current)
-                        {
-                            parameters.Add(pair.Key, pair.Value);
-                        }
-                    }
+                    var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
                     BackParametersStack.Remove(last);
                     ForwardParametersStack.Add(parameters);
                 }
@@ -344,15 +354,7 @@ namespace TsubameViewer.Presentation.Views
                 var forwardNavigationParameters = ForwardParametersStack.Last();
                 {
                     var last = ForwardParametersStack.Last();
-                    var current = CurrentNavigationParameters; // GoForwardAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                    var parameters = new NavigationParameters();
-                    if (current != null)
-                    {
-                        foreach (var pair in current)
-                        {
-                            parameters.Add(pair.Key, pair.Value);
-                        }
-                    }
+                    var parameters = GetCurrentNavigationParameter(); // GoForwardAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
                     ForwardParametersStack.Remove(last);
                     BackParametersStack.Add(parameters);
                 }
@@ -429,5 +431,20 @@ namespace TsubameViewer.Presentation.Views
 
 
         #endregion
+    }
+
+
+    public static class NavigationParametersExtensions
+    {
+        public static NavigationParameters Clone(this INavigationParameters parameters)
+        {
+            var clone = new NavigationParameters();
+            foreach (var pair in parameters)
+            {
+                clone.Add(pair.Key, pair.Value);
+            }
+
+            return clone;
+        }
     }
 }

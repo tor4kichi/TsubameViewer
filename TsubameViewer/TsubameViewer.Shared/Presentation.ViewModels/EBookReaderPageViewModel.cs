@@ -121,7 +121,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatingTo(INavigationParameters parameters)
         {
-            PrimaryWindowCoreLayout.CurrentNavigationParameters = parameters;
+            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
 
             base.OnNavigatingTo(parameters);
         }

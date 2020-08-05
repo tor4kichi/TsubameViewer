@@ -140,9 +140,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (Images?.Any() ?? false)
             {
-                var images = Images.ToArray();
+                Images.ForEach(x => (x as IDisposable)?.Dispose());
                 Images = null;
-                images.AsParallel().ForAll(x => (x as IDisposable)?.Dispose());
             }
 
             CurrentImage = null;
@@ -161,11 +160,9 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        BitmapImage _emptyImage = new BitmapImage();
-
         public override void OnNavigatingTo(INavigationParameters parameters)
         {
-            Views.PrimaryWindowCoreLayout.CurrentNavigationParameters = parameters;
+            Views.PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
 
             base.OnNavigatingTo(parameters);
         }
@@ -186,9 +183,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 )
             {
-                // TODO: CurrentImageIndexをINavigationParametersから設定できるようにする
-
-
                 if (parameters.TryGetValue("token", out string token))
                 {
                     if (_currentToken != token)

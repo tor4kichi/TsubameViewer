@@ -211,7 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatingTo(INavigationParameters parameters)
         {
-            PrimaryWindowCoreLayout.CurrentNavigationParameters = parameters;
+            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
 
             base.OnNavigatingTo(parameters);
         }
@@ -231,11 +231,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 var mode = parameters.GetNavigationMode();
 
+                if (mode == NavigationMode.Refresh)
+                {
+                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();
+                }
+
                 _leavePageCancellationTokenSource = new CancellationTokenSource();
 
                 if (mode == NavigationMode.New
                     || mode == NavigationMode.Forward
                     || mode == NavigationMode.Back
+                    || mode == NavigationMode.Refresh
                     )
                 {
                     HasFileItem = false;
@@ -311,14 +317,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             HasFileItem = ImageFileItems.Any();
                         }
-                    }
-                }
-                else if (mode == NavigationMode.Refresh)
-                {
-                    HasFileItem = false;
-                    using (await _NavigationLock.LockAsync(default))
-                    {
-                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                     }
                 }
                 else if (!_isCompleteEnumeration

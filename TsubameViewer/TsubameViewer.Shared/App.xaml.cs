@@ -284,9 +284,9 @@ namespace TsubameViewer
             {
                 if (item is StorageFile file)
                 {
-                    if (!SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
+                    if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                     {
-                        continue;
+                        storageItemTypes = Models.Domain.StorageItemTypes.Archive;
                     }
                     else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                     {
@@ -297,6 +297,7 @@ namespace TsubameViewer
                     {
                         storageItemTypes = Models.Domain.StorageItemTypes.EBook;
                     }
+                    else { continue; }
 
                     var fileToken = await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
                     token = fileToken;
