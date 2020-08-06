@@ -81,7 +81,7 @@
         <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.FontFamily, Mode=TwoWay}" 
                   Header="フォント"
                   HorizontalContentAlignment="Right"
-                  HorizontalAlignment="Right"
+                  HorizontalAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
@@ -143,6 +143,7 @@
       
     </i:Interaction.Behaviors>
 
+    <!-- 電子書籍ビューワー -->
     <eBookControls:EPubRenderer x:Name="WebView"
                                 PageHtml="{Binding PageHtml}"
                                 FirstApproachingPageIndex="{Binding InnerCurrentImageIndex, Mode=OneWay}"
@@ -162,6 +163,7 @@
       
     </eBookControls:EPubRenderer>
 
+    <!-- コントロールUI -->
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
           Background="Transparent"
@@ -219,7 +221,7 @@
     </Grid>
     
     
-
+    <!-- デバッグ -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                 Opacity="0.5"
                 x:Name="DebugPanel"
@@ -229,9 +231,9 @@
 
 
     
-
+    <!-- タイトルバー -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75">
-      <Grid x:Name="DraggableTitleBarArea_Desktop">
+      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
         
       </Grid>
       <uwpControls:DockPanel>
@@ -256,8 +258,8 @@
             <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
           </TextBlock>
 
-          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}">
-            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
+          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}" Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
+            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" TextDecorations="Underline">
               <Run Text="{Binding CurrentPageTitle}" /> - <Run Text="{Binding Title}" />
             </TextBlock>
           </HyperlinkButton>
@@ -265,7 +267,7 @@
       </uwpControls:DockPanel>
     </Grid>
 
-
+    <!-- Toc -->
     <Grid x:Name="TocContainer" Visibility="Collapsed">
       <Grid x:Name="TocBackgroundPanel" Background="{ThemeResource SystemAltMediumLowColor}"  IsHitTestVisible="True">
         <i:Interaction.Behaviors>
@@ -278,10 +280,7 @@
 
         </i:Interaction.Behaviors>
       </Grid>
-      
-      
-
-      <Grid x:Name="TocContentPanel" HorizontalAlignment="Left" >
+      <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" >
 
         <ListView ItemsSource="{Binding TocItems}"
                   SelectedItem="{Binding SelectedTocItem, Mode=TwoWay}"
@@ -297,7 +296,7 @@
           </ListView.Header>
           <ListView.ItemTemplate>
             <DataTemplate >
-              <TextBlock Text="{Binding Label}" />
+              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
             </DataTemplate>
           </ListView.ItemTemplate>
 
