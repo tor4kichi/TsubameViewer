@@ -80,6 +80,35 @@
           </ToolTipService.ToolTip>
         </ComboBox>
 
+        <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.FontFamily, Mode=TwoWay}" 
+                  Header="フォント"
+                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Right"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：12px" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+        <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
+                  Header="ふりがなのフォント"
+                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Right"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="デフォルト：12px" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+
         <Button Content="設定をリセットする" 
                 HorizontalAlignment="Stretch"
                 Command="{Binding ResetEBookReaderSettingsCommand}"
@@ -130,6 +159,8 @@
                                 LetterSpacingInPixel="{Binding EBookReaderSettings.LetterSpacingInPixel}"
                                 LineHeightInNoUnit="{Binding EBookReaderSettings.LineHeightInNoUnit}"
                                 RubyFontSizeInPixel="{Binding EBookReaderSettings.RubySizeInPixel}"
+                                ContentsFontFamily="{Binding EBookReaderSettings.FontFamily}"
+                                RubyFontFamily="{Binding EBookReaderSettings.RubyFontFamily}"
              >
       
     </eBookControls:EPubRenderer>
@@ -231,6 +262,17 @@
     
 
     <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind WebView.NowRightToLeftReadingMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoNextImageCommand}" />
+            <Setter Target="RightPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>

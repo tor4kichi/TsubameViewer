@@ -20,6 +20,8 @@ namespace TsubameViewer.Models.Domain.EBook
             _LetterSpacingInPixel = Read(DefaultLetterSpacingInPixel, nameof(LetterSpacingInPixel));
             _LineHeightInNoUnit = Read(DefaultLineHeightInNoUnit, nameof(LineHeightInNoUnit));
             _RubySizeInPixel = Read(DefaultRubySizeInPixel, nameof(RubySizeInPixel));
+            _FontFamily = Read(default(string), nameof(FontFamily));
+            _RubyFontFamily = Read(default(string), nameof(RubyFontFamily));
         }
 
 
@@ -69,6 +71,21 @@ namespace TsubameViewer.Models.Domain.EBook
         {
             get { return _RubySizeInPixel; }
             set { SetProperty(ref _RubySizeInPixel, value); }
+        }
+
+        private string _FontFamily;
+        public string FontFamily
+        {
+            get { return _FontFamily; }
+            set { SetProperty(ref _FontFamily, value); }
+        }
+
+
+        private string _RubyFontFamily;
+        public string RubyFontFamily
+        {
+            get { return _RubyFontFamily; }
+            set { SetProperty(ref _RubyFontFamily, value); }
         }
     }
 

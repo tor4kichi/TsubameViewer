@@ -6,7 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 //using TsubameViewer.Presentation.ViewModels;
@@ -39,6 +42,21 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         // Using a DependencyProperty as the backing store for IsVerticalLayout.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty IsVerticalLayoutProperty =
             DependencyProperty.Register("IsVerticalLayout", typeof(bool), typeof(EPubRenderer), new PropertyMetadata(false));
+
+
+
+
+
+        public bool NowRightToLeftReadingMode
+        {
+            get { return (bool)GetValue(NowRightToLeftReadingModeProperty); }
+            set { SetValue(NowRightToLeftReadingModeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for NowRightToLeftReadingMode.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty NowRightToLeftReadingModeProperty =
+            DependencyProperty.Register("NowRightToLeftReadingMode", typeof(bool), typeof(EPubRenderer), new PropertyMetadata(false));
+
 
 
         public bool WithSeparetePage
@@ -133,6 +151,30 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
 
 
+        public string ContentsFontFamily
+        {
+            get { return (string)GetValue(ContentsFontFamilyProperty); }
+            set { SetValue(ContentsFontFamilyProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for ContentsFontFamily.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ContentsFontFamilyProperty =
+            DependencyProperty.Register("ContentsFontFamily", typeof(string), typeof(EPubRenderer), new PropertyMetadata(null));
+
+
+
+        public string RubyFontFamily
+        {
+            get { return (string)GetValue(RubyFontFamilyProperty); }
+            set { SetValue(RubyFontFamilyProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for RubyFontFamily.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty RubyFontFamilyProperty =
+            DependencyProperty.Register("RubyFontFamily", typeof(string), typeof(EPubRenderer), new PropertyMetadata(null));
+
+
+
 
 
         public double LetterSpacingInPixel
@@ -143,7 +185,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         // Using a DependencyProperty as the backing store for LetterSpacingInPixel.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty LetterSpacingInPixelProperty =
-            DependencyProperty.Register("LetterSpacingInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(0.0, RefreshOnStylePropertyChanged));
+            DependencyProperty.Register("LetterSpacingInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(0.0));
 
 
 
@@ -157,7 +199,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         // Using a DependencyProperty as the backing store for LineHeightInNoUnit.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty LineHeightInNoUnitProperty =
-            DependencyProperty.Register("LineHeightInNoUnit", typeof(double), typeof(EPubRenderer), new PropertyMetadata(1.5, RefreshOnStylePropertyChanged));
+            DependencyProperty.Register("LineHeightInNoUnit", typeof(double), typeof(EPubRenderer), new PropertyMetadata(1.5));
 
 
 
@@ -170,19 +212,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         // Using a DependencyProperty as the backing store for RubyFontSizeInPixel.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty RubyFontSizeInPixelProperty =
-            DependencyProperty.Register("RubyFontSizeInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(10.0, RefreshOnStylePropertyChanged));
-
-
-
-        private static void RefreshOnStylePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            var _this = (EPubRenderer)d;
-            if (_this.isFirstContent) { return; }
-
-            _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
-            _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(_this.PageHtml));
-        }
-
+            DependencyProperty.Register("RubyFontSizeInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(10.0));
 
 
         public string PageHtml
@@ -216,17 +246,28 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         // evalでdocument.headにstyleタグを追加しても反映されないため
         // html文字列に直接埋め込む
         string ToStyleEmbedHtml(string pageHtml)
-        {            
-            string ePubRendererCss =
-                $@"
-                body, p, span {{ 
-                    letter-spacing: {LetterSpacingInPixel}px !important; 
-                    line-height: {LineHeightInNoUnit} !important;
-                }}
-                rt {{ 
-                    font-size: {RubyFontSizeInPixel}px !important; 
-                }}
-                ".Replace("\n", "").Replace("\r", "").Replace("\t", "");
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("body, p, span{");
+            sb.Append($"letter-spacing: {LetterSpacingInPixel}px !important;");
+            sb.Append($"line-height: {LineHeightInNoUnit} !important;");
+            if (ContentsFontFamily != null)
+            {
+                sb.Append($"font-family: \"{ContentsFontFamily}\" !important;");
+            }
+            sb.Append("}");
+            sb.Append("rt {");
+            sb.Append($"font-size: {RubyFontSizeInPixel}px !important;");
+            if (RubyFontFamily != null)
+            {
+                sb.Append($"font-family: \"{RubyFontFamily}\" !important;");
+            }
+            else if (ContentsFontFamily != null)
+            {
+                sb.Append($"font-family: \"{ContentsFontFamily}\" !important;");
+            }
+            sb.Append("}");
+            string ePubRendererCss = sb.ToString();
 
             var xmlDoc = new XmlDocument();
             xmlDoc.LoadXml(pageHtml);
@@ -289,8 +330,23 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
         {
             Window.Current.SizeChanged += Current_SizeChanged;
-            StyleChangedObserver = this.ObserveDependencyProperty(FontSizeProperty)
-                .Subscribe(_ => { Refresh(); });
+
+            CompositeDisposable disposables = new CompositeDisposable();
+            StyleChangedObserver = disposables;
+            var dispatcher = Dispatcher;
+            new[]
+            {
+                this.ObserveDependencyProperty(FontSizeProperty),
+                this.ObserveDependencyProperty(LetterSpacingInPixelProperty),
+                this.ObserveDependencyProperty(LineHeightInNoUnitProperty),
+                this.ObserveDependencyProperty(RubyFontSizeInPixelProperty),
+                this.ObserveDependencyProperty(ContentsFontFamilyProperty),
+                this.ObserveDependencyProperty(RubyFontFamilyProperty),
+            }
+            .Merge()
+            .Throttle(TimeSpan.FromMilliseconds(10))
+            .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
+            .AddTo(disposables);
         }
 
         private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
@@ -380,6 +436,15 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         }
 
 
+        private void ReloadPageHtml()
+        {
+            ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
+            WebView.NavigateToString(this.ToStyleEmbedHtml(PageHtml));
+        }
+
+
+
+
         public void PrepareGoNext()
         {
             PreservedCurrentInnerPageIndex = 0;
@@ -423,6 +488,9 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 "sideways-lr" => true,
                 _ => false,
             };
+
+            NowRightToLeftReadingMode = writingModeString.EndsWith("rl");
+
             Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
 
 

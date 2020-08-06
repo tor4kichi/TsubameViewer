@@ -95,6 +95,8 @@ namespace TsubameViewer.Presentation.ViewModels
             EBookReaderSettings.LetterSpacingInPixel = EBookReaderSettings.DefaultLetterSpacingInPixel;
             EBookReaderSettings.LineHeightInNoUnit = EBookReaderSettings.DefaultLineHeightInNoUnit;
             EBookReaderSettings.RubySizeInPixel = EBookReaderSettings.DefaultRubySizeInPixel;
+            EBookReaderSettings.FontFamily = null;
+            EBookReaderSettings.RubyFontFamily = null;
         }
 
 
@@ -111,8 +113,10 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
         public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
         public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(1, 50).Select(x => (double)x).ToList();
+        public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
 
-        public EBookReaderPageViewModel(
+
+    public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
             EBookReaderSettings themeSettings,
