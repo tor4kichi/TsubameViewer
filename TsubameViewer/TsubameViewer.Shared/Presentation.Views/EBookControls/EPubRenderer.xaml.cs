@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Prism.Commands;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using System.Xml;
 //using TsubameViewer.Presentation.ViewModels;
 using Uno.Threading;
 using Windows.Foundation;
@@ -26,6 +28,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 {
     public sealed partial class EPubRenderer : UserControl
     {
+
 
         public bool IsVerticalLayout
         {
@@ -129,6 +132,59 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
 
 
+
+
+
+        public double LetterSpacingInPixel
+        {
+            get { return (double)GetValue(LetterSpacingInPixelProperty); }
+            set { SetValue(LetterSpacingInPixelProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for LetterSpacingInPixel.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty LetterSpacingInPixelProperty =
+            DependencyProperty.Register("LetterSpacingInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(0.0, RefreshOnStylePropertyChanged));
+
+
+
+
+
+        public double LineHeightInNoUnit
+        {
+            get { return (double)GetValue(LineHeightInNoUnitProperty); }
+            set { SetValue(LineHeightInNoUnitProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for LineHeightInNoUnit.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty LineHeightInNoUnitProperty =
+            DependencyProperty.Register("LineHeightInNoUnit", typeof(double), typeof(EPubRenderer), new PropertyMetadata(1.5, RefreshOnStylePropertyChanged));
+
+
+
+
+        public double RubyFontSizeInPixel
+        {
+            get { return (double)GetValue(RubyFontSizeInPixelProperty); }
+            set { SetValue(RubyFontSizeInPixelProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for RubyFontSizeInPixel.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty RubyFontSizeInPixelProperty =
+            DependencyProperty.Register("RubyFontSizeInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(10.0, RefreshOnStylePropertyChanged));
+
+
+
+        private static void RefreshOnStylePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var _this = (EPubRenderer)d;
+            if (_this.isFirstContent) { return; }
+
+            _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
+            _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(_this.PageHtml));
+        }
+
+
+
         public string PageHtml
         {
             get { return (string)GetValue(PageHtmlProperty); }
@@ -145,14 +201,71 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             using var _ = await _this._domUpdateLock.LockAsync(default);
 
-            if (e.NewValue is string newPageHtml)
+            if (e.NewValue is string newPageHtml && !string.IsNullOrEmpty(newPageHtml))
             {
                 _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
-                _this.WebView.NavigateToString(newPageHtml);
+                _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
             }
             else
             {
                 _this.WebView.NavigateToString(string.Empty);
+            }
+        }
+
+
+        // evalでdocument.headにstyleタグを追加しても反映されないため
+        // html文字列に直接埋め込む
+        string ToStyleEmbedHtml(string pageHtml)
+        {            
+            string ePubRendererCss =
+                $@"
+                body, p, span {{ 
+                    letter-spacing: {LetterSpacingInPixel}px !important; 
+                    line-height: {LineHeightInNoUnit} !important;
+                }}
+                rt {{ 
+                    font-size: {RubyFontSizeInPixel}px !important; 
+                }}
+                ".Replace("\n", "").Replace("\r", "").Replace("\t", "");
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(pageHtml);
+
+            var root = xmlDoc.DocumentElement;
+
+            Stack<XmlNode> nodes = new Stack<XmlNode>();
+            nodes.Push(root);
+            while (nodes.Any())
+            {
+                var node = nodes.Pop();
+
+                if (node.Name == "head")
+                {
+                    var cssItems = new[] { ePubRendererCss };
+                    foreach (var css in cssItems)
+                    {
+                        var cssNode = xmlDoc.CreateElement("style");
+                        var typeAttr = xmlDoc.CreateAttribute("type");
+                        typeAttr.Value = "text/css";
+                        cssNode.Attributes.Append(typeAttr);
+                        cssNode.InnerText = css;
+                        node.AppendChild(cssNode);
+                    }
+                    break;
+                }
+
+                foreach (var child in node.ChildNodes)
+                {
+                    nodes.Push(child as XmlNode);
+                }
+            }
+
+            using (var stringWriter = new StringWriter())
+            using (var xmlTextWriter = XmlWriter.Create(stringWriter))
+            {
+                xmlDoc.WriteTo(xmlTextWriter);
+                xmlTextWriter.Flush();
+                return stringWriter.GetStringBuilder().ToString();
             }
         }
 
@@ -162,21 +275,30 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             WebView.NavigationStarting += WebView_NavigationStarting;
             WebView.NavigationCompleted += WebView_NavigationCompleted;
+            
             WebView.DOMContentLoaded += WebView_DOMContentLoaded;
 
             Loaded += EPubRenderer_Loaded;
-            Unloaded += EPubRenderer_Unloaded;
+            Unloaded += EPubRenderer_Unloaded;            
+        }
+
+
+
+        IDisposable StyleChangedObserver;
+
+        private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
+        {
+            Window.Current.SizeChanged += Current_SizeChanged;
+            StyleChangedObserver = this.ObserveDependencyProperty(FontSizeProperty)
+                .Subscribe(_ => { Refresh(); });
         }
 
         private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
         {
             Window.Current.SizeChanged -= Current_SizeChanged;
+            StyleChangedObserver.Dispose();
         }
 
-        private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
-        {
-            Window.Current.SizeChanged += Current_SizeChanged;
-        }
 
         private async void Current_SizeChanged(object sender, Windows.UI.Core.WindowSizeChangedEventArgs e)
         {
@@ -303,6 +425,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             };
             Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
 
+
             var columnCount = !WithSeparetePage ? 1 : 2;
             if (IsVerticalLayout)
             {
@@ -310,12 +433,12 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
                 // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
                 // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; \"" });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; font-size:{FontSize}px; \";" });
             }
             else
             {
                 // Note: -8は下側と右側の見切れ対策
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; \"" });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; font-size:{FontSize}px; \";" });
             }
 
             // TODO: ePub）lr レイアウトのページ送りに対応する

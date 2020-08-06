@@ -108,7 +108,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public EBookReaderSettings EBookReaderSettings { get; }
         public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
-        public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Range(1, 40).Select(x => x - 10).Select(x => (double)x).ToList();
+        public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
         public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
         public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(1, 50).Select(x => (double)x).ToList();
 
@@ -271,7 +271,6 @@ namespace TsubameViewer.Presentation.ViewModels
             new[] 
             {
                 this.ObserveProperty(x => x.CurrentImageIndex).ToUnit(),
-                EBookReaderSettings.PropertyChangedAsObservable().ToUnit(),
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(10), _scheduler)
@@ -303,31 +302,9 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             var node = _nodes.Pop();
 
-                            if (node.Name == "html")
-                            {
-                                var style = node.Attributes["style"];
-                                if (style == null)
-                                {
-                                    style = xmlDoc.CreateAttribute("style");
-                                    node.Attributes.Append(style);
-                                }
-                                style.Value = $"font-size:{EBookReaderSettings.RootFontSizeInPixel}px;";
-                            }
-
                             if (node.Name == "head")
                             {
-                                string settingsCss = 
-$@"
-body, p, span {{ 
-    letter-spacing: {EBookReaderSettings.LetterSpacingInPixel}px !important; 
-    line-height: {EBookReaderSettings.LineHeightInNoUnit} !important;
-}}
-rt {{ 
-    font-size: {EBookReaderSettings.RubySizeInPixel}px !important; 
-}}
-";
-
-                                var cssItems = new[] { _AppCSS, settingsCss, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                                var cssItems = new[] { _AppCSS, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
                                 foreach (var css in cssItems)
                                 {
                                     var cssNode = xmlDoc.CreateElement("style");

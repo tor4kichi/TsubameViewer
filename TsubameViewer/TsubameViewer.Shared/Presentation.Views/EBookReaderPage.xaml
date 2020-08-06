@@ -120,12 +120,16 @@
     <eBookControls:EPubRenderer x:Name="WebView"
                                 PageHtml="{Binding PageHtml}"
                                 FirstApproachingPageIndex="{Binding InnerCurrentImageIndex, Mode=OneWay}"
-             IsTapEnabled="False"
-             IsHitTestVisible="False"
-             IsAccessKeyScope="False"
-             AllowFocusOnInteraction="False"
-             Margin="24 48 24 24"
-             PageBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
+                               IsTapEnabled="False"
+                               IsHitTestVisible="False"
+                               IsAccessKeyScope="False"
+                               AllowFocusOnInteraction="False"
+                               Margin="24 48 24 24"
+                               PageBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
+                                FontSize="{Binding EBookReaderSettings.RootFontSizeInPixel}"
+                                LetterSpacingInPixel="{Binding EBookReaderSettings.LetterSpacingInPixel}"
+                                LineHeightInNoUnit="{Binding EBookReaderSettings.LineHeightInNoUnit}"
+                                RubyFontSizeInPixel="{Binding EBookReaderSettings.RubySizeInPixel}"
              >
       
     </eBookControls:EPubRenderer>
