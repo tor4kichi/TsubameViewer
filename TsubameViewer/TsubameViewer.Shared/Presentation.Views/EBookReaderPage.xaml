@@ -15,8 +15,6 @@
   mc:Ignorable="d"
   >
 
-  <!-- TODO: WebViewへのTheme適用 -->
-
   <Page.Resources>
 
     <DataTemplate x:Key="PixelUnitTextTemplate">
@@ -122,7 +120,6 @@
     <i:Interaction.Behaviors>
       
       <!-- Mouse Input-->
-
       <myBehaviour:MouseWheelTrigger x:Name="PageMoveMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
           <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand}" />
@@ -165,36 +162,6 @@
       
     </eBookControls:EPubRenderer>
 
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75">
-      <uwpControls:DockPanel>
-        <Button Command="{Binding BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
-          <SymbolIcon Symbol="Back">
-            <SymbolIcon.RenderTransform>
-              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-            </SymbolIcon.RenderTransform>
-          </SymbolIcon>
-        </Button>
-
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
-          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
-            <SymbolIcon Symbol="Setting" />
-          </Button>
-          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
-        </StackPanel>
-
-
-        <uwpControls:DockPanel Padding="8 0" x:Name="DraggableTitleBarArea_Desktop">
-          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="12" Margin="8 0 0 0">
-            <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
-          </TextBlock>
-          
-          <TextBlock  Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
-
-          </TextBlock>
-        </uwpControls:DockPanel>
-      </uwpControls:DockPanel>
-    </Grid>
-    
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
           Background="Transparent"
@@ -259,7 +226,92 @@
                 Visibility="Collapsed"
                 >
     </StackPanel>
+
+
     
+
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75">
+      <Grid x:Name="DraggableTitleBarArea_Desktop">
+        
+      </Grid>
+      <uwpControls:DockPanel>
+        <Button Command="{Binding BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
+          <SymbolIcon Symbol="Back">
+            <SymbolIcon.RenderTransform>
+              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+            </SymbolIcon.RenderTransform>
+          </SymbolIcon>
+        </Button>
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
+          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
+            <SymbolIcon Symbol="Setting" />
+          </Button>
+          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
+        </StackPanel>
+
+
+        <uwpControls:DockPanel Padding="8 0" >
+          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="12" Margin="8 0 0 0">
+            <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
+          </TextBlock>
+
+          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}">
+            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
+              <Run Text="{Binding CurrentPageTitle}" /> - <Run Text="{Binding Title}" />
+            </TextBlock>
+          </HyperlinkButton>
+        </uwpControls:DockPanel>
+      </uwpControls:DockPanel>
+    </Grid>
+
+
+    <Grid x:Name="TocContainer" Visibility="Collapsed">
+      <Grid x:Name="TocBackgroundPanel" Background="{ThemeResource SystemAltMediumLowColor}"  IsHitTestVisible="True">
+        <i:Interaction.Behaviors>
+          <core:EventTriggerBehavior EventName="Tapped">
+            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </core:EventTriggerBehavior>
+          <core:DataTriggerBehavior Binding="{Binding CurrentImageIndex}" Value="{x:Null}" ComparisonCondition="NotEqual">
+            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </core:DataTriggerBehavior>
+
+        </i:Interaction.Behaviors>
+      </Grid>
+      
+      
+
+      <Grid x:Name="TocContentPanel" HorizontalAlignment="Left" >
+
+        <ListView ItemsSource="{Binding TocItems}"
+                  SelectedItem="{Binding SelectedTocItem, Mode=TwoWay}"
+                  Background="{ThemeResource SystemChromeLowColor}"
+                  SelectionMode="Single"
+                  SingleSelectionFollowsFocus="False"
+                  Padding="0 48 0 0"
+                  >
+          <ListView.Header>
+            <ContentControl Tapped="CoverImage_Tapped">
+              <Image Source="{Binding CoverImage}" Height="160" Margin="8" VerticalAlignment="Top" Stretch="UniformToFill" />
+            </ContentControl>
+          </ListView.Header>
+          <ListView.ItemTemplate>
+            <DataTemplate >
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </ListView.ItemTemplate>
+
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="Tapped">
+              <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+        </ListView>
+      </Grid>
+    </Grid>
+
+
 
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>
@@ -270,16 +322,6 @@
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoNextImageCommand}" />
             <Setter Target="RightPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind WebView.NowOnlyImageView, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="WebView.Margin" Value="0 48 0 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

@@ -191,6 +191,31 @@ namespace TsubameViewer.Presentation.Views
 
         }
 
+
+        private DelegateCommand _OpenTocPaneCommand;
+        public DelegateCommand OpenTocPaneCommand =>
+            _OpenTocPaneCommand ?? (_OpenTocPaneCommand = new DelegateCommand(ExecuteOpenTocPaneCommand));
+
+        void ExecuteOpenTocPaneCommand()
+        {
+            TocContainer.Visibility = Visibility.Visible;
+        }
+
+
+        private DelegateCommand _CloseTocPaneCommand;
+        public DelegateCommand CloseTocPaneCommand =>
+            _CloseTocPaneCommand ?? (_CloseTocPaneCommand = new DelegateCommand(ExecuteCloseTocPaneCommand));
+
+        void ExecuteCloseTocPaneCommand()
+        {
+            TocContainer.Visibility = Visibility.Collapsed;
+        }
+
+        private void CoverImage_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            (DataContext as EBookReaderPageViewModel).CurrentImageIndex = 0;
+        }
+
         public void RefreshPage()
         {
             WebView.Refresh();

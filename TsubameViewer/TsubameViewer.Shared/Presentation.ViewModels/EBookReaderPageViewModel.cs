@@ -18,6 +18,7 @@ using System.Xml;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.EBook;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
@@ -25,9 +26,17 @@ using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using VersOne.Epub;
 using Windows.Storage;
 using Windows.UI.Core;
+using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+    public sealed class TocItemViewModel
+    {
+        public string Label { get; set; }
+        public string Id { get; set; }
+    }
+
     public sealed class EBookReaderPageViewModel : ViewModelBase
     {
         string _AppCSS;
@@ -68,7 +77,22 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         EpubBookRef _currentBook;
+        EpubTextContentFileRef _currentPage;
         List<EpubTextContentFileRef> _currentBookReadingOrder;
+        
+        private IReadOnlyList<TocItemViewModel> _TocItems;
+        public IReadOnlyList<TocItemViewModel> TocItems
+        {
+            get { return _TocItems; }
+            set { SetProperty(ref _TocItems, value); }
+        }
+
+        private TocItemViewModel _selectedTocItem;
+        public TocItemViewModel SelectedTocItem
+        {
+            get { return _selectedTocItem; }
+            set { SetProperty(ref _selectedTocItem, value); }
+        }
 
         private string _PageHtml;
         public string PageHtml
@@ -82,6 +106,20 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             get { return _title; }
             set { SetProperty(ref _title, value); }
+        }
+
+        private string _currentPageTitle;
+        public string CurrentPageTitle
+        {
+            get { return _currentPageTitle; }
+            set { SetProperty(ref _currentPageTitle, value); }
+        }
+
+        private BitmapImage _CoverImage;
+        public BitmapImage CoverImage
+        {
+            get { return _CoverImage; }
+            set { SetProperty(ref _CoverImage, value); }
         }
 
 
@@ -106,6 +144,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly ThumbnailManager _thumbnailManager;
         private readonly IScheduler _scheduler;
 
         public EBookReaderSettings EBookReaderSettings { get; }
@@ -115,10 +154,12 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(1, 50).Select(x => (double)x).ToList();
         public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
 
+        Windows.UI.ViewManagement.ApplicationView _applicationView;
 
-    public EBookReaderPageViewModel(
+        public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
+            ThumbnailManager thumbnailManager,
             EBookReaderSettings themeSettings,
             IScheduler scheduler,
             ToggleFullScreenCommand toggleFullScreenCommand,
@@ -127,6 +168,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
+            _thumbnailManager = thumbnailManager;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             EBookReaderSettings = themeSettings;
@@ -135,6 +177,8 @@ namespace TsubameViewer.Presentation.ViewModels
             DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim();
+
+            _applicationView = ApplicationView.GetForCurrentView();
         }
 
 
@@ -150,6 +194,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _readingSessionDisposer.Dispose();
             _readingSessionDisposer = null;
 
+            _applicationView.Title = string.Empty;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -252,6 +297,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             CurrentImageIndex = i;
                             InnerCurrentImageIndex = bookmark.innerPageIndex;
+                            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
                             break;
                         }
                     }
@@ -268,6 +314,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
                     }
+
+                    SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
                 }
             }
 
@@ -283,6 +331,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     
                     var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { throw new IndexOutOfRangeException(); }
+
+                    _currentPage = currentPage;
 
                     Debug.WriteLine(currentPage.FileName);
 
@@ -392,8 +442,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     // ブックマークに登録
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);
 
-                    // タイトルを更新
-                    Title = $"{_currentBook.Title} - {Path.GetFileNameWithoutExtension(currentPage.FileName)}";
+                    // Tocを更新
+                    SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FileName));
+
+                    // ページ名更新
+                    CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FileName);
                 })
                 .AddTo(_navigationDisposables);
 
@@ -417,22 +470,60 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _readingSessionDisposer?.Dispose();
             _readingSessionDisposer = new CompositeDisposable();
-
+ 
             var fileStream = await _currentFolderItem.OpenStreamForReadAsync()
                 .AddTo(_readingSessionDisposer);
 
             var epubBook = await EpubReader.OpenBookAsync(fileStream)
                 .AddTo(_readingSessionDisposer);
 
+            
+
             _currentBook = epubBook;
             _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
 
+            TocItems = _currentBook.Schema.Package.EpubVersion switch
+            {
+                VersOne.Epub.Schema.EpubVersion.EPUB_2 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
+                VersOne.Epub.Schema.EpubVersion.EPUB_3_0 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
+                VersOne.Epub.Schema.EpubVersion.EPUB_3_1 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
+                _ => throw new NotSupportedException()
+            };
+
+            SelectedTocItem = TocItems.FirstOrDefault();
+
+            var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(_currentFolderItem);
+            CoverImage = new BitmapImage(new Uri(thumbnailFile.Path));
+
             Debug.WriteLine(epubBook.Title);
+
+            // タイトルを更新
+            Title = _currentBook.Title;
+            _applicationView.Title = _currentBook.Title;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
         }
 
+
+        // call from View
+        public void UpdateFromCurrentTocItem()
+        {
+            if (SelectedTocItem == null) { return; }
+
+            var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FileName));
+            if (selectedBook == null)
+            {
+                throw new Exception();
+            }
+
+            if (selectedBook == _currentPage) 
+            {
+                return; 
+            }
+
+            CurrentImageIndex = _currentBookReadingOrder.IndexOf(selectedBook);
+        }
 
 
         #region Commands
@@ -446,7 +537,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            CurrentImageIndex += 1;
+            CurrentImageIndex = Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1);
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -463,7 +554,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            CurrentImageIndex -= 1;
+            CurrentImageIndex = Math.Max(CurrentImageIndex - 1, 0);
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -473,20 +564,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
         }
-
-
-
-        private DelegateCommand _SizeChangedCommand;
-        public DelegateCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new DelegateCommand(async () =>
-            {
-                throw new NotImplementedException();
-                //if (!(Images?.Any() ?? false)) { return; }
-
-                //await Task.Delay(50);
-
-                //RaisePropertyChanged(nameof(CurrentImageIndex));
-            });
 
 
         #endregion

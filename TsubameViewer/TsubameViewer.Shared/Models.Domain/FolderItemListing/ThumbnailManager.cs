@@ -249,7 +249,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
+        private async Task<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
         {
             using var fileStream = await file.OpenStreamForReadAsync();
 
