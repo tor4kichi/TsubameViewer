@@ -97,12 +97,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerSettings ImageViewerSettings { get; }
 
+        private readonly IScheduler _scheduler;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
+            IScheduler scheduler,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
@@ -110,6 +112,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager
             )
         {
+            _scheduler = scheduler;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
@@ -291,6 +294,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // 画像更新
             this.ObserveProperty(x => x.CurrentImageIndex)
+                .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
                 .Subscribe(async index =>
                 {
                     if (Images == null || Images.Length == 0) { return; }
