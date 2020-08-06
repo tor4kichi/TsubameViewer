@@ -33,6 +33,9 @@
         </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyCollectionToObjectConverter>
 
+      <myConv:ColorToBrush x:Key="ColorToBrush" />
+      <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />
+      <myConv:NullableColorConverter x:Key="NullableColorConverter" />
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

@@ -200,7 +200,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     parameters.Add("__restored", string.Empty);
                 }
-                var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters);
+                var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters, new SuppressNavigationTransitionInfo());
                 if (!result.Success)
                 {
                     await Task.Delay(50);

@@ -25,6 +25,7 @@ using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using VersOne.Epub;
 using Windows.Storage;
+using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
@@ -135,6 +136,8 @@ namespace TsubameViewer.Presentation.ViewModels
             EBookReaderSettings.RubySizeInPixel = EBookReaderSettings.DefaultRubySizeInPixel;
             EBookReaderSettings.FontFamily = null;
             EBookReaderSettings.RubyFontFamily = null;
+            EBookReaderSettings.BackgroundColor = Colors.Transparent;
+            EBookReaderSettings.ForegroundColor = Colors.Transparent;
         }
 
 
@@ -145,14 +148,16 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly ApplicationSettings _applicationSettings;
         private readonly IScheduler _scheduler;
 
         public EBookReaderSettings EBookReaderSettings { get; }
         public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
         public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
         public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
-        public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(1, 50).Select(x => (double)x).ToList();
+        public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(0, 51).Select(x => (double)x).ToList();
         public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
+        public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
 
         Windows.UI.ViewManagement.ApplicationView _applicationView;
 
@@ -160,6 +165,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
+            ApplicationSettings applicationSettings,
             EBookReaderSettings themeSettings,
             IScheduler scheduler,
             ToggleFullScreenCommand toggleFullScreenCommand,
@@ -169,6 +175,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
+            _applicationSettings = applicationSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             EBookReaderSettings = themeSettings;
@@ -336,10 +343,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     Debug.WriteLine(currentPage.FileName);
 
-                    ApplicationTheme theme = EBookReaderSettings.Theme;
+                    ApplicationTheme theme = _applicationSettings.Theme;
                     if (theme == ApplicationTheme.Default)
                     {
-                        theme = EBookReaderSettings.GetSystemTheme();
+                        theme = ApplicationSettings.GetSystemTheme();
                     }
 
                     PageHtml = await Task.Run(async () =>

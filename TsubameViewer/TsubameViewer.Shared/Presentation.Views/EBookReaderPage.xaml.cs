@@ -220,5 +220,26 @@ namespace TsubameViewer.Presentation.Views
         {
             WebView.Refresh();
         }
+
+        private void BackgroundColorPickerFlyout_Opening(object sender, object e)
+        {
+            var pageVM = DataContext as EBookReaderPageViewModel;
+            var color = pageVM.EBookReaderSettings.BackgroundColor;
+            if (color.A == 0)
+            {
+                color.A = 0xff;
+                pageVM.EBookReaderSettings.BackgroundColor = color;
+            }
+        }
+
+        private void ForegroundColorPickerFlyout_Opening(object sender, object e)
+        {
+            var pageVM = DataContext as EBookReaderPageViewModel;
+            var color = pageVM.EBookReaderSettings.ForegroundColor;
+            if (color == null)
+            {
+                pageVM.EBookReaderSettings.ForegroundColor = new Color() { A = 0xff } ;
+            }
+        }
     }
 }

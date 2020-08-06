@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
+using Windows.UI;
 
 namespace TsubameViewer.Models.Domain.EBook
 {
@@ -15,35 +16,17 @@ namespace TsubameViewer.Models.Domain.EBook
 
         public EBookReaderSettings()
         {
-            _Theme = Read(ApplicationTheme.Default, nameof(Theme));
+//            _Theme = Read(ApplicationTheme.Default, nameof(Theme));
             _RootFontSizeInPixel = Read(DefaultRootFontSizeInPixel, nameof(RootFontSizeInPixel));
             _LetterSpacingInPixel = Read(DefaultLetterSpacingInPixel, nameof(LetterSpacingInPixel));
             _LineHeightInNoUnit = Read(DefaultLineHeightInNoUnit, nameof(LineHeightInNoUnit));
             _RubySizeInPixel = Read(DefaultRubySizeInPixel, nameof(RubySizeInPixel));
             _FontFamily = Read(default(string), nameof(FontFamily));
             _RubyFontFamily = Read(default(string), nameof(RubyFontFamily));
+            _BackgroundColor = Read(Colors.Transparent, nameof(BackgroundColor));
+            _ForegroundColor = Read(Colors.Transparent, nameof(ForegroundColor));
         }
 
-
-
-
-        private ApplicationTheme _Theme;
-        public ApplicationTheme Theme
-        {
-            get { return _Theme; }
-            set { SetProperty(ref _Theme, value); }
-        }
-
-
-        public static ApplicationTheme GetSystemTheme()
-        {
-            return App.Current.RequestedTheme switch
-            {
-                Windows.UI.Xaml.ApplicationTheme.Dark => ApplicationTheme.Dark,
-                Windows.UI.Xaml.ApplicationTheme.Light => ApplicationTheme.Light,
-                _ => throw new NotSupportedException()
-            };
-        }
 
         private double _RootFontSizeInPixel;
         public double RootFontSizeInPixel
@@ -87,13 +70,21 @@ namespace TsubameViewer.Models.Domain.EBook
             get { return _RubyFontFamily; }
             set { SetProperty(ref _RubyFontFamily, value); }
         }
+
+        private Color _BackgroundColor;
+        public Color BackgroundColor
+        {
+            get { return _BackgroundColor; }
+            set { SetProperty(ref _BackgroundColor, value); }
+        }
+
+        private Color? _ForegroundColor;
+        public Color? ForegroundColor
+        {
+            get { return _ForegroundColor; }
+            set { SetProperty(ref _ForegroundColor, value); }
+        }
     }
 
 
-    public enum ApplicationTheme
-    {
-        Default,
-        Light,
-        Dark,
-    }
 }

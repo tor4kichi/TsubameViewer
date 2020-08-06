@@ -14,7 +14,12 @@
   xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   mc:Ignorable="d"
   >
-
+  <Page.Transitions>
+    <TransitionCollection>
+      
+    </TransitionCollection>
+  </Page.Transitions>
+  
   <Page.Resources>
 
     <DataTemplate x:Key="PixelUnitTextTemplate">
@@ -27,8 +32,8 @@
       <StackPanel Spacing="16" HorizontalAlignment="Right">
         <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
                   Header="文字の大きさ"
-                  HorizontalAlignment="Right"
-                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
                   ToolTipService.Placement="Right"
                 >
@@ -40,8 +45,8 @@
         </ComboBox>
         <ComboBox ItemsSource="{Binding LeffterSpacingItems}" SelectedItem="{Binding EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
                   Header="文字の間隔"
-                  HorizontalAlignment="Right"
-                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
                   ToolTipService.Placement="Right"
                 >
@@ -53,8 +58,8 @@
         </ComboBox>
         <ComboBox ItemsSource="{Binding LineHeightItems}" SelectedItem="{Binding EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
                   Header="行間の幅"
-                  HorizontalAlignment="Right"
-                  HorizontalContentAlignment="Right"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                 >
           <ToolTipService.ToolTip>
@@ -65,8 +70,8 @@
         </ComboBox>
         <ComboBox ItemsSource="{Binding RubySizeItems}" SelectedItem="{Binding EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
                   Header="ふりがなの文字の大きさ"
-                  HorizontalContentAlignment="Right"
-                  HorizontalAlignment="Right"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
@@ -80,8 +85,8 @@
 
         <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.FontFamily, Mode=TwoWay}" 
                   Header="フォント"
-                  HorizontalContentAlignment="Right"
                   HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
@@ -94,8 +99,8 @@
 
         <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
                   Header="ふりがなのフォント"
-                  HorizontalContentAlignment="Right"
-                  HorizontalAlignment="Right"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
@@ -107,6 +112,43 @@
         </ComboBox>
 
 
+        <StackPanel HorizontalAlignment="Stretch">
+          <TextBlock Text="背景色" HorizontalAlignment="Left" />
+          <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid>
+              <TextBlock Text="背景色を変更" />
+            </Grid>
+
+            <Button.Flyout>
+              <Flyout Placement="Left" Opening="BackgroundColorPickerFlyout_Opening">
+                <ColorPicker Color="{Binding EBookReaderSettings.BackgroundColor, Mode=TwoWay}"
+                               >
+
+                </ColorPicker>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+
+        <StackPanel HorizontalAlignment="Stretch">
+          <TextBlock Text="文字色" HorizontalAlignment="Left" />
+          <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid>
+              <TextBlock Text="文字色を変更" />
+            </Grid>
+            <Button.Flyout>
+              <Flyout Placement="Left" Opening="ForegroundColorPickerFlyout_Opening">
+                <ColorPicker Color="{Binding EBookReaderSettings.ForegroundColor, Mode=TwoWay, Converter={StaticResource NullableColorConverter}}"
+                             >
+
+                </ColorPicker>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+
+        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" /> 
+
         <Button Content="設定をリセットする" 
                 HorizontalAlignment="Stretch"
                 Command="{Binding ResetEBookReaderSettingsCommand}"
@@ -115,7 +157,7 @@
     </Flyout>
   </Page.Resources>
 
-  <Grid Background="{ThemeResource SystemColorBackgroundColor}">
+  <Grid Background="{Binding EBookReaderSettings.BackgroundColor, Converter={StaticResource ColorToBrush}}">
 
     <i:Interaction.Behaviors>
       
@@ -151,8 +193,9 @@
                                IsHitTestVisible="False"
                                IsAccessKeyScope="False"
                                AllowFocusOnInteraction="False"
-                               Margin="24 48 24 24"
-                               PageBackgroundColor="{ThemeResource SystemColorBackgroundColor}"
+                               Margin="32 72 32 48"
+                               PageBackgroundColor="{Binding EBookReaderSettings.BackgroundColor}"
+                                FontColor="{Binding EBookReaderSettings.ForegroundColor, Converter={StaticResource NullableColorConverter}}"
                                 FontSize="{Binding EBookReaderSettings.RootFontSizeInPixel}"
                                 LetterSpacingInPixel="{Binding EBookReaderSettings.LetterSpacingInPixel}"
                                 LineHeightInNoUnit="{Binding EBookReaderSettings.LineHeightInNoUnit}"
@@ -232,7 +275,7 @@
 
     
     <!-- タイトルバー -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}">
       <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
         
       </Grid>
@@ -252,15 +295,14 @@
           <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
         </StackPanel>
 
-
         <uwpControls:DockPanel Padding="8 0" >
-          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="12" Margin="8 0 0 0">
-            <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
+          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0">
+            <Run Text="{Binding CurrentPageTitle}" /> - <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
           </TextBlock>
 
-          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}" Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
+          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}" Foreground="{ThemeResource ApplicationForegroundThemeBrush}" MinWidth="80">
             <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" TextDecorations="Underline">
-              <Run Text="{Binding CurrentPageTitle}" /> - <Run Text="{Binding Title}" />
+              <Run Text="{Binding Title}" />
             </TextBlock>
           </HyperlinkButton>
         </uwpControls:DockPanel>

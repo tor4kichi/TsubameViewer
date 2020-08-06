@@ -23,6 +23,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ApplicationSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Bookmark\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileSortType.cs" />
@@ -63,7 +64,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ColorToBrush.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\DateTimetoStringConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NotTransparentColorToBooleanConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NullableColorConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookControls\EPubRenderer.xaml.cs">
       <DependentUpon>EPubRenderer.xaml</DependentUpon>
     </Compile>

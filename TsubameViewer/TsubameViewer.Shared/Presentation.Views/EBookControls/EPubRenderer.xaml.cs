@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Toolkit.Uwp.Helpers;
+using Newtonsoft.Json;
 using Prism.Commands;
 using Reactive.Bindings.Extensions;
 using System;
@@ -215,6 +216,21 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             DependencyProperty.Register("RubyFontSizeInPixel", typeof(double), typeof(EPubRenderer), new PropertyMetadata(10.0));
 
 
+
+
+        public Color FontColor
+        {
+            get { return (Color)GetValue(FontColorProperty); }
+            set { SetValue(FontColorProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for FontColor.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty FontColorProperty =
+            DependencyProperty.Register("FontColor", typeof(Color), typeof(EPubRenderer), new PropertyMetadata(Colors.Transparent));
+
+
+
+
         public string PageHtml
         {
             get { return (string)GetValue(PageHtmlProperty); }
@@ -254,6 +270,12 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             if (ContentsFontFamily != null)
             {
                 sb.Append($"font-family: \"{ContentsFontFamily}\" !important;");
+            }
+            if (FontColor != Colors.Transparent)
+            {
+                var color = FontColor;
+                color.A = 0xff;
+                sb.Append($"color: rgba({color.R},{color.G},{color.B}, 1.0) !important;");
             }
             sb.Append("}");
             sb.Append("rt {");
@@ -342,6 +364,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 this.ObserveDependencyProperty(RubyFontSizeInPixelProperty),
                 this.ObserveDependencyProperty(ContentsFontFamilyProperty),
                 this.ObserveDependencyProperty(RubyFontFamilyProperty),
+                this.ObserveDependencyProperty(FontColorProperty),
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(10))
@@ -366,7 +389,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 WebView.Refresh();
 
                 // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                await Task.Delay(200);
+                //await Task.Delay(50);
             }
         }
 
@@ -461,7 +484,11 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
+            if (PageHtml == null) { return; }
+
             using var _ = await _domUpdateLock.LockAsync(default);
+
+            
 
             var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
             var oldCurrentPageIndex = _innerCurrentPage;
