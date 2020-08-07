@@ -36,6 +36,8 @@
       <myConv:ColorToBrush x:Key="ColorToBrush" />
       <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
+      <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
+      <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

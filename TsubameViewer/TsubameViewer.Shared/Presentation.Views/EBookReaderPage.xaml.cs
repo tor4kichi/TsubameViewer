@@ -77,6 +77,7 @@ namespace TsubameViewer.Presentation.Views
             
             base.OnNavigatedTo(e);
         }
+
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;

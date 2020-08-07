@@ -31,6 +31,7 @@ using Uno.Threading;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
+using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -72,13 +73,56 @@ namespace TsubameViewer.Presentation.ViewModels
         public string ParentFolderOrArchiveName
         {
             get { return _ParentFolderOrArchiveName; }
-            set { SetProperty(ref _ParentFolderOrArchiveName, value); }
+            private set { SetProperty(ref _ParentFolderOrArchiveName, value); }
         }
 
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
 
         public ReactiveProperty<double> CanvasWidth { get; }
         public ReactiveProperty<double> CanvasHeight { get; }
+
+
+
+        private string _title;
+        public string Title
+        {
+            get { return _title; }
+            private set { SetProperty(ref _title, value); }
+        }
+
+
+        private string _pageFolderName;
+        public string PageFolderName
+        {
+            get { return _pageFolderName; }
+            set { SetProperty(ref _pageFolderName, value); }
+        }
+
+        private string _pageName;
+        public string PageName
+        {
+            get { return _pageName; }
+            private set { SetProperty(ref _pageName, value); }
+        }
+
+
+        private string[] _pageFolderNames;
+        public string[] PageFolderNames
+        {
+            get { return _pageFolderNames; }
+            set { SetProperty(ref _pageFolderNames, value); }
+        }
+
+
+        private StorageItemTypes _ItemType;
+        public StorageItemTypes ItemType
+        {
+            get { return _ItemType; }
+            private set { SetProperty(ref _ItemType, value); }
+        }
+
+
+        readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
         private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
@@ -96,8 +140,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
+            BookmarkManager bookmarkManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
-            BookmarkManager bookmarkManager
+            BackNavigationCommand backNavigationCommand
             )
         {
             _scheduler = scheduler;
@@ -105,6 +150,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
+            BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
@@ -294,7 +340,10 @@ namespace TsubameViewer.Presentation.ViewModels
                         using (await _imageLoadingLock.LockAsync(ct))
                         {
                             var imageSource = Images[index];
-                            _appView.Title = $"{imageSource.Name} - {DisplayCurrentImageIndex.Value}/{Images.Length}";
+
+                            var names = imageSource.Name.Split(SeparateChars);
+                            PageName = names[names.Length - 1];
+                            PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
 
                             await Task.Delay(1);
 
@@ -352,10 +401,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 CurrentImageIndex = result.FirstSelectedIndex;
                 _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
                 ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
-            }
 
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
+                PageFolderNames = Images.Select(x => x.Name.Split(SeparateChars).TakeLast(2).First()).Distinct().ToArray();
+
+                ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
+
+                _appView.Title = _currentFolderItem.Name;
+                Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
+
+                GoNextImageCommand.RaiseCanExecuteChanged();
+                GoPrevImageCommand.RaiseCanExecuteChanged();
+            }
         }
 
         public void Test()
@@ -366,6 +422,7 @@ namespace TsubameViewer.Presentation.ViewModels
         #region Commands
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
+        public BackNavigationCommand BackNavigationCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>
@@ -411,6 +468,29 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 RaisePropertyChanged(nameof(CurrentImageIndex));
             });
+
+        private DelegateCommand<string> _changePageFolderCommand;
+        public DelegateCommand<string> ChangePageFolderCommand =>
+            _changePageFolderCommand ?? (_changePageFolderCommand = new DelegateCommand<string>(ExecuteChangePageFolderCommand));
+
+        void ExecuteChangePageFolderCommand(string pageName)
+        {
+            var pageFirstItem = Images.FirstOrDefault(x => x.Name.Contains(pageName));
+            if (pageFirstItem == null) { return; }
+
+            var pageFirstItemIndex = Images.IndexOf(pageFirstItem);
+            CurrentImageIndex = pageFirstItemIndex;
+        }
+
+        private DelegateCommand<double?> _ChangePageCommand;
+        public DelegateCommand<double?> ChangePageCommand =>
+            _ChangePageCommand ?? (_ChangePageCommand = new DelegateCommand<double?>(ExecuteChangePageCommand));
+
+        void ExecuteChangePageCommand(double? parameter)
+        {
+            var page = (int)parameter.Value;
+            CurrentImageIndex = page;
+        }
 
 
         #endregion

@@ -223,7 +223,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 .AddTo(disposables);
             var zipArchive = new ZipArchive(stream)
                 .AddTo(disposables);
-
+            
             var supportedEntries = zipArchive.Entries
                 .OrderBy(x => x.FullName)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))

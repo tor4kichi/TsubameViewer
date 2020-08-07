@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Uno.Threading;
 using Windows.Storage;
 
 namespace TsubameViewer.Models.Infrastructure
@@ -14,7 +15,7 @@ namespace TsubameViewer.Models.Infrastructure
     public class FlagsRepositoryBase : BindableBase
     {
         private readonly LocalObjectStorageHelper _LocalStorageHelper;
-
+        FastAsyncLock _fileUpdateLock = new FastAsyncLock();
         public FlagsRepositoryBase()
         {
             _LocalStorageHelper = new Microsoft.Toolkit.Uwp.Helpers.LocalObjectStorageHelper();
@@ -25,9 +26,12 @@ namespace TsubameViewer.Models.Infrastructure
             return _LocalStorageHelper.Read<T>(propertyName, @default);
         }
 
-        protected Task<T> ReadFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
+        protected async Task<T> ReadFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
         {
-            return _LocalStorageHelper.ReadFileAsync(propertyName, value);
+            using (await _fileUpdateLock.LockAsync(default))
+            {
+                return await _LocalStorageHelper.ReadFileAsync(propertyName, value);
+            }
         }
 
         protected void Save<T>(T value, [CallerMemberName] string propertyName = null)
@@ -35,9 +39,12 @@ namespace TsubameViewer.Models.Infrastructure
             _LocalStorageHelper.Save(propertyName, value);
         }
 
-        protected Task<StorageFile> SaveFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
+        protected async Task<StorageFile> SaveFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
         {
-            return _LocalStorageHelper.SaveFileAsync(propertyName, value);
+            using (await _fileUpdateLock.LockAsync(default))
+            {
+                return await _LocalStorageHelper.SaveFileAsync(propertyName, value);
+            }
         }
 
         protected void Save<T>(T? value, [CallerMemberName] string propertyName = null)

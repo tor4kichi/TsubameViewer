@@ -11,8 +11,11 @@ using TsubameViewer.Presentation.ViewModels;
 using Uno;
 using Uno.Disposables;
 using Uno.Threading;
+using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -50,6 +53,39 @@ namespace TsubameViewer.Presentation.Views
                 Image.Fade(1.0f, 175f)
                     .Start();
             }
+        }
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = true;
+
+            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x3f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0xaf, 0xff, 0xff, 0xff);
+
+            base.OnNavigatedTo(e);
+        }
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = null;
+            appView.TitleBar.ButtonHoverBackgroundColor = null;
+            appView.TitleBar.ButtonInactiveBackgroundColor = null;
+            appView.TitleBar.ButtonPressedBackgroundColor = null;
+
+            base.OnNavigatingFrom(e);
         }
     }
 }

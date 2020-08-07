@@ -9,14 +9,26 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
   xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
-  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation" xmlns:domainModels="using:TsubameViewer.Models.Domain"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
   
   <Page.Resources>
+    <Flyout x:Key="SettingsFlyout">
+      <StackPanel Spacing="16">
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=TwoWay}"
+                    Header="{Binding Source=IsReverseImageFliping_MouseWheel, Converter={StaticResource LocalizeConverter}}"
+                    />
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_Button, Mode=TwoWay}"
+                    Header="{Binding Source=IsReverseImageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                    />
+
+      </StackPanel>
+    </Flyout>
   </Page.Resources>
 
   <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
@@ -44,10 +56,10 @@
       
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoPrevImageCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoNextImageCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <!-- Image sizing -->
@@ -78,7 +90,7 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{Binding GoPrevImageCommand}"
+        Command="{Binding GoNextImageCommand}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -103,7 +115,7 @@
       </Border>
 
       <Button x:Name="RightPageMoveButton"
-        Command="{Binding GoNextImageCommand}"
+        Command="{Binding GoPrevImageCommand}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -121,6 +133,82 @@
         <SymbolIcon Symbol="Forward" />
       </Button>
     </Grid>
+
+
+    <!-- タイトルバー -->
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}">
+      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
+
+      </Grid>
+      <uwpControls:DockPanel>
+        <Button Command="{Binding BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
+          <SymbolIcon Symbol="Back">
+            <SymbolIcon.RenderTransform>
+              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+            </SymbolIcon.RenderTransform>
+          </SymbolIcon>
+        </Button>
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
+          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
+            <SymbolIcon Symbol="Setting" />
+          </Button>
+          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
+        </StackPanel>
+
+        <uwpControls:DockPanel Padding="8 0" >
+          <Button Background="Transparent" uwpControls:DockPanel.Dock="Right">
+            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0" TextDecorations="Underline">
+              <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
+            </TextBlock>
+
+            <Button.Flyout>
+              <Flyout x:Name="PageFlyout">
+
+                <StackPanel Spacing="16">
+
+                  <ComboBox x:Name="PageFolderNamesSelector"
+                          ItemsSource="{Binding PageFolderNames}"
+                            SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                          SelectionChangedTrigger="Committed"
+                            Header="フォルダ"
+                            MinWidth="240"
+                            Visibility="Collapsed"
+                          >
+                    <i:Interaction.Behaviors>
+                      <core:EventTriggerBehavior EventName="SelectionChanged">
+                        <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+                        <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
+                      </core:EventTriggerBehavior>
+                    </i:Interaction.Behaviors>
+
+                  </ComboBox>
+                  
+                  <Slider x:Name="PageSelector"
+                          Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="240"
+                          Minimum="0"
+                          Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                          ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                          TickFrequency="1"
+                          StepFrequency="1"
+                          Header="ページ"
+                          >
+                  </Slider>
+
+
+
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" >
+              <Run Text="{Binding Title}" />
+          </TextBlock>
+        </uwpControls:DockPanel>
+      </uwpControls:DockPanel>
+    </Grid>
+
 
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>
@@ -141,12 +229,38 @@
             <StateTrigger IsActive="{Binding ImageViewerSettings.IsReverseImageFliping_Button}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="LeftPageMoveButton.Command" Value="{Binding GoNextImageCommand}" />
-            <Setter Target="RightPageMoveButton.Command" Value="{Binding GoPrevImageCommand}" />
+            <Setter Target="LeftPageMoveButton.Command" Value="{Binding GoPrevImageCommand}" />
+            <Setter Target="RightPageMoveButton.Command" Value="{Binding GoNextImageCommand}" />
 
-            <Setter Target="GamePadLeftAction.Command" Value="{Binding GoNextImageCommand}" />
-            <Setter Target="GamePadRightAction.Command" Value="{Binding GoPrevImageCommand}" />
+            <Setter Target="GamePadLeftAction.Command" Value="{Binding GoPrevImageCommand}" />
+            <Setter Target="GamePadRightAction.Command" Value="{Binding GoNextImageCommand}" />
 
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding ItemType}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <domainModels:StorageItemTypes>Archive</domainModels:StorageItemTypes>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PageFolderNamesSelector.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="1" Comparison="Equal" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PageFolderNamesSelector.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
