@@ -66,3 +66,25 @@ FileSortType.UpdateTimeDecending = 新しい順
 
 #### ImageViewerPage
 
+CurrentFolder_InArchive = フォルダ
+Page = ページ
+
+
+
+#### EBookReaderPage
+
+DefaultWithParameter = デフォルト：{0}
+FontSize = 文字の大きさ
+LetterSpacing = 文字の間隔
+LineHeight = 行の間隔
+RubyFontSize = ふりがなの文字の大きさ
+FontFamily = 文字のフォント
+RubyFontFamily = ふりがなの文字のフォント
+
+BackgroundColor = 背景色
+ChangeBackgroundColor = 背景色を変更
+
+ForegroundColor = 文字色
+ChangeForegroundColor = 文字色を変更
+
+ResetEBookSettings = 設定をリセットする

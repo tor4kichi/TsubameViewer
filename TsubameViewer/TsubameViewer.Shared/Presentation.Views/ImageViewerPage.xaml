@@ -29,6 +29,44 @@
 
       </StackPanel>
     </Flyout>
+
+    <Flyout x:Key="PageFlyout">
+
+      <StackPanel Spacing="16">
+
+        <ComboBox x:Name="PageFolderNamesSelector"
+                          ItemsSource="{Binding PageFolderNames}"
+                            SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                          SelectionChangedTrigger="Committed"
+                            Header="{Binding Source=CurrentFolder_InArchive, Converter={StaticResource LocalizeConverter}}"
+                            MinWidth="240"
+                            Visibility="Collapsed"
+                          >
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="SelectionChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+        </ComboBox>
+
+        <Slider x:Name="PageSelector"
+                          Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Width="240"
+                          Minimum="0"
+                          Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                          ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                          TickFrequency="1"
+                          StepFrequency="1"
+                          Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
+                          >
+        </Slider>
+
+
+
+      </StackPanel>
+    </Flyout>
   </Page.Resources>
 
   <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
@@ -157,50 +195,11 @@
         </StackPanel>
 
         <uwpControls:DockPanel Padding="8 0" >
-          <Button Background="Transparent" uwpControls:DockPanel.Dock="Right">
+          <Button Flyout="{StaticResource PageFlyout}" Background="Transparent" uwpControls:DockPanel.Dock="Right">
             <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0" TextDecorations="Underline">
               <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
             </TextBlock>
 
-            <Button.Flyout>
-              <Flyout x:Name="PageFlyout">
-
-                <StackPanel Spacing="16">
-
-                  <ComboBox x:Name="PageFolderNamesSelector"
-                          ItemsSource="{Binding PageFolderNames}"
-                            SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                          SelectionChangedTrigger="Committed"
-                            Header="フォルダ"
-                            MinWidth="240"
-                            Visibility="Collapsed"
-                          >
-                    <i:Interaction.Behaviors>
-                      <core:EventTriggerBehavior EventName="SelectionChanged">
-                        <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
-                        <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
-                      </core:EventTriggerBehavior>
-                    </i:Interaction.Behaviors>
-
-                  </ComboBox>
-                  
-                  <Slider x:Name="PageSelector"
-                          Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Width="240"
-                          Minimum="0"
-                          Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                          ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                          TickFrequency="1"
-                          StepFrequency="1"
-                          Header="ページ"
-                          >
-                  </Slider>
-
-
-
-                </StackPanel>
-              </Flyout>
-            </Button.Flyout>
           </Button>
           <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" >
               <Run Text="{Binding Title}" />

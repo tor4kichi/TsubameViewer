@@ -33,7 +33,7 @@
     <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
         <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
-                  Header="文字の大きさ"
+                  Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -41,12 +41,12 @@
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：18px" />
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=18px}}" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
         <ComboBox ItemsSource="{Binding LeffterSpacingItems}" SelectedItem="{Binding EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
-                  Header="文字の間隔"
+                  Header="{Binding Source=LetterSpacing, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -54,24 +54,24 @@
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：0px" />
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=0px}}" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
         <ComboBox ItemsSource="{Binding LineHeightItems}" SelectedItem="{Binding EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
-                  Header="行間の幅"
+                  Header="{Binding Source=LineHeight, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：1.5 (単位なし)" />
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=1.5}}" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
         <ComboBox ItemsSource="{Binding RubySizeItems}" SelectedItem="{Binding EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
-                  Header="ふりがなの文字の大きさ"
+                  Header="{Binding Source=RubyFontSize, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -80,13 +80,13 @@
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：12px" />
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=12px}}" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
 
         <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.FontFamily, Mode=TwoWay}" 
-                  Header="フォント"
+                  Header="{Binding Source=FontFamily, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -94,13 +94,13 @@
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：12px" />
+              <TextBlock Text="" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
 
         <ComboBox ItemsSource="{Binding SystemFontFamilies}" SelectedItem="{Binding EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
-                  Header="ふりがなのフォント"
+                  Header="{Binding Source=RubyFontFamily, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -108,17 +108,17 @@
                 >
           <ToolTipService.ToolTip>
             <ToolTip >
-              <TextBlock Text="デフォルト：12px" />
+              <TextBlock Text="" />
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
 
 
         <StackPanel HorizontalAlignment="Stretch">
-          <TextBlock Text="背景色" HorizontalAlignment="Left" />
+          <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="背景色を変更" />
+              <TextBlock Text="{Binding Source=ChangeBackgroundColor, Converter={StaticResource LocalizeConverter}}" />
             </Grid>
 
             <Button.Flyout>
@@ -133,10 +133,10 @@
         </StackPanel>
 
         <StackPanel HorizontalAlignment="Stretch">
-          <TextBlock Text="文字色" HorizontalAlignment="Left" />
+          <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="文字色を変更" />
+              <TextBlock Text="{Binding Source=ChangeForegroundColor, Converter={StaticResource LocalizeConverter}}" />
             </Grid>
             <Button.Flyout>
               <Flyout Placement="Left" Opening="ForegroundColorPickerFlyout_Opening">
@@ -149,9 +149,9 @@
           </Button>
         </StackPanel>
 
-        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" /> 
+        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
 
-        <Button Content="設定をリセットする" 
+        <Button Content="{Binding Source=ResetEBookSettings, Converter={StaticResource LocalizeConverter}}" 
                 HorizontalAlignment="Stretch"
                 Command="{Binding ResetEBookReaderSettingsCommand}"
                 />
@@ -298,15 +298,15 @@
         </StackPanel>
 
         <uwpControls:DockPanel Padding="8 0" >
-          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0">
+          <Button Command="{x:Bind OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
+            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" TextDecorations="Underline" >
             <Run Text="{Binding CurrentPageTitle}" /> - <Run Text="{Binding DisplayInnerCurrentImageIndex.Value}" />/<Run Text="{Binding InnerImageTotalCount}" />
-          </TextBlock>
-
-          <HyperlinkButton Command="{x:Bind OpenTocPaneCommand}" Foreground="{ThemeResource ApplicationForegroundThemeBrush}" MinWidth="80">
-            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" TextDecorations="Underline">
-              <Run Text="{Binding Title}" />
             </TextBlock>
-          </HyperlinkButton>
+          </Button>
+
+          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
+              <Run Text="{Binding Title}" />
+          </TextBlock>
         </uwpControls:DockPanel>
       </uwpControls:DockPanel>
     </Grid>
