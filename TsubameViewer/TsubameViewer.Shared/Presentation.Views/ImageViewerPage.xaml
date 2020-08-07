@@ -60,6 +60,7 @@
                           TickFrequency="1"
                           StepFrequency="1"
                           Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
+                Margin="4 0"
                           >
         </Slider>
 
