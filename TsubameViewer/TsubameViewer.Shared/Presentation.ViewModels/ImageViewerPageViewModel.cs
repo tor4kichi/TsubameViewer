@@ -1,12 +1,8 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
-using Prism.Commands;
+﻿using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
-using SharpCompress.Archives.Rar;
-using SharpCompress.Common;
-using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -32,21 +28,13 @@ using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using Uno;
 using Uno.Extensions;
 using Uno.Threading;
-using Windows.Data.Pdf;
-using Windows.Foundation;
-using Windows.Foundation.Metadata;
-using Windows.Graphics.Imaging;
 using Windows.Storage;
-using Windows.Storage.AccessCache;
-using Windows.Storage.Search;
-using Windows.Storage.Streams;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    [AllowForWeb]
-    public sealed class ImageViewerPageViewModel : ViewModelBase, IDestructible
+    public sealed class ImageViewerPageViewModel : ViewModelBase
     {
         private string _currentToken;
         private StorageFolder _tokenGettingFolder;
@@ -132,10 +120,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public void Destroy()
-        {
-            _disposables.Dispose();
-        }
+
 
 
 
@@ -415,8 +400,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             return CurrentImageIndex > 0 && Images?.Length > 0;
         }
-
-
 
         private DelegateCommand _SizeChangedCommand;
         public DelegateCommand SizeChangedCommand =>

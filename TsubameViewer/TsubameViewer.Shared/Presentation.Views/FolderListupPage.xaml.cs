@@ -42,10 +42,26 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
+            this.Loaded += FolderListupPage_Loaded;
+            this.Unloaded += FolderListupPage_Unloaded;
+        }
+
+        private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
+        {
             FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
             FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;            
+            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
         }
+
+        private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
+        }
+
+
+
 
         #region 初期フォーカス設定
 

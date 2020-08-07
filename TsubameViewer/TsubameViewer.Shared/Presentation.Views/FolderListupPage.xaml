@@ -23,9 +23,13 @@
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
-  
+
   <!-- NavigaitonCacheMode = Enabled にすると
     ItemsRepeaterの中身が残る？ためキャッシュは利用していない
+  -->
+  
+  <!-- ItemsRepeaterのメモリリークの修正
+  https://github.com/microsoft/microsoft-ui-xaml/issues/1954
   -->
 
   <Page.Resources>

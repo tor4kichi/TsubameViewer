@@ -82,7 +82,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         public IImageSource Item { get; }
 
@@ -110,10 +109,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
 
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings) 
+        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings) 
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
 
 #if WINDOWS_UWP
@@ -129,8 +127,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, ThumbnailManager thumbnailManager, FolderListingSettings folderListingSettings)
-             : this(sourceStorageItemsRepository, thumbnailManager, folderListingSettings)
+        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings)
+             : this(sourceStorageItemsRepository, folderListingSettings)
         {
             Item = item;
             DateCreated = Item.DateCreated;
@@ -198,6 +196,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                     _isAppearingRequestButLoadingCancelled = false;
                     Image = await Item.GenerateThumbnailBitmapImageAsync(ct);
+
+                    await Task.Delay(10);
                 }
                 finally
                 {

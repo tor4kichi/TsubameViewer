@@ -11,8 +11,10 @@
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
-  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   mc:Ignorable="d"
+  
   >
   <Page.Transitions>
     <TransitionCollection>

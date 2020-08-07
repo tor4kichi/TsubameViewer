@@ -36,7 +36,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
     
 
-    public sealed class FolderListupPageViewModel : ViewModelBase, IDestructible
+    public sealed class FolderListupPageViewModel : ViewModelBase
     {
         // Note: FolderListupPage内でフォルダ階層のコントロールをしている
         // フォルダ階層の移動はNavigationServiceを通さずにページ内で完結してる
@@ -51,7 +51,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -132,7 +131,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
@@ -180,15 +178,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 */
 
         }
-
-
-        void IDestructible.Destroy()
-        {
-            SelectedFileSortType.Dispose();
-        }
-
-
-
 
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -403,7 +392,7 @@ namespace TsubameViewer.Presentation.ViewModels
             foreach (var folderItem in result.Images)
             {
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _thumbnailManager, _folderListingSettings);
+                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _folderListingSettings);
                 if (item.Type == StorageItemTypes.Folder)
                 {
                     FolderItems.Add(item);

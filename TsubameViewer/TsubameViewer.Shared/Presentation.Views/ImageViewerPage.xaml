@@ -14,9 +14,8 @@
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-  NavigationCacheMode="Enabled"
   >
-
+  
   <Page.Resources>
   </Page.Resources>
 

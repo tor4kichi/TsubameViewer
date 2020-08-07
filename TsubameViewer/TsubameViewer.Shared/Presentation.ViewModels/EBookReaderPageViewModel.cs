@@ -197,6 +197,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables.Dispose();
             _navigationDisposables = null;
+            _currentBook = null;
+            _currentPage = null;
+            _currentBookReadingOrder = null;
+            CoverImage = null;
 
             _readingSessionDisposer.Dispose();
             _readingSessionDisposer = null;
@@ -571,7 +575,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
         }
-
 
         #endregion
     }
