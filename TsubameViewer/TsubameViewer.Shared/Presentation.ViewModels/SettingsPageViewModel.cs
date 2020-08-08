@@ -1,5 +1,6 @@
 ﻿using I18NPortable;
 using Prism.Commands;
+using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -12,21 +13,27 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Converters;
+using Uno.Disposables;
 using Windows.Storage;
 using Windows.UI.Popups;
 using Windows.UI.Xaml.Controls;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public sealed class SettingsPageViewModel : ViewModelBase
+    public sealed class SettingsPageViewModel : ViewModelBase, IDisposable
     {
+        private readonly IEventAggregator _eventAggregator;
+        private readonly ApplicationSettings _applicationSettings;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
@@ -35,13 +42,18 @@ namespace TsubameViewer.Presentation.ViewModels
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
+        
         public SettingsPageViewModel(
+            IEventAggregator eventAggregator,
+            ApplicationSettings applicationSettings,
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
             ThumbnailManager thumbnailManager
             )
         {
+            _eventAggregator = eventAggregator;
+            _applicationSettings = applicationSettings;
             _folderListingSettings = folderListingSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
@@ -90,6 +102,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         { 
                             IsVisible = Xamarin.Essentials.DeviceInfo.Idiom != Xamarin.Essentials.DeviceIdiom.TV
                         },
+                        new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
                     }
                 },
             };
@@ -108,6 +121,26 @@ namespace TsubameViewer.Presentation.ViewModels
                     */
                 },
             };
+        }
+
+        public override void OnNavigatedFrom(INavigationParameters parameters)
+        {
+            Dispose();
+
+            base.OnNavigatedFrom(parameters);
+        }
+
+        public void Dispose()
+        {
+            foreach (var group in SettingGroups)
+            {
+                group.TryDispose();
+            }
+
+            foreach (var group in AdvancedSettingGroups)
+            {
+                group.TryDispose();
+            }
         }
 
         private async Task DeleteThumnnailsAsync()
@@ -155,6 +188,7 @@ namespace TsubameViewer.Presentation.ViewModels
             var conv = new ToKMGTPEZYConverter();
             return (string)conv.Convert(size, typeof(string), null, CultureInfo.CurrentCulture.Name);
         }
+
     }
 
     public abstract class SettingItemViewModelBase
@@ -272,7 +306,7 @@ namespace TsubameViewer.Presentation.ViewModels
         ReactiveProperty<bool> ValueContainer { get; }
     }
 
-    public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, IToggleSwitchSettingItemViewModel 
+    public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, IToggleSwitchSettingItemViewModel , IDisposable
         where T : INotifyPropertyChanged
     {
         public ToggleSwitchSettingItemViewModel(string label, T value, Expression<Func<T, bool>> expression)
@@ -283,9 +317,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveProperty<bool> ValueContainer { get; }
         public string Label { get; }
+
+        public void Dispose()
+        {
+            ((IDisposable)ValueContainer).Dispose();
+        }
     }
 
-    public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase
+    public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase, IDisposable 
     {
         public string Label { get; }
         public IReadOnlyReactiveProperty<string> Text { get; }
@@ -294,9 +333,14 @@ namespace TsubameViewer.Presentation.ViewModels
             Label = label;
             Text = textObservable.ToReadOnlyReactivePropertySlim();
         }
+
+        public void Dispose()
+        {
+            Text.Dispose();
+        }
     }
 
-    public class ButtonSettingItemViewModel : SettingItemViewModelBase
+    public class ButtonSettingItemViewModel : SettingItemViewModelBase, IDisposable
     {
         private readonly Action _buttonAction;
 
@@ -318,5 +362,41 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string Label { get; }
         public ReactiveCommand ActionCommand { get; }
+
+        public void Dispose()
+        {
+            ((IDisposable)ActionCommand).Dispose();
+        }
+    }
+
+    public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+    {
+        private readonly IEventAggregator _eventAggregator;
+
+        public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IEventAggregator eventAggregator)
+        {
+            Label = label;
+            _eventAggregator = eventAggregator;
+            SelectedTheme = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Theme);
+
+            _themeChangedSubscriber = SelectedTheme.Subscribe(theme => 
+            {
+                _eventAggregator.GetEvent<ThemeChangeRequestEvent>().Publish(theme);
+            });
+        }
+
+        public ReactiveProperty<ApplicationTheme> SelectedTheme { get; }
+
+        public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
+
+        IDisposable _themeChangedSubscriber;
+
+        public string Label { get; }
+
+        public void Dispose()
+        {
+            ((IDisposable)SelectedTheme).Dispose();
+            _themeChangedSubscriber.Dispose();
+        }
     }
 }

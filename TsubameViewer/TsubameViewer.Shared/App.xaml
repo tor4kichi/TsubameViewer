@@ -15,6 +15,11 @@
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="Presentation.Styles/SettingsControlStyles.xaml"/>
+      </ResourceDictionary.MergedDictionaries>
+      
+      
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 

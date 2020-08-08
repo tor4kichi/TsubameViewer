@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -45,10 +46,16 @@ namespace TsubameViewer.Presentation.Views
             Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
 
             _backNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<BackNavigationRequestEvent>()
-                .Subscribe(() => HandleBackRequest(), keepSubscriberReferenceAlive: true);                
+                .Subscribe(() => HandleBackRequest(), keepSubscriberReferenceAlive: true);
+
+            _themeChangeRequestEventSubscriber = _viewModel.EventAggregator.GetEvent<ThemeChangeRequestEvent>()
+                .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
+
+            SetTheme(_viewModel.ApplicationSettings.Theme);
         }
 
         IDisposable _backNavigationEventSubscriber;
+        IDisposable _themeChangeRequestEventSubscriber;
 
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
         {
@@ -440,6 +447,29 @@ namespace TsubameViewer.Presentation.Views
 
 
 
+
+        #endregion
+
+
+        #region Theme
+
+        public void SetTheme(Models.Domain.ApplicationTheme applicationTheme)
+        {
+#if WINDOWS_UWP
+            if (applicationTheme == Models.Domain.ApplicationTheme.Default)
+            {
+                applicationTheme = SystemThemeHelper.GetSystemTheme();
+            }
+#endif
+
+            this.RequestedTheme = applicationTheme switch
+            {
+                Models.Domain.ApplicationTheme.Light => ElementTheme.Light,
+                Models.Domain.ApplicationTheme.Dark => ElementTheme.Dark,
+                Models.Domain.ApplicationTheme.Default => ElementTheme.Default,
+                _ => throw new NotSupportedException(),
+            };
+        }
 
         #endregion
     }

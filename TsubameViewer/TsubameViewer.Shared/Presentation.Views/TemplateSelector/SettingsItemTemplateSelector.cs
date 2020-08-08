@@ -13,6 +13,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
         public DataTemplate StoredFoldersSettingItem { get; set; }
         public DataTemplate UpdatableTextSettingItem { get; set; }
         public DataTemplate ButtonSettingItem { get; set; }
+        public DataTemplate ThemeSelectSettingItem { get; set; }
 
         protected override DataTemplate SelectTemplateCore(object item)
         {
@@ -26,6 +27,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
                 IToggleSwitchSettingItemViewModel _ => ToggleSwitchSettingItem,
                 UpdatableTextSettingItemViewModel _ => UpdatableTextSettingItem,
                 ButtonSettingItemViewModel _ => ButtonSettingItem,
+                ThemeSelectSettingItemViewModel _ => ThemeSelectSettingItem,
                 _ => throw new NotSupportedException(),
             };
         }

@@ -5,6 +5,7 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
@@ -22,6 +23,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public PrimaryWindowCoreLayoutViewModel(
             [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
             IEventAggregator eventAggregator,
+            ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
@@ -35,6 +37,7 @@ namespace TsubameViewer.Presentation.ViewModels
             };
             _navigationServiceLazy = navigationServiceLazy;
             EventAggregator = eventAggregator;
+            ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
             SourceChoiceCommand = sourceChoiceCommand;
             RefreshNavigationCommand = refreshNavigationCommand;
@@ -60,6 +63,7 @@ namespace TsubameViewer.Presentation.ViewModels
             });
 
         public IEventAggregator EventAggregator { get; }
+        public ApplicationSettings ApplicationSettings { get; }
         public RestoreNavigationManager RestoreNavigationManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }

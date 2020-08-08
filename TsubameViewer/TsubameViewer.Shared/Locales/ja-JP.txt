@@ -3,6 +3,11 @@
 
 Cancel = キャンセル
 
+ApplicationTheme = テーマ
+ApplicationTheme.Default = デフォルト
+ApplicationTheme.Light = 明るいテーマ
+ApplicationTheme.Dark = 暗いテーマ
+
 
 #### PrimaryWindowCoreLayout
 
