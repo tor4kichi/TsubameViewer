@@ -180,6 +180,9 @@ namespace TsubameViewer.Presentation.Views
                 () => _ = _navigationService?.RefreshAsync()
                 );
 
+        public static bool IsPreventSystemBackNavigation { get; set; }
+
+
         #region Back/Forward Navigation
 
         public async Task RestoreNavigationStack()
@@ -422,6 +425,8 @@ namespace TsubameViewer.Presentation.Views
 
         private void App_BackRequested(object sender, BackRequestedEventArgs e)
         {
+            if (IsPreventSystemBackNavigation) { return; }
+
             if (HandleBackRequest())
             {
                 Debug.WriteLine("back navigated with SystemNavigationManager.BackRequested");

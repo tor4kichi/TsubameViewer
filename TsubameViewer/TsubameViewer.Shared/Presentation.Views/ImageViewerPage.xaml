@@ -94,11 +94,15 @@
       </myBehaviour:MouseCenterClickTrigger>
       
       <!-- GamePad Input-->
-      <uiNavigation:UINavigationTriggerBehavior Kind="Left" IsRequireFocus="True">
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
         <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding GoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
-      <uiNavigation:UINavigationTriggerBehavior Kind="Right" IsRequireFocus="True">
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
         <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding GoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+
+      <uiNavigation:UINavigationTriggerBehavior Kind="Menu">
+        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <!-- Image sizing -->
@@ -116,13 +120,12 @@
     </i:Interaction.Behaviors>
 
 
-    <Image x:Name="Image" Source="{Binding CurrentImage}" />
+    <Image x:Name="Image" Source="{Binding CurrentImage}" Margin="0 32 0 0" />
 
-    <TextBlock Visibility="Collapsed">
-      <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
-    </TextBlock>
 
-    <Grid Margin="0 48 0 32">
+    
+    <!-- コントロールUI（共通）-->
+    <Grid x:Name="ImageNavigationUIContainer" Margin="0 48 0 32">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
         <ColumnDefinition Width="4*" />
@@ -174,8 +177,59 @@
     </Grid>
 
 
-    <!-- タイトルバー -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}">
+    
+
+    
+
+    
+    <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
+    <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
+      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0"          
+          >
+       
+      </Grid>
+
+      <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource SystemChromeAltHighColor}" IsHitTestVisible="True">
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
+          <Button x:Name="BottomUIBackNavigationButton" Command="{Binding BackNavigationCommand}" Height="48" Width="60"
+                  XYFocusRight="{x:Bind ImageNavigationFlyoutButton}"
+                  >
+            <SymbolIcon Symbol="Back">
+              <SymbolIcon.RenderTransform>
+                <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+              </SymbolIcon.RenderTransform>
+            </SymbolIcon>
+          </Button>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="16">
+          <Button x:Name="ImageNavigationFlyoutButton" Flyout="{StaticResource PageFlyout}" Height="48" Background="Transparent" 
+                  XYFocusLeft="{x:Bind BottomUIBackNavigationButton}"
+                  XYFocusRight="{x:Bind BottomUISettingsFlyoutButton}"
+                  >
+            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="16" Margin="8 0 0 0" TextDecorations="Underline">
+                    <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
+            </TextBlock>
+
+          </Button>
+          <Button x:Name="BottomUISettingsFlyoutButton" Flyout="{StaticResource SettingsFlyout}" Height="48" Width="60"
+                  XYFocusLeft="{x:Bind ImageNavigationFlyoutButton}"
+                  >
+            <SymbolIcon Symbol="Setting" />
+          </Button>
+
+        </StackPanel>
+
+
+        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="16" Margin="16 0" >
+              <Run Text="{Binding Title}" />
+        </TextBlock>
+
+      </uwpControls:DockPanel>
+    </Grid>
+
+    <!-- 補助コントロールUI（デスクトップ） -->
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}" Visibility="Collapsed">
       <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
 
       </Grid>
@@ -263,6 +317,51 @@
             <Setter Target="PageFolderNamesSelector.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
+      </VisualStateGroup>
+
+      <!-- 左右移動を抑止する -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- デスクトップ、タッチ、コントローラーそれぞれの表示切替 -->
+      <VisualStateGroup>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:UserInteractionModeTrigger InteractionMode="Touch" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
       </VisualStateGroup>
 
     </VisualStateManager.VisualStateGroups>

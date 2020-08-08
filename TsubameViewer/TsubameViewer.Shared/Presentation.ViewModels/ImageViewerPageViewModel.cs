@@ -426,7 +426,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>
-            _GoNextImageCommand ??= new DelegateCommand(ExecuteGoNextImageCommand, CanGoNextCommand);
+            _GoNextImageCommand ??= new DelegateCommand(ExecuteGoNextImageCommand, CanGoNextCommand) { IsActive = true };
 
         private void ExecuteGoNextImageCommand()
         {
@@ -443,7 +443,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private DelegateCommand _GoPrevImageCommand;
         public DelegateCommand GoPrevImageCommand =>
-            _GoPrevImageCommand ??= new DelegateCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand);
+            _GoPrevImageCommand ??= new DelegateCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand) { IsActive = true };
 
         private void ExecuteGoPrevImageCommand()
         {
