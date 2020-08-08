@@ -125,7 +125,7 @@
 
     
     <!-- コントロールUI（共通）-->
-    <Grid x:Name="ImageNavigationUIContainer" Margin="0 48 0 32">
+    <Grid x:Name="UIContainer" Margin="0 48 0 32">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
         <ColumnDefinition Width="4*" />

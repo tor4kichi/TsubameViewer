@@ -84,7 +84,7 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
             
-            var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageNavigationUIContainer);
+            var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
             foreach (var item in uiItems)
             {
                 if (item == RightPageMoveButton)
