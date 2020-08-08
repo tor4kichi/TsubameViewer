@@ -191,7 +191,6 @@ namespace TsubameViewer.Presentation.Views
                 () => _ = _navigationService?.RefreshAsync()
                 );
 
-        public static bool IsPreventSystemBackNavigation { get; set; }
 
 
         #region Back/Forward Navigation
@@ -291,6 +290,10 @@ namespace TsubameViewer.Presentation.Views
             return CurrentNavigationParameters?.Clone() ?? new NavigationParameters();
         }
 
+
+        // NavigationManager.BackRequestedによる戻るを一時的に防止する
+        // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
+        public static bool IsPreventSystemBackNavigation { get; set; }
 
 
         private INavigationParameters _Prev;

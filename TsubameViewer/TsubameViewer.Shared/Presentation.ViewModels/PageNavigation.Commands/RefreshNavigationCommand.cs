@@ -1,4 +1,5 @@
 ﻿using Prism.Commands;
+using Prism.Events;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -9,12 +10,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class RefreshNavigationCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService => _lazyNavigationService.Value;
-        private readonly Lazy<INavigationService> _lazyNavigationService;
+        private readonly IEventAggregator _eventAggregator;
 
-        public RefreshNavigationCommand([Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> lazyNavigationService)
+        public RefreshNavigationCommand(IEventAggregator eventAggregator)
         {
-            _lazyNavigationService = lazyNavigationService;
+            _eventAggregator = eventAggregator;
         }
 
         protected override bool CanExecute(object parameter)
@@ -24,7 +24,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override void Execute(object parameter)
         {
-            _ = _navigationService.RefreshAsync();
+            _eventAggregator.GetEvent<RefreshNavigationRequestEvent>().Publish();
         }
     }
 }
