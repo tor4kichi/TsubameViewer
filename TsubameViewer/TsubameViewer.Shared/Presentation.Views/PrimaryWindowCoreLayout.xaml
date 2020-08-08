@@ -9,7 +9,7 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -34,8 +34,11 @@
                     IsBackButtonVisible="Collapsed"
                     IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
-                    XYFocusDownNavigationStrategy="RectilinearDistance"
+                    XYFocusDownNavigationStrategy="Projection"
                       >
+      <NavigationView.PaneHeader>
+        <Border x:Name="NavigationViewHeader" />
+      </NavigationView.PaneHeader>
       
       <i:Interaction.Behaviors>
         <core:EventTriggerBehavior EventName="ItemInvoked">
@@ -74,7 +77,9 @@
         </CommandBar>
       </NavigationView.PaneFooter>
 
-      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="2" />
+      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="2"
+             XYFocusDownNavigationStrategy="RectilinearDistance"
+             />
     </NavigationView>
 
     <VisualStateManager.VisualStateGroups>
@@ -111,6 +116,26 @@
           <VisualState.Setters>
             <Setter Target="MenuRightCommandBar.MaxWidth" Value="48" />
             <Setter Target="MenuRightCommandBar.Margin" Value="16 0 24 0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind MyNavigtionView.IsPaneVisible, Mode=OneWay}" EqualTo="False" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigtionView.Margin" Value="0 27 0 0" />
+            <Setter Target="NavigationViewHeader.Padding" Value="48 0 0 0" />
+            <Setter Target="MenuRightCommandBar.Padding" Value="0 0 48 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

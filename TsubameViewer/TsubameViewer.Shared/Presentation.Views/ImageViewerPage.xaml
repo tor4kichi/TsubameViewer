@@ -337,6 +337,17 @@
 
         <VisualState>
           <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+            <Setter Target="AnimationUICommandBar.Padding" Value="80 32 80 64" />
+          </VisualState.Setters>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
             <wst:UserInteractionModeTrigger InteractionMode="Touch" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -353,14 +364,7 @@
           </VisualState.Setters>
         </VisualState>
 
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
+        
 
       </VisualStateGroup>
 

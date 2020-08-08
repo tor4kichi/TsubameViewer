@@ -607,34 +607,6 @@
       </VisualStateGroup>
 
 
-      <!-- 画面サイズによる表示切り替え -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <AdaptiveTrigger MinWindowWidth="1220" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="HeaderLayout.Margin" Value="140 16" />
-            <Setter Target="ContentRootStackPanel.Margin" Value="140 8 140 32" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <AdaptiveTrigger MinWindowWidth="610" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <AdaptiveTrigger MinWindowWidth="0" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="HeaderLayout.Margin" Value="8 16" />
-            <Setter Target="ContentRootStackPanel.Margin" Value="8 8 8 32" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
       
       <!-- ファイルの表示方法切り替え -->
       <VisualStateGroup>
@@ -687,6 +659,46 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+      <!-- 画面サイズによる表示切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="48 8 48 0" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="48 8 48 27" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="140 16" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="140 8 140 32" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="8 16" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="8 8 8 32" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

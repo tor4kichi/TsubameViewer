@@ -259,6 +259,16 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 16 48 27" />
+          </VisualState.Setters>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>

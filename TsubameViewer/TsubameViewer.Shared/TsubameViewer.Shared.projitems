@@ -20,9 +20,6 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeConverter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MainPage.xaml.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ApplicationSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Bookmark\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
@@ -115,10 +112,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\UINavigationTrigger.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="$(MSBuildThisFileDirectory)MainPage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Styles\SettingsControlStyles.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

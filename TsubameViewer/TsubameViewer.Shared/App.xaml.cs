@@ -52,7 +52,7 @@ namespace TsubameViewer
             UnhandledException += App_UnhandledException;
 
             RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
-
+            
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
 
@@ -157,6 +157,8 @@ namespace TsubameViewer
 
         public override void OnInitialized()
         {
+            Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
+
 #if WINDOWS_UWP
             Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
 #endif

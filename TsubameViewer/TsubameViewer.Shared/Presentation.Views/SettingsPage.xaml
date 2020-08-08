@@ -4,7 +4,10 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Presentation.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector" 
+  xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   
@@ -146,7 +149,7 @@
       </Grid>
 
       <ScrollViewer>
-        <StackPanel>
+        <StackPanel x:Name="ScrollViewerRootPanel">
           <ItemsControl ItemsSource="{Binding SettingGroups}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
@@ -211,5 +214,42 @@
         
       </ScrollViewer>
     </uwpControls:DockPanel>
+
+    <VisualStateManager.VisualStateGroups>
+      <!-- 画面サイズによる表示切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ScrollViewerRootPanel.Padding" Value="80 0 80 27" />
+          </VisualState.Setters>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
   </Grid>
 </Page>
