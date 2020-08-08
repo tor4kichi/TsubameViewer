@@ -167,10 +167,10 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="PageMoveMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand}" />
+          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand, Mode=OneWay}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{x:Bind InnerGoNextImageCommand}" />
+          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{x:Bind InnerGoNextImageCommand, Mode=OneWay}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       
@@ -179,15 +179,15 @@
       </myBehaviour:MouseCenterClickTrigger>
 
       <!-- GamePad Input-->
-      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{x:Bind InnerGoPrevImageCommand}" />
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left">
+        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
-      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{x:Bind InnerGoNextImageCommand}" />
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right">
+        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding ElementName=PageRoot, Path=InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="Menu">
-        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{Binding ElementName=PageRoot, Path=OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
 
@@ -226,7 +226,7 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{x:Bind InnerGoPrevImageCommand}"
+        Command="{x:Bind InnerGoPrevImageCommand, Mode=OneWay}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -251,7 +251,7 @@
       </Border>
 
       <Button x:Name="RightPageMoveButton"
-        Command="{x:Bind InnerGoNextImageCommand}"
+        Command="{x:Bind InnerGoNextImageCommand, Mode=OneWay}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -416,17 +416,6 @@
 
 
     <VisualStateManager.VisualStateGroups>
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind WebView.NowRightToLeftReadingMode, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="LeftPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoNextImageCommand}" />
-            <Setter Target="RightPageMoveButton.Command" Value="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
 
       <!-- 左右移動を抑止する -->
       <VisualStateGroup>

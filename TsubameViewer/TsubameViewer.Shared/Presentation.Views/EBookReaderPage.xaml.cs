@@ -12,6 +12,7 @@ using System.Reactive.Disposables;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.Views.EBookControls;
 using Uno.Threading;
@@ -62,7 +63,48 @@ namespace TsubameViewer.Presentation.Views
 
             WebView.Loaded += WebView_Loaded;
             WebView.Unloaded += WebView_Unloaded;
+
+            this.Loaded += PageNavigationCommandInitialize_Loaded;
+            this.Unloaded += PageNavigationCommandDispose_Unloaded; 
         }
+
+
+        //
+        // Note: ePubRenderer内のページ遷移を含めたページ移動コマンドの左右入れ替え実装について
+        // VisualStateManagerで切り替えたかったが、null参照エラーが出て動かないため
+        // コードビハインドで切り替える形にした。
+        // デバッグあり実行だと動くが、デバッグ無し実行だと動かなかった。（リリースビルドでも同様）
+        //
+
+        private void PageNavigationCommandDispose_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _disposables.Dispose();
+        }
+
+        private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
+            this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
+
+            _disposables = new CompositeDisposable();
+            WebView.ObserveDependencyProperty(EPubRenderer.NowRightToLeftReadingModeProperty)
+               .Subscribe(_ =>
+               {
+                   if (WebView.NowRightToLeftReadingMode)
+                   {
+                       this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoNextCommand);
+                       this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
+                   }
+                   else
+                   {
+                       this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
+                       this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
+                   }
+               })
+               .AddTo(_disposables);
+        }
+
+        CompositeDisposable _disposables;
 
         #region Bottom UI Menu
 
@@ -327,9 +369,16 @@ namespace TsubameViewer.Presentation.Views
             WebView.Fade(1.0f, 100).Start();
         }
 
-        private DelegateCommand _InnerGoNextImageCommand;
-        public DelegateCommand InnerGoNextImageCommand =>
-            _InnerGoNextImageCommand ?? (_InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand));
+        public ICommand InnerGoNextImageCommand
+        {
+            get { return (ICommand)GetValue(InnerGoNextImageCommandProperty); }
+            private set { SetValue(InnerGoNextImageCommandProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty InnerGoNextImageCommandProperty =
+            DependencyProperty.Register("InnerGoNextImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
+
 
         async void ExecuteGoNextCommand()
         {
@@ -351,9 +400,18 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        private DelegateCommand _InnerGoPrevImageCommand;
-        public DelegateCommand InnerGoPrevImageCommand =>
-            _InnerGoPrevImageCommand ?? (_InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand));
+
+
+        public ICommand InnerGoPrevImageCommand
+        {
+            get { return (ICommand)GetValue(InnerGoPrevImageCommandProperty); }
+            private set { SetValue(InnerGoPrevImageCommandProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty InnerGoPrevImageCommandProperty =
+            DependencyProperty.Register("InnerGoPrevImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
+
 
         async void ExecuteGoPrevCommand()
         {
@@ -374,6 +432,7 @@ namespace TsubameViewer.Presentation.Views
             }
 
         }
+
 
 
         private DelegateCommand _OpenTocPaneCommand;
