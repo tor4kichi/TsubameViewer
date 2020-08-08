@@ -52,7 +52,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUIContainer.ActualHeight, duration: 0 ).Start();
+            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 0 ).Start();
             
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY;
@@ -129,12 +129,12 @@ namespace TsubameViewer.Presentation.Views
                 if (e.Cumulative.Translation.Y < 0)
                 {
                     AnimationUIContainer.Fade(0.5f, duration: 20).Start();
-                    AnimationUICommandBar.Offset(offsetY: 16, duration: 20).Start();
+                    AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight * 0.75f, duration: 20).Start();
                 }
                 else
                 {
                     AnimationUIContainer.Fade(0.0f, duration: 20).Start();
-                    AnimationUICommandBar.Offset(offsetY: (float)AnimationUIContainer.ActualHeight, duration: 20).Start();
+                    AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 20).Start();
                 }
             }
         }
@@ -155,16 +155,16 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        private async void CloseBottomUI()
+        private void CloseBottomUI()
         {
-            await AnimationUICommandBar.Offset(offsetY: (float)AnimationUIContainer.ActualHeight, duration: 100).StartAsync();
-            await AnimationUIContainer.Fade(0.0f, duration: 100).StartAsync();
+            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 175).Start();
+            AnimationUIContainer.Fade(0.0f, duration: 175).Start();
         }
 
         private async Task CompleteOpenBottomUI()
         {
-            AnimationUIContainer.Fade(1.0f, duration: 100).Start();
-            await AnimationUICommandBar.Offset(offsetY: 0, duration: 100).StartAsync();
+            AnimationUIContainer.Fade(1.0f, duration: 175).Start();
+            await AnimationUICommandBar.Offset(offsetY: 0, duration: 175).StartAsync();
         }
 
 
@@ -187,8 +187,8 @@ namespace TsubameViewer.Presentation.Views
             IsOpenBottomMenu = !IsOpenBottomMenu;
             if (IsOpenBottomMenu)
             {
-                await CompleteOpenBottomUI();
                 ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
+                await CompleteOpenBottomUI();
             }
             else
             {
