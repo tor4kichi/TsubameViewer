@@ -159,6 +159,30 @@
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
+
+          <StackPanel Spacing="16" HorizontalAlignment="Left" Margin="32 16 0 16">
+            <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer_Support/wiki/Privacy-Policy" 
+                             HorizontalContentAlignment="Right"
+                             FontWeight="SemiBold"
+                             Width="{StaticResource SettingItemWidth}"
+                             />
+            <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer_Support/wiki/Third-Party-Library-Notice" 
+                             HorizontalContentAlignment="Right"
+                             FontWeight="SemiBold"
+                             Width="{StaticResource SettingItemWidth}"
+                             />
+
+            <HyperlinkButton Content="{Binding Source=AskQuestionWithMashmarrow, Converter={StaticResource LocalizeConverter}}" 
+                             NavigateUri="https://marshmallow-qa.com/tor4kichi" 
+                             HorizontalContentAlignment="Right"
+                             FontWeight="SemiBold"
+                             Width="{StaticResource SettingItemWidth}"
+                             />
+          </StackPanel>
+          
+
           <!-- AdvancedSetting -->
           <uwpControls:Expander Margin="32 64 32 32" Visibility="Collapsed">
             <uwpControls:Expander.Header>

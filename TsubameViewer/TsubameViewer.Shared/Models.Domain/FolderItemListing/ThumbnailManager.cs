@@ -1,6 +1,5 @@
 ﻿using LiteDB;
 using Microsoft.Toolkit.Uwp.Helpers;
-using MonkeyCache;
 using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,5 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
-using MonkeyCache;
 using Prism;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -106,12 +105,7 @@ namespace TsubameViewer
             var db = new LiteDatabase(connectionString);
             container.RegisterInstance<ILiteDatabase>(db);
 
-            MonkeyCache.BarrelUtils.SetBaseCachePath(ApplicationData.Current.LocalFolder.Path);
-
             var unityContainer = container.GetContainer();
-            var thumbnailBarell = MonkeyCache.LiteDB.Barrel.Create(Path.Combine(ApplicationData.Current.LocalFolder.Path, "thumbnail_cache.db"), true);
-            unityContainer.RegisterInstance<IBarrel>("ThumbnailBarrel", thumbnailBarell);
-
             unityContainer.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             
             base.RegisterRequiredTypes(container);

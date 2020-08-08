@@ -1,5 +1,4 @@
-﻿using Hnx8.ReadJEnc;
-using Prism.Mvvm;
+﻿using Prism.Mvvm;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Common;
 using System;

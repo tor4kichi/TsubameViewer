@@ -47,6 +47,10 @@ IsReverseImageFliping_Button = ページ送りを逆にする（クリック/タ
 GeneralUISettings = 操作設定
 IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
 
+PrivacyPolicy = プライバシーポリシー
+ThirdPartyLibraryNotice = サードパーティライブラリのライセンス表示
+AskQuestionWithMashmarrow = マシュマロを送る（バグ報告・質問・提案）
+
 
 
 #### SourceStorageItemsPage

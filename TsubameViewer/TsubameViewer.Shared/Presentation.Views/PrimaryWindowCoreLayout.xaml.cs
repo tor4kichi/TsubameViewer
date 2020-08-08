@@ -48,6 +48,9 @@ namespace TsubameViewer.Presentation.Views
             _backNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<BackNavigationRequestEvent>()
                 .Subscribe(() => HandleBackRequest(), keepSubscriberReferenceAlive: true);
 
+            _refreshNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<RefreshNavigationRequestEvent>()
+                .Subscribe(() => RefreshCommand.Execute(), keepSubscriberReferenceAlive: true);
+
             _themeChangeRequestEventSubscriber = _viewModel.EventAggregator.GetEvent<ThemeChangeRequestEvent>()
                 .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
 
@@ -55,6 +58,7 @@ namespace TsubameViewer.Presentation.Views
         }
 
         IDisposable _backNavigationEventSubscriber;
+        IDisposable _refreshNavigationEventSubscriber;
         IDisposable _themeChangeRequestEventSubscriber;
 
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
