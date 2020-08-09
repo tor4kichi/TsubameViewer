@@ -92,8 +92,14 @@ namespace TsubameViewer.Presentation.ViewModels
         bool _nowMovePrev;
 
         HashSet<int> _DoubleViewSpecialProcessPage;
+        HashSet<int> _UserInputDoubleViewSpecialProcessPage;
 
-
+        private bool _nowSpecialProcessDoubleViewToSingleView;
+        public bool NowUserInputSpecialProcessDoubleViewToSingleView
+        {
+            get { return _nowSpecialProcessDoubleViewToSingleView; }
+            set { SetProperty(ref _nowSpecialProcessDoubleViewToSingleView, value); }
+        }
 
 
         private string _title;
@@ -345,7 +351,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(async index =>
                 {
                     if (Images == null || Images.Length == 0) { return; }
-
+                    Debug.WriteLine("New Index: " + index);
                     _imageLoadingCts?.Cancel();
                     _imageLoadingCts?.Dispose();
                     _imageLoadingCts = new CancellationTokenSource();
@@ -388,6 +394,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
                             _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource1.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
 
+
+
                             var canvasWidth = (int)CanvasWidth.Value;
                             var canvasHeight = (int)CanvasHeight.Value;
 
@@ -395,17 +403,30 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             _CurrentImage = null;
                             _CurrentImage2 = null;
-                            if (!NowDoubleImageView)
+                            if (!NowCanDoubleImageView)
                             {
                                 _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
+                                NowUserInputSpecialProcessDoubleViewToSingleView = false;
                             }
                             else
                             {
+                                // 見開き表示対応
+                                // 表示切替の進行方向に合わせた2枚表示と1枚表示の場合分けが必要になる
                                 if (!nowMovePreview)
                                 {
-                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index);
-                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index + 1);
+                                    if (_thenDoubleViewUpdated_Backward)
+                                    {
+                                        _thenDoubleViewUpdated_Backward = false;
+
+                                        index = _CurrentImageIndex += 1;
+                                        imageSource1 = Images[_CurrentImageIndex];
+                                    }
+
+                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index);
+                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index + 1) || _UserInputDoubleViewSpecialProcessPage.Contains(index + 1);
                                     var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
+
+                                    NowUserInputSpecialProcessDoubleViewToSingleView = _UserInputDoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index + 1);
 
                                     IImageSource imageSource2;
                                     // 前方向への移動
@@ -415,6 +436,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                     {
                                         // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
                                         _DoubleViewSpecialProcessPage.Add(index);
+                                        _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
                                     }
                                     else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index + 1)) != null)
                                     {
@@ -424,19 +446,32 @@ namespace TsubameViewer.Presentation.ViewModels
                                         {
                                             // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
                                             _DoubleViewSpecialProcessPage.Add(index + 1);
+                                            _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
                                             _CurrentImage2 = null;
                                         }
                                         else
                                         {
                                             _CurrentImageIndex += 1;
+                                            _thenDoubleViewUpdated_Forward = true;
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index - 1);
-                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index);
+                                    if (_thenDoubleViewUpdated_Forward)
+                                    {
+                                        _thenDoubleViewUpdated_Forward = false;
+
+                                        index = _CurrentImageIndex -= 1;
+                                        imageSource1 = Images[_CurrentImageIndex];
+                                    }
+
+                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index - 1) || _UserInputDoubleViewSpecialProcessPage.Contains(index - 1);
+                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index);
                                     var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
+
+
+                                    NowUserInputSpecialProcessDoubleViewToSingleView = _UserInputDoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index - 1);
 
                                     // 右綴じとしてimageSource1が左、imageSource2が右に来る
 
@@ -448,6 +483,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                     {
                                         // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
                                         _DoubleViewSpecialProcessPage.Add(index);
+                                        _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
                                     }
                                     else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index - 1)) != null)
                                     {
@@ -457,19 +493,21 @@ namespace TsubameViewer.Presentation.ViewModels
                                         {
                                             // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
                                             _DoubleViewSpecialProcessPage.Add(index - 1);
+                                            _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
                                             _CurrentImage = null;
                                         }
                                         else
                                         {
                                             _CurrentImageIndex -= 1;
+                                            _thenDoubleViewUpdated_Backward = true;
                                         }
                                     }
                                 }
 
                                 if (ct.IsCancellationRequested) { return; }
                             }
-                            
 
+                            NowDoubleImageView = _CurrentImage != null && CurrentImage2 != null;
                             RaisePropertyChanged(nameof(CurrentImage));
                             RaisePropertyChanged(nameof(CurrentImage2));                            
                         }
@@ -484,6 +522,8 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
+        bool _thenDoubleViewUpdated_Forward;
+        bool _thenDoubleViewUpdated_Backward;
         CancellationTokenSource _imageLoadingCts;
         FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
@@ -508,6 +548,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
 
                 _DoubleViewSpecialProcessPage = _doubleImageViewSepecialProcessManager.GetSpecialProcessPages(_currentFolderItem.Path);
+                _UserInputDoubleViewSpecialProcessPage = _doubleImageViewSepecialProcessManager.GetUserINputSpecialProcessPages(_currentFolderItem.Path);
 
                 GoNextImageCommand.RaiseCanExecuteChanged();
                 GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -589,21 +630,79 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
+
+
+        private DelegateCommand _AddSpecialProcessPageCommand;
+        public DelegateCommand AddSpecialProcessPageCommand =>
+            _AddSpecialProcessPageCommand ?? (_AddSpecialProcessPageCommand = new DelegateCommand(ExecuteAddSpecialProcessPageCommand));
+
+        void ExecuteAddSpecialProcessPageCommand()
+        {
+            var index = _CurrentImageIndex;
+            if (_thenDoubleViewUpdated_Backward)
+            {
+                index++;
+            }
+            if (_thenDoubleViewUpdated_Forward)
+            {
+                index--;
+            }
+
+            if (_DoubleViewSpecialProcessPage.Contains(index)) { return; }
+            if (_UserInputDoubleViewSpecialProcessPage.Contains(index)) { return; }
+
+            _UserInputDoubleViewSpecialProcessPage.Add(index);
+            _doubleImageViewSepecialProcessManager.SetUserInputSpecialProcessPage(_currentFolderItem.Path, _UserInputDoubleViewSpecialProcessPage);
+            RaisePropertyChanged(nameof(CurrentImageIndex));
+        }
+
+
+        private DelegateCommand _RemoveSpecialProcessPageCommand;
+        public DelegateCommand RemoveSpecialProcessPageCommand =>
+            _RemoveSpecialProcessPageCommand ?? (_RemoveSpecialProcessPageCommand = new DelegateCommand(ExecuteRemoveSpecialProcessPageCommand));
+
+        void ExecuteRemoveSpecialProcessPageCommand()
+        {
+            var index = _CurrentImageIndex;
+            if (_thenDoubleViewUpdated_Backward)
+            {
+                index++;
+            }
+            if (_thenDoubleViewUpdated_Forward)
+            {
+                index--;
+            }
+
+            if (!_UserInputDoubleViewSpecialProcessPage.Contains(index)) { return; }
+
+            _UserInputDoubleViewSpecialProcessPage.Remove(index);
+            _doubleImageViewSepecialProcessManager.SetUserInputSpecialProcessPage(_currentFolderItem.Path, _UserInputDoubleViewSpecialProcessPage);
+            RaisePropertyChanged(nameof(CurrentImageIndex));
+        }
+
+
         #endregion
 
         #region Single/Double View
 
-        private bool _nowDoubleImageView;
-        public bool NowDoubleImageView
+        private bool _nowCanDoubleImageView;
+        public bool NowCanDoubleImageView
         {
-            get { return _nowDoubleImageView; }
-            private set { SetProperty(ref _nowDoubleImageView, value); }
+            get { return _nowCanDoubleImageView; }
+            private set { SetProperty(ref _nowCanDoubleImageView, value); }
         }
 
 
+        private bool _NowDoubleImageView;
+        public bool NowDoubleImageView
+        {
+            get { return _NowDoubleImageView; }
+            set { SetProperty(ref _NowDoubleImageView, value); }
+        }
+
         public void SetSingleImageView()
         {
-            NowDoubleImageView = false;
+            NowCanDoubleImageView = false;
 
             if (Images?.Any() == false)
             {
@@ -615,7 +714,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public void SetDoubleImageView()
         {
-            NowDoubleImageView = true;
+            NowCanDoubleImageView = true;
 
             if ((Images?.Any() ?? false) == false)
             {

@@ -19,19 +19,24 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         // 漫画など開始ページがズレている時に、ズレがあるとした前側のページ一つに対して両開き表示と記録することで
         // 常にズレを補正した表示ができるようにする
 
-        public void AddSpecialProcessPage(string path, int page)
+        public void SetSpecialProcessPage(string path, HashSet<int> pages)
         {
-            _doubleImageViewSepecialProcessRepository.AddSpecialProcessPage(path, page);
+            _doubleImageViewSepecialProcessRepository.SetSpecialProcessPage(path, pages);
         }
 
-        public void RemoveSpecialProcessPage(string path, int page)
+        public void SetUserInputSpecialProcessPage(string path, HashSet<int> pages)
         {
-            _doubleImageViewSepecialProcessRepository.RemoveSpecialProcessPage(path, page);
+            _doubleImageViewSepecialProcessRepository.SetUserInputSpecialProcessPage(path, pages);
         }
 
         public HashSet<int> GetSpecialProcessPages(string path)
         {
             return _doubleImageViewSepecialProcessRepository.Get(path);
+        }
+
+        public HashSet<int> GetUserINputSpecialProcessPages(string path)
+        {
+            return _doubleImageViewSepecialProcessRepository.GetFromUserInput(path);
         }
 
         public sealed class DoubleImageViewSepecialProcessRepository : LiteDBServiceBase<DoubleImageViewSepecialProcessEntry>
@@ -42,10 +47,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public HashSet<int> Get(string path)
             {
-                return _collection.FindById(path)?.ForceDoubleImageViewPageIndexies ?? new HashSet<int>();
+                return _collection.FindById(path)?.DoubleImageViewPageIndexies ?? new HashSet<int>();
             }
 
-            public void AddSpecialProcessPage(string path, int page)
+
+            public HashSet<int> GetFromUserInput(string path)
+            {
+                return _collection.FindById(path)?.UserInputDoubleImageViewPageIndexies ?? new HashSet<int>();
+            }
+
+            public void SetSpecialProcessPage(string path, HashSet<int> pages)
             {
                 var entry = _collection.FindById(path);
                 if (entry == null)
@@ -53,26 +64,32 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     _collection.Insert(new DoubleImageViewSepecialProcessEntry() 
                     {
                         Path = path,
-                        ForceDoubleImageViewPageIndexies = new HashSet<int>() { page }
+                        UserInputDoubleImageViewPageIndexies = new HashSet<int>() ,
+                        DoubleImageViewPageIndexies = pages
                     });
                 }
                 else
                 {
-                    if (!entry.ForceDoubleImageViewPageIndexies.Contains(page))
-                    {
-                        entry.ForceDoubleImageViewPageIndexies.Add(page);
-                        _collection.Update(entry);
-                    }
+                    entry.DoubleImageViewPageIndexies = pages;
+                    _collection.Update(entry);
                 }
             }
 
-            public void RemoveSpecialProcessPage(string path, int page)
+            public void SetUserInputSpecialProcessPage(string path, HashSet<int> pages)
             {
                 var entry = _collection.FindById(path);
-                if (entry == null) { return; }
-
-                if (entry.ForceDoubleImageViewPageIndexies.Remove(page))
+                if (entry == null)
                 {
+                    _collection.Insert(new DoubleImageViewSepecialProcessEntry()
+                    {
+                        Path = path,
+                        UserInputDoubleImageViewPageIndexies = pages,
+                        DoubleImageViewPageIndexies = new HashSet<int>()
+                    });
+                }
+                else
+                {
+                    entry.UserInputDoubleImageViewPageIndexies = pages;
                     _collection.Update(entry);
                 }
             }
@@ -84,7 +101,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public string Path { get; set; }
 
             [BsonField]
-            public HashSet<int> ForceDoubleImageViewPageIndexies { get; set; }
+            public HashSet<int> DoubleImageViewPageIndexies { get; set; }
+
+            [BsonField]
+            public HashSet<int> UserInputDoubleImageViewPageIndexies { get; set; }
+
         }
 
     }

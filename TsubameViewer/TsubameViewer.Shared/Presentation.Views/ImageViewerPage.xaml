@@ -67,7 +67,9 @@
                           >
         </Slider>
 
+        <Button x:Name="AddDoubleViewScpecialProcessButton" Content="右側をズレ補正ページに指定する" Command="{Binding AddSpecialProcessPageCommand}" Visibility="Collapsed" />
 
+        <Button x:Name="RemoveDoubleViewScpecialProcessButton" Content="ページのズレ補正を解除" Command="{Binding RemoveSpecialProcessPageCommand}" Visibility="Collapsed" />
 
       </StackPanel>
     </Flyout>
@@ -292,7 +294,29 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      
 
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding NowUserInputSpecialProcessDoubleViewToSingleView}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="RemoveDoubleViewScpecialProcessButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding NowDoubleImageView}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="AddDoubleViewScpecialProcessButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+      </VisualStateGroup>
+      
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
