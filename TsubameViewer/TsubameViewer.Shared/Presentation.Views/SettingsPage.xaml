@@ -165,13 +165,13 @@
 
           <StackPanel Spacing="16" HorizontalAlignment="Left" Margin="32 16 0 16">
             <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer_Support/wiki/Privacy-Policy" 
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy" 
                              HorizontalContentAlignment="Right"
                              FontWeight="SemiBold"
                              Width="{StaticResource SettingItemWidth}"
                              />
             <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
-                             NavigateUri="https://github.com/tor4kichi/TsubameViewer_Support/wiki/Third-Party-Library-Notice" 
+                             NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Third-Party-Library-Notice" 
                              HorizontalContentAlignment="Right"
                              FontWeight="SemiBold"
                              Width="{StaticResource SettingItemWidth}"
