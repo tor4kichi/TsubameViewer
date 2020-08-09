@@ -183,13 +183,11 @@ namespace TsubameViewer.Presentation.Views
                     return;
                 }
 
-                OpenImageViewerItem.Visibility = itemVM.Type == Models.Domain.StorageItemTypes.Folder ? Visibility.Visible : Visibility.Collapsed;
                 OpenImageViewerItem.CommandParameter = itemVM;
-                OpenImageViewerItem.Command = pageVM.AltOpenFolderItemCommand;
+                OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
                 
-                OpenListupItem.Visibility = itemVM.Type == Models.Domain.StorageItemTypes.Archive ? Visibility.Visible : Visibility.Collapsed;
                 OpenListupItem.CommandParameter = itemVM; 
-                OpenListupItem.Command = pageVM.AltOpenFolderItemCommand;
+                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
             }
             else
             {

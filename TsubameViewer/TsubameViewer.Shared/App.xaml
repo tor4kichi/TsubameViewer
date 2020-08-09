@@ -20,7 +20,7 @@
       </ResourceDictionary.MergedDictionaries>
 
 
-      <x:Boolean x:Key="DebugTVMode">True</x:Boolean>
+      <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
       
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />

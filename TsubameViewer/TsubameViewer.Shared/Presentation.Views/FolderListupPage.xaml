@@ -22,6 +22,7 @@
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+  NavigationCacheMode="Enabled"
   >
 
   <!-- NavigaitonCacheMode = Enabled にすると
@@ -383,8 +384,8 @@
                           >
             <GridView.ContextFlyout>
               <MenuFlyout x:Name="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
-                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="画像ビューワーで開く" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
-                <MenuFlyoutItem x:Name="OpenListupItem" Text="圧縮ファイルの内容を一覧表示" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
+                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
+                <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
               </MenuFlyout>
             </GridView.ContextFlyout>
             

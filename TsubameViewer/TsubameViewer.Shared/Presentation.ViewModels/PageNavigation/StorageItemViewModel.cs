@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
@@ -83,6 +84,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly BookmarkManager _bookmarkManager;
+
         public IImageSource Item { get; }
 
 
@@ -109,10 +112,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
 
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings) 
+        private double _ReadParcentage;
+        public double ReadParcentage
+        {
+            get { return _ReadParcentage; }
+            set { SetProperty(ref _ReadParcentage, value); }
+        }
+
+        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager) 
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderListingSettings = folderListingSettings;
+            _bookmarkManager = bookmarkManager;
 
 #if WINDOWS_UWP
             if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
@@ -127,8 +138,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings)
-             : this(sourceStorageItemsRepository, folderListingSettings)
+        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
+             : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
         {
             Item = item;
             DateCreated = Item.DateCreated;
@@ -140,6 +151,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 Path = storageItemImageSource.Path;
             }
+
+            ReadParcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
         }
 
         public void ClearImage()

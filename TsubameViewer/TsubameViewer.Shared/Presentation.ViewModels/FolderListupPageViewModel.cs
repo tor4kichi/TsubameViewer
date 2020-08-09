@@ -16,6 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
@@ -49,13 +50,14 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowProcessing, value); }
         }
 
+        private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
-        public AltOpenFolderItemCommand AltOpenFolderItemCommand { get; }
-
+        public OpenImageViewerCommand OpenImageViewerCommand { get; }
+        public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
         public ObservableCollection<StorageItemViewModel> EBookFileItems { get; }
@@ -120,21 +122,24 @@ namespace TsubameViewer.Presentation.ViewModels
         static bool _LastIsFolderThumbnailEnabled;
 
         public FolderListupPageViewModel(
+            BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
-            AltOpenFolderItemCommand altOpenFolderItemCommand
+            OpenImageViewerCommand openImageViewerCommand,
+            OpenFolderListupCommand openFolderListupCommand
             )
         {
+            _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
-            AltOpenFolderItemCommand = altOpenFolderItemCommand;
+            OpenImageViewerCommand = openImageViewerCommand;
+            OpenFolderListupCommand = openFolderListupCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
             EBookFileItems = new ObservableCollection<StorageItemViewModel>();
@@ -392,7 +397,7 @@ namespace TsubameViewer.Presentation.ViewModels
             foreach (var folderItem in result.Images)
             {
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _folderListingSettings);
+                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Folder)
                 {
                     FolderItems.Add(item);

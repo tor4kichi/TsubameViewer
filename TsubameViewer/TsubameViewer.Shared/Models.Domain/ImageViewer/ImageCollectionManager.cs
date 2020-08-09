@@ -34,10 +34,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class ImageCollectionManager
     {
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderContainerTypeManager _folderContainerTypeManager;
 
-        public ImageCollectionManager(ThumbnailManager thumbnailManager)
+        public ImageCollectionManager(
+            ThumbnailManager thumbnailManager,
+            FolderContainerTypeManager folderContainerTypeManager
+            )
         {
             _thumbnailManager = thumbnailManager;
+            _folderContainerTypeManager = folderContainerTypeManager;
         }
 
         public async Task<ImageCollectionResult> GetImageSourcesAsync(IStorageItem storageItem, CancellationToken ct = default)
@@ -120,11 +125,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     var images = new IImageSource[result.ItemsCount];
                     int index = 0;
 
+                    bool isAllImageFile = true;
                     await foreach (var item in result.Images.WithCancellation(ct))
                     {
                         images[index] = item;
                         index++;
+
+                        isAllImageFile &= (item as StorageItemImageSource)?.ItemTypes == StorageItemTypes.Image;
                     }
+
+                    // フォルダが画像のみを保持しているかどうかをローカルDBに設定する
+                    _folderContainerTypeManager.SetContainerType(folder, isAllImageFile ? FolderContainerType.OnlyImages : FolderContainerType.Other);
 
                     return new ImageCollectionResult()
                     {

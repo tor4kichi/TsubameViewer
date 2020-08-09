@@ -71,6 +71,10 @@ FileSortType.TitleDecending = ファイル名（降順）
 FileSortType.UpdateTimeAscending = 古い順
 FileSortType.UpdateTimeDecending = 新しい順
 
+OpenImageViewer = リーダーで開く
+OpenFolderListup = ファイルを一覧表示
+
+
 
 
 #### ImageViewerPage

@@ -8,11 +8,11 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class AltOpenFolderItemCommand : DelegateCommandBase
+    public sealed class OpenFolderListupCommand : DelegateCommandBase
     {
-        private readonly INavigationService _navigationService;
-        
-        public AltOpenFolderItemCommand(
+        private INavigationService _navigationService;
+
+        public OpenFolderListupCommand(
             INavigationService navigationService
             )
         {
@@ -28,12 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Image)
-                {
-                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
-                }
-                else if (item.Type == StorageItemTypes.Archive)
+                if (item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
@@ -41,16 +36,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 else if (item.Type == StorageItemTypes.Folder)
                 {
                     var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.EBook)
                 {
-                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+
                 }
                 else if (item.Type == StorageItemTypes.None)
                 {
-                    
                 }
             }
         }

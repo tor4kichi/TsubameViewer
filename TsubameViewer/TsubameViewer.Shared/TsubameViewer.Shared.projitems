@@ -24,13 +24,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Bookmark\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileSortType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderContainerTypeRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ListingImageConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\IImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageFileImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ZipArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
@@ -45,7 +46,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceFoldersRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\AltOpenFolderItemCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BackNavigationRequestEvent.cs" />
