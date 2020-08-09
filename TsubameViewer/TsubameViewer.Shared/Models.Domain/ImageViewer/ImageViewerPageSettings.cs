@@ -12,6 +12,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _IsReverseImageFliping_MouseWheel = Read(false, nameof(IsReverseImageFliping_MouseWheel));
             _IsReverseImageFliping_Button = Read(false, nameof(IsReverseImageFliping_Button));
             _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
+            _IsEnableSpreadDisplay = Read(true, nameof(IsEnableSpreadDisplay));
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -28,11 +29,20 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             set => SetProperty(ref _IsReverseImageFliping_Button, value);
         }
 
+        // 見開き表示時に左綴じとしてページを並べる
         private bool _IsLeftBindingView;
         public bool IsLeftBindingView
         {
             get => _IsLeftBindingView;
             set => SetProperty(ref _IsLeftBindingView, value);
+        }
+
+        // 見開き表示
+        private bool _IsEnableSpreadDisplay;
+        public bool IsEnableSpreadDisplay
+        {
+            get { return _IsEnableSpreadDisplay; }
+            set { SetProperty(ref _IsEnableSpreadDisplay, value); }
         }
     }
 }

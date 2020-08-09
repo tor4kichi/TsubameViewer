@@ -12,7 +12,7 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
-  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation" xmlns:domainModels="using:TsubameViewer.Models.Domain"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation" xmlns:domainModels="using:TsubameViewer.Models.Domain" xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
@@ -25,6 +25,9 @@
                     />
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_Button, Mode=TwoWay}"
                     Header="{Binding Source=IsReverseImageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                    />
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnableSpreadDisplay, Mode=TwoWay}"
+                    Header="{Binding Source=IsEnableSpreadDisplay, Converter={StaticResource LocalizeConverter}}"
                     />
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsLeftBindingView, Mode=TwoWay}"
                     Header="{Binding Source=IsLeftBindingView, Converter={StaticResource LocalizeConverter}}"
@@ -67,9 +70,7 @@
                           >
         </Slider>
 
-        <Button x:Name="AddDoubleViewScpecialProcessButton" Content="右側をズレ補正ページに指定する" Command="{Binding AddSpecialProcessPageCommand}" Visibility="Collapsed" />
-
-        <Button x:Name="RemoveDoubleViewScpecialProcessButton" Content="ページのズレ補正を解除" Command="{Binding RemoveSpecialProcessPageCommand}" Visibility="Collapsed" />
+        <Button x:Name="DoubleViewCorrectButton" Content="見開きのページズレを補正する" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed" />
 
       </StackPanel>
     </Flyout>
@@ -294,33 +295,21 @@
 
     <VisualStateManager.VisualStateGroups>
 
-      
-
       <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding NowUserInputSpecialProcessDoubleViewToSingleView}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="RemoveDoubleViewScpecialProcessButton.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{Binding NowDoubleImageView}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="AddDoubleViewScpecialProcessButton.Visibility" Value="Visible" />
+            <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
-
       </VisualStateGroup>
       
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <AdaptiveTrigger MinWindowWidth="920" />
+            <myStateTriggers:AspectRatioTrigger WidthHeightRatio="1.35" Target="{Binding ElementName=RootGrid}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="Image2.Visibility" Value="Visible" />

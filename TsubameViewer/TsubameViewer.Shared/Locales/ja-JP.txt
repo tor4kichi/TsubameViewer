@@ -82,6 +82,7 @@ OpenFolderListup = ファイルを一覧表示
 CurrentFolder_InArchive = フォルダ
 Page = ページ
 
+IsEnableSpreadDisplay = 見開き表示
 IsLeftBindingView = 左綴じ表示
 
 

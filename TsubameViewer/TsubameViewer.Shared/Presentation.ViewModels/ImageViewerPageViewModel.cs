@@ -89,17 +89,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ReactiveProperty<double> CanvasWidth { get; }
         public ReactiveProperty<double> CanvasHeight { get; }
 
-        bool _nowMovePrev;
 
-        HashSet<int> _DoubleViewSpecialProcessPage;
-        HashSet<int> _UserInputDoubleViewSpecialProcessPage;
-
-        private bool _nowSpecialProcessDoubleViewToSingleView;
-        public bool NowUserInputSpecialProcessDoubleViewToSingleView
-        {
-            get { return _nowSpecialProcessDoubleViewToSingleView; }
-            set { SetProperty(ref _nowSpecialProcessDoubleViewToSingleView, value); }
-        }
 
 
         private string _title;
@@ -152,7 +142,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
-        private readonly DoubleImageViewSepecialProcessManager _doubleImageViewSepecialProcessManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
@@ -161,7 +150,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
-            DoubleImageViewSepecialProcessManager doubleImageViewSepecialProcessManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
@@ -173,7 +161,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
-            _doubleImageViewSepecialProcessManager = doubleImageViewSepecialProcessManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim()
@@ -346,10 +333,16 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
             // 画像更新
-            this.ObserveProperty(x => x.CurrentImageIndex)
+            new [] 
+            {
+                this.ObserveProperty(x => x.CurrentImageIndex).ToUnit(),
+                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit() 
+            }
+                .Merge()
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
-                .Subscribe(async index =>
+                .Subscribe(async _ =>
                 {
+                    var index = CurrentImageIndex;
                     if (Images == null || Images.Length == 0) { return; }
                     Debug.WriteLine("New Index: " + index);
                     _imageLoadingCts?.Cancel();
@@ -361,9 +354,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         using (await _imageLoadingLock.LockAsync(ct))
                         {
-                            var nowMovePreview = _nowMovePrev;
-                            _nowMovePrev = false;
-
                             async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
                             {
                                 var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
@@ -394,117 +384,24 @@ namespace TsubameViewer.Presentation.ViewModels
                             PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
                             _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource1.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
 
-
+                            _CurrentImage2 = null;
 
                             var canvasWidth = (int)CanvasWidth.Value;
                             var canvasHeight = (int)CanvasHeight.Value;
 
                             if (ct.IsCancellationRequested) { return; }
 
-                            _CurrentImage = null;
-                            _CurrentImage2 = null;
-                            if (!NowCanDoubleImageView)
+                            _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
+                            
+                            IImageSource imageSource2;
+                            if (ImageViewerSettings.IsEnableSpreadDisplay && NowCanDoubleImageView && (imageSource2 = Images.ElementAtOrDefault(index + 1)) != null)
                             {
-                                _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
-                                NowUserInputSpecialProcessDoubleViewToSingleView = false;
+                                _CurrentImage2 = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct); ;
+                                NowDoubleImageView = true;
                             }
                             else
                             {
-                                // 見開き表示対応
-                                // 表示切替の進行方向に合わせた2枚表示と1枚表示の場合分けが必要になる
-                                if (!nowMovePreview)
-                                {
-                                    if (_thenDoubleViewUpdated_Backward)
-                                    {
-                                        _thenDoubleViewUpdated_Backward = false;
-
-                                        index = _CurrentImageIndex += 1;
-                                        imageSource1 = Images[_CurrentImageIndex];
-                                    }
-
-                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index);
-                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index + 1) || _UserInputDoubleViewSpecialProcessPage.Contains(index + 1);
-                                    var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
-
-                                    NowUserInputSpecialProcessDoubleViewToSingleView = _UserInputDoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index + 1);
-
-                                    IImageSource imageSource2;
-                                    // 前方向への移動
-                                    // 一枚目が大きい場合は二枚目を読み込まない
-                                    _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
-                                    if (_CurrentImage.PixelHeight < _CurrentImage.PixelWidth)
-                                    {
-                                        // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
-                                        _DoubleViewSpecialProcessPage.Add(index);
-                                        _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
-                                    }
-                                    else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index + 1)) != null)
-                                    {
-                                        // 二枚目を読み込む場合は前方向にインデックスを補正する
-                                        _CurrentImage2 = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct);
-                                        if (_CurrentImage2.PixelHeight < _CurrentImage2.PixelWidth)
-                                        {
-                                            // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
-                                            _DoubleViewSpecialProcessPage.Add(index + 1);
-                                            _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
-                                            _CurrentImage2 = null;
-                                        }
-                                        else
-                                        {
-                                            _CurrentImageIndex += 1;
-                                            _thenDoubleViewUpdated_Forward = true;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    if (_thenDoubleViewUpdated_Forward)
-                                    {
-                                        _thenDoubleViewUpdated_Forward = false;
-
-                                        index = _CurrentImageIndex -= 1;
-                                        imageSource1 = Images[_CurrentImageIndex];
-                                    }
-
-                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index - 1) || _UserInputDoubleViewSpecialProcessPage.Contains(index - 1);
-                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index);
-                                    var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
-
-
-                                    NowUserInputSpecialProcessDoubleViewToSingleView = _UserInputDoubleViewSpecialProcessPage.Contains(index) || _UserInputDoubleViewSpecialProcessPage.Contains(index - 1);
-
-                                    // 右綴じとしてimageSource1が左、imageSource2が右に来る
-
-                                    IImageSource imageSource2;
-                                    // 後方向への移動
-                                    // 二枚目が大きい場合は一枚目を読み込まない
-                                    _CurrentImage2 = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct); ;
-                                    if (_CurrentImage2.PixelHeight < _CurrentImage2.PixelWidth)
-                                    {
-                                        // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
-                                        _DoubleViewSpecialProcessPage.Add(index);
-                                        _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
-                                    }
-                                    else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index - 1)) != null)
-                                    {
-                                        // 二枚目を読み込む場合は後方向にインデックスを補正する
-                                        _CurrentImage = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct);
-                                        if (_CurrentImage.PixelHeight < _CurrentImage.PixelWidth)
-                                        {
-                                            // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
-                                            _DoubleViewSpecialProcessPage.Add(index - 1);
-                                            _doubleImageViewSepecialProcessManager.SetSpecialProcessPage(_currentFolderItem.Path, _DoubleViewSpecialProcessPage);
-                                            _CurrentImage = null;
-                                        }
-                                        else
-                                        {
-                                            _CurrentImageIndex -= 1;
-                                            _thenDoubleViewUpdated_Backward = true;
-                                        }
-                                    }
-                                }
-
-                                if (ct.IsCancellationRequested) { return; }
+                                NowDoubleImageView = false;
                             }
 
                             NowDoubleImageView = _CurrentImage != null && CurrentImage2 != null;
@@ -522,8 +419,6 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
-        bool _thenDoubleViewUpdated_Forward;
-        bool _thenDoubleViewUpdated_Backward;
         CancellationTokenSource _imageLoadingCts;
         FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
@@ -547,9 +442,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 _appView.Title = _currentFolderItem.Name;
                 Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
 
-                _DoubleViewSpecialProcessPage = _doubleImageViewSepecialProcessManager.GetSpecialProcessPages(_currentFolderItem.Path);
-                _UserInputDoubleViewSpecialProcessPage = _doubleImageViewSepecialProcessManager.GetUserINputSpecialProcessPages(_currentFolderItem.Path);
-
                 GoNextImageCommand.RaiseCanExecuteChanged();
                 GoPrevImageCommand.RaiseCanExecuteChanged();
             }
@@ -566,7 +458,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            CurrentImageIndex += 1;
+            CurrentImageIndex = Math.Min(CurrentImageIndex + (NowCanDoubleImageView ? 2 : 1), Images.Length - 1); ;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -583,8 +475,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            _nowMovePrev = true;
-            CurrentImageIndex -= 1;
+            CurrentImageIndex = Math.Max(CurrentImageIndex - (NowCanDoubleImageView ? 2 : 1), 0);
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
@@ -629,55 +520,13 @@ namespace TsubameViewer.Presentation.ViewModels
             CurrentImageIndex = page;
         }
 
+        private DelegateCommand _DoubleViewCorrectCommand;
+        public DelegateCommand DoubleViewCorrectCommand =>
+            _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new DelegateCommand(ExecuteDoubleViewCorrectCommand));
 
-
-
-        private DelegateCommand _AddSpecialProcessPageCommand;
-        public DelegateCommand AddSpecialProcessPageCommand =>
-            _AddSpecialProcessPageCommand ?? (_AddSpecialProcessPageCommand = new DelegateCommand(ExecuteAddSpecialProcessPageCommand));
-
-        void ExecuteAddSpecialProcessPageCommand()
+        void ExecuteDoubleViewCorrectCommand()
         {
-            var index = _CurrentImageIndex;
-            if (_thenDoubleViewUpdated_Backward)
-            {
-                index++;
-            }
-            if (_thenDoubleViewUpdated_Forward)
-            {
-                index--;
-            }
-
-            if (_DoubleViewSpecialProcessPage.Contains(index)) { return; }
-            if (_UserInputDoubleViewSpecialProcessPage.Contains(index)) { return; }
-
-            _UserInputDoubleViewSpecialProcessPage.Add(index);
-            _doubleImageViewSepecialProcessManager.SetUserInputSpecialProcessPage(_currentFolderItem.Path, _UserInputDoubleViewSpecialProcessPage);
-            RaisePropertyChanged(nameof(CurrentImageIndex));
-        }
-
-
-        private DelegateCommand _RemoveSpecialProcessPageCommand;
-        public DelegateCommand RemoveSpecialProcessPageCommand =>
-            _RemoveSpecialProcessPageCommand ?? (_RemoveSpecialProcessPageCommand = new DelegateCommand(ExecuteRemoveSpecialProcessPageCommand));
-
-        void ExecuteRemoveSpecialProcessPageCommand()
-        {
-            var index = _CurrentImageIndex;
-            if (_thenDoubleViewUpdated_Backward)
-            {
-                index++;
-            }
-            if (_thenDoubleViewUpdated_Forward)
-            {
-                index--;
-            }
-
-            if (!_UserInputDoubleViewSpecialProcessPage.Contains(index)) { return; }
-
-            _UserInputDoubleViewSpecialProcessPage.Remove(index);
-            _doubleImageViewSepecialProcessManager.SetUserInputSpecialProcessPage(_currentFolderItem.Path, _UserInputDoubleViewSpecialProcessPage);
-            RaisePropertyChanged(nameof(CurrentImageIndex));
+            CurrentImageIndex = Math.Max(CurrentImageIndex - 1, 0);
         }
 
 
@@ -702,6 +551,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public void SetSingleImageView()
         {
+            if (!NowCanDoubleImageView) { return; }
+
             NowCanDoubleImageView = false;
 
             if (Images?.Any() == false)
@@ -714,6 +565,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public void SetDoubleImageView()
         {
+            if (NowCanDoubleImageView) { return; }
             NowCanDoubleImageView = true;
 
             if ((Images?.Any() ?? false) == false)
