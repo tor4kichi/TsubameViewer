@@ -26,6 +26,9 @@
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_Button, Mode=TwoWay}"
                     Header="{Binding Source=IsReverseImageFliping_Button, Converter={StaticResource LocalizeConverter}}"
                     />
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsLeftBindingView, Mode=TwoWay}"
+                    Header="{Binding Source=IsLeftBindingView, Converter={StaticResource LocalizeConverter}}"
+                    />
 
       </StackPanel>
     </Flyout>
@@ -120,7 +123,30 @@
     </i:Interaction.Behaviors>
 
 
-    <Image x:Name="Image" Source="{Binding CurrentImage}" Margin="0 32 0 0" />
+    <StackPanel x:Name="ImageContainerPanel" Orientation="Horizontal" Margin="0 32 0 0" HorizontalAlignment="Center"
+                uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+                FlowDirection="RightToLeft"
+                >
+      <Image x:Name="Image" Source="{Binding CurrentImage}" Stretch="Uniform" Height="{Binding ElementName=ImageContainerPanel, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}"  />
+      <Image x:Name="Image2" Source="{Binding CurrentImage2}" Stretch="Uniform" Height="{Binding ElementName=ImageContainerPanel, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}"  Visibility="Collapsed"  />
+
+      <i:Interaction.Behaviors>
+        <core:DataTriggerBehavior Binding="{x:Bind Image2.Visibility, Mode=OneWay}" ComparisonCondition="Equal">
+          <core:DataTriggerBehavior.Value>
+            <Visibility>Collapsed</Visibility>
+          </core:DataTriggerBehavior.Value>
+
+          <core:CallMethodAction TargetObject="{Binding}" MethodName="SetSingleImageView" />
+        </core:DataTriggerBehavior>
+        <core:DataTriggerBehavior Binding="{x:Bind Image2.Visibility, Mode=OneWay}" ComparisonCondition="Equal">
+          <core:DataTriggerBehavior.Value>
+            <Visibility>Visible</Visibility>
+          </core:DataTriggerBehavior.Value>
+
+          <core:CallMethodAction TargetObject="{Binding}" MethodName="SetDoubleImageView" />
+        </core:DataTriggerBehavior>
+      </i:Interaction.Behaviors>
+    </StackPanel>
 
 
     
@@ -265,6 +291,30 @@
 
 
     <VisualStateManager.VisualStateGroups>
+
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="920" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Image2.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding ImageViewerSettings.IsLeftBindingView}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageContainerPanel.FlowDirection" Value="LeftToRight" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -288,7 +338,7 @@
 
             <Setter Target="GamePadLeftAction.Command" Value="{Binding GoPrevImageCommand}" />
             <Setter Target="GamePadRightAction.Command" Value="{Binding GoNextImageCommand}" />
-
+            
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

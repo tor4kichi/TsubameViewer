@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Uwp.UI.Converters;
+using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -62,6 +63,13 @@ namespace TsubameViewer.Presentation.ViewModels
             private set => SetProperty(ref _CurrentImage, value);
         }
 
+        private BitmapImage _CurrentImage2;
+        public BitmapImage CurrentImage2
+        {
+            get => _CurrentImage2;
+            private set => SetProperty(ref _CurrentImage2, value);
+        }
+
         private int _CurrentImageIndex;
         public int CurrentImageIndex
         {
@@ -80,6 +88,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveProperty<double> CanvasWidth { get; }
         public ReactiveProperty<double> CanvasHeight { get; }
+
+        bool _nowMovePrev;
+
+        HashSet<int> _DoubleViewSpecialProcessPage;
+
 
 
 
@@ -133,6 +146,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly DoubleImageViewSepecialProcessManager _doubleImageViewSepecialProcessManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
@@ -141,6 +155,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
+            DoubleImageViewSepecialProcessManager doubleImageViewSepecialProcessManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
@@ -152,6 +167,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
+            _doubleImageViewSepecialProcessManager = doubleImageViewSepecialProcessManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .ToReadOnlyReactivePropertySlim()
@@ -339,41 +355,123 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         using (await _imageLoadingLock.LockAsync(ct))
                         {
-                            var imageSource = Images[index];
+                            var nowMovePreview = _nowMovePrev;
+                            _nowMovePrev = false;
 
-                            var names = imageSource.Name.Split(SeparateChars);
+                            async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
+                            {
+                                var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
+
+                                // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
+                                if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+                                {
+                                    if (bitmapImage.PixelHeight > canvasHeight)
+                                    {
+                                        bitmapImage.DecodePixelHeight = canvasHeight;
+                                    }
+                                }
+                                else
+                                {
+                                    if (bitmapImage.PixelWidth > canvasWidth)
+                                    {
+                                        bitmapImage.DecodePixelWidth = canvasWidth;
+                                    }
+                                }
+
+                                return bitmapImage;
+                            }
+
+                            var imageSource1 = Images[index];
+
+                            var names = imageSource1.Name.Split(SeparateChars);
                             PageName = names[names.Length - 1];
                             PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
+                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource1.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
 
-                            await Task.Delay(1);
+                            var canvasWidth = (int)CanvasWidth.Value;
+                            var canvasHeight = (int)CanvasHeight.Value;
 
                             if (ct.IsCancellationRequested) { return; }
 
-                            var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
-
-                            // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
-                            var canvasWidth = (int)CanvasWidth.Value;
-                            var canvasHeight = (int)CanvasHeight.Value;
-                            if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+                            _CurrentImage = null;
+                            _CurrentImage2 = null;
+                            if (!NowDoubleImageView)
                             {
-                                if (bitmapImage.PixelHeight > canvasHeight)
-                                {
-                                    bitmapImage.DecodePixelHeight = canvasHeight;
-                                }
+                                _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
                             }
                             else
                             {
-                                if (bitmapImage.PixelWidth > canvasWidth)
+                                if (!nowMovePreview)
                                 {
-                                    bitmapImage.DecodePixelWidth = canvasWidth;
+                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index);
+                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index + 1);
+                                    var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
+
+                                    IImageSource imageSource2;
+                                    // 前方向への移動
+                                    // 一枚目が大きい場合は二枚目を読み込まない
+                                    _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
+                                    if (_CurrentImage.PixelHeight < _CurrentImage.PixelWidth)
+                                    {
+                                        // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
+                                        _DoubleViewSpecialProcessPage.Add(index);
+                                    }
+                                    else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index + 1)) != null)
+                                    {
+                                        // 二枚目を読み込む場合は前方向にインデックスを補正する
+                                        _CurrentImage2 = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct);
+                                        if (_CurrentImage2.PixelHeight < _CurrentImage2.PixelWidth)
+                                        {
+                                            // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
+                                            _DoubleViewSpecialProcessPage.Add(index + 1);
+                                            _CurrentImage2 = null;
+                                        }
+                                        else
+                                        {
+                                            _CurrentImageIndex += 1;
+                                        }
+                                    }
                                 }
+                                else
+                                {
+                                    var isNeedSpecialProcessImage1 = _DoubleViewSpecialProcessPage.Contains(index - 1);
+                                    var isNeedSpecialProcessImage2 = _DoubleViewSpecialProcessPage.Contains(index);
+                                    var isNeedSingleView = isNeedSpecialProcessImage1 || isNeedSpecialProcessImage2;
+
+                                    // 右綴じとしてimageSource1が左、imageSource2が右に来る
+
+                                    IImageSource imageSource2;
+                                    // 後方向への移動
+                                    // 二枚目が大きい場合は一枚目を読み込まない
+                                    _CurrentImage2 = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct); ;
+                                    if (_CurrentImage2.PixelHeight < _CurrentImage2.PixelWidth)
+                                    {
+                                        // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
+                                        _DoubleViewSpecialProcessPage.Add(index);
+                                    }
+                                    else if (!isNeedSingleView && (imageSource2 = Images.ElementAtOrDefault(index - 1)) != null)
+                                    {
+                                        // 二枚目を読み込む場合は後方向にインデックスを補正する
+                                        _CurrentImage = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct);
+                                        if (_CurrentImage.PixelHeight < _CurrentImage.PixelWidth)
+                                        {
+                                            // 横長の場合はSingleViewで表示させるためsecondIamgeSourceは読み込まない
+                                            _DoubleViewSpecialProcessPage.Add(index - 1);
+                                            _CurrentImage = null;
+                                        }
+                                        else
+                                        {
+                                            _CurrentImageIndex -= 1;
+                                        }
+                                    }
+                                }
+
+                                if (ct.IsCancellationRequested) { return; }
                             }
+                            
 
-                            if (ct.IsCancellationRequested) { return; }
-
-                            CurrentImage = bitmapImage;
-
-                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
+                            RaisePropertyChanged(nameof(CurrentImage));
+                            RaisePropertyChanged(nameof(CurrentImage2));                            
                         }
                     }
                     catch (OperationCanceledException) { }
@@ -409,14 +507,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 _appView.Title = _currentFolderItem.Name;
                 Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
 
+                _DoubleViewSpecialProcessPage = _doubleImageViewSepecialProcessManager.GetSpecialProcessPages(_currentFolderItem.Path);
+
                 GoNextImageCommand.RaiseCanExecuteChanged();
                 GoPrevImageCommand.RaiseCanExecuteChanged();
             }
-        }
-
-        public void Test()
-        {
-            Debug.WriteLine("Test Called!");
         }
 
         #region Commands
@@ -447,6 +542,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
+            _nowMovePrev = true;
             CurrentImageIndex -= 1;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -455,7 +551,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool CanGoPrevCommand()
         {
-            return CurrentImageIndex > 0 && Images?.Length > 0;
+            return CurrentImageIndex >= 1 && Images?.Length > 0;
         }
 
         private DelegateCommand _SizeChangedCommand;
@@ -494,6 +590,51 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         #endregion
+
+        #region Single/Double View
+
+        private bool _nowDoubleImageView;
+        public bool NowDoubleImageView
+        {
+            get { return _nowDoubleImageView; }
+            private set { SetProperty(ref _nowDoubleImageView, value); }
+        }
+
+
+        public void SetSingleImageView()
+        {
+            NowDoubleImageView = false;
+
+            if (Images?.Any() == false)
+            {
+                return;
+            }
+
+            CurrentImage2 = null;
+        }
+
+        public void SetDoubleImageView()
+        {
+            NowDoubleImageView = true;
+
+            if ((Images?.Any() ?? false) == false)
+            {
+                return;
+            }
+
+            // 奇数ページを表示している場合は偶数ページ始まりになるように
+            if (CurrentImageIndex % 2 == 1)
+            {
+                CurrentImageIndex -= 1;
+            }
+            else
+            {
+                RaisePropertyChanged(nameof(CurrentImageIndex));
+            }
+        }
+
+        #endregion
+
 
     }
 

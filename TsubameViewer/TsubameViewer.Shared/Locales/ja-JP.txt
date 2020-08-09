@@ -82,6 +82,7 @@ OpenFolderListup = ファイルを一覧表示
 CurrentFolder_InArchive = フォルダ
 Page = ページ
 
+IsLeftBindingView = 左綴じ表示
 
 
 #### EBookReaderPage

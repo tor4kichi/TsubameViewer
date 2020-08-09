@@ -10,6 +10,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public ImageViewerSettings()
         {
             _IsReverseImageFliping_MouseWheel = Read(false, nameof(IsReverseImageFliping_MouseWheel));
+            _IsReverseImageFliping_Button = Read(false, nameof(IsReverseImageFliping_Button));
+            _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -24,6 +26,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             get => _IsReverseImageFliping_Button;
             set => SetProperty(ref _IsReverseImageFliping_Button, value);
+        }
+
+        private bool _IsLeftBindingView;
+        public bool IsLeftBindingView
+        {
+            get => _IsLeftBindingView;
+            set => SetProperty(ref _IsLeftBindingView, value);
         }
     }
 }
