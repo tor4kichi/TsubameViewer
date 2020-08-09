@@ -152,7 +152,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 Path = storageItemImageSource.Path;
             }
 
-            ReadParcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
+            UpdateLastReadPosition();
         }
 
         public void ClearImage()
@@ -225,6 +225,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 _isAppearingRequestButLoadingCancelled = true;
                 return;
             }
+        }
+
+        public void UpdateLastReadPosition()
+        {
+            var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
+            ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
         }
 
         public void RestoreThumbnailLoadingTask()

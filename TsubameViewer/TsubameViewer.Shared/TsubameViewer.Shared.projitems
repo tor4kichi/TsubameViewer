@@ -166,6 +166,7 @@
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Services\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\Controls\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Locales\ja-JP.txt" />

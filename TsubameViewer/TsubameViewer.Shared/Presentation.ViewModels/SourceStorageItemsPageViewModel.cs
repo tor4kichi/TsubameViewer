@@ -22,6 +22,7 @@ using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Uno.Disposables;
 using Uno.Extensions.Specialized;
 using Windows.Storage;
+using TsubameViewer.Models.Domain.Bookmark;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -35,6 +36,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> Files { get; }
 
+        private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -50,6 +52,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         bool _foldersInitialized = false;
         public SourceStorageItemsPageViewModel(
+            BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             OpenFolderItemCommand openFolderItemCommand,
@@ -64,6 +67,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _eventAggregator = eventAggregator;
+            _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
 
@@ -100,14 +104,14 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
                         // 追加用ボタンの次に配置するための 1
-                        Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _folderListingSettings));
+                        Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                     }
                     else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
                         || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
                         || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.EBook
                         )
                     {
-                        Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _folderListingSettings));
+                        Files.Insert(0, new StorageItemViewModel(storageItemImageSource, args.Token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                     }
                 })
                 .AddTo(_disposables);
@@ -139,13 +143,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _foldersInitialized = true;
 
-                Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _folderListingSettings) { });
+                Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager) { });
                 await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                 {
                     var storageItemImageSource = new StorageItemImageSource(item.item, _thumbnailManager);
                     if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
-                        Folders.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _folderListingSettings));
+                        Folders.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                     }
                     else
                     {
@@ -161,7 +165,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.EBook
                         )
                     {
-                        Files.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _folderListingSettings));
+                        Files.Add(new StorageItemViewModel(storageItemImageSource, item.token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                     }
                     else
                     {

@@ -308,6 +308,13 @@ namespace TsubameViewer.Presentation.ViewModels
                         else
                         {
                             HasFileItem = ImageFileItems.Any();
+
+                            // 最後に読んだ位置を更新
+                            ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
+                            ArchiveFileItems.ForEach(x => x.UpdateLastReadPosition());
+                            EBookFileItems.ForEach(x => x.UpdateLastReadPosition());
+                            FolderItems.ForEach(x => x.UpdateLastReadPosition());
+
                         }
                     }
                 }
@@ -329,6 +336,12 @@ namespace TsubameViewer.Presentation.ViewModels
                     ArchiveFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                     EBookFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
                     FolderItems.ForEach(x => x.RestoreThumbnailLoadingTask());
+
+                    // 最後に読んだ位置を更新
+                    ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
+                    ArchiveFileItems.ForEach(x => x.UpdateLastReadPosition());
+                    EBookFileItems.ForEach(x => x.UpdateLastReadPosition());
+                    FolderItems.ForEach(x => x.UpdateLastReadPosition());
                 }
             }
             finally

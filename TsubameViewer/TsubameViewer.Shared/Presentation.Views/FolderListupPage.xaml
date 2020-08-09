@@ -116,77 +116,94 @@
     <!-- SmallImageWidth 等の定数はApp.xaml.csで設定している -->
     <!-- その定数自体は Models.Domain/FolderItemListing/ListingImageConstants.cs で定義している -->
 
+    <Style TargetType="ProgressBar" >
+      <Setter Property="Minimum" Value="0.0" />
+      <Setter Property="Maximum" Value="1.0" />
+      <Setter Property="Height" Value="4" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="#afff3333" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
 
-    <DataTemplate x:Key="FolderTemplate">
+    <DataTemplate x:Key="FolderTemplate"
+                  >
       <uwpControls:DockPanel>
 
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
 
-        <Grid Height="52" Margin="12 0" uwpControls:DockPanel.Dock="Bottom">
-          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0 0 40 0" VerticalAlignment="Center" />
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0">
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0">
             <FontIcon.RenderTransform>
               <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
             </FontIcon.RenderTransform>
           </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
         </Grid>
 
         <Image Source="{Binding Image}"
-               Stretch="UniformToFill"
-               VerticalAlignment="Center"
-               Height="80"
-               />
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
       </uwpControls:DockPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="ArchiveFileTemplate">
-      <StackPanel>
+      <uwpControls:DockPanel>
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
+
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+          
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
+        </Grid>
 
         <Image Source="{Binding Image}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
                  Height="80"
                      />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-        </Grid>
-      </StackPanel>
+
+      </uwpControls:DockPanel>
     </DataTemplate>
 
     <DataTemplate x:Key="EBookFileTemplate">
-      <StackPanel>
+      <uwpControls:DockPanel>
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
+
+        
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
+        </Grid>
 
         <Image Source="{Binding Image}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
                  Height="80"
                      />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-        </Grid>
-      </StackPanel>
+
+      </uwpControls:DockPanel>
     </DataTemplate>
     
 

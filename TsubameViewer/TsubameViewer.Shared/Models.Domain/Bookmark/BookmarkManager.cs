@@ -6,6 +6,22 @@ using TsubameViewer.Models.Infrastructure;
 
 namespace TsubameViewer.Models.Domain.Bookmark
 {
+    public struct NormalizedPagePosition
+    {
+        public float Value { get; set; }
+
+        public NormalizedPagePosition(float normalized)
+        {
+            Value = Math.Clamp(normalized, 0.0f, 1.0f);
+        }
+
+        public NormalizedPagePosition(int pageCount, int currentPagePosition)
+        {
+            if (pageCount < currentPagePosition) { throw new ArgumentOutOfRangeException("pageCount < currentPagePosition"); }
+
+            Value = Math.Clamp(currentPagePosition / (float)pageCount, 0.0f, 1.0f);
+        }
+    }
     public sealed class BookmarkManager
     {
         private readonly BookmarkRepository _bookmarkRepository;
@@ -32,15 +48,20 @@ namespace TsubameViewer.Models.Domain.Bookmark
             return _bookmarkRepository.GetBookmarkPageNameAndIndex(path);
         }
 
-
-        public void AddBookmark(string path, string pageName)
+        public float GetBookmarkLastReadPositionInNormalized(string path)
         {
-            _bookmarkRepository.AddorReplace(path, pageName);
+            return _bookmarkRepository.GetBookmarkLastReadPositionInNormalized(path);
         }
 
-        public void AddBookmark(string path, string pageName, int innerPageIndex)
+
+        public void AddBookmark(string path, string pageName, NormalizedPagePosition normalizedPosition)
         {
-            _bookmarkRepository.AddorReplace(path, pageName, innerPageIndex);
+            _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition);
+        }
+
+        public void AddBookmark(string path, string pageName, int innerPageIndex, NormalizedPagePosition normalizedPosition)
+        {
+            _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, innerPageIndex);
         }
 
         public void RemoveBookmark(string path)
@@ -69,6 +90,12 @@ namespace TsubameViewer.Models.Domain.Bookmark
                 return (bookmark.PageName, bookmark.InnerPageIndex);
             }
 
+            public float GetBookmarkLastReadPositionInNormalized(string path)
+            {
+                var bookmark = _collection.FindOne(x => x.Path == path);
+                return bookmark?.Position.Value ?? 0.0f;
+            }
+
             public bool IsBookmarked(string path)
             {
                 var bookmark = _collection.FindOne(x => x.Path == path);
@@ -82,17 +109,18 @@ namespace TsubameViewer.Models.Domain.Bookmark
                 return bookmark != null;
             }
 
-            public void AddorReplace(string path, string bookmarkPageName, int innerPageIndex = 0)
+            public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0)
             {
                 var bookmark = _collection.FindOne(x => x.Path == path);
                 if (bookmark == null)
                 {
-                    _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName, InnerPageIndex = innerPageIndex });
+                    _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName, InnerPageIndex = innerPageIndex, Position = normalizedPosition });
                 }
                 else
                 {
                     bookmark.PageName = bookmarkPageName;
                     bookmark.InnerPageIndex = innerPageIndex;
+                    bookmark.Position = normalizedPosition;
                     _collection.Update(bookmark);
                 }
             }
@@ -117,6 +145,9 @@ namespace TsubameViewer.Models.Domain.Bookmark
         public string PageName { get; set; }
 
         [BsonField]
-        public int InnerPageIndex { get; set; } 
+        public int InnerPageIndex { get; set; }
+
+        [BsonField]
+        public NormalizedPagePosition Position { get; set; }
     }
 }

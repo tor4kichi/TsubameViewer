@@ -373,7 +373,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             CurrentImage = bitmapImage;
 
-                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name);
+                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
                         }
                     }
                     catch (OperationCanceledException) { }

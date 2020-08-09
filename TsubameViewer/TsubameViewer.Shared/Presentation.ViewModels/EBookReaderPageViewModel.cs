@@ -451,7 +451,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     });
 
                     // ブックマークに登録
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName);
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
 
                     // Tocを更新
                     SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FileName));
@@ -468,7 +468,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { return; }
 
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex);
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
                 })
                 .AddTo(_navigationDisposables);
 
