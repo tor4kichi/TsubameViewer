@@ -83,7 +83,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
                     )
                 {
-                    var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(file);
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file);
                     if (thumbnailFile == null) { return null; }
                     var image = new BitmapImage();
 

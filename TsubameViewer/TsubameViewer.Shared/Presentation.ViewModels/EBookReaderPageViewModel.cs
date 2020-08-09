@@ -503,7 +503,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SelectedTocItem = TocItems.FirstOrDefault();
 
-            var thumbnailFile = await _thumbnailManager.GetArchiveThumbnailAsync(_currentFolderItem);
+            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(_currentFolderItem);
             CoverImage = new BitmapImage(new Uri(thumbnailFile.Path));
 
             Debug.WriteLine(epubBook.Title);

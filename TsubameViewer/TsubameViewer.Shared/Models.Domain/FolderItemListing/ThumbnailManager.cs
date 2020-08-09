@@ -87,7 +87,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 ;
         }
 
-        public async Task<StorageFile> GetArchiveThumbnailAsync(StorageFile file, CancellationToken ct = default)
+        public async Task<StorageFile> GetFileThumbnailImageAsync(StorageFile file, CancellationToken ct = default)
         {
             var tempFolder = await GetTempFolderAsync();
             var itemId = GetStorageItemId(file);
@@ -233,15 +233,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             else
             {
 #if WINDOWS_UWP
-                var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions) { FolderDepth = FolderDepth.Deep });
+                var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
                 var count = await query.GetItemCountAsync();
+
                 if (count == 0) { return null; }
-                var files = await query.GetFilesAsync(0, 1);
-                var file = files[0];
+
                 var tempFolder = await GetTempFolderAsync();
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                await GenerateThumbnailImageAsync(file, thumbnailFile);
-                return new Uri(thumbnailFile.Path);
+
+                var thumbnailFile = await tempFolder.CreateFileAsync(itemId);
+                var files = await query.GetFilesAsync(0, 1);
+                var outputFile = await GenerateThumbnailImageAsync(files[0], thumbnailFile);
+                return new Uri(outputFile.Path);
 #else
                 return null;
 #endif
