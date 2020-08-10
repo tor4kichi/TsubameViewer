@@ -28,6 +28,7 @@ using Uno.Extensions;
 using Uno.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -174,9 +175,11 @@ namespace TsubameViewer.Presentation.Views
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
-            if (flyout.Target is ContentControl content)
+            if (flyout.Target is Control content)
             {
-                var itemVM = (content.DataContext as StorageItemViewModel) ?? content.Content as StorageItemViewModel;
+                var itemVM = (content.DataContext as StorageItemViewModel)
+                    ?? (content as ContentControl)?.Content as StorageItemViewModel
+                    ;
                 if (itemVM == null)
                 {
                     flyout.Hide();
@@ -195,6 +198,7 @@ namespace TsubameViewer.Presentation.Views
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+                OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
             }
             else
             {

@@ -267,6 +267,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             {
                                 isPathChanged = true;
                                 _currentPath = unescapedPath;
+                                _currentItem = null;
                             }
                         }
 

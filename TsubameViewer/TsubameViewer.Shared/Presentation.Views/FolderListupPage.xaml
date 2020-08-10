@@ -235,7 +235,7 @@
                UserControlによるカーソル移動サポートを有効化している -->
 
     <DataTemplate x:Key="FileItemTemplate_Line">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -252,7 +252,7 @@
     </DataTemplate>
     
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -261,7 +261,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -270,7 +270,7 @@
     </DataTemplate>
     
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -340,7 +340,14 @@
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
-    
+
+    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
+      <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+      <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
+      <MenuFlyoutSeparator />
+      <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
+    </MenuFlyout>
+
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
@@ -397,15 +404,8 @@
                                     SelectionMode="None"
                                     XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
                                         IsTabStop="False"
+                                        ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}"
                           >
-            <GridView.ContextFlyout>
-              <MenuFlyout x:Name="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
-                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
-                <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
-              </MenuFlyout>
-            </GridView.ContextFlyout>
             
             <GridView.ItemContainerTransitions>
               <TransitionCollection />
@@ -464,6 +464,7 @@
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
+                               
                                   >
             <winUI:ItemsRepeater.Layout>
               <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
