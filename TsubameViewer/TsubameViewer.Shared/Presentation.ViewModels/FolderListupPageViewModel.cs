@@ -20,6 +20,7 @@ using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
@@ -54,11 +55,15 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
+
+        public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
+        public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
+        public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
         public ObservableCollection<StorageItemViewModel> EBookFileItems { get; }
@@ -126,23 +131,29 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            SecondaryTileManager secondaryTileManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
-            OpenWithExplorerCommand openWithExplorerCommand
+            OpenWithExplorerCommand openWithExplorerCommand,
+            SecondaryTileAddCommand secondaryTileAddCommand,
+            SecondaryTileRemoveCommand secondaryTileRemoveCommand
             )
         {
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            SecondaryTileManager = secondaryTileManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
+            SecondaryTileAddCommand = secondaryTileAddCommand;
+            SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
             EBookFileItems = new ObservableCollection<StorageItemViewModel>();

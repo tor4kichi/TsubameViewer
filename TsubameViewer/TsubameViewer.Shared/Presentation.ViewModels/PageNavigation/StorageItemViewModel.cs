@@ -63,7 +63,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             throw new NotSupportedException();
         }
 
-        private static string GetSubtractPath(IStorageFolder lt, IStorageItem rt)
+        public static string GetSubtractPath(IStorageFolder lt, IStorageItem rt)
         {
             if (!rt.Path.StartsWith(lt.Path))
             {

@@ -196,6 +196,14 @@ namespace TsubameViewer.Presentation.Views
                     : Visibility.Collapsed
                     ;
 
+                AddSecondaryTile.CommandParameter = itemVM;
+                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
+                AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
+
+                RemoveSecondaryTile.CommandParameter = itemVM;
+                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
+                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
+
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;

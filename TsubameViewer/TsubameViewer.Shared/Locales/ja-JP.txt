@@ -75,6 +75,8 @@ OpenImageViewer = リーダーで開く
 OpenFolderListup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
 
+AddSecondaryTile = スタートにピン留めする
+RemoveSecondaryTile = スタートのピン留めを解除
 
 
 #### ImageViewerPage

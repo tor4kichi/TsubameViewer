@@ -23,6 +23,7 @@ using Uno.Disposables;
 using Uno.Extensions.Specialized;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Presentation.Services.UWP;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -43,10 +44,13 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IEventAggregator _eventAggregator;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
+        public SecondaryTileManager SecondaryTileManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
+        public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
+        public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
 
         CompositeDisposable _disposables = new CompositeDisposable();
         CompositeDisposable _navigationDisposables;
@@ -60,11 +64,14 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            SecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
-            OpenWithExplorerCommand openWithExplorerCommand
+            OpenWithExplorerCommand openWithExplorerCommand,
+            SecondaryTileAddCommand secondaryTileAddCommand,
+            SecondaryTileRemoveCommand secondaryTileRemoveCommand
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
@@ -72,10 +79,13 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand = openFolderItemCommand;
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            SecondaryTileManager = secondaryTileManager;
             _eventAggregator = eventAggregator;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
+            SecondaryTileAddCommand = secondaryTileAddCommand;
+            SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;

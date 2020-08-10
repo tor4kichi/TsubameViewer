@@ -52,6 +52,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
+        public const string SecondaryTileThumbnailSaveFolderName = "SecondaryTile";
+        static StorageFolder _SecondaryTileThumbnailFolder;
+        public static async ValueTask<StorageFolder> GetSecondaryTileThumbnailFolderAsync()
+        {
+            return _SecondaryTileThumbnailFolder ??= await ApplicationData.Current.LocalFolder.CreateFolderAsync(SecondaryTileThumbnailSaveFolderName, CreationCollisionOption.OpenIfExists);
+        }
+
+
         public async Task DeleteAllThumnnailsAsync()
         {
             await Task.Run(async () =>
@@ -70,7 +78,24 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
-        private string GetStorageItemId(StorageFile item)
+
+        public string GetStorageItemId(IStorageItem item)
+        {
+            if (item is StorageFile file)
+            {
+                return GetStorageItemId(file);
+            }
+            else if (item is StorageFolder folder)
+            {
+                return GetStorageItemId(folder);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public string GetStorageItemId(StorageFile item)
         {
             return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
                 ? code
@@ -78,7 +103,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 ;
         }
 
-        private string GetStorageItemId(StorageFolder item)
+        public string GetStorageItemId(StorageFolder item)
         {
             
             return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
@@ -222,6 +247,23 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return true;
         }
 
+        public async Task<Uri> GetThumbnailAsync(IStorageItem storageItem)
+        {
+            if (storageItem is StorageFolder folder)
+            {
+                return await GetFolderThumbnailAsync(folder);
+            }
+            else if (storageItem is StorageFile file)
+            {
+                var thumb = await GetFileThumbnailImageAsync(file);
+                return new Uri(thumb.Path);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         public async Task<Uri> GetFolderThumbnailAsync(StorageFolder folder)
         {
             var itemId = GetStorageItemId(folder);
@@ -320,5 +362,162 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public uint Width { get; set; }
             public uint Height { get; set; }
         }
+
+
+
+        #region Secondary Tile
+
+
+
+        public sealed class GenerateSecondaryTileThumbnailResult
+        {
+            public StorageFile Wide310x150Logo { get; set; }
+            public StorageFile Square310x310Logo { get; set; }
+            public StorageFile Square150x150Logo { get; set; }
+        }
+
+        public async Task SecondaryThumbnailDeleteNotExist(IEnumerable<string> itemIdList)
+        {
+            await Task.Run(async () => 
+            {
+                var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
+                var idSet = itemIdList.ToHashSet();
+
+                var folders = await thumbnailFolder.GetFoldersAsync();
+                var alreadDeleteFolders = folders.Where(x => !idSet.Contains(x.Path));
+                foreach (var folder in alreadDeleteFolders)
+                {
+                    await folder.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    Debug.WriteLine("delete secondary tile thumbnail: " + folder.Name);
+                }
+            });
+        }
+
+        public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(IStorageItem storageItem)
+        {
+            if (storageItem is StorageFolder folder)
+            {
+                return GenerateSecondaryThumbnailImageAsync(folder);
+            }
+            else if (storageItem is StorageFile file)
+            {
+                return GenerateSecondaryThumbnailImageAsync(file);
+            }
+            else
+            {
+                throw new NotSupportedException(); 
+            }
+        }
+
+        public async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFolder folder)
+        {
+            var itemId = GetStorageItemId(folder);
+
+#if WINDOWS_UWP
+            var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
+            var count = await query.GetItemCountAsync();
+
+            if (count == 0) { return null; }
+
+            var files = await query.GetFilesAsync(0, 1);
+            return await GenerateSecondaryThumbnailImageAsync(files[0], itemId);
+#endif
+        }
+
+        public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file)
+        {
+            var itemId = GetStorageItemId(file);
+            return GenerateSecondaryThumbnailImageAsync(file, itemId);
+        }
+
+        private  Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, string itemId)
+        {
+            return Task.Run(async () =>
+            {
+                var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
+                var itemFolder = await thumbnailFolder.CreateFolderAsync(itemId, CreationCollisionOption.ReplaceExisting);
+                var wideThumbFile = await itemFolder.CreateFileAsync("thumb310x150.png", CreationCollisionOption.ReplaceExisting);
+                var square310ThumbFile = await itemFolder.CreateFileAsync("thumb310x310.png", CreationCollisionOption.ReplaceExisting);
+                var square150ThumbFile = await itemFolder.CreateFileAsync("thumb150x150.png", CreationCollisionOption.ReplaceExisting);
+
+                try
+                {
+                    using (var stream = new InMemoryRandomAccessStream())
+                    {
+                        var result = await (file.FileType switch
+                        {
+                            SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            _ => throw new NotSupportedException(file.FileType)
+                        });
+
+                        if (!result) { return null; }
+
+                        
+                        (StorageFile file, int width, int height)[] items = new[]
+                        {
+                            (wideThumbFile, 310, 150),
+                            (square310ThumbFile, 310, 310),
+                            (square150ThumbFile, 150, 150),
+                        };
+
+                        var decoder = await BitmapDecoder.CreateAsync(stream);
+                        using (var memStream = new InMemoryRandomAccessStream())
+                        {
+                            foreach (var item in items)
+                            {
+                                memStream.Seek(0);
+                                var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
+                                encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+                                if (decoder.PixelWidth < decoder.PixelHeight)
+                                {
+                                    var ratio = (float)item.width / decoder.PixelWidth;
+                                    encoder.BitmapTransform.ScaledWidth = (uint)item.width;
+                                    encoder.BitmapTransform.ScaledHeight = (uint)(decoder.PixelHeight * ratio);
+                                    encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                }
+                                else
+                                {
+                                    var ratio = (float)item.height / decoder.PixelHeight;
+                                    encoder.BitmapTransform.ScaledWidth = (uint)(decoder.PixelWidth * ratio);
+                                    encoder.BitmapTransform.ScaledHeight = (uint)item.height;
+                                    encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                }
+                                await encoder.FlushAsync();
+                                memStream.Seek(0);
+                                using (var fileStream = await item.file.OpenAsync(FileAccessMode.ReadWrite))
+                                {
+                                    await RandomAccessStream.CopyAsync(memStream, fileStream);
+                                }
+                            }
+                        }
+
+                        return new GenerateSecondaryTileThumbnailResult()
+                        {
+                            Wide310x150Logo = wideThumbFile,
+                            Square310x310Logo = square310ThumbFile,
+                            Square150x150Logo = square150ThumbFile,
+                        };
+                    }
+                }
+                catch
+                {
+                    await itemFolder.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    throw;
+                }
+            });
+        }
+
+        #endregion
     }
 }

@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.Views;
 using Unity;
 using Windows.ApplicationModel;
@@ -30,6 +31,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer
@@ -118,6 +120,8 @@ namespace TsubameViewer
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
 
+            container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
+
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
@@ -135,7 +139,7 @@ namespace TsubameViewer
             }
 #endif
 
-            
+
 
             if (args.Arguments is LaunchActivatedEventArgs launchActivatedEvent)
             {
@@ -143,16 +147,85 @@ namespace TsubameViewer
                 {
                     // Ensure the current window is active
                     Windows.UI.Xaml.Window.Current.Activate();
+
+                    if (!string.IsNullOrEmpty(launchActivatedEvent.Arguments))
+                    {
+                        try
+                        {
+                            var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
+                            OnSecondatyTileActivated(tileArgs);
+                        }
+                        catch { }
+                        
+                    }
                 }
+                
             }
             else if (args.Arguments is FileActivatedEventArgs fileActivatedEventArgs)
             {
                 OnFileActivated_Internal(fileActivatedEventArgs);
             }
+            
 
             return base.OnStartAsync(args);
         }
 
+
+        private async void OnSecondatyTileActivated(SecondaryTileArguments args)
+        {
+            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+
+            NavigationParameters parameters = new NavigationParameters();
+            parameters.Add("token", args.Token);
+            if (!string.IsNullOrEmpty(args.Path))
+            {
+                parameters.Add("path", args.Path);
+            }
+            var ext = Path.GetExtension(args.Path);
+            if (string.IsNullOrEmpty(ext))
+            {
+                // フォルダ
+                if (string.IsNullOrEmpty(args.Path))
+                {
+                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    return;
+                }
+                var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
+                
+                var folder = await sourceFolderRepository.GetFolderAsync(args.Token);
+                var item = await FolderHelper.GetFolderItemFromPath(folder, args.Path);
+                if (item is StorageFolder itemFolder)
+                {
+                    var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
+                    if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
+                    {
+                        _ = navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    }
+                    else
+                    {
+                        _ = navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    }
+                    return;
+                }
+                
+                ext = (item as StorageFile).FileType;
+            }
+            
+
+            {
+                // ファイル
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
+                    || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext) 
+                    )
+                {
+                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                }
+                else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
+                {
+                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                }
+            }
+        }
 
 
         public override void OnInitialized()
@@ -196,6 +269,8 @@ namespace TsubameViewer
             Window.Current.Activate();
 
             _ = shell.RestoreNavigationStack();
+
+            Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
 
             base.OnInitialized();
         }
@@ -303,6 +378,7 @@ namespace TsubameViewer
 
             // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
             // TODO: FileActivationで開いた画像ビューワーページのバックナビゲーション先をSourceStorageItemsPageにする？
+            // TODO: ファイルアクティべーション時、フォルダを渡された際、フォルダ内が画像のみなら画像ビューワーで開きたい
             if (token != null)
             {
                 var ns = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
@@ -310,11 +386,11 @@ namespace TsubameViewer
                     || storageItemTypes == Models.Domain.StorageItemTypes.Archive
                     )
                 {
-                    var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), ("token", token));
+                    var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), new SuppressNavigationTransitionInfo(), ("token", token));
                 }
                 else if (storageItemTypes == Models.Domain.StorageItemTypes.EBook)
                 {
-                    var result = await ns.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), ("token", token));
+                    var result = await ns.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), new SuppressNavigationTransitionInfo(), ("token", token));
                 }
             }
         }

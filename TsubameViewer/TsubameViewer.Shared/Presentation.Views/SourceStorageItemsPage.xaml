@@ -229,6 +229,9 @@
           <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
           <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
           <MenuFlyoutSeparator />
+          <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{Binding Source=AddSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
+          <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{Binding Source=RemoveSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
+          <MenuFlyoutSeparator />
           <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
         </MenuFlyout>
       </GridView.ContextFlyout>
