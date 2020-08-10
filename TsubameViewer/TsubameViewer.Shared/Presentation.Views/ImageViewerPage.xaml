@@ -18,6 +18,9 @@
   >
   
   <Page.Resources>
+
+    <myConv:SliderValueChangedEventArgsConverter x:Key="SliderValueChangedEventArgsConverter" />
+
     <Flyout x:Key="SettingsFlyout">
       <StackPanel Spacing="16">
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=TwoWay}"
@@ -67,7 +70,13 @@
                           StepFrequency="1"
                           Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
                 Margin="4 0"
+                FlowDirection="RightToLeft"
                           >
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="ValueChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
         </Slider>
 
         <Button x:Name="DoubleViewCorrectButton" Content="見開きのページズレを補正する" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed" />
@@ -126,30 +135,33 @@
     </i:Interaction.Behaviors>
 
 
-    <StackPanel x:Name="ImageContainerPanel" Orientation="Horizontal" Margin="0 32 0 0" HorizontalAlignment="Center"
-                uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
-                FlowDirection="RightToLeft"
+    <Border x:Name="ImagesContainer"
+            uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+            >
+      <ItemsControl ItemsSource="{Binding CurrentImages}"
+                    HorizontalAlignment="Center"
+                    x:Name="ImageItemsControl"
+                    >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"  />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel x:Name="ImageContainerPanel" 
+                        Orientation="Horizontal" 
+                        FlowDirection="RightToLeft"
+                        Margin="0 32 0 0"
                 >
-      <Image x:Name="Image" Source="{Binding CurrentImage}" Stretch="Uniform" Height="{Binding ElementName=ImageContainerPanel, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}"  />
-      <Image x:Name="Image2" Source="{Binding CurrentImage2}" Stretch="Uniform" Height="{Binding ElementName=ImageContainerPanel, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}"  Visibility="Collapsed"  />
+            </StackPanel>
 
-      <i:Interaction.Behaviors>
-        <core:DataTriggerBehavior Binding="{x:Bind Image2.Visibility, Mode=OneWay}" ComparisonCondition="Equal">
-          <core:DataTriggerBehavior.Value>
-            <Visibility>Collapsed</Visibility>
-          </core:DataTriggerBehavior.Value>
-
-          <core:CallMethodAction TargetObject="{Binding}" MethodName="SetSingleImageView" />
-        </core:DataTriggerBehavior>
-        <core:DataTriggerBehavior Binding="{x:Bind Image2.Visibility, Mode=OneWay}" ComparisonCondition="Equal">
-          <core:DataTriggerBehavior.Value>
-            <Visibility>Visible</Visibility>
-          </core:DataTriggerBehavior.Value>
-
-          <core:CallMethodAction TargetObject="{Binding}" MethodName="SetDoubleImageView" />
-        </core:DataTriggerBehavior>
-      </i:Interaction.Behaviors>
-    </StackPanel>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </Border>
+    
 
 
     
@@ -305,17 +317,6 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <myStateTriggers:AspectRatioTrigger WidthHeightRatio="1.35" Target="{Binding ElementName=RootGrid}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Image2.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
 
       <VisualStateGroup>
         <VisualState>
@@ -324,6 +325,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ImageContainerPanel.FlowDirection" Value="LeftToRight" />
+            <Setter Target="PageSelector.FlowDirection" Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

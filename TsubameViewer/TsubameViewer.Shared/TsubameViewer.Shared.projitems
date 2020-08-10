@@ -71,6 +71,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NullableColorConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NumberMinus1Converter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NumberStartFrom1Converter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\SliderValueChangedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookControls\EPubRenderer.xaml.cs">
       <DependentUpon>EPubRenderer.xaml</DependentUpon>
     </Compile>

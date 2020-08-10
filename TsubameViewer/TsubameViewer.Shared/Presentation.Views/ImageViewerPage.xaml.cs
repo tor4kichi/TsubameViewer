@@ -210,13 +210,13 @@ namespace TsubameViewer.Presentation.Views
         {
             using (var cts = new CancellationTokenSource(5000))
             {
-                Image.Opacity = 0.0;
-                while (Image.Source == null)
+                ImagesContainer.Opacity = 0.0;
+                while (!ImageItemsControl.Items.Any())
                 {
                     await Task.Delay(50, cts.Token);
                 }
 
-                Image.Fade(1.0f, 175f)
+                ImagesContainer.Fade(1.0f, 175f)
                     .Start();
             }
         }

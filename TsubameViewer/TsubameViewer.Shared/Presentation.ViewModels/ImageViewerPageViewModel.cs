@@ -55,19 +55,11 @@ namespace TsubameViewer.Presentation.ViewModels
             private set { SetProperty(ref _Images, value); }
         }
 
-
-        private BitmapImage _CurrentImage;
-        public BitmapImage CurrentImage
+        private BitmapImage[] _CurrentImages = new BitmapImage[0];
+        public BitmapImage[] CurrentImages
         {
-            get => _CurrentImage;
-            private set => SetProperty(ref _CurrentImage, value);
-        }
-
-        private BitmapImage _CurrentImage2;
-        public BitmapImage CurrentImage2
-        {
-            get => _CurrentImage2;
-            private set => SetProperty(ref _CurrentImage2, value);
+            get { return _CurrentImages; }
+            set { SetProperty(ref _CurrentImages, value); }
         }
 
         private int _CurrentImageIndex;
@@ -163,6 +155,16 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
+                .Do(_ => 
+                {
+                    if (Images == null || !Images.Any()) { return; }
+
+                    var imageSource = Images[CurrentImageIndex];
+                    var names = imageSource.Name.Split(SeparateChars);
+                    PageName = names[names.Length - 1];
+                    PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
+                })
                 .ToReadOnlyReactivePropertySlim()
                 .AddTo(_disposables);
 
@@ -187,7 +189,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 Images = null;
             }
 
-            CurrentImage = null;
+            CurrentImages = null;
 
             _leavePageCancellationTokenSource.Cancel();
             _navigationDisposables.Dispose();
@@ -335,88 +337,170 @@ namespace TsubameViewer.Presentation.ViewModels
             // 画像更新
             new [] 
             {
-                this.ObserveProperty(x => x.CurrentImageIndex).ToUnit(),
                 ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit() 
             }
                 .Merge()
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
                 .Subscribe(async _ =>
                 {
-                    var index = CurrentImageIndex;
-                    if (Images == null || Images.Length == 0) { return; }
-                    Debug.WriteLine("New Index: " + index);
-                    _imageLoadingCts?.Cancel();
-                    _imageLoadingCts?.Dispose();
-                    _imageLoadingCts = new CancellationTokenSource();
-
-                    var ct = _imageLoadingCts.Token;
-                    try
-                    {
-                        using (await _imageLoadingLock.LockAsync(ct))
-                        {
-                            async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
-                            {
-                                var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
-
-                                // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
-                                if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-                                {
-                                    if (bitmapImage.PixelHeight > canvasHeight)
-                                    {
-                                        bitmapImage.DecodePixelHeight = canvasHeight;
-                                    }
-                                }
-                                else
-                                {
-                                    if (bitmapImage.PixelWidth > canvasWidth)
-                                    {
-                                        bitmapImage.DecodePixelWidth = canvasWidth;
-                                    }
-                                }
-
-                                return bitmapImage;
-                            }
-
-                            var imageSource1 = Images[index];
-
-                            var names = imageSource1.Name.Split(SeparateChars);
-                            PageName = names[names.Length - 1];
-                            PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
-                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource1.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
-
-                            _CurrentImage2 = null;
-
-                            var canvasWidth = (int)CanvasWidth.Value;
-                            var canvasHeight = (int)CanvasHeight.Value;
-
-                            if (ct.IsCancellationRequested) { return; }
-
-                            _CurrentImage = await MakeBitmapImageAsync(imageSource1, canvasWidth, canvasHeight, ct);
-                            
-                            IImageSource imageSource2;
-                            if (ImageViewerSettings.IsEnableSpreadDisplay && NowCanDoubleImageView && (imageSource2 = Images.ElementAtOrDefault(index + 1)) != null)
-                            {
-                                _CurrentImage2 = await MakeBitmapImageAsync(imageSource2, canvasWidth, canvasHeight, ct); ;
-                                NowDoubleImageView = true;
-                            }
-                            else
-                            {
-                                NowDoubleImageView = false;
-                            }
-
-                            NowDoubleImageView = _CurrentImage != null && CurrentImage2 != null;
-                            RaisePropertyChanged(nameof(CurrentImage));
-                            RaisePropertyChanged(nameof(CurrentImage2));                            
-                        }
-                    }
-                    catch (OperationCanceledException) { }
-#if DEBUG
-                    Debug.WriteLine($"w={CurrentImage?.PixelWidth:F2}, h={CurrentImage?.PixelHeight:F2}");
-#endif
+                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
+                    await ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
+        }
+
+
+        async Task MoveImageIndex(IndexMoveDirection direction, int? request = null)
+        {
+            if (Images == null || Images.Length == 0) { return; }
+
+            // requestIndex round
+            // roundした場合は読み込み数の切り捨て必要
+
+            _imageLoadingCts?.Cancel();
+            _imageLoadingCts?.Dispose();
+            _imageLoadingCts = new CancellationTokenSource();
+            
+            var ct = _imageLoadingCts.Token;
+            try
+            {
+                using (await _imageLoadingLock.LockAsync(ct))
+                {
+                    // 読み込むべきインデックスを先に洗い出す
+                    var requestIndex = direction switch
+                    {
+                        IndexMoveDirection.Refresh => request ?? CurrentImageIndex,
+                        IndexMoveDirection.Forward => CurrentImageIndex + (_prevForceSingleView ? 1 : _CurrentImages.Length),
+                        IndexMoveDirection.Backward => CurrentImageIndex - _CurrentImages.Length,
+                        _ => throw new NotSupportedException(),
+                    };
+
+                    // requestIndexの範囲をページ数上下限のそれぞれ1余計な分までをもってクランプ
+                    // 見開き表示時に+2/-2の範囲までを表示リクエストすることで
+                    // 例えば1ページから-2で0と-1を表示するリクエストとして
+                    // 後の処理で-1を切り落とすことで0ページのみを表示させることを意図しています。
+                    requestIndex = Math.Clamp(requestIndex, -1, Images.Length);
+
+                    // 表示用のインデックスを生成
+                    // 後ろ方向にページ移動していた場合は1 -> 0のように逆順の並びにすることで
+                    // 見開きページかつ横長ページを表示しようとしたときに後ろ方向の一個前だけを選択して表示できるようにしている
+                    var indexies = Enumerable.Range(0, _CurrentImages.Length);
+                    if (direction == IndexMoveDirection.Backward)
+                    {
+                        indexies = indexies.Reverse();
+                    }
+
+                    // Imagesが扱えるindexの範囲に限定
+                    indexies = indexies.Where(x => x + requestIndex < Images.Length && x + requestIndex >= 0);
+
+                    if (indexies.Count() == 0) { return; }
+
+                    foreach (var i in Enumerable.Range(0, _CurrentImages.Length))
+                    {
+                        _CurrentImages[i] = null;
+                    }
+
+                    var canvasWidth = (int)CanvasWidth.Value;
+                    var canvasHeight = (int)CanvasHeight.Value;
+
+                    
+                    int generateImageIndex = -1;
+                    bool isForceSingleImageView = false;
+                    foreach (var i in indexies)
+                    {
+                        if (isForceSingleImageView)
+                        {
+                            _CurrentImages[i] = null;
+                            continue;
+                        }
+
+                        if (ct.IsCancellationRequested) { return; }
+
+                        var imageSource = Images[requestIndex + i];
+                        var bitmapImage = await MakeBitmapImageAsync(imageSource, canvasWidth, canvasHeight, ct);
+                        if (bitmapImage.PixelHeight < bitmapImage.PixelWidth)
+                        {
+                            isForceSingleImageView = true;
+
+                            // 二枚目以降が横長だった場合は表示しない
+                            if (_CurrentImages.Any(x => x != null))
+                            {
+                                // TODO: 横長画像をスキップした場合に、生成したbitmapImageを後で使い回せるようにしたい
+                                break;
+                            }
+                        }
+
+                        generateImageIndex = requestIndex + i;
+
+                        _CurrentImages[i] = bitmapImage;
+#if DEBUG
+                        Debug.WriteLine($"w={_CurrentImages[i].PixelWidth:F2}, h={_CurrentImages[i].PixelHeight:F2}");
+#endif
+                    }
+
+                    if (generateImageIndex == -1) { throw new Exception(); }
+
+                    // SliderとCurrentImageIndexの更新が競合するため、スキップ用の仕掛けが必要
+                    _nowCurrenImageIndexChanging = true;
+                    if (isForceSingleImageView)
+                    {
+                        CurrentImageIndex = generateImageIndex;
+                        _prevForceSingleView = true;
+                    }
+                    else
+                    {
+                        CurrentImageIndex = requestIndex;
+                        _prevForceSingleView = false;
+                    }
+                    _nowCurrenImageIndexChanging = false;
+
+                    NowDoubleImageView = CurrentImages.Count(x => x != null) >= 2;
+                    RaisePropertyChanged(nameof(CurrentImages));
+                }
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        bool _nowCurrenImageIndexChanging;
+        bool _prevForceSingleView;
+
+        async Task ResetImageIndex(int requestIndex)
+        {
+            _prevForceSingleView = false;
+            await MoveImageIndex(IndexMoveDirection.Refresh, requestIndex);
+        }
+
+        static async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
+        {
+            var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
+
+            // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
+            if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
+            {
+                if (bitmapImage.PixelHeight > canvasHeight)
+                {
+                    bitmapImage.DecodePixelHeight = canvasHeight;
+                }
+            }
+            else
+            {
+                if (bitmapImage.PixelWidth > canvasWidth)
+                {
+                    bitmapImage.DecodePixelWidth = canvasWidth;
+                }
+            }
+
+            return bitmapImage;
+        }
+
+
+        public enum IndexMoveDirection
+        {
+            Refresh,
+            Forward,
+            Backward,
         }
 
         CancellationTokenSource _imageLoadingCts;
@@ -458,10 +542,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            CurrentImageIndex = Math.Min(CurrentImageIndex + (NowCanDoubleImageView ? 2 : 1), Images.Length - 1); ;
-
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
+            _ = MoveImageIndex(IndexMoveDirection.Forward);
         }
 
         private bool CanGoNextCommand()
@@ -475,10 +556,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            CurrentImageIndex = Math.Max(CurrentImageIndex - (NowCanDoubleImageView ? 2 : 1), 0);
-
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
+            _ = MoveImageIndex(IndexMoveDirection.Backward);
         }
 
         private bool CanGoPrevCommand()
@@ -490,11 +568,13 @@ namespace TsubameViewer.Presentation.ViewModels
         public DelegateCommand SizeChangedCommand =>
             _SizeChangedCommand ??= new DelegateCommand(async () =>
             {
+                CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
+
                 if (!(Images?.Any() ?? false)) { return; }
 
                 await Task.Delay(50);
 
-                RaisePropertyChanged(nameof(CurrentImageIndex));
+                _ = ResetImageIndex(CurrentImageIndex);
             });
 
         private DelegateCommand<string> _changePageFolderCommand;
@@ -507,17 +587,18 @@ namespace TsubameViewer.Presentation.ViewModels
             if (pageFirstItem == null) { return; }
 
             var pageFirstItemIndex = Images.IndexOf(pageFirstItem);
-            CurrentImageIndex = pageFirstItemIndex;
+            _ = ResetImageIndex(pageFirstItemIndex);
         }
 
         private DelegateCommand<double?> _ChangePageCommand;
         public DelegateCommand<double?> ChangePageCommand =>
             _ChangePageCommand ?? (_ChangePageCommand = new DelegateCommand<double?>(ExecuteChangePageCommand));
 
-        void ExecuteChangePageCommand(double? parameter)
+        async void ExecuteChangePageCommand(double? parameter)
         {
-            var page = (int)parameter.Value;
-            CurrentImageIndex = page;
+            if (_nowCurrenImageIndexChanging) { return; }
+
+            await ResetImageIndex((int)parameter.Value);
         }
 
         private DelegateCommand _DoubleViewCorrectCommand;
@@ -526,21 +607,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ExecuteDoubleViewCorrectCommand()
         {
-            CurrentImageIndex = Math.Max(CurrentImageIndex - 1, 0);
+            _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
         }
 
 
         #endregion
 
         #region Single/Double View
-
-        private bool _nowCanDoubleImageView;
-        public bool NowCanDoubleImageView
-        {
-            get { return _nowCanDoubleImageView; }
-            private set { SetProperty(ref _nowCanDoubleImageView, value); }
-        }
-
 
         private bool _NowDoubleImageView;
         public bool NowDoubleImageView
@@ -549,39 +622,39 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowDoubleImageView, value); }
         }
 
-        public void SetSingleImageView()
+
+        private int _ViewResponsibleImageAmount;
+        public int ViewResponsibleImageAmount
         {
-            if (!NowCanDoubleImageView) { return; }
-
-            NowCanDoubleImageView = false;
-
-            if (Images?.Any() == false)
-            {
-                return;
-            }
-
-            CurrentImage2 = null;
+            get { return _ViewResponsibleImageAmount; }
+            set { SetProperty(ref _ViewResponsibleImageAmount, value); }
         }
 
-        public void SetDoubleImageView()
+        void CalcViewResponsibleImageAmount(double canvasWidth, double canvasHeight)
         {
-            if (NowCanDoubleImageView) { return; }
-            NowCanDoubleImageView = true;
-
-            if ((Images?.Any() ?? false) == false)
+            var images = _CurrentImages.ToArray();
+            if (ImageViewerSettings.IsEnableSpreadDisplay)
             {
-                return;
-            }
+                var aspectRatio = canvasWidth / canvasHeight;
 
-            // 奇数ページを表示している場合は偶数ページ始まりになるように
-            if (CurrentImageIndex % 2 == 1)
-            {
-                CurrentImageIndex -= 1;
+                if (aspectRatio > 1.35)
+                {
+                    ViewResponsibleImageAmount = 2;
+                    CurrentImages = new BitmapImage[2] { images.ElementAtOrDefault(0), null };
+                }
+                else
+                {
+                    ViewResponsibleImageAmount = 1;
+                    CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                }
             }
             else
             {
-                RaisePropertyChanged(nameof(CurrentImageIndex));
+                ViewResponsibleImageAmount = 1;
+                CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
             }
+
+            
         }
 
         #endregion
