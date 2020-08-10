@@ -1,20 +1,31 @@
 ﻿using I18NPortable;
 using Prism.Commands;
+using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.SourceFolders;
+using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 {
     public sealed class SourceChoiceCommand : DelegateCommandBase
     {
+        private INavigationService _navigationService => _lazyNavigationService.Value;
+        private readonly Lazy<INavigationService> _lazyNavigationService;
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
-        public SourceChoiceCommand(SourceStorageItemsRepository sourceStorageItemsRepository)
+        public SourceChoiceCommand(
+            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> lazyNavigationService,
+            SourceStorageItemsRepository sourceStorageItemsRepository
+            )
         {
+            _lazyNavigationService = lazyNavigationService;
             _SourceStorageItemsRepository = sourceStorageItemsRepository;
         }
+
+        public bool OpenAfterChoice { get; set; } = false;
+
         protected override bool CanExecute(object parameter)
         {
             return true;
@@ -31,7 +42,13 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (seletedFolder == null) { return; }
 
-            await _SourceStorageItemsRepository.AddItemPersistantAsync(seletedFolder, SourceOriginConstants.ChoiceDialog);
+            var token = await _SourceStorageItemsRepository.AddItemPersistantAsync(seletedFolder, SourceOriginConstants.ChoiceDialog);
+
+            if (OpenAfterChoice && token != null)
+            {
+                var parameters = new NavigationParameters(("token", token));
+                await _navigationService.NavigateAsync(nameof(Views.FolderListupPage), parameters);
+            }
         }
     }
 }

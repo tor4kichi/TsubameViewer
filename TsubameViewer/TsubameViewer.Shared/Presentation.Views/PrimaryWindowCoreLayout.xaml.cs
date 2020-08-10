@@ -10,10 +10,13 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
+using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -56,6 +59,7 @@ namespace TsubameViewer.Presentation.Views
 
             SetTheme(_viewModel.ApplicationSettings.Theme);
         }
+
 
         IDisposable _backNavigationEventSubscriber;
         IDisposable _refreshNavigationEventSubscriber;
@@ -476,6 +480,82 @@ namespace TsubameViewer.Presentation.Views
                 Models.Domain.ApplicationTheme.Default => ElementTheme.Default,
                 _ => throw new NotSupportedException(),
             };
+        }
+
+        #endregion
+
+
+        #region Drop Action
+
+        private async void Grid_DragEnter(object sender, DragEventArgs e)
+        {
+            var deferral = e.GetDeferral();
+            try
+            {
+                if (e.DataView.Contains(StandardDataFormats.StorageItems))
+                {
+                    var items = await e.DataView.GetStorageItemsAsync();
+                    var isAllAcceptableItem = items.All(item => item is StorageFolder 
+                    || (item is StorageFile file && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
+                    );
+                    if (isAllAcceptableItem)
+                    {
+                        e.AcceptedOperation = DataPackageOperation.Link;
+                    }
+                }
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        }
+
+        private async void Grid_Drop(object sender, DragEventArgs e)
+        {
+            var defferal = e.GetDeferral();
+
+            try
+            {
+                string token = null;
+                var dropItems = await e.DataView.GetStorageItemsAsync();
+                foreach (var storageItem in dropItems)
+                {
+                    if (storageItem is StorageFolder)
+                    {
+                        token = await _viewModel.SourceStorageItemsRepository.AddItemPersistantAsync(storageItem, SourceOriginConstants.DragAndDrop);
+                    }
+                    else if (storageItem is StorageFile file)
+                    {
+                        token = await _viewModel.SourceStorageItemsRepository.AddFileTemporaryAsync(file, SourceOriginConstants.DragAndDrop);
+                    }
+                }
+
+                if (dropItems.Count == 1)
+                {
+                    var navigateItem = await _viewModel.SourceStorageItemsRepository.GetItemAsync(token);
+                    if (navigateItem is StorageFolder)
+                    {
+                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters(("token", token)));
+                    }
+                    else if (navigateItem is StorageFile fileItem)
+                    {
+                        if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(fileItem.FileType)
+                            || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
+                            )
+                        {
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters(("token", token)));
+                        }
+                        else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
+                        {
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters(("token", token)));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                defferal.Complete();
+            }
         }
 
         #endregion

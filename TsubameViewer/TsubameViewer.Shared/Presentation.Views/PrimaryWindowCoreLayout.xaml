@@ -29,7 +29,7 @@
 
     <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
   </Page.Resources>
-  <Grid>
+  <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop">
     <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
                     IsBackButtonVisible="Collapsed"
                     IsSettingsVisible="False"

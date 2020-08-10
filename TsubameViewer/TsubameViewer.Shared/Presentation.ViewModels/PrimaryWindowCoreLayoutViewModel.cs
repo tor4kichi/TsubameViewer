@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
+using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Unity.Attributes;
@@ -15,7 +16,7 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class PrimaryWindowCoreLayoutViewModel : BindableBase
     {
-        private INavigationService _navigationService => _navigationServiceLazy.Value;
+        public INavigationService NavigationService => _navigationServiceLazy.Value;
         private readonly Lazy<INavigationService> _navigationServiceLazy;
 
 
@@ -25,6 +26,7 @@ namespace TsubameViewer.Presentation.ViewModels
             IEventAggregator eventAggregator,
             ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
+            SourceStorageItemsRepository sourceStorageItemsRepository,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
             OpenPageCommand openPageCommand
@@ -39,7 +41,9 @@ namespace TsubameViewer.Presentation.ViewModels
             EventAggregator = eventAggregator;
             ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
+            SourceStorageItemsRepository = sourceStorageItemsRepository;
             SourceChoiceCommand = sourceChoiceCommand;
+            SourceChoiceCommand.OpenAfterChoice = true;
             RefreshNavigationCommand = refreshNavigationCommand;
             OpenPageCommand = openPageCommand;
         }
@@ -58,13 +62,14 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (item is MenuItemViewModel menuItem)
                 {
-                    _navigationService.NavigateAsync(menuItem.PageType);
+                    NavigationService.NavigateAsync(menuItem.PageType);
                 }
             });
 
         public IEventAggregator EventAggregator { get; }
         public ApplicationSettings ApplicationSettings { get; }
         public RestoreNavigationManager RestoreNavigationManager { get; }
+        public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }
         public OpenPageCommand OpenPageCommand { get; }

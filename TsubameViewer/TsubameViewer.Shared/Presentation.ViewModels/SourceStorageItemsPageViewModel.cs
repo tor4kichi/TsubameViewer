@@ -153,7 +153,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        throw new NotSupportedException();
+                        //throw new NotSupportedException();
                     }
                 }
 
