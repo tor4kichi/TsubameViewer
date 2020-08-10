@@ -223,7 +223,16 @@
             Padding="48 16"
             SelectionMode="None"
               >
-      
+
+      <GridView.ContextFlyout>
+        <MenuFlyout x:Name="FoldersMenuFlyout" Opened="FoldersMenuFlyout_Opened">
+          <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+          <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
+          <MenuFlyoutSeparator />
+          <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
+        </MenuFlyout>
+      </GridView.ContextFlyout>
+
       <GridView.Header>
         <Grid HorizontalAlignment="Right">
 

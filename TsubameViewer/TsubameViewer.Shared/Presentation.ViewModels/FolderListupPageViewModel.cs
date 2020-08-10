@@ -58,6 +58,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
+        public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public ObservableCollection<StorageItemViewModel> FolderItems { get; }
         public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
         public ObservableCollection<StorageItemViewModel> EBookFileItems { get; }
@@ -129,7 +130,8 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
-            OpenFolderListupCommand openFolderListupCommand
+            OpenFolderListupCommand openFolderListupCommand,
+            OpenWithExplorerCommand openWithExplorerCommand
             )
         {
             _bookmarkManager = bookmarkManager;
@@ -140,6 +142,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
+            OpenWithExplorerCommand = openWithExplorerCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
             EBookFileItems = new ObservableCollection<StorageItemViewModel>();
@@ -287,16 +290,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             if (isTokenChanged)
                             {
-                                _tokenGettingFolder = await _sourceStorageItemsRepository.GetFolderAsync(token);
+                                var tokenStorageItem = await _sourceStorageItemsRepository.GetItemAsync(token);
+                                _tokenGettingFolder = tokenStorageItem as StorageFolder;
+                                _currentItem = tokenStorageItem as StorageFile;
                             }
 
-                            if (_tokenGettingFolder == null)
+                            if (_currentItem == null)
                             {
-                                throw new Exception("token parameter is require for path parameter.");
+                                var currentPathItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                                _currentItem = currentPathItem;
                             }
 
-                            var currentPathItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-                            _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
 
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);

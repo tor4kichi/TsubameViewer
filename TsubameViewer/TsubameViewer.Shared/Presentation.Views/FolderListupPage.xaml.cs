@@ -185,9 +185,16 @@ namespace TsubameViewer.Presentation.Views
 
                 OpenImageViewerItem.CommandParameter = itemVM;
                 OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
-                
-                OpenListupItem.CommandParameter = itemVM; 
+
+                OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
             }
             else
             {

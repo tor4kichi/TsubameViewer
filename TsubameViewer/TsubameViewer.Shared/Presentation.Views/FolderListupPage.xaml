@@ -400,8 +400,10 @@
                           >
             <GridView.ContextFlyout>
               <MenuFlyout x:Name="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
-                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
-                <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" Command="{Binding ElementName=ContentRootStackPanel, Path=DataContext.AltOpenFolderItemCommand}" />
+                <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+                <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
               </MenuFlyout>
             </GridView.ContextFlyout>
             

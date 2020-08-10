@@ -44,6 +44,9 @@ namespace TsubameViewer.Presentation.ViewModels
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
+        public OpenImageViewerCommand OpenImageViewerCommand { get; }
+        public OpenFolderListupCommand OpenFolderListupCommand { get; }
+        public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
 
         CompositeDisposable _disposables = new CompositeDisposable();
         CompositeDisposable _navigationDisposables;
@@ -52,13 +55,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         bool _foldersInitialized = false;
         public SourceStorageItemsPageViewModel(
+            IEventAggregator eventAggregator,
+            FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
-            FolderListingSettings folderListingSettings,
-            OpenFolderItemCommand openFolderItemCommand,
-            SourceChoiceCommand sourceChoiceCommand,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            IEventAggregator eventAggregator            
+            SourceChoiceCommand sourceChoiceCommand,
+            OpenFolderItemCommand openFolderItemCommand,
+            OpenImageViewerCommand openImageViewerCommand,
+            OpenFolderListupCommand openFolderListupCommand,
+            OpenWithExplorerCommand openWithExplorerCommand
             )
         {
             Folders = new ObservableCollection<StorageItemViewModel>();
@@ -67,6 +73,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _eventAggregator = eventAggregator;
+            OpenImageViewerCommand = openImageViewerCommand;
+            OpenFolderListupCommand = openFolderListupCommand;
+            OpenWithExplorerCommand = openWithExplorerCommand;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;

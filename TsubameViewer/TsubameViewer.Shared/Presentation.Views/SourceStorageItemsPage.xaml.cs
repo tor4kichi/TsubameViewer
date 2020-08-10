@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Uno;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -50,6 +51,40 @@ namespace TsubameViewer.Presentation.Views
                         itemContainer.Focus(FocusState.Keyboard);
                     }
                 }
+            }
+        }
+
+
+        private void FoldersMenuFlyout_Opened(object sender, object e)
+        {
+            var flyout = sender as FlyoutBase;
+            var pageVM = DataContext as SourceStorageItemsPageViewModel;
+            if (flyout.Target is ContentControl content)
+            {
+                var itemVM = (content.DataContext as StorageItemViewModel) ?? content.Content as StorageItemViewModel;
+                if (itemVM == null)
+                {
+                    flyout.Hide();
+                    return;
+                }
+
+                OpenImageViewerItem.CommandParameter = itemVM;
+                OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
+
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder) 
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+            }
+            else
+            {
+                flyout.Hide();
+                return;
             }
         }
     }
