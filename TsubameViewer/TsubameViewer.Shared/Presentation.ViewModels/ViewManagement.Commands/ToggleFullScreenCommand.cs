@@ -22,6 +22,7 @@ namespace TsubameViewer.Presentation.Views.ViewManagement.Commands
 
         protected override void Execute(object parameter)
         {
+            System.Diagnostics.Debug.WriteLine("ToggleFullScreenCommand");
             if (_currentView.IsFullScreenMode)
             {
                 _currentView.ExitFullScreenMode();

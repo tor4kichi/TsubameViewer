@@ -253,6 +253,8 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonInactiveBackgroundColor = null;
             appView.TitleBar.ButtonPressedBackgroundColor = null;
 
+            appView.ExitFullScreenMode();
+
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
 
             base.OnNavigatingFrom(e);

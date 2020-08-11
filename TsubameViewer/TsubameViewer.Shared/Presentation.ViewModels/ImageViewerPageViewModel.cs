@@ -197,9 +197,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            // フルスクリーンを終了
-            ApplicationView.GetForCurrentView().ExitFullScreenMode();
-
             _appView.Title = String.Empty;
             ParentFolderOrArchiveName = String.Empty;
 

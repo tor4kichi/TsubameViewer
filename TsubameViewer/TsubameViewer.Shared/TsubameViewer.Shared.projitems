@@ -87,6 +87,7 @@
       <DependentUpon>SourceStorageItemsPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />

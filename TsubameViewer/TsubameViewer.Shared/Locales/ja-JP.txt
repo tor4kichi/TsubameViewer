@@ -87,6 +87,8 @@ Page = ページ
 IsEnableSpreadDisplay = 見開き表示
 IsLeftBindingView = 左綴じ表示
 
+SwitchFullScreen = 全画面切替
+
 
 #### EBookReaderPage
 

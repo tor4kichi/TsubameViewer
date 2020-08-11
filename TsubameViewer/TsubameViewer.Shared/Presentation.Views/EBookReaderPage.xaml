@@ -14,6 +14,7 @@
   xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" 
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
   mc:Ignorable="d"
   
   >
@@ -166,9 +167,22 @@
                 />
       </StackPanel>
     </Flyout>
+
+    <MenuFlyout x:Key="DesktopViewManagementFlyout">
+      <MenuFlyoutItem Text="{Binding Source=SwitchFullScreen, Converter={StaticResource LocalizeConverter}}" Command="{Binding ToggleFullScreenCommand}"
+                      x:Name="SwitchFullScreeMenuItem"
+                      Visibility="Collapsed"
+                      >
+        <MenuFlyoutItem.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11" IsEnabled="False" />
+        </MenuFlyoutItem.KeyboardAccelerators>
+      </MenuFlyoutItem>
+    </MenuFlyout>
   </Page.Resources>
 
-  <Grid x:Name="RootGrid" Background="{Binding EBookReaderSettings.BackgroundColor, Converter={StaticResource ColorToBrush}}">
+  <Grid x:Name="RootGrid" Background="{Binding EBookReaderSettings.BackgroundColor, Converter={StaticResource ColorToBrush}}"
+        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
+        >
 
     <i:Interaction.Behaviors>
       
@@ -215,6 +229,15 @@
 
     </i:Interaction.Behaviors>
 
+    <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
+         そのため、非表示のButtonのKeyboardAcceleratorsを利用する
+    -->
+    <Button Command="{Binding ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
+      <Button.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F11" />
+      </Button.KeyboardAccelerators>
+    </Button>
+    
     <!-- 電子書籍ビューワー -->
     <eBookControls:EPubRenderer x:Name="WebView"
                                 PageHtml="{Binding PageHtml}"
@@ -398,6 +421,10 @@
 
     <!-- 補助コントロールUI（デスクトップ） -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}" Visibility="Collapsed">
+      <Grid.RenderTransform>
+        <TranslateTransform />
+      </Grid.RenderTransform>
+      
       <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
         
       </Grid>
@@ -479,6 +506,56 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      <!-- フルスクリーン -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:FullScreenModeTrigger IsFullScreen="True" />
+              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="Toolbar_Desktop"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:FullScreenModeTrigger IsFullScreen="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-32"
+                               Storyboard.TargetName="Toolbar_Desktop"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="Toolbar_Desktop"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!-- スクロールのページ送りを逆にする -->
       <VisualStateGroup>
         <VisualState>
@@ -560,6 +637,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 

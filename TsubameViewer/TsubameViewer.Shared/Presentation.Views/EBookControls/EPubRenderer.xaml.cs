@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Helpers;
+using Microsoft.Toolkit.Uwp.UI.Animations;
 using Newtonsoft.Json;
 using Prism.Commands;
 using Reactive.Bindings.Extensions;
@@ -18,6 +19,7 @@ using Uno.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -351,11 +353,32 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
         {
-            Window.Current.SizeChanged += Current_SizeChanged;
-
             CompositeDisposable disposables = new CompositeDisposable();
-            StyleChangedObserver = disposables;
             var dispatcher = Dispatcher;
+
+            Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+                h => Window.Current.SizeChanged += h,
+                h => Window.Current.SizeChanged -= h
+                )
+                .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
+                .Throttle(TimeSpan.FromMilliseconds(100))
+                .Subscribe(async args =>
+                {
+                    await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+                    {
+                        using (await _domUpdateLock.LockAsync(default))
+                        {
+                            // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
+                            //await Task.Delay(50);
+
+                            // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+                            WebView.Refresh();
+                        }
+                    });
+                })
+                .AddTo(disposables);
+
+            StyleChangedObserver = disposables;
             new[]
             {
                 this.ObserveDependencyProperty(FontSizeProperty),
@@ -374,24 +397,10 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
         {
-            Window.Current.SizeChanged -= Current_SizeChanged;
             StyleChangedObserver.Dispose();
         }
 
 
-        private async void Current_SizeChanged(object sender, Windows.UI.Core.WindowSizeChangedEventArgs e)
-        {
-            ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
-
-            using (await _domUpdateLock.LockAsync(default))
-            {
-                // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-                WebView.Refresh();
-
-                // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                //await Task.Delay(50);
-            }
-        }
 
 
         private async void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
