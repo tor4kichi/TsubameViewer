@@ -13,7 +13,7 @@
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" 
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
-  xmlns:wst="using:WindowsStateTriggers" xmlns:ui="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:wst="using:WindowsStateTriggers" 
   mc:Ignorable="d"
   
   >

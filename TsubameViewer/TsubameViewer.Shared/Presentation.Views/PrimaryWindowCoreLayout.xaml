@@ -9,7 +9,8 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" xmlns:wst="using:WindowsStateTriggers"
+  xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+  xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
