@@ -278,8 +278,8 @@ namespace TsubameViewer.Presentation.Views
             var appView = ApplicationView.GetForCurrentView();
             appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
             appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0x3f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0xaf, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
 
