@@ -536,10 +536,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; font-size:{FontSize}px; \";" });
             }
 
-            // TODO: ePub）lr レイアウトのページ送りに対応する
-
-            // TODO: ePub）p（パラグラフ）が無い場合に、画像のみのページと仮定して、xaml側で設定してる余白を非表示に切り替えたい
-
             //
             // １ページの高さを求める
             // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
