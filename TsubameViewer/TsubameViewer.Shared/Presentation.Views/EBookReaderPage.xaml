@@ -424,7 +424,7 @@
             </TextBlock>
           </Button>
 
-          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12">
+          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
               <Run Text="{Binding Title}" />
           </TextBlock>
         </uwpControls:DockPanel>

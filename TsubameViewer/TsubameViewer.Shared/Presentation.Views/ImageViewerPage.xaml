@@ -353,14 +353,14 @@
           <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
         </StackPanel>
 
-        <uwpControls:DockPanel Padding="8 0" >
+        <uwpControls:DockPanel Padding="8 0">
           <Button Flyout="{StaticResource PageFlyout}" Background="Transparent" uwpControls:DockPanel.Dock="Right">
             <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0" TextDecorations="Underline">
               <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
             </TextBlock>
 
           </Button>
-          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" >
+          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
               <Run Text="{Binding Title}" />
           </TextBlock>
         </uwpControls:DockPanel>
