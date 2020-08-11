@@ -194,7 +194,6 @@
             <StackPanel x:Name="ImageContainerPanel" 
                         Orientation="Horizontal" 
                         FlowDirection="RightToLeft"
-                        Margin="0 32 0 0"
                 >
             </StackPanel>
 
@@ -436,15 +435,10 @@
           <VisualState.StateTriggers>
             <StateTrigger IsActive="True" />
           </VisualState.StateTriggers>
-          <VisualState.Storyboard>
-            <Storyboard>
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="0"
-                               Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
-            </Storyboard>
-          </VisualState.Storyboard>
+          <VisualState.Setters>
+            <Setter Target="ImagesContainer.Margin" Value="0 32 0 0" />
+            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+          </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
       

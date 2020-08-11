@@ -246,7 +246,7 @@
                                IsHitTestVisible="False"
                                IsAccessKeyScope="False"
                                AllowFocusOnInteraction="False"
-                               Margin="32 72 32 48"
+                               Margin="32 48 32 48"
                                PageBackgroundColor="{Binding EBookReaderSettings.BackgroundColor}"
                                 FontColor="{Binding EBookReaderSettings.ForegroundColor, Converter={StaticResource NullableColorConverter}}"
                                 FontSize="{Binding EBookReaderSettings.RootFontSizeInPixel}"
@@ -544,15 +544,10 @@
           <VisualState.StateTriggers>
             <StateTrigger IsActive="True" />
           </VisualState.StateTriggers>
-          <VisualState.Storyboard>
-            <Storyboard>
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="0"
-                               Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
-            </Storyboard>
-          </VisualState.Storyboard>
+          <VisualState.Setters>
+            <Setter Target="WebView.Margin" Value="32 72 32 48" />
+            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+          </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
       
