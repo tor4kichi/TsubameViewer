@@ -479,7 +479,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 memStream.Seek(0);
                                 var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
                                 encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-                                if (decoder.PixelWidth < decoder.PixelHeight)
+                                if (decoder.PixelWidth < decoder.PixelHeight || item.width > item.height)
                                 {
                                     var ratio = (float)item.width / decoder.PixelWidth;
                                     encoder.BitmapTransform.ScaledWidth = (uint)item.width;
