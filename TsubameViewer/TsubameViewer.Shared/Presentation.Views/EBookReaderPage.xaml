@@ -33,6 +33,14 @@
     
     <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
+
+        <ToggleSwitch IsOn="{Binding EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
+                      />
+        <ToggleSwitch IsOn="{Binding EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                      />
+
         <ComboBox ItemsSource="{Binding RootFontSizeItems}" SelectedItem="{Binding EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
                   Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
                   HorizontalAlignment="Stretch"
@@ -165,25 +173,39 @@
     <i:Interaction.Behaviors>
       
       <!-- Mouse Input-->
-      <myBehaviour:MouseWheelTrigger x:Name="PageMoveMouseWheelTrigger">
+      <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction x:Name="MouseWheelUpAction" Command="{x:Bind InnerGoPrevImageCommand, Mode=OneWay}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction x:Name="MouseWheelDownAction" Command="{x:Bind InnerGoNextImageCommand, Mode=OneWay}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
-      
+      <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
+
       <myBehaviour:MouseCenterClickTrigger>
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
 
       <!-- GamePad Input-->
-      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left">
-        <core:InvokeCommandAction x:Name="GamePadLeftAction"  Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}" />
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
+        <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
-      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right">
-        <core:InvokeCommandAction x:Name="GamePadRightAction" Command="{Binding ElementName=PageRoot, Path=InnerGoNextImageCommand}" />
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
+        <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True" IsEnabled="False">
+        <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True" IsEnabled="False">
+        <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="Menu">
@@ -226,7 +248,7 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{x:Bind InnerGoPrevImageCommand, Mode=OneWay}"
+        Command="{x:Bind InnerGoNextImageCommand}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -245,13 +267,34 @@
         </Border>
 
       </Button>
+      <Button x:Name="ReverseLeftPageMoveButton"
+        Command="{x:Bind InnerGoNextImageCommand}"
+              Grid.Column="0"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              IsEnabled="False"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Left" />
+          <KeyboardAccelerator Key="LeftButton" />
+        </Button.KeyboardAccelerators>
+
+        <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+          <SymbolIcon Symbol="Back" />
+        </Border>
+
+      </Button>
 
       <Border Grid.Column="1">
 
       </Border>
 
       <Button x:Name="RightPageMoveButton"
-        Command="{x:Bind InnerGoNextImageCommand, Mode=OneWay}"
+        Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -259,6 +302,25 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Right" />
+          <KeyboardAccelerator Key="RightButton" />
+
+        </Button.KeyboardAccelerators>
+
+        <SymbolIcon Symbol="Forward" />
+      </Button>
+      <Button x:Name="ReverseRightPageMoveButton"
+        Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}"
+              Grid.Column="2"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              IsEnabled="False"
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
@@ -417,6 +479,40 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      <!-- スクロールのページ送りを逆にする -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding EBookReaderSettings.IsReversePageFliping_Scroll}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- 左右のページ送りを逆にする -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding EBookReaderSettings.IsReversePageFliping_Button}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="True" />
+            <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="True" />
+
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="True" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadRightTriggerBehavior.IsEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!-- 左右移動を抑止する -->
       <VisualStateGroup>
         <VisualState>

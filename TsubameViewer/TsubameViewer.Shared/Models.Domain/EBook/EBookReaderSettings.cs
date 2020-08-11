@@ -16,7 +16,8 @@ namespace TsubameViewer.Models.Domain.EBook
 
         public EBookReaderSettings()
         {
-//            _Theme = Read(ApplicationTheme.Default, nameof(Theme));
+            _IsReversePageFliping_Scroll = Read(false, nameof(IsReversePageFliping_Scroll));
+            _IsReversePageFliping_Button = Read(false, nameof(IsReversePageFliping_Button));
             _RootFontSizeInPixel = Read(DefaultRootFontSizeInPixel, nameof(RootFontSizeInPixel));
             _LetterSpacingInPixel = Read(DefaultLetterSpacingInPixel, nameof(LetterSpacingInPixel));
             _LineHeightInNoUnit = Read(DefaultLineHeightInNoUnit, nameof(LineHeightInNoUnit));
@@ -27,6 +28,20 @@ namespace TsubameViewer.Models.Domain.EBook
             _ForegroundColor = Read(Colors.Transparent, nameof(ForegroundColor));
         }
 
+        private bool _IsReversePageFliping_Scroll;
+        public bool IsReversePageFliping_Scroll
+        {
+            get { return _IsReversePageFliping_Scroll; }
+            set { SetProperty(ref _IsReversePageFliping_Scroll, value); }
+        }
+
+
+        private bool _IsReversePageFliping_Button;
+        public bool IsReversePageFliping_Button
+        {
+            get { return _IsReversePageFliping_Button; }
+            set { SetProperty(ref _IsReversePageFliping_Button, value); }
+        }
 
         private double _RootFontSizeInPixel;
         public double RootFontSizeInPixel

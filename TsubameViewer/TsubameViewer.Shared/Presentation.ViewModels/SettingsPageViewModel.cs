@@ -86,15 +86,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 },
                 new SettingsGroupViewModel
                 {
-                    Label = "ImageViewerSettings".Translate(),
-                    Items =
-                    {
-                        new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
-                        new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_Button".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_Button),
-                    }
-                },
-                new SettingsGroupViewModel
-                {
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {

@@ -87,21 +87,6 @@ namespace TsubameViewer.Presentation.Views
             this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
 
             _disposables = new CompositeDisposable();
-            WebView.ObserveDependencyProperty(EPubRenderer.NowRightToLeftReadingModeProperty)
-               .Subscribe(_ =>
-               {
-                   if (WebView.NowRightToLeftReadingMode)
-                   {
-                       this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoNextCommand);
-                       this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
-                   }
-                   else
-                   {
-                       this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
-                       this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
-                   }
-               })
-               .AddTo(_disposables);
         }
 
         CompositeDisposable _disposables;
