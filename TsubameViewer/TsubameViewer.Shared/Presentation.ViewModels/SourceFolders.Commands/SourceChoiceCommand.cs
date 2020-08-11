@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
@@ -46,7 +47,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (OpenAfterChoice && token != null)
             {
-                var parameters = new NavigationParameters(("token", token));
+                var parameters = new NavigationParameters((PageNavigationConstants.Token, token));
                 await _navigationService.NavigateAsync(nameof(Views.FolderListupPage), parameters);
             }
         }

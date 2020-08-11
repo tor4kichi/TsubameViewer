@@ -20,6 +20,7 @@ using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.EBook;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
@@ -231,7 +232,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 || mode == NavigationMode.Back)
             {
-                if (parameters.TryGetValue("token", out string token))
+                if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
                 {
                     if (_currentToken != token)
                     {
@@ -256,7 +257,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     throw new ArgumentException("EBookReaderPage was require 'token' parameter.");
                 }
 
-                if (parameters.TryGetValue("path", out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (_currentPath != unescapedPath)
@@ -295,8 +296,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // 表示する画像を決める
             if (mode == NavigationMode.Forward
-                || parameters.ContainsKey("__restored")
-                || (mode == NavigationMode.New && !parameters.ContainsKey("pageName"))
+                || parameters.ContainsKey(PageNavigationConstants.Restored)
+                || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
                 )
             {
                 var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
@@ -314,10 +315,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey("pageName")
+            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName)
                 )
             {
-                if (parameters.TryGetValue("pageName", out string pageName))
+                if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
                 {
                     var unescapedPageName = Uri.UnescapeDataString(pageName);
                     var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);

@@ -17,6 +17,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
 using Windows.ApplicationModel;
@@ -179,11 +180,16 @@ namespace TsubameViewer
             var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
 
             NavigationParameters parameters = new NavigationParameters();
-            parameters.Add("token", args.Token);
+            parameters.Add(PageNavigationConstants.Token, args.Token);
             if (!string.IsNullOrEmpty(args.Path))
             {
-                parameters.Add("path", args.Path);
+                parameters.Add(PageNavigationConstants.Path, args.Path);
             }
+            if (!string.IsNullOrEmpty(args.PageName))
+            {
+                parameters.Add(PageNavigationConstants.PageName, args.PageName);
+            }
+
             var ext = Path.GetExtension(args.Path);
             if (string.IsNullOrEmpty(ext))
             {
@@ -231,7 +237,7 @@ namespace TsubameViewer
         }
 
         TaskCompletionSource<int> _initializeTaskCompletionSource = new TaskCompletionSource<int>();
-        public override void OnInitialized()
+        public override async void OnInitialized()
         {
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
@@ -271,9 +277,9 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            _ = shell.RestoreNavigationStack();
+            await shell.RestoreNavigationStack();
 
-            Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
+            _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
 
             _initializeTaskCompletionSource.TrySetResult(0);
 

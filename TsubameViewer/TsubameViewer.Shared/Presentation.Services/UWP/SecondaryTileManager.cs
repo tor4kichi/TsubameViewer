@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -91,7 +92,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             return JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
         }
 
-        public async Task<bool> AddSecondaryTile(string token, string path, string displayName, IStorageItem storageItem)
+        public async Task<bool> AddSecondaryTile(SecondaryTileArguments arguments, string displayName, IStorageItem storageItem)
         {
             static string AppLocalFolderUriConvertToMsAppDataSchema(string uri)
             {
@@ -100,10 +101,8 @@ namespace TsubameViewer.Presentation.Services.UWP
             }
 
             var tileId = _secondaryTileIdRepository.GetTileId(storageItem.Path);
-            var item = new SecondaryTileArguments() { Token = token, Path = path };
-
             var tileThubmnails = await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem);
-            var json = JsonSerializer.Serialize(item);
+            var json = JsonSerializer.Serialize(arguments);
             var tile = new SecondaryTile(
                 tileId, 
                 displayName, 
@@ -118,7 +117,10 @@ namespace TsubameViewer.Presentation.Services.UWP
             Debug.WriteLine($"セカンダリタイルを追加： result {result} - " + storageItem.Path);
             if (result)
             {
-                Tiles.Add(path, tile);
+                // アプリ起動時には既に追加済みだったが、その後タイルを削除して、またタイルを追加と操作した場合に対応するため
+                // 重複のID登録が起きうることを想定
+                Tiles.Remove(tileId);
+                Tiles.Add(tileId, tile);
             }
             return result;
         }
@@ -145,5 +147,7 @@ namespace TsubameViewer.Presentation.Services.UWP
         public string Token { get; set; }
 
         public string Path { get; set; }
+
+        public string PageName { get; set; }
     }
 }

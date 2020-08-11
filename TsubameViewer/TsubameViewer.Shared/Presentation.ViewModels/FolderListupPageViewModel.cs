@@ -257,7 +257,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     using (await _NavigationLock.LockAsync(default))
                     {
                         bool isTokenChanged = false;
-                        if (parameters.TryGetValue("token", out string token))
+                        if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
                         {
                             if (_currentToken != token)
                             {
@@ -271,7 +271,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         bool isPathChanged = false;
-                        if (parameters.TryGetValue("path", out string path))
+                        if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                         {
                             var unescapedPath = Uri.UnescapeDataString(path);
                             if (_currentPath != unescapedPath)

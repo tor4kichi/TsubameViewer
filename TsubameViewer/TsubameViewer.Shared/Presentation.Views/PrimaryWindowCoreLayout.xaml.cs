@@ -107,24 +107,6 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
 
-            // 画像ビューワーページはバックスタックに一つしか積まれないようにする
-            if (e.SourcePageType == typeof(Views.ImageViewerPage))
-            {
-                var lastNavigatedPageEntry = frame.BackStack.ElementAtOrDefault(1);
-                if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.ImageViewerPage))
-                {
-                    frame.BackStack.RemoveAt(1);
-                }
-            }
-            else if (e.SourcePageType == typeof(Views.EBookReaderPage))
-            {
-                var lastNavigatedPageEntry = frame.BackStack.ElementAtOrDefault(1);
-                if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.EBookReaderPage))
-                {
-                    frame.BackStack.RemoveAt(1);
-                }
-            }
-
 
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
@@ -150,18 +132,41 @@ namespace TsubameViewer.Presentation.Views
             }
             else if (!_isFirstNavigation)
             {
+                // ここのFrame_Navigatedが呼ばれた後にViewModel側のNavigatingToが呼ばれる
                 // 順序重要
                 _Prev = PrimaryWindowCoreLayout.CurrentNavigationParameters;
 
-                if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
+
+                // ビューワー系ページはバックスタックに積まれないようにする
+                // ビューワー系ページを開いてる状態でアプリ外部からビューワー系ページを開く操作があり得る
+                bool rememberBackStack = true;
+                if (e.SourcePageType == typeof(Views.ImageViewerPage)
+                    || e.SourcePageType == typeof(Views.EBookReaderPage))
                 {
+                    var lastNavigatedPageEntry = frame.BackStack.LastOrDefault();
+                    if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.ImageViewerPage)
+                        || lastNavigatedPageEntry?.SourcePageType == typeof(Views.EBookReaderPage)
+                        )
+                    {
+                        frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
+                        rememberBackStack = false;
+                    }
+                }
+
+                if (e.NavigationMode != Windows.UI.Xaml.Navigation.NavigationMode.New)
+                {
+                    rememberBackStack = false;
+                }
+
+                if (rememberBackStack)
+                { 
                     ForwardParametersStack.Clear();
                     var parameters = new NavigationParameters();
                     if (_Prev != null)
                     {
                         foreach (var pair in _Prev)
                         {
-                            if (pair.Key == "__restored") { continue; }
+                            if (pair.Key == PageNavigationConstants.Restored) { continue; }
 
                             parameters.Add(pair.Key, pair.Value);
                         }
@@ -213,9 +218,9 @@ namespace TsubameViewer.Presentation.Views
                 }
 
                 var parameters = MakeNavigationParameter(currentEntry.Parameters);
-                if (!parameters.ContainsKey("__restored"))
+                if (!parameters.ContainsKey(PageNavigationConstants.Restored))
                 {
-                    parameters.Add("__restored", string.Empty);
+                    parameters.Add(PageNavigationConstants.Restored, string.Empty);
                 }
                 var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters, new SuppressNavigationTransitionInfo());
                 if (!result.Success)
@@ -535,7 +540,7 @@ namespace TsubameViewer.Presentation.Views
                     var navigateItem = await _viewModel.SourceStorageItemsRepository.GetItemAsync(token);
                     if (navigateItem is StorageFolder)
                     {
-                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters(("token", token)));
+                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Token, token)));
                     }
                     else if (navigateItem is StorageFile fileItem)
                     {
@@ -543,11 +548,11 @@ namespace TsubameViewer.Presentation.Views
                             || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
                             )
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters(("token", token)));
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Token, token)));
                         }
                         else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters(("token", token)));
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Token, token)));
                         }
                     }
                 }

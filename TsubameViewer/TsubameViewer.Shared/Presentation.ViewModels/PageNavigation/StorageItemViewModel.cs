@@ -26,7 +26,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
     {
         #region Navigation Parameters
 
-        public static async ValueTask<INavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
+        public static async ValueTask<NavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
         {
             var item = await vm.GetTokenStorageItem();
             if (item is IStorageFolder folder)
@@ -34,16 +34,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm.Item.StorageItem));
                 if (vm.Type == StorageItemTypes.Image)
                 {
-                    return new NavigationParameters(("token", vm.Token), ("path", escapedPath), ("pageName", Uri.EscapeDataString(vm.Name)));
+                    return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
                 }
                 else
                 {
-                    return new NavigationParameters(("token", vm.Token), ("path", escapedPath));
+                    return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, escapedPath));
                 }
             }
             else if (item is IStorageFile file)
             {
-                return new NavigationParameters(("token", vm.Token), ("path", Uri.EscapeDataString(file.Name)));
+                return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, Uri.EscapeDataString(file.Name)));
             }
 
             throw new NotSupportedException();

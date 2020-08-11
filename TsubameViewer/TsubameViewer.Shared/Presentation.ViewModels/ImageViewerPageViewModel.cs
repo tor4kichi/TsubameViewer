@@ -24,6 +24,7 @@ using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.ViewManagement.Commands;
 using Uno;
@@ -228,7 +229,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 )
             {
-                if (parameters.TryGetValue("token", out string token))
+                if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
                 {
                     if (_currentToken != token)
                     {
@@ -258,7 +259,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
 #endif
 
-                if (parameters.TryGetValue("path", out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (_currentPath != unescapedPath)
@@ -293,8 +294,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // 表示する画像を決める
             if (mode == NavigationMode.Forward 
-                || parameters.ContainsKey("__restored") 
-                || (mode == NavigationMode.New && !parameters.ContainsKey("pageName"))
+                || parameters.ContainsKey(PageNavigationConstants.Restored) 
+                || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
                 )
             {
                 var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_currentFolderItem.Path);
@@ -310,10 +311,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey("pageName")
+            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName)
                 )
             {
-                if (parameters.TryGetValue("pageName", out string pageName))
+                if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
                 {
                     var unescapedPageName = Uri.UnescapeDataString(pageName);
                     var firstSelectItem = Images.FirstOrDefault(x => x.Name == unescapedPageName);

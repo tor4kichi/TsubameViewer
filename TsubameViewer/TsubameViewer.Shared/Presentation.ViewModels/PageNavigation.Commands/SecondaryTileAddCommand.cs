@@ -1,6 +1,7 @@
 ﻿using Prism.Commands;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.Services.UWP;
@@ -27,8 +28,27 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             {
                 if (itemVM.Item is StorageItemImageSource storageItemImageSource)
                 {
-                    var subtractPath = await StorageItemViewModel.GetRawSubtractPath(itemVM);
-                    var result = await _secondaryTileManager.AddSecondaryTile(itemVM.Token, subtractPath, itemVM.Name, storageItemImageSource.StorageItem);
+                    var param = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
+                    var tileArguments = new SecondaryTileArguments();
+                    if (param.TryGetValue(PageNavigationConstants.Token, out string token))
+                    {
+                        tileArguments.Token = token;
+                    }
+                    if (param.TryGetValue(PageNavigationConstants.Path, out string path))
+                    {
+                        // TODO: SecondaryTileAddCommand, Uri.EscapeDataStringの無駄な呼び出しを削る
+                        tileArguments.Path = Uri.UnescapeDataString(path);
+                    }
+                    if (param.TryGetValue(PageNavigationConstants.PageName, out string pageName))
+                    {
+                        tileArguments.PageName = pageName;
+                    }
+
+                    var result = await _secondaryTileManager.AddSecondaryTile(
+                        tileArguments, 
+                        itemVM.Name, 
+                        storageItemImageSource.StorageItem
+                        );
                 }
             }
         }
