@@ -406,7 +406,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var canvasWidth = (int)CanvasWidth.Value;
                     var canvasHeight = (int)CanvasHeight.Value;
 
-                    
+
                     int generateImageIndex = -1;
                     bool isForceSingleImageView = false;
                     foreach (var i in indexies)
@@ -462,6 +462,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
             catch (OperationCanceledException) { }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.ToString());
+            }
         }
 
         bool _nowCurrenImageIndexChanging;
