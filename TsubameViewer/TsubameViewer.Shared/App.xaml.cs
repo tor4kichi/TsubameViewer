@@ -20,6 +20,7 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
+using Uno.Threading;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -58,6 +59,8 @@ namespace TsubameViewer
             
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         }
+
+        FastAsyncLock _InitializeLock = new FastAsyncLock();
 
         private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
@@ -131,8 +134,10 @@ namespace TsubameViewer
             container.RegisterForNavigation<SettingsPage>();
         }
 
-        public override Task OnStartAsync(StartArgs args)
+        bool isRestored = false;
+        public override async Task OnStartAsync(StartArgs args)
         {
+            using var releaser = await _InitializeLock.LockAsync(default);
 #if DEBUG
             if (System.Diagnostics.Debugger.IsAttached)
             {
@@ -154,91 +159,118 @@ namespace TsubameViewer
                         try
                         {
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
-                            OnSecondatyTileActivated(tileArgs);
+                            var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
+                            var result = await NavigateAsync(navigationInfo);
+                            if (result.Success)
+                            {
+                                isRestored = true;
+                            }
                         }
                         catch { }
                     }
                 }
-                
             }
             else if (args.Arguments is FileActivatedEventArgs fileActivatedEventArgs)
             {
-                OnFileActivated_Internal(fileActivatedEventArgs);
-            }
-            
+                try
+                {
+                    var navigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
 
-            return base.OnStartAsync(args);
+                    var result = await NavigateAsync(navigationInfo);
+                    if (result.Success)
+                    {
+                        isRestored = true;
+                    }
+                }
+                catch { }
+            }
+
+            if (!isRestored)
+            {
+                isRestored = true;
+                var shell = Window.Current.Content as  PrimaryWindowCoreLayout;
+                await shell.RestoreNavigationStack();
+            }
+
+            await base.OnStartAsync(args);
         }
 
-
-        private async void OnSecondatyTileActivated(SecondaryTileArguments args)
+        async Task<INavigationResult> NavigateAsync(PageNavigationInfo info)
         {
-            await _initializeTaskCompletionSource.Task;
-
-            await Task.Delay(250);
-
             var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-
             NavigationParameters parameters = new NavigationParameters();
-            parameters.Add(PageNavigationConstants.Token, args.Token);
-            if (!string.IsNullOrEmpty(args.Path))
+            parameters.Add(PageNavigationConstants.Token, info.Token);
+            if (!string.IsNullOrEmpty(info.Path))
             {
-                parameters.Add(PageNavigationConstants.Path, args.Path);
+                parameters.Add(PageNavigationConstants.Path, info.Path);
             }
-            if (!string.IsNullOrEmpty(args.PageName))
+            if (!string.IsNullOrEmpty(info.PageName))
             {
-                parameters.Add(PageNavigationConstants.PageName, args.PageName);
+                parameters.Add(PageNavigationConstants.PageName, info.PageName);
             }
 
-            var ext = Path.GetExtension(args.Path);
+            var ext = Path.GetExtension(info.Path);
             if (string.IsNullOrEmpty(ext))
             {
                 // フォルダ
-                if (string.IsNullOrEmpty(args.Path))
+                if (string.IsNullOrEmpty(info.Path))
                 {
-                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
-                    return;
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
-                
-                var folder = await sourceFolderRepository.GetFolderAsync(args.Token);
-                var item = await FolderHelper.GetFolderItemFromPath(folder, args.Path);
+
+                var folder = await sourceFolderRepository.GetFolderAsync(info.Token);
+                var item = await FolderHelper.GetFolderItemFromPath(folder, info.Path);
                 if (item is StorageFolder itemFolder)
                 {
                     var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
                     if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
                     {
-                        _ = navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                        return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                     }
                     else
                     {
-                        _ = navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                        return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                     }
-                    return;
                 }
-                
+
                 ext = (item as StorageFile).FileType;
             }
-            
 
+
+            // ファイル
+            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
+                || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext)
+                )
             {
-                // ファイル
-                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
-                    || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext) 
-                    )
-                {
-                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
-                }
-                else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
-                {
-                    _ = navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
-                }
+                return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
             }
+            else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
+            {
+                return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+            }
+
+
+            return null;
+        }
+
+        PageNavigationInfo _preserveInitialNavigatePageInfo;
+
+        private PageNavigationInfo SecondatyTileArgumentToNavigationInfo(SecondaryTileArguments args)
+        {
+            var info = new PageNavigationInfo();
+            info.Token = args.Token;
+            info.Path = args.Path;
+            info.PageName = args.PageName;
+
+            return info;
         }
 
         TaskCompletionSource<int> _initializeTaskCompletionSource = new TaskCompletionSource<int>();
         public override async void OnInitialized()
         {
+            using var releaser = await _InitializeLock.LockAsync(default);
+
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
 #if WINDOWS_UWP
@@ -277,11 +309,7 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
-            await shell.RestoreNavigationStack();
-
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
-
-            _initializeTaskCompletionSource.TrySetResult(0);
 
             base.OnInitialized();
         }
@@ -356,28 +384,24 @@ namespace TsubameViewer
         }
 
 
-        async void OnFileActivated_Internal(FileActivatedEventArgs args)
+        async Task<PageNavigationInfo> FileActivatedArgumentToNavigationInfo(FileActivatedEventArgs args)
         {
             // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
             var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
             string token = null;
-            Models.Domain.StorageItemTypes storageItemTypes = Models.Domain.StorageItemTypes.None;
             foreach (var item in args.Files)
             {
                 if (item is StorageFile file)
                 {
                     if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                     {
-                        storageItemTypes = Models.Domain.StorageItemTypes.Archive;
                     }
                     else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                     {
                         NeighboringFilesQueryCache.AddNeighboringFilesQuery(file.Path, args.NeighboringFilesQuery);
-                        storageItemTypes = Models.Domain.StorageItemTypes.Image;
                     }
                     else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                     {
-                        storageItemTypes = Models.Domain.StorageItemTypes.EBook;
                     }
                     else { continue; }
 
@@ -392,18 +416,23 @@ namespace TsubameViewer
             // TODO: ファイルアクティべーション時、フォルダを渡された際、フォルダ内が画像のみなら画像ビューワーで開きたい
             if (token != null)
             {
-                var ns = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                if (storageItemTypes == Models.Domain.StorageItemTypes.Image
-                    || storageItemTypes == Models.Domain.StorageItemTypes.Archive
-                    )
+                return new PageNavigationInfo()
                 {
-                    var result = await ns.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), new SuppressNavigationTransitionInfo(), ("token", token));
-                }
-                else if (storageItemTypes == Models.Domain.StorageItemTypes.EBook)
-                {
-                    var result = await ns.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), new SuppressNavigationTransitionInfo(), ("token", token));
-                }
+                    Token = token,
+                };
             }
+
+            return null;
         }
     }
+
+    public class PageNavigationInfo
+    {
+        public string Token { get; set; }
+
+        public string Path { get; set; }
+
+        public string PageName { get; set; }
+    }
+
 }
