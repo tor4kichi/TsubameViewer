@@ -156,7 +156,6 @@ namespace TsubameViewer
                             OnSecondatyTileActivated(tileArgs);
                         }
                         catch { }
-                        
                     }
                 }
                 
@@ -173,6 +172,10 @@ namespace TsubameViewer
 
         private async void OnSecondatyTileActivated(SecondaryTileArguments args)
         {
+            await _initializeTaskCompletionSource.Task;
+
+            await Task.Delay(250);
+
             var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
 
             NavigationParameters parameters = new NavigationParameters();
@@ -227,7 +230,7 @@ namespace TsubameViewer
             }
         }
 
-
+        TaskCompletionSource<int> _initializeTaskCompletionSource = new TaskCompletionSource<int>();
         public override void OnInitialized()
         {
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
@@ -271,6 +274,8 @@ namespace TsubameViewer
             _ = shell.RestoreNavigationStack();
 
             Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
+
+            _initializeTaskCompletionSource.TrySetResult(0);
 
             base.OnInitialized();
         }
