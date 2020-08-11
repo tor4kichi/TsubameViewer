@@ -305,15 +305,15 @@ namespace TsubameViewer.Presentation.ViewModels
                                 var tokenStorageItem = await _sourceStorageItemsRepository.GetItemAsync(token);
                                 _tokenGettingFolder = tokenStorageItem as StorageFolder;
                                 _currentItem = tokenStorageItem as StorageFile;
+                                DisplayCurrentPath = _tokenGettingFolder.Path;
                             }
 
-                            if (_currentItem == null)
+                            if (isPathChanged && _currentItem == null)
                             {
                                 var currentPathItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
                                 _currentItem = currentPathItem;
+                                DisplayCurrentPath = _currentItem.Path;
                             }
-
-                            DisplayCurrentPath = _currentItem.Path;
 
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                         }
