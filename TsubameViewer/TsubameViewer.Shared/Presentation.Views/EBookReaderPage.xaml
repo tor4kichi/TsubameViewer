@@ -246,7 +246,7 @@
                                IsHitTestVisible="False"
                                IsAccessKeyScope="False"
                                AllowFocusOnInteraction="False"
-                               Margin="32 48 32 48"
+                               Margin="32 48 24 48"
                                PageBackgroundColor="{Binding EBookReaderSettings.BackgroundColor}"
                                 FontColor="{Binding EBookReaderSettings.ForegroundColor, Converter={StaticResource NullableColorConverter}}"
                                 FontSize="{Binding EBookReaderSettings.RootFontSizeInPixel}"
@@ -554,7 +554,7 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="WebView.Margin" Value="32 72 32 48" />
+            <Setter Target="WebView.Margin" Value="32 72 24 48" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
