@@ -379,8 +379,6 @@ namespace TsubameViewer
             return null;
         }
 
-        PageNavigationInfo _preserveInitialNavigatePageInfo;
-
         private PageNavigationInfo SecondatyTileArgumentToNavigationInfo(SecondaryTileArguments args)
         {
             var info = new PageNavigationInfo();

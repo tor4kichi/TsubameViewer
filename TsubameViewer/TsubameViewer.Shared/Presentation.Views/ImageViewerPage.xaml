@@ -447,7 +447,10 @@
 
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="True" />
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+            </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ImagesContainer.Margin" Value="0 32 0 0" />

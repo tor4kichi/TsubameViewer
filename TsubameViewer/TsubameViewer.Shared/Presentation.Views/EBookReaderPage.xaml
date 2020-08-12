@@ -543,7 +543,8 @@
 
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="True" />
+            <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="WebView.Margin" Value="32 72 32 48" />
