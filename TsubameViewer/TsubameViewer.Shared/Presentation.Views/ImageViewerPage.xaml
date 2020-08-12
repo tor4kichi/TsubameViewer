@@ -575,6 +575,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
