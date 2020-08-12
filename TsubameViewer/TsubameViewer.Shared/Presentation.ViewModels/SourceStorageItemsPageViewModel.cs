@@ -213,6 +213,14 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             ((IDisposable)_disposables).Dispose();
         }
+
+
+        private DelegateCommand<StorageItemViewModel> _DeleteStoredFolderCommand;
+        public DelegateCommand<StorageItemViewModel> DeleteStoredFolderCommand =>
+            _DeleteStoredFolderCommand ??= new DelegateCommand<StorageItemViewModel>(async (itemVM) =>
+            {
+                _sourceStorageItemsRepository.RemoveFolder(itemVM.Token);
+            });
     }
 
     public sealed class SourceItemsGroup

@@ -87,6 +87,9 @@ namespace TsubameViewer.Presentation.Views
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+
+                RemoveSourceStorageItem.CommandParameter = itemVM;
+                RemoveSourceStorageItem.Command = pageVM.DeleteStoredFolderCommand;
             }
             else
             {
