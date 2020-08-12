@@ -24,6 +24,7 @@ using Uno.Extensions.Specialized;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Presentation.Services.UWP;
+using Uno.Extensions;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -191,6 +192,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         throw new NotSupportedException();
                     }
                 }
+            }
+            else
+            {
+                Folders.ForEach(x => x.UpdateLastReadPosition());
+                Files.ForEach(x => x.UpdateLastReadPosition());
             }
 
             await base.OnNavigatedToAsync(parameters);
