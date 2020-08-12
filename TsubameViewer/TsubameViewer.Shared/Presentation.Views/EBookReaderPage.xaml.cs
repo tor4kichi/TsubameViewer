@@ -101,13 +101,12 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 0).Start();
+            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight + 24, duration: 175, delay: 1000).Start();
 
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
-            SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY;
+            SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
             SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted;
-            SwipeProcessScreen.ManipulationDelta += SwipeProcessScreen_ManipulationDelta;
             SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
 
             SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
@@ -175,27 +174,24 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        private void SwipeProcessScreen_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            if (!e.IsInertial)
-            {
-                Debug.WriteLine(e.Cumulative.Translation.Y);
-                if (e.Cumulative.Translation.Y < 0)
-                {
-                    AnimationUIContainer.Fade(0.5f, duration: 20).Start();
-                    AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight * 0.75f, duration: 20).Start();
-                }
-                else
-                {
-                    AnimationUIContainer.Fade(0.0f, duration: 20).Start();
-                    AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 20).Start();
-                }
-            }
-        }
 
         private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
-            if (e.Cumulative.Translation.Y < -60
+            if (e.Cumulative.Translation.X > 60
+                || e.Velocities.Linear.X > 0.75
+                )
+            {
+                // 右スワイプ
+                LeftPageMoveButton.Command.Execute(null);
+            }
+            else if (e.Cumulative.Translation.X < -60
+                || e.Velocities.Linear.X < -0.75
+                )
+            {
+                // 左スワイプ
+                RightPageMoveButton.Command.Execute(null);
+            }
+            else if (e.Cumulative.Translation.Y < -60
                 || e.Velocities.Linear.Y < -0.25
                 )
             {
