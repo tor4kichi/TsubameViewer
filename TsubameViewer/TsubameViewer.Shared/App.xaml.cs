@@ -160,6 +160,8 @@ namespace TsubameViewer
                         {
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
                             var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
+                            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+                            await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
                             var result = await NavigateAsync(navigationInfo);
                             if (result.Success)
                             {
@@ -176,10 +178,15 @@ namespace TsubameViewer
                 {
                     var navigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
 
-                    var result = await NavigateAsync(navigationInfo);
-                    if (result.Success)
+                    if (navigationInfo != null)
                     {
-                        isRestored = true;
+                        var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+                        await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
+                        var result = await NavigateAsync(navigationInfo);
+                        if (result.Success)
+                        {
+                            isRestored = true;
+                        }
                     }
                 }
                 catch { }
