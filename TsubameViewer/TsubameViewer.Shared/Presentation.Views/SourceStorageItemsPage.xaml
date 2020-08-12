@@ -18,6 +18,17 @@
   >
 
   <Page.Resources>
+
+    <Style TargetType="ProgressBar" >
+      <Setter Property="Minimum" Value="0.0" />
+      <Setter Property="Maximum" Value="1.0" />
+      <Setter Property="Height" Value="4" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="#afff3333" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    
     <DataTemplate x:Key="FolderTemplate">
       <StackPanel>
         <ToolTipService.ToolTip>
@@ -29,16 +40,18 @@
                  VerticalAlignment="Center"
                  Height="80"
                      />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+        <Grid Height="52">
+          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
             <FontIcon.RenderTransform>
               <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
             </FontIcon.RenderTransform>
           </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
         </Grid>
       </StackPanel>
     </DataTemplate>
@@ -99,16 +112,18 @@
                  VerticalAlignment="Center"
                  Height="80"
                      />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+        <Grid Height="52">
+          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
             <FontIcon.RenderTransform>
               <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
             </FontIcon.RenderTransform>
           </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
         </Grid>
       </StackPanel>
     </DataTemplate>
@@ -124,15 +139,17 @@
                  VerticalAlignment="Center"
                  Height="80"
                      />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
+        <Grid Height="52">
+          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
             <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
             <FontIcon.RenderTransform>
               <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
             </FontIcon.RenderTransform>
           </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
         </Grid>
       </StackPanel>
     </DataTemplate>
