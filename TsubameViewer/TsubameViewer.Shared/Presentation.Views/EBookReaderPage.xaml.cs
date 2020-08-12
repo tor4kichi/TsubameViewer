@@ -353,6 +353,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
         {
+            (DataContext as EBookReaderPageViewModel).CompletePageLoading();
             WebView.Fade(1.0f, 100).Start();
         }
 
@@ -362,6 +363,9 @@ namespace TsubameViewer.Presentation.Views
             private set { SetValue(InnerGoNextImageCommandProperty, value); }
         }
 
+
+        FastAsyncLock _movePageLock = new FastAsyncLock();
+
         // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty InnerGoNextImageCommandProperty =
             DependencyProperty.Register("InnerGoNextImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
@@ -369,23 +373,28 @@ namespace TsubameViewer.Presentation.Views
 
         async void ExecuteGoNextCommand()
         {
-            if (WebView.CanGoNext())
+            using (await _movePageLock.LockAsync(default))
             {
-                WebView.GoNext();
-                
-            }
-            else
-            {
-                var pageVM = DataContext as EBookReaderPageViewModel;
-                if (pageVM.GoNextImageCommand.CanExecute())
+                if (WebView.CanGoNext())
                 {
-                    await WebView.Fade(0, 50).StartAsync();
-                    
-                    WebView.PrepareGoNext();
-                    pageVM.GoNextImageCommand.Execute();
+                    WebView.GoNext();
+                }
+                else
+                {
+                    var pageVM = DataContext as EBookReaderPageViewModel;
+                    if (pageVM.CanGoNext())
+                    {
+                        await WebView.Fade(0, 50).StartAsync();
+
+                        WebView.PrepareGoNext();
+                        await pageVM.GoNextImageAsync();
+                    }
                 }
             }
         }
+
+
+
 
 
 
@@ -402,22 +411,24 @@ namespace TsubameViewer.Presentation.Views
 
         async void ExecuteGoPrevCommand()
         {
-            if (WebView.CanGoPreview())
+            using (await _movePageLock.LockAsync(default))
             {
-                WebView.GoPreview();
-            }
-            else
-            {
-                var pageVM = DataContext as EBookReaderPageViewModel;
-                if (pageVM.GoPrevImageCommand.CanExecute())
+                if (WebView.CanGoPreview())
                 {
-                    await WebView.Fade(0, 50).StartAsync();
+                    WebView.GoPreview();
+                }
+                else
+                {
+                    var pageVM = DataContext as EBookReaderPageViewModel;
+                    if (pageVM.CanGoPrev())
+                    {
+                        await WebView.Fade(0, 50).StartAsync();
 
-                    WebView.PrepareGoPreview();
-                    pageVM.GoPrevImageCommand.Execute();
+                        WebView.PrepareGoPreview();
+                        await pageVM.GoPrevImageAsync();
+                    }
                 }
             }
-
         }
 
 

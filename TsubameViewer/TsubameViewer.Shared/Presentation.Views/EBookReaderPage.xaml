@@ -494,6 +494,7 @@
 
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="Tapped">
+              <core:CallMethodAction TargetObject="{x:Bind WebView}" MethodName="PrepareTocSelectionChange" />
               <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
             </core:EventTriggerBehavior>
           </i:Interaction.Behaviors>

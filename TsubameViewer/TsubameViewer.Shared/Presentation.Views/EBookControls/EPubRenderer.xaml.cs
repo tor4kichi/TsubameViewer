@@ -475,6 +475,11 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         }
 
 
+        public void PrepareTocSelectionChange()
+        {
+            PreservedCurrentInnerPageIndex = 0;
+            _isGoNextOrPreview = true;
+        }
 
 
         public void PrepareGoNext()
