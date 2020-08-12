@@ -559,12 +559,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            _ = MoveImageIndex(IndexMoveDirection.Forward);
+            if (CurrentImageIndex + 1 < Images?.Length)
+            {
+                _ = MoveImageIndex(IndexMoveDirection.Forward);
+            }
         }
 
         private bool CanGoNextCommand()
         {
-            return CurrentImageIndex + 1 < Images?.Length;
+            //return CurrentImageIndex + 1 < Images?.Length;
+            return true;
         }
 
         private DelegateCommand _GoPrevImageCommand;
@@ -573,12 +577,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            _ = MoveImageIndex(IndexMoveDirection.Backward);
+            if (CurrentImageIndex >= 1 && Images?.Length > 0)
+            {
+                _ = MoveImageIndex(IndexMoveDirection.Backward);
+            }
         }
 
         private bool CanGoPrevCommand()
         {
-            return CurrentImageIndex >= 1 && Images?.Length > 0;
+            //return CurrentImageIndex >= 1 && Images?.Length > 0;
+            return true;
         }
 
         private DelegateCommand _SizeChangedCommand;

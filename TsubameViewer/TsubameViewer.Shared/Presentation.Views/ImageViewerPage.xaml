@@ -179,6 +179,9 @@
     <Border x:Name="ImagesContainer"
             uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
             >
+      <Border.RenderTransform>
+        <TranslateTransform />
+      </Border.RenderTransform>
       <ItemsControl ItemsSource="{Binding CurrentImages}"
                     HorizontalAlignment="Center"
                     x:Name="ImageItemsControl"
@@ -413,6 +416,12 @@
                                Storyboard.TargetName="Toolbar_Desktop"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="32"
+                               Storyboard.TargetName="ImagesContainer"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -427,6 +436,11 @@
                                Storyboard.TargetName="Toolbar_Desktop"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="ImagesContainer"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -438,6 +452,7 @@
           <VisualState.Setters>
             <Setter Target="ImagesContainer.Margin" Value="0 32 0 0" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+            <Setter Target="ImagesContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
