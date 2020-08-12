@@ -31,6 +31,7 @@ using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
+using Windows.Web.Http;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -408,8 +409,8 @@ namespace TsubameViewer.Presentation.ViewModels
                                 }
                             }
 
-                        // 画像リソースの埋め込み
-                        {
+                            // 画像リソースの埋め込み
+                            {
                                 XmlAttribute imageSourceAttr = null;
                                 if (node.Name == "img")
                                 {
@@ -425,20 +426,16 @@ namespace TsubameViewer.Presentation.ViewModels
                                     {
                                         if (imageSourceAttr.Value.EndsWith(image.Key))
                                         {
-                                            var base64Image = Convert.ToBase64String(await image.Value.ReadContentAsBytesAsync());
-                                            var sb = new StringBuilder();
-                                            sb.Append("data:");
-                                            sb.Append(image.Value.ContentMimeType);
-                                            sb.Append(";base64,");
-                                            sb.Append(base64Image);
-                                            imageSourceAttr.Value = sb.ToString();
+                                            // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                                            /// <see cref="ResolveWebResourceRequest"/>
+                                            imageSourceAttr.Value = DummyReosurceRequestDomain + image.Key;
                                         }
                                     }
                                 }
                             }
 
-                        // cssの埋め込み
-                        {
+                            // cssの埋め込み
+                            {
                                 if (node.Name == "link"
                                     && node.Attributes["type"]?.Value == "text/css"
                                 )
@@ -519,11 +516,41 @@ namespace TsubameViewer.Presentation.ViewModels
             _InnerPageTotalCountChangedTcs?.SetResult(0);
         }
 
+
+
+        const string DummyReosurceRequestDomain = "https://dummy.com/";
+        object _lock = new object();
+        public Stream ResolveWebResourceRequest(Uri requestUri)
+        {
+            // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
+            // 1. 同時呼び出し不可。lockによる順列処理化が必要
+            // 2. EPubContentFileRef.ReadContentAsBytesAsync()などのAsync系は呼び出し後は
+            //    EPubReader内部の別スレッドにスイッチする（確証なし）ようなので、
+            //    ResolveWebResourceRequest呼び出し元とは違うスレッドになってしまう可能性がある
+            //    ライブラリ側としてはかなり例外的な内部処理だと思うがAsync系メソッドさえ回避すれば問題ない
+            lock (_lock)
+            {
+                var key = requestUri.OriginalString.Remove(0, DummyReosurceRequestDomain.Length);
+                foreach (var image in _currentBook.Content.Images)
+                {
+                    if (image.Key == key)
+                    {
+                        return new MemoryStream(image.Value.ReadContentAsBytes());
+                    }
+                }
+
+                throw new NotSupportedException();
+            }
+        }
+
+
+
         TaskCompletionSource<int> _InnerPageTotalCountChangedTcs;
 
         FastAsyncLock _PageUpdateLock = new FastAsyncLock();
 
         CompositeDisposable _readingSessionDisposer;
+
 
         private async Task RefreshItems(CancellationToken ct)
         {

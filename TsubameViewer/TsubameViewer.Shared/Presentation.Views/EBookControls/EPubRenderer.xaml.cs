@@ -402,6 +402,15 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
 
 
+        private void WebView_WebResourceRequested(WebView sender, WebViewWebResourceRequestedEventArgs args)
+        {
+            WebResourceRequested?.Invoke(this, args);
+        }
+
+        public event EventHandler<WebViewWebResourceRequestedEventArgs> WebResourceRequested;
+
+
+
 
         private async void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
         {

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -29,7 +30,10 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Windows.Web.Http;
 using Xamarin.Essentials;
+using Prism.Ioc;
+using AsyncLock = Uno.Threading.AsyncLock;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -64,8 +68,35 @@ namespace TsubameViewer.Presentation.Views
             WebView.Loaded += WebView_Loaded;
             WebView.Unloaded += WebView_Unloaded;
 
+            WebView.WebResourceRequested += WebView_WebResourceRequested;
+
             this.Loaded += PageNavigationCommandInitialize_Loaded;
-            this.Unloaded += PageNavigationCommandDispose_Unloaded; 
+            this.Unloaded += PageNavigationCommandDispose_Unloaded;
+        }
+
+        EBookReaderPageViewModel _pageViewModel;
+        EBookReaderPageViewModel PageViewModel => _pageViewModel ??= DataContext as EBookReaderPageViewModel;
+
+        private void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+        {
+            var reqesutUri = e.Request.RequestUri;
+
+            using (var defferral = e.GetDeferral())
+            {
+                try
+                {
+                    var stream = PageViewModel.ResolveWebResourceRequest(reqesutUri);
+                    if (stream != null)
+                    {
+                        e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
+                        e.Response.Content = new HttpStreamContent(stream.AsInputStream());
+                    }
+                }
+                finally
+                {
+                    defferral.Complete();
+                }
+            }
         }
 
 
@@ -83,6 +114,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
         {
+            var pageVM = PageViewModel;
             this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
             this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
 
