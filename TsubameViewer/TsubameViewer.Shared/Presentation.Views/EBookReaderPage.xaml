@@ -312,9 +312,16 @@
 
       </Button>
 
-      <Border Grid.Column="1">
-
-      </Border>
+      <Button x:Name="ToggleBottomMenuButton"
+              Command="{x:Bind ToggleBottomMenuCommand}" 
+              Grid.Column="1"
+              Grid.ColumnSpan="1"
+              Opacity="0" 
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden" />
 
       <Button x:Name="RightPageMoveButton"
         Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}"

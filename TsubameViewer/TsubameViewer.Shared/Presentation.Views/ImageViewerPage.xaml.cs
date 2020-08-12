@@ -100,6 +100,13 @@ namespace TsubameViewer.Presentation.Views
                         LeftPageMoveButton.Command.Execute(null);
                     }
                 }
+                else if (item == ToggleBottomMenuButton)
+                {
+                    if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
+                    {
+                        ToggleBottomMenuButton.Command.Execute(null);
+                    }
+                }
             }
         }
 
@@ -193,7 +200,7 @@ namespace TsubameViewer.Presentation.Views
 
         private DelegateCommand _toggleBottomMenuCommand;
         public DelegateCommand ToggleBottomMenuCommand =>
-            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand));
+            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
 
         void ExecuteToggleBottomMenuCommand()
         {
