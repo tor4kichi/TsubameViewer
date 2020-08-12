@@ -362,9 +362,10 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageLoadingCts = new CancellationTokenSource();
             
             var ct = _imageLoadingCts.Token;
-            try
+            
+            using (await _imageLoadingLock.LockAsync(ct))
             {
-                using (await _imageLoadingLock.LockAsync(ct))
+                try
                 {
                     // 読み込むべきインデックスを先に洗い出す
                     var requestIndex = direction switch
@@ -430,6 +431,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
+                        if (ct.IsCancellationRequested) { return; }
+
                         generateImageIndex = requestIndex + i;
 
                         _CurrentImages[i] = bitmapImage;
@@ -439,6 +442,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     if (generateImageIndex == -1) { throw new Exception(); }
+
+                    if (ct.IsCancellationRequested) { return; }
 
                     // SliderとCurrentImageIndexの更新が競合するため、スキップ用の仕掛けが必要
                     _nowCurrenImageIndexChanging = true;
@@ -454,14 +459,24 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     _nowCurrenImageIndexChanging = false;
 
+
                     NowDoubleImageView = CurrentImages.Count(x => x != null) >= 2;
                     RaisePropertyChanged(nameof(CurrentImages));
                 }
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception e)
-            {
-                Debug.WriteLine(e.ToString());
+                catch (OperationCanceledException)
+                {
+                    CurrentImageIndex = direction switch
+                    {
+                        IndexMoveDirection.Refresh => CurrentImageIndex,
+                        IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + _CurrentImages.Length, Images.Length - 1),
+                        IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - _CurrentImages.Length, 0),
+                        _ => throw new NotSupportedException(),
+                    };
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.ToString());
+                }
             }
         }
 
