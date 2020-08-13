@@ -135,6 +135,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly RecentlyAccessManager _recentlyAccessManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
@@ -143,6 +144,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
+            RecentlyAccessManager recentlyAccessManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
@@ -154,6 +156,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
+            _recentlyAccessManager = recentlyAccessManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .Do(_ => 
@@ -545,6 +548,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 GoNextImageCommand.RaiseCanExecuteChanged();
                 GoPrevImageCommand.RaiseCanExecuteChanged();
+
+                _recentlyAccessManager.AddWatched(_currentToken, _currentPath);
             }
         }
 

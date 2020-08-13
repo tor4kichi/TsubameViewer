@@ -151,6 +151,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ApplicationSettings _applicationSettings;
         private readonly IScheduler _scheduler;
 
@@ -168,6 +169,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
+            RecentlyAccessManager recentlyAccessManager,
             ApplicationSettings applicationSettings,
             EBookReaderSettings themeSettings,
             IScheduler scheduler,
@@ -178,6 +180,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
+            _recentlyAccessManager = recentlyAccessManager;
             _applicationSettings = applicationSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
@@ -586,6 +589,9 @@ namespace TsubameViewer.Presentation.ViewModels
             // タイトルを更新
             Title = _currentBook.Title;
             _applicationView.Title = _currentBook.Title;
+
+
+            _recentlyAccessManager.AddWatched(_currentToken, _currentPath);
         }
 
 
