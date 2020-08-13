@@ -525,8 +525,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 memStream.Seek(0);
                                 var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
                                 encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-                                if (decoder.PixelWidth < decoder.PixelHeight || item.width > item.height)
+                                if (decoder.PixelWidth < decoder.PixelHeight)
                                 {
+                                    // 幅に合わせて高さをスケールさせる
+                                    // 縦長の場合に使用
                                     var ratio = (float)item.width / decoder.PixelWidth;
                                     encoder.BitmapTransform.ScaledWidth = (uint)item.width;
                                     encoder.BitmapTransform.ScaledHeight = (uint)(decoder.PixelHeight * ratio);
@@ -534,6 +536,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 }
                                 else
                                 {
+                                    // 高さに合わせて幅をスケールさせる
+                                    // 横長の場合に使用
                                     var ratio = (float)item.height / decoder.PixelHeight;
                                     encoder.BitmapTransform.ScaledWidth = (uint)(decoder.PixelWidth * ratio);
                                     encoder.BitmapTransform.ScaledHeight = (uint)item.height;
