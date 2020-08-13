@@ -30,9 +30,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\IImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\RarArchiveEntryImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ZipArchiveEntryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceOriginConstants.cs" />

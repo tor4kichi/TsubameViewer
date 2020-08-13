@@ -17,6 +17,11 @@ namespace TsubameViewer.Models.Domain
                 ZipFileType,
                 RarFileType,
                 PdfFileType,
+                CbrFileType,
+                CbzFileType,
+                SevenZipFileType,
+                Cb7FileType,
+                TarFileType
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
@@ -46,6 +51,12 @@ namespace TsubameViewer.Models.Domain
         public const string ZipFileType = ".zip";
         public const string RarFileType = ".rar";
         public const string PdfFileType = ".pdf";
+        public const string CbrFileType = ".cbr";
+        public const string CbzFileType = ".cbz";
+        public const string SevenZipFileType = ".7z";
+        public const string Cb7FileType = ".cb7";
+        public const string TarFileType = ".tar";
+
 
         public const string JpgFileType = ".jpg";
         public const string JpegFileType = ".jpeg";
@@ -118,8 +129,7 @@ namespace TsubameViewer.Models.Domain
             {
                 StorageItemImageSource storageItem => storageItem.ItemTypes,
                 PdfPageImageSource _ => StorageItemTypes.Image,
-                ZipArchiveEntryImageSource _ => StorageItemTypes.Image,
-                RarArchiveEntryImageSource _ => StorageItemTypes.Image,
+                ArchiveEntryImageSource _ => StorageItemTypes.Image,
                 _ => StorageItemTypes.None
             };
         }

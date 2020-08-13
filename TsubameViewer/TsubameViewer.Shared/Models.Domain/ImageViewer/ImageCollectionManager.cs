@@ -1,12 +1,15 @@
 ﻿using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Archives.Tar;
+using SharpCompress.Archives.Zip;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
 using System.IO;
-using System.IO.Compression;
+//using System.IO.Compression;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Runtime.CompilerServices;
@@ -220,6 +223,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 SupportedFileTypesHelper.ZipFileType => await GetImagesFromZipFileAsync(file),
                 SupportedFileTypesHelper.RarFileType => await GetImagesFromRarFileAsync(file),
                 SupportedFileTypesHelper.PdfFileType => await GetImagesFromPdfFileAsync(file),
+                SupportedFileTypesHelper.CbzFileType => await GetImagesFromZipFileAsync(file),
+                SupportedFileTypesHelper.CbrFileType => await GetImagesFromRarFileAsync(file),
+                SupportedFileTypesHelper.SevenZipFileType => await GetImagesFromSevenZipFileAsync(file),
+                SupportedFileTypesHelper.Cb7FileType => await GetImagesFromSevenZipFileAsync(file),
+                SupportedFileTypesHelper.TarFileType => await GetImagesFromTarFileAsync(file),
                 _ => throw new NotSupportedException("not supported file type: " + file.FileType),
             };
 
@@ -232,13 +240,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
                 .AddTo(disposables);
-            var zipArchive = new ZipArchive(stream)
+            var zipArchive = ZipArchive.Open(stream)
                 .AddTo(disposables);
             
             var supportedEntries = zipArchive.Entries
-                .OrderBy(x => x.FullName)
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name))
-                .Select(x => (IImageSource)new ZipArchiveEntryImageSource(x, file))
+                .OrderBy(x => x.Key)
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -279,7 +287,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .OrderBy(x => x.Key)
-                .Select(x => (IImageSource)new RarArchiveEntryImageSource(x, file))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -290,6 +298,50 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             };
         }
 
+
+        public async Task<GetImagesFromArchiveResult> GetImagesFromSevenZipFileAsync(StorageFile file)
+        {
+            CompositeDisposable disposables = new CompositeDisposable();
+            var stream = await file.OpenStreamForReadAsync()
+                .AddTo(disposables);
+            var zipArchive = SevenZipArchive.Open(stream)
+                .AddTo(disposables);
+
+            var supportedEntries = zipArchive.Entries
+                .OrderBy(x => x.Key)
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .ToArray();
+
+            return new GetImagesFromArchiveResult()
+            {
+                ItemsCount = (uint)supportedEntries.Length,
+                Disposer = disposables,
+                Images = supportedEntries,
+            };
+        }
+
+        public async Task<GetImagesFromArchiveResult> GetImagesFromTarFileAsync(StorageFile file)
+        {
+            CompositeDisposable disposables = new CompositeDisposable();
+            var stream = await file.OpenStreamForReadAsync()
+                .AddTo(disposables);
+            var zipArchive = TarArchive.Open(stream)
+                .AddTo(disposables);
+
+            var supportedEntries = zipArchive.Entries
+                .OrderBy(x => x.Key)
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .ToArray();
+
+            return new GetImagesFromArchiveResult()
+            {
+                ItemsCount = (uint)supportedEntries.Length,
+                Disposer = disposables,
+                Images = supportedEntries,
+            };
+        }
 
     }
 }

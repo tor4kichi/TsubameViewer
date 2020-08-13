@@ -1,6 +1,8 @@
 ﻿using LiteDB;
 using Microsoft.Toolkit.Uwp.Helpers;
 using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Archives.Tar;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -141,6 +143,13 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.CbzFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.CbrFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.SevenZipFileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.Cb7FileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+                            SupportedFileTypesHelper.TarFileType => TarFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+
+
                             SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
@@ -149,6 +158,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
+
                             SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream.AsStreamForWrite()),
                             _ => throw new NotSupportedException(file.FileType)
                         });
@@ -206,7 +216,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var archiveStream = await file.OpenStreamForReadAsync())
             using (var zipArchive = new ZipArchive(archiveStream))
             {
-                var archiveImageItem = zipArchive.Entries.AsParallel().OrderBy(x=> x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
+                var archiveImageItem = zipArchive.Entries.OrderBy(x=> x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
                 if (archiveImageItem == null) { return false; }
 
                 using (var inputStream = archiveImageItem.Open())
@@ -224,7 +234,43 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var archiveStream = await file.OpenAsync(FileAccessMode.Read))
             using (var rarArchive = RarArchive.Open(archiveStream.AsStreamForRead()))
             {
-                var archiveImageItem = rarArchive.Entries.AsParallel().OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));                
+                var archiveImageItem = rarArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));                
+                if (archiveImageItem == null) { return false; }
+
+                using (var inputStream = archiveImageItem.OpenEntryStream())
+                {
+                    await inputStream.CopyToAsync(outputStream);
+                    await outputStream.FlushAsync();
+                }
+
+                return true;
+            }
+        }
+
+        private static async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
+        {
+            using (var archiveStream = await file.OpenStreamForReadAsync())
+            using (var zipArchive = SevenZipArchive.Open(archiveStream))
+            {
+                var archiveImageItem = zipArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                if (archiveImageItem == null) { return false; }
+
+                using (var inputStream = archiveImageItem.OpenEntryStream())
+                {
+                    await inputStream.CopyToAsync(outputStream);
+                    await outputStream.FlushAsync();
+                }
+
+                return true;
+            }
+        }
+
+        private static async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
+        {
+            using (var archiveStream = await file.OpenStreamForReadAsync())
+            using (var zipArchive = TarArchive.Open(archiveStream))
+            {
+                var archiveImageItem = zipArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
                 if (archiveImageItem == null) { return false; }
 
                 using (var inputStream = archiveImageItem.OpenEntryStream())
