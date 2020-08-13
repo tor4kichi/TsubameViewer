@@ -250,8 +250,8 @@
           <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{Binding Source=RemoveSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
           <MenuFlyoutSeparator />
           <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
-          <MenuFlyoutSeparator />
-          <MenuFlyoutSubItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}">
+          <MenuFlyoutSeparator x:Name="SourceManageSeparetor" />
+          <MenuFlyoutSubItem x:Name="SourceManageSubItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}">
             <MenuFlyoutItem x:Name="RemoveSourceStorageItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" />
           </MenuFlyoutSubItem>
         </MenuFlyout>

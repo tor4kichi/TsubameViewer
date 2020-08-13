@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Uno;
+using Uno.Extensions;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -90,6 +91,12 @@ namespace TsubameViewer.Presentation.Views
 
                 RemoveSourceStorageItem.CommandParameter = itemVM;
                 RemoveSourceStorageItem.Command = pageVM.DeleteStoredFolderCommand;
+                SourceManageSeparetor.Visibility =
+                SourceManageSubItem.Visibility =
+                    itemVM.GetTokenStorageItem().GetSyncResult().Path == itemVM.Path
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
             }
             else
             {
