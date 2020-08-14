@@ -1,0 +1,226 @@
+﻿<Page
+    x:Class="TsubameViewer.Presentation.Views.SearchResultPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" xmlns:i="using:Microsoft.Xaml.Interactivity" xmlns:core="using:Microsoft.Xaml.Interactions.Core" xmlns:wst="using:WindowsStateTriggers"
+  mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+  <Page.Resources>
+    <Style TargetType="ProgressBar" >
+      <Setter Property="Minimum" Value="0.0" />
+      <Setter Property="Maximum" Value="1.0" />
+      <Setter Property="Height" Value="4" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="#afff3333" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <DataTemplate x:Key="FolderTemplate"
+                  >
+      <uwpControls:DockPanel>
+
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
+        </Grid>
+
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+      </uwpControls:DockPanel>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ArchiveFileTemplate">
+      <uwpControls:DockPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
+        </Grid>
+
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+
+      </uwpControls:DockPanel>
+    </DataTemplate>
+
+    <DataTemplate x:Key="EBookFileTemplate">
+      <uwpControls:DockPanel>
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" />
+        </ToolTipService.ToolTip>
+
+
+        <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
+            <FontIcon.RenderTransform>
+              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+            </FontIcon.RenderTransform>
+          </FontIcon>
+
+          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
+        </Grid>
+
+        <Image Source="{Binding Image}"
+                 Stretch="UniformToFill"
+                 VerticalAlignment="Center"
+                 Height="80"
+                     />
+
+      </uwpControls:DockPanel>
+    </DataTemplate>
+
+
+    <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
+                                     Folder="{StaticResource FolderTemplate}"
+                                   Archive="{StaticResource ArchiveFileTemplate}"
+                                   EBook="{StaticResource EBookFileTemplate}"
+                                     >
+    </ts:FolderItemTemplateSelector>
+
+
+
+    <Style x:Key="FolderStyle" TargetType="GridViewItem">
+      <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="0 0 0 0" />
+      <Setter Property="Margin" Value="6 6" />
+    </Style>
+
+    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
+      <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+      <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
+      <MenuFlyoutSeparator />
+      <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{Binding Source=AddSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
+      <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{Binding Source=RemoveSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
+      <MenuFlyoutSeparator />
+      <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
+    </MenuFlyout>
+
+  </Page.Resources>
+
+  <Grid>
+
+    <uwpControls:DockPanel>
+
+      <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout" Margin="48 8 48 0"
+                  Padding="8 0">
+
+        <Border Height="48" />
+        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
+          <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
+        </TextBlock>
+
+
+      </StackPanel>
+      <ScrollViewer>
+        <StackPanel x:Name="ContentRootStackPanel" Margin="48 8 48 32">
+          <uwpControls:AdaptiveGridView ItemsSource="{Binding SearchResultItems}"
+                          x:Name="FoldersAdaptiveGridView"
+                          StretchContentForSingleRow="False"
+                          OneRowModeEnabled="False"
+                          VerticalAlignment="Top"
+                          ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+                          ItemContainerStyle="{StaticResource FolderStyle}"
+                          DesiredWidth="360"            
+                          ItemHeight="132"
+                          IsItemClickEnabled="True"
+                          ItemClickCommand="{Binding OpenFolderItemCommand}"
+                          IsSynchronizedWithCurrentItem="False"
+                                    SelectionMode="None"
+                                    XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
+                                        IsTabStop="False"
+                                        ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}"
+                          >
+
+            <GridView.ItemContainerTransitions>
+              <TransitionCollection />
+            </GridView.ItemContainerTransitions>
+            <GridView.Header>
+              <Grid >
+              </Grid>
+            </GridView.Header>
+            <i:Interaction.Behaviors>
+              <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+                <core:CallMethodAction MethodName="Initialize" />
+              </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+            </i:Interaction.Behaviors>
+          </uwpControls:AdaptiveGridView>
+        </StackPanel>
+      </ScrollViewer>
+    </uwpControls:DockPanel>
+
+
+    <VisualStateManager.VisualStateGroups>
+      <!-- 画面サイズによる表示切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="48 8 48 0" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="48 8 48 27" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="140 16" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="140 8 140 32" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Margin" Value="8 16" />
+            <Setter Target="ContentRootStackPanel.Margin" Value="8 8 8 32" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+  </Grid>
+  
+</Page>

@@ -27,6 +27,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return _recentlyAccessRepository.GetItemsSortWithRecently(take);
         }
 
+        public void Delete(RecentlyAccessEntry entry)
+        {
+            _recentlyAccessRepository.DeleteItem(entry.Id);
+        }
+
         public sealed class RecentlyAccessRepository : LiteDBServiceBase<RecentlyAccessEntry>
         {
             public RecentlyAccessRepository(ILiteDatabase liteDatabase) : base(liteDatabase)

@@ -226,8 +226,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
-            _navigationService = parameters.GetNavigationService();
-            
             IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
 
             NowProcessing = true;
@@ -463,13 +461,6 @@ namespace TsubameViewer.Presentation.ViewModels
         #endregion
 
 
-        #region Navigation
-
-        private INavigationService _navigationService;
-
-
-
-        #endregion
 
         #region FileSortType
 

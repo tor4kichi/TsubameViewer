@@ -77,7 +77,15 @@ namespace TsubameViewer.Presentation.Views
             typeof(Views.FolderListupPage),
             typeof(Views.ImageViewerPage),
             typeof(Views.EBookReaderPage),
+            typeof(Views.SearchResultPage),
             typeof(SettingsPage),
+        };
+
+        private Type[] ForgetOwnNavigationPageTypes = new Type[]
+        {
+            typeof(Views.ImageViewerPage),
+            typeof(Views.EBookReaderPage),
+            typeof(Views.SearchResultPage),
         };
 
 
@@ -140,12 +148,11 @@ namespace TsubameViewer.Presentation.Views
                 // ビューワー系ページはバックスタックに積まれないようにする
                 // ビューワー系ページを開いてる状態でアプリ外部からビューワー系ページを開く操作があり得る
                 bool rememberBackStack = true;
-                if (e.SourcePageType == typeof(Views.ImageViewerPage)
-                    || e.SourcePageType == typeof(Views.EBookReaderPage))
+                if (ForgetOwnNavigationPageTypes.Any(type => type == e.SourcePageType))
                 {
                     var lastNavigatedPageEntry = frame.BackStack.LastOrDefault();
-                    if (lastNavigatedPageEntry?.SourcePageType == typeof(Views.ImageViewerPage)
-                        || lastNavigatedPageEntry?.SourcePageType == typeof(Views.EBookReaderPage)
+                    if (ForgetOwnNavigationPageTypes.Any(type => type == lastNavigatedPageEntry?.SourcePageType)
+                        && e.SourcePageType == lastNavigatedPageEntry?.SourcePageType
                         )
                     {
                         frame.BackStack.RemoveAt(frame.BackStackDepth - 1);

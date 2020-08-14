@@ -126,12 +126,16 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
+            container.RegisterSingleton<Models.UseCase.Search.SearchIndexUpdateWhenSourceFollderAdded>();
+
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<EBookReaderPage>();
             container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
+            container.RegisterForNavigation<SearchResultPage>();
+
         }
 
         bool isRestored = false;
@@ -244,7 +248,11 @@ namespace TsubameViewer
             Window.Current.Content = shell;
             Window.Current.Activate();
 
+            // セカンダリタイル管理の初期化
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
+            
+            // 検索インデックスをソース管理にフォルダやファイルが追加された時に更新する機能を有効化
+            Container.Resolve<Models.UseCase.Search.SearchIndexUpdateWhenSourceFollderAdded>().Initialize();
 
             base.OnInitialized();
         }

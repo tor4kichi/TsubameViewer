@@ -2,15 +2,33 @@
 using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
+using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
+using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Unity.Attributes;
+using Uno.Extensions;
+using Uno.Threading;
+using Windows.Storage;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -18,15 +36,23 @@ namespace TsubameViewer.Presentation.ViewModels
     {
         public INavigationService NavigationService => _navigationServiceLazy.Value;
         private readonly Lazy<INavigationService> _navigationServiceLazy;
-
+        private readonly IScheduler _scheduler;
+        private readonly FolderContainerTypeManager _folderContainerTypeManager;
+        private readonly StorageItemSearchManager _storageItemSearchManager;
 
         public List<object> MenuItems { get;  }
+
+        CompositeDisposable _disposables = new CompositeDisposable();
+
         public PrimaryWindowCoreLayoutViewModel(
             [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
             IEventAggregator eventAggregator,
+            IScheduler scheduler,
             ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            FolderContainerTypeManager folderContainerTypeManager,
+            StorageItemSearchManager storageItemSearchManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
             OpenPageCommand openPageCommand
@@ -39,14 +65,49 @@ namespace TsubameViewer.Presentation.ViewModels
             };
             _navigationServiceLazy = navigationServiceLazy;
             EventAggregator = eventAggregator;
+            _scheduler = scheduler;
             ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
             SourceStorageItemsRepository = sourceStorageItemsRepository;
+            _folderContainerTypeManager = folderContainerTypeManager;
+            _storageItemSearchManager = storageItemSearchManager;
             SourceChoiceCommand = sourceChoiceCommand;
             SourceChoiceCommand.OpenAfterChoice = true;
             RefreshNavigationCommand = refreshNavigationCommand;
             OpenPageCommand = openPageCommand;
+
+
+            UpdateAutoSuggestCommand = new ReactiveCommand<string>();
+
+            UpdateAutoSuggestCommand
+                .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
+                .Subscribe(ExecuteUpdateAutoSuggestCommand)
+                .AddTo(_disposables);
+
+            EventAggregator.GetEvent<StorageItemSearchManager.SearchIndexUpdateProgressEvent>()
+                .Subscribe(args => 
+                {
+                    _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateProgressCount = args.ProcessedCount;
+                    _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateTotalCount = args.TotalCount;
+
+                    Debug.WriteLine($"[SearchIndexUpdate] progress: {args.ProcessedCount}/{args.TotalCount} ");
+                }
+                , ThreadOption.UIThread
+                , keepSubscriberReferenceAlive: true
+                )
+                .AddTo(_disposables);
+
+            AutoSuggestBoxItems = new[]
+            {
+                _AutoSuggestItemsGroup,
+                _autoSuggestBoxSearchIndexGroup
+            };
         }
+
+        AutoSuggestBoxGroupBase _AutoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
+        AutoSuggestBoxSearchIndexGroup _autoSuggestBoxSearchIndexGroup = new AutoSuggestBoxSearchIndexGroup();
+
+        public object[] AutoSuggestBoxItems { get; }
 
         private bool _IsDisplayMenu = true;
         public bool IsDisplayMenu
@@ -73,6 +134,127 @@ namespace TsubameViewer.Presentation.ViewModels
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }
         public OpenPageCommand OpenPageCommand { get; }
+
+
+
+        #region Search
+
+        public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
+
+        FastAsyncLock _suggestUpdateLock = new FastAsyncLock();
+        async void ExecuteUpdateAutoSuggestCommand(string parameter)
+        {
+            using (await _suggestUpdateLock.LockAsync(default))
+            {
+                _AutoSuggestItemsGroup.Items.Clear();
+                if (string.IsNullOrWhiteSpace(parameter)) { return; }
+
+                var result = await Task.Run(() => _storageItemSearchManager.SearchAsync(parameter.Trim(), 0, 3));
+                _AutoSuggestItemsGroup.Items.AddRange(result.Entries);
+            }
+        }
+
+        private DelegateCommand<StorageItemSearchEntry> _SuggestChosenCommand;
+        public DelegateCommand<StorageItemSearchEntry> SuggestChosenCommand =>
+            _SuggestChosenCommand ?? (_SuggestChosenCommand = new DelegateCommand<StorageItemSearchEntry>(ExecuteSuggestChosenCommand));
+
+        async void ExecuteSuggestChosenCommand(StorageItemSearchEntry entry)
+        {
+            var token = entry.ReferenceTokens.First();
+            var path = entry.Path;
+
+            var parameters = new NavigationParameters();
+            parameters.Add(PageNavigationConstants.Token, token);
+
+            var tokenItem = await SourceStorageItemsRepository.GetItemAsync(token);
+
+            var subtractPath = path.Substring(tokenItem.Path.Length);
+            if (subtractPath.Length > 0)
+            {
+                parameters.Add(PageNavigationConstants.Path, subtractPath);
+            }
+
+            var ext = Path.GetExtension(path);
+            if (string.IsNullOrEmpty(ext))
+            {
+                if (tokenItem is StorageFolder folder)
+                {
+                    var item = await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
+                    if (item is StorageFolder itemFolder)
+                    {
+                        if (await _folderContainerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
+                        {
+                            await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                            return;
+                        }
+                        else
+                        {
+                            await NavigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                            return;
+                        }
+                    }
+                }
+
+                ext = (tokenItem as StorageFile).FileType;
+            }
+            // ファイル
+            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
+                || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext)
+                )
+            {
+                await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+            }
+            else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
+            {
+                await NavigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+            }
+        }
+
+
+        private DelegateCommand<object> _SearchQuerySubmitCommand;
+        public DelegateCommand<object> SearchQuerySubmitCommand =>
+            _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new DelegateCommand<object>(ExecuteSearchQuerySubmitCommand));
+
+        void ExecuteSearchQuerySubmitCommand(object parameter)
+        {
+            if (parameter is string q)
+            {
+                // 検索ページを開く
+                NavigationService.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
+            }
+            else if (parameter is StorageItemSearchEntry entry)
+            {
+                ExecuteSuggestChosenCommand(entry);
+            }
+        }
+
+
+        #endregion
+    }
+
+
+    public class AutoSuggestBoxGroupBase : BindableBase
+    {
+        public string Label { get; set; }
+        public ObservableCollection<StorageItemSearchEntry> Items { get; } = new ObservableCollection<StorageItemSearchEntry>();
+    }
+
+    public class AutoSuggestBoxSearchIndexGroup : AutoSuggestBoxGroupBase
+    {
+        private uint _SearchIndexUpdateProgressCount;
+        public uint SearchIndexUpdateProgressCount
+        {
+            get { return _SearchIndexUpdateProgressCount; }
+            set { SetProperty(ref _SearchIndexUpdateProgressCount, value); }
+        }
+
+        private uint _SearchIndexUpdateTotalCount;
+        public uint SearchIndexUpdateTotalCount
+        {
+            get { return _SearchIndexUpdateTotalCount; }
+            set { SetProperty(ref _SearchIndexUpdateTotalCount, value); }
+        }
+
     }
 
 

@@ -36,6 +36,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceOriginConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Search\StorageItemSearchManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SupportedFileTypesHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
@@ -45,6 +46,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Search\SearchIndexUpdateWhenSourceFollderAdded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
@@ -58,6 +60,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageNavigationConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\ThemeChangeRequestEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
@@ -70,6 +73,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ColorToBrush.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\DateTimetoStringConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NotTransparentColorToBooleanConverter.cs" />
@@ -83,11 +87,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookReaderPage.xaml.cs">
       <DependentUpon>EBookReaderPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SearchResultPage.xaml.cs">
+      <DependentUpon>SearchResultPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SourceStorageItemsPage.xaml.cs">
       <DependentUpon>SourceStorageItemsPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\SearchAutoSuggestBoxGroupStyleSelector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
@@ -150,6 +158,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\SearchResultPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\SettingsPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -167,12 +179,11 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\Search\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Models.UseCase\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\SampleData\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\StyleSelector\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\Controls\" />
   </ItemGroup>
   <ItemGroup>

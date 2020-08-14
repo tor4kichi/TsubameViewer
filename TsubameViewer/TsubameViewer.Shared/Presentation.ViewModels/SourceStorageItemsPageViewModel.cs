@@ -209,17 +209,29 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var idSet = _LastUpdatedRecentlyAccessEnties.Select(x => x.Id).ToHashSet();
                 {
-                    var deletedItems = recentlyAccessItems.Where(x => !idSet.Contains(x.Id));
-                    foreach (var i in Enumerable.Range(0, deletedItems.Count()))
-                    {
-                        RecentlyItems.RemoveAt(RecentlyItems.Count - 1);
-                    }
-                }
-                {
                     var addNewItems = recentlyAccessItems.TakeWhile(x => !idSet.Contains(x.Id)).Reverse();
                     foreach (var newItem in addNewItems)
                     {
-                        RecentlyItems.Insert(0, await ToStorageItemViewModel(newItem));
+                        var alreadyAdded = RecentlyItems.FirstOrDefault(x => x.Token == newItem.Token && x.Path.EndsWith(newItem.SubtractPath));
+                        if (alreadyAdded != null)
+                        {
+                            RecentlyItems.Remove(alreadyAdded);
+                            RecentlyItems.Insert(0, alreadyAdded);
+                        }
+                        else
+                        {
+                            RecentlyItems.Insert(0, await ToStorageItemViewModel(newItem));
+                        }
+                    }
+                }
+                {
+                    var deletedItems = recentlyAccessItems.OrderByDescending(x => x.Id).TakeWhile(x => !idSet.Contains(x.Id));
+                    foreach (var i in Enumerable.Range(0, deletedItems.Count()))
+                    {                        
+                        if (RecentlyItems.Count == 0) { break; }
+                        if (RecentlyItems.Count <= 10) { break; }
+
+                        RecentlyItems.RemoveAt(RecentlyItems.Count - 1);
                     }
                 }
             }
@@ -227,7 +239,14 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 foreach (var item in recentlyAccessItems)
                 {
-                    RecentlyItems.Add(await ToStorageItemViewModel(item));
+                    try
+                    {
+                        RecentlyItems.Add(await ToStorageItemViewModel(item));
+                    }
+                    catch
+                    {
+                        _recentlyAccessManager.Delete(item);
+                    }
                 }
             }
 

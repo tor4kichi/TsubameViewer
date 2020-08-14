@@ -133,7 +133,12 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 return await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
             }
 
-            return await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+            if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
+            {
+                return await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+            }
+
+            return null;
         }
 
 

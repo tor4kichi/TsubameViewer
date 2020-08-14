@@ -110,3 +110,9 @@ ForegroundColor = 文字色
 ChangeForegroundColor = 文字色を変更
 
 ResetEBookSettings = 設定をリセットする
+
+
+#### SearchResult
+
+SearchResultWith = 次の検索結果
+SearchPlaceholder = タイトルの検索
