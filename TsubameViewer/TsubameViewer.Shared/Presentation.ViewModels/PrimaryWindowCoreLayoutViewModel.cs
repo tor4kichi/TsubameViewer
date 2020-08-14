@@ -21,6 +21,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
@@ -37,6 +38,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public INavigationService NavigationService => _navigationServiceLazy.Value;
         private readonly Lazy<INavigationService> _navigationServiceLazy;
         private readonly IScheduler _scheduler;
+        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly StorageItemSearchManager _storageItemSearchManager;
 
@@ -51,6 +53,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            PathReferenceCountManager PathReferenceCountManager,
             FolderContainerTypeManager folderContainerTypeManager,
             StorageItemSearchManager storageItemSearchManager,
             SourceChoiceCommand sourceChoiceCommand,
@@ -69,6 +72,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
             SourceStorageItemsRepository = sourceStorageItemsRepository;
+            _PathReferenceCountManager = PathReferenceCountManager;
             _folderContainerTypeManager = folderContainerTypeManager;
             _storageItemSearchManager = storageItemSearchManager;
             SourceChoiceCommand = sourceChoiceCommand;
@@ -84,7 +88,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
-            EventAggregator.GetEvent<StorageItemSearchManager.SearchIndexUpdateProgressEvent>()
+            EventAggregator.GetEvent<PathReferenceCountUpdateWhenSourceManagementChanged.SearchIndexUpdateProgressEvent>()
                 .Subscribe(args => 
                 {
                     _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateProgressCount = args.ProcessedCount;
@@ -160,53 +164,41 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async void ExecuteSuggestChosenCommand(StorageItemSearchEntry entry)
         {
-            var token = entry.ReferenceTokens.First();
             var path = entry.Path;
 
             var parameters = new NavigationParameters();
-            parameters.Add(PageNavigationConstants.Token, token);
 
-            var tokenItem = await SourceStorageItemsRepository.GetItemAsync(token);
+            var token = _PathReferenceCountManager.GetToken(entry.Path);
+            var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(token, entry.Path);
 
-            var subtractPath = path.Substring(tokenItem.Path.Length);
-            if (subtractPath.Length > 0)
+            parameters.Add(PageNavigationConstants.Path, entry.Path);
+
+            if (storageItem is StorageFolder itemFolder)
             {
-                parameters.Add(PageNavigationConstants.Path, subtractPath);
-            }
-
-            var ext = Path.GetExtension(path);
-            if (string.IsNullOrEmpty(ext))
-            {
-                if (tokenItem is StorageFolder folder)
+                if (await _folderContainerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
                 {
-                    var item = await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
-                    if (item is StorageFolder itemFolder)
-                    {
-                        if (await _folderContainerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
-                        {
-                            await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
-                            return;
-                        }
-                        else
-                        {
-                            await NavigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
-                            return;
-                        }
-                    }
+                    await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    return;
                 }
-
-                ext = (tokenItem as StorageFile).FileType;
+                else
+                {
+                    await NavigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    return;
+                }
             }
-            // ファイル
-            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
-                || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext)
-                )
+            else if (storageItem is StorageFile file)
             {
-                await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
-            }
-            else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
-            {
-                await NavigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                // ファイル
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType)
+                    || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                    )
+                {
+                    await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                }
+                else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
+                {
+                    await NavigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                }
             }
         }
 

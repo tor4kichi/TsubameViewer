@@ -47,7 +47,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (OpenAfterChoice && token != null)
             {
-                var parameters = new NavigationParameters((PageNavigationConstants.Token, token));
+                var parameters = new NavigationParameters((PageNavigationConstants.Path, seletedFolder.Path));
                 await _navigationService.NavigateAsync(nameof(Views.FolderListupPage), parameters);
             }
         }

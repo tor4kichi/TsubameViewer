@@ -26,57 +26,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
     {
         #region Navigation Parameters
 
-        public static async ValueTask<NavigationParameters> CreatePageParameterAsync(StorageItemViewModel vm)
+        public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
         {
-            var item = await vm.GetTokenStorageItem();
-            if (item is IStorageFolder folder)
+            var escapedPath = Uri.EscapeDataString(vm.Item.StorageItem.Path);
+            if (vm.Type == StorageItemTypes.Image)
             {
-                var escapedPath = Uri.EscapeDataString(GetSubtractPath(folder, vm.Item.StorageItem));
-                if (vm.Type == StorageItemTypes.Image)
-                {
-                    return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
-                }
-                else
-                {
-                    return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, escapedPath));
-                }
+                return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
             }
-            else if (item is IStorageFile file)
+            else
             {
-                return new NavigationParameters((PageNavigationConstants.Token, vm.Token), (PageNavigationConstants.Path, Uri.EscapeDataString(file.Name)));
+                return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
             }
-
-            throw new NotSupportedException();
-        }
-
-        public static async Task<string> GetRawSubtractPath(StorageItemViewModel vm)
-        {
-            var item = await vm.GetTokenStorageItem();
-            if (item is IStorageFolder folder)
-            {
-                if (vm.Item is StorageItemImageSource storageItemImageSource)
-                {
-                    return GetSubtractPath(folder, storageItemImageSource.StorageItem);
-                }
-            }
-
-            throw new NotSupportedException();
-        }
-
-        public static string GetSubtractPath(IStorageFolder lt, IStorageItem rt)
-        {
-            if (!rt.Path.StartsWith(lt.Path))
-            {
-                throw new ArgumentException("差分パスの取得には親子関係にあるフォルダとアイテムが必要です。");
-            }
-
-            return rt.Path.Substring(lt.Path.Length);
-        }
-
-
-        internal async Task<IStorageItem> GetTokenStorageItem()
-        {
-            return await _sourceStorageItemsRepository.GetItemAsync(Token);
         }
 
         #endregion
@@ -89,9 +49,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public IImageSource Item { get; }
 
 
-
         public string Token { get; }
 
+        
         public string Name { get; }
 
         
@@ -143,8 +103,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         {
             Item = item;
             DateCreated = Item.DateCreated;
-            
             Token = token;
+            
             Name = Item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             if (item is StorageItemImageSource storageItemImageSource)

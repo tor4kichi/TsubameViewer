@@ -126,7 +126,8 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
-            container.RegisterSingleton<Models.UseCase.Search.SearchIndexUpdateWhenSourceFollderAdded>();
+            container.RegisterSingleton<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
+            container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();
@@ -251,9 +252,16 @@ namespace TsubameViewer
             // セカンダリタイル管理の初期化
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
             
-            // 検索インデックスをソース管理にフォルダやファイルが追加された時に更新する機能を有効化
-            Container.Resolve<Models.UseCase.Search.SearchIndexUpdateWhenSourceFollderAdded>().Initialize();
+            // ソース管理に変更が加えられた時にアプリが把握しているストレージアイテムのパスと
+            // そのストレージアイテムを引く際に必要なフォルダアクセス権とを紐付ける
+            Container.Resolve<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>().Initialize();
 
+            // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
+            // ローカルDBや画像サムネイルの破棄などを行う
+            // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
+            // ストレージアイテムのパスごとに参照数を管理し、参照がゼロになった時に限って破棄するような仕組みにしている
+            Container.Resolve<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
+            
             base.OnInitialized();
         }
 
@@ -329,8 +337,6 @@ namespace TsubameViewer
 
         public class PageNavigationInfo
         {
-            public string Token { get; set; }
-
             public string Path { get; set; }
 
             public string PageName { get; set; }
@@ -340,13 +346,28 @@ namespace TsubameViewer
         {
             var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
             var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
+            var referenceCountRepository = Container.Resolve<PathReferenceCountManager>();
+
+            string tokenGettingPath = info.Path;
+            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(Path.GetExtension(info.Path)))
+            {
+                tokenGettingPath = Path.GetDirectoryName(info.Path);
+            }
+
+            var token = referenceCountRepository.GetTokens(tokenGettingPath)?.FirstOrDefault();
+           
+            if (token == null) { return null; }
 
             NavigationParameters parameters = new NavigationParameters();
-            parameters.Add(PageNavigationConstants.Token, info.Token);
-            if (!string.IsNullOrEmpty(info.Path))
+
+
+            if (string.IsNullOrEmpty(info.Path))
             {
-                parameters.Add(PageNavigationConstants.Path, info.Path);
+                throw new NullReferenceException("PageNavigationInfo.Path is can not be null.");
             }
+
+            parameters.Add(PageNavigationConstants.Path, info.Path);
+
             if (!string.IsNullOrEmpty(info.PageName))
             {
                 parameters.Add(PageNavigationConstants.PageName, info.PageName);
@@ -354,42 +375,33 @@ namespace TsubameViewer
 
             
 
-            var ext = Path.GetExtension(info.Path);
-            if (string.IsNullOrEmpty(ext))
+            var item = await sourceFolderRepository.GetStorageItemFromPath(token, info.Path);
+            if (item is StorageFolder itemFolder)
             {
-                var tokenItem = await sourceFolderRepository.GetItemAsync(info.Token);
-                if (tokenItem is StorageFolder folder)
+                var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
+                if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
                 {
-                    var item = await FolderHelper.GetFolderItemFromPath(folder, info.Path);
-                    if (item is StorageFolder itemFolder)
-                    {
-                        var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
-                        if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
-                        {
-                            return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
-                        }
-                        else
-                        {
-                            return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
-                        }
-                    }
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }
-
-                ext = (tokenItem as StorageFile).FileType;
+                else
+                {
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                }
             }
-
-            // ファイル
-            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext)
-                || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(ext)
-                )
+            else if  (item is StorageFile file)
             {
-                return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                // ファイル
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType)
+                    || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                    )
+                {
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                }
+                else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
+                {
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                }
             }
-            else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(ext))
-            {
-                return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
-            }
-
 
             return null;
         }
@@ -397,7 +409,6 @@ namespace TsubameViewer
         private PageNavigationInfo SecondatyTileArgumentToNavigationInfo(SecondaryTileArguments args)
         {
             var info = new PageNavigationInfo();
-            info.Token = args.Token;
             info.Path = args.Path;
             info.PageName = args.PageName;
 
@@ -410,7 +421,7 @@ namespace TsubameViewer
         {
             // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
             var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
-            string token = null;
+            string path = null;
             foreach (var item in args.Files)
             {
                 if (item is StorageFile file)
@@ -427,8 +438,8 @@ namespace TsubameViewer
                     }
                     else { continue; }
 
-                    var fileToken = await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
-                    token = fileToken;
+                    await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
+                    path = file.Path;
                     break;
                 }
             }
@@ -436,11 +447,11 @@ namespace TsubameViewer
             // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
             // TODO: FileActivationで開いた画像ビューワーページのバックナビゲーション先をSourceStorageItemsPageにする？
             // TODO: ファイルアクティべーション時、フォルダを渡された際、フォルダ内が画像のみなら画像ビューワーで開きたい
-            if (token != null)
+            if (path != null)
             {
                 return new PageNavigationInfo()
                 {
-                    Token = token,
+                    Path = path,
                 };
             }
 

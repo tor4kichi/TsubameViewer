@@ -86,7 +86,6 @@ namespace TsubameViewer.Presentation.Services.UWP
             return SecondaryTile.Exists(_secondaryTileIdRepository.GetTileId(path));
         }
 
-
         public static SecondaryTileArguments DeserializeSecondaryTileArguments(string arguments)
         {
             return JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
@@ -125,15 +124,15 @@ namespace TsubameViewer.Presentation.Services.UWP
             return result;
         }
 
-        public async Task<bool> RemoveSecondaryTile(IStorageItem storageItem)
+        public async Task<bool> RemoveSecondaryTile(string path)
         {
-            var tileId = _secondaryTileIdRepository.GetTileId(storageItem.Path);
+            var tileId = _secondaryTileIdRepository.GetTileId(path);
             if (Tiles.TryGetValue(tileId, out var tile))
             {
                 if (await tile.RequestDeleteAsync())
                 {
                     Tiles.Remove(tileId);
-                    Debug.WriteLine("セカンダリタイルを削除：" + storageItem.Path);
+                    Debug.WriteLine("セカンダリタイルを削除：" + path);
                     return true;
                 }
             }
@@ -144,8 +143,6 @@ namespace TsubameViewer.Presentation.Services.UWP
 
     public sealed class SecondaryTileArguments
     {
-        public string Token { get; set; }
-
         public string Path { get; set; }
 
         public string PageName { get; set; }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -166,6 +167,21 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             return (storageItem, entry.Metadata);
         }
+
+
+        public async Task<IStorageItem> GetStorageItemFromPath(string token, string path)
+        {
+            var tokenStorageItem = await GetItemAsync(token);
+
+            if (tokenStorageItem.Path == path)
+            {
+                return tokenStorageItem;
+            }
+
+            var subtractPath = path.Substring(tokenStorageItem.Path.Length);
+            return await FolderHelper.GetFolderItemFromPath(tokenStorageItem as StorageFolder, subtractPath);
+        }
+
 
 
         public void RemoveFolder(string token)

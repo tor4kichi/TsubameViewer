@@ -78,39 +78,32 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             });
         }
 
+        public async Task DeleteFromPath(string path)
+        {
+            _thumbnailImageInfoRepository.DeleteItem(path);
+            var tempFolder = await GetTempFolderAsync();
+            var itemId = GetStorageItemId(path);
+            if (await tempFolder.FileExistsAsync(itemId))
+            {
+                var file = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
+                await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+            }
+        }
+
+
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
 
         public string GetStorageItemId(IStorageItem item)
         {
-            if (item is StorageFile file)
-            {
-                return GetStorageItemId(file);
-            }
-            else if (item is StorageFolder folder)
-            {
-                return GetStorageItemId(folder);
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
+            return GetStorageItemId(item.Path);
         }
 
-        public string GetStorageItemId(StorageFile item)
+        public string GetStorageItemId(string path)
         {
-            return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
+            return _FilePathToHashCodeStringMap.TryGetValue(path, out var code)
                 ? code
-                : _FilePathToHashCodeStringMap[item.Path] = new String(item.Path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
-                ;
-        }
-
-        public string GetStorageItemId(StorageFolder item)
-        {
-            
-            return _FilePathToHashCodeStringMap.TryGetValue(item.Path, out var code)
-                ? code
-                : _FilePathToHashCodeStringMap[item.Path] = new String(item.Path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
+                : _FilePathToHashCodeStringMap[path] = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
                 ;
         }
 

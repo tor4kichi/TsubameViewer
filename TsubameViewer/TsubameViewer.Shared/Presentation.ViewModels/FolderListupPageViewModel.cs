@@ -54,6 +54,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderListingSettings _folderListingSettings;
 
         public SecondaryTileManager SecondaryTileManager { get; }
@@ -86,9 +87,6 @@ namespace TsubameViewer.Presentation.ViewModels
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
 
         IReadOnlyReactiveProperty<QueryOptions> _currentQueryOptions;
-
-        private string _currentToken;
-        private StorageFolder _tokenGettingFolder;
 
         private string _currentPath;
         private IStorageItem _currentItem;
@@ -131,6 +129,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            PathReferenceCountManager PathReferenceCountManager,
             SecondaryTileManager secondaryTileManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand,
@@ -145,6 +144,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _PathReferenceCountManager = PathReferenceCountManager;
             SecondaryTileManager = secondaryTileManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
@@ -254,20 +254,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     using (await _NavigationLock.LockAsync(default))
                     {
-                        bool isTokenChanged = false;
-                        if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
-                        {
-                            if (_currentToken != token)
-                            {
-                                _currentToken = token;
-                                isTokenChanged = true;
-                            }
-                        }
-                        else
-                        {
-                            throw new Exception("required 'token' parameter in FolderListupPage navigation.");
-                        }
-
                         bool isPathChanged = false;
                         if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                         {
@@ -283,7 +269,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         // 以下の場合に表示内容を更新する
                         //    1. 表示フォルダが変更された場合
                         //    2. 前回の更新が未完了だった場合
-                        if (isTokenChanged || isPathChanged)
+                        if (isPathChanged)
                         {
                             {
                                 var items = new[] { FolderItems, ArchiveFileItems, EBookFileItems, ImageFileItems }
@@ -298,17 +284,20 @@ namespace TsubameViewer.Presentation.ViewModels
                                 items.AsParallel().ForAll(x => x.Dispose());
                             }
 
-                            if (isTokenChanged)
-                            {
-                                var tokenStorageItem = await _sourceStorageItemsRepository.GetItemAsync(token);
-                                _tokenGettingFolder = tokenStorageItem as StorageFolder;
-                                _currentItem = tokenStorageItem as StorageFile;
-                                DisplayCurrentPath = _tokenGettingFolder.Path;
-                            }
-
                             if (isPathChanged && _currentItem == null)
                             {
-                                var currentPathItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                                // PathReferenceCountManagerへの登録が遅延する可能性がある
+                                string token = null;
+                                foreach (var _ in Enumerable.Repeat(0, 100))
+                                {
+                                    token = _PathReferenceCountManager.GetToken(_currentPath);
+                                    if (token != null)
+                                    {
+                                        break;
+                                    }
+                                    await Task.Delay(100);
+                                }
+                                var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                                 _currentItem = currentPathItem;
                                 DisplayCurrentPath = _currentItem.Path;
                             }
@@ -388,11 +377,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     Debug.WriteLine(file.Path);
                     await RefreshFolderItems(file, ct);
                 }
-                else if (_tokenGettingFolder != null)
-                {
-                    Debug.WriteLine(_tokenGettingFolder.Path);
-                    await RefreshFolderItems(_tokenGettingFolder, ct);
-                }
                 else
                 {
                     throw new NotSupportedException();
@@ -424,7 +408,7 @@ namespace TsubameViewer.Presentation.ViewModels
             foreach (var folderItem in result.Images)
             {
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, _currentToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                var item = new StorageItemViewModel(folderItem, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Folder)
                 {
                     FolderItems.Add(item);

@@ -39,9 +39,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class ImageViewerPageViewModel : ViewModelBase
     {
-        private string _currentToken;
-        private StorageFolder _tokenGettingFolder;
-
         private string _currentPath;
         private IStorageItem _currentFolderItem;
 
@@ -133,6 +130,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private readonly IScheduler _scheduler;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -141,6 +139,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageViewerPageViewModel(
             IScheduler scheduler,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            PathReferenceCountManager PathReferenceCountManager,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
@@ -151,6 +150,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _scheduler = scheduler;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _PathReferenceCountManager = PathReferenceCountManager;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
@@ -229,54 +229,54 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 )
             {
-                if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
-                {
-                    if (_currentToken != token)
-                    {
-                        _currentPath = null;
-                        _currentFolderItem = null;
-
-                        _currentToken = token;
-
-                        var item = await _sourceStorageItemsRepository.GetItemAsync(token);
-
-                        _tokenGettingFolder = item as StorageFolder;
-
-                        // ファイルアクティベーションなど
-                        if (item is StorageFile file)
-                        {
-                            _currentFolderItem = file;
-                        }
-
-                        Images = default;
-                        CurrentImageIndex = 0;
-                    }
-                }
-#if DEBUG
-                else
-                {
-                    Debug.Assert(false, "required 'token' parameter in FolderListupPage navigation.");
-                }
-#endif
-
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (_currentPath != unescapedPath)
                     {
                         _currentPath = unescapedPath;
-                        if (_tokenGettingFolder == null)
+
+                        // PathReferenceCountManagerへの登録が遅延する可能性がある
+                        string token = null;
+                        var ext = Path.GetExtension(_currentPath);
+                        var directoryPath = Path.GetDirectoryName(_currentPath);
+                        var rawPath = _currentPath;
+                        foreach (var _ in Enumerable.Repeat(0, 10))
                         {
-                            // token がファイルを指す場合は _currentFolderItem を通じて表示する
-                            if (_currentFolderItem.Name != unescapedPath)
+                            // PathReferenceCountManagerに対して画像ファイルは登録していないため
+                            // 画像ファイルの場合は親フォルダのパスを利用する
+                            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext))
                             {
-                                throw new Exception("token parameter is require for path parameter.");
+                                token = _PathReferenceCountManager.GetToken(directoryPath);
+                                if (token != null)
+                                {
+                                    _currentPath = directoryPath;
+                                    break;
+                                }
                             }
+
+                            // 画像をファイルアクティベーションした場合には
+                            // 例外的に画像ファイルのパスが渡される
+                            token = _PathReferenceCountManager.GetToken(rawPath);
+                            if (token != null)
+                            {
+                                _currentPath = rawPath;
+                                break;
+                            }
+
+                            await Task.Delay(100);
                         }
-                        else
+
+                        foreach (var _ in Enumerable.Repeat(0, 10))
                         {
-                            _currentFolderItem = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
+                            token = _PathReferenceCountManager.GetToken(_currentPath);
+                            if (token != null)
+                            {
+                                break;
+                            }
+                            await Task.Delay(100);
                         }
+                        _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
 
                         Images = default;
                         CurrentImageIndex = 0;
@@ -287,7 +287,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 以下の場合に表示内容を更新する
             //    1. 表示フォルダが変更された場合
             //    2. 前回の更新が未完了だった場合
-            if (_tokenGettingFolder != null || _currentFolderItem != null)
+            if (_currentFolderItem != null)
             {
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
@@ -549,7 +549,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 GoNextImageCommand.RaiseCanExecuteChanged();
                 GoPrevImageCommand.RaiseCanExecuteChanged();
 
-                _recentlyAccessManager.AddWatched(_currentToken, _currentPath);
+                _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
             }
         }
 

@@ -15,21 +15,21 @@ namespace TsubameViewer.Models.Domain
 {
     public static class FolderHelper
     {
-        public static async ValueTask<IStorageItem> GetFolderItemFromPath(StorageFolder parent, string path)
+        public static async ValueTask<IStorageItem> GetFolderItemFromPath(StorageFolder parent, string subtractPath)
         {
-            if (string.IsNullOrEmpty(path) || (path.Length == 1 && Path.DirectorySeparatorChar == path[0]))
+            if (string.IsNullOrEmpty(subtractPath) || (subtractPath.Length == 1 && Path.DirectorySeparatorChar == subtractPath[0]))
             {
                 return parent;
             }
 
-            var folderDescendantsNames = path.Split(Path.DirectorySeparatorChar);
+            var folderDescendantsNames = subtractPath.Split(Path.DirectorySeparatorChar);
             StorageFolder currentFolder = parent;
             foreach (var descendantName in folderDescendantsNames.Skip(1).SkipLast(1))
             {
                 var child = await currentFolder.GetFolderAsync(descendantName);
                 if (child == null)
                 {
-                    throw new Exception("Folder not found. " + Path.Combine(parent.Path, path));
+                    throw new Exception("Folder not found. " + Path.Combine(parent.Path, subtractPath));
                 }
                 currentFolder = child;
             }

@@ -239,6 +239,11 @@ namespace TsubameViewer.Presentation.Views
                 }
 
                 Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
+
+                if (currentEntry.PageName == nameof(Views.SourceStorageItemsPage))
+                {
+                    return;
+                }
             }
             catch
             {
@@ -266,7 +271,7 @@ namespace TsubameViewer.Presentation.Views
                     Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + backNavItem.PageName);
                 }
             }
-
+            /*
             {
                 var forwardStack = await navigationManager.GetForwardNavigationEntriesAsync();
                 foreach (var forwardNavItem in forwardStack)
@@ -278,6 +283,7 @@ namespace TsubameViewer.Presentation.Views
                     Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + forwardNavItem.PageName);
                 }
             }
+            */
         }
 
         static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
@@ -332,6 +338,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 await _viewModel.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
+            /*
             {
                 PageEntry[] forwardNavigationPageEntries = new PageEntry[ForwardParametersStack.Count];
                 for (var forwardStackIndex = 0; forwardStackIndex < ForwardParametersStack.Count; forwardStackIndex++)
@@ -343,7 +350,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 await _viewModel.RestoreNavigationManager.SetForwardNavigationEntriesAsync(forwardNavigationPageEntries);
             }
-
+            */
         }
 
         static PageEntry MakePageEnetry(Type pageType, INavigationParameters parameters)
@@ -529,6 +536,7 @@ namespace TsubameViewer.Presentation.Views
             try
             {
                 string token = null;
+                IStorageItem openStorageItem = null;
                 var dropItems = await e.DataView.GetStorageItemsAsync();
                 foreach (var storageItem in dropItems)
                 {
@@ -540,26 +548,27 @@ namespace TsubameViewer.Presentation.Views
                     {
                         token = await _viewModel.SourceStorageItemsRepository.AddFileTemporaryAsync(file, SourceOriginConstants.DragAndDrop);
                     }
-                }
 
+                    openStorageItem = storageItem;
+                }
+                
                 if (dropItems.Count == 1)
                 {
-                    var navigateItem = await _viewModel.SourceStorageItemsRepository.GetItemAsync(token);
-                    if (navigateItem is StorageFolder)
+                    if (openStorageItem is StorageFolder)
                     {
-                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Token, token)));
+                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                     }
-                    else if (navigateItem is StorageFile fileItem)
+                    else if (openStorageItem is StorageFile fileItem)
                     {
                         if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(fileItem.FileType)
                             || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
                             )
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Token, token)));
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                         }
                         else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Token, token)));
+                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                         }
                     }
                 }

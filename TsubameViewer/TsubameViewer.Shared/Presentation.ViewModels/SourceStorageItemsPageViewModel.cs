@@ -41,6 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -66,6 +67,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
+            PathReferenceCountManager PathReferenceCountManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             RecentlyAccessManager recentlyAccessManager,
             SecondaryTileManager secondaryTileManager,
@@ -93,6 +95,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
+            _PathReferenceCountManager = PathReferenceCountManager;
             _folderListingSettings = folderListingSettings;
 
             Groups = new[]
@@ -112,6 +115,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
                 .Subscribe(args =>
                 {
+
                     var existInFolders = Folders.FirstOrDefault(x => x.Token == args.Token);
                     if (existInFolders != null)
                     {
@@ -149,10 +153,10 @@ namespace TsubameViewer.Presentation.ViewModels
                         Folders.Remove(existInFolders);
                     }
 
-                    var existInFiles = RecentlyItems.FirstOrDefault(x => x.Token == args.Token);
-                    if (existInFiles != null)
+                    var existInFiles = RecentlyItems.Where(x => x.Token == args.Token).ToList();
+                    foreach (var item in existInFiles)
                     {
-                        RecentlyItems.Remove(existInFiles);
+                        RecentlyItems.Remove(item);
                     }
                 })
                 .AddTo(_disposables);
@@ -188,31 +192,22 @@ namespace TsubameViewer.Presentation.ViewModels
 
             async Task<StorageItemViewModel> ToStorageItemViewModel(RecentlyAccessManager.RecentlyAccessEntry entry)
             {
-                IStorageItem storageItem = null;
                 //_currentFolderItem = 
-                var tokenItem = await _sourceStorageItemsRepository.GetItemAsync(entry.Token);
-                if (!string.IsNullOrEmpty(entry.SubtractPath))
-                {
-                    storageItem = await FolderHelper.GetFolderItemFromPath(tokenItem as StorageFolder, entry.SubtractPath);
-                }
-                else
-                {
-                    storageItem = tokenItem;
-                }
-
+                var token = _PathReferenceCountManager.GetToken(entry.Path);
+                var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, entry.Path);
                 var storageItemImageSource = new StorageItemImageSource(storageItem, _thumbnailManager);
-                return new StorageItemViewModel(storageItemImageSource, entry.Token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                return new StorageItemViewModel(storageItemImageSource, token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
             }
 
             var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(10);
             if (_LastUpdatedRecentlyAccessEnties != null)
             {
-                var idSet = _LastUpdatedRecentlyAccessEnties.Select(x => x.Id).ToHashSet();
+                var idSet = _LastUpdatedRecentlyAccessEnties.Select(x => x.Path).ToHashSet();
                 {
-                    var addNewItems = recentlyAccessItems.TakeWhile(x => !idSet.Contains(x.Id)).Reverse();
+                    var addNewItems = recentlyAccessItems.TakeWhile(x => !idSet.Contains(x.Path)).Reverse();
                     foreach (var newItem in addNewItems)
                     {
-                        var alreadyAdded = RecentlyItems.FirstOrDefault(x => x.Token == newItem.Token && x.Path.EndsWith(newItem.SubtractPath));
+                        var alreadyAdded = RecentlyItems.FirstOrDefault(x => x.Path == newItem.Path);
                         if (alreadyAdded != null)
                         {
                             RecentlyItems.Remove(alreadyAdded);
@@ -225,7 +220,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
                 {
-                    var deletedItems = recentlyAccessItems.OrderByDescending(x => x.Id).TakeWhile(x => !idSet.Contains(x.Id));
+                    var deletedItems = recentlyAccessItems.OrderByDescending(x => x.LastAccess).TakeWhile(x => !idSet.Contains(x.Path));
                     foreach (var i in Enumerable.Range(0, deletedItems.Count()))
                     {                        
                         if (RecentlyItems.Count == 0) { break; }

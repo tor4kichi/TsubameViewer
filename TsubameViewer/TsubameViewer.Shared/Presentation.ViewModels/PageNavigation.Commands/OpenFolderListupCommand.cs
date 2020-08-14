@@ -30,12 +30,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             {
                 if (item.Type == StorageItemTypes.Archive)
                 {
-                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
-                    var parameters = await StorageItemViewModel.CreatePageParameterAsync(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.EBook)

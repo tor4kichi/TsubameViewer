@@ -28,7 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             {
                 if (itemVM.Item is StorageItemImageSource storageItemImageSource)
                 {
-                    var result = await _secondaryTileManager.RemoveSecondaryTile(storageItemImageSource.StorageItem);
+                    var result = await _secondaryTileManager.RemoveSecondaryTile(storageItemImageSource.StorageItem.Path);
                 }
             }
         }

@@ -17,9 +17,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _recentlyAccessRepository = recentlyAccessRepository;
         }
 
-        public void AddWatched(string token, string subtractPath)
+        public void AddWatched(string path, DateTimeOffset lastAccess)
         {
-            _recentlyAccessRepository.Upsert(token, subtractPath);
+            _recentlyAccessRepository.Upsert(path, lastAccess);
         }
 
         public List<RecentlyAccessEntry> GetItemsSortWithRecently(int take)
@@ -29,53 +29,62 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public void Delete(RecentlyAccessEntry entry)
         {
-            _recentlyAccessRepository.DeleteItem(entry.Id);
+            _recentlyAccessRepository.DeleteItem(entry.Path);
+        }
+
+        public void Delete(string path)
+        {
+            _recentlyAccessRepository.Delete(path);
         }
 
         public sealed class RecentlyAccessRepository : LiteDBServiceBase<RecentlyAccessEntry>
         {
             public RecentlyAccessRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
             {
-                _collection.EnsureIndex(x => x.Token);
-                _collection.EnsureIndex(x => x.SubtractPath);
+                _collection.EnsureIndex(x => x.Path);
+                _collection.EnsureIndex(x => x.LastAccess);
             }
 
-            public void Upsert(string token, string subtractPath)
+            public void Upsert(string path, DateTimeOffset lastAccess)
             {
-                var existItem = _collection.FindOne(x => x.Token == token && x.SubtractPath == subtractPath);
+                var existItem = _collection.FindOne(x => x.Path == path);
                 if (existItem != null)
                 {
-                    _collection.Delete(existItem.Id);
+                    existItem.LastAccess = lastAccess;
+                    _collection.Update(existItem);
+                    return;
                 }
                 else
                 {
                     var count = _collection.Count();
                     if (count > RecordCount)
                     {
-                        var first = _collection.Query().First();
-                        _collection.Delete(first.Id);
+                        var first = _collection.Query().OrderBy(x => x.LastAccess).First();
+                        _collection.Delete(first.Path);
                     }
-                }
 
-                _collection.Insert(new RecentlyAccessEntry() { Token = token, SubtractPath = subtractPath });
+                    _collection.Insert(new RecentlyAccessEntry() { Path = path, LastAccess = lastAccess });
+                }
             }
 
             public List<RecentlyAccessEntry> GetItemsSortWithRecently(int take)
             {
-                return _collection.Query().OrderByDescending(x => x.Id).Limit(take).ToList();
+                return _collection.Query().OrderByDescending(x => x.LastAccess).Limit(take).ToList();
+            }
+
+            public void Delete(string path)
+            {
+                _collection.DeleteMany(x => x.Path == path);
             }
         }
 
         public class RecentlyAccessEntry
         {
-            [BsonId(autoId: true)]
-            public int Id { get; set; }
+            [BsonId]
+            public string Path { get; set; }
 
             [BsonField]
-            public string Token { get; set; }
-
-            [BsonField]
-            public string SubtractPath { get; set; }
+            public DateTimeOffset LastAccess { get; set; }
         }
     }
 }

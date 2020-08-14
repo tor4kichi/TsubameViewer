@@ -28,15 +28,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             {
                 if (itemVM.Item is StorageItemImageSource storageItemImageSource)
                 {
-                    var param = await StorageItemViewModel.CreatePageParameterAsync(itemVM);
+                    var param = StorageItemViewModel.CreatePageParameter(itemVM);
                     var tileArguments = new SecondaryTileArguments();
-                    if (param.TryGetValue(PageNavigationConstants.Token, out string token))
-                    {
-                        tileArguments.Token = token;
-                    }
                     if (param.TryGetValue(PageNavigationConstants.Path, out string path))
                     {
-                        // TODO: SecondaryTileAddCommand, Uri.EscapeDataStringの無駄な呼び出しを削る
                         tileArguments.Path = Uri.UnescapeDataString(path);
                     }
                     if (param.TryGetValue(PageNavigationConstants.PageName, out string pageName))

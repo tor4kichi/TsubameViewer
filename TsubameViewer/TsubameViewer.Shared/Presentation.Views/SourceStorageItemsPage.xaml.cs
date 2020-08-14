@@ -93,7 +93,7 @@ namespace TsubameViewer.Presentation.Views
                 RemoveSourceStorageItem.Command = pageVM.DeleteStoredFolderCommand;
                 SourceManageSeparetor.Visibility =
                 SourceManageSubItem.Visibility =
-                    itemVM.GetTokenStorageItem().GetSyncResult().Path == itemVM.Path
+                    itemVM.Item.StorageItem.Path == itemVM.Path
                     ? Visibility.Visible
                     : Visibility.Collapsed
                     ;

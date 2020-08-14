@@ -48,6 +48,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
+        public void Delete(string path)
+        {
+            _folderContainerTypeRepository.DeleteItem(path);
+        }
+
         internal void SetContainerType(StorageFolder folder, FolderContainerType folderContainerType)
         {
             _folderContainerTypeRepository.SetContainerType(folder.Path, folderContainerType);

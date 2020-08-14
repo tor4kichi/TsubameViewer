@@ -47,9 +47,6 @@ namespace TsubameViewer.Presentation.ViewModels
         string _LightThemeCss;
         string _DarkThemeCss;
 
-        private string _currentToken;
-        private StorageFolder _tokenGettingFolder;
-
         private string _currentPath;
         private StorageFile _currentFolderItem;
 
@@ -149,6 +146,7 @@ namespace TsubameViewer.Presentation.ViewModels
         
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -167,6 +165,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            PathReferenceCountManager PathReferenceCountManager,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
             RecentlyAccessManager recentlyAccessManager,
@@ -178,6 +177,7 @@ namespace TsubameViewer.Presentation.ViewModels
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _PathReferenceCountManager = PathReferenceCountManager;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
             _recentlyAccessManager = recentlyAccessManager;
@@ -237,64 +237,39 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 || mode == NavigationMode.Back)
             {
-                if (parameters.TryGetValue(PageNavigationConstants.Token, out string token))
-                {
-                    if (_currentToken != token)
-                    {
-                        _currentPath = null;
-                        _currentFolderItem = null;
-
-                        _currentToken = token;
-
-                        var item = await _sourceStorageItemsRepository.GetItemAsync(token);
-
-                        _tokenGettingFolder = item as StorageFolder;
-
-                        // ファイルアクティベーションなど
-                        if (item is StorageFile file)
-                        {
-                            _currentFolderItem = file;
-                        }
-                    }
-                }
-                else
-                {
-                    throw new ArgumentException("EBookReaderPage was require 'token' parameter.");
-                }
-
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (_currentPath != unescapedPath)
                     {
                         _currentPath = unescapedPath;
-                        if (_tokenGettingFolder == null)
+                        // PathReferenceCountManagerへの登録が遅延する可能性がある
+                        string token = null;
+                        foreach (var _ in Enumerable.Repeat(0, 100))
                         {
-                            // token がファイルを指す場合は _currentFolderItem を通じて表示する
-                            if (_currentFolderItem.Name != unescapedPath)
+                            token = _PathReferenceCountManager.GetToken(_currentPath);
+                            if (token != null)
                             {
-                                throw new Exception("token parameter is require for path parameter.");
+                                break;
                             }
+                            await Task.Delay(100);
+                        }
+                        var item = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
+
+                        if (item is StorageFile file)
+                        {
+                            _currentFolderItem = file;
                         }
                         else
                         {
-                            var item = await FolderHelper.GetFolderItemFromPath(_tokenGettingFolder, _currentPath);
-
-                            if (item is StorageFile file)
-                            {
-                                _currentFolderItem = file;
-                            }
-                            else
-                            {
-                                throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
-                            }
+                            throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
                         }
                     }
                 }
             }
 
             
-            if (_tokenGettingFolder != null || _currentFolderItem != null)
+            if (_currentFolderItem != null)
             {
                 await RefreshItems(_leavePageCancellationTokenSource.Token);
             }
@@ -591,7 +566,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _applicationView.Title = _currentBook.Title;
 
 
-            _recentlyAccessManager.AddWatched(_currentToken, _currentPath);
+            _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
         }
 
 
