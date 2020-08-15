@@ -350,7 +350,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
             else
             {
-                throw new Exception();
+                return false;
             }
 
             return true;
