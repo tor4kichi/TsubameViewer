@@ -8,13 +8,13 @@ Windows10/XboxOne向けの漫画・小説ビューアです。
 * ePubのテキスト表示に対応
   * 縦書き・横書きの両方に対応
   * フォント、文字サイズ、背景色など自由に変更可能
-* 【Windows10】スタート画面へのピン留めに対応
+* スタート画面へのピン留めに対応
 
 ## ダウンロード
 
-* Windows10/XboxOne - マイクロソフトストア
-  * [ストアアプリで開く](ms-windows-store://pdp/?productid=9NDXXQRG4PL8)
-  * [ブラウザで開く](https://www.microsoft.com/store/apps/9NDXXQRG4PL8)
+**試用版が「無期限・無制限」で利用できます。アプリ購入は必須ではありません。** アプリが気に入ったアプリ購入から開発を支援できる形になっています。試用版とアプリ購入版には機能制限の差はありません。
+
+* [Windows10/XboxOne - マイクロソフトストア](https://www.microsoft.com/store/apps/9NDXXQRG4PL8)
 
 ## 使い方
 
@@ -44,7 +44,6 @@ Windows10/XboxOne向けの漫画・小説ビューアです。
 * 圧縮ファイルをストレージに展開せずそのまま表示
   * zip/rar/pdf/epubのいずれもメモリ上のみで解決。ストレージ書き込みを最小限に抑えられます。
 
-
 ### アプリの機能
 
 * ファイル拡張子の関連付けに対応
@@ -56,6 +55,6 @@ Windows10/XboxOne向けの漫画・小説ビューアです。
 * 画像
   * .jpg/.png/.bmp/.gif/.tiff/.svg
 * アーカイブ
-  * .zip/.rar/.pdf
+  * .zip/.cbz/.rar/.cbr/.7z/.cb7/.tar/.pdf
 * 電子書籍
   * .epub
