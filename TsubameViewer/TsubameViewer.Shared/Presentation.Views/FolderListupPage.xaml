@@ -123,7 +123,7 @@
 
     <DataTemplate x:Key="FolderTemplate"
                   >
-      <uwpControls:DockPanel>
+      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
 
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
@@ -149,7 +149,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="ArchiveFileTemplate">
-      <uwpControls:DockPanel>
+      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
@@ -175,7 +175,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="EBookFileTemplate">
-      <uwpControls:DockPanel>
+      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>

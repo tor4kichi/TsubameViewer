@@ -175,44 +175,40 @@ namespace TsubameViewer.Presentation.Views
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
-            if (flyout.Target is Control content)
+
+            StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
+            if (itemVM == null && flyout.Target is Control content)
             {
-                var itemVM = (content.DataContext as StorageItemViewModel)
-                    ?? (content as ContentControl)?.Content as StorageItemViewModel
-                    ;
-                if (itemVM == null)
-                {
-                    flyout.Hide();
-                    return;
-                }
-
-                OpenImageViewerItem.CommandParameter = itemVM;
-                OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
-
-                OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
-                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-
-                AddSecondaryTile.CommandParameter = itemVM;
-                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-                AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
-
-                RemoveSecondaryTile.CommandParameter = itemVM;
-                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
-
-                OpenWithExplorerItem.CommandParameter = itemVM;
-                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-                OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
+                itemVM = (content as ContentControl)?.Content as StorageItemViewModel;
             }
-            else
+
+            if (itemVM == null)
             {
                 flyout.Hide();
                 return;
             }
+
+            OpenImageViewerItem.CommandParameter = itemVM;
+            OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
+
+            OpenListupItem.CommandParameter = itemVM;
+            OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+            OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+                ? Visibility.Visible
+                : Visibility.Collapsed
+                ;
+
+            AddSecondaryTile.CommandParameter = itemVM;
+            AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
+            AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
+
+            RemoveSecondaryTile.CommandParameter = itemVM;
+            RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
+            RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
+
+            OpenWithExplorerItem.CommandParameter = itemVM;
+            OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+            OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }
