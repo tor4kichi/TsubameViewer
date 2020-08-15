@@ -2,3 +2,5 @@
 TsubameViewer/TsubameViewer.*/bin
 TsubameViewer/TsubameViewer.UWP/TsubameViewer.Uwp_temporarykey.pfx
 /TsubameViewer/TsubameViewer.UWP/Package.StoreAssociation.xml
+/TsubameViewer/TsubameViewer.UWP/AppPackages
+/TsubameViewer/TsubameViewer.UWP/BundleArtifacts
