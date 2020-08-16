@@ -29,6 +29,7 @@ using Uno.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using Windows.Storage;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -171,7 +172,7 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private void MenuFlyout_Opened(object sender, object e)
+        private async void MenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
@@ -190,6 +191,18 @@ namespace TsubameViewer.Presentation.Views
 
             OpenImageViewerItem.CommandParameter = itemVM;
             OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
+            if (itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+            {
+                var folderContainerType = await pageVM.FolderContainerTypeManager.GetFolderContainerType((itemVM.Item as StorageItemImageSource).StorageItem as StorageFolder);
+                OpenImageViewerItem.Visibility = folderContainerType == Models.Domain.FolderItemListing.FolderContainerType.OnlyImages 
+                    ? Visibility.Visible 
+                    : Visibility.Collapsed
+                    ;
+            }
+            else
+            {
+                OpenImageViewerItem.Visibility = Visibility.Visible;
+            }
 
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Command = pageVM.OpenFolderListupCommand;
@@ -197,6 +210,7 @@ namespace TsubameViewer.Presentation.Views
                 ? Visibility.Visible
                 : Visibility.Collapsed
                 ;
+
 
             AddSecondaryTile.CommandParameter = itemVM;
             AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;

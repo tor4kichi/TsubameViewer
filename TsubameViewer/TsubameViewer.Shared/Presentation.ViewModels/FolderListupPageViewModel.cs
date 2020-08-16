@@ -57,6 +57,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderListingSettings _folderListingSettings;
 
+        public FolderContainerTypeManager FolderContainerTypeManager { get; }
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -128,6 +129,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public FolderListupPageViewModel(
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
+            FolderContainerTypeManager folderContainerTypeManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             PathReferenceCountManager PathReferenceCountManager,
             SecondaryTileManager secondaryTileManager,
@@ -143,6 +145,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
+            FolderContainerTypeManager = folderContainerTypeManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _PathReferenceCountManager = PathReferenceCountManager;
             SecondaryTileManager = secondaryTileManager;

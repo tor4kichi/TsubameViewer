@@ -24,7 +24,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderContainerTypeRepository = folderContainerTypeRepository;
         }
 
-        public async Task<FolderContainerType> GetFolderContainerType(StorageFolder folder)
+        public async ValueTask<FolderContainerType> GetFolderContainerType(StorageFolder folder)
         {
             var containerType = _folderContainerTypeRepository.GetContainerType(folder.Path);
             
