@@ -539,7 +539,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
                 ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
 
-                PageFolderNames = Images.Select(x => x.Name.Split(SeparateChars).TakeLast(2).First()).Distinct().ToArray();
+                if (_currentFolderItem is StorageFolder ||
+                    (_currentFolderItem is StorageFile file && SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                    )
+                {
+                    PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                }
+                else
+                {
+                    PageFolderNames = new string[0];
+                }
+
 
                 ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
 
