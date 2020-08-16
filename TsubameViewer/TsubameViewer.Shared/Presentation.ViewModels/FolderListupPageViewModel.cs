@@ -449,7 +449,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
             EBookFileItems.Clear();
-            var result = await _imageCollectionManager.GetImageSourcesAsync(storageItem, ct);
+            var result = await _imageCollectionManager.GetImageSourcesForFolderItemsListingAsync(storageItem, ct);
 
             if (result.Images?.Any() != true)
             {
