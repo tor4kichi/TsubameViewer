@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
+using Uno.UI.Toolkit;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -224,5 +225,78 @@ namespace TsubameViewer.Presentation.Views
             OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
             OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
         }
+
+
+
+
+        public async void BringIntoViewLastIntractItem()
+        {
+            var pageVM = (DataContext as FolderListupPageViewModel);
+            var lastIntaractItem = pageVM.FolderLastIntractItem.Value;
+            if (lastIntaractItem != null)
+            {
+                DependencyObject item;
+                do
+                {
+                    item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
+
+                    await Task.Delay(10);
+                }
+                while (item == null);
+
+                if (item is Control control)
+                {
+                    var transform = control.TransformToVisual(RootScrollViewer);
+                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
+                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
+                    control.Focus(FocusState.Keyboard);
+                }
+            }
+            else if (pageVM.ImageLastIntractItem.Value >= 1)
+            {
+                // 実際にスクロールするまでItemTemplateは解決されない
+                // 一旦Opacity=0.0に設定した上で要素が取れるまでプログラマチックにスクロールしていく
+                // 要素が取れてスクロールが完了したらOpacity=1.0に戻す
+                
+                DependencyObject item;
+                var visibleItemsRepeater = new[] { FileItemsRepeater_Line, FileItemsRepeater_Small, FileItemsRepeater_Midium, FileItemsRepeater_Large }.First(x => x.Visibility == Visibility.Visible);
+                visibleItemsRepeater.Opacity = 0.0;
+                RootScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+                double offset = 0;
+                {
+                    var transform = visibleItemsRepeater.TransformToVisual(RootScrollViewer);
+                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
+                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
+                    offset = positionInScrollViewer.Y;
+                }
+                
+                do
+                {
+                    item = visibleItemsRepeater.TryGetElement(pageVM.ImageLastIntractItem.Value);
+
+                    RootScrollViewer.ChangeView(null, offset, null, true);
+
+                    offset += RootScrollViewer.ViewportHeight;
+
+                    await Task.Delay(10);
+                }
+                while (item == null);
+
+                await Task.Delay(100);
+
+                if (item is Control control)
+                {
+                    var transform = control.TransformToVisual(RootScrollViewer);
+                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
+                    control.Focus(FocusState.Keyboard);
+                    RootScrollViewer.StartBringIntoView(new BringIntoViewOptions() { AnimationDesired = false });
+//                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
+                }
+
+                visibleItemsRepeater.Opacity = 1.0;
+                RootScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
+            }
+        }
+
     }
 }

@@ -61,7 +61,7 @@ namespace TsubameViewer.Presentation.Views
 
             SetTheme(_viewModel.ApplicationSettings.Theme);
 
-            Loaded += PrimaryWindowCoreLayout_Loaded;            
+            AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;            
         }
 
         private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)

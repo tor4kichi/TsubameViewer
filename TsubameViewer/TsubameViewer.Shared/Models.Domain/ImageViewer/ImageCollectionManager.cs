@@ -170,7 +170,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderItemsAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder.CreateItemQuery();
+            var query = storageFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableItems(itemsCount, query, ct));
 #else
@@ -193,7 +193,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFile file, StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder?.CreateFileQuery();
+            var query = storageFolder?.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions));
             if (query == null) { return (0, null); }
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));

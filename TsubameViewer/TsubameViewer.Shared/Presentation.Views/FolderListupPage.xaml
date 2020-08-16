@@ -385,7 +385,7 @@
 
         
       </StackPanel>
-      <ScrollViewer>
+      <ScrollViewer x:Name="RootScrollViewer">
         <StackPanel x:Name="ContentRootStackPanel" Margin="48 8 48 32">
           <uwpControls:AdaptiveGridView ItemsSource="{Binding Source={StaticResource FolderAndArchiveItems}}"
                           x:Name="FoldersAdaptiveGridView"
@@ -461,8 +461,7 @@
                                   ItemsSource="{Binding FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
-                               Visibility="Collapsed"
-                               
+                               Visibility="Collapsed"                              
                                   >
             <winUI:ItemsRepeater.Layout>
               <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
@@ -558,6 +557,17 @@
       </ScrollViewer>
       
     </uwpControls:DockPanel>
+
+    <i:Interaction.Behaviors>
+
+      <core:DataTriggerBehavior Binding="{Binding FolderLastIntractItem.Value}" Value="{x:Null}" ComparisonCondition="NotEqual">
+        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
+      </core:DataTriggerBehavior>
+
+      <core:DataTriggerBehavior Binding="{Binding ImageLastIntractItem.Value}" Value="-1" ComparisonCondition="NotEqual">
+        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
+      </core:DataTriggerBehavior>
+    </i:Interaction.Behaviors>
 
     <VisualStateManager.VisualStateGroups>
       
