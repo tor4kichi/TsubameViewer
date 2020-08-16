@@ -54,13 +54,21 @@ namespace TsubameViewer.Presentation.Views
             FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
             FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
             FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
+
+            FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
+            FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
+            FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         }
 
         private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
         {
-            FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_ElementPrepared;
+            FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_ElementPrepared;
+
+            FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
+            FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
+            FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
         }
 
 
@@ -150,6 +158,18 @@ namespace TsubameViewer.Presentation.Views
                 itemVM.Initialize();
             }
         }
+
+        private void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
+        {
+            if (args.Element is FrameworkElement fe
+               && fe.DataContext is StorageItemViewModel itemVM
+               )
+            {
+                itemVM.StopImageLoading();
+            }
+        }
+
+
 
 
 
@@ -257,7 +277,7 @@ namespace TsubameViewer.Presentation.Views
                 // 実際にスクロールするまでItemTemplateは解決されない
                 // 一旦Opacity=0.0に設定した上で要素が取れるまでプログラマチックにスクロールしていく
                 // 要素が取れてスクロールが完了したらOpacity=1.0に戻す
-                
+                /*
                 DependencyObject item;
                 var visibleItemsRepeater = new[] { FileItemsRepeater_Line, FileItemsRepeater_Small, FileItemsRepeater_Midium, FileItemsRepeater_Large }.First(x => x.Visibility == Visibility.Visible);
                 visibleItemsRepeater.Opacity = 0.0;
@@ -295,6 +315,7 @@ namespace TsubameViewer.Presentation.Views
 
                 visibleItemsRepeater.Opacity = 1.0;
                 RootScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
+                */
             }
         }
 

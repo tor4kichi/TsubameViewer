@@ -440,6 +440,11 @@ namespace TsubameViewer.Presentation.ViewModels
         
         private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
         {
+            FolderItems.DisposeAll();
+            ArchiveFileItems.DisposeAll();
+            ImageFileItems.DisposeAll();
+            EBookFileItems.DisposeAll();
+
             FolderItems.Clear();
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
