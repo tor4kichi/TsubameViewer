@@ -9,7 +9,7 @@
   <Identity
     Name="18803tor4kichi.TsubameViewer"
     Publisher="CN=DFF1CEA0-5963-4197-8676-6105C5E8CE4B"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <mp:PhoneIdentity PhoneProductId="37bb45e3-5324-4790-b288-51560417bde3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
