@@ -156,7 +156,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             _ => throw new NotSupportedException(file.FileType)
                         });
 
-                        if (!result) { return null; }
+                        if (!result || stream.Size == 0) { return null; }
 
                         var decoder = await BitmapDecoder.CreateAsync(stream);
                         using (var memStream = new InMemoryRandomAccessStream())
