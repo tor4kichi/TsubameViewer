@@ -43,7 +43,7 @@
 
     <Flyout x:Key="PageFlyout">
 
-      <StackPanel Spacing="16">
+      <StackPanel>
 
         <ComboBox x:Name="PageFolderNamesSelector"
                           ItemsSource="{Binding PageFolderNames}"
@@ -52,6 +52,7 @@
                             Header="{Binding Source=CurrentFolder_InArchive, Converter={StaticResource LocalizeConverter}}"
                             MinWidth="240"
                             Visibility="Collapsed"
+                  Margin="0 0 0 16"
                           >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="SelectionChanged">
@@ -81,7 +82,9 @@
           </i:Interaction.Behaviors>
         </Slider>
 
-        <Button x:Name="DoubleViewCorrectButton" Content="見開きのページズレを補正する" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed" />
+        <Button x:Name="DoubleViewCorrectButton" Content="見開きのページズレを補正する" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
+                Margin="0 16 0 0"
+                />
 
       </StackPanel>
     </Flyout>
@@ -522,28 +525,14 @@
         </VisualState>
       </VisualStateGroup>
 
+      <!-- アーカイブファイル内のフォルダ名表示の切り替え -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding ItemType}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <domainModels:StorageItemTypes>Archive</domainModels:StorageItemTypes>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
+            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="1" Comparison="GreaterThan" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PageFolderNamesSelector.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="1" Comparison="Equal" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="PageFolderNamesSelector.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

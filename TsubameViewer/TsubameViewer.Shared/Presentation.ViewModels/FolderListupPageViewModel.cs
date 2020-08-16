@@ -19,6 +19,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -55,8 +56,10 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly PathReferenceCountManager _PathReferenceCountManager;
+        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
 
+        public FolderContainerTypeManager FolderContainerTypeManager { get; }
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -83,6 +86,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public FolderItemsGroupBase[] Groups { get; }
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+
+        public ReactivePropertySlim<StorageItemViewModel> FolderLastIntractItem { get; }
+        public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
 
@@ -128,9 +134,11 @@ namespace TsubameViewer.Presentation.ViewModels
         public FolderListupPageViewModel(
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
+            FolderContainerTypeManager folderContainerTypeManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             PathReferenceCountManager PathReferenceCountManager,
             SecondaryTileManager secondaryTileManager,
+            FolderLastIntractItemManager folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -143,9 +151,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
+            FolderContainerTypeManager = folderContainerTypeManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _PathReferenceCountManager = PathReferenceCountManager;
             SecondaryTileManager = secondaryTileManager;
+            _folderLastIntractItemManager = folderLastIntractItemManager;
             _folderListingSettings = folderListingSettings;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
@@ -180,7 +190,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
-
+            FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>();
+            ImageLastIntractItem = new ReactivePropertySlim<int>();
             /*
             _currentQueryOptions = Observable.CombineLatest(
                 SelectedFolderViewFirstSort,
@@ -213,6 +224,11 @@ namespace TsubameViewer.Presentation.ViewModels
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
             _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
             _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
+
+            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            {
+                _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
+            }
 
             base.OnNavigatedFrom(parameters);
         }
@@ -346,6 +362,37 @@ namespace TsubameViewer.Presentation.ViewModels
                     EBookFileItems.ForEach(x => x.UpdateLastReadPosition());
                     FolderItems.ForEach(x => x.UpdateLastReadPosition());
                 }
+
+
+                if (mode != NavigationMode.New)
+                {
+                    var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
+                    if (lastIntaractItem != null)
+                    {
+                        StorageItemViewModel lastIntractItemVM = null;
+                        foreach (var item in new[] { FolderItems, ArchiveFileItems, EBookFileItems, }.SelectMany(x => x))
+                        {
+                            if (item.Name == lastIntaractItem)
+                            {
+                                lastIntractItemVM = item;
+                                break;
+                            }
+                        }
+
+                        FolderLastIntractItem.Value = lastIntractItemVM;
+
+                        if (lastIntractItemVM == null)
+                        {
+                            var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
+                            ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
+                        }
+                    }
+                    else
+                    {
+                        FolderLastIntractItem.Value = null;
+                        ImageLastIntractItem.Value = 0;
+                    }
+                }
             }
             finally
             {
@@ -393,11 +440,16 @@ namespace TsubameViewer.Presentation.ViewModels
         
         private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
         {
+            FolderItems.DisposeAll();
+            ArchiveFileItems.DisposeAll();
+            ImageFileItems.DisposeAll();
+            EBookFileItems.DisposeAll();
+
             FolderItems.Clear();
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
             EBookFileItems.Clear();
-            var result = await _imageCollectionManager.GetImageSourcesAsync(storageItem, ct);
+            var result = await _imageCollectionManager.GetImageSourcesForFolderItemsListingAsync(storageItem, ct);
 
             if (result.Images?.Any() != true)
             {

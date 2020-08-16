@@ -135,6 +135,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public void StopImageLoading()
         {
             _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -149,16 +151,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
             if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
 
+            var ct = _cts.Token;
             try
             {
-                if (_cts.IsCancellationRequested) 
+                if (ct.IsCancellationRequested)
                 {
                     _isAppearingRequestButLoadingCancelled = true;
                     return; 
                 }
 
-                _isInitialized = true;
-                var ct = _cts.Token;
                 ct.ThrowIfCancellationRequested();
 
                 await _loadinLock.WaitAsync(ct);
@@ -178,6 +179,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 }
 
                 Debug.WriteLine("Thumbnail Load: " + Name);
+
+                _isInitialized = true;
             }
             catch (OperationCanceledException)
             {
@@ -201,7 +204,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 {
                     return;
                 }
-                
+
                 _isInitialized = false;
                 
                 Initialize();

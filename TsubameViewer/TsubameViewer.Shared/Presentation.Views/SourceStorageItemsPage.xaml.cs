@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Uno;
 using Uno.Extensions;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -56,7 +58,7 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        private void FoldersMenuFlyout_Opened(object sender, object e)
+        private async void FoldersMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as SourceStorageItemsPageViewModel;
@@ -74,6 +76,18 @@ namespace TsubameViewer.Presentation.Views
 
             OpenImageViewerItem.CommandParameter = itemVM;
             OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
+            if (itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+            {
+                var folderContainerType = await pageVM.FolderContainerTypeManager.GetFolderContainerType((itemVM.Item as StorageItemImageSource).StorageItem as StorageFolder);
+                OpenImageViewerItem.Visibility = folderContainerType == Models.Domain.FolderItemListing.FolderContainerType.OnlyImages
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+            }
+            else
+            {
+                OpenImageViewerItem.Visibility = Visibility.Visible;
+            }
 
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Command = pageVM.OpenFolderListupCommand;

@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
@@ -134,6 +135,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
+        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
@@ -144,6 +146,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
+            FolderLastIntractItemManager folderLastIntractItemManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
@@ -157,6 +160,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
+            _folderLastIntractItemManager = folderLastIntractItemManager;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .Do(_ => 
@@ -168,6 +172,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     PageName = names[names.Length - 1];
                     PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
+                    _folderLastIntractItemManager.SetLastIntractItemName(_currentFolderItem.Path, imageSource.Name);
                 })
                 .ToReadOnlyReactivePropertySlim()
                 .AddTo(_disposables);
@@ -531,7 +536,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            var result = await _imageCollectionManager.GetImageSourcesAsync(_currentFolderItem);
+            var result = await _imageCollectionManager.GetImageSourcesForImageViewerAsync(_currentFolderItem);
             if (result != null)
             {
                 Images = result.Images;
@@ -539,7 +544,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
                 ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
 
-                PageFolderNames = Images.Select(x => x.Name.Split(SeparateChars).TakeLast(2).First()).Distinct().ToArray();
+                if (_currentFolderItem is StorageFolder ||
+                    (_currentFolderItem is StorageFile file && SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                    )
+                {
+                    PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                }
+                else
+                {
+                    PageFolderNames = new string[0];
+                }
+
 
                 ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
 

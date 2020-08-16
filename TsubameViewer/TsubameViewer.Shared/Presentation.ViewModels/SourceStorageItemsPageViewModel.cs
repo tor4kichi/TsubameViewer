@@ -48,6 +48,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IEventAggregator _eventAggregator;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
+        public FolderContainerTypeManager FolderContainerTypeManager { get; }
         public SecondaryTileManager SecondaryTileManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
@@ -66,6 +67,7 @@ namespace TsubameViewer.Presentation.ViewModels
             IEventAggregator eventAggregator,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
+            FolderContainerTypeManager folderContainerTypeManager,
             ThumbnailManager thumbnailManager,
             PathReferenceCountManager PathReferenceCountManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -94,6 +96,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             _bookmarkManager = bookmarkManager;
+            FolderContainerTypeManager = folderContainerTypeManager;
             _thumbnailManager = thumbnailManager;
             _PathReferenceCountManager = PathReferenceCountManager;
             _folderListingSettings = folderListingSettings;

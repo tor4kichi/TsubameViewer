@@ -26,6 +26,7 @@ namespace TsubameViewer.Models.Domain.EBook
             _RubyFontFamily = Read(default(string), nameof(RubyFontFamily));
             _BackgroundColor = Read(Colors.Transparent, nameof(BackgroundColor));
             _ForegroundColor = Read(Colors.Transparent, nameof(ForegroundColor));
+            _OverrideWritingMode = Read(WritingMode.Inherit, nameof(OverrideWritingMode));
         }
 
         private bool _IsReversePageFliping_Scroll;
@@ -99,7 +100,23 @@ namespace TsubameViewer.Models.Domain.EBook
             get { return _ForegroundColor; }
             set { SetProperty(ref _ForegroundColor, value); }
         }
+
+
+        private WritingMode _OverrideWritingMode;
+        public WritingMode OverrideWritingMode
+        {
+            get { return _OverrideWritingMode; }
+            set { SetProperty(ref _OverrideWritingMode, value); }
+        }
     }
 
+
+    public enum WritingMode
+    {
+        Inherit,
+        Horizontal_TopToBottom,
+        Vertical_RightToLeft,
+        Vertical_LeftToRight,
+    }
 
 }

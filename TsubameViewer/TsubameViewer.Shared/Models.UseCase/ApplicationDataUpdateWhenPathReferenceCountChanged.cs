@@ -7,6 +7,7 @@ using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Bookmark;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
@@ -21,6 +22,7 @@ namespace TsubameViewer.Models.UseCase
         private readonly StorageItemSearchManager _storageItemSearchManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ApplicationDataUpdateWhenPathReferenceCountChanged(
@@ -30,7 +32,8 @@ namespace TsubameViewer.Models.UseCase
             StorageItemSearchManager storageItemSearchManager,
             FolderContainerTypeManager folderContainerTypeManager,
             ThumbnailManager thumbnailManager,
-            SecondaryTileManager secondaryTileManager
+            SecondaryTileManager secondaryTileManager,
+            FolderLastIntractItemManager folderLastIntractItemManager
             )
         {
             _eventAggregator = eventAggregator;
@@ -39,6 +42,7 @@ namespace TsubameViewer.Models.UseCase
             _storageItemSearchManager = storageItemSearchManager;
             _folderContainerTypeManager = folderContainerTypeManager;
             _thumbnailManager = thumbnailManager;
+            _folderLastIntractItemManager = folderLastIntractItemManager;
             _eventAggregator.GetEvent<PathReferenceCountManager.PathReferenceAddedEvent>()
                 .Subscribe(args => 
                 {
@@ -54,6 +58,7 @@ namespace TsubameViewer.Models.UseCase
                     _bookmarkManager.RemoveBookmark(args.Path);
                     _storageItemSearchManager.Remove(args.Path);
                     _folderContainerTypeManager.Delete(args.Path);
+                    _folderLastIntractItemManager.Remove(args.Path);
                     await _thumbnailManager.DeleteFromPath(args.Path);
                     await secondaryTileManager.RemoveSecondaryTile(args.Path);
                 }
