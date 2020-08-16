@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Uwp.UI.Extensions;
+using Prism.Commands;
 using Prism.Navigation;
 using Reactive.Bindings.Extensions;
 using System;
@@ -18,6 +19,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
 using Windows.UI.Core;
+using Windows.UI.Text.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -58,8 +60,37 @@ namespace TsubameViewer.Presentation.Views
                 .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
 
             SetTheme(_viewModel.ApplicationSettings.Theme);
+
+            Loaded += PrimaryWindowCoreLayout_Loaded;            
         }
 
+        private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+        {
+            var textBox = AutoSuggestBox.FindDescendant<TextBox>();
+            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+            textBox.TextChanged += TextBox_TextChanged;
+        }
+
+        bool _isInputIncomplete;
+        private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+        {
+            _isInputIncomplete = true;
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInputIncomplete == false)
+            {
+                (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+            }
+        }
+
+        private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+        {
+            _isInputIncomplete = false;
+            (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+        }
 
         IDisposable _backNavigationEventSubscriber;
         IDisposable _refreshNavigationEventSubscriber;
@@ -316,7 +347,7 @@ namespace TsubameViewer.Presentation.Views
         // NavigationManager.BackRequestedによる戻るを一時的に防止する
         // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
         public static bool IsPreventSystemBackNavigation { get; set; }
-
+        public CoreTextEditContext _context { get; private set; }
 
         private INavigationParameters _Prev;
 

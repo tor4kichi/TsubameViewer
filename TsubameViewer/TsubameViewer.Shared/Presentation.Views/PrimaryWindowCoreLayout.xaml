@@ -106,9 +106,6 @@
             </mySS:SearchAutoSuggestBoxGroupStyleSelector>
           </AutoSuggestBox.GroupStyleSelector>
           <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="TextChanged">
-              <core:InvokeCommandAction Command="{Binding UpdateAutoSuggestCommand}" CommandParameter="{x:Bind AutoSuggestBox.Text, Mode=OneWay}" />
-            </core:EventTriggerBehavior>
 
             <core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{Binding SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
