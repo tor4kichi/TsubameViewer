@@ -30,6 +30,10 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
             _folderLastIntractItemRepository.SetLastIntractItemName(path, itemName);
         }
 
+        public void Remove(string path)
+        {
+            _folderLastIntractItemRepository.DeleteItem(path);
+        }
 
         public class FolderLastIntractItemRepository : LiteDBServiceBase<FolderLastIntractItem>
         {
