@@ -109,6 +109,12 @@ ChangeBackgroundColor = 背景色を変更
 ForegroundColor = 文字色
 ChangeForegroundColor = 文字色を変更
 
+OverrideWritingMode = フロー方向
+WritingMode.Inherit = 変更しない
+WritingMode.Horizontal_TopToBottom = 横書き
+WritingMode.Vertical_RightToLeft = 縦書き（右から左）
+WritingMode.Vertical_LeftToRight = 縦書き（左から右）
+
 ResetEBookSettings = 設定をリセットする
 
 

@@ -160,6 +160,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(0, 51).Select(x => (double)x).ToList();
         public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
         public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
+        public IReadOnlyList<WritingMode> WritingModeItems { get; } = new[] { WritingMode.Inherit, WritingMode.Horizontal_TopToBottom, WritingMode.Vertical_RightToLeft, /*WritingMode.Vertical_LeftToRight*/ };
 
         Windows.UI.ViewManagement.ApplicationView _applicationView;
 

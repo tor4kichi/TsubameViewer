@@ -159,6 +159,20 @@
           </Button>
         </StackPanel>
 
+        <ComboBox ItemsSource="{Binding WritingModeItems}" SelectedItem="{Binding EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
+                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
         <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
 
         <Button Content="{Binding Source=ResetEBookSettings, Converter={StaticResource LocalizeConverter}}" 
@@ -255,6 +269,7 @@
                                 RubyFontSizeInPixel="{Binding EBookReaderSettings.RubySizeInPixel}"
                                 ContentsFontFamily="{Binding EBookReaderSettings.FontFamily}"
                                 RubyFontFamily="{Binding EBookReaderSettings.RubyFontFamily}"
+                                OverrideWritingMode="{Binding EBookReaderSettings.OverrideWritingMode}"
              >
       
     </eBookControls:EPubRenderer>

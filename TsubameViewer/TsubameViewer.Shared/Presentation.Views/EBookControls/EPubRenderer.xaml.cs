@@ -14,6 +14,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using TsubameViewer.Models.Domain.EBook;
 //using TsubameViewer.Presentation.ViewModels;
 using Uno.Threading;
 using Windows.Foundation;
@@ -233,6 +234,20 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
 
 
+        public WritingMode OverrideWritingMode
+        {
+            get { return (WritingMode)GetValue(OverrideWritingModeProperty); }
+            set { SetValue(OverrideWritingModeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for OverrideWritingMode.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty OverrideWritingModeProperty =
+            DependencyProperty.Register("OverrideWritingMode", typeof(WritingMode), typeof(EPubRenderer), new PropertyMetadata(WritingMode.Inherit));
+
+
+
+
+
         public string PageHtml
         {
             get { return (string)GetValue(PageHtmlProperty); }
@@ -266,6 +281,21 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         string ToStyleEmbedHtml(string pageHtml)
         {
             StringBuilder sb = new StringBuilder();
+            sb.Append("html, body {");
+            if (OverrideWritingMode == WritingMode.Horizontal_TopToBottom)
+            {
+                sb.Append($"writing-mode: horizontal-tb !important;");
+            }
+            else if (OverrideWritingMode == WritingMode.Vertical_RightToLeft)
+            {
+                sb.Append($"writing-mode: vertical-rl !important;");
+            }
+            else if (OverrideWritingMode == WritingMode.Vertical_LeftToRight)
+            {
+                sb.Append($"writing-mode: vertical-lr !important;");
+            }
+            sb.Append("}");
+
             sb.Append("body, p, span{");
             sb.Append($"letter-spacing: {LetterSpacingInPixel}px !important;");
             sb.Append($"line-height: {LineHeightInNoUnit} !important;");
@@ -279,6 +309,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 color.A = 0xff;
                 sb.Append($"color: rgba({color.R},{color.G},{color.B}, 1.0) !important;");
             }
+
             sb.Append("}");
             sb.Append("rt {");
             sb.Append($"font-size: {RubyFontSizeInPixel}px !important;");
@@ -388,6 +419,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 this.ObserveDependencyProperty(ContentsFontFamilyProperty),
                 this.ObserveDependencyProperty(RubyFontFamilyProperty),
                 this.ObserveDependencyProperty(FontColorProperty),
+                this.ObserveDependencyProperty(OverrideWritingModeProperty),
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(10))
@@ -526,23 +558,24 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             // ページ送りを表現している。
             //
 
-            // 縦書きかをチェック
-            var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
+            {
+                // 縦書きかをチェック
+                var writingModeString = await WebView.InvokeScriptAsync("eval", new[] { @"
                 window.getComputedStyle(document.body).getPropertyValue('writing-mode')
                 " });
-            IsVerticalLayout = writingModeString switch
-            {
-                "vertical-rl" => true,
-                "vertical-lr" => true,
-                "sideways-rl" => true,
-                "sideways-lr" => true,
-                _ => false,
-            };
+                IsVerticalLayout = writingModeString switch
+                {
+                    "vertical-rl" => true,
+                    "vertical-lr" => true,
+                    "sideways-rl" => true,
+                    "sideways-lr" => true,
+                    _ => false,
+                };
 
-            NowRightToLeftReadingMode = writingModeString.EndsWith("rl");
+                NowRightToLeftReadingMode = writingModeString.EndsWith("rl");
 
-            Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
-
+                Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
+            }
 
             var columnCount = !WithSeparetePage ? 1 : 2;
             if (IsVerticalLayout)
@@ -594,7 +627,16 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                     "
                 });
                 Debug.WriteLine(sizeList);
-                var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct().Select(x => IsVerticalLayout ? x : x - 8).ToArray();
+                var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct();
+                if (IsVerticalLayout)
+                {
+                    sizeItems = sizeItems.ToArray();
+                }
+                else
+                {
+                    var first = sizeItems.ElementAtOrDefault(0);
+                    sizeItems = sizeItems.Select(x => x - first).ToArray();
+                }
                 var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
                 const int candidateSampleCount = 5;
                 const int compareSampleCount = 10;
