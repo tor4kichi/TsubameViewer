@@ -121,6 +121,13 @@ namespace TsubameViewer.Presentation.ViewModels
             private set { SetProperty(ref _ItemType, value); }
         }
 
+        private bool _nowImageLoadingLongRunning;
+        public bool NowImageLoadingLongRunning
+        {
+            get { return _nowImageLoadingLongRunning; }
+            set { SetProperty(ref _nowImageLoadingLongRunning, value); }
+        }
+
 
         readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
@@ -357,7 +364,9 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
+        BitmapImage _emptyImage = new BitmapImage();
 
+        int _nowRequestedImageIndex = 0;
         async Task MoveImageIndex(IndexMoveDirection direction, int? request = null)
         {
             if (Images == null || Images.Length == 0) { return; }
@@ -365,10 +374,19 @@ namespace TsubameViewer.Presentation.ViewModels
             // requestIndex round
             // roundした場合は読み込み数の切り捨て必要
 
-            _imageLoadingCts?.Cancel();
-            _imageLoadingCts?.Dispose();
-            _imageLoadingCts = new CancellationTokenSource();
-            
+            // 最後と最初の画像は読み込みキャンセルさせない
+
+            if (_nowRequestedImageIndex >= Images.Length - _CurrentImages.Length || _nowRequestedImageIndex <= _CurrentImages.Length)
+            {
+                _imageLoadingCts ??= new CancellationTokenSource();
+            }
+            else
+            {
+                _imageLoadingCts?.Cancel();
+                _imageLoadingCts?.Dispose();
+                _imageLoadingCts = new CancellationTokenSource();
+            }
+
             var ct = _imageLoadingCts.Token;
             
             using (await _imageLoadingLock.LockAsync(ct))
@@ -390,6 +408,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     // 後の処理で-1を切り落とすことで0ページのみを表示させることを意図しています。
                     requestIndex = Math.Clamp(requestIndex, -1, Images.Length);
 
+                    _nowRequestedImageIndex = requestIndex;
+
                     // 表示用のインデックスを生成
                     // 後ろ方向にページ移動していた場合は1 -> 0のように逆順の並びにすることで
                     // 見開きページかつ横長ページを表示しようとしたときに後ろ方向の一個前だけを選択して表示できるようにしている
@@ -402,11 +422,9 @@ namespace TsubameViewer.Presentation.ViewModels
                     // Imagesが扱えるindexの範囲に限定
                     indexies = indexies.Where(x => x + requestIndex < Images.Length && x + requestIndex >= 0);
 
-                    if (indexies.Count() == 0) { return; }
-
-                    foreach (var i in Enumerable.Range(0, _CurrentImages.Length))
+                    if (indexies.Count() == 0) 
                     {
-                        _CurrentImages[i] = null;
+                        return; 
                     }
 
                     var canvasWidth = (int)CanvasWidth.Value;
@@ -414,12 +432,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
                     int generateImageIndex = -1;
-                    bool isForceSingleImageView = false;
+                    bool isForceSingleImageView = false;   
+                    
+                    // 最後のページを一枚だけで表示する必要がある時、表示しない側の画像を空にする
+                    if (_CurrentImages.Length >= 2 && indexies.Count() == 1)
+                    {
+                        _CurrentImages[1 - indexies.First()] = _emptyImage;
+                    }
+
                     foreach (var i in indexies)
                     {
                         if (isForceSingleImageView)
                         {
-                            _CurrentImages[i] = null;
+                            _CurrentImages[i] = _emptyImage;
                             continue;
                         }
 
@@ -432,8 +457,9 @@ namespace TsubameViewer.Presentation.ViewModels
                             isForceSingleImageView = true;
 
                             // 二枚目以降が横長だった場合は表示しない
-                            if (_CurrentImages.Any(x => x != null))
+                            if (generateImageIndex != -1)
                             {
+                                _CurrentImages[1 - i] = _emptyImage;
                                 // TODO: 横長画像をスキップした場合に、生成したbitmapImageを後で使い回せるようにしたい
                                 break;
                             }
@@ -453,7 +479,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     if (ct.IsCancellationRequested) { return; }
 
-                    // SliderとCurrentImageIndexの更新が競合するため、スキップ用の仕掛けが必要
+                    // SliderとCurrentImageIndexの更新が競合することに対処するためのスキップ用の仕掛け
                     _nowCurrenImageIndexChanging = true;
                     if (isForceSingleImageView)
                     {
@@ -470,6 +496,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     NowDoubleImageView = CurrentImages.Count(x => x != null) >= 2;
                     RaisePropertyChanged(nameof(CurrentImages));
+
+                    NowImageLoadingLongRunning = false;
                 }
                 catch (OperationCanceledException)
                 {
@@ -480,6 +508,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - _CurrentImages.Length, 0),
                         _ => throw new NotSupportedException(),
                     };
+                    NowImageLoadingLongRunning = true;
                 }
                 catch (Exception e)
                 {

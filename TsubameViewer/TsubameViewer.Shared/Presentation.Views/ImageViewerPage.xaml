@@ -179,12 +179,12 @@
       </Button.KeyboardAccelerators>
     </Button>
 
-    <Border x:Name="ImagesContainer"
+    <Grid x:Name="ImagesContainer"
             uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
             >
-      <Border.RenderTransform>
+      <Grid.RenderTransform>
         <TranslateTransform />
-      </Border.RenderTransform>
+      </Grid.RenderTransform>
       <ItemsControl ItemsSource="{Binding CurrentImages}"
                     HorizontalAlignment="Center"
                     x:Name="ImageItemsControl"
@@ -206,7 +206,11 @@
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
       </ItemsControl>
-    </Border>
+
+      <Border >
+        <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
+      </Border>
+    </Grid>
     
 
 
@@ -409,6 +413,39 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      <!-- 画像読み込み中の画面演出 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding NowImageLoadingLongRunning}" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.064"
+                               To="0.5"
+                               Storyboard.TargetName="ImageLoadingBarrier"
+                               Storyboard.TargetProperty="Opacity"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.064"
+                               To="0.0"
+                               Storyboard.TargetName="ImageLoadingBarrier"
+                               Storyboard.TargetProperty="Opacity"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+
+      </VisualStateGroup>
+      
       <!-- フルスクリーン -->
       <VisualStateGroup>
         <VisualState>
