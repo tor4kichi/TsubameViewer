@@ -193,7 +193,7 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private async void MenuFlyout_Opened(object sender, object e)
+        private void MenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
@@ -210,40 +210,22 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            OpenImageViewerItem.CommandParameter = itemVM;
-            OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
-            if (itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-            {
-                var folderContainerType = await pageVM.FolderContainerTypeManager.GetFolderContainerType((itemVM.Item as StorageItemImageSource).StorageItem as StorageFolder);
-                OpenImageViewerItem.Visibility = folderContainerType == Models.Domain.FolderItemListing.FolderContainerType.OnlyImages 
-                    ? Visibility.Visible 
-                    : Visibility.Collapsed
-                    ;
-            }
-            else
-            {
-                OpenImageViewerItem.Visibility = Visibility.Visible;
-            }
-
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Command = pageVM.OpenFolderListupCommand;
-            OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                ? Visibility.Visible
-                : Visibility.Collapsed
-                ;
+            OpenListupItem.IsEnabled = itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder;
 
 
             AddSecondaryTile.CommandParameter = itemVM;
             AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-            AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
+            AddSecondaryTile.IsEnabled = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path);
 
             RemoveSecondaryTile.CommandParameter = itemVM;
             RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-            RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
+            RemoveSecondaryTile.IsEnabled = pageVM.SecondaryTileManager.ExistTile(itemVM.Path);
 
             OpenWithExplorerItem.CommandParameter = itemVM;
             OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-            OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
+            OpenWithExplorerItem.IsEnabled = itemVM.Item is StorageItemImageSource;
         }
 
 

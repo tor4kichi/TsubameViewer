@@ -58,7 +58,7 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        private async void FoldersMenuFlyout_Opened(object sender, object e)
+        private void FoldersMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as SourceStorageItemsPageViewModel;
@@ -72,21 +72,6 @@ namespace TsubameViewer.Presentation.Views
             {
                 flyout.Hide();
                 return;
-            }
-
-            OpenImageViewerItem.CommandParameter = itemVM;
-            OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
-            if (itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-            {
-                var folderContainerType = await pageVM.FolderContainerTypeManager.GetFolderContainerType((itemVM.Item as StorageItemImageSource).StorageItem as StorageFolder);
-                OpenImageViewerItem.Visibility = folderContainerType == Models.Domain.FolderItemListing.FolderContainerType.OnlyImages
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-            }
-            else
-            {
-                OpenImageViewerItem.Visibility = Visibility.Visible;
             }
 
             OpenListupItem.CommandParameter = itemVM;

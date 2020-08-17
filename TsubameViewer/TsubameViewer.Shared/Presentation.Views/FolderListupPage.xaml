@@ -122,7 +122,7 @@
 
     <DataTemplate x:Key="FolderTemplate"
                   >
-      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <uwpControls:DockPanel>
 
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
@@ -148,7 +148,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="ArchiveFileTemplate">
-      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <uwpControls:DockPanel>
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
@@ -174,7 +174,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="EBookFileTemplate">
-      <uwpControls:DockPanel ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <uwpControls:DockPanel>
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" />
         </ToolTipService.ToolTip>
@@ -335,8 +335,7 @@
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
 
-    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened">
-      <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened" >
       <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
       <MenuFlyoutSeparator />
       <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{Binding Source=AddSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
@@ -390,7 +389,6 @@
                           x:Name="FoldersAdaptiveGridView"
                           StretchContentForSingleRow="False"
                           OneRowModeEnabled="False"
-                          VerticalAlignment="Top"
                           ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
                           ItemContainerStyle="{StaticResource FolderStyle}"
                           DesiredWidth="360"            
