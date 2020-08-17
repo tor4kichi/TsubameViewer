@@ -121,6 +121,26 @@
           
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
+      <tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
+        <DataTemplate>
+          <StackPanel Spacing="8">
+            <Grid>
+              <TextBlock Text="{Binding Label}" />
+              <ComboBox ItemsSource="{Binding Locales}" SelectedValue="{Binding SelectedLocale.Value, Mode=TwoWay}"
+                      DisplayMemberPath="DisplayName"
+                      SelectedValuePath="Locale"
+                      HorizontalAlignment="Right"
+                    >
+              </ComboBox>
+            </Grid>
+
+            <Button Content="{Binding RestartTextTranslated}" 
+                    Command="{Binding RestartApplicationCommand}"
+                    Visibility="{Binding IsRequireRestart, Converter={StaticResource BoolToVisibilityConverter}}"
+                    />
+          </StackPanel>
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
     </tt:SettingsItemTemplateSelector>
 
 

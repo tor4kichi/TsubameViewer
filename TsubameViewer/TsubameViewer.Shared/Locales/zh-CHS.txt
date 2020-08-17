@@ -1,0 +1,127 @@
+
+#### General
+
+Cancel = 取消
+
+ApplicationTheme = 主题
+ApplicationTheme.Default = 遵循系统设置
+ApplicationTheme.Light = 明亮的主题
+ApplicationTheme.Dark = 黑暗主题
+
+
+#### PrimaryWindowCoreLayout
+
+AddNewFolder = 新增文件夹
+Import = 进口
+RefreshLatest = 更新到最新信息
+Settings = 组态
+
+SourceStorageItemsPage = 夹
+CollectionPage = 采集
+
+
+#### SettingsPage
+
+SettingsPageTitle = 组态
+AdvancedSettings = 高级设置
+
+OverrideLocale = 🌏表示言語/显示语言/Display language
+RequireRestartApplicationToRefrectSettings = 重新启动应用程序以反映设置
+
+SourceFoldersSettings = 文件夹导入到应用程序
+RemoveSourceFolderFromApp = 从应用中删除
+ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用程序中删除{0}吗？
+ConfirmRemoveSourceFolderFromAppDescription = 此删除操作不会删除指定的文件夹或文件夹中的项目。 \ n从应用程序中删除的文件夹可以随时在应用程序中重新注册。
+
+ThumbnailImageSettings = 缩略图显示设置
+IsDisplayImageFileThubnail = 显示图像文件的缩略图
+IsDisplayArchiveFileThubnail = 显示压缩文件的缩略图
+IsDisplayFolderThubnail = 显示文件夹缩略图
+DeleteThumbnailCache = 删除所有缩略图缓存
+ThumbnailCacheSize = 图像缓存存储容量
+ProcessingThumbnailCache = 处理删除操作
+
+
+
+ImageViewerSettings = 图像查看器设置
+IsReverseImageFliping_MouseWheel = 反向滚动分页
+IsReverseImageFliping_Button = 反向左/右翻页
+
+GeneralUISettings = 操作设定
+IsForceEnableXYNavigation = 在页面打开时自动聚焦内容\ n（箭头键/游戏板）
+
+PrivacyPolicy = 隐私政策
+ThirdPartyLibraryNotice = 第三方库许可证显示
+AskQuestionWithMashmarrow = 发送棉花糖（错误报告/问题/建议）
+
+
+
+#### SourceStorageItemsPage
+
+Folders = 夹
+RecentlyUsedFiles = 最近查看的文件
+
+SelectSourceFolder = 将文件夹添加到TsubameViewer
+
+
+#### FolderListupPage
+
+ReturnSourceFolderPageButton = 返回原始文件夹
+
+FileSortTitle = 排序
+FileSortType.TitleAscending = 文件名（升序）
+FileSortType.TitleDecending = 文件名（降序）
+FileSortType.UpdateTimeAscending = 最旧的优先
+FileSortType.UpdateTimeDecending = 新命令
+
+OpenImageViewer = 在阅读器中打开
+OpenFolderListup = 列出档案
+OpenWithExplorer = 在资源管理器中打开
+
+AddSecondaryTile = 固定即可开始
+RemoveSecondaryTile = 取消开始
+
+
+#### ImageViewerPage
+
+CurrentFolder_InArchive = 夹
+Page = 页
+
+IsEnableSpreadDisplay = 点差显示
+IsLeftBindingView = 左绑定显示
+
+SwitchFullScreen = 全屏切换
+
+
+#### EBookReaderPage
+
+IsReversePageFliping_Scroll = 反向滚动分页
+IsReversePageFliping_Button = 反向左/右翻页
+
+DefaultWithParameter = 默认值：{0}
+FontSize = 字体大小
+LetterSpacing = 字符间距
+LineHeight = 行间距
+RubyFontSize = 语音字体大小
+FontFamily = 字符字体
+RubyFontFamily = 语音字体
+
+BackgroundColor = 背景颜色
+ChangeBackgroundColor = 更改背景颜色
+
+ForegroundColor = 字母颜色
+ChangeForegroundColor = 更改文字颜色
+
+OverrideWritingMode = 流动的方向
+WritingMode.Inherit = 不会改变
+WritingMode.Horizontal_TopToBottom = 横向写作
+WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）
+WritingMode.Vertical_LeftToRight = 垂直书写（从左到右）
+
+ResetEBookSettings = 重新设置
+
+
+#### SearchResult
+
+SearchResultWith = 下一个搜索结果
+SearchPlaceholder = 搜索标题

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 
@@ -10,6 +11,7 @@ namespace TsubameViewer.Models.Domain
         public ApplicationSettings()
         {
             _Theme = Read(ApplicationTheme.Default, nameof(Theme));
+            _Locale = Read(default(string), nameof(Locale));
         }
 
         private ApplicationTheme _Theme;
@@ -28,6 +30,14 @@ namespace TsubameViewer.Models.Domain
                 Windows.UI.Xaml.ApplicationTheme.Light => ApplicationTheme.Light,
                 _ => throw new NotSupportedException()
             };
+        }
+
+
+        private string _Locale;
+        public string Locale
+        {
+            get { return _Locale; }
+            set { SetProperty(ref _Locale, value); }
         }
     }
 

@@ -1,0 +1,127 @@
+
+#### General
+
+Cancel = Cancel
+
+ApplicationTheme = Theme
+ApplicationTheme.Default = Follow system settings
+ApplicationTheme.Light = Light theme
+ApplicationTheme.Dark = Dark theme
+
+
+#### PrimaryWindowCoreLayout
+
+AddNewFolder = Add Folder
+Import = Import
+RefreshLatest = Update to the latest information
+Settings = Setting
+
+SourceStorageItemsPage = Folder
+CollectionPage = Collection
+
+
+#### SettingsPage
+
+SettingsPageTitle = Setting
+AdvancedSettings = Advanced Setting
+
+OverrideLocale = 🌏表示言語/显示语言/Display language
+RequireRestartApplicationToRefrectSettings = Restart the application to reflect the setting
+
+SourceFoldersSettings = Folder imported to the application
+RemoveSourceFolderFromApp = Remove from app
+ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove {0} from the app?
+ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
+
+ThumbnailImageSettings = Thumbnail display settings
+IsDisplayImageFileThubnail = Display thumbnails of image files
+IsDisplayArchiveFileThubnail = Display thumbnails of compressed files
+IsDisplayFolderThubnail = Show folder thumbnails
+DeleteThumbnailCache = Delete all thumbnail image cache
+ThumbnailCacheSize = Image cached storage capacity
+ProcessingThumbnailCache = Processing delete operation
+
+
+
+ImageViewerSettings = Image viewer settings
+IsReverseImageFliping_MouseWheel = Reverse scrolling pagination
+IsReverseImageFliping_Button = Reverse left/right page feed
+
+GeneralUISettings = Operation settings
+IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
+
+PrivacyPolicy = privacy policy
+ThirdPartyLibraryNotice = Third-party library license display
+AskQuestionWithMashmarrow = Send marshmallow (bug report/question/suggestion)
+
+
+
+#### SourceStorageItemsPage
+
+Folders = Folder
+RecentlyUsedFiles = Recently viewed files
+
+SelectSourceFolder = Add folder to TsubameViewer
+
+
+#### FolderListupPage
+
+ReturnSourceFolderPageButton = Return to original folder
+
+FileSortTitle = Sorting
+FileSortType.TitleAscending = File name (ascending order)
+FileSortType.TitleDecending = File name (descending order)
+FileSortType.UpdateTimeAscending = Recent first
+FileSortType.UpdateTimeDecending = Latest first
+
+OpenImageViewer = Open in reader
+OpenFolderListup = List files
+OpenWithExplorer = Open in explorer
+
+AddSecondaryTile = Pin to start
+RemoveSecondaryTile = Unpin the start
+
+
+#### ImageViewerPage
+
+CurrentFolder_InArchive = Folder
+Page = Page
+
+IsEnableSpreadDisplay = Spread display
+IsLeftBindingView = Left binding display
+
+SwitchFullScreen = Full screen switching
+
+
+#### EBookReaderPage
+
+IsReversePageFliping_Scroll = Reverse scrolling pagination
+IsReversePageFliping_Button = Reverse left/right page feed
+
+DefaultWithParameter = Default: {0}
+FontSize = Font size
+LetterSpacing = Character spacing
+LineHeight = Line spacing
+RubyFontSize = Phonetic font size
+FontFamily = Character font
+RubyFontFamily = Phonetic font
+
+BackgroundColor = Background color
+ChangeBackgroundColor = Change background color
+
+ForegroundColor = Text color
+ChangeForegroundColor = Change text color
+
+OverrideWritingMode = Flow direction
+WritingMode.Inherit = Not going to change
+WritingMode.Horizontal_TopToBottom = Horizontal writing
+WritingMode.Vertical_RightToLeft = Vertical writing (right to left)
+WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
+
+ResetEBookSettings = Reset settings
+
+
+#### SearchResult
+
+SearchResultWith = Next search result
+SearchPlaceholder = Search for title

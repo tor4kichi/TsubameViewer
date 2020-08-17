@@ -224,12 +224,22 @@ namespace TsubameViewer
                     //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
                     .SetNotFoundSymbol("🍣")
 #endif
-                    .SetFallbackLocale("ja")
+                    .SetFallbackLocale("en")
                     .Init(GetType().Assembly);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.ToString());
+            }
+
+            var applicationSettings = Container.Resolve<Models.Domain.ApplicationSettings>();
+            try
+            {
+                I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
+            }
+            catch 
+            {
+                I18NPortable.I18N.Current.Locale = "en-US";
             }
 
             Resources["Strings"] = I18NPortable.I18N.Current;

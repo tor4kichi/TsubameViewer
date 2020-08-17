@@ -1,10 +1,10 @@
-﻿
+
 #### General
 
 Cancel = キャンセル
 
 ApplicationTheme = テーマ
-ApplicationTheme.Default = デフォルト
+ApplicationTheme.Default = システム設定に従う
 ApplicationTheme.Light = 明るいテーマ
 ApplicationTheme.Dark = 暗いテーマ
 
@@ -25,9 +25,12 @@ CollectionPage = コレクション
 SettingsPageTitle = 設定
 AdvancedSettings = 詳細設定
 
+OverrideLocale = 🌏表示言語/显示语言/Display language
+RequireRestartApplicationToRefrectSettings = アプリを再起動して設定を反映する
+
 SourceFoldersSettings = アプリに取り込んだフォルダ
 RemoveSourceFolderFromApp = アプリから取り除く
-ConfirmRemoveSourceFolderFromAppWithFolderName  = {0} をアプリから取り除いてもよろしいですか？
+ConfirmRemoveSourceFolderFromAppWithFolderName = {0} をアプリから取り除いてもよろしいですか？
 ConfirmRemoveSourceFolderFromAppDescription = この除去操作によって指定フォルダやフォルダ内アイテムが削除されることはありません。\nアプリから取り除いたフォルダは、いつでもアプリに再登録できます。
 
 ThumbnailImageSettings = サムネイル表示設定

@@ -178,6 +178,8 @@
     <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\DarkTheme.css" />
     <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\LightTheme.css" />
     <Content Include="$(MSBuildThisFileDirectory)Assets\SharedAssets.md" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Locales\zh-CHS.txt" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Locales\en-US.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
