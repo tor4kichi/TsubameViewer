@@ -38,7 +38,7 @@ using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public sealed class ImageViewerPageViewModel : ViewModelBase
+    public sealed class ImageViewerPageViewModel : ViewModelBase, IDisposable
     {
         private string _currentPath;
         private IStorageItem _currentFolderItem;
@@ -194,6 +194,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
 
+        public void Dispose()
+        {
+            _disposables.Dispose();
+            _ImageEnumerationDisposer?.Dispose();
+        }
+
 
 
 
@@ -208,9 +214,12 @@ namespace TsubameViewer.Presentation.ViewModels
             CurrentImages = null;
 
             _leavePageCancellationTokenSource.Cancel();
+            _leavePageCancellationTokenSource.Dispose();
             _navigationDisposables.Dispose();
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
+            _imageLoadingCts?.Cancel();
+            _imageLoadingCts?.Dispose();
 
             _appView.Title = String.Empty;
             ParentFolderOrArchiveName = String.Empty;

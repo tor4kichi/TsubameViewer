@@ -18,6 +18,12 @@
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
   >
+
+  <i:Interaction.Behaviors>
+    <core:EventTriggerBehavior EventName="Unloaded">
+      <core:CallMethodAction TargetObject="{Binding}" MethodName="Dispose" />
+    </core:EventTriggerBehavior>
+  </i:Interaction.Behaviors>
   
   <Page.Resources>
 
