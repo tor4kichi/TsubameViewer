@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
+using Microsoft.IO;
 using Prism;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -128,6 +129,7 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
             container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
+            container.RegisterInstance(new RecyclableMemoryStreamManager());
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<FolderListupPage>();

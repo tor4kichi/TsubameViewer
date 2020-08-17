@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using Microsoft.IO;
+using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -38,14 +39,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager,
-            FolderContainerTypeManager folderContainerTypeManager
+            FolderContainerTypeManager folderContainerTypeManager,
+            RecyclableMemoryStreamManager recyclableMemoryStreamManager
             )
         {
             _thumbnailManager = thumbnailManager;
             _folderContainerTypeManager = folderContainerTypeManager;
+            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         }
 
         public Task<ImageCollectionResult> GetImageSourcesForImageViewerAsync(IStorageItem storageItem, CancellationToken ct = default)
@@ -261,7 +265,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = zipArchive.Entries
                 .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -278,7 +282,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
                 .Select(x => pdfDocument.GetPage((uint)x))
-                .Select(x => (IImageSource)new PdfPageImageSource(x, file))
+                .Select(x => (IImageSource)new PdfPageImageSource(x, file, _recyclableMemoryStreamManager))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -290,7 +294,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public static async Task<GetImagesFromArchiveResult> GetImagesFromRarFileAsync(StorageFile file)
+        public async Task<GetImagesFromArchiveResult> GetImagesFromRarFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
@@ -302,7 +306,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .OrderBy(x => x.Key)
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -325,7 +329,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = zipArchive.Entries
                 .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
@@ -347,7 +351,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = zipArchive.Entries
                 .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
                 .ToArray();
 
             return new GetImagesFromArchiveResult()
