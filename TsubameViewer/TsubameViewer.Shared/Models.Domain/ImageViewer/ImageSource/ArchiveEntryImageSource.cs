@@ -47,8 +47,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             using (var entryStream = _entry.OpenEntryStream())
             using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             {
-                Debug.WriteLine(entryStream.Length);
-
                 entryStream.CopyTo(memoryStream);
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
@@ -80,8 +78,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             using (var entryStream = _entry.OpenEntryStream())
             using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             {
-                Debug.WriteLine(entryStream.Length);
-
                 entryStream.CopyTo(memoryStream);
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
