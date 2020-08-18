@@ -81,6 +81,7 @@ OpenWithExplorer = エクスプローラーで開く
 AddSecondaryTile = スタートにピン留めする
 RemoveSecondaryTile = スタートのピン留めを解除
 
+FolderItemMenuNoActionSuggested = 選択可能なアクションはありません
 
 #### ImageViewerPage
 

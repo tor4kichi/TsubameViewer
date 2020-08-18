@@ -49,6 +49,7 @@ namespace TsubameViewer.Presentation.Views
             this.Unloaded += FolderListupPage_Unloaded;
         }
 
+
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
         {
             FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
@@ -193,7 +194,16 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private void MenuFlyout_Opened(object sender, object e)
+        // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
+        // 原因は Microsoft.Xaml.UI にありそうだけど特定はしてない。
+        // （2.4.2から2.5.0 preに変更したところで問題が起きるようになった）
+        private void FoldersAdaptiveGridView_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
+        {
+            var flyout = Resources["FolderAndArchiveMenuFlyout"] as FlyoutBase;
+            flyout.ShowAt(args.OriginalSource as FrameworkElement);
+        }
+
+        private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
@@ -210,23 +220,53 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            OpenListupItem.CommandParameter = itemVM;
-            OpenListupItem.Command = pageVM.OpenFolderListupCommand;
-            OpenListupItem.IsEnabled = itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder;
+            if (itemVM.Item is StorageItemImageSource == false)
+            {
+                NoActionDescMenuItem.Visibility = Visibility.Visible;
 
+                OpenListupItem.Visibility = Visibility.Collapsed;
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
-            AddSecondaryTile.CommandParameter = itemVM;
-            AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-            AddSecondaryTile.IsEnabled = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path);
+                AddSecondaryTile.CommandParameter = itemVM;
+                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
+                AddSecondaryTile.Visibility = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
 
-            RemoveSecondaryTile.CommandParameter = itemVM;
-            RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-            RemoveSecondaryTile.IsEnabled = pageVM.SecondaryTileManager.ExistTile(itemVM.Path);
+                RemoveSecondaryTile.CommandParameter = itemVM;
+                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
+                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
 
-            OpenWithExplorerItem.CommandParameter = itemVM;
-            OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-            OpenWithExplorerItem.IsEnabled = itemVM.Item is StorageItemImageSource;
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+                OpenWithExplorerItem.Visibility = Visibility.Visible;
+                ;
+
+                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+            }
         }
+
+
 
 
 

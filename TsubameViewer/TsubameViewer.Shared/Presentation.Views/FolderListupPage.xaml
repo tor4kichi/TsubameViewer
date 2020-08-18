@@ -229,7 +229,7 @@
                UserControlによるカーソル移動サポートを有効化している -->
 
     <DataTemplate x:Key="FileItemTemplate_Line">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextRequested="FoldersAdaptiveGridView_ContextRequested" >
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -246,7 +246,7 @@
     </DataTemplate>
     
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextRequested="FoldersAdaptiveGridView_ContextRequested" >
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -255,7 +255,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextRequested="FoldersAdaptiveGridView_ContextRequested" >
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -264,7 +264,7 @@
     </DataTemplate>
     
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextRequested="FoldersAdaptiveGridView_ContextRequested">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -335,13 +335,15 @@
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
 
-    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="MenuFlyout_Opened" >
+    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="FolderAndArchiveMenuFlyout_Opened" Placement="Bottom">
       <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
-      <MenuFlyoutSeparator />
+      <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
       <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{Binding Source=AddSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
       <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{Binding Source=RemoveSecondaryTile, Converter={StaticResource LocalizeConverter}}" />
-      <MenuFlyoutSeparator />
+      <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
       <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{Binding Source=OpenWithExplorer, Converter={StaticResource LocalizeConverter}}" />
+
+      <MenuFlyoutItem x:Name="NoActionDescMenuItem" Text="{Binding Source=FolderItemMenuNoActionSuggested, Converter={StaticResource LocalizeConverter}}" IsEnabled="False" />
     </MenuFlyout>
 
   </Page.Resources>
@@ -359,6 +361,7 @@
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
                   XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
+                  
                     >
           <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
@@ -399,7 +402,7 @@
                                     SelectionMode="None"
                                     XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
                                         IsTabStop="False"
-                                        ContextFlyout="{StaticResource FolderAndArchiveMenuFlyout}"
+                                        ContextRequested="FoldersAdaptiveGridView_ContextRequested"
                           >
             
             <GridView.ItemContainerTransitions>
