@@ -207,27 +207,30 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public override void OnNavigatedFrom(INavigationParameters parameters)
+        public override async void OnNavigatedFrom(INavigationParameters parameters)
         {
-            _leavePageCancellationTokenSource?.Cancel();
-            _leavePageCancellationTokenSource?.Dispose();
-            _leavePageCancellationTokenSource = null;
-
-            ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            EBookFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            FolderItems.Reverse().ForEach(x => x.StopImageLoading());
-
-            _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
-            _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
-            _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
-
-            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            using (await _NavigationLock.LockAsync(default))
             {
-                _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
-            }
+                _leavePageCancellationTokenSource?.Cancel();
+                _leavePageCancellationTokenSource?.Dispose();
+                _leavePageCancellationTokenSource = null;
 
-            base.OnNavigatedFrom(parameters);
+                ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                EBookFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                FolderItems.Reverse().ForEach(x => x.StopImageLoading());
+
+                _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
+                _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
+                _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
+
+                if (_currentPath != null && parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                {
+                    _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
+                }
+
+                base.OnNavigatedFrom(parameters);
+            }
         }
 
         public override void OnNavigatingTo(INavigationParameters parameters)
