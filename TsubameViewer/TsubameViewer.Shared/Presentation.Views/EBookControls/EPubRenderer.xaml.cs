@@ -628,15 +628,8 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 });
                 Debug.WriteLine(sizeList);
                 var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct();
-                if (IsVerticalLayout)
-                {
-                    sizeItems = sizeItems.ToArray();
-                }
-                else
-                {
-                    var first = sizeItems.ElementAtOrDefault(0);
-                    sizeItems = sizeItems.Select(x => x - first).ToArray();
-                }
+                var first = sizeItems.ElementAtOrDefault(0);
+                sizeItems = sizeItems.Select(x => x - first).ToArray();
                 var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
                 const int candidateSampleCount = 5;
                 const int compareSampleCount = 10;

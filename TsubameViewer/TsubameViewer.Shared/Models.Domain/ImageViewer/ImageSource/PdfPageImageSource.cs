@@ -1,4 +1,5 @@
-﻿using Prism.Mvvm;
+﻿using Microsoft.IO;
+using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -18,13 +19,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
         private readonly PdfPage _pdfPage;
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
-        public PdfPageImageSource(PdfPage pdfPage, IStorageItem storageItem)
+        public PdfPageImageSource(PdfPage pdfPage, IStorageItem storageItem, RecyclableMemoryStreamManager recyclableMemoryStreamManager)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
             DateCreated = storageItem.DateCreated.DateTime;
             StorageItem = storageItem;
+            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         }
 
         public string Name { get; }
@@ -33,7 +36,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct = default)
         {
-            using (var memoryStream = new MemoryStream())
+            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             using (var streamWrite = new StreamWriter(memoryStream))
             {
                 await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
@@ -53,7 +56,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
         {
-            using (var memoryStream = new MemoryStream())
+            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             using (var streamWrite = new StreamWriter(memoryStream))
             {
                 await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);

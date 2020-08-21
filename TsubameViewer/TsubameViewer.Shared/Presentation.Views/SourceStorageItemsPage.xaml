@@ -242,8 +242,7 @@
               >
 
       <GridView.ContextFlyout>
-        <MenuFlyout x:Name="FoldersMenuFlyout" Opened="FoldersMenuFlyout_Opened">
-          <MenuFlyoutItem x:Name="OpenImageViewerItem" Text="{Binding Source=OpenImageViewer, Converter={StaticResource LocalizeConverter}}"/>
+        <MenuFlyout x:Name="FoldersMenuFlyout" Opening="FoldersMenuFlyout_Opened" Placement="Bottom">
           <MenuFlyoutItem x:Name="OpenListupItem" Text="{Binding Source=OpenFolderListup, Converter={StaticResource LocalizeConverter}}" />
           <MenuFlyoutSeparator />
           <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{Binding Source=AddSecondaryTile, Converter={StaticResource LocalizeConverter}}" />

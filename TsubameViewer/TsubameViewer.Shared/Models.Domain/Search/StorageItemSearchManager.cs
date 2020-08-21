@@ -125,7 +125,7 @@ namespace TsubameViewer.Models.Domain.Search
                 var queryEnum = _collection.Query();
                 foreach (var query in querys)
                 {
-                    queryEnum = queryEnum.Where(x => x.Title.Contains(query) || x.Tags.Any(y => y.Contains(query)));
+                    queryEnum = queryEnum.Where(x => x.Title.Contains(query, StringComparison.CurrentCultureIgnoreCase) || x.Tags.Any(y => y.Contains(query, StringComparison.CurrentCultureIgnoreCase)));
                 }
 
                 return queryEnum;

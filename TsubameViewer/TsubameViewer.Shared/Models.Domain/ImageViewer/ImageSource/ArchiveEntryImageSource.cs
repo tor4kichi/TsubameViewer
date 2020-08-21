@@ -1,4 +1,5 @@
-﻿using Prism.Mvvm;
+﻿using Microsoft.IO;
+using Prism.Mvvm;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
@@ -6,6 +7,7 @@ using SharpCompress.Archives.Rar;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
@@ -21,11 +23,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     public sealed class ArchiveEntryImageSource : IImageSource, IDisposable
     {
         private readonly IArchiveEntry _entry;
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
-        public ArchiveEntryImageSource(IArchiveEntry entry, IStorageItem storageItem)
+        public ArchiveEntryImageSource(IArchiveEntry entry, IStorageItem storageItem, RecyclableMemoryStreamManager recyclableMemoryStreamManager)
         {
             _entry = entry;
             StorageItem = storageItem;
+            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
         }
 
@@ -41,8 +45,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
         {
             using (var entryStream = _entry.OpenEntryStream())
-            using (var memoryStream = entryStream.ToMemoryStream())
+            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             {
+                entryStream.CopyTo(memoryStream);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
                 ct.ThrowIfCancellationRequested();
 
                 var bitmapImage = new BitmapImage();
@@ -69,16 +76,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
         {
             using (var entryStream = _entry.OpenEntryStream())
-            using (var memoryStream = entryStream.ToMemoryStream())
+            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
             {
+                entryStream.CopyTo(memoryStream);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
                 ct.ThrowIfCancellationRequested();
 
                 var bitmapImage = new BitmapImage();
+                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
                 await bitmapImage.SetSourceAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
 
                 ct.ThrowIfCancellationRequested();
 
-                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
 
                 return bitmapImage;
             }

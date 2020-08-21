@@ -47,6 +47,16 @@ namespace TsubameViewer.Presentation.Views
 
             this.Loaded += FolderListupPage_Loaded;
             this.Unloaded += FolderListupPage_Unloaded;
+
+            this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+        }
+
+        private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.Item is StorageItemViewModel itemVM)
+            {
+                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM .Name, TextWrapping = TextWrapping.Wrap } });
+            }
         }
 
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
@@ -193,7 +203,16 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private async void MenuFlyout_Opened(object sender, object e)
+        // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
+        // 原因は Microsoft.Xaml.UI にありそうだけど特定はしてない。
+        // （2.4.2から2.5.0 preに変更したところで問題が起きるようになった）
+        private void FoldersAdaptiveGridView_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
+        {
+            var flyout = Resources["FolderAndArchiveMenuFlyout"] as FlyoutBase;
+            flyout.ShowAt(args.OriginalSource as FrameworkElement);
+        }
+
+        private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
             var pageVM = DataContext as FolderListupPageViewModel;
@@ -210,41 +229,53 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            OpenImageViewerItem.CommandParameter = itemVM;
-            OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
-            if (itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+            if (itemVM.Item is StorageItemImageSource == false)
             {
-                var folderContainerType = await pageVM.FolderContainerTypeManager.GetFolderContainerType((itemVM.Item as StorageItemImageSource).StorageItem as StorageFolder);
-                OpenImageViewerItem.Visibility = folderContainerType == Models.Domain.FolderItemListing.FolderContainerType.OnlyImages 
-                    ? Visibility.Visible 
-                    : Visibility.Collapsed
-                    ;
+                NoActionDescMenuItem.Visibility = Visibility.Visible;
+
+                OpenListupItem.Visibility = Visibility.Collapsed;
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
             }
             else
             {
-                OpenImageViewerItem.Visibility = Visibility.Visible;
-            }
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
-            OpenListupItem.CommandParameter = itemVM;
-            OpenListupItem.Command = pageVM.OpenFolderListupCommand;
-            OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                ? Visibility.Visible
-                : Visibility.Collapsed
+                AddSecondaryTile.CommandParameter = itemVM;
+                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
+                AddSecondaryTile.Visibility = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+
+                RemoveSecondaryTile.CommandParameter = itemVM;
+                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
+                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
+                OpenWithExplorerItem.Visibility = Visibility.Visible;
                 ;
 
-
-            AddSecondaryTile.CommandParameter = itemVM;
-            AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-            AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
-
-            RemoveSecondaryTile.CommandParameter = itemVM;
-            RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-            RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
-
-            OpenWithExplorerItem.CommandParameter = itemVM;
-            OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-            OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource) ? Visibility.Visible : Visibility.Collapsed;
+                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+            }
         }
+
+
 
 
 

@@ -37,13 +37,40 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    
+
+    public class CachedFolderListupItems
+    {
+        public ObservableCollection<StorageItemViewModel> FolderItems { get; set; }
+        public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; set; }
+        public ObservableCollection<StorageItemViewModel> EBookFileItems { get; set; }
+        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; set; }
+
+        public int GetTotalCount()
+        {
+            return FolderItems.Count
+                + ArchiveFileItems.Count
+                + EBookFileItems.Count
+                + ImageFileItems.Count
+                ;
+        }
+
+        public void DisposeItems()
+        {
+            FolderItems.DisposeAll();
+            ArchiveFileItems.DisposeAll();
+            ImageFileItems.DisposeAll();
+            EBookFileItems.DisposeAll();
+        }
+    }
+
 
     public sealed class FolderListupPageViewModel : ViewModelBase
     {
-        // Note: FolderListupPage内でフォルダ階層のコントロールをしている
-        // フォルダ階層の移動はNavigationServiceを通さずにページ内で完結してる
-        // 
+        const int FolderListupItemsCacheCount = 200;
+        static List<string> _CacheFolderListupItemsOrder = new List<string>();
+
+        static Dictionary<string, CachedFolderListupItems> _CachedFolderListupItems = new Dictionary<string, CachedFolderListupItems>();
+
 
         private bool _NowProcessing;
         public bool NowProcessing
@@ -59,7 +86,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
 
-        public FolderContainerTypeManager FolderContainerTypeManager { get; }
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -68,12 +94,18 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-        public ObservableCollection<StorageItemViewModel> FolderItems { get; }
-        public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; }
-        public ObservableCollection<StorageItemViewModel> EBookFileItems { get; }
-        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
+        public ObservableCollection<StorageItemViewModel> FolderItems { get; private set; }
+        public ObservableCollection<StorageItemViewModel> ArchiveFileItems { get; private set; }
+        public ObservableCollection<StorageItemViewModel> EBookFileItems { get; private set; }
+        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
-        public AdvancedCollectionView FileItemsView { get; }
+
+        private AdvancedCollectionView _FileItemsView;
+        public AdvancedCollectionView FileItemsView
+        {
+            get { return _FileItemsView; }
+            set { SetProperty(ref _FileItemsView, value); }
+        }
 
         private bool _HasFileItem;
         public bool HasFileItem
@@ -83,7 +115,12 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public FolderItemsGroupBase[] Groups { get; }
+        private FolderItemsGroupBase[] _groups;
+        public FolderItemsGroupBase[] Groups
+        {
+            get { return _groups; }
+            set { SetProperty(ref _groups, value); }
+        }
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
@@ -91,8 +128,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
-
-        IReadOnlyReactiveProperty<QueryOptions> _currentQueryOptions;
 
         private string _currentPath;
         private IStorageItem _currentItem;
@@ -134,7 +169,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public FolderListupPageViewModel(
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
-            FolderContainerTypeManager folderContainerTypeManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             PathReferenceCountManager PathReferenceCountManager,
             SecondaryTileManager secondaryTileManager,
@@ -151,7 +185,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
-            FolderContainerTypeManager = folderContainerTypeManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _PathReferenceCountManager = PathReferenceCountManager;
             SecondaryTileManager = secondaryTileManager;
@@ -172,21 +205,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
 
-            Groups = new FolderItemsGroupBase[]
-            {
-                new FolderFolderItemsGroup()
-                {
-                    Items = FolderItems,
-                },
-                new FileFolderItemsGroup()
-                { 
-                    Items = ArchiveFileItems
-                },
-                new FileFolderItemsGroup()
-                {
-                    Items = EBookFileItems
-                },
-            };
+            
 
 
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
@@ -210,27 +229,55 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public override void OnNavigatedFrom(INavigationParameters parameters)
+        public override async void OnNavigatedFrom(INavigationParameters parameters)
         {
-            _leavePageCancellationTokenSource?.Cancel();
-            _leavePageCancellationTokenSource?.Dispose();
-            _leavePageCancellationTokenSource = null;
-
-            ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            EBookFileItems.Reverse().ForEach(x => x.StopImageLoading());
-            FolderItems.Reverse().ForEach(x => x.StopImageLoading());
-
-            _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
-            _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
-            _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
-
-            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            using (await _NavigationLock.LockAsync(default))
             {
-                _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
-            }
+                _leavePageCancellationTokenSource?.Cancel();
+                _leavePageCancellationTokenSource?.Dispose();
+                _leavePageCancellationTokenSource = null;
 
-            base.OnNavigatedFrom(parameters);
+                ImageFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                ArchiveFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                EBookFileItems.Reverse().ForEach(x => x.StopImageLoading());
+                FolderItems.Reverse().ForEach(x => x.StopImageLoading());
+
+                _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
+                _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
+                _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
+
+                if (_currentPath != null && parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                {
+                    _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
+                }
+
+
+                // 
+                _CachedFolderListupItems.Add(_currentPath, new CachedFolderListupItems() 
+                {
+                    ArchiveFileItems = ArchiveFileItems,
+                    EBookFileItems = EBookFileItems,
+                    FolderItems = FolderItems,
+                    ImageFileItems = ImageFileItems,
+                });
+
+                _CacheFolderListupItemsOrder.Remove(_currentPath);
+                _CacheFolderListupItemsOrder.Add(_currentPath);
+
+                while (_CachedFolderListupItems.Select(x => x.Value.GetTotalCount()).Sum() > FolderListupItemsCacheCount)
+                {
+                    var item = _CacheFolderListupItemsOrder.First();
+                    if (_CachedFolderListupItems.Remove(item, out var cachedItems))
+                    {
+                        cachedItems.DisposeItems();
+                    }
+                    _CacheFolderListupItemsOrder.Remove(item);
+                }
+
+                Groups = null;
+
+                base.OnNavigatedFrom(parameters);
+            }
         }
 
         public override void OnNavigatingTo(INavigationParameters parameters)
@@ -270,63 +317,35 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     using (await _NavigationLock.LockAsync(default))
                     {
-                        bool isPathChanged = false;
                         if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                         {
                             var unescapedPath = Uri.UnescapeDataString(path);
-                            if (_currentPath != unescapedPath)
+                            _currentPath = unescapedPath;
+                            _currentItem = null;
+                           
+                            // PathReferenceCountManagerへの登録が遅延する可能性がある
+                            string token = null;
+                            foreach (var _ in Enumerable.Repeat(0, 100))
                             {
-                                isPathChanged = true;
-                                _currentPath = unescapedPath;
-                                _currentItem = null;
-                            }
-                        }
-
-                        // 以下の場合に表示内容を更新する
-                        //    1. 表示フォルダが変更された場合
-                        //    2. 前回の更新が未完了だった場合
-                        if (isPathChanged)
-                        {
-                            {
-                                var items = new[] { FolderItems, ArchiveFileItems, EBookFileItems, ImageFileItems }
-                                    .SelectMany(x => x)
-                                    .ToArray();
-                                
-                                FolderItems.Clear();
-                                ArchiveFileItems.Clear();
-                                EBookFileItems.Clear();
-                                ImageFileItems.Clear();
-
-                                items.AsParallel().ForAll(x => x.Dispose());
-                            }
-
-                            if (isPathChanged && _currentItem == null)
-                            {
-                                // PathReferenceCountManagerへの登録が遅延する可能性がある
-                                string token = null;
-                                foreach (var _ in Enumerable.Repeat(0, 100))
+                                token = _PathReferenceCountManager.GetToken(_currentPath);
+                                if (token != null)
                                 {
-                                    token = _PathReferenceCountManager.GetToken(_currentPath);
-                                    if (token != null)
-                                    {
-                                        break;
-                                    }
-                                    await Task.Delay(100);
+                                    break;
                                 }
-                                var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
-                                _currentItem = currentPathItem;
-                                DisplayCurrentPath = _currentItem.Path;
+                                await Task.Delay(100);
                             }
+                            var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
+                            _currentItem = currentPathItem;
+                            DisplayCurrentPath = _currentItem.Path;
+                        }
 
-                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                        }
-                        else if (!_isCompleteEnumeration)
+                        if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
                         {
-                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                        }
-                        else
-                        {
-                            HasFileItem = ImageFileItems.Any();
+                            FolderItems = cachedItems.FolderItems;
+                            ArchiveFileItems = cachedItems.ArchiveFileItems;
+                            EBookFileItems = cachedItems.EBookFileItems;
+                            ImageFileItems = cachedItems.ImageFileItems;
+
 
                             // 最後に読んだ位置を更新
                             ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
@@ -334,7 +353,22 @@ namespace TsubameViewer.Presentation.ViewModels
                             EBookFileItems.ForEach(x => x.UpdateLastReadPosition());
                             FolderItems.ForEach(x => x.UpdateLastReadPosition());
 
+                            _FileItemsView = new AdvancedCollectionView(ImageFileItems);
+                            using (FileItemsView.DeferRefresh())
+                            {
+                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
+
+                                FileItemsView.SortDescriptions.Clear();
+                                FileItemsView.SortDescriptions.Add(sortDescription);
+                            }
+                            RaisePropertyChanged(nameof(FileItemsView));
                         }
+                        else
+                        {
+                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                        }
+
+                        HasFileItem = ImageFileItems.Any();
                     }
                 }
                 else if (!_isCompleteEnumeration
@@ -343,7 +377,30 @@ namespace TsubameViewer.Presentation.ViewModels
                     || _LastIsFolderThumbnailEnabled != _folderListingSettings.IsFolderThumbnailEnabled
                     )
                 {
-                    using (await _NavigationLock.LockAsync(default))
+                    if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
+                    {
+                        FolderItems = cachedItems.FolderItems;
+                        ArchiveFileItems = cachedItems.ArchiveFileItems;
+                        EBookFileItems = cachedItems.EBookFileItems;
+                        ImageFileItems = cachedItems.ImageFileItems;
+
+                        // 最後に読んだ位置を更新
+                        ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
+                        ArchiveFileItems.ForEach(x => x.UpdateLastReadPosition());
+                        EBookFileItems.ForEach(x => x.UpdateLastReadPosition());
+                        FolderItems.ForEach(x => x.UpdateLastReadPosition());
+
+                        _FileItemsView = new AdvancedCollectionView(ImageFileItems);
+                        using (FileItemsView.DeferRefresh())
+                        {
+                            var sortDescription = ToSortDescription(SelectedFileSortType.Value);
+
+                            FileItemsView.SortDescriptions.Clear();
+                            FileItemsView.SortDescriptions.Add(sortDescription);
+                        }
+                        RaisePropertyChanged(nameof(FileItemsView));
+                    }
+                    else
                     {
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                     }
@@ -363,6 +420,25 @@ namespace TsubameViewer.Presentation.ViewModels
                     FolderItems.ForEach(x => x.UpdateLastReadPosition());
                 }
 
+                
+
+                Groups = new FolderItemsGroupBase[]
+                {
+                    new FolderFolderItemsGroup()
+                    {
+                        Items = FolderItems,
+                    },
+                    new FileFolderItemsGroup()
+                    {
+                        Items = ArchiveFileItems
+                    },
+                    new FileFolderItemsGroup()
+                    {
+                        Items = EBookFileItems
+                    },
+                };
+
+                RaisePropertyChanged(nameof(ImageFileItems));
 
                 if (mode != NavigationMode.New)
                 {
@@ -410,6 +486,10 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using var _ = await _RefreshLock.LockAsync(ct);
 
+            FolderItems = new ObservableCollection<StorageItemViewModel>();
+            ArchiveFileItems = new ObservableCollection<StorageItemViewModel>();
+            EBookFileItems = new ObservableCollection<StorageItemViewModel>();
+            ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             _isCompleteEnumeration = false;
             try
@@ -440,11 +520,6 @@ namespace TsubameViewer.Presentation.ViewModels
         
         private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
         {
-            FolderItems.DisposeAll();
-            ArchiveFileItems.DisposeAll();
-            ImageFileItems.DisposeAll();
-            EBookFileItems.DisposeAll();
-
             FolderItems.Clear();
             ArchiveFileItems.Clear();
             ImageFileItems.Clear();
@@ -479,7 +554,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
-            
+            _FileItemsView = new AdvancedCollectionView(ImageFileItems);
             using (FileItemsView.DeferRefresh())
             {
                 var sortDescription = ToSortDescription(SelectedFileSortType.Value);
@@ -489,6 +564,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 ImageFileItems.AddRange(unsortedFileItems);
             }
+
+            RaisePropertyChanged(nameof(FileItemsView));
 
             HasFileItem = ImageFileItems.Any();
         }
@@ -541,8 +618,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                                 FileItemsView.SortDescriptions.Clear();
                                 FileItemsView.SortDescriptions.Add(sortDescription);
-
-                                //ImageFileItems.AddRange(sortedFileItems);
                             }
                         }
 

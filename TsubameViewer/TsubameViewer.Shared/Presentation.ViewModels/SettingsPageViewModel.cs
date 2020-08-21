@@ -94,6 +94,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             IsVisible = Xamarin.Essentials.DeviceInfo.Idiom != Xamarin.Essentials.DeviceIdiom.TV
                         },
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
+                        new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
+                        
                     }
                 },
             };
@@ -182,7 +184,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
     }
 
-    public abstract class SettingItemViewModelBase
+    public abstract class SettingItemViewModelBase : BindableBase
     {
         public bool IsVisible { get; set; } = true;
     }
@@ -388,6 +390,62 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             ((IDisposable)SelectedTheme).Dispose();
             _themeChangedSubscriber.Dispose();
+        }
+    }
+
+    public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+    {
+        private string _currentLocale = I18NPortable.I18N.Current.Locale;
+        public LocaleSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings)
+        {
+            Label = label;
+            SelectedLocale = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Locale);
+
+            _themeChangedSubscriber = SelectedLocale.Subscribe(locale =>
+            {
+                if (string.IsNullOrEmpty(locale)) { return; }
+
+                I18NPortable.I18N.Current.Locale = locale;
+                IsRequireRestart = _currentLocale != locale;
+                RestartTextTranslated = "RequireRestartApplicationToRefrectSettings".Translate();
+            });
+        }
+
+        private string _RestartTextTranslated;
+        public string RestartTextTranslated
+        {
+            get { return _RestartTextTranslated; }
+            set { SetProperty(ref _RestartTextTranslated, value); }
+        }
+
+        private bool _isRequireRestart;
+        public bool IsRequireRestart
+        {
+            get { return _isRequireRestart; }
+            set { SetProperty(ref _isRequireRestart, value); }
+        }
+
+        public ReactiveProperty<string> SelectedLocale { get; }
+
+        public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
+
+        IDisposable _themeChangedSubscriber;
+
+        public string Label { get; }
+
+        public void Dispose()
+        {
+            ((IDisposable)SelectedLocale).Dispose();
+            _themeChangedSubscriber.Dispose();
+        }
+
+        private DelegateCommand _RestartApplicationCommand;
+        public DelegateCommand RestartApplicationCommand =>
+            _RestartApplicationCommand ?? (_RestartApplicationCommand = new DelegateCommand(ExecuteRestartApplicationCommand));
+
+        void ExecuteRestartApplicationCommand()
+        {
+            _ = Windows.ApplicationModel.Core.CoreApplication.RequestRestartAsync("");
         }
     }
 }
