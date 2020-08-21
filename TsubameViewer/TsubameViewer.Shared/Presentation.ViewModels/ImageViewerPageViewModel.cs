@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.UI.Converters;
+﻿using Microsoft.IO;
+using Microsoft.Toolkit.Uwp.UI.Converters;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
@@ -12,9 +13,11 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -153,6 +156,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
+            RecyclableMemoryStreamManager recyclableMemoryStreamManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
@@ -190,6 +194,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
+
+            _SizeChangedSubject
+                .Where(x => x >= 0 && Images != null)
+                .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
+                .Subscribe(index => 
+                {
+                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
+                    _ = ResetImageIndex(index);
+                })
+                .AddTo(_disposables);
         }
 
 
@@ -205,6 +219,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
+            ClearPrefetch();
+
             if (Images?.Any() ?? false)
             {
                 Images.ForEach(x => (x as IDisposable)?.Dispose());
@@ -380,6 +396,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (Images == null || Images.Length == 0) { return; }
 
+            if (direction != IndexMoveDirection.Backward)
+            {
+                ClearPrefetch();
+            }
+
             // requestIndex round
             // roundした場合は読み込み数の切り捨て必要
 
@@ -507,6 +528,33 @@ namespace TsubameViewer.Presentation.ViewModels
                     RaisePropertyChanged(nameof(CurrentImages));
 
                     NowImageLoadingLongRunning = false;
+
+                    // 先行読み込みを仕込む
+                    if (direction == IndexMoveDirection.Forward)
+                    {
+                        if (NowDoubleImageView)
+                        {
+                            var firstPageImageSource = Images.ElementAtOrDefault(CurrentImageIndex + (isForceSingleImageView ? 1 : 2));
+                            if (firstPageImageSource != null)
+                            {
+                                SetPrefetch(0, firstPageImageSource);
+
+                                var secondPageImageSource = Images.ElementAtOrDefault(CurrentImageIndex + (isForceSingleImageView ? 2 : 3));
+                                if (secondPageImageSource != null)
+                                {
+                                    SetPrefetch(1, secondPageImageSource);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var firstPageImageSource = Images.ElementAtOrDefault(CurrentImageIndex + 1);
+                            if (firstPageImageSource != null)
+                            {
+                                SetPrefetch(0, firstPageImageSource);
+                            }
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -535,9 +583,13 @@ namespace TsubameViewer.Presentation.ViewModels
             await MoveImageIndex(IndexMoveDirection.Refresh, requestIndex);
         }
 
-        static async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
+        
+
+
+        async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
         {
-            var bitmapImage = await imageSource.GenerateBitmapImageAsync(ct);
+            var bitmapImage = await GetImageIfPrefetched(imageSource) 
+                ?? await imageSource.GenerateBitmapImageAsync(ct);
 
             // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
             if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
@@ -606,6 +658,45 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
+
+        #region Prefetch Images
+
+
+        PrefetchImageInfo[] _PrefetchImageDatum = new PrefetchImageInfo[2];
+        
+        void SetPrefetch(int slot, IImageSource imageSource)
+        {
+            ClearPrefetch(slot);
+            if (imageSource == null) { return; }
+            _PrefetchImageDatum[slot] = new PrefetchImageInfo(imageSource);
+            _ = _PrefetchImageDatum[slot].StartPrefetchAsync();
+        }
+
+        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource)
+        {
+            var prefetch = _PrefetchImageDatum.FirstOrDefault(x => x?.ImageSource == imageSource);
+            if (prefetch == null || prefetch.IsCanceled) { return null; }
+
+            return await prefetch.StartPrefetchAsync();
+        }
+
+        void ClearPrefetch(int slot)
+        {
+            _PrefetchImageDatum[slot]?.Cancel();
+            _PrefetchImageDatum[slot]?.Dispose();
+            _PrefetchImageDatum[slot] = null;
+        }
+
+        void ClearPrefetch()
+        {
+            ClearPrefetch(0);
+            ClearPrefetch(1);
+        }
+
+        
+        #endregion
+
+
         #region Commands
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
@@ -647,17 +738,16 @@ namespace TsubameViewer.Presentation.ViewModels
             return true;
         }
 
+
+        ISubject<int> _SizeChangedSubject = new BehaviorSubject<int>(-1);
+
         private DelegateCommand _SizeChangedCommand;
         public DelegateCommand SizeChangedCommand =>
             _SizeChangedCommand ??= new DelegateCommand(async () =>
             {
-                CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
-
                 if (!(Images?.Any() ?? false)) { return; }
 
-                await Task.Delay(50);
-
-                _ = ResetImageIndex(CurrentImageIndex);
+                _SizeChangedSubject.OnNext(CurrentImageIndex);
             });
 
         private DelegateCommand<string> _changePageFolderCommand;
@@ -723,18 +813,27 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (aspectRatio > 1.35)
                 {
                     ViewResponsibleImageAmount = 2;
-                    CurrentImages = new BitmapImage[2] { images.ElementAtOrDefault(0), null };
+                    if (CurrentImages?.Length != 2)
+                    {
+                        CurrentImages = new BitmapImage[2] { images.ElementAtOrDefault(0), null };
+                    }
                 }
                 else
                 {
                     ViewResponsibleImageAmount = 1;
-                    CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                    if (CurrentImages?.Length != 1)
+                    {
+                        CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                    }
                 }
             }
             else
             {
                 ViewResponsibleImageAmount = 1;
-                CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                if (CurrentImages?.Length != 1)
+                {
+                    CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                }
             }
 
             
@@ -745,6 +844,50 @@ namespace TsubameViewer.Presentation.ViewModels
 
     }
 
+    public class PrefetchImageInfo : IDisposable
+    {
+        public PrefetchImageInfo(IImageSource imageSource)
+        {
+            ImageSource = imageSource;
+        }
+
+        CancellationTokenSource _PrefetchCts = new CancellationTokenSource();
+
+        public BitmapImage Image { get; set; }
+
+        public IImageSource ImageSource { get; set; }
+
+        public bool IsCompleted { get; set; }
+
+        public bool IsCanceled { get; set; }
+
+        static FastAsyncLock _lock = new FastAsyncLock();
+
+        public void Cancel()
+        {
+            IsCanceled = true;
+            _PrefetchCts.Cancel();
+        }
+
+
+        public async Task<BitmapImage> StartPrefetchAsync()
+        {
+            using (await _lock.LockAsync(_PrefetchCts.Token))
+            {                
+                Image ??= await ImageSource.GenerateBitmapImageAsync(_PrefetchCts.Token);
+                IsCompleted = true;
+
+                Debug.WriteLine("prefetch done: " + ImageSource.Name);
+
+                return Image;
+            }
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_PrefetchCts).Dispose();
+        }
+    }
 
 
 }

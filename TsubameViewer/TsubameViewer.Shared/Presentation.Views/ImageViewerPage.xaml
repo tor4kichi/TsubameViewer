@@ -197,7 +197,7 @@
                     >
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"  />
+            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
 
