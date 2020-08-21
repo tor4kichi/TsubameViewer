@@ -28,6 +28,16 @@ namespace TsubameViewer.Presentation.Views
         public SearchResultPage()
         {
             this.InitializeComponent();
+
+            this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+        }
+
+        private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.Item is StorageItemViewModel itemVM)
+            {
+                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+            }
         }
 
 

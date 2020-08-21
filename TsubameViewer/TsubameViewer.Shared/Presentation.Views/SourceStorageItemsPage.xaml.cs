@@ -32,6 +32,16 @@ namespace TsubameViewer.Presentation.Views
         public SourceStorageItemsPage()
         {
             this.InitializeComponent();
+
+            this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+        }
+
+        private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.Item is StorageItemViewModel itemVM && itemVM.Token != null)
+            {
+                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+            }
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
