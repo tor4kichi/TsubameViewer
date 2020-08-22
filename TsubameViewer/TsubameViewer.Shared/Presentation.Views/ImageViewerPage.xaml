@@ -142,7 +142,9 @@
       <myBehaviour:MouseCenterClickTrigger>
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
-      
+
+      <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
+
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
         <core:InvokeCommandAction Command="{Binding GoNextImageCommand, Mode=OneTime}" />
@@ -452,6 +454,30 @@
 
       </VisualStateGroup>
       
+      <!-- マウスカーソルの自動非表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+            
       <!-- フルスクリーン -->
       <VisualStateGroup>
         <VisualState>
@@ -473,7 +499,6 @@
                                Storyboard.TargetName="ImagesContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
-
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
