@@ -54,15 +54,19 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             var list = StorageApplicationPermissions.MostRecentlyUsedList;
             string token = null;
 
-            foreach (var entry in list.Entries)
+            try
             {
-                var item = await list.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-                if (item.Path == storageItem.Path)
+                foreach (var entry in list.Entries)
                 {
-                    token = entry.Token;
-                    break;
+                    var item = await list.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                    if (item.Path == storageItem.Path)
+                    {
+                        token = entry.Token;
+                        break;
+                    }
                 }
             }
+            catch { }
 
             token ??= Guid.NewGuid().ToString();
 
