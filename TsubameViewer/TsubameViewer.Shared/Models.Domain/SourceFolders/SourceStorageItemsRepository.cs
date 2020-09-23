@@ -131,19 +131,38 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             return token;
         }
 
+        Dictionary<string, IStorageItem> _cached = new Dictionary<string, IStorageItem>();
+
         public async Task<IStorageItem> GetItemAsync(string token)
         {
+            if (_cached.TryGetValue(token, out var item)) { return item; }
+
             if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))
             {
-                return await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
+                item = await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
             }
 
             if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
             {
-                return await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                try
+                {
+                    item = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                }
+                catch { }
+
+                try
+                {
+                    item ??= await StorageApplicationPermissions.FutureAccessList.GetFileAsync(token);
+                }
+                catch { }
             }
 
-            return null;
+            if (item != null)
+            {
+                _cached.Add(token, item);
+            }
+
+            return item;
         }
 
 
@@ -182,8 +201,15 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 return tokenStorageItem;
             }
 
-            var subtractPath = path.Substring(tokenStorageItem.Path.Length);
-            return await FolderHelper.GetFolderItemFromPath(tokenStorageItem as StorageFolder, subtractPath);
+            if (tokenStorageItem is StorageFolder folder)
+            {
+                var subtractPath = path.Substring(tokenStorageItem.Path.Length);
+                return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
 
 

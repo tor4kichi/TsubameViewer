@@ -343,6 +343,19 @@ namespace TsubameViewer.Presentation.ViewModels
                                 throw new Exception();
                             }
 
+                            foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
+                            {
+                                try
+                                {
+                                    _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath);
+                                    token = tempToken;
+                                }
+                                catch
+                                {
+                                    _PathReferenceCountManager.Remove(tempToken);
+                                }
+                            }
+
                             _currentItemRootFolderToken = token;
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);

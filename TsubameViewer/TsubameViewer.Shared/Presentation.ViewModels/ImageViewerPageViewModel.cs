@@ -313,7 +313,19 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                             await Task.Delay(100);
                         }
-                        _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
+
+                        foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
+                        {
+                            try
+                            {
+                                _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath);
+                                token = tempToken;
+                            }
+                            catch
+                            {
+                                _PathReferenceCountManager.Remove(tempToken);
+                            }
+                        }
 
                         Images = default;
                         CurrentImageIndex = 0;

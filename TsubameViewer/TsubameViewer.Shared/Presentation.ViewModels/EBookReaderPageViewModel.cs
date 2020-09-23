@@ -259,13 +259,21 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                             await Task.Delay(100);
                         }
-                        var item = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
 
-                        if (item is StorageFile file)
+                        foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
                         {
-                            _currentFolderItem = file;
+                            try
+                            {
+                                _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath) as StorageFile;
+                                token = tempToken;
+                            }
+                            catch
+                            {
+                                _PathReferenceCountManager.Remove(tempToken);
+                            }
                         }
-                        else
+
+                        if (_currentFolderItem == null)
                         {
                             throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
                         }
