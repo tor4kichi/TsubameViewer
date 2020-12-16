@@ -196,9 +196,30 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         {
             var tokenStorageItem = await GetItemAsync(token);
 
-            if (tokenStorageItem.Path == path)
+            if (tokenStorageItem?.Path == path)
             {
                 return tokenStorageItem;
+            }
+            else
+            {
+                // tokenからファイルやフォルダが取れなかった場合はpathをヒントにStorageFolderの取得を試みる
+                await foreach (var item in GetParsistantItems())
+                {
+                    var folderPath = item.item.Path;
+                    string dirName = Path.GetDirectoryName(path);
+                    do
+                    {
+                        if (folderPath.Equals(dirName))
+                        {
+                            tokenStorageItem = item.item;
+                            break;
+                        }
+                        dirName = Path.GetDirectoryName(dirName);
+                    }
+                    while (!string.IsNullOrEmpty(dirName));
+
+                    if (tokenStorageItem != null) { break; }
+                }
             }
 
             if (tokenStorageItem is StorageFolder folder)

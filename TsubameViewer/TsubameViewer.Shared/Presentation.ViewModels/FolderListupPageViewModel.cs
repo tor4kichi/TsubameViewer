@@ -328,7 +328,7 @@ namespace TsubameViewer.Presentation.ViewModels
                            
                             // PathReferenceCountManagerへの登録が遅延する可能性がある
                             string token = null;
-                            foreach (var _ in Enumerable.Repeat(0, 100))
+                            foreach (var _ in Enumerable.Repeat(0, 10))
                             {
                                 token = _PathReferenceCountManager.GetToken(_currentPath);
                                 if (token != null)
