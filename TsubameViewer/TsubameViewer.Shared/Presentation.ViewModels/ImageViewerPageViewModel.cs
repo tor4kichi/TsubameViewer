@@ -36,6 +36,7 @@ using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
@@ -436,7 +437,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 try
                 {
                     // 読み込むべきインデックスを先に洗い出す
-                    var requestIndex = direction switch
+                    var rawRequestIndex = direction switch
                     {
                         IndexMoveDirection.Refresh => request ?? CurrentImageIndex,
                         IndexMoveDirection.Forward => CurrentImageIndex + (_prevForceSingleView ? 1 : _CurrentImages.Length),
@@ -444,11 +445,33 @@ namespace TsubameViewer.Presentation.ViewModels
                         _ => throw new NotSupportedException(),
                     };
 
-                    // requestIndexの範囲をページ数上下限のそれぞれ1余計な分までをもってクランプ
-                    // 見開き表示時に+2/-2の範囲までを表示リクエストすることで
-                    // 例えば1ページから-2で0と-1を表示するリクエストとして
-                    // 後の処理で-1を切り落とすことで0ページのみを表示させることを意図しています。
-                    requestIndex = Math.Clamp(requestIndex, -1, Images.Length);
+                    // 表示位置のWrap処理
+                    var requestIndex = rawRequestIndex switch
+                    {
+                        int i when i < 0 => Images.Length - _CurrentImages.Length,
+                        int i when i >= Images.Length => 0,
+                        _ => rawRequestIndex
+                    };
+
+                    // 最後尾から先頭にジャンプした場合に音を鳴らす
+                    if (requestIndex != rawRequestIndex)
+                    {
+                        ElementSoundPlayer.State = ElementSoundPlayerState.On;
+                        ElementSoundPlayer.Volume = 1.0;
+                        ElementSoundPlayer.Play(ElementSoundKind.Invoke);
+
+                        _ = Task.Delay(500).ContinueWith(prevTask =>
+                        {
+                            _scheduler.Schedule(async () => 
+                            {
+                                using (await _imageLoadingLock.LockAsync(ct))
+                                {
+                                    ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
+                                }
+                            });
+                        });
+                    }
+
 
                     _nowRequestedImageIndex = requestIndex;
 
@@ -720,10 +743,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoNextImageCommand()
         {
-            if (CurrentImageIndex + 1 < Images?.Length)
-            {
-                _ = MoveImageIndex(IndexMoveDirection.Forward);
-            }
+            _ = MoveImageIndex(IndexMoveDirection.Forward);
         }
 
         private bool CanGoNextCommand()
@@ -738,10 +758,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void ExecuteGoPrevImageCommand()
         {
-            if (CurrentImageIndex >= 1 && Images?.Length > 0)
-            {
-                _ = MoveImageIndex(IndexMoveDirection.Backward);
-            }
+            _ = MoveImageIndex(IndexMoveDirection.Backward);
         }
 
         private bool CanGoPrevCommand()
