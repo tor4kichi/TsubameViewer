@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reactive.Disposables;
 using System.Text;
 using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.Search;

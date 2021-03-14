@@ -16,7 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.RestoreNavigation;
@@ -158,6 +158,9 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
             Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
+
+
+        string _currentItemRootFolderToken;
 
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
@@ -325,7 +328,7 @@ namespace TsubameViewer.Presentation.ViewModels
                            
                             // PathReferenceCountManagerへの登録が遅延する可能性がある
                             string token = null;
-                            foreach (var _ in Enumerable.Repeat(0, 100))
+                            foreach (var _ in Enumerable.Repeat(0, 10))
                             {
                                 token = _PathReferenceCountManager.GetToken(_currentPath);
                                 if (token != null)
@@ -334,6 +337,27 @@ namespace TsubameViewer.Presentation.ViewModels
                                 }
                                 await Task.Delay(100);
                             }
+
+                            if (token == null)
+                            {
+                                throw new Exception();
+                            }
+
+                            foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
+                            {
+                                try
+                                {
+                                    _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath);
+                                    token = tempToken;
+                                }
+                                catch
+                                {
+                                    _PathReferenceCountManager.Remove(tempToken);
+                                }
+                            }
+
+                            _currentItemRootFolderToken = token;
+
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
@@ -534,6 +558,7 @@ namespace TsubameViewer.Presentation.ViewModels
             List<StorageItemViewModel> unsortedFileItems = new List<StorageItemViewModel>();
             foreach (var folderItem in result.Images)
             {
+                _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken);
                 ct.ThrowIfCancellationRequested();
                 var item = new StorageItemViewModel(folderItem, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Folder)

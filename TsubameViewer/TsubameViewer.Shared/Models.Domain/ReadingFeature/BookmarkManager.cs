@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 
-namespace TsubameViewer.Models.Domain.Bookmark
+namespace TsubameViewer.Models.Domain.ReadingFeature
 {
     public struct NormalizedPagePosition
     {

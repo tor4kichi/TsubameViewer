@@ -54,15 +54,19 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             var list = StorageApplicationPermissions.MostRecentlyUsedList;
             string token = null;
 
-            foreach (var entry in list.Entries)
+            try
             {
-                var item = await list.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-                if (item.Path == storageItem.Path)
+                foreach (var entry in list.Entries)
                 {
-                    token = entry.Token;
-                    break;
+                    var item = await list.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                    if (item.Path == storageItem.Path)
+                    {
+                        token = entry.Token;
+                        break;
+                    }
                 }
             }
+            catch { }
 
             token ??= Guid.NewGuid().ToString();
 
@@ -127,19 +131,38 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             return token;
         }
 
+        Dictionary<string, IStorageItem> _cached = new Dictionary<string, IStorageItem>();
+
         public async Task<IStorageItem> GetItemAsync(string token)
         {
+            if (_cached.TryGetValue(token, out var item)) { return item; }
+
             if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))
             {
-                return await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
+                item = await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
             }
 
             if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
             {
-                return await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                try
+                {
+                    item = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+                }
+                catch { }
+
+                try
+                {
+                    item ??= await StorageApplicationPermissions.FutureAccessList.GetFileAsync(token);
+                }
+                catch { }
             }
 
-            return null;
+            if (item is not null)
+            {
+                _cached.Add(token, item);
+            }
+
+            return item;
         }
 
 
@@ -173,13 +196,41 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         {
             var tokenStorageItem = await GetItemAsync(token);
 
-            if (tokenStorageItem.Path == path)
+            if (tokenStorageItem?.Path == path)
             {
                 return tokenStorageItem;
             }
+            else
+            {
+                // tokenからファイルやフォルダが取れなかった場合はpathをヒントにStorageFolderの取得を試みる
+                await foreach (var item in GetParsistantItems())
+                {
+                    var folderPath = item.item.Path;
+                    string dirName = Path.GetDirectoryName(path);
+                    do
+                    {
+                        if (folderPath.Equals(dirName))
+                        {
+                            tokenStorageItem = item.item;
+                            break;
+                        }
+                        dirName = Path.GetDirectoryName(dirName);
+                    }
+                    while (!string.IsNullOrEmpty(dirName));
 
-            var subtractPath = path.Substring(tokenStorageItem.Path.Length);
-            return await FolderHelper.GetFolderItemFromPath(tokenStorageItem as StorageFolder, subtractPath);
+                    if (tokenStorageItem != null) { break; }
+                }
+            }
+
+            if (tokenStorageItem is StorageFolder folder)
+            {
+                var subtractPath = path.Substring(tokenStorageItem.Path.Length);
+                return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
+            }
+            else
+            {
+                throw new Exception();
+            }
         }
 
 

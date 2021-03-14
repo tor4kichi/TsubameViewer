@@ -14,5 +14,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public const int LargeFileThumbnailImageWidth = 300;
         public const int LargeFileThumbnailImageHeight = 426;
+
+        public const int FolderImageHeight = 80;
+        public const int FolderImageWidth = 306;
     }
 }

@@ -217,10 +217,11 @@
           <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
-
       <myBehaviour:MouseCenterClickTrigger>
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
+
+      <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
@@ -529,6 +530,34 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      <!-- マウスカーソルの自動非表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!-- フルスクリーン -->
       <VisualStateGroup>
         <VisualState>
@@ -545,6 +574,7 @@
                                Storyboard.TargetName="Toolbar_Desktop"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
+
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>

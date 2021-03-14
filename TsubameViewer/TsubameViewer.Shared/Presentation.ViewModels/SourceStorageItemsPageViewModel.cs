@@ -22,7 +22,7 @@ using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Uno.Disposables;
 using Uno.Extensions.Specialized;
 using Windows.Storage;
-using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.Services.UWP;
 using Uno.Extensions;
 using TsubameViewer.Models.Domain;
