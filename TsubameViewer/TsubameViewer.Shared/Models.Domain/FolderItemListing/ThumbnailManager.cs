@@ -50,7 +50,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public static async ValueTask<StorageFolder> GetTempFolderAsync()
         {
-            return ApplicationData.Current.TemporaryFolder;
+            return await Task.FromResult(ApplicationData.Current.TemporaryFolder);
         }
 
 
@@ -118,12 +118,28 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             else
             {
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                return await GenerateThumbnailImageAsync(file, thumbnailFile);
+                if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                    )
+                {
+                    return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap);
+                }
+                else
+                {
+                    return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForImageFileThumbnailBitmap);
+                }
             }
         }
 
+        private void EncodingForImageFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
+        {
+            // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
+            var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / decoder.PixelHeight;
+            encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
+            encoder.BitmapTransform.ScaledHeight = ListingImageConstants.LargeFileThumbnailImageHeight;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+        }
 
-        private Task<StorageFile> GenerateThumbnailImageAsync(StorageFile file, StorageFile outputFile)
+        private Task<StorageFile> GenerateThumbnailImageAsync(StorageFile file, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder)
         {
             return Task.Run(async () => 
             {
@@ -171,12 +187,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 ImageHeight = decoder.PixelHeight
                             });
 
-                            // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
-                            var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / decoder.PixelHeight;
-                            encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
-                            encoder.BitmapTransform.ScaledHeight = ListingImageConstants.LargeFileThumbnailImageHeight;
-                            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-                            
+                            setupEncoder(decoder, encoder);
+
+                            Debug.WriteLine($"thumb out <{file.Path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+
                             await encoder.FlushAsync();
 
                             memStream.Seek(0);
@@ -323,13 +337,25 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId);
                 var files = await query.GetFilesAsync(0, 1);
-                var outputFile = await GenerateThumbnailImageAsync(files[0], thumbnailFile);
+                var outputFile = await GenerateThumbnailImageAsync(files[0], thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap);
                 return new Uri(outputFile.Path);
 #else
                 return null;
 #endif
             }
         }
+
+        private void EncodingForFolderOrArchiveFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
+        {
+            // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
+            var ratio = (double)ListingImageConstants.FolderImageWidth / decoder.PixelWidth;
+            encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = ListingImageConstants.FolderImageHeight, Width = ListingImageConstants.FolderImageWidth };
+            encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio); 
+            encoder.BitmapTransform.ScaledWidth = ListingImageConstants.FolderImageWidth;
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+        }
+
+
 
         private async Task<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream)
         {
