@@ -157,7 +157,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 catch { }
             }
 
-            if (item != null)
+            if (item is not null)
             {
                 _cached.Add(token, item);
             }

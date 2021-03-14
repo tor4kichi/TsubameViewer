@@ -366,12 +366,31 @@ namespace TsubameViewer
                 tokenGettingPath = Path.GetDirectoryName(info.Path);
             }
 
-            var token = referenceCountRepository.GetTokens(tokenGettingPath)?.FirstOrDefault();
-           
-            if (token == null) { return null; }
+            var tokens = referenceCountRepository.GetTokens(tokenGettingPath);
+
+            if (tokens == null) { return null; }
+
+            string finalToken = null;
+            foreach (var token in tokens)
+            {
+                try
+                {
+                    var temp = await sourceFolderRepository.GetItemAsync(token);
+                    if (temp is null)
+                    {
+                        throw new Exception();
+                    }
+
+                    finalToken = token;
+                    break;
+                }
+                catch 
+                {
+                    referenceCountRepository.Remove(token);
+                }
+            }
 
             NavigationParameters parameters = new NavigationParameters();
-
 
             if (string.IsNullOrEmpty(info.Path))
             {
@@ -385,9 +404,8 @@ namespace TsubameViewer
                 parameters.Add(PageNavigationConstants.PageName, info.PageName);
             }
 
-            
+            var item = await sourceFolderRepository.GetStorageItemFromPath(finalToken, info.Path);
 
-            var item = await sourceFolderRepository.GetStorageItemFromPath(token, info.Path);
             if (item is StorageFolder itemFolder)
             {
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
