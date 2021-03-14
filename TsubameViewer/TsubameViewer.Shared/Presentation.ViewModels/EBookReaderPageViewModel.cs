@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.Domain.Bookmark;
+using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.EBook;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
