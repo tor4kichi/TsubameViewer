@@ -80,11 +80,11 @@
     <PackageCertificateKeyFile>
     </PackageCertificateKeyFile>
     <LangVersion>Latest</LangVersion>
-    <PackageCertificateThumbprint>5B2C000516868E3A3B933E730AB3BABB14E2027F</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>00EB86D001FBDECE5BBB788FD987300725856180</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x86|x64|arm|arm64</AppxBundlePlatforms>
