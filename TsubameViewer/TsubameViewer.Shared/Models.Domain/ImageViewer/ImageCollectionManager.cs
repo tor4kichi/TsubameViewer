@@ -81,7 +81,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
                     try
                     {
-                        var images = new IImageSource[result.ItemsCount];
+                        List<IImageSource> images = new List<IImageSource>((int)result.ItemsCount);
                         int firstSelectedIndex = 0;
                         if (result.Images != null)
                         { 
@@ -95,15 +95,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                                 }
                                 index++;
                             }
+
+                            images.Sort(ImageSourceNameInterporatedComparer.Default);
                         }
                         else
                         {
-                            images = new IImageSource[] { new StorageItemImageSource(file, _thumbnailManager) };
+                            images = new List<IImageSource>() { new StorageItemImageSource(file, _thumbnailManager) };
                         }
 
                         return new ImageCollectionResult()     
                         {
-                            Images = images,
+                            Images = images.ToArray(),
                             ItemsEnumeratorDisposer = Disposable.Empty,
                             FirstSelectedIndex = firstSelectedIndex,
                             ParentFolderOrArchiveName = parentFolder?.Name
@@ -120,9 +122,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     try
                     {
                         var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
+
+                        result.Images.Sort(ImageSourceNameInterporatedComparer.Default);
+
                         return new ImageCollectionResult()
                         {
-                            Images = result.Images,
+                            Images = result.Images.ToArray(),
                             ItemsEnumeratorDisposer = result.Disposer,
                             FirstSelectedIndex = 0,
                             ParentFolderOrArchiveName = file.Name
@@ -183,8 +188,48 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             public uint ItemsCount { get; set; }
             public IDisposable Disposer { get; set; }
-            public IImageSource[] Images { get; set; }
+            public List<IImageSource> Images { get; set; }
         }
+
+
+        private class ImageSourceNameInterporatedComparer : IComparer<IImageSource>
+        {
+            public static readonly ImageSourceNameInterporatedComparer Default = new ImageSourceNameInterporatedComparer();
+            private ImageSourceNameInterporatedComparer() { }
+            public int Compare(IImageSource x, IImageSource y)
+            {
+                var xDictPath = Path.GetDirectoryName(x.Name);
+                var yDictPath = Path.GetDirectoryName(y.Name);
+
+                if (xDictPath != yDictPath)
+                {
+                    return String.CompareOrdinal(x.Name, y.Name);
+                }
+
+                static bool TryGetPageNumber(string name, out int pageNumber)
+                {
+                    int keta = 1;
+                    int number = 0;
+                    foreach (var i in name.Reverse().SkipWhile(c => !char.IsDigit(c)).TakeWhile(c => char.IsDigit(c)))
+                    {
+                        number += i * keta;
+                        keta *= 10;
+                    }
+
+                    pageNumber = number;
+                    return number > 0;
+                }
+
+                var xName = Path.GetFileNameWithoutExtension(x.Name);
+                if (!TryGetPageNumber(xName, out int xPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
+
+                var yName = Path.GetFileNameWithoutExtension(y.Name);
+                if (!TryGetPageNumber(yName, out int yPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
+
+                return xPageNumber - yPageNumber;
+            }
+        }
+
 
         public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderItemsAsync(StorageFolder storageFolder, CancellationToken ct)
         {
@@ -253,6 +298,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return result;
         }
 
+        
+
 
         public async Task<GetImagesFromArchiveResult> GetImagesFromZipFileAsync(StorageFile file)
         {
@@ -263,14 +310,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 .AddTo(disposables);
             
             var supportedEntries = zipArchive.Entries
-                .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToArray();
+                .ToList();
 
             return new GetImagesFromArchiveResult()
             {
-                ItemsCount = (uint)supportedEntries.Length,
+                ItemsCount = (uint)supportedEntries.Count,
                 Disposer = disposables,
                 Images = supportedEntries,
             };
@@ -283,7 +329,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
                 .Select(x => pdfDocument.GetPage((uint)x))
                 .Select(x => (IImageSource)new PdfPageImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToArray();
+                .ToList();
 
             return new GetImagesFromArchiveResult()
             {
@@ -305,13 +351,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             var supportedEntries = rarArchive.Entries
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .OrderBy(x => x.Key)
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToArray();
+                .ToList();
 
             return new GetImagesFromArchiveResult()
             {
-                ItemsCount = (uint)supportedEntries.Length,
+                ItemsCount = (uint)supportedEntries.Count,
                 Disposer = disposables,
                 Images = supportedEntries,
             };
@@ -327,14 +372,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 .AddTo(disposables);
 
             var supportedEntries = zipArchive.Entries
-                .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToArray();
+                .ToList();
 
             return new GetImagesFromArchiveResult()
             {
-                ItemsCount = (uint)supportedEntries.Length,
+                ItemsCount = (uint)supportedEntries.Count,
                 Disposer = disposables,
                 Images = supportedEntries,
             };
@@ -349,14 +393,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 .AddTo(disposables);
 
             var supportedEntries = zipArchive.Entries
-                .OrderBy(x => x.Key)
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToArray();
+                .ToList();
 
             return new GetImagesFromArchiveResult()
             {
-                ItemsCount = (uint)supportedEntries.Length,
+                ItemsCount = (uint)supportedEntries.Count,
                 Disposer = disposables,
                 Images = supportedEntries,
             };
