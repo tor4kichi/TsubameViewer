@@ -10,12 +10,13 @@
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
-  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters"
-  >
+  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
+  xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup">
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
+        <folderListup:FolderListupItemTemplate />
         <ResourceDictionary Source="Presentation.Styles/SettingsControlStyles.xaml"/>
       </ResourceDictionary.MergedDictionaries>
 
