@@ -103,7 +103,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 var result = await Task.Run(() => _storageItemSearchManager.SearchAsync(q.Trim(), 0, 100), ct);
                 foreach (var entry in result.Entries)
                 {
-                    SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
+                    try
+                    {
+                        SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
+                    }
+                    catch 
+                    {
+                        _storageItemSearchManager.Remove(entry.Path);
+                    }
                 }
 
                 int totalCount = result.TotalCount;
