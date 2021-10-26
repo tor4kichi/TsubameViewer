@@ -59,7 +59,7 @@ namespace TsubameViewer.Models.Domain
             }
         }
 
-        public static async IAsyncEnumerable<IStorageItem> GetEnumerator(StorageFileQueryResult query, uint itemsCount, [EnumeratorCancellation] CancellationToken ct = default)
+        public static async IAsyncEnumerable<StorageFile> GetEnumerator(StorageFileQueryResult query, uint itemsCount, [EnumeratorCancellation] CancellationToken ct = default)
         {
             uint currentCount = 0;
             while (currentCount < itemsCount)
@@ -67,6 +67,23 @@ namespace TsubameViewer.Models.Domain
                 ct.ThrowIfCancellationRequested();
 
                 var items = await query.GetFilesAsync(currentCount, GetEnumeratorOneTimeGetCount).AsTask(ct);
+                foreach (var item in items)
+                {
+                    yield return item;
+                }
+
+                currentCount += (uint)items.Count;
+            }
+        }
+
+        public static async IAsyncEnumerable<StorageFolder> GetEnumerator(StorageFolderQueryResult query, uint itemsCount, [EnumeratorCancellation] CancellationToken ct = default)
+        {
+            uint currentCount = 0;
+            while (currentCount < itemsCount)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var items = await query.GetFoldersAsync(currentCount, GetEnumeratorOneTimeGetCount).AsTask(ct);
                 foreach (var item in items)
                 {
                     yield return item;

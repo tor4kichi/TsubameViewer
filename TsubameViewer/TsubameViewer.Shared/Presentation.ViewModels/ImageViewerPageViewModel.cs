@@ -661,7 +661,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            var result = await _imageCollectionManager.GetImageSourcesForImageViewerAsync(_currentFolderItem);
+            var result = await _imageCollectionManager.GetImagesAsync(_currentFolderItem);
             if (result != null)
             {
                 Images = result.Images;
