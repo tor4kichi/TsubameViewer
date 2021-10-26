@@ -106,6 +106,7 @@ namespace TsubameViewer.Presentation.Views
         private Type[] CanGoBackPageTypes = new Type[] 
         {
             typeof(Views.FolderListupPage),
+            typeof(Views.ImageListupPage),
             typeof(Views.ImageViewerPage),
             typeof(Views.EBookReaderPage),
             typeof(Views.SearchResultPage),

@@ -1,4 +1,3 @@
-
 #### General
 
 Cancel = 取消
@@ -67,6 +66,11 @@ SelectSourceFolder = 将文件夹添加到TsubameViewer
 #### FolderListupPage
 
 ReturnSourceFolderPageButton = 返回原始文件夹
+ChangeViewToFolderListupPage = 切换到文件夹视图
+ChangeViewToImageListupPage = 切换到图像列表视图
+
+
+
 
 FileSortTitle = 排序
 FileSortType.TitleAscending = 文件名（升序）

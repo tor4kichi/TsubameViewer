@@ -132,6 +132,7 @@ namespace TsubameViewer
             container.RegisterInstance(new RecyclableMemoryStreamManager());
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
+            container.RegisterForNavigation<ImageListupPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<EBookReaderPage>();
@@ -409,7 +410,7 @@ namespace TsubameViewer
             if (item is StorageFolder itemFolder)
             {
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
-                if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
+                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
                 {
                     return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }
