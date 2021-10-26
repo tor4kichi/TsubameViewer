@@ -20,6 +20,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ApplicationSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ReadingFeature\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
@@ -75,6 +76,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedQuickReturnHeader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedStickyHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ColorToBrush.cs" />
@@ -90,6 +93,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookReaderPage.xaml.cs">
       <DependentUpon>EBookReaderPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListup\FolderListupItemTemplate.xaml.cs">
+      <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Helpers\VisualTreeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
@@ -150,6 +157,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListupPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListup\FolderListupItemTemplate.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

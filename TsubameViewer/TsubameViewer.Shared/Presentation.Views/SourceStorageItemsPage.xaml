@@ -18,212 +18,13 @@
   >
 
   <Page.Resources>
-
-    <Style TargetType="ProgressBar" >
-      <Setter Property="Minimum" Value="0.0" />
-      <Setter Property="Maximum" Value="1.0" />
-      <Setter Property="Height" Value="4" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="Foreground" Value="#afff3333" />
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    
-    <DataTemplate x:Key="FolderTemplate">
-      <StackPanel>
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
-        </ToolTipService.ToolTip>
-        
-        <Image Source="{Binding Image}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
-        <Grid Height="52">
-          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-
-          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
-        </Grid>
-      </StackPanel>
-    </DataTemplate>
-
-    <DataTemplate x:Key="AddNewFolderTemplate">
-      <uwpControls:DockPanel>
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
-        </ToolTipService.ToolTip>
-        
-        <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="52" Margin="12 0">
-          <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
-            <SymbolIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.30" ScaleY="1.30" CenterX="12" CenterY="12" />
-            </SymbolIcon.RenderTransform>
-          </SymbolIcon>
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" />
-          </StackPanel>
-        </uwpControls:DockPanel>
-        <Border  />
-      </uwpControls:DockPanel>
-    </DataTemplate>
-
-    <DataTemplate x:Key="ImageFileTemplate">
-      <StackPanel>
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
-        </ToolTipService.ToolTip>
-        
-        <Image Source="{Binding Image}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
-        <Grid Height="52" Margin="12 0">
-          <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70B;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 4 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-        </Grid>
-      </StackPanel>
-    </DataTemplate>
-    
-    <DataTemplate x:Key="ArchiveFileTemplate">
-      <StackPanel>
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
-        </ToolTipService.ToolTip>
-        
-        <Image Source="{Binding Image}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
-        <Grid Height="52">
-          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding Path}" FontSize="12" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-
-          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
-        </Grid>
-      </StackPanel>
-    </DataTemplate>
-
-    <DataTemplate x:Key="EBookFileTemplate">
-      <StackPanel>
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" />
-        </ToolTipService.ToolTip>
-
-        <Image Source="{Binding Image}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
-        <Grid Height="52">
-          <StackPanel Margin="12 0 40 0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-          </StackPanel>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
-            <FontIcon.RenderTransform>
-              <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-            </FontIcon.RenderTransform>
-          </FontIcon>
-
-          <ProgressBar Value="{Binding ReadParcentage}" VerticalAlignment="Bottom" />
-        </Grid>
-      </StackPanel>
-    </DataTemplate>
-
-
-    <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
-                                     Folder="{StaticResource FolderTemplate}"
-                                     AddNewFolder="{StaticResource AddNewFolderTemplate}"
-                                   Archive="{StaticResource ArchiveFileTemplate}"
-                                   Image="{StaticResource ImageFileTemplate}"
-                                   EBook="{StaticResource EBookFileTemplate}"
-                                     >
-    </ts:FolderItemTemplateSelector>
-
-
-    <ss:FolderItemStyleSelector x:Key="FolderItemStyleSelector">
-      <ss:FolderItemStyleSelector.AddNewFolder>
-        <Style TargetType="GridViewItem">
-          <Setter Property="Background" Value="{ThemeResource SystemAccentColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0 0 0 0" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:FolderItemStyleSelector.AddNewFolder>
-      <ss:FolderItemStyleSelector.Folder>
-        <Style TargetType="GridViewItem">
-          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0 0 0 0" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:FolderItemStyleSelector.Folder>
-      <ss:FolderItemStyleSelector.Image>
-        <Style TargetType="GridViewItem">
-          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0 0 0 0" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:FolderItemStyleSelector.Image>
-      <ss:FolderItemStyleSelector.Archive>
-        <Style TargetType="GridViewItem">
-          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0 0 0 0" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:FolderItemStyleSelector.Archive>
-      <ss:FolderItemStyleSelector.EBook>
-        <Style TargetType="GridViewItem">
-          <Setter Property="Background" Value="{ThemeResource SystemBaseLowColor}" />
-          <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-          <Setter Property="VerticalContentAlignment" Value="Stretch" />
-          <Setter Property="Padding" Value="0 0 0 0" />
-          <Setter Property="Margin" Value="6 6" />
-        </Style>
-      </ss:FolderItemStyleSelector.EBook>
-    </ss:FolderItemStyleSelector>
-
-
     <CollectionViewSource x:Key="ItemsCollectionViewSource" 
                           Source="{Binding Groups}"
                           IsSourceGrouped="True"
                           ItemsPath="Items"
                           />
-
-
-
   </Page.Resources>
-  <Grid>
+  <Grid Margin="0 16 0 0">
 
     <uwpControls:AdaptiveGridView 
             x:Name="FoldersAdaptiveGridView"
@@ -237,7 +38,6 @@
             IsItemClickEnabled="True"
             ItemClickCommand="{Binding OpenFolderItemCommand}"
             IsSynchronizedWithCurrentItem="False"
-            Padding="48 16"
             SelectionMode="None"
               >
 
@@ -298,7 +98,14 @@
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 16 48 27" />
           </VisualState.Setters>
         </VisualState>
-        
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1600" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="280 0 280 32" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <AdaptiveTrigger MinWindowWidth="1220" />
@@ -312,6 +119,7 @@
             <AdaptiveTrigger MinWindowWidth="610" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 32" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>

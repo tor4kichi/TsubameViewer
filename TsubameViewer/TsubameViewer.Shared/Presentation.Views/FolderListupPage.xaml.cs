@@ -31,6 +31,7 @@ using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 using Uno.UI.Toolkit;
+using TsubameViewer.Presentation.Views.Helpers;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -286,22 +287,30 @@ namespace TsubameViewer.Presentation.Views
             var lastIntaractItem = pageVM.FolderLastIntractItem.Value;
             if (lastIntaractItem != null)
             {
-                DependencyObject item;
-                do
+                if (lastIntaractItem.Type is not Models.Domain.StorageItemTypes.Image)
                 {
-                    item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
+                    FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
 
-                    await Task.Delay(10);
-                }
-                while (item == null);
+                    {
+                        DependencyObject item;
+                        do
+                        {
+                            item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
-                if (item is Control control)
-                {
-                    var transform = control.TransformToVisual(RootScrollViewer);
-                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
-                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
-                    control.Focus(FocusState.Keyboard);
-                }
+                            await Task.Delay(10);
+                        }
+                        while (item == null);
+
+                        if (item is Control control)
+                        {
+                            var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                            var transform = control.TransformToVisual(sv);
+                            var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
+                            //sv.ChangeView(null, positionInScrollViewer.Y + 64, null, true);
+                            control.Focus(FocusState.Keyboard);
+                        }
+                    }
+                }                
             }
             else if (pageVM.ImageLastIntractItem.Value >= 1)
             {
