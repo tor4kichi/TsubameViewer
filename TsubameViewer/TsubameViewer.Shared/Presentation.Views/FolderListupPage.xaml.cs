@@ -46,9 +46,6 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
-            this.Loaded += FolderListupPage_Loaded;
-            this.Unloaded += FolderListupPage_Unloaded;
-
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         }
 
@@ -59,30 +56,6 @@ namespace TsubameViewer.Presentation.Views
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM .Name, TextWrapping = TextWrapping.Wrap } });
             }
         }
-
-        private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
-
-            FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-            FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-            FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        }
-
-        private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-        {
-            FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-            FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-
-            FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-            FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-            FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        }
-
-
 
 
         #region 初期フォーカス設定
@@ -102,106 +75,25 @@ namespace TsubameViewer.Presentation.Views
                     var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
                     itemContainer.Focus(FocusState.Keyboard);
                 }
-                else if (FileItemsRepeater_Small.ItemsSource != null && FileItemsRepeater_Small.Visibility == Visibility.Visible)
-                {
-                    var item = FileItemsRepeater_Small.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
-                else if (FileItemsRepeater_Midium.ItemsSource != null && FileItemsRepeater_Midium.Visibility == Visibility.Visible)
-                {
-                    var item = FileItemsRepeater_Midium.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
-                else if (FileItemsRepeater_Large.ItemsSource != null && FileItemsRepeater_Large.Visibility == Visibility.Visible)
-                {
-                    var item = FileItemsRepeater_Large.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
                 else
                 {
                     ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
 
                     this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-                    this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-
                     this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
-                    this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
                 }
             }
             
         }
 
-        private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-        {
-            this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-            this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-
-            (args.Element as Control).Focus(FocusState.Keyboard);
-        }
-
-
         private void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-            this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
 
             args.ItemContainer.Focus(FocusState.Keyboard);
         }
 
         #endregion
-
-
-
-        private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-        {
-            if (args.Element is FrameworkElement fe
-                && fe.DataContext is StorageItemViewModel itemVM
-                )
-            {
-                itemVM.Initialize();
-            }
-        }
-
-        private void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
-        {
-            if (args.Element is FrameworkElement fe
-               && fe.DataContext is StorageItemViewModel itemVM
-               )
-            {
-                itemVM.StopImageLoading();
-            }
-        }
-
-
-
-
-
-
-        private void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            var item = sender as FrameworkElement;
-            item.Scale(1.020f, 1.020f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
-                .Start();
-        }
-
-        private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            var item = sender as FrameworkElement;
-            item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
-                .Start();
-        }
-
-
-
-
 
 
         // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
@@ -244,7 +136,7 @@ namespace TsubameViewer.Presentation.Views
             else
             {
                 OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Command = pageVM.OpenListupCommand;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
                     ? Visibility.Visible
                     : Visibility.Collapsed
@@ -312,7 +204,7 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }                
             }
-            else if (pageVM.ImageLastIntractItem.Value >= 1)
+            //else if (pageVM.ImageLastIntractItem.Value >= 1)
             {
                 // 実際にスクロールするまでItemTemplateは解決されない
                 // 一旦Opacity=0.0に設定した上で要素が取れるまでプログラマチックにスクロールしていく

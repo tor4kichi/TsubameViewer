@@ -38,18 +38,41 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class ImageCollectionManager
     {
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager,
-            FolderContainerTypeManager folderContainerTypeManager,
             RecyclableMemoryStreamManager recyclableMemoryStreamManager
             )
         {
             _thumbnailManager = thumbnailManager;
-            _folderContainerTypeManager = folderContainerTypeManager;
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+        }
+
+        public async Task<bool> IsExistImageFileAsync(IStorageItem storageItem, CancellationToken ct)
+        {
+            if (storageItem is StorageFolder folder)
+            {
+                var query = MakeImageFileSearchQueryResult(folder);
+                var count = await query.GetItemCountAsync().AsTask(ct);
+                return count > 0;
+            }
+            else if (storageItem is StorageFile file && file.IsSupportedMangaFile())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+
+        public async Task<bool> IsExistFolderOrArchiveFileAsync(StorageFolder folder, CancellationToken ct)
+        {
+            var query = MakeFoldersAndArchiveFileSearchQueryResult(folder);
+            var count = await query.GetItemCountAsync().AsTask(ct);
+            return count > 0;
         }
 
         public Task<ImageCollectionResult> GetImagesAsync(IStorageItem storageItem, CancellationToken ct = default)
@@ -206,17 +229,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 var images = new IImageSource[result.ItemsCount];
                 int index = 0;
 
-                bool isAllImageFile = true;
                 await foreach (var item in result.Images.WithCancellation(ct))
                 {
                     images[index] = item;
                     index++;
-
-                    isAllImageFile &= (item as StorageItemImageSource)?.ItemTypes == StorageItemTypes.Image;
                 }
-
-                // フォルダが画像のみを保持しているかどうかをローカルDBに設定する
-                _folderContainerTypeManager.SetContainerType(folder, isAllImageFile ? FolderContainerType.OnlyImages : FolderContainerType.Other);
 
                 return new ImageCollectionResult()
                 {
@@ -301,10 +318,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 
 #endif
 
+        private StorageItemQueryResult MakeFoldersAndArchiveFileSearchQueryResult(StorageFolder folder)
+        {
+            return folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)));
+        }
+
         private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetSubFoldersAndArchiveFileAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)));
+            var query = MakeFoldersAndArchiveFileSearchQueryResult(storageFolder);
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableItems(itemsCount, query, ct));
 #else
@@ -312,11 +334,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 #endif
         }
 
+        private StorageFileQueryResult MakeImageFileSearchQueryResult(StorageFolder storageFolder)
+        {
+            return storageFolder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions));
+        }
 
         private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder?.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions));
+            var query = MakeImageFileSearchQueryResult(storageFolder);
             if (query == null) { return (0, null); }
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));

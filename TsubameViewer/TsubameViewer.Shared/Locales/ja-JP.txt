@@ -1,4 +1,3 @@
-
 #### General
 
 Cancel = キャンセル
@@ -67,6 +66,11 @@ SelectSourceFolder = TsubameViewerにフォルダを追加
 #### FolderListupPage
 
 ReturnSourceFolderPageButton = 元のフォルダへ戻る
+ChangeViewToFolderListupPage = フォルダビューに切替
+ChangeViewToImageListupPage = 画像一覧ビューに切替
+
+
+
 
 FileSortTitle = 並べ替え
 FileSortType.TitleAscending = ファイル名（昇順）

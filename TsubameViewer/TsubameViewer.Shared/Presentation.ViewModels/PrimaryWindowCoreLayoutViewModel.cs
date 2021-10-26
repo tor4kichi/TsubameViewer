@@ -175,7 +175,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (storageItem is StorageFolder itemFolder)
             {
-                if (await _folderContainerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
+                if (await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
                 {
                     await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                     return;

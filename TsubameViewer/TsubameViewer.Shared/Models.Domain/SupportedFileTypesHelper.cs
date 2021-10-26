@@ -74,6 +74,29 @@ namespace TsubameViewer.Models.Domain
         public static readonly HashSet<string> SupportedImageFileExtensions;
         public static readonly HashSet<string> SupportedEBookFileExtensions;
 
+        public static bool IsSupportedImageFile(this StorageFile file)
+        {
+            return IsSupportedImageFileExtension(file.FileType);
+        }
+
+        public static bool IsSupportedMangaOrEBookFile(this StorageFile file)
+        {
+            return IsSupportedArchiveFileExtension(file.FileType)
+                || IsSupportedEBookFileExtension(file.FileType);
+        }
+
+        public static bool IsSupportedMangaFile(this StorageFile file)
+        {
+            return IsSupportedArchiveFileExtension(file.FileType);
+        }
+
+        public static bool IsSupportedEBookFile(this StorageFile file)
+        {
+            return IsSupportedEBookFileExtension(file.FileType);
+        }
+
+
+
 
         public static IEnumerable<string> GetAllSupportedFileExtensions()
         {
