@@ -259,7 +259,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
                         {
-                            ImageFileItems = cachedItems.ImageFileItems;
+                            ImageFileItems = cachedItems.FolderItems;
 
 
                             // 最後に読んだ位置を更新
@@ -289,7 +289,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
                     {
-                        ImageFileItems = cachedItems.ImageFileItems;
+                        ImageFileItems = cachedItems.FolderItems;
 
                         // 最後に読んだ位置を更新
                         ImageFileItems.ForEach(x => x.UpdateLastReadPosition());

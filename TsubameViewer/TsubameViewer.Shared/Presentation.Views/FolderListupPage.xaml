@@ -22,13 +22,6 @@
   >
   <Page.Resources>
 
-    <CollectionViewSource x:Key="FolderAndArchiveItems"
-                          Source="{Binding Groups}"
-                          IsSourceGrouped="True"
-                          ItemsPath="Items"
-                          />
-
-    
     <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="FolderAndArchiveMenuFlyout_Opened" Placement="Bottom">
       <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
       <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
@@ -43,7 +36,7 @@
   </Page.Resources>
   <Grid Margin="0 8 0 0">
     <uwpControls:AdaptiveGridView 
-      ItemsSource="{Binding Source={StaticResource FolderAndArchiveItems}}"
+      ItemsSource="{Binding FolderItems}"
       x:Name="FoldersAdaptiveGridView"
       StretchContentForSingleRow="False"
       OneRowModeEnabled="False"
