@@ -13,7 +13,7 @@
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
   >
 
@@ -24,8 +24,12 @@
                           ItemsPath="Items"
                           />
   </Page.Resources>
-  <Grid Margin="0 16 0 0">
+  <Grid Margin="0 0 0 0">
 
+    <Border VerticalAlignment="Top"
+            Height="44"
+            Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+            />
     <uwpControls:AdaptiveGridView 
             x:Name="FoldersAdaptiveGridView"
             StretchContentForSingleRow="False"
@@ -95,7 +99,7 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 16 48 27" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 27" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -111,7 +115,7 @@
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 16 140 32" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 0 140 32" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -127,7 +131,7 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16 8 32" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

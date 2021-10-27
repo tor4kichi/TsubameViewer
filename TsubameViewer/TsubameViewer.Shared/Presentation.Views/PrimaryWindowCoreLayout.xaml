@@ -11,36 +11,47 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:uwpExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
   xmlns:wst="using:WindowsStateTriggers" 
-  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" xmlns:mySS="using:TsubameViewer.Presentation.Views.StyleSelector"
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
+  xmlns:mySS="using:TsubameViewer.Presentation.Views.StyleSelector"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
+>
   <Page.Resources>
 
-    <myConv:AutoSuggestBoxQuerySubmittedEventArgsConverter x:Key="AutoSuggestBoxQuerySubmittedEventArgsConverter" />
+    <ResourceDictionary>
+      
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource SystemChromeMediumColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource SystemChromeMediumColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
 
-    <CollectionViewSource x:Key="AutoSuggestBoxItems"
+      <myConv:AutoSuggestBoxQuerySubmittedEventArgsConverter x:Key="AutoSuggestBoxQuerySubmittedEventArgsConverter" />
+
+      <CollectionViewSource x:Key="AutoSuggestBoxItems"
                           Source="{Binding AutoSuggestBoxItems}"
                           IsSourceGrouped="True"
                           ItemsPath="Items"
                           >
-      
-    </CollectionViewSource>
-    
-    <ts:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
-      <ts:MenuItemTemplateSelector.MenuSeparator>
-        <DataTemplate>
-          <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
-        </DataTemplate>
-      </ts:MenuItemTemplateSelector.MenuSeparator>
-      <ts:MenuItemTemplateSelector.MenuItem>
-        <DataTemplate>
-          <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
-        </DataTemplate>
-      </ts:MenuItemTemplateSelector.MenuItem>
-    </ts:MenuItemTemplateSelector>
 
-    <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+      </CollectionViewSource>
+
+      <ts:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
+        <ts:MenuItemTemplateSelector.MenuSeparator>
+          <DataTemplate>
+            <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
+          </DataTemplate>
+        </ts:MenuItemTemplateSelector.MenuSeparator>
+        <ts:MenuItemTemplateSelector.MenuItem>
+          <DataTemplate>
+            <TextBlock Text="{Binding PageType, Converter={StaticResource LocalizeConverter}}" />
+          </DataTemplate>
+        </ts:MenuItemTemplateSelector.MenuItem>
+      </ts:MenuItemTemplateSelector>
+
+    </ResourceDictionary>
   </Page.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop">
     <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"

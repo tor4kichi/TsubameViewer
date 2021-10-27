@@ -169,7 +169,7 @@ namespace TsubameViewer.Presentation.Views
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
-            var pageVM = DataContext as FolderListupPageViewModel;
+            var pageVM = DataContext as ImageListupPageViewModel;
 
             StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
             if (itemVM == null && flyout.Target is Control content)

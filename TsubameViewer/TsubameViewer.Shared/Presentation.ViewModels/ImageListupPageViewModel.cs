@@ -140,6 +140,9 @@ namespace TsubameViewer.Presentation.ViewModels
         static bool _LastIsImageFileThumbnailEnabled;
 
 
+        public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
+
+
         public ImageListupPageViewModel(
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,

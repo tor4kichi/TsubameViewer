@@ -20,6 +20,16 @@
         <ResourceDictionary Source="Presentation.Styles/SettingsControlStyles.xaml"/>
       </ResourceDictionary.MergedDictionaries>
 
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
 
       <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
       

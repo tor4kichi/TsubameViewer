@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
@@ -167,7 +167,9 @@
 
     <uwpControls:DockPanel x:Name="ContentRootStackPanel" Margin="0 0 0 0">
 
-      <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8">
+      <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8"
+                  Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+                  >
         <uwpControls:DockPanel>
 
           <StackPanel x:Name="HeaderStackPanel"
@@ -268,7 +270,7 @@
 
       <ScrollViewer Padding="48 0 48 0" 
                     >
-        <Grid x:Name="FileItemsContainer" Margin="0 0 0 32">
+        <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
                                   ItemsSource="{Binding FileItemsView}"

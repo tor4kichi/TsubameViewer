@@ -9,7 +9,7 @@
   xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:wst="using:WindowsStateTriggers"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationContentBackgroundBrush}">
   
   <Page.Resources>
 
@@ -164,7 +164,7 @@
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
-      <Grid uwpControls:DockPanel.Dock="Top" Margin="32 16">
+      <Grid uwpControls:DockPanel.Dock="Top" Padding="32 16" Background="{ThemeResource ApplicationHeaderBackgroundBrush}">
         <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" />
       </Grid>
 

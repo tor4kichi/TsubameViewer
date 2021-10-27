@@ -18,7 +18,7 @@
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
   <Page.Resources>
 
@@ -34,7 +34,13 @@
     </MenuFlyout>
 
   </Page.Resources>
-  <Grid Margin="0 8 0 0">
+  <Grid >
+
+    <Border Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+            VerticalAlignment="Top"
+            Height="{x:Bind HeaderLayout.(uwpUIExtensions:FrameworkElementExtensions.ActualHeight), Mode=OneWay}"
+            />
+
     <uwpControls:AdaptiveGridView 
       ItemsSource="{Binding FolderItems}"
       x:Name="FoldersAdaptiveGridView"
@@ -58,7 +64,7 @@
       </GridView.ItemContainerTransitions>
 
       <i:Interaction.Behaviors>
-        <myBehaior:QuickReturnHeaderBehavior />
+        <myBehaior:StickyHeaderBehavior />
 
         <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
           <core:CallMethodAction MethodName="Initialize" />
@@ -68,9 +74,11 @@
       
       
       <GridView.Header>
-        <uwpControls:DockPanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-          <StackPanel uwpControls:DockPanel.Dock="Left" x:Name="HeaderLayout" Margin="0 0 0 0"
-                  Padding="8 0"
+        <uwpControls:DockPanel x:Name="HeaderLayout" Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+                               uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+                               >
+          <StackPanel uwpControls:DockPanel.Dock="Left" 
+                  Padding="0 8"
                     
                     >
 
@@ -149,7 +157,6 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="HeaderLayout.Padding" Value="0 0 0 0" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 27" />
           </VisualState.Setters>
         </VisualState>
@@ -158,7 +165,6 @@
             <AdaptiveTrigger MinWindowWidth="1600" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="HeaderLayout.Padding" Value="0 0" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="280 0 280 32" />
           </VisualState.Setters>
         </VisualState>
@@ -167,7 +173,6 @@
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="HeaderLayout.Padding" Value="0 0" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 0 140 32" />
           </VisualState.Setters>
         </VisualState>
@@ -184,7 +189,6 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="HeaderLayout.Padding" Value="0 0" />
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
           </VisualState.Setters>
         </VisualState>
