@@ -41,15 +41,12 @@
       <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
-                     />
+             />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
-        
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
                     Opacity="0.35"
-
                     />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
@@ -78,11 +75,10 @@
   
   <DataTemplate x:Key="ArchiveFileTemplate" x:DataType="vm:StorageItemViewModel">
     <Grid Background="Transparent" IsHitTestVisible="True">
-
       <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
-                     />
+             />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />

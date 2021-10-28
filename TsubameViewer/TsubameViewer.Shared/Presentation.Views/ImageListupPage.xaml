@@ -176,21 +176,21 @@
                   uwpControls:DockPanel.Dock="Left"
                   >
 
-            <TextBlock Text="{Binding DisplayCurrentPath}" Opacity="0.7" />
+            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
             <Button x:Name="ReturnSourceFolderPageButton"
               Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
-              Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}"
+              Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
               >
 
             </Button>
           </StackPanel>
 
           <Border uwpControls:DockPanel.Dock="Right"
-                  Visibility="{Binding HasFolderOrBookItem, Converter={StaticResource BoolToVisibilityConverter}}"
+                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                   >
             <Button Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                  Command="{Binding OpenFolderListupCommand}"
-                  CommandParameter="{Binding CurrentFolderItem}"
+                  Command="{x:Bind _vm.OpenFolderListupCommand}"
+                  CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
                   />
           </Border>
 
@@ -206,29 +206,29 @@
               <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
             </TextBlock>
             <DropDownButton x:Name="FileSortButton" 
-                            Content="{Binding SelectedFileSortType.Value, Converter={StaticResource LocalizeConverter}}"
+                            Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Padding="8"
                             Background="Transparent"
                               Height="40"
                             >
               <DropDownButton.Flyout>
                 <MenuFlyout>
-                  <MenuFlyoutItem Text="{Binding Source=FileSortType.UpdateTimeDecending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>UpdateTimeDecending</models:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{Binding Source=FileSortType.UpdateTimeAscending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>UpdateTimeAscending</models:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{Binding Source=FileSortType.TitleAscending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>TitleAscending</models:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{Binding Source=FileSortType.TitleDecending, Converter={StaticResource LocalizeConverter}}" Command="{Binding ChangeFileSortCommand}">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>TitleDecending</models:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
@@ -242,8 +242,8 @@
 
           <ListView x:Name="FileDisplayModeItemsListView"
                     uwpControls:DockPanel.Dock="Right"
-                  ItemsSource="{Binding FileDisplayModeItems}"
-                  SelectedItem="{Binding FileDisplayMode.Value, Mode=TwoWay}"
+                  ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
+                  SelectedItem="{x:Bind _vm.FileDisplayMode.Value, Mode=TwoWay}"
                   ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
@@ -273,7 +273,7 @@
         <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
-                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"                              
@@ -285,11 +285,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -297,7 +297,7 @@
           </winUI:ItemsRepeater>
 
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
-                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
@@ -309,11 +309,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -321,7 +321,7 @@
           </winUI:ItemsRepeater>
 
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
-                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
@@ -333,11 +333,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -345,7 +345,7 @@
           </winUI:ItemsRepeater>
 
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
-                                  ItemsSource="{Binding FileItemsView}"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                  XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
@@ -357,11 +357,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{Binding OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -375,9 +375,19 @@
 
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
+        <!-- NowProcessing の変更が何故か反映されないケースがあるため、別プロパティで読み込み中表示をキャンセルするようにしている -->
+        <!-- ItemsRepeater上での読み込みが重いとかだろうか？ -->
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding NowProcessing}" />
+            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
@@ -392,9 +402,9 @@
         <VisualState>
           <VisualState.StateTriggers>
 
-            <StateTrigger IsActive="{Binding IsRestrictImageFileThumbnail}" />
+            <StateTrigger IsActive="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}" />
 
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <models:FileDisplayMode>Line</models:FileDisplayMode>
               </wst:EqualsStateTrigger.EqualTo>
@@ -406,7 +416,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <models:FileDisplayMode>Small</models:FileDisplayMode>
               </wst:EqualsStateTrigger.EqualTo>
@@ -418,7 +428,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <models:FileDisplayMode>Midium</models:FileDisplayMode>
               </wst:EqualsStateTrigger.EqualTo>
@@ -430,7 +440,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FileDisplayMode.Value}">
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <models:FileDisplayMode>Large</models:FileDisplayMode>
               </wst:EqualsStateTrigger.EqualTo>
@@ -451,7 +461,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding IsRestrictImageFileThumbnail}">
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <x:Boolean>True</x:Boolean>
               </wst:EqualsStateTrigger.EqualTo>
@@ -462,7 +472,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding HasFileItem}" />
+            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
             <!-- Note: ファイルの表示方法切替の時に 0になると一瞬表示が消えてしまう -->
             <!--<wst:EqualsStateTrigger Value="{Binding FileItems.Count}" EqualTo="0" />-->
           </VisualState.StateTriggers>

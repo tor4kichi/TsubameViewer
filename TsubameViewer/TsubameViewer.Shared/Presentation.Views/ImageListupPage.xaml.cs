@@ -30,11 +30,26 @@ namespace TsubameViewer.Presentation.Views
     {
         public ImageListupPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
 
-            this.Loaded += FolderListupPage_Loaded;
-            this.Unloaded += FolderListupPage_Unloaded;
+            Loaded += FolderListupPage_Loaded;
+            Unloaded += FolderListupPage_Unloaded;
+
+            DataContextChanged += OnDataContextChanged;
         }
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            var oldViewModel = _vm;
+            _vm = args.NewValue as ImageListupPageViewModel;
+            if (_vm != null && oldViewModel != _vm)
+            {
+                this.Bindings.Update();
+            }
+        }
+
+        private ImageListupPageViewModel _vm { get; set; }
+
 
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
         {

@@ -8,6 +8,7 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:wst="using:WindowsStateTriggers"
+  xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
   
@@ -21,27 +22,27 @@
 
     <tt:SettingsItemTemplateSelector x:Key="SettingItemTemplateSelector">
       <tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
-        <DataTemplate>
+        <DataTemplate x:DataType="viewModel:IToggleSwitchSettingItemViewModel">
           <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ToggleSwitch IsOn="{Binding ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" Margin="0" Padding="0" />
-            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
+            <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" Margin="0" Padding="0" />
+            <TextBlock Text="{x:Bind Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
           </uwpControls:DockPanel>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
 
       <!-- アプリに記録されたフォルダ -->
       <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
-        <DataTemplate>
+        <DataTemplate x:DataType="viewModel:StoredFoldersSettingItemViewModel">
           <StackPanel Width="{StaticResource SettingItemWidth}" Spacing="16">
-            <ItemsControl ItemsSource="{Binding Folders}" IsTabStop="False">
+            <ItemsControl ItemsSource="{x:Bind Folders}" IsTabStop="False">
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
                   <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 6">
                     <uwpControls:DockPanel>
                       <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
                       <StackPanel>
-                        <TextBlock Text="{Binding FolderName}" />
-                        <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind FolderName}" />
+                        <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
                       </StackPanel>
                     </uwpControls:DockPanel>
 
@@ -59,15 +60,15 @@
                        Style="{StaticResource SubtitleTextBlockStyle}"
                        />
 
-            <ItemsControl ItemsSource="{Binding TempFiles}" IsTabStop="False">
+            <ItemsControl ItemsSource="{x:Bind TempFiles}" IsTabStop="False">
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
                   <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 8">
                     <uwpControls:DockPanel>
                       <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
                       <StackPanel>
-                        <TextBlock Text="{Binding FolderName}" />
-                        <TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Bind FolderName}" />
+                        <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
                       </StackPanel>
                     </uwpControls:DockPanel>
 
@@ -87,28 +88,28 @@
       </tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
 
       <tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
-        <DataTemplate>
-          <Grid Width="{StaticResource SettingItemWidth}" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-            <TextBlock Text="{Binding Label}" />
-            <TextBlock Text="{Binding Text.Value}" HorizontalAlignment="Right" />
+        <DataTemplate x:DataType="viewModel:UpdatableTextSettingItemViewModel">
+          <Grid Width="{StaticResource SettingItemWidth}" Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+            <TextBlock Text="{x:Bind Label}" />
+            <TextBlock Text="{x:Bind Text.Value, Mode=OneWay}" HorizontalAlignment="Right" />
           </Grid>
           
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
 
       <tt:SettingsItemTemplateSelector.ButtonSettingItem>
-        <DataTemplate>
-          <Button Content="{Binding Label, Mode=OneTime}" Command="{Binding ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
+        <DataTemplate x:DataType="viewModel:ButtonSettingItemViewModel">
+          <Button Content="{x:Bind Label}" Command="{x:Bind ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
                   HorizontalAlignment="Right"
-                  Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                  Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
                   />
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ButtonSettingItem>
       <tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
-        <DataTemplate>
+        <DataTemplate x:DataType="viewModel:ThemeSelectSettingItemViewModel">
           <Grid>
-            <TextBlock Text="{Binding Label}" />
-            <ComboBox ItemsSource="{Binding ThemeItems}" SelectedItem="{Binding SelectedTheme.Value, Mode=TwoWay}"
+            <TextBlock Text="{x:Bind Label}" />
+            <ComboBox ItemsSource="{x:Bind ThemeItems}" SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
                       HorizontalAlignment="Right"
                     >
               <ComboBox.ItemTemplate>
@@ -122,11 +123,11 @@
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
       <tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
-        <DataTemplate>
+        <DataTemplate x:DataType="viewModel:LocaleSelectSettingItemViewModel">
           <StackPanel Spacing="8">
             <Grid>
-              <TextBlock Text="{Binding Label}" />
-              <ComboBox ItemsSource="{Binding Locales}" SelectedValue="{Binding SelectedLocale.Value, Mode=TwoWay}"
+              <TextBlock Text="{x:Bind Label}" />
+              <ComboBox ItemsSource="{x:Bind Locales}" SelectedValue="{x:Bind SelectedLocale.Value, Mode=TwoWay}"
                       DisplayMemberPath="DisplayName"
                       SelectedValuePath="Locale"
                       HorizontalAlignment="Right"
@@ -134,9 +135,9 @@
               </ComboBox>
             </Grid>
 
-            <Button Content="{Binding RestartTextTranslated}" 
-                    Command="{Binding RestartApplicationCommand}"
-                    Visibility="{Binding IsRequireRestart, Converter={StaticResource BoolToVisibilityConverter}}"
+            <Button Content="{x:Bind RestartTextTranslated}" 
+                    Command="{x:Bind RestartApplicationCommand}"
+                    Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                     />
           </StackPanel>
         </DataTemplate>
@@ -144,10 +145,10 @@
     </tt:SettingsItemTemplateSelector>
 
 
-    <DataTemplate x:Key="SettingsGroupTemplate">
-      <StackPanel Spacing="16" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-        <TextBlock Text="{Binding Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
-        <ItemsControl ItemsSource="{Binding Items}"
+    <DataTemplate x:Key="SettingsGroupTemplate" x:DataType="viewModel:SettingsGroupViewModel">
+      <StackPanel Spacing="16" Visibility="{x:Bind IsVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+        <TextBlock Text="{x:Bind  Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <ItemsControl ItemsSource="{x:Bind  Items}"
                         ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
                               HorizontalAlignment="Left"
                       IsTabStop="False"
@@ -170,7 +171,7 @@
 
       <ScrollViewer>
         <StackPanel x:Name="ScrollViewerRootPanel">
-          <ItemsControl ItemsSource="{Binding SettingGroups}"
+          <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                         IsTabStop="False"
@@ -214,7 +215,7 @@
                      />
             </uwpControls:Expander.Header>
 
-            <ItemsControl ItemsSource="{Binding AdvancedSettingGroups}"
+            <ItemsControl ItemsSource="{x:Bind _vm.AdvancedSettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                           HorizontalAlignment="Left"

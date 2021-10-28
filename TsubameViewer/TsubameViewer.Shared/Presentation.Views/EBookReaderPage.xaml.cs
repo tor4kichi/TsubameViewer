@@ -72,7 +72,22 @@ namespace TsubameViewer.Presentation.Views
 
             this.Loaded += PageNavigationCommandInitialize_Loaded;
             this.Unloaded += PageNavigationCommandDispose_Unloaded;
+
+            DataContextChanged += OnDataContextChanged;
         }
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            var oldViewModel = _vm;
+            _vm = args.NewValue as EBookReaderPageViewModel;
+            if (_vm != null && oldViewModel != _vm)
+            {
+                this.Bindings.Update();
+            }
+        }
+
+        private EBookReaderPageViewModel _vm { get; set; }
+
 
         EBookReaderPageViewModel _pageViewModel;
         EBookReaderPageViewModel PageViewModel => _pageViewModel ??= DataContext as EBookReaderPageViewModel;

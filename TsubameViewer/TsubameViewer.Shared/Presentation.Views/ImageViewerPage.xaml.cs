@@ -43,7 +43,20 @@ namespace TsubameViewer.Presentation.Views
 
             Loaded += ResetAnimationUIContainer_Loaded1;
             Unloaded += TapAndController_Unloaded;
+            DataContextChanged += OnDataContextChanged;
         }
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            var oldViewModel = _vm;
+            _vm = args.NewValue as ImageViewerPageViewModel;
+            if (_vm != null && oldViewModel != _vm)
+            {
+                this.Bindings.Update();
+            }
+        }
+
+        private ImageViewerPageViewModel _vm { get; set; }
 
         private void TapAndController_Unloaded(object sender, RoutedEventArgs e)
         {

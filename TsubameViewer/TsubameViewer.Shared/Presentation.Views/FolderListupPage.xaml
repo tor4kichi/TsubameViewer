@@ -42,7 +42,7 @@
             />
 
     <uwpControls:AdaptiveGridView 
-      ItemsSource="{Binding FolderItems}"
+      ItemsSource="{x:Bind _vm.FolderItems}"
       x:Name="FoldersAdaptiveGridView"
       StretchContentForSingleRow="False"
       OneRowModeEnabled="False"
@@ -51,7 +51,7 @@
       DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
       ItemHeight="{StaticResource FolderGridViewItemHeight}"
       IsItemClickEnabled="True"
-      ItemClickCommand="{Binding OpenFolderItemCommand}"
+      ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
       IsSynchronizedWithCurrentItem="False"
       SelectionMode="None"
       XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
@@ -82,10 +82,10 @@
                     
                     >
 
-            <TextBlock Text="{Binding DisplayCurrentPath}" Opacity="0.7" />
+            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
             <Button x:Name="ReturnSourceFolderPageButton"
                   Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
-                  Command="{Binding OpenPageCommand}" CommandParameter="{Binding FoldersManagementPageName}"
+                  Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
                   >
 
             </Button>
@@ -93,12 +93,12 @@
 
           </StackPanel>
 
-          <Border Visibility="{Binding HasFileItem, Converter={StaticResource BoolToVisibilityConverter}}"
+          <Border Visibility="{x:Bind _vm.HasFileItem, Converter={StaticResource BoolToVisibilityConverter}}"
                   uwpControls:DockPanel.Dock="Right"
                   >
             <Button Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
-                    Command="{Binding OpenImageListupCommand}"
-                    CommandParameter="{Binding CurrentFolderItem}"
+                    Command="{x:Bind _vm.OpenImageListupCommand}"
+                    CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
                     >
               
             </Button>
@@ -112,13 +112,10 @@
 
     <i:Interaction.Behaviors>
 
-      <core:DataTriggerBehavior Binding="{Binding FolderLastIntractItem.Value}" Value="{x:Null}" ComparisonCondition="NotEqual">
+      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
         <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
       </core:DataTriggerBehavior>
 
-      <core:DataTriggerBehavior Binding="{Binding ImageLastIntractItem.Value}" Value="-1" ComparisonCondition="NotEqual">
-        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
-      </core:DataTriggerBehavior>
     </i:Interaction.Behaviors>
 
     <VisualStateManager.VisualStateGroups>
@@ -127,7 +124,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding NowProcessing}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
@@ -140,7 +137,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding FolderItems.Count}" EqualTo="0" />
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FolderItems.Count, Mode=OneWay}" EqualTo="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             

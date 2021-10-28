@@ -260,7 +260,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                         }
 
-                        if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
+                        if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
                         {
                             ImageFileItems = cachedItems.FolderItems;
 

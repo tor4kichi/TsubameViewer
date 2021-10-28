@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -25,6 +26,20 @@ namespace TsubameViewer.Presentation.Views
         public SettingsPage()
         {
             this.InitializeComponent();
+
+            DataContextChanged += OnDataContextChanged;
         }
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            var oldViewModel = _vm;
+            _vm = args.NewValue as SettingsPageViewModel;
+            if (_vm != null && oldViewModel != _vm)
+            {
+                this.Bindings.Update();
+            }
+        }
+
+        private SettingsPageViewModel _vm { get; set; }
     }
 }

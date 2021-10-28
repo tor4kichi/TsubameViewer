@@ -160,14 +160,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
             try
             {
-                List<IImageSource> images = new List<IImageSource>((int)result.ItemsCount);
+                List<IImageSource> images = new List<IImageSource>();
                 int firstSelectedIndex = 0;
                 if (result.Images != null)
                 {
                     int index = 0;
                     await foreach (var item in result.Images?.WithCancellation(ct))
                     {
-                        images[index] = item;
+                        images.Add(item);
                         if (item.Name == file.Name)
                         {
                             firstSelectedIndex = index;

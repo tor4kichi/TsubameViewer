@@ -34,7 +34,20 @@ namespace TsubameViewer.Presentation.Views
             this.InitializeComponent();
 
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+            DataContextChanged += OnDataContextChanged;
         }
+
+        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+        {
+            var oldViewModel = _vm;
+            _vm = args.NewValue as SourceStorageItemsPageViewModel;
+            if (_vm != null && oldViewModel != _vm)
+            {
+                this.Bindings.Update();
+            }
+        }
+
+        private SourceStorageItemsPageViewModel _vm { get; set; }
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
