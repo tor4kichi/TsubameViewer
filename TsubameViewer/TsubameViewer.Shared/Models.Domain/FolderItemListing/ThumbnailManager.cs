@@ -29,14 +29,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 {
     public sealed class ThumbnailManager
     {
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
 
         private readonly FastAsyncLock _fileReadWriteLock = new FastAsyncLock();
 
         public ThumbnailManager(
-            ThumbnailImageInfoRepository thumbnailImageInfoRepository 
+            FolderListingSettings folderListingSettings,
+            ThumbnailImageInfoRepository thumbnailImageInfoRepository
             )
         {
+            _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
         }
 
@@ -361,11 +364,20 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private void EncodingForFolderOrArchiveFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
         {
-            // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
-            var ratio = (double)ListingImageConstants.FolderImageWidth / decoder.PixelWidth;
-            encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = ListingImageConstants.FolderImageHeight, Width = ListingImageConstants.FolderImageWidth };
-            encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio); 
-            encoder.BitmapTransform.ScaledWidth = ListingImageConstants.FolderImageWidth;
+            if (decoder.PixelHeight > decoder.PixelWidth)
+            {
+                // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
+                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Width / decoder.PixelWidth;
+                encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio);
+                encoder.BitmapTransform.ScaledWidth = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Width;
+            }
+            else
+            {
+                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Height / decoder.PixelHeight;
+                encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
+                encoder.BitmapTransform.ScaledHeight = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Height;
+            }
+            //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = encoder.BitmapTransform.ScaledHeight, Width = encoder.BitmapTransform.ScaledWidth };
             encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
         }
 

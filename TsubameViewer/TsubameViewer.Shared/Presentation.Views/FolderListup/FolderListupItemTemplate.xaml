@@ -21,27 +21,39 @@
     <Setter Property="Background" Value="Transparent" />
   </Style>
 
+  <Style x:Key="FolderItemTextBlockStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="Margin" Value="12 0" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="MaxLines" Value="3" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <Style x:Key="FolderItemImageStyle" TargetType="Image">
+    <Setter Property="Stretch" Value="UniformToFill" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  
   <DataTemplate x:Key="FolderTemplate" x:DataType="vm:StorageItemViewModel">
-    <uwpControls:DockPanel Background="Transparent" IsHitTestVisible="True">
-      <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
-        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xED41;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
-
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-      </Grid>
-
+    <Grid Background="Transparent" IsHitTestVisible="True">
       <Image Source="{x:Bind Image, Mode=OneWay}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
              x:Name="ImageControl"
+             Style="{StaticResource FolderItemImageStyle}"
                      />
+      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
 
-    </uwpControls:DockPanel>
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        
+        <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
+                    Opacity="0.35"
+
+                    />
+        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+    </Grid>
   </DataTemplate>
 
   <DataTemplate x:Key="AddNewFolderTemplate">
@@ -50,7 +62,7 @@
         <TextBlock Text="{i18nExt:Localize Key=AddNewFolder}" />
       </ToolTipService.ToolTip>
 
-      <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="52" Margin="12 0">
+      <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
         <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
           <SymbolIcon.RenderTransform>
             <ScaleTransform ScaleX="1.30" ScaleY="1.30" CenterX="12" CenterY="12" />
@@ -65,32 +77,30 @@
   </DataTemplate>
   
   <DataTemplate x:Key="ArchiveFileTemplate" x:DataType="vm:StorageItemViewModel">
-    <uwpControls:DockPanel Background="Transparent" IsHitTestVisible="True">
-      <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
-        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
+    <Grid Background="Transparent" IsHitTestVisible="True">
+
+      <Image Source="{x:Bind Image, Mode=OneWay}"
+             x:Name="ImageControl"
+             Style="{StaticResource FolderItemImageStyle}"
+                     />
+      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
           <FontIcon.RenderTransform>
             <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
           </FontIcon.RenderTransform>
         </FontIcon>
-
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
-
-      <Image Source="{x:Bind Image, Mode=OneWay}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
-
-    </uwpControls:DockPanel>
+    </Grid>
   </DataTemplate>
 
   <DataTemplate x:Key="EBookFileTemplate" x:DataType="vm:StorageItemViewModel">
     <uwpControls:DockPanel Background="Transparent" IsHitTestVisible="True">
 
-      <Grid Height="52" uwpControls:DockPanel.Dock="Bottom">
-        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" Margin="12 0 40 0" VerticalAlignment="Center" />
+      <Grid Height="{StaticResource FolderItemTitleHeight}" uwpControls:DockPanel.Dock="Bottom">
+        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True">
           <FontIcon.RenderTransform>
             <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
@@ -101,10 +111,8 @@
       </Grid>
 
       <Image Source="{x:Bind Image, Mode=OneWay}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Center"
-                 Height="80"
-                     />
+             Style="{StaticResource FolderItemImageStyle}"
+             />
 
     </uwpControls:DockPanel>
   </DataTemplate>
@@ -120,9 +128,9 @@
       <Image Source="{x:Bind Image, Mode=OneWay}"
                  Stretch="UniformToFill"
                  VerticalAlignment="Center"
-                 Height="80"
+                 Height="{StaticResource FolderAndArchiveHeight}"
                      />
-      <Grid Height="52" Margin="12 0">
+      <Grid Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
         <StackPanel Margin="0 0 40 0" VerticalAlignment="Center">
           <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
         </StackPanel>

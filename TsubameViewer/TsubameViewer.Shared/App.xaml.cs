@@ -254,6 +254,9 @@ namespace TsubameViewer
             Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
             Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
 
+            UpdateFolderItemSizingResourceValues();
+
+
             var shell = Container.Resolve<PrimaryWindowCoreLayout>();
             var ns = shell.GetNavigationService();
             var unityContainer = Container.GetContainer();
@@ -278,7 +281,15 @@ namespace TsubameViewer
             base.OnInitialized();
         }
 
-      
+        public void UpdateFolderItemSizingResourceValues()
+        {
+            var folderListingSettings = Container.Resolve<Models.Domain.FolderItemListing.FolderListingSettings>();
+            Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
+            Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
+            Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
+        }
+
+
 
         /// <summary>
         /// Invoked when application execution is being suspended.  Application state is saved
