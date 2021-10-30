@@ -215,14 +215,17 @@
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
-      <Border >
+      <Grid >
         <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
-      </Border>
+      </Grid>
     </Grid>
-    
+
+    <Grid>
+      <ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
+    </Grid>
 
 
-    
+
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer" Margin="0 48 0 32">
       <Grid.ColumnDefinitions>

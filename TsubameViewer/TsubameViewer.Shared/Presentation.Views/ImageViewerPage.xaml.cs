@@ -223,16 +223,33 @@ namespace TsubameViewer.Presentation.Views
 
         private async void ImageViewerPage_Loaded(object sender, RoutedEventArgs e)
         {
-            using (var cts = new CancellationTokenSource(5000))
-            {
-                ImagesContainer.Opacity = 0.0;
-                while (!ImageItemsControl.Items.Any())
+            using (var cts = new CancellationTokenSource(60000))
+            {                
+                try
                 {
-                    await Task.Delay(50, cts.Token);
-                }
+                    ImagesContainer.Opacity = 0.0;
+                    bool isLongLoding = false;
+                    DateTime loadingStarted = DateTime.Now;
+                    ImageLodingProgress.Opacity = 0.0;
+                    while (!ImageItemsControl.Items.Any())
+                    {
+                        await Task.Delay(50, cts.Token);
 
-                ImagesContainer.Fade(1.0f, 175f)
-                    .Start();
+                        if (!isLongLoding && (DateTime.Now - loadingStarted) > TimeSpan.FromSeconds(0.5))
+                        {
+                            isLongLoding = true;
+                            ImageLodingProgress.IsActive = true;
+                            ImageLodingProgress.Opacity = 1.0;
+                        }
+                    }
+                }
+                finally
+                {
+                    ImageLodingProgress.IsActive = false;
+                    ImageLodingProgress.Opacity = 0.0;
+                    ImagesContainer.Fade(1.0f, 175f)
+                        .Start();
+                }
             }
         }
 
