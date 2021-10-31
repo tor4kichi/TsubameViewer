@@ -180,15 +180,17 @@ namespace TsubameViewer.Presentation.Views
                 // ビューワー系ページはバックスタックに積まれないようにする
                 // ビューワー系ページを開いてる状態でアプリ外部からビューワー系ページを開く操作があり得る
                 bool rememberBackStack = true;
-                if (ForgetOwnNavigationPageTypes.Any(type => type == e.SourcePageType))
+                if (frame.BackStack.LastOrDefault() is not null and var lastNavigatedPageEntry)
                 {
-                    var lastNavigatedPageEntry = frame.BackStack.LastOrDefault();
-                    if (ForgetOwnNavigationPageTypes.Any(type => type == lastNavigatedPageEntry?.SourcePageType)
-                        && e.SourcePageType == lastNavigatedPageEntry?.SourcePageType
-                        )
+                    if (ForgetOwnNavigationPageTypes.Any(type => type == e.SourcePageType))
                     {
-                        frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
-                        rememberBackStack = false;
+                        if (ForgetOwnNavigationPageTypes.Any(type => type == lastNavigatedPageEntry.SourcePageType)
+                            && e.SourcePageType == lastNavigatedPageEntry.SourcePageType
+                            )
+                        {
+                            frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
+                            rememberBackStack = false;
+                        }
                     }
                 }
 
@@ -200,17 +202,18 @@ namespace TsubameViewer.Presentation.Views
                 if (rememberBackStack)
                 { 
                     ForwardParametersStack.Clear();
-                    var parameters = new NavigationParameters();
+                    var prevParameters = new NavigationParameters();
                     if (_Prev != null)
                     {
                         foreach (var pair in _Prev)
                         {
                             if (pair.Key == PageNavigationConstants.Restored) { continue; }
 
-                            parameters.Add(pair.Key, pair.Value);
+                            prevParameters.Add(pair.Key, pair.Value);
                         }
                     }
-                    BackParametersStack.Add(parameters);
+
+                    BackParametersStack.Add(prevParameters);
                 }
 
                 _ = StoreNaviagtionParameterDelayed();
@@ -402,18 +405,35 @@ namespace TsubameViewer.Presentation.Views
 
             if (_navigationService.CanGoBack())
             {
-                var backNavigationParameters = BackParametersStack.ElementAtOrDefault(BackParametersStack.Count - 1);
+                var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath))
                 {
-                    var last = BackParametersStack.Last();
-                    var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                    BackParametersStack.Remove(last);
-                    ForwardParametersStack.Add(parameters);
+                    while (BackParametersStack.LastOrDefault() is not null and var lastNavigationParameters
+                        && lastNavigationParameters.TryGetValue(PageNavigationConstants.Path, out string lastPath)
+                        && currentPath == lastPath
+                        )
+                    {
+                        ContentFrame.BackStack.RemoveAt(ContentFrame.BackStackDepth - 1);
+                        BackParametersStack.Remove(lastNavigationParameters);
+                        lastNavigationParameters = BackParametersStack.LastOrDefault();
+                    }
                 }
-                _ = backNavigationParameters == null
-                    ? _navigationService.GoBackAsync()
-                    : _navigationService.GoBackAsync(backNavigationParameters)
-                    ;
-
+                {
+                    var lastNavigationParameters = BackParametersStack.LastOrDefault();
+                    if (lastNavigationParameters != null)
+                    {
+                        BackParametersStack.Remove(lastNavigationParameters);
+                        ForwardParametersStack.Add(parameters);
+                        _ = lastNavigationParameters == null
+                            ? _navigationService.GoBackAsync()
+                            : _navigationService.GoBackAsync(lastNavigationParameters)
+                            ;
+                    }
+                    else
+                    {
+                        _navigationService.NavigateAsync(nameof(Views.SourceStorageItemsPage));
+                    }
+                }
                 return true;
             }
             else

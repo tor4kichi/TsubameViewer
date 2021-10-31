@@ -186,6 +186,13 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
+        public override void OnNavigatingTo(INavigationParameters parameters)
+        {
+            Views.PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
+
+            base.OnNavigatingTo(parameters);
+        }
+
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
