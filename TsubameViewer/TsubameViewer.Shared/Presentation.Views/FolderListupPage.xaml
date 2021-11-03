@@ -36,7 +36,7 @@
   </Page.Resources>
   <Grid >
 
-    <Border Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+    <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
             VerticalAlignment="Top"
             Height="{x:Bind HeaderLayout.(uwpUIExtensions:FrameworkElementExtensions.ActualHeight), Mode=OneWay}"
             />
@@ -57,6 +57,7 @@
       XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
       IsTabStop="False"
       ContextRequested="FoldersAdaptiveGridView_ContextRequested"
+      uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 64 0 0"
       >
 
       <GridView.ItemContainerTransitions>
@@ -74,7 +75,7 @@
       
       
       <GridView.Header>
-        <uwpControls:DockPanel x:Name="HeaderLayout" Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+        <uwpControls:DockPanel x:Name="HeaderLayout" Background="{ThemeResource ApplicationContentBackgroundBrush}"
                                uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
                                >
           <StackPanel uwpControls:DockPanel.Dock="Left" 

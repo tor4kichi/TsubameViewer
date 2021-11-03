@@ -168,7 +168,7 @@
     <uwpControls:DockPanel x:Name="ContentRootStackPanel" Margin="0 0 0 0">
 
       <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8"
-                  Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
                   >
         <uwpControls:DockPanel>
 

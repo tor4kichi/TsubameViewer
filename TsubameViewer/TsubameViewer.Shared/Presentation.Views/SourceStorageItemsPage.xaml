@@ -29,7 +29,7 @@
 
     <Border VerticalAlignment="Top"
             Height="44"
-            Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+            Background="{ThemeResource ApplicationContentBackgroundBrush}"
             />
     <uwpControls:AdaptiveGridView 
             x:Name="FoldersAdaptiveGridView"

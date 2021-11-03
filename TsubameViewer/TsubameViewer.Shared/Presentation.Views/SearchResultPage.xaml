@@ -31,8 +31,7 @@
 
   <Grid Margin="0 0 0 0">
 
-    <Border Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
-            VerticalAlignment="Top"
+    <Border VerticalAlignment="Top"
             Height="{x:Bind HeaderLayout.(uwpUIExtensions:FrameworkElementExtensions.ActualHeight), Mode=OneWay}"
             >
 
@@ -75,7 +74,7 @@
         <StackPanel 
           uwpControls:DockPanel.Dock="Top" 
           x:Name="HeaderLayout"
-          Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
           uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
           Padding="8 8"
           >
