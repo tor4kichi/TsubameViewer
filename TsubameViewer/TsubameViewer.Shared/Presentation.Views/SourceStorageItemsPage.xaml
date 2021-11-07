@@ -11,21 +11,26 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
-  xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
+  xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
+  xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
   >
 
   <Page.Resources>
     <CollectionViewSource x:Key="ItemsCollectionViewSource" 
-                          Source="{Binding Groups}"
+                          Source="{x:Bind _vm.Groups, Mode=OneWay}"
                           IsSourceGrouped="True"
                           ItemsPath="Items"
                           />
   </Page.Resources>
-  <Grid Margin="0 16 0 0">
+  <Grid Margin="0 0 0 0">
 
+    <Border VerticalAlignment="Top"
+            Height="44"
+            Background="{ThemeResource ApplicationContentBackgroundBrush}"
+            />
     <uwpControls:AdaptiveGridView 
             x:Name="FoldersAdaptiveGridView"
             StretchContentForSingleRow="False"
@@ -33,10 +38,10 @@
             ItemsSource="{Binding Source={StaticResource ItemsCollectionViewSource}}" 
             ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
             ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-            DesiredWidth="360"            
-            ItemHeight="132"
+            DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
+            ItemHeight="{StaticResource FolderGridViewItemHeight}"
             IsItemClickEnabled="True"
-            ItemClickCommand="{Binding OpenFolderItemCommand}"
+            ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
             IsSynchronizedWithCurrentItem="False"
             SelectionMode="None"
               >
@@ -67,8 +72,8 @@
         <GroupStyle HidesIfEmpty="True"
                     >
           <GroupStyle.HeaderTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding GroupId, Converter={StaticResource LocalizeConverter}}" />
+            <DataTemplate x:DataType="viewModel:SourceItemsGroup">
+              <TextBlock Text="{x:Bind GroupId, Converter={StaticResource LocalizeConverter}}" />
             </DataTemplate>
           </GroupStyle.HeaderTemplate>
           <GroupStyle.HeaderContainerStyle>
@@ -95,7 +100,7 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 16 48 27" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 27" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -111,7 +116,7 @@
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 16 140 32" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 0 140 32" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -127,7 +132,7 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 16 8 32" />
+            <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

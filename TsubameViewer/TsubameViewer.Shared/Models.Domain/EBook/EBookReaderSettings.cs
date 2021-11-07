@@ -24,8 +24,8 @@ namespace TsubameViewer.Models.Domain.EBook
             _RubySizeInPixel = Read(DefaultRubySizeInPixel, nameof(RubySizeInPixel));
             _FontFamily = Read(default(string), nameof(FontFamily));
             _RubyFontFamily = Read(default(string), nameof(RubyFontFamily));
-            _BackgroundColor = Read(Colors.Transparent, nameof(BackgroundColor));
-            _ForegroundColor = Read(Colors.Transparent, nameof(ForegroundColor));
+            _BackgroundColor = Read<Color>(Colors.Transparent, nameof(BackgroundColor));
+            _ForegroundColor = Read<Color?>(Colors.Transparent, nameof(ForegroundColor));
             _OverrideWritingMode = Read(WritingMode.Inherit, nameof(OverrideWritingMode));
         }
 

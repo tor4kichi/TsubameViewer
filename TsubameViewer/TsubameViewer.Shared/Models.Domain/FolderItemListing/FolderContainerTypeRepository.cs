@@ -24,27 +24,32 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderContainerTypeRepository = folderContainerTypeRepository;
         }
 
-        public async ValueTask<FolderContainerType> GetFolderContainerType(StorageFolder folder)
+        public async ValueTask<FolderContainerType> GetFolderContainerTypeWithCacheAsync(StorageFolder folder)
         {
             var containerType = _folderContainerTypeRepository.GetContainerType(folder.Path);
             
             if (containerType != null) { return containerType.Value; }
 
+            return await GetLatestFolderContainerTypeAndUpdateCacheAsync(folder);
+        }
+
+        public async Task<FolderContainerType> GetLatestFolderContainerTypeAndUpdateCacheAsync(StorageFolder folder)
+        {
             var query = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = Windows.Storage.Search.FolderDepth.Shallow });
             var count = await query.GetItemCountAsync();
-            if (count == 0) 
+            if (count == 0)
             {
                 _folderContainerTypeRepository.SetContainerType(folder.Path, FolderContainerType.Other);
-                return FolderContainerType.Other; 
+                return FolderContainerType.Other;
             }
 
             var items = await query.GetFilesAsync(0, count);
-            containerType = items.All(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType))
+            var containerType = items.All(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType))
                 ? FolderContainerType.OnlyImages
                 : FolderContainerType.Other
                 ;
-            _folderContainerTypeRepository.SetContainerType(folder.Path, containerType.Value);
-            return containerType.Value;
+            _folderContainerTypeRepository.SetContainerType(folder.Path, containerType);
+            return containerType;
         }
 
 

@@ -1,0 +1,488 @@
+﻿<Page
+    x:Class="TsubameViewer.Presentation.Views.ImageListupPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:i="using:Microsoft.Xaml.Interactivity" 
+  xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
+  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
+  xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
+  xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
+  xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
+  >
+
+  <!-- NavigaitonCacheMode = Enabled にすると
+    ItemsRepeaterの中身が残る？ためキャッシュは利用していない
+  -->
+
+  <!-- ItemsRepeaterのメモリリークの修正
+  https://github.com/microsoft/microsoft-ui-xaml/issues/1954
+  -->
+
+  <!-- SmallImageWidth 等の定数はApp.xaml.csで設定している -->
+  <!-- その定数自体は Models.Domain/FolderItemListing/ListingImageConstants.cs で定義している -->
+
+
+
+  <Page.Resources>
+
+    <MenuFlyout x:Key="FolderAndArchiveMenuFlyout" Opened="FolderAndArchiveMenuFlyout_Opened" Placement="Bottom">
+      <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
+      <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
+      <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
+      <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{i18nExt:Localize Key=RemoveSecondaryTile}" />
+      <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
+      <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
+
+      <MenuFlyoutItem x:Name="NoActionDescMenuItem" Text="{i18nExt:Localize Key=FolderItemMenuNoActionSuggested}" IsEnabled="False" />
+    </MenuFlyout>
+
+
+
+    <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
+               UserControlによるカーソル移動サポートを有効化している -->
+
+    <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextRequested="FoldersAdaptiveGridView_ContextRequested" Background="Transparent" IsHitTestVisible="True" >
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        </ToolTipService.ToolTip>
+        <Grid Background="{ThemeResource SystemBaseLowColor}" Padding="12 6">
+          <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
+            <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
+            <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
+
+          </StackPanel>
+
+          <SymbolIcon Symbol="OpenFile" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        </Grid>
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Small">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextRequested="FoldersAdaptiveGridView_ContextRequested" Background="Transparent" IsHitTestVisible="True" >
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        </ToolTipService.ToolTip>
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Midium">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextRequested="FoldersAdaptiveGridView_ContextRequested" Background="Transparent" IsHitTestVisible="True">
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        </ToolTipService.ToolTip>
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Large">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextRequested="FoldersAdaptiveGridView_ContextRequested" Background="Transparent" IsHitTestVisible="True">
+        <ToolTipService.ToolTip>
+          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        </ToolTipService.ToolTip>
+        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      </UserControl>
+    </DataTemplate>
+
+
+    <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
+      <ts:FileDisplayModeTemplateSelector.Line>
+        <DataTemplate>
+          <Grid Height="13">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    VerticalAlignment="Top"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                  VerticalAlignment="Bottom"
+                  />
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Line>
+      <ts:FileDisplayModeTemplateSelector.Small>
+        <DataTemplate >
+          <Grid>
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="5"
+                    Canvas.Left="2"
+                    
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    Canvas.Top="2"
+                  />
+
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Small>
+      <ts:FileDisplayModeTemplateSelector.Midium>
+        <DataTemplate >
+          <Grid>
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                  HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                  />
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Midium>
+      <ts:FileDisplayModeTemplateSelector.Large>
+        <DataTemplate >
+          <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Large>
+    </ts:FileDisplayModeTemplateSelector>
+
+  </Page.Resources>
+  
+  
+  
+  <Grid>
+
+    <uwpControls:DockPanel x:Name="ContentRootStackPanel" Margin="0 0 0 0">
+
+      <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  >
+        <uwpControls:DockPanel>
+
+          <StackPanel x:Name="HeaderStackPanel"
+                  uwpControls:DockPanel.Dock="Left"
+                  >
+
+            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
+            <Button x:Name="ReturnSourceFolderPageButton"
+              Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
+              Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
+              >
+
+            </Button>
+          </StackPanel>
+
+          <Border uwpControls:DockPanel.Dock="Right"
+                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                  >
+            <Button Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
+                  Command="{x:Bind _vm.OpenFolderListupCommand}"
+                  CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
+                  />
+          </Border>
+
+
+          <Border />
+
+        </uwpControls:DockPanel>
+
+        <uwpControls:DockPanel x:Name="FilesActionLayout" >
+
+          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
+            <TextBlock VerticalAlignment="Center">
+              <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
+            </TextBlock>
+            <DropDownButton x:Name="FileSortButton" 
+                            Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                            Padding="8"
+                            Background="Transparent"
+                              Height="40"
+                            >
+              <DropDownButton.Flyout>
+                <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>TitleAscending</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>TitleDecending</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </DropDownButton.Flyout>
+            </DropDownButton>
+          </StackPanel>
+
+
+
+          <ListView x:Name="FileDisplayModeItemsListView"
+                    uwpControls:DockPanel.Dock="Right"
+                  ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
+                  SelectedItem="{x:Bind _vm.FileDisplayMode.Value, Mode=TwoWay}"
+                  ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                  SelectionMode="Single"
+                  SingleSelectionFollowsFocus="False"
+                  XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
+                  
+                    >
+            <ListView.ItemContainerStyle>
+              <Style TargetType="ListViewItem">
+                <Setter Property="MinWidth" Value="32" />
+              </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+          </ListView>
+
+          <Border />
+        </uwpControls:DockPanel>
+
+      </StackPanel>
+
+
+      <ScrollViewer Padding="48 0 48 0" 
+                    >
+        <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
+          <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Line}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"                              
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
+                                      />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Small}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
+                                      />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Midium}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                               FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Large}"
+                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
+                               Visibility="Collapsed"
+                               FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+            </winUI:ItemsRepeater.Layout>
+
+            <i:Interaction.Behaviors>
+              <core:EventTriggerBehavior EventName="Tapped">
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+              </core:EventTriggerBehavior>
+              <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+              </uiNavigation:UINavigationTriggerBehavior>
+            </i:Interaction.Behaviors>
+
+          </winUI:ItemsRepeater>
+        </Grid>
+      </ScrollViewer>
+    </uwpControls:DockPanel>
+
+    <VisualStateManager.VisualStateGroups>
+
+      <!-- 表示内容切替中の全体の表示切替 -->
+      <VisualStateGroup>
+        <!-- NowProcessing の変更が何故か反映されないケースがあるため、別プロパティで読み込み中表示をキャンセルするようにしている -->
+        <!-- ItemsRepeater上での読み込みが重いとかだろうか？ -->
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
+            <Setter Target="FileSortButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      
+      <!-- ファイルの表示方法切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+
+            <StateTrigger IsActive="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}" />
+
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Line</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Line.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Small</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Small.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Midium</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Midium.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Large</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+      
+      <!-- ファイルアイテムの表示方法切替
+      　　１．画像ファイルのサムネイル表示を無効にしてる場合は強制で表示切替UIを非表示
+      　　２．ファイルアイテムが無い時は非表示　
+      -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <x:Boolean>True</x:Boolean>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
+            <!-- Note: ファイルの表示方法切替の時に 0になると一瞬表示が消えてしまう -->
+            <!--<wst:EqualsStateTrigger Value="{Binding FileItems.Count}" EqualTo="0" />-->
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileDisplayModeItemsListView.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+    </VisualStateManager.VisualStateGroups>
+  </Grid>
+</Page>

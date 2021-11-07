@@ -38,115 +38,66 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class ImageCollectionManager
     {
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager,
-            FolderContainerTypeManager folderContainerTypeManager,
             RecyclableMemoryStreamManager recyclableMemoryStreamManager
             )
         {
             _thumbnailManager = thumbnailManager;
-            _folderContainerTypeManager = folderContainerTypeManager;
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         }
 
-        public Task<ImageCollectionResult> GetImageSourcesForImageViewerAsync(IStorageItem storageItem, CancellationToken ct = default)
+        public async Task<bool> IsExistImageFileAsync(IStorageItem storageItem, CancellationToken ct)
         {
-            return GetImageSourcesAsync(storageItem, folderReturnOnlyImages: true, ct);
+            if (storageItem is StorageFolder folder)
+            {
+                var query = MakeImageFileSearchQueryResult(folder);
+                var count = await query.GetItemCountAsync().AsTask(ct);
+                return count > 0;
+            }
+            else if (storageItem is StorageFile file && file.IsSupportedMangaFile())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
         }
 
-        public Task<ImageCollectionResult> GetImageSourcesForFolderItemsListingAsync(IStorageItem storageItem, CancellationToken ct = default)
+        public async Task<bool> IsExistFolderOrArchiveFileAsync(StorageFolder folder, CancellationToken ct)
         {
-            return GetImageSourcesAsync(storageItem, folderReturnOnlyImages: false, ct);
+            var query = MakeFoldersAndArchiveFileSearchQueryResult(folder);
+            var count = await query.GetItemCountAsync().AsTask(ct);
+            return count > 0;
         }
 
-
-
-        private async Task<ImageCollectionResult> GetImageSourcesAsync(IStorageItem storageItem, bool folderReturnOnlyImages, CancellationToken ct = default)
+        public Task<ImageCollectionResult> GetImagesAsync(IStorageItem storageItem, CancellationToken ct = default)
         {
             if (storageItem is StorageFile file)
             {
-                // 画像ファイルを指定された場合だけ特殊対応として、その親フォルダの内容を列挙して返す
-                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                {
-                    // Note: 親フォルダへのアクセス権限無い場合が想定されるが
-                    // 　　　アプリとしてユーザーに選択可能としているのはフォルダのみなので無視できる？
-                    
-                    // TODO: 外部からアプリに画像が渡された時、親フォルダへのアクセス権が無いケースに対応する
-                    var parentFolder = await file.GetParentAsync();
-                    
-                    // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
-                    var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
-                    try
-                    {
-                        List<IImageSource> images = new List<IImageSource>((int)result.ItemsCount);
-                        int firstSelectedIndex = 0;
-                        if (result.Images != null)
-                        { 
-                            int index = 0;
-                            await foreach (var item in result.Images?.WithCancellation(ct))
-                            {
-                                images[index] = item;
-                                if (item.Name == file.Name)
-                                {
-                                    firstSelectedIndex = index;
-                                }
-                                index++;
-                            }
-
-                            images.Sort(ImageSourceNameInterporatedComparer.Default);
-                        }
-                        else
-                        {
-                            images = new List<IImageSource>() { new StorageItemImageSource(file, _thumbnailManager) };
-                        }
-
-                        return new ImageCollectionResult()     
-                        {
-                            Images = images.ToArray(),
-                            ItemsEnumeratorDisposer = Disposable.Empty,
-                            FirstSelectedIndex = firstSelectedIndex,
-                            ParentFolderOrArchiveName = parentFolder?.Name
-                        };
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return null;
-                    }
-                }
-                // 圧縮ファイルを展開した中身を列挙して返す
-                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                {
-                    try
-                    {
-                        var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
-
-                        result.Images.Sort(ImageSourceNameInterporatedComparer.Default);
-
-                        return new ImageCollectionResult()
-                        {
-                            Images = result.Images.ToArray(),
-                            ItemsEnumeratorDisposer = result.Disposer,
-                            FirstSelectedIndex = 0,
-                            ParentFolderOrArchiveName = file.Name
-                        };
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return null;
-                    }
-
-                }
+                return GetImagesFromFileAsync(file, ct);
             }
             // フォルダ内のフォルダ、画像ファイル、圧縮ファイルを列挙して返す
             else if (storageItem is StorageFolder folder)
             {
-                var result = folderReturnOnlyImages
-                    ? await Task.Run(async () => await GetFolderImagesAsync(folder, ct))
-                    : await Task.Run(async () => await GetFolderItemsAsync(folder, ct))
-                    ;
+                return GetImagesFromFolderAsync(folder, ct);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+        public async Task<ImageCollectionResult> GetFolderOrArchiveFileAsync(IStorageItem storageItem, CancellationToken ct)
+        {
+            // フォルダ内のフォルダを列挙して返す
+            if (storageItem is StorageFolder folder)
+            {
+                var result = await GetSubFoldersAndArchiveFileAsync(folder, ct);
+
                 try
                 {
                     var images = new IImageSource[result.ItemsCount];
@@ -161,9 +112,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                         isAllImageFile &= (item as StorageItemImageSource)?.ItemTypes == StorageItemTypes.Image;
                     }
 
-                    // フォルダが画像のみを保持しているかどうかをローカルDBに設定する
-                    _folderContainerTypeManager.SetContainerType(folder, isAllImageFile ? FolderContainerType.OnlyImages : FolderContainerType.Other);
-
                     return new ImageCollectionResult()
                     {
                         Images = images,
@@ -177,12 +125,129 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     return null;
                 }
             }
+            else 
+            {
+                throw new NotSupportedException(); 
+            }
+        }
 
-            throw new NotSupportedException();
+        private Task<ImageCollectionResult> GetImagesFromFileAsync(StorageFile file, CancellationToken ct)
+        {
+            // 画像ファイルを指定された場合だけ特殊対応として、その親フォルダの内容を列挙して返す
+            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
+            {
+                return GetParentFolderImagesAsync(file, ct);
+            }
+            // 圧縮ファイルを展開した中身を列挙して返す
+            else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+            {
+                return GetArchiveFileImagesAsync(file, ct);
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+        private async Task<ImageCollectionResult> GetParentFolderImagesAsync(StorageFile file, CancellationToken ct)
+        {
+            // Note: 親フォルダへのアクセス権限無い場合が想定されるが
+            // 　　　アプリとしてユーザーに選択可能としているのはフォルダのみなので無視できる？
+
+            // TODO: 外部からアプリに画像が渡された時、親フォルダへのアクセス権が無いケースに対応する
+            var parentFolder = await file.GetParentAsync();
+
+            // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
+            var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
+            try
+            {
+                List<IImageSource> images = new List<IImageSource>();
+                int firstSelectedIndex = 0;
+                if (result.Images != null)
+                {
+                    int index = 0;
+                    await foreach (var item in result.Images?.WithCancellation(ct))
+                    {
+                        images.Add(item);
+                        if (item.Name == file.Name)
+                        {
+                            firstSelectedIndex = index;
+                        }
+                        index++;
+                    }
+
+                    images.Sort(ImageSourceNameInterporatedComparer.Default);
+                }
+                else
+                {
+                    images = new List<IImageSource>() { new StorageItemImageSource(file, _thumbnailManager) };
+                }
+
+                return new ImageCollectionResult()
+                {
+                    Images = images.ToArray(),
+                    ItemsEnumeratorDisposer = Disposable.Empty,
+                    FirstSelectedIndex = firstSelectedIndex,
+                    ParentFolderOrArchiveName = parentFolder?.Name
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
         }
 
 
-        
+        private async Task<ImageCollectionResult> GetArchiveFileImagesAsync(StorageFile file, CancellationToken ct)
+        {
+            try
+            {
+                var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
+
+                result.Images.Sort(ImageSourceNameInterporatedComparer.Default);
+
+                return new ImageCollectionResult()
+                {
+                    Images = result.Images.ToArray(),
+                    ItemsEnumeratorDisposer = result.Disposer,
+                    FirstSelectedIndex = 0,
+                    ParentFolderOrArchiveName = file.Name
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
+
+
+
+        private async Task<ImageCollectionResult> GetImagesFromFolderAsync(StorageFolder folder, CancellationToken ct)
+        {
+            var result = await GetFolderImagesAsync(folder, ct);
+            try
+            {
+                var images = new IImageSource[result.ItemsCount];
+                int index = 0;
+
+                await foreach (var item in result.Images.WithCancellation(ct))
+                {
+                    images[index] = item;
+                    index++;
+                }
+
+                return new ImageCollectionResult()
+                {
+                    Images = images,
+                    ItemsEnumeratorDisposer = Disposable.Empty,
+                    FirstSelectedIndex = 0,
+                    ParentFolderOrArchiveName = String.Empty,
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                return null;
+            }
+        }
 
         public struct GetImagesFromArchiveResult
         {
@@ -231,7 +296,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderItemsAsync(StorageFolder storageFolder, CancellationToken ct)
+        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderItemsAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
             var query = storageFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
@@ -253,11 +318,31 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 
 #endif
 
+        private StorageItemQueryResult MakeFoldersAndArchiveFileSearchQueryResult(StorageFolder folder)
+        {
+            return folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)));
+        }
 
-        public async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFolder storageFolder, CancellationToken ct)
+        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetSubFoldersAndArchiveFileAsync(StorageFolder storageFolder, CancellationToken ct)
         {
 #if WINDOWS_UWP
-            var query = storageFolder?.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions));
+            var query = MakeFoldersAndArchiveFileSearchQueryResult(storageFolder);
+            var itemsCount = await query.GetItemCountAsync();
+            return (itemsCount, AsyncEnumerableItems(itemsCount, query, ct));
+#else
+            return (itemsCount, AsyncEnumerableImages(
+#endif
+        }
+
+        private StorageFileQueryResult MakeImageFileSearchQueryResult(StorageFolder storageFolder)
+        {
+            return storageFolder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions));
+        }
+
+        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderImagesAsync(StorageFolder storageFolder, CancellationToken ct)
+        {
+#if WINDOWS_UWP
+            var query = MakeImageFileSearchQueryResult(storageFolder);
             if (query == null) { return (0, null); }
             var itemsCount = await query.GetItemCountAsync();
             return (itemsCount, AsyncEnumerableImages(itemsCount, query, ct));
@@ -301,7 +386,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         
 
 
-        public async Task<GetImagesFromArchiveResult> GetImagesFromZipFileAsync(StorageFile file)
+        private async Task<GetImagesFromArchiveResult> GetImagesFromZipFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
@@ -322,7 +407,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             };
         }
 
-        public async Task<GetImagesFromArchiveResult> GetImagesFromPdfFileAsync(StorageFile file)
+        private async Task<GetImagesFromArchiveResult> GetImagesFromPdfFileAsync(StorageFile file)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
 
@@ -340,7 +425,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public async Task<GetImagesFromArchiveResult> GetImagesFromRarFileAsync(StorageFile file)
+        private async Task<GetImagesFromArchiveResult> GetImagesFromRarFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
@@ -363,7 +448,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public async Task<GetImagesFromArchiveResult> GetImagesFromSevenZipFileAsync(StorageFile file)
+        private async Task<GetImagesFromArchiveResult> GetImagesFromSevenZipFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()
@@ -384,7 +469,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             };
         }
 
-        public async Task<GetImagesFromArchiveResult> GetImagesFromTarFileAsync(StorageFile file)
+        private async Task<GetImagesFromArchiveResult> GetImagesFromTarFileAsync(StorageFile file)
         {
             CompositeDisposable disposables = new CompositeDisposable();
             var stream = await file.OpenStreamForReadAsync()

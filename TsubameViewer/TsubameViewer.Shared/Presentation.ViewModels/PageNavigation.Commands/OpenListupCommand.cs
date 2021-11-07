@@ -1,35 +1,29 @@
-﻿using Microsoft.Xaml.Interactivity;
-using Prism.Commands;
+﻿using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Windows.Input;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
-using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenFolderItemCommand : DelegateCommandBase
+    public sealed class OpenListupCommand : DelegateCommandBase
     {
-        private readonly INavigationService _navigationService;
+        private INavigationService _navigationService;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
-        private readonly SourceChoiceCommand _sourceChoiceCommand;
 
-        public OpenFolderItemCommand(
+        public OpenListupCommand(
             INavigationService navigationService,
-            FolderContainerTypeManager folderContainerTypeManager,
-            SourceChoiceCommand sourceChoiceCommand
+            FolderContainerTypeManager folderContainerTypeManager
             )
         {
             _navigationService = navigationService;
             _folderContainerTypeManager = folderContainerTypeManager;
-            _sourceChoiceCommand = sourceChoiceCommand;
         }
 
         protected override bool CanExecute(object parameter)
@@ -41,10 +35,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
+                if (item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
@@ -57,17 +51,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     else
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                        var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new SuppressNavigationTransitionInfo());
                     }
                 }
                 else if (item.Type == StorageItemTypes.EBook)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+
                 }
                 else if (item.Type == StorageItemTypes.None)
                 {
-                    ((ICommand)_sourceChoiceCommand).Execute(null);
                 }
             }
         }

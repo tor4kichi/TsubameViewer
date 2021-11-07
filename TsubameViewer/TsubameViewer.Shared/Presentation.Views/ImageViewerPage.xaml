@@ -16,7 +16,7 @@
   xmlns:domainModels="using:TsubameViewer.Models.Domain" 
   xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
 
   <i:Interaction.Behaviors>
@@ -125,18 +125,18 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{Binding GoPrevImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{Binding GoNextImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{Binding GoNextImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{Binding GoPrevImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
@@ -147,16 +147,16 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{Binding GoNextImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{Binding GoPrevImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True" IsEnabled="False">
-        <core:InvokeCommandAction Command="{Binding GoPrevImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True" IsEnabled="False">
-        <core:InvokeCommandAction Command="{Binding GoNextImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
 
@@ -166,13 +166,13 @@
 
       <!-- Image sizing -->
       <core:EventTriggerBehavior EventName="Loaded">
-        <core:ChangePropertyAction TargetObject="{Binding CanvasWidth}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
       </core:EventTriggerBehavior>
       <core:EventTriggerBehavior EventName="SizeChanged">
-        <core:ChangePropertyAction TargetObject="{Binding CanvasWidth}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{Binding CanvasHeight}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-        <core:InvokeCommandAction Command="{Binding SizeChangedCommand}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+        <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
       </core:EventTriggerBehavior>
 
 
@@ -181,7 +181,7 @@
     <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
          そのため、非表示のButtonのKeyboardAcceleratorsを利用する
     -->
-    <Button Command="{Binding ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
+    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
       <Button.KeyboardAccelerators>
         <KeyboardAccelerator Key="F11" />
       </Button.KeyboardAccelerators>
@@ -193,7 +193,7 @@
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
-      <ItemsControl ItemsSource="{Binding CurrentImages}"
+      <ItemsControl ItemsSource="{x:Bind _vm.CurrentImages, Mode=OneWay}"
                     HorizontalAlignment="Center"
                     x:Name="ImageItemsControl"
                     >
@@ -215,14 +215,17 @@
         </ItemsControl.ItemsPanel>
       </ItemsControl>
 
-      <Border >
+      <Grid >
         <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
-      </Border>
+      </Grid>
     </Grid>
-    
+
+    <Grid>
+      <ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
+    </Grid>
 
 
-    
+
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer" Margin="0 48 0 32">
       <Grid.ColumnDefinitions>
@@ -231,7 +234,7 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{Binding GoNextImageCommand, Mode=OneTime}"
+        Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -252,7 +255,7 @@
       </Button>
 
       <Button x:Name="ReverseLeftPageMoveButton"
-        Command="{Binding GoPrevImageCommand, Mode=OneTime}"
+        Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -288,7 +291,7 @@
 
 
       <Button x:Name="RightPageMoveButton"
-        Command="{Binding GoPrevImageCommand, Mode=OneTime}"
+        Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -307,7 +310,7 @@
       </Button>
 
       <Button x:Name="ReverseRightPageMoveButton"
-        Command="{Binding GoNextImageCommand, Mode=OneTime}"
+        Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -342,7 +345,7 @@
 
       <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource SystemChromeAltHighColor}" IsHitTestVisible="True">
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
-          <Button x:Name="BottomUIBackNavigationButton" Command="{Binding BackNavigationCommand}" Height="48" Width="60"
+          <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Height="48" Width="60"
                   XYFocusRight="{x:Bind ImageNavigationFlyoutButton}"
                   >
             <SymbolIcon Symbol="Back">
@@ -359,7 +362,7 @@
                   XYFocusRight="{x:Bind BottomUISettingsFlyoutButton}"
                   >
             <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="16" Margin="8 0 0 0" TextDecorations="Underline">
-                    <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
+                    <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
             </TextBlock>
 
           </Button>
@@ -373,14 +376,14 @@
 
 
         <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="16" Margin="16 0" >
-              <Run Text="{Binding Title}" />
+              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
         </TextBlock>
 
       </uwpControls:DockPanel>
     </Grid>
 
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource SystemBaseMediumLowColor}" Visibility="Collapsed">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
@@ -389,7 +392,7 @@
 
       </Grid>
       <uwpControls:DockPanel>
-        <Button Command="{Binding BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
+        <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
           <SymbolIcon Symbol="Back">
             <SymbolIcon.RenderTransform>
               <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
@@ -407,12 +410,12 @@
         <uwpControls:DockPanel Padding="8 0">
           <Button Flyout="{StaticResource PageFlyout}" Background="Transparent" uwpControls:DockPanel.Dock="Right">
             <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0" TextDecorations="Underline">
-              <Run Text="{Binding PageFolderName}" /> - <Run Text="{Binding PageName}" /> - <Run Text="{Binding DisplayCurrentImageIndex.Value}" />/<Run Text="{Binding Images.Length}" />
+              <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
             </TextBlock>
 
           </Button>
           <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
-              <Run Text="{Binding Title}" />
+              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
           </TextBlock>
         </uwpControls:DockPanel>
       </uwpControls:DockPanel>
@@ -425,7 +428,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding NowImageLoadingLongRunning}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowImageLoadingLongRunning, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
@@ -540,7 +543,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding NowDoubleImageView}" />
+            <StateTrigger IsActive="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
@@ -551,7 +554,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding ImageViewerSettings.IsLeftBindingView}" />
+            <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsLeftBindingView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ImageContainerPanel.FlowDirection" Value="LeftToRight" />
@@ -564,7 +567,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel}" />
+            <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
@@ -577,7 +580,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding ImageViewerSettings.IsReverseImageFliping_Button}" />
+            <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_Button, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
@@ -597,6 +600,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
+            <!-- x:BindでバインディングしようとするとXaml internal Compile error: C9999 -->
             <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="1" Comparison="GreaterThan" />
           </VisualState.StateTriggers>
           <VisualState.Setters>

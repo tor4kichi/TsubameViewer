@@ -11,9 +11,9 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:wst="using:WindowsStateTriggers"
-  
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
   mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
   <Page.Resources>
     
@@ -31,6 +31,13 @@
 
   <Grid Margin="0 0 0 0">
 
+    <Border VerticalAlignment="Top"
+            Height="{x:Bind HeaderLayout.(uwpUIExtensions:FrameworkElementExtensions.ActualHeight), Mode=OneWay}"
+            >
+
+    </Border>
+
+    
     <uwpControls:AdaptiveGridView
       ItemsSource="{Binding SearchResultItems}"
       x:Name="FoldersAdaptiveGridView"
@@ -39,8 +46,8 @@
       VerticalAlignment="Top"
       ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
       ItemContainerStyle="{StaticResource FolderStyle}"
-      DesiredWidth="360"            
-      ItemHeight="132"
+      DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
+      ItemHeight="{StaticResource FolderGridViewItemHeight}"
       IsItemClickEnabled="True"
       ItemClickCommand="{Binding OpenFolderItemCommand}"
       IsSynchronizedWithCurrentItem="False"
@@ -55,7 +62,7 @@
       </GridView.ItemContainerTransitions>
 
       <i:Interaction.Behaviors>
-        <myBehaior:QuickReturnHeaderBehavior />
+        <myBehaior:StickyHeaderBehavior />
 
         <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
           <core:CallMethodAction MethodName="Initialize" />
@@ -64,11 +71,15 @@
 
       
       <GridView.Header>
-        <StackPanel uwpControls:DockPanel.Dock="Top" x:Name="HeaderLayout"
-                    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                  Padding="8 0">
+        <StackPanel 
+          uwpControls:DockPanel.Dock="Top" 
+          x:Name="HeaderLayout"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+          Padding="8 8"
+          >
 
-          <Border Height="48" />
+          <Border Height="16" />
           <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
             <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
           </TextBlock>

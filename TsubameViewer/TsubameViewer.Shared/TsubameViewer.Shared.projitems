@@ -52,8 +52,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\ApplicationDataUpdateWhenPathReferenceCountChanged.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
@@ -97,6 +101,9 @@
       <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Helpers\VisualTreeExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageListupPage.xaml.cs">
+      <DependentUpon>ImageListupPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
@@ -161,6 +168,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\FolderListup\FolderListupItemTemplate.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageListupPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

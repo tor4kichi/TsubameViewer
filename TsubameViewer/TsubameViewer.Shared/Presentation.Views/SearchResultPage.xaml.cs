@@ -61,7 +61,7 @@ namespace TsubameViewer.Presentation.Views
                 OpenImageViewerItem.Command = pageVM.OpenImageViewerCommand;
 
                 OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
+                OpenListupItem.Command = pageVM.OpenFolderItemSecondaryCommand;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
                     ? Visibility.Visible
                     : Visibility.Collapsed

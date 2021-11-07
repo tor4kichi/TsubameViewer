@@ -132,6 +132,7 @@ namespace TsubameViewer
             container.RegisterInstance(new RecyclableMemoryStreamManager());
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
+            container.RegisterForNavigation<ImageListupPage>();
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<EBookReaderPage>();
@@ -253,6 +254,9 @@ namespace TsubameViewer
             Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
             Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
 
+            UpdateFolderItemSizingResourceValues();
+
+
             var shell = Container.Resolve<PrimaryWindowCoreLayout>();
             var ns = shell.GetNavigationService();
             var unityContainer = Container.GetContainer();
@@ -277,7 +281,15 @@ namespace TsubameViewer
             base.OnInitialized();
         }
 
-      
+        public void UpdateFolderItemSizingResourceValues()
+        {
+            var folderListingSettings = Container.Resolve<Models.Domain.FolderItemListing.FolderListingSettings>();
+            Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
+            Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
+            Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
+        }
+
+
 
         /// <summary>
         /// Invoked when application execution is being suspended.  Application state is saved
@@ -409,7 +421,7 @@ namespace TsubameViewer
             if (item is StorageFolder itemFolder)
             {
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
-                if (await containerTypeManager.GetFolderContainerType(itemFolder) == FolderContainerType.OnlyImages)
+                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
                 {
                     return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }

@@ -15,13 +15,13 @@ using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenFolderItemCommand : DelegateCommandBase
+    public sealed class OpenFolderItemSecondaryCommand : DelegateCommandBase
     {
         private readonly INavigationService _navigationService;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly SourceChoiceCommand _sourceChoiceCommand;
 
-        public OpenFolderItemCommand(
+        public OpenFolderItemSecondaryCommand(
             INavigationService navigationService,
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand
@@ -44,11 +44,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder);
+                    var containerType = await _folderContainerTypeManager.GetLatestFolderContainerTypeAndUpdateCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);
@@ -57,7 +57,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     else
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                        var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new DrillInNavigationTransitionInfo());
                     }
                 }
                 else if (item.Type == StorageItemTypes.EBook)

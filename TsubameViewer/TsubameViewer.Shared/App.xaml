@@ -11,15 +11,27 @@
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
-  xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup">
+  xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup"
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls">
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
+        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
         <folderListup:FolderListupItemTemplate />
         <ResourceDictionary Source="Presentation.Styles/SettingsControlStyles.xaml"/>
       </ResourceDictionary.MergedDictionaries>
 
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
 
       <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
       
