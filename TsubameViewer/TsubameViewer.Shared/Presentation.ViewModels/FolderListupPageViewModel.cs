@@ -81,6 +81,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenPageCommand OpenPageCommand { get; }
         public OpenListupCommand OpenListupCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
+        public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public OpenImageListupCommand OpenImageListupCommand { get; }
@@ -145,6 +146,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenPageCommand openPageCommand,
             OpenListupCommand openListupCommand,
             OpenFolderItemCommand openFolderItemCommand,
+            OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
             OpenImageListupCommand openImageListupCommand,
@@ -164,6 +166,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenPageCommand = openPageCommand;
             OpenListupCommand = openListupCommand;
             OpenFolderItemCommand = openFolderItemCommand;
+            OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
             OpenImageListupCommand = openImageListupCommand;

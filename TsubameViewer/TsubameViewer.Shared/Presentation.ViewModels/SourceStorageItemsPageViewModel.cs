@@ -48,9 +48,11 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IEventAggregator _eventAggregator;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
+        public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
         public SecondaryTileManager SecondaryTileManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
+        public OpenImageListupCommand OpenImageListupCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
@@ -73,7 +75,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
+            OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
             OpenImageViewerCommand openImageViewerCommand,
+            OpenImageListupCommand openImageListupCommand,
             OpenFolderListupCommand openFolderListupCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
@@ -83,12 +87,14 @@ namespace TsubameViewer.Presentation.ViewModels
             Folders = new ObservableCollection<StorageItemViewModel>();
             RecentlyItems = new ObservableCollection<StorageItemViewModel>();
             OpenFolderItemCommand = openFolderItemCommand;
+            OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _recentlyAccessManager = recentlyAccessManager;
             SecondaryTileManager = secondaryTileManager;
             _eventAggregator = eventAggregator;
             OpenImageViewerCommand = openImageViewerCommand;
+            OpenImageListupCommand = openImageListupCommand;
             OpenFolderListupCommand = openFolderListupCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;

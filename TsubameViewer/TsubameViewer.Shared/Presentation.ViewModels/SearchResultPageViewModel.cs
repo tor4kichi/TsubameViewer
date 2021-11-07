@@ -42,7 +42,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
+        public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
+        public OpenImageListupCommand OpenImageListupCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
@@ -58,7 +60,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager secondaryTileManager,
 
             OpenFolderItemCommand openFolderItemCommand,
+            OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
             OpenImageViewerCommand openImageViewerCommand,
+            OpenImageListupCommand openImageListupCommand,
             OpenFolderListupCommand openFolderListupCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
@@ -73,7 +77,9 @@ namespace TsubameViewer.Presentation.ViewModels
             _thumbnailManager = thumbnailManager;
             SecondaryTileManager = secondaryTileManager;
             OpenFolderItemCommand = openFolderItemCommand;
+            OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
             OpenImageViewerCommand = openImageViewerCommand;
+            OpenImageListupCommand = openImageListupCommand;
             OpenFolderListupCommand = openFolderListupCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
