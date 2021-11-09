@@ -26,6 +26,7 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.Services.UWP;
 using Uno.Extensions;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.RestoreNavigation;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -44,6 +45,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly IEventAggregator _eventAggregator;
         
@@ -71,6 +73,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ThumbnailManager thumbnailManager,
             PathReferenceCountManager PathReferenceCountManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            FolderLastIntractItemManager folderLastIntractItemManager,
             RecentlyAccessManager recentlyAccessManager,
             SecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
@@ -90,6 +93,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _folderLastIntractItemManager = folderLastIntractItemManager;
             _recentlyAccessManager = recentlyAccessManager;
             SecondaryTileManager = secondaryTileManager;
             _eventAggregator = eventAggregator;
@@ -194,6 +198,13 @@ namespace TsubameViewer.Presentation.ViewModels
             else
             {
                 Folders.ForEach(x => x.UpdateLastReadPosition());
+
+                var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
+                Folders.Where(x => x.Name == lastIntaractItemPath).ForEach(x => 
+                {
+                    x.ThumbnailChanged();
+                    x.Initialize();
+                });
             }
 
             async Task<StorageItemViewModel> ToStorageItemViewModel(RecentlyAccessManager.RecentlyAccessEntry entry)
@@ -261,6 +272,11 @@ namespace TsubameViewer.Presentation.ViewModels
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
             _navigationDisposables?.Dispose();
+
+            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            {
+                _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
+            }
 
             base.OnNavigatedFrom(parameters);
         }

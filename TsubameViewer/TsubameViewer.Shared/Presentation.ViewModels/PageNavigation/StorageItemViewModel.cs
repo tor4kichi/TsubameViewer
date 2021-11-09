@@ -169,7 +169,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     ct.ThrowIfCancellationRequested();
 
                     _isAppearingRequestButLoadingCancelled = false;
-                    Image = await Item.GenerateThumbnailBitmapImageAsync(ct);
+                    using (var stream = await Item.GetThumbnailImageStreamAsync(ct))
+                    {
+                        if (stream is null) { return; }
+
+                        var bitmapImage = new BitmapImage();
+                        bitmapImage.SetSource(stream);
+                        bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
+                        Image = bitmapImage;
+                    }
 
                     await Task.Delay(10);
                 }
@@ -209,6 +217,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 
                 Initialize();
             }
+        }
+
+        public void ThumbnailChanged()
+        {
+            Image = null;
+            _isInitialized = false;
         }
 
         public void Dispose()

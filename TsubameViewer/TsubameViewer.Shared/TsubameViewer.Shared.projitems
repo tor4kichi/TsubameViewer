@@ -68,6 +68,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\ThemeChangeRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SearchResultPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
@@ -208,7 +209,6 @@
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\Search\" />
     <Folder Include="$(MSBuildThisFileDirectory)Models.Infrastructure\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
   </ItemGroup>
   <ItemGroup>

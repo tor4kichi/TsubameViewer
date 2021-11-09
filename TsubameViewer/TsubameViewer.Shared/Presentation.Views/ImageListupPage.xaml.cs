@@ -9,6 +9,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using Uno.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -129,8 +130,6 @@ namespace TsubameViewer.Presentation.Views
 
         #endregion
 
-
-
         private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
             if (args.Element is FrameworkElement fe
@@ -198,18 +197,7 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            if (itemVM.Item is StorageItemImageSource == false)
-            {
-                NoActionDescMenuItem.Visibility = Visibility.Visible;
-
-                OpenListupItem.Visibility = Visibility.Collapsed;
-                AddSecondaryTile.Visibility = Visibility.Collapsed;
-                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
-                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
-            }
-            else
+            if (itemVM.Item is StorageItemImageSource or ArchiveEntryImageSource or PdfPageImageSource)
             {
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Command = pageVM.OpenFolderListupCommand;
@@ -217,6 +205,14 @@ namespace TsubameViewer.Presentation.Views
                     ? Visibility.Visible
                     : Visibility.Collapsed
                     ;
+
+                SetThumbnailImageMenuItem.CommandParameter = itemVM;
+                SetThumbnailImageMenuItem.Command = pageVM.ChangeStorageItemThumbnailImageCommand;
+                SetThumbnailImageMenuItem.Visibility = itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive
+                    ? Visibility.Visible
+                    : Visibility.Collapsed
+                    ;
+
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
                 AddSecondaryTile.CommandParameter = itemVM;
@@ -241,6 +237,19 @@ namespace TsubameViewer.Presentation.Views
                 ;
 
                 NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+            }
+            
+            else
+            {
+                NoActionDescMenuItem.Visibility = Visibility.Visible;
+
+                OpenListupItem.Visibility = Visibility.Collapsed;
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
             }
         }
     }

@@ -24,6 +24,7 @@ using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.FolderItemListing
 {
@@ -63,6 +64,37 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public static async ValueTask<StorageFolder> GetSecondaryTileThumbnailFolderAsync()
         {
             return _SecondaryTileThumbnailFolder ??= await ApplicationData.Current.LocalFolder.CreateFolderAsync(SecondaryTileThumbnailSaveFolderName, CreationCollisionOption.OpenIfExists);
+        }
+
+
+        public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, CancellationToken ct)
+        {
+            var outputFile = await GetThumbnailAsync(targetItem);
+
+            var decoder = await BitmapDecoder.CreateAsync(bitmapImage);
+            using (var memStream = new InMemoryRandomAccessStream())
+            {
+                var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
+
+                // サムネイルサイズ情報を記録
+                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                {
+                    Path = targetItem.Path,
+                    ImageWidth = decoder.PixelWidth,
+                    ImageHeight = decoder.PixelHeight
+                });
+
+                Debug.WriteLine($"thumb out <{outputFile.Path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+
+                await encoder.FlushAsync();
+
+                memStream.Seek(0);
+                using (await _fileReadWriteLock.LockAsync(ct))
+                using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite))
+                {
+                    await RandomAccessStream.CopyAsync(memStream, fileStream);
+                }
+            }
         }
 
 
@@ -317,7 +349,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return true;
         }
 
-        public async Task<Uri> GetThumbnailAsync(IStorageItem storageItem)
+        public async Task<StorageFile> GetThumbnailAsync(IStorageItem storageItem)
         {
             if (storageItem is StorageFolder folder)
             {
@@ -325,8 +357,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
             else if (storageItem is StorageFile file)
             {
-                var thumb = await GetFileThumbnailImageAsync(file);
-                return new Uri(thumb.Path);
+                return await GetFileThumbnailImageAsync(file);
             }
             else
             {
@@ -334,13 +365,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<Uri> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct = default)
+        public async Task<StorageFile> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct = default)
         {
             var itemId = GetStorageItemId(folder);
             if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
             {
-                var cachedFile = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                return new Uri(cachedFile.Path, UriKind.Absolute);
+                return await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
             }
             else
             {
@@ -354,8 +384,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId);
                 var files = await query.GetFilesAsync(0, 1);
-                var outputFile = await GenerateThumbnailImageAsync(files[0], thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                return new Uri(outputFile.Path);
+                return await GenerateThumbnailImageAsync(files[0], thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
                 return null;
 #endif

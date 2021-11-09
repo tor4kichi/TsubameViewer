@@ -34,9 +34,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public DateTime DateCreated { get; }
         public IStorageItem StorageItem { get; }
 
-        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct = default)
+        public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+            var memoryStream = _recyclableMemoryStreamManager.GetStream();
             using (var streamWrite = new StreamWriter(memoryStream))
             {
                 await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
@@ -47,16 +47,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
                 ct.ThrowIfCancellationRequested();
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-                return bitmapImage;
             }
+
+            return memoryStream.AsRandomAccessStream();
         }
 
-        public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default)
+        public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+            var memoryStream = _recyclableMemoryStreamManager.GetStream();
             using (var streamWrite = new StreamWriter(memoryStream))
             {
                 await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
@@ -67,14 +65,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
                 ct.ThrowIfCancellationRequested();
-
-                var bitmapImage = new BitmapImage();
-                bitmapImage.SetSource(memoryStream.AsRandomAccessStream());
-
-                bitmapImage.DecodePixelWidth = FolderItemListing.ListingImageConstants.MidiumFileThumbnailImageWidth;
-
-                return bitmapImage;
             }
+
+            return memoryStream.AsRandomAccessStream();
         }
 
         public void Dispose()

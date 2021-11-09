@@ -33,6 +33,7 @@ using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
 using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -89,6 +90,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
+        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
         public ObservableCollection<StorageItemViewModel> FolderItems { get; private set; }
 
         private bool _HasFileItem;
@@ -152,7 +154,8 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenImageListupCommand openImageListupCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
-            SecondaryTileRemoveCommand secondaryTileRemoveCommand
+            SecondaryTileRemoveCommand secondaryTileRemoveCommand,
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand
             )
         {
             _bookmarkManager = bookmarkManager;
@@ -173,6 +176,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
+            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
 
             FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>();
@@ -192,7 +196,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 */
 
         }
-
 
         public override async void OnNavigatedFrom(INavigationParameters parameters)
         {
@@ -379,6 +382,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
+                        lastIntractItemVM?.ThumbnailChanged();
                         FolderLastIntractItem.Value = lastIntractItemVM;
                     }
                     else
@@ -444,7 +448,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken);
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                var item = new StorageItemViewModel(folderItem, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Folder)
                 {
                     FolderItems.Add(item);

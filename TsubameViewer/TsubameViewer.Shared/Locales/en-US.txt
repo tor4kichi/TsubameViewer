@@ -85,6 +85,8 @@ OpenWithExplorer = Open in explorer
 AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start
 
+SetThumbnailImage = Set as thumbnail image
+
 FolderItemMenuNoActionSuggested = No action available
 
 #### ImageViewerPage

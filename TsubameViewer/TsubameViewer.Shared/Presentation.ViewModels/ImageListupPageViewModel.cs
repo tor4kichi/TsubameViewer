@@ -22,6 +22,7 @@ using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
 using Uno.Extensions;
 using Uno.Threading;
@@ -61,6 +62,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
+        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
 
@@ -158,7 +160,8 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderListupCommand openFolderListupCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
-            SecondaryTileRemoveCommand secondaryTileRemoveCommand
+            SecondaryTileRemoveCommand secondaryTileRemoveCommand,
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand
             )
         {
             _bookmarkManager = bookmarkManager;
@@ -176,6 +179,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
+            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
@@ -319,7 +323,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                     }
                 }
-                else
+                else 
                 {
                     // 前回読み込みキャンセルしていたものを改めて読み込むように
                     ImageFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
@@ -398,7 +402,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken);
                 ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                var item = new StorageItemViewModel(folderItem, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Image)
                 {
                     ImageFileItems.Add(item);

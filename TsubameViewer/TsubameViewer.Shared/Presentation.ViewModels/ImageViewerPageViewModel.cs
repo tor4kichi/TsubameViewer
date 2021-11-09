@@ -623,8 +623,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
         {
-            var bitmapImage = await GetImageIfPrefetched(imageSource) 
-                ?? await imageSource.GenerateBitmapImageAsync(ct);
+            var bitmapImage = await GetImageIfPrefetched(imageSource);
+
+            if (bitmapImage == null)
+            {
+                using (var stream = await imageSource.GetThumbnailImageStreamAsync(ct))
+                {
+                    bitmapImage = new BitmapImage();
+                    bitmapImage.SetSource(stream);
+                }
+            }
+                
 
             // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
             if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
@@ -901,9 +910,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public async Task<BitmapImage> StartPrefetchAsync()
         {
-            using (await _lock.LockAsync(_PrefetchCts.Token))
-            {                
-                Image ??= await ImageSource.GenerateBitmapImageAsync(_PrefetchCts.Token);
+            var ct = _PrefetchCts.Token;
+            using (await _lock.LockAsync(ct))
+            {             
+                if (Image == null)
+                {
+                    using (var stream = await ImageSource.GetImageStreamAsync(ct))
+                    {
+                        Image = new BitmapImage();
+                        Image.SetSource(stream);
+                    }
+                }
+                
                 IsCompleted = true;
 
                 Debug.WriteLine("prefetch done: " + ImageSource.Name);

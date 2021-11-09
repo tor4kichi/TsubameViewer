@@ -85,6 +85,8 @@ OpenWithExplorer = 在资源管理器中打开
 AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始
 
+SetThumbnailImage = 设置为缩略图
+
 FolderItemMenuNoActionSuggested = 没有可用的动作
 
 #### ImageViewerPage
