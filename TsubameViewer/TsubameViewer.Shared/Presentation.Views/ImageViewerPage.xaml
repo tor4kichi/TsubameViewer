@@ -14,7 +14,8 @@
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:domainModels="using:TsubameViewer.Models.Domain" 
-  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -221,7 +222,7 @@
     </Grid>
 
     <Grid>
-      <ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
+      <muxc:ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
     </Grid>
 
 
