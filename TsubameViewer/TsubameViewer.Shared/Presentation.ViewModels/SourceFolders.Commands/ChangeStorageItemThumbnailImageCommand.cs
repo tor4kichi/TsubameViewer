@@ -46,7 +46,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                     }
                     else if (item.Item is StorageItemImageSource folderItem)
                     {
-                        var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(item.Token, Path.GetDirectoryName(folderItem.Path));
+                        var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(item.Token.TokenString, Path.GetDirectoryName(folderItem.Path));
                         if (folder == null) { throw new InvalidOperationException(); }
                         await _thumbnailManager.SetThumbnailAsync(folder, stream, default);
                     }

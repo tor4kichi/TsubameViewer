@@ -81,6 +81,7 @@ FileSortType.UpdateTimeDecending = 新命令
 OpenImageViewer = 在阅读器中打开
 OpenFolderListup = 列出档案
 OpenWithExplorer = 在资源管理器中打开
+OpenWithExternalApplication = 使用外部应用程序打开
 
 AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始

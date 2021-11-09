@@ -38,7 +38,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new DrillInNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {

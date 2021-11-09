@@ -81,6 +81,7 @@ FileSortType.UpdateTimeDecending = 新しい順
 OpenImageViewer = リーダーで開く
 OpenFolderListup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
+OpenWithExternalApplication = 外部アプリで開く
 
 AddSecondaryTile = スタートにピン留めする
 RemoveSecondaryTile = スタートのピン留めを解除

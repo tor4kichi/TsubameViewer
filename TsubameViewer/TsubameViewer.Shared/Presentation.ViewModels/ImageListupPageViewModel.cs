@@ -63,6 +63,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
         public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
+        public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
 
@@ -118,7 +119,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _CurrentFolderItem, value); }
         }
 
-        string _currentItemRootFolderToken;
+        StorageItemToken _currentItemRootFolderToken;
 
 
 
@@ -161,7 +162,8 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
             SecondaryTileRemoveCommand secondaryTileRemoveCommand,
-            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
             )
         {
             _bookmarkManager = bookmarkManager;
@@ -180,6 +182,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+            OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
@@ -263,12 +266,12 @@ namespace TsubameViewer.Presentation.ViewModels
                                 }
                             }
 
-                            _currentItemRootFolderToken = token;
+                            _currentItemRootFolderToken = new StorageItemToken(_currentPath, token);
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                         }
 
                         if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
@@ -400,7 +403,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             foreach (var folderItem in result.Images)
             {
-                _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken);
+                _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken.TokenString);
                 ct.ThrowIfCancellationRequested();
                 var item = new StorageItemViewModel(folderItem, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 if (item.Type == StorageItemTypes.Image)

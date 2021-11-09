@@ -81,6 +81,7 @@ FileSortType.UpdateTimeDecending = Latest first
 OpenImageViewer = Open in reader
 OpenFolderListup = List files
 OpenWithExplorer = Open in explorer
+OpenWithExternalApplication = Open with an external app
 
 AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start

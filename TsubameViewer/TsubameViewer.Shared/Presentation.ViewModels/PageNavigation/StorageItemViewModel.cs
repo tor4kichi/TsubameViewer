@@ -22,6 +22,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
+    public record StorageItemToken(string RootItemPath, string TokenString)
+    {
+    }
+
+
     public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
         #region Navigation Parameters
@@ -49,7 +54,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public IImageSource Item { get; }
 
 
-        public string Token { get; }
+        public StorageItemToken Token { get; }
 
         
         public string Name { get; }
@@ -98,7 +103,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
+        public StorageItemViewModel(IImageSource item, StorageItemToken token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
              : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
         {
             Item = item;

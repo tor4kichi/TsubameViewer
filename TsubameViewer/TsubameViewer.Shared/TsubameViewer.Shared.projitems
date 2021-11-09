@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)IsExternalInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeExtension.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\DeleteStoredFolderCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
@@ -60,6 +62,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenWithExternalApplicationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\SecondaryTileAddCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
@@ -84,6 +87,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedQuickReturnHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedStickyHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
+      <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Helpers\CodeBehindExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ColorToBrush.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\DateTimetoStringConverter.cs" />
@@ -161,6 +168,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\EBookReaderPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
