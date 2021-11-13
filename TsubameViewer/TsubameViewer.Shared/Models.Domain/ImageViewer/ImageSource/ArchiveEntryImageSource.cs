@@ -46,10 +46,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
+            using var mylock = await _fastAsyncLock.LockAsync(ct);
+
             var memoryStream = _recyclableMemoryStreamManager.GetStream();
             using (var entryStream = _entry.OpenEntryStream())
             {
-                await entryStream.CopyToAsync(memoryStream);
+                entryStream.CopyTo(memoryStream);
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
                 ct.ThrowIfCancellationRequested();
@@ -78,7 +80,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             var memoryStream = _recyclableMemoryStreamManager.GetStream();
             using (var entryStream = _entry.OpenEntryStream())
             {
-                await entryStream.CopyToAsync(memoryStream);
+                entryStream.CopyTo(memoryStream);
                 memoryStream.Seek(0, SeekOrigin.Begin);
 
                 ct.ThrowIfCancellationRequested();

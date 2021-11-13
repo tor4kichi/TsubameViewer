@@ -52,6 +52,8 @@ namespace TsubameViewer.Presentation.ViewModels
         IDisposable _ImageEnumerationDisposer;
 
         private IImageSource[] _Images;
+        private string _currentItemRootFolderToken;
+
         public IImageSource[] Images
         {
             get { return _Images; }
@@ -328,6 +330,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
+                        _currentItemRootFolderToken = token;
                         Images = default;
                         CurrentImageIndex = 0;
                     }
@@ -670,36 +673,88 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            var result = await _imageCollectionManager.GetImagesAsync(_currentFolderItem);
-            if (result != null)
+            IImageCollectionContext imageCollectionContext = null;
+            try
             {
-                Images = result.Images;
-                CurrentImageIndex = result.FirstSelectedIndex;
-                _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
-                ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
+                if (_currentFolderItem is StorageFolder folder)
+                {
+                    Debug.WriteLine(folder.Path);
+                    imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+                }
+                else if (_currentFolderItem is StorageFile file)
+                {
+                    Debug.WriteLine(file.Path);
+                    if (file.IsSupportedImageFile())
+                    {
+                        try
+                        {
+                            var parentFolder = await file.GetParentAsync();
+                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken, Path.GetDirectoryName(_currentPath));
+                            if (parentItem is StorageFolder parentFolder)
+                            {
+                                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                            }
+                        }
+                    }
+                    else if (file.IsSupportedMangaFile())
+                    {
+                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            catch (OperationCanceledException)
+            {
 
+            }
+
+            if (imageCollectionContext == null) { return; }
+
+            Images = (await imageCollectionContext.GetImageFilesAsync(ct)).ToArray();
+            {
+                if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
+                {
+                    var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
+                    CurrentImageIndex = Images.IndexOf(item);
+                }
+                else { CurrentImageIndex = 0; }
+            }
+
+            _ImageEnumerationDisposer = imageCollectionContext as IDisposable;
+            ParentFolderOrArchiveName = imageCollectionContext.Name;
+            
+            {
                 if (_currentFolderItem is StorageFolder ||
-                    (_currentFolderItem is StorageFile file && SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                    (_currentFolderItem is StorageFile file && file.IsSupportedMangaFile())
                     )
                 {
-                    PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    var folders = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
+                    //PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    PageFolderNames = folders.Select(x => x.Name).ToArray();
                 }
                 else
                 {
                     PageFolderNames = new string[0];
                 }
-
-
-                ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
-
-                _appView.Title = _currentFolderItem.Name;
-                Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
-
-                GoNextImageCommand.RaiseCanExecuteChanged();
-                GoPrevImageCommand.RaiseCanExecuteChanged();
-
-                _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
             }
+
+
+            ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
+
+            _appView.Title = _currentFolderItem.Name;
+            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
+
+            GoNextImageCommand.RaiseCanExecuteChanged();
+            GoPrevImageCommand.RaiseCanExecuteChanged();
+
+            _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
         }
 
 

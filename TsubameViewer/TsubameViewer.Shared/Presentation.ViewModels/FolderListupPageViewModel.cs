@@ -57,12 +57,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class FolderListupPageViewModel : ViewModelBase
     {
-        const int FolderListupItemsCacheCount = 200;
-        static List<string> _CacheFolderListupItemsOrder = new List<string>();
-
-        static Dictionary<string, CachedFolderListupItems> _CachedFolderListupItems = new Dictionary<string, CachedFolderListupItems>();
-
-
         private bool _NowProcessing;
         public bool NowProcessing
         {
@@ -127,6 +121,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _CurrentFolderItem, value); }
         }
 
+        IDisposable _ImageCollectionDisposer;
 
         StorageItemToken _currentItemRootFolderToken;
 
@@ -219,25 +214,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
 
+                FolderItems.DisposeAll();
+                FolderItems.Clear();
 
-                // 
-                _CachedFolderListupItems.Add(_currentPath, new CachedFolderListupItems() 
-                {
-                    FolderItems = FolderItems,
-                });
-
-                _CacheFolderListupItemsOrder.Remove(_currentPath);
-                _CacheFolderListupItemsOrder.Add(_currentPath);
-
-                while (_CachedFolderListupItems.Select(x => x.Value.GetTotalCount()).Sum() > FolderListupItemsCacheCount)
-                {
-                    var item = _CacheFolderListupItemsOrder.First();
-                    if (_CachedFolderListupItems.Remove(item, out var cachedItems))
-                    {
-                        cachedItems.DisposeItems();
-                    }
-                    _CacheFolderListupItemsOrder.Remove(item);
-                }
+                _ImageCollectionDisposer?.Dispose();
+                _ImageCollectionDisposer = null;
 
                 base.OnNavigatedFrom(parameters);
             }
@@ -322,21 +303,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                         }
 
-                        if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
-                        {
-                            FolderItems = cachedItems.FolderItems;
-
-                            // 最後に読んだ位置を更新
-                            FolderItems.ForEach(x => x.UpdateLastReadPosition());
-
-                            RaisePropertyChanged(nameof(FolderItems));
-                        }
-                        else
-                        {
-                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                        }
-
-                        HasFileItem = await _imageCollectionManager.IsExistImageFileAsync(_currentItem, _leavePageCancellationTokenSource.Token);
+                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                     }
                 }
                 else if (!_isCompleteEnumeration
@@ -345,19 +312,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     || _LastIsFolderThumbnailEnabled != _folderListingSettings.IsFolderThumbnailEnabled
                     )
                 {
-                    if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
-                    {
-                        FolderItems = cachedItems.FolderItems;
-
-                        // 最後に読んだ位置を更新
-                        FolderItems.ForEach(x => x.UpdateLastReadPosition());
-
-                        RaisePropertyChanged(nameof(FolderItems));
-                    }
-                    else
-                    {
-                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                    }
+                    await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                 }
                 else
                 {
@@ -410,18 +365,40 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using var _ = await _RefreshLock.LockAsync(ct);
 
+            FolderItems.Clear();
+
             _isCompleteEnumeration = false;
+            IImageCollectionContext imageCollectionContext = null;
             try
             {
                 if (_currentItem is StorageFolder folder)
                 {
                     Debug.WriteLine(folder.Path);
-                    await RefreshFolderItems(folder, ct);
+                    imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
                 }
                 else if (_currentItem is StorageFile file)
                 {
                     Debug.WriteLine(file.Path);
-                    await RefreshFolderItems(file, ct);
+                    if (file.IsSupportedImageFile())
+                    {
+                        try
+                        {
+                            var parentFolder = await file.GetParentAsync();
+                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken.TokenString, Path.GetDirectoryName(_currentPath));
+                            if (parentItem is StorageFolder parentFolder)
+                            {
+                                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                            }
+                        }
+                    }
+                    else if (file.IsSupportedMangaFile())
+                    {
+                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                    }
                 }
                 else
                 {
@@ -434,20 +411,11 @@ namespace TsubameViewer.Presentation.ViewModels
             {
 
             }
-        }
 
-        
-        private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
-        {
-            FolderItems.Clear();
-            var result = await _imageCollectionManager.GetFolderOrArchiveFileAsync(storageItem, ct);
+            if (imageCollectionContext == null) { return; }
 
-            if (result.Images?.Any() != true)
-            {
-                return;
-            }
-
-            foreach (var folderItem in result.Images)
+            _ImageCollectionDisposer = imageCollectionContext as IDisposable;
+            foreach (var folderItem in await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct))
             {
                 _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken.TokenString);
                 ct.ThrowIfCancellationRequested();
@@ -465,14 +433,15 @@ namespace TsubameViewer.Presentation.ViewModels
                     FolderItems.Add(item);
                 }
             }
-        }
 
+            HasFileItem = await imageCollectionContext.IsExistImageFileAsync(ct);
+        }
 
         #endregion
 
 
 
-        
+
     }
 
     public abstract class FolderItemsGroupBase

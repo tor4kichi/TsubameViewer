@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -145,6 +146,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
+        IDisposable _ImageCollectionDisposer;
 
         public ImageListupPageViewModel(
             BookmarkManager bookmarkManager,
@@ -192,6 +194,13 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageLastIntractItem = new ReactivePropertySlim<int>();
         }
 
+        public override void OnNavigatedFrom(INavigationParameters parameters)
+        {
+            _ImageCollectionDisposer?.Dispose();
+            _ImageCollectionDisposer = null;
+
+            base.OnNavigatedFrom(parameters);
+        }
 
         public override void OnNavigatingTo(INavigationParameters parameters)
         {
@@ -366,18 +375,42 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using var _ = await _RefreshLock.LockAsync(ct);
 
+            _ImageCollectionDisposer?.Dispose();
+            _ImageCollectionDisposer = null;
+            ImageFileItems.Clear();
+
             _isCompleteEnumeration = false;
+            IImageCollectionContext imageCollectionContext = null;
             try
             {
                 if (_currentItem is StorageFolder folder)
                 {
                     Debug.WriteLine(folder.Path);
-                    await RefreshFolderItems(folder, ct);
+                    imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
                 }
                 else if (_currentItem is StorageFile file)
                 {
                     Debug.WriteLine(file.Path);
-                    await RefreshFolderItems(file, ct);
+                    if (file.IsSupportedImageFile())
+                    {
+                        try
+                        {
+                            var parentFolder = await file.GetParentAsync();
+                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken.TokenString, Path.GetDirectoryName(_currentPath));
+                            if (parentItem is StorageFolder parentFolder)
+                            {
+                                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                            }
+                        }
+                    }
+                    else if (file.IsSupportedMangaFile())
+                    {
+                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                    }
                 }
                 else
                 {
@@ -390,18 +423,11 @@ namespace TsubameViewer.Presentation.ViewModels
             {
 
             }
-        }
-        private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
-        {
-            ImageFileItems.Clear();
 
-            var result = await _imageCollectionManager.GetImagesAsync(storageItem, ct);
-            if (result.Images?.Any() != true)
-            {
-                return;
-            }
+            if (imageCollectionContext == null) { return; }
 
-            foreach (var folderItem in result.Images)
+            _ImageCollectionDisposer = imageCollectionContext as IDisposable;
+            foreach (var folderItem in await imageCollectionContext.GetImageFilesAsync(ct))
             {
                 _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken.TokenString);
                 ct.ThrowIfCancellationRequested();
@@ -413,10 +439,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             HasFileItem = ImageFileItems.Any();
-            HasFolderOrBookItem = storageItem is StorageFolder folder
-                ? await _imageCollectionManager.IsExistFolderOrArchiveFileAsync(folder, ct)
-                : false
-                ;
+            HasFolderOrBookItem = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
         }
 
         #endregion

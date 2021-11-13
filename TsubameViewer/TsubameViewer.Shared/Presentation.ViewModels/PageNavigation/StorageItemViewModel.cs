@@ -179,12 +179,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                         if (stream is null) { return; }
 
                         var bitmapImage = new BitmapImage();
-                        bitmapImage.SetSource(stream);
                         bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
+                        await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                         Image = bitmapImage;
                     }
-
-                    await Task.Delay(10);
                 }
                 finally
                 {
