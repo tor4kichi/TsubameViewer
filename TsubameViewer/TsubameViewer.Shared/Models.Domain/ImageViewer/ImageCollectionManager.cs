@@ -462,7 +462,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     }
     public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry) : IImageCollectionDirectoryToken
     {
-        public string Key => Entry?.Key;
+        private string _key;
+        public string Key => _key ??= ( Entry?.Key is not null ? (Entry.IsDirectory ? Entry.Key : Path.GetDirectoryName(Entry.Key)) : null);
     }
 
     public sealed class PdfImageCollection : IImageCollection
@@ -491,6 +492,168 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
     }
 
+    public static class DirectoryPathHelper
+    {
+        public static bool IsSameDirectoryPath(string pathA, string pathB)
+        {
+            if (pathA == pathB) { return true; }
+
+            bool pathAEmpty = string.IsNullOrEmpty(pathA);
+            bool pathBEmpty = string.IsNullOrEmpty(pathB);
+            if (pathAEmpty && pathBEmpty) { return true; }
+            else if (pathAEmpty ^ pathBEmpty) { return false; }
+
+            bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
+            bool isSkipBLastChar = pathB.EndsWith(Path.DirectorySeparatorChar) || pathB.EndsWith(Path.AltDirectorySeparatorChar);
+            if (isSkipALastChar && isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB.SkipLast(1))) { return true; }
+            }
+            else if (isSkipALastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB)) { return true; }
+            }
+            else if (isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA, pathB.SkipLast(1))) { return true; }
+            }
+
+            return false;
+        }
+
+        public static bool IsSameDirectoryPath(IArchiveEntry x, IArchiveEntry y)
+        {
+            if (x == null && y == null) { throw new NotSupportedException(); }
+
+            if (x == null)
+            {
+                return IsRootDirectoryEntry(y);
+            }
+            else if (y == null)
+            {
+                return IsRootDirectoryEntry(x);
+            }
+            else
+            {
+                var pathX = x.IsDirectory ? x.Key : Path.GetDirectoryName(x.Key);
+                var pathY = y.IsDirectory ? y.Key : Path.GetDirectoryName(y.Key);
+                return IsSameDirectoryPath(pathX, pathY);
+            }
+        }
+
+        public static bool IsSameDirectoryPath(ArchiveDirectoryToken x, ArchiveDirectoryToken y)
+        {
+            if (x == null && y == null) { throw new NotSupportedException(); }
+
+            if (x.Key == null)
+            {
+                return IsRootDirectoryEntry(y);
+            }
+            else if (x.Key == null)
+            {
+                return IsRootDirectoryEntry(x);
+            }
+            else
+            {
+                return IsSameDirectoryPath(x.Key, y.Key);
+            }
+        }
+
+        public static bool IsChildDirectoryPath(ArchiveDirectoryToken parent, ArchiveDirectoryToken target)
+        {
+            if (parent.Key == null)
+            {
+                return IsRootDirectoryPath(Path.GetDirectoryName(target.Key));
+            }
+
+            return IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
+        }
+
+        public static bool IsChildDirectoryPath(string parent, string target)
+        {
+            return IsSameDirectoryPath(parent, Path.GetDirectoryName(target));
+        }
+
+        public static bool IsRootDirectoryEntry(ArchiveDirectoryToken token)
+        {
+            if (token.Key == null) { return true; }
+
+            var directorySeparaterCount = GetDirectoryDepth(token.Key);
+            if (directorySeparaterCount == 0) { return true; }
+            if (directorySeparaterCount == 1)
+            {
+                if (token.Key.EndsWith(Path.DirectorySeparatorChar)
+                    || token.Key.EndsWith(Path.AltDirectorySeparatorChar)
+                    )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static bool IsRootDirectoryEntry(IArchiveEntry entry)
+        {
+            if (!entry.IsDirectory) { return false; }
+
+            return IsRootDirectoryPath(entry.Key);
+        }
+
+        public static bool IsRootDirectoryPath(string path)
+        {
+            var directorySeparaterCount = GetDirectoryDepth(path);
+            if (directorySeparaterCount == 0) { return true; }
+            if (directorySeparaterCount == 1)
+            {
+                if (path.EndsWith(Path.DirectorySeparatorChar)
+                    || path.EndsWith(Path.AltDirectorySeparatorChar)
+                    )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
+
+        public static int GetDirectoryDepth(string path)
+        {
+            return path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar);
+        }
+
+    }
+
+    public class ArchiveDirectoryEqualityComparer : IEqualityComparer<IArchiveEntry>
+    {
+        public static readonly ArchiveDirectoryEqualityComparer Default = new ArchiveDirectoryEqualityComparer();
+        private ArchiveDirectoryEqualityComparer() { }
+
+        public bool Equals(IArchiveEntry x, IArchiveEntry y)
+        {
+            return DirectoryPathHelper.IsSameDirectoryPath(x, y);
+        }
+
+        public int GetHashCode(IArchiveEntry obj)
+        {
+            var pathX = obj.IsDirectory ? obj.Key : Path.GetDirectoryName(obj.Key);
+            if (pathX.EndsWith(Path.DirectorySeparatorChar))
+            {
+                return pathX.GetHashCode();
+            }
+            else if (pathX.EndsWith(Path.AltDirectorySeparatorChar))
+            {
+                return (pathX.Remove(pathX.Length - 1) + Path.DirectorySeparatorChar).GetHashCode();
+            }
+            else
+            {
+                return (pathX + Path.DirectorySeparatorChar).GetHashCode();
+            }
+        }
+    }
+
     public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDisposable
     {
 
@@ -511,33 +674,27 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
-            _directories = Archive.Entries.Where(x => x.IsDirectory).Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
+
+            // ディレクトリベースでフォルダ構造を見つける
+            var dir = Archive.Entries.Where(x => x.IsDirectory);
+
+            // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
+            if (!dir.Any())
+            {
+                dir = Archive.Entries.Where(x => !x.IsDirectory)
+                    .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    .Distinct(ArchiveDirectoryEqualityComparer.Default);
+            }
+            _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
             if (_rootDirectoryToken == null || 
-                (_directories.Count == 1 && IsRootDirectoryEntry(_directories[0].Entry))
+                (_directories.Count == 1 && DirectoryPathHelper.IsRootDirectoryEntry(_directories[0].Entry))
                 )
             {
                 _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
             }
         }
 
-        public static bool IsRootDirectoryEntry(IArchiveEntry entry)
-        {
-            if (!entry.IsDirectory) { return false; }
-
-            var directorySeparaterCount = GetPathSeparaterCount(entry.Key);
-            if (directorySeparaterCount == 0) { return true; }
-            if (directorySeparaterCount == 1)
-            {
-                if (entry.Key.EndsWith(Path.DirectorySeparatorChar)
-                    || entry.Key.EndsWith(Path.AltDirectorySeparatorChar)
-                    )
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        
 
         private readonly ArchiveDirectoryToken _rootDirectoryToken;
 
@@ -550,24 +707,33 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return _directories.FirstOrDefault(x => x.Entry.Key == path);
         }
 
-        static int GetPathSeparaterCount(string path)
-        {
-            return path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar);
-        }
+        
         public IEnumerable<ArchiveDirectoryToken> GetSubDirectories(ArchiveDirectoryToken token)
         {
-            token ??= _rootDirectoryToken;            
-            if (token == _rootDirectoryToken)
+            token ??= _rootDirectoryToken;
+            var dirs = _directories.Where(x => DirectoryPathHelper.IsChildDirectoryPath(token.Key, x.Key));
+            
+            if (DirectoryPathHelper.IsRootDirectoryEntry(token))
             {
-                return _directories.Where(x => GetPathSeparaterCount(x.Key) == 1);
+                int depth = 1;
+                while (!dirs.Any())
+                {
+                    dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
+                    if (depth == 10) { break; }
+                }
+
+                // もしルートフォルダにもう一段ルートフォルダを持ったアーカイブの場合に、そのフォルダだけスキップするように
+                if (dirs.Count() == 1 && !GetImagesFromDirectory(dirs.ElementAt(0)).Any())
+                {
+                    dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
+                }
+
+                dirs ??= Enumerable.Empty<ArchiveDirectoryToken>();
             }
-            else
-            {
-                int targetPathSeparaterCount = GetPathSeparaterCount(token.Key) + 1;
-                return _directories.Where(x => x.Key.StartsWith(token.Key) && GetPathSeparaterCount(x.Key) == targetPathSeparaterCount);
-            }
+
+            return dirs;
         }
-       
+
         public IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths()
         {
             return _directories;
@@ -586,8 +752,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             if (token != _rootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
 
             var imageSourceItems = (token?.Key is null 
-                ? Archive.Entries.Where(x => GetPathSeparaterCount(x.Key) == 0)
-                : Archive.Entries.Where(x => IsSameDirectoryPath(Path.GetDirectoryName(x.Key), token.Key))
+                ? Archive.Entries.Where(x => DirectoryPathHelper.IsRootDirectoryEntry(x))
+                : Archive.Entries.Where(x => DirectoryPathHelper.IsSameDirectoryPath(x, token.Entry))
                 )
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _recyclableMemoryStreamManager, _thumbnailManager))
@@ -597,27 +763,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return imageSourceItems;
         }
 
-        static bool IsSameDirectoryPath(string pathA, string pathB)
-        {
-            if (pathA == pathB) { return true; }
-            bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
-            bool isSkipBLastChar = pathB.EndsWith(Path.DirectorySeparatorChar) || pathB.EndsWith(Path.AltDirectorySeparatorChar);
-            if (isSkipALastChar && isSkipBLastChar)
-            {
-                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB.SkipLast(1))) { return true; }
-            }
-            else if (isSkipALastChar)
-            {
-                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB)) { return true; }
-            }
-            else if (isSkipBLastChar)
-            {
-                if (Enumerable.SequenceEqual(pathA, pathB.SkipLast(1))) { return true; }
-            }
-
-            return false;
-        }
-
+        
         public void Dispose()
         {
             ((IDisposable)_disposables).Dispose();
