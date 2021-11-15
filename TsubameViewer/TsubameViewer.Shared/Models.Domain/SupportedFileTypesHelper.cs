@@ -30,6 +30,7 @@ namespace TsubameViewer.Models.Domain
             {
                 JpgFileType,
                 JpegFileType,
+                JfifFileType,
                 PngFileType,
                 BmpFileType,
                 GifFileType,
@@ -60,6 +61,7 @@ namespace TsubameViewer.Models.Domain
 
         public const string JpgFileType = ".jpg";
         public const string JpegFileType = ".jpeg";
+        public const string JfifFileType = ".jfif";
         public const string PngFileType = ".png";
         public const string BmpFileType = ".bmp";
         public const string GifFileType = ".gif";
