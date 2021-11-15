@@ -42,7 +42,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
             var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageAsync(StorageItem, _pdfPage, ct);
-            var stream = await thumbnailFile.OpenStreamForWriteAsync();
+            var stream = await thumbnailFile.OpenStreamForReadAsync();
             return stream.AsRandomAccessStream();
         }
 

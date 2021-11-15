@@ -14,7 +14,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class StorageItemImageSource : IImageSource, IDisposable
+    public sealed class StorageItemImageSource : IImageSource
     {
         private readonly ThumbnailManager _thumbnailManager;
 
@@ -39,10 +39,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             StorageItem = storageItem;
             _thumbnailManager = thumbnailManager;
             ItemTypes = SupportedFileTypesHelper.StorageItemToStorageItemTypes(StorageItem);
-        }
-
-        public void Dispose()
-        {
         }
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)

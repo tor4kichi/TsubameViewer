@@ -23,7 +23,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class ArchiveEntryImageSource : IImageSource, IDisposable
+    public sealed class ArchiveEntryImageSource : IImageSource
     {
         private readonly IArchiveEntry _entry;
         private readonly ArchiveDirectoryToken _archiveDirectoryToken;
@@ -50,8 +50,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public DateTime DateCreated { get; }
 
-        CancellationTokenSource _cts = new CancellationTokenSource();
-
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
             using var mylock = await ArchiveEntryAccessLock.LockAsync(ct);
@@ -70,14 +68,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public void CancelLoading()
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
         }
 
-        public void Dispose()
-        {
-            ((IDisposable)_cts).Dispose();
-        }
 
         internal static FastAsyncLock ArchiveEntryAccessLock = new FastAsyncLock();
 
@@ -86,7 +78,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             using var mylock = await ArchiveEntryAccessLock.LockAsync(ct);
 
             var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageAsync(StorageItem, _entry, ct);
-            var stream = await thumbnailFile.OpenStreamForWriteAsync();
+            var stream = await thumbnailFile.OpenStreamForReadAsync();
             return stream.AsRandomAccessStream();
         }
 
