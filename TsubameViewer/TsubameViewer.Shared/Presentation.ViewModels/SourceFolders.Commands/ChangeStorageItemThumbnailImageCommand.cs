@@ -38,7 +38,15 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                 {
                     if (item.Item is ArchiveEntryImageSource archiveEntry)
                     {
-                        await _thumbnailManager.SetThumbnailAsync(archiveEntry.StorageItem, stream, default);
+                        var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
+                        if (parentDirectoryArchiveEntry == null)
+                        {
+                            await _thumbnailManager.SetThumbnailAsync(archiveEntry.StorageItem, stream, default);
+                        }
+                        else
+                        {
+                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, stream, default);
+                        }
                     }
                     else if (item.Item is PdfPageImageSource pdf)
                     {
@@ -49,6 +57,18 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                         var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(item.Token.TokenString, Path.GetDirectoryName(folderItem.Path));
                         if (folder == null) { throw new InvalidOperationException(); }
                         await _thumbnailManager.SetThumbnailAsync(folder, stream, default);
+                    }
+                    else if (item.Item is ArchiveDirectoryImageSource archiveDirectoryItem)
+                    {
+                        var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
+                        if (parentDirectoryArchiveEntry == null)
+                        {
+                            await _thumbnailManager.SetThumbnailAsync(archiveDirectoryItem.StorageItem, stream, default);
+                        }
+                        else
+                        {
+                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, stream, default);
+                        }
                     }
                     else
                     {

@@ -69,10 +69,12 @@
                                >
           <StackPanel uwpControls:DockPanel.Dock="Left" 
                   Padding="0 8"
-                    
+                    Spacing="8"
                     >
 
-            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
+            <TextBlock Opacity="0.7">
+              <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
+            </TextBlock>
             <Button x:Name="ReturnSourceFolderPageButton"
                   Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
                   Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"

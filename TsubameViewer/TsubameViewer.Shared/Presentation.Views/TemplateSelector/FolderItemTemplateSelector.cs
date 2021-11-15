@@ -14,6 +14,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
         public Windows.UI.Xaml.DataTemplate Folder { get; set; }
         public Windows.UI.Xaml.DataTemplate Image { get; set; }
         public Windows.UI.Xaml.DataTemplate Archive { get; set; }
+        public Windows.UI.Xaml.DataTemplate ArchiveFolder { get; set; }
         public Windows.UI.Xaml.DataTemplate EBook { get; set; }
 
         protected override Windows.UI.Xaml.DataTemplate SelectTemplateCore(object item)
@@ -30,6 +31,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
                     StorageItemTypes.Folder => Folder,
                     StorageItemTypes.Image => Image,
                     StorageItemTypes.Archive => Archive,
+                    StorageItemTypes.ArchiveFolder => ArchiveFolder,
                     StorageItemTypes.EBook => EBook,
                     _ => throw new NotSupportedException()
                 };

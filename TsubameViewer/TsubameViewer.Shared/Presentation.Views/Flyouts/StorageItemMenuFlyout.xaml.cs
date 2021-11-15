@@ -101,6 +101,35 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 SourceManageSeparetor.Visibility = isSourceStorageItem.TrueToVisible();
                 SourceManageSubItem.Visibility = isSourceStorageItem.TrueToVisible();
             }
+            else if (itemVM.Item is ArchiveDirectoryImageSource)
+            {
+                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+
+                bool isSourceStorageItem = (itemVM.Token.RootItemPath == itemVM.Path);
+
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Visibility = Visibility.Visible;
+
+                SetThumbnailImageMenuItem.CommandParameter = itemVM;
+                SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+
+                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
+
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+
+                OpenWithExternalAppMenuItem.CommandParameter = itemVM;
+                OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
+
+                RemoveSourceStorageItem.CommandParameter = itemVM;
+                SourceManageSeparetor.Visibility = Visibility.Collapsed;
+                SourceManageSubItem.Visibility = Visibility.Collapsed;
+            }
             else
             {
                 NoActionDescMenuItem.Visibility = Visibility.Visible;

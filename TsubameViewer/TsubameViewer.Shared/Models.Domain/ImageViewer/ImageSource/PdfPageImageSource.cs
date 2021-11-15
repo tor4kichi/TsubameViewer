@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using Uno.Disposables;
 using Windows.Data.Pdf;
 using Windows.Storage;
@@ -20,44 +21,37 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     {
         private readonly PdfPage _pdfPage;
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+        private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfPageImageSource(PdfPage pdfPage, IStorageItem storageItem, RecyclableMemoryStreamManager recyclableMemoryStreamManager)
+        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
             DateCreated = storageItem.DateCreated.DateTime;
             StorageItem = storageItem;
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+            _thumbnailManager = thumbnailManager;
         }
 
         public string Name { get; }
         public DateTime DateCreated { get; }
-        public IStorageItem StorageItem { get; }
+        public StorageFile StorageItem { get; }
+
+        IStorageItem IImageSource.StorageItem => StorageItem;
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            var memoryStream = _recyclableMemoryStreamManager.GetStream();
-            using (var streamWrite = new StreamWriter(memoryStream))
-            {
-                await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
-
-                ct.ThrowIfCancellationRequested();
-
-                await memoryStream.FlushAsync();
-                memoryStream.Seek(0, SeekOrigin.Begin);
-
-                ct.ThrowIfCancellationRequested();
-            }
-
-            return memoryStream.AsRandomAccessStream();
+            var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageAsync(StorageItem, _pdfPage, ct);
+            var stream = await thumbnailFile.OpenStreamForWriteAsync();
+            return stream.AsRandomAccessStream();
         }
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
             var memoryStream = _recyclableMemoryStreamManager.GetStream();
-            using (var streamWrite = new StreamWriter(memoryStream))
+            var stream = memoryStream.AsRandomAccessStream();
             {
-                await _pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
+                await _pdfPage.RenderToStreamAsync(stream).AsTask(ct);
 
                 ct.ThrowIfCancellationRequested();
 
@@ -67,7 +61,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 ct.ThrowIfCancellationRequested();
             }
 
-            return memoryStream.AsRandomAccessStream();
+            return stream;
         }
 
         public void Dispose()

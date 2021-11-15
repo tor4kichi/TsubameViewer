@@ -153,6 +153,7 @@ namespace TsubameViewer.Models.Domain
                 StorageItemImageSource storageItem => storageItem.ItemTypes,
                 PdfPageImageSource _ => StorageItemTypes.Image,
                 ArchiveEntryImageSource _ => StorageItemTypes.Image,
+                ArchiveDirectoryImageSource _ => StorageItemTypes.ArchiveFolder,
                 _ => StorageItemTypes.None
             };
         }

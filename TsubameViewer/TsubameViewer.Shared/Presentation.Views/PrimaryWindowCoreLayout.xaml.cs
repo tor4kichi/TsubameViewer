@@ -406,7 +406,9 @@ namespace TsubameViewer.Presentation.Views
             if (_navigationService.CanGoBack())
             {
                 var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath))
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath)
+                    && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName) is false
+                    )
                 {
                     while (BackParametersStack.SkipLast(1).LastOrDefault() is not null and var lastNavigationParameters
                         && lastNavigationParameters.TryGetValue(PageNavigationConstants.Path, out string lastPath)

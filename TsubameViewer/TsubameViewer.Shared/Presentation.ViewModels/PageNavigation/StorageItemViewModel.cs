@@ -38,6 +38,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
             }
+            else if (vm.Type == StorageItemTypes.ArchiveFolder)
+            {
+                var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
+                return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.ArchiveFolderName, Uri.EscapeDataString(archiveFolderImageSource.Path)));
+            }
             else
             {
                 return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
@@ -74,8 +79,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public StorageItemTypes Type { get; }
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
-        private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
-
+        private static FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private double _ReadParcentage;
         public double ReadParcentage
@@ -139,9 +143,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void StopImageLoading()
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
+            // do nothing.
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -149,6 +151,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
+            var ct = _cts.Token;
+            using var _ = await _imageLoadingLock.LockAsync(ct);
+
             if (Item == null) { return; }
             if (_isInitialized) { return; }
 
@@ -156,7 +161,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
             if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
 
-            var ct = _cts.Token;
             try
             {
                 if (ct.IsCancellationRequested)
@@ -167,29 +171,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                 ct.ThrowIfCancellationRequested();
 
-                await _loadinLock.WaitAsync(ct);
-
-                try
+                _isAppearingRequestButLoadingCancelled = false;
+                using (var stream = await Item.GetThumbnailImageStreamAsync(ct))
                 {
-                    ct.ThrowIfCancellationRequested();
-
-                    _isAppearingRequestButLoadingCancelled = false;
-                    using (var stream = await Item.GetThumbnailImageStreamAsync(ct))
-                    {
-                        if (stream is null) { return; }
-
-                        var bitmapImage = new BitmapImage();
-                        bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
-                        await bitmapImage.SetSourceAsync(stream).AsTask(ct);
-                        Image = bitmapImage;
-                    }
+                    if (stream is null || stream.Size == 0) { return; }
+                        
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
+                    bitmapImage.SetSource(stream);
+                    Image = bitmapImage;
                 }
-                finally
-                {
-                    _loadinLock.Release();
-                }
-
-                Debug.WriteLine("Thumbnail Load: " + Name);
 
                 _isInitialized = true;
             }

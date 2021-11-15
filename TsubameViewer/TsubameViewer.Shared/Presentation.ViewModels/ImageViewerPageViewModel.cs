@@ -39,6 +39,7 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -364,8 +365,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName)
-                )
+            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName))
             {
                 if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
                 {
@@ -381,6 +381,19 @@ namespace TsubameViewer.Presentation.ViewModels
                 //if (parameters.TryGetValue("sort", out string sortMethod))
                 {
 
+                }
+            }
+            
+            if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName))
+            {
+                if (parameters.TryGetValue<string>(PageNavigationConstants.ArchiveFolderName, out string folderName))
+                {
+                    var unescapedFolderName = Uri.UnescapeDataString(folderName);
+                    var pageFirstItem = Images.FirstOrDefault(x => x.Name.Contains(unescapedFolderName));
+                    if (pageFirstItem != null)
+                    {
+                        CurrentImageIndex = Images.IndexOf(pageFirstItem);
+                    }
                 }
             }
 
@@ -412,7 +425,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (Images == null || Images.Length == 0) { return; }
 
-            if (direction != IndexMoveDirection.Backward)
+            if (direction != IndexMoveDirection.Forward)
             {
                 ClearPrefetch();
             }
@@ -630,7 +643,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (bitmapImage == null)
             {
-                using (var stream = await imageSource.GetThumbnailImageStreamAsync(ct))
+                using (var stream = await imageSource.GetImageStreamAsync(ct))
                 {
                     bitmapImage = new BitmapImage();
                     bitmapImage.SetSource(stream);
@@ -717,7 +730,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (imageCollectionContext == null) { return; }
 
-            Images = (await imageCollectionContext.GetImageFilesAsync(ct)).ToArray();
+            Images = (await imageCollectionContext.GetAllImageFilesAsync(ct)).ToArray();
             {
                 if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
                 {
@@ -736,7 +749,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     )
                 {
                     var folders = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
-                    //PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
                     PageFolderNames = folders.Select(x => x.Name).ToArray();
                 }
                 else

@@ -161,9 +161,15 @@
 
           <StackPanel x:Name="HeaderStackPanel"
                   uwpControls:DockPanel.Dock="Left"
+                      Spacing="8"
                   >
 
-            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
+            <uwpControls:WrapPanel Orientation="Horizontal">
+            <TextBlock Opacity="0.7">
+              <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
+            </TextBlock>
+              
+            </uwpControls:WrapPanel>
             <Button x:Name="ReturnSourceFolderPageButton"
               Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
               Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"

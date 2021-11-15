@@ -28,6 +28,7 @@ using TsubameViewer.Presentation.Views;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
+using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels
@@ -122,8 +123,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         StorageItemToken _currentItemRootFolderToken;
 
+        private string _currentArchiveFolderName;
 
-
+        private string _DisplayCurrentArchiveFolderName;
+        public string DisplayCurrentArchiveFolderName
+        {
+            get { return _DisplayCurrentArchiveFolderName; }
+            private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
+        }
 
 
         private bool _IsRestrictImageFileThumbnail;
@@ -229,6 +236,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _leavePageCancellationTokenSource = new CancellationTokenSource();
 
+                _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
+                    ? Uri.UnescapeDataString(archiveFolderName)
+                    : null
+                    ;
+
+
                 if (mode == NavigationMode.New
                     || mode == NavigationMode.Forward
                     || mode == NavigationMode.Back
@@ -279,8 +292,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
-                            DisplayCurrentPath = _currentItem.Path;
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            DisplayCurrentPath = _currentItem.Path;                            
                         }
 
                         if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
@@ -387,6 +399,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -406,10 +419,21 @@ namespace TsubameViewer.Presentation.ViewModels
                                 imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
                             }
                         }
+
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
-                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, _currentArchiveFolderName ?? String.Empty, ct);
+                        DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
+                        if (_currentArchiveFolderName == null)
+                        {
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                        }
+                        else if (imageCollectionContext is ArchiveImageCollectionContext aic)
+                        {
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                        }
                     }
                 }
                 else
