@@ -284,7 +284,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        private class ImageSourceNameInterporatedComparer : IComparer<IImageSource>
+        public class ImageSourceNameInterporatedComparer : IComparer<IImageSource>
         {
             public static readonly ImageSourceNameInterporatedComparer Default = new ImageSourceNameInterporatedComparer();
             private ImageSourceNameInterporatedComparer() { }
@@ -510,7 +510,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _disposables = disposables;
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
-            _rootDirectoryToken = Archive.Entries.Where(x => IsRootDirectoryEntry(x)).Select(x => new ArchiveDirectoryToken(Archive, x)).FirstOrDefault();
+            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
             _directories = Archive.Entries.Where(x => x.IsDirectory).Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
             if (_rootDirectoryToken == null || 
                 (_directories.Count == 1 && IsRootDirectoryEntry(_directories[0].Entry))
@@ -556,11 +556,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
         public IEnumerable<ArchiveDirectoryToken> GetSubDirectories(ArchiveDirectoryToken token)
         {
-            token ??= _rootDirectoryToken;
-            if (token == null || token.Key == null) { return Enumerable.Empty<ArchiveDirectoryToken>(); }
-
-            int targetPathSeparaterCount = GetPathSeparaterCount(token.Key) + 1;
-            return _directories.Where(x => x.Key.StartsWith(token.Key) && GetPathSeparaterCount(x.Key) == targetPathSeparaterCount);
+            token ??= _rootDirectoryToken;            
+            if (token == _rootDirectoryToken)
+            {
+                return _directories.Where(x => GetPathSeparaterCount(x.Key) == 1);
+            }
+            else
+            {
+                int targetPathSeparaterCount = GetPathSeparaterCount(token.Key) + 1;
+                return _directories.Where(x => x.Key.StartsWith(token.Key) && GetPathSeparaterCount(x.Key) == targetPathSeparaterCount);
+            }
         }
        
         public IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths()
@@ -580,15 +585,37 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             if (_entriesCacheByDirectory.TryGetValue(token, out var entries)) { return entries; }
             if (token != _rootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
 
-            var imageSourceItems = (token?.Key is not null 
-                ? Archive.Entries.Where(x => Path.GetDirectoryName(x.Key) == token.Key && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                : Archive.Entries.Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+            var imageSourceItems = (token?.Key is null 
+                ? Archive.Entries.Where(x => GetPathSeparaterCount(x.Key) == 0)
+                : Archive.Entries.Where(x => IsSameDirectoryPath(Path.GetDirectoryName(x.Key), token.Key))
                 )
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                 .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _recyclableMemoryStreamManager, _thumbnailManager))
                 .ToList();
 
             _entriesCacheByDirectory.Add(token, imageSourceItems);
             return imageSourceItems;
+        }
+
+        static bool IsSameDirectoryPath(string pathA, string pathB)
+        {
+            if (pathA == pathB) { return true; }
+            bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
+            bool isSkipBLastChar = pathB.EndsWith(Path.DirectorySeparatorChar) || pathB.EndsWith(Path.AltDirectorySeparatorChar);
+            if (isSkipALastChar && isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB.SkipLast(1))) { return true; }
+            }
+            else if (isSkipALastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB)) { return true; }
+            }
+            else if (isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA, pathB.SkipLast(1))) { return true; }
+            }
+
+            return false;
         }
 
         public void Dispose()
@@ -602,10 +629,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 return GetImagesFromDirectory(_rootDirectoryToken);
             }
+            /*
             else if (_directories.Count == 1 && IsRootDirectoryEntry(_directories[0].Entry))
             {
                 return GetImagesFromDirectory(_rootDirectoryToken);
             }
+            */
             else
             {
                 return _directories.SelectMany(x => GetImagesFromDirectory(x)).ToList();

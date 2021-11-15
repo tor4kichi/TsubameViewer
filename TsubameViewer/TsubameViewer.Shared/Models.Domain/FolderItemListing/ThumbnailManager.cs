@@ -136,12 +136,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
         {
-            if (entry.IsDirectory && !entry.Key.Contains(Path.DirectorySeparatorChar) && entry.Key.Contains(Path.AltDirectorySeparatorChar))
-            {
-                // ルートフォルダはサムネイル対応しない
-                throw new NotSupportedException();
-            }
-
             return Path.Combine(file.Path, entry.Key);
         }
         public string GetArchiveEntryPath(StorageFile file, PdfPage pdfPage)

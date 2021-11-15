@@ -40,6 +40,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -730,8 +731,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (imageCollectionContext == null) { return; }
 
-            Images = (await imageCollectionContext.GetAllImageFilesAsync(ct)).ToArray();
+            var images = await imageCollectionContext.GetAllImageFilesAsync(ct);
             {
+                // 初期ソート
+                images.Sort(ImageSourceNameInterporatedComparer.Default);
+                Images = images.ToArray();
                 if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
                 {
                     var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
