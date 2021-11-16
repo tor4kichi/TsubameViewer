@@ -13,6 +13,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         IStorageItem StorageItem { get; }
         string Name { get; }
+
+        string Path { get; }
         DateTime DateCreated { get; }
         Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default);
 

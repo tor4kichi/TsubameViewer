@@ -537,6 +537,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 var pathX = x.IsDirectory ? x.Key : Path.GetDirectoryName(x.Key);
                 var pathY = y.IsDirectory ? y.Key : Path.GetDirectoryName(y.Key);
+
+                //ReadOnlySpan<char> 
                 return IsSameDirectoryPath(pathX, pathY);
             }
         }

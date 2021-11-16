@@ -34,6 +34,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
         public string Name { get; }
+
+        public string Path => Name;
         public DateTime DateCreated { get; }
         public StorageFile StorageItem { get; }
 

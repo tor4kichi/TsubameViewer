@@ -390,7 +390,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (parameters.TryGetValue<string>(PageNavigationConstants.ArchiveFolderName, out string folderName))
                 {
                     var unescapedFolderName = Uri.UnescapeDataString(folderName);
-                    var pageFirstItem = Images.FirstOrDefault(x => x.Name.Contains(unescapedFolderName));
+                    var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
                     if (pageFirstItem != null)
                     {
                         CurrentImageIndex = Images.IndexOf(pageFirstItem);
