@@ -46,7 +46,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         IStorageItem IImageSource.StorageItem => StorageItem;
 
-        public string Name => _entry.Key;
+        private string _name;
+        public string Name => _name ??= Path.GetFileName(_entry.Key);
 
         public DateTime DateCreated { get; }
 
