@@ -41,12 +41,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             else if (vm.Type == StorageItemTypes.ArchiveFolder)
             {
                 var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
-                return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.ArchiveFolderName, Uri.EscapeDataString(archiveFolderImageSource.Path)));
+                
+                return CreateArchiveFolderPageParameter(escapedPath, Uri.EscapeDataString(archiveFolderImageSource.Path));
             }
             else
             {
                 return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
             }
+        }
+
+        public static NavigationParameters CreateArchiveFolderPageParameter(string filePath, string archiveFolderPath)
+        {
+            return new NavigationParameters((PageNavigationConstants.Path, filePath), (PageNavigationConstants.ArchiveFolderName, archiveFolderPath));
         }
 
         #endregion

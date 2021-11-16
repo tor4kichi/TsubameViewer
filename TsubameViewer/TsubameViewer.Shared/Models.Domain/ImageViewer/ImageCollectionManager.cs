@@ -48,6 +48,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct);
 
         Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct);
+        Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct);
 
         bool IsSupportedFolderContentsChanged { get; }
 
@@ -84,6 +85,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
                     .ToList()
                     );
+            }
+
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetLeafFolders()
+                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
+                    .ToList());
             }
 
             public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
@@ -139,6 +147,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 return Task.FromResult(new List<IImageSource>());
             }
 
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(new List<IImageSource>());
+            }
+
             public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
             {
                 return Task.FromResult(_pdfImageCollection.GetAllImages());
@@ -183,6 +196,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 var items = await FolderAndArchiveFileSearchQuery.GetItemsAsync().AsTask(ct);
                 return items.Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToList();
+            }
+
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(new List<IImageSource>());
             }
 
             public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
@@ -290,12 +308,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             private ImageSourceNameInterporatedComparer() { }
             public int Compare(IImageSource x, IImageSource y)
             {
-                var xDictPath = Path.GetDirectoryName(x.Name);
-                var yDictPath = Path.GetDirectoryName(y.Name);
+                var xDictPath = Path.GetDirectoryName(x.Path);
+                var yDictPath = Path.GetDirectoryName(y.Path);
 
                 if (xDictPath != yDictPath)
                 {
-                    return String.CompareOrdinal(x.Name, y.Name);
+                    return String.CompareOrdinal(x.Path, y.Path);
                 }
 
                 static bool TryGetPageNumber(string name, out int pageNumber)
@@ -312,11 +330,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     return number > 0;
                 }
 
-                var xName = Path.GetFileNameWithoutExtension(x.Name);
-                if (!TryGetPageNumber(xName, out int xPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
+                var xName = Path.GetFileNameWithoutExtension(x.Path);
+                if (!TryGetPageNumber(xName, out int xPageNumber)) { return String.CompareOrdinal(x.Path, y.Path); }
 
-                var yName = Path.GetFileNameWithoutExtension(y.Name);
-                if (!TryGetPageNumber(yName, out int yPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
+                var yName = Path.GetFileNameWithoutExtension(y.Path);
+                if (!TryGetPageNumber(yName, out int yPageNumber)) { return String.CompareOrdinal(x.Path, y.Path); }
 
                 return xPageNumber - yPageNumber;
             }
@@ -579,44 +597,30 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public static bool IsRootDirectoryEntry(ArchiveDirectoryToken token)
         {
             if (token.Key == null) { return true; }
-
-            var directorySeparaterCount = GetDirectoryDepth(token.Key);
-            if (directorySeparaterCount == 0) { return true; }
-            if (directorySeparaterCount == 1)
-            {
-                if (token.Key.EndsWith(Path.DirectorySeparatorChar)
-                    || token.Key.EndsWith(Path.AltDirectorySeparatorChar)
-                    )
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            else { return IsRootDirectoryEntry(token.Entry); }
         }
 
         public static bool IsRootDirectoryEntry(IArchiveEntry entry)
         {
-            if (!entry.IsDirectory) { return false; }
-
-            return IsRootDirectoryPath(entry.Key);
+            return IsRootDirectoryPath(entry.IsDirectory ? entry.Key : Path.GetDirectoryName(entry.Key));
         }
 
         public static bool IsRootDirectoryPath(string path)
         {
-            var directorySeparaterCount = GetDirectoryDepth(path);
-            if (directorySeparaterCount == 0) { return true; }
-            if (directorySeparaterCount == 1)
+            if (path == String.Empty) 
             {
-                if (path.EndsWith(Path.DirectorySeparatorChar)
+                return true; 
+            }
+            else if (path.EndsWith(Path.DirectorySeparatorChar)
                     || path.EndsWith(Path.AltDirectorySeparatorChar)
                     )
-                {
-                    return true;
-                }
+            {
+                return true;
             }
-
-            return false;
+            else
+            {
+                return false;
+            }
         }
 
 
@@ -684,7 +688,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             if (!dir.Any())
             {
                 dir = Archive.Entries.Where(x => !x.IsDirectory)
-                    .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    .Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
                     .Distinct(ArchiveDirectoryEqualityComparer.Default);
             }
             _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
@@ -706,7 +710,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             if (string.IsNullOrEmpty(path)) { return _rootDirectoryToken; }
 
-            return _directories.FirstOrDefault(x => x.Entry.Key == path);
+            return _directories.FirstOrDefault(x => x.Key == path);
         }
 
         
@@ -715,25 +719,31 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             token ??= _rootDirectoryToken;
             var dirs = _directories.Where(x => DirectoryPathHelper.IsChildDirectoryPath(token.Key, x.Key));
             
-            if (DirectoryPathHelper.IsRootDirectoryEntry(token))
-            {
-                int depth = 1;
-                while (!dirs.Any())
-                {
-                    dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
-                    if (depth == 10) { break; }
-                }
+            //if (DirectoryPathHelper.IsRootDirectoryEntry(token))
+            //{
+            //    int depth = 1;
+            //    while (!dirs.Any())
+            //    {
+            //        dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
+            //        if (depth == 10) { break; }
+            //        depth++;
+            //    }
 
-                // もしルートフォルダにもう一段ルートフォルダを持ったアーカイブの場合に、そのフォルダだけスキップするように
-                if (dirs.Count() == 1 && !GetImagesFromDirectory(dirs.ElementAt(0)).Any())
-                {
-                    dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
-                }
+            //    // もしルートフォルダにもう一段ルートフォルダを持ったアーカイブの場合に、そのフォルダだけスキップするように
+            //    if (dirs.Count() == 1 && !GetImagesFromDirectory(dirs.ElementAt(0)).Any())
+            //    {
+            //        dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
+            //    }
 
-                dirs ??= Enumerable.Empty<ArchiveDirectoryToken>();
-            }
+            //    dirs ??= Enumerable.Empty<ArchiveDirectoryToken>();
+            //}
 
             return dirs;
+        }
+
+        public IEnumerable<ArchiveDirectoryToken> GetLeafFolders()
+        {
+            return _directories.Where(x => !GetSubDirectories(x).Any());
         }
 
         public IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths()

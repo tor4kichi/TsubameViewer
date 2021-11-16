@@ -184,7 +184,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (Images == null || !Images.Any()) { return; }
 
                     var imageSource = Images[CurrentImageIndex];
-                    var names = imageSource.Name.Split(SeparateChars);
+                    var names = imageSource.Path.Split(SeparateChars);
                     PageName = names[names.Length - 1];
                     PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
@@ -397,6 +397,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
+
+            RaisePropertyChanged(nameof(CurrentImageIndex));
 
             // 表示画像が揃ったら改めてボタンを有効化
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -748,12 +750,21 @@ namespace TsubameViewer.Presentation.ViewModels
             ParentFolderOrArchiveName = imageCollectionContext.Name;
             
             {
-                if (_currentFolderItem is StorageFolder ||
-                    (_currentFolderItem is StorageFile file && file.IsSupportedMangaFile())
-                    )
-                {
-                    var folders = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
-                    PageFolderNames = folders.Select(x => x.Name).ToArray();
+                if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
+                { 
+                //if (_currentFolderItem is StorageFolder ||
+                //    (_currentFolderItem is StorageFile file && file.IsSupportedMangaFile())
+                //    )
+                //{
+                    var folders = await imageCollectionContext.GetLeafFoldersAsync(ct);
+                    if (folders.Count <= 1)
+                    {
+                        PageFolderNames = new string[0];
+                    }
+                    else
+                    {
+                        PageFolderNames = folders.Select(x => x.Name).ToArray();
+                    }
                 }
                 else
                 {
@@ -865,7 +876,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ExecuteChangePageFolderCommand(string pageName)
         {
-            var pageFirstItem = Images.FirstOrDefault(x => x.Name.Contains(pageName));
+            var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(pageName));
             if (pageFirstItem == null) { return; }
 
             var pageFirstItemIndex = Images.IndexOf(pageFirstItem);

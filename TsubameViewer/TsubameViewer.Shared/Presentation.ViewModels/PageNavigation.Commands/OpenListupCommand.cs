@@ -13,6 +13,8 @@ using Prism.Ioc;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 using System.Threading;
 using Uno.Disposables;
+using System.Linq;
+using System.IO;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
@@ -53,8 +55,33 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                         }
                         else
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(item);
-                            var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                            var leaves = await collectionContext.GetLeafFoldersAsync(ct);                      
+                            if (leaves.Count == 0)
+                            {
+                                var parameters = StorageItemViewModel.CreatePageParameter(item);
+                                var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new DrillInNavigationTransitionInfo());
+                            }
+                            else if (leaves.Count == 1)
+                            {
+                                var leaf = leaves[0] as ArchiveDirectoryImageSource;
+                                var parameters = StorageItemViewModel.CreateArchiveFolderPageParameter(Uri.EscapeDataString(item.Path), Uri.EscapeDataString(leaf.Path));
+                                var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageListupPage), parameters, new DrillInNavigationTransitionInfo());
+                            }
+                            else
+                            {
+                                // 圧縮フォルダにスキップ可能なルートフォルダを含んでいる場合
+                                var distinct = leaves.Select(x => new string(x.Path.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
+                                if (distinct.Count == 1)
+                                {
+                                    var parameters = StorageItemViewModel.CreateArchiveFolderPageParameter(Uri.EscapeDataString(item.Path), Uri.EscapeDataString(distinct[0]));
+                                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                                }
+                                else
+                                {
+                                    var parameters = StorageItemViewModel.CreatePageParameter(item);
+                                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                                }
+                            }
                         }
                     }
                     finally
