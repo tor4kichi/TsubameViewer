@@ -41,6 +41,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
+using TsubameViewer.Presentation.ViewModels.Sorting;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -736,7 +737,7 @@ namespace TsubameViewer.Presentation.ViewModels
             var images = await imageCollectionContext.GetAllImageFilesAsync(ct);
             {
                 // 初期ソート
-                images.Sort(ImageSourceNameInterporatedComparer.Default);
+                images.Sort(ImageSourceTitleDigitCompletionComparer.Default);
                 Images = images.ToArray();
                 if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
                 {

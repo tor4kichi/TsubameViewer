@@ -73,15 +73,19 @@ ChangeViewToImageListupPage = 切换到图像列表视图
 
 
 FileSortTitle = 排序
+FileSortType.UpdateTimeDescThenTitleAsc = 新订单和标题升序
 FileSortType.TitleAscending = 文件名（升序）
 FileSortType.TitleDecending = 文件名（降序）
 FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
+TitleDigitCompletion = 标题数字完成
+
+
 OpenImageViewer = 在阅读器中打开
 OpenFolderListup = 列出档案
 OpenWithExplorer = 在资源管理器中打开
-OpenWithExternalApplication = 使用外部应用程序打开
+OpenWithExternalApplication = 在另一个应用程序中打开
 
 AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始

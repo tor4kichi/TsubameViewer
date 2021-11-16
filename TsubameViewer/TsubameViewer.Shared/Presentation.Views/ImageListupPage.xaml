@@ -87,7 +87,7 @@
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
       <ts:FileDisplayModeTemplateSelector.Line>
         <DataTemplate>
-          <Grid Height="13">
+          <Grid Height="13" Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="5" Width="13"
                     VerticalAlignment="Top"
@@ -101,7 +101,7 @@
       </ts:FileDisplayModeTemplateSelector.Line>
       <ts:FileDisplayModeTemplateSelector.Small>
         <DataTemplate >
-          <Grid>
+          <Grid Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
@@ -120,7 +120,7 @@
       </ts:FileDisplayModeTemplateSelector.Small>
       <ts:FileDisplayModeTemplateSelector.Midium>
         <DataTemplate >
-          <Grid>
+          <Grid Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
@@ -128,20 +128,24 @@
                   Height="7" Width="7"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
+                    Margin="4 0 0 0"
                   />
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="7" Width="7"
                   HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
+                    Margin="0 0 3 0"
                   />
           </Grid>
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Midium>
       <ts:FileDisplayModeTemplateSelector.Large>
         <DataTemplate >
-          <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+          <Border Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
+          </Border>
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
@@ -192,20 +196,23 @@
 
         </uwpControls:DockPanel>
 
-        <uwpControls:DockPanel x:Name="FilesActionLayout" >
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 8">
 
-          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
-            <TextBlock VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" Spacing="4">
+            <TextBlock VerticalAlignment="Center" >
               <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
             </TextBlock>
             <DropDownButton x:Name="FileSortButton" 
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
-                            Padding="8"
                             Background="Transparent"
-                              Height="40"
                             >
               <DropDownButton.Flyout>
                 <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>UpdateTimeDecending</models:FileSortType>
@@ -231,6 +238,18 @@
             </DropDownButton>
           </StackPanel>
 
+          <Button Margin="8 0 0 0">
+            <Button.Content>
+              <SymbolIcon Symbol="More" />
+            </Button.Content>
+
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+
 
 
           <ListView x:Name="FileDisplayModeItemsListView"
@@ -245,7 +264,10 @@
                     >
             <ListView.ItemContainerStyle>
               <Style TargetType="ListViewItem">
-                <Setter Property="MinWidth" Value="32" />
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Padding" Value="0 0 0 0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
               </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemsPanel>

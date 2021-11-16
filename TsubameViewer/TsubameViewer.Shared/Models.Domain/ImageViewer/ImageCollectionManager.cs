@@ -302,43 +302,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public class ImageSourceNameInterporatedComparer : IComparer<IImageSource>
-        {
-            public static readonly ImageSourceNameInterporatedComparer Default = new ImageSourceNameInterporatedComparer();
-            private ImageSourceNameInterporatedComparer() { }
-            public int Compare(IImageSource x, IImageSource y)
-            {
-                var xDictPath = Path.GetDirectoryName(x.Path);
-                var yDictPath = Path.GetDirectoryName(y.Path);
-
-                if (xDictPath != yDictPath)
-                {
-                    return String.CompareOrdinal(x.Path, y.Path);
-                }
-
-                static bool TryGetPageNumber(string name, out int pageNumber)
-                {
-                    int keta = 1;
-                    int number = 0;
-                    foreach (var i in name.Reverse().SkipWhile(c => !char.IsDigit(c)).TakeWhile(c => char.IsDigit(c)))
-                    {
-                        number += i * keta;
-                        keta *= 10;
-                    }
-
-                    pageNumber = number;
-                    return number > 0;
-                }
-
-                var xName = Path.GetFileNameWithoutExtension(x.Path);
-                if (!TryGetPageNumber(xName, out int xPageNumber)) { return String.CompareOrdinal(x.Path, y.Path); }
-
-                var yName = Path.GetFileNameWithoutExtension(y.Path);
-                if (!TryGetPageNumber(yName, out int yPageNumber)) { return String.CompareOrdinal(x.Path, y.Path); }
-
-                return xPageNumber - yPageNumber;
-            }
-        }
+        
 
         public static readonly QueryOptions ImageFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions);
 

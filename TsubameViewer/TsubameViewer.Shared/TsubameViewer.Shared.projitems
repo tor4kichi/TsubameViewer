@@ -73,6 +73,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\ThemeChangeRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SearchResultPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Sorting\TitleDigitCompletionComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />

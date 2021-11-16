@@ -5,11 +5,14 @@ using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -96,6 +99,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
+        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+
+
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
@@ -155,6 +161,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IDisposable _ImageCollectionDisposer;
 
+        CompositeDisposable _disposables = new CompositeDisposable();
+
         public ImageListupPageViewModel(
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
@@ -195,10 +203,24 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
-            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
+                .AddTo(_disposables);
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+                .AddTo(_disposables);
 
-            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
-            ImageLastIntractItem = new ReactivePropertySlim<int>();
+            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
+                .AddTo(_disposables);
+            ImageLastIntractItem = new ReactivePropertySlim<int>()
+                .AddTo(_disposables);
+
+
+            Observable.CombineLatest(
+                SelectedFileSortType,
+                IsSortWithTitleDigitCompletion,
+                (sortType, withInterpolation) => (sortType, withInterpolation)
+                )
+                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
+                .AddTo(_disposables);                
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -304,18 +326,14 @@ namespace TsubameViewer.Presentation.ViewModels
                             ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
 
                             _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
-
-                                FileItemsView.SortDescriptions.Clear();
-                                FileItemsView.SortDescriptions.Add(sortDescription);
-                            }
-                            RaisePropertyChanged(nameof(FileItemsView));
+                            
+                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                         }
                         else
                         {
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                         }
 
                         HasFileItem = ImageFileItems.Any();
@@ -333,18 +351,14 @@ namespace TsubameViewer.Presentation.ViewModels
                         ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
 
                         _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-                        using (FileItemsView.DeferRefresh())
-                        {
-                            var sortDescription = ToSortDescription(SelectedFileSortType.Value);
 
-                            FileItemsView.SortDescriptions.Clear();
-                            FileItemsView.SortDescriptions.Add(sortDescription);
-                        }
-                        RaisePropertyChanged(nameof(FileItemsView));
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                     else
                     {
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                 }
                 else 
@@ -471,14 +485,16 @@ namespace TsubameViewer.Presentation.ViewModels
         #region FileSortType
 
 
-        public static SortDescription ToSortDescription(FileSortType fileSortType)
+        public static IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType, bool withTitleDigitCompletion)
         {
+            IComparer TitleDigitCompletionComparer = withTitleDigitCompletion ? Sorting.TitleDigitCompletionComparer.Default : null;
             return fileSortType switch
             {
-                FileSortType.TitleAscending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending),
-                FileSortType.TitleDecending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending),
-                FileSortType.UpdateTimeAscending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending),
-                FileSortType.UpdateTimeDecending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending),
+                FileSortType.UpdateTimeDescThenTitleAsc => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending), new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
+                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
+                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, TitleDigitCompletionComparer) },
+                FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
+                FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
                 _ => throw new NotSupportedException(),
             };
         }
@@ -500,25 +516,34 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (sortType.HasValue)
                 {
                     SelectedFileSortType.Value = sortType.Value;
-
-                    using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token))
-                    {
-                        if (ImageFileItems.Any())
-                        {
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
-
-                                FileItemsView.SortDescriptions.Clear();
-                                FileItemsView.SortDescriptions.Add(sortDescription);
-                            }
-                        }
-
-                        RaisePropertyChanged(nameof(ImageFileItems));
-                    }
                 }
             });
 
+        private async Task SetSort(FileSortType fileSort, bool withNameInterpolation, CancellationToken ct)
+        {
+            using (await _RefreshLock.LockAsync(ct))
+            {
+                SetSortAsyncUnsafe(fileSort, withNameInterpolation);
+            }
+        }
+
+        private void SetSortAsyncUnsafe(FileSortType fileSort, bool withNameInterpolation)
+        {
+            var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
+            if (ImageFileItems.Any())
+            {
+                using (FileItemsView.DeferRefresh())
+                {
+                    FileItemsView.SortDescriptions.Clear();
+                    foreach (var sort in sortDescriptions)
+                    {
+                        FileItemsView.SortDescriptions.Add(sort);
+                    }                    
+                }
+            }
+
+            RaisePropertyChanged(nameof(ImageFileItems));
+        }
 
         #endregion
     }
