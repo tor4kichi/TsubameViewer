@@ -165,7 +165,7 @@
                   >
 
             <uwpControls:WrapPanel Orientation="Horizontal">
-            <TextBlock Opacity="0.7">
+            <TextBlock Opacity="0.7" TextWrapping="Wrap">
               <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
             </TextBlock>
               
