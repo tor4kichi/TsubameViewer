@@ -73,6 +73,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
 
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
@@ -106,6 +107,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+        public ReactivePropertySlim<FileSortType?> SelectedChildFileSortType { get; }
 
         public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
 
@@ -149,6 +151,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private string _currentArchiveFolderName;
 
+        private FolderAndArchiveDisplaySettingEntry _currentPathDisplaySetting;
 
         private string _DisplayCurrentArchiveFolderName;
         public string DisplayCurrentArchiveFolderName
@@ -158,6 +161,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         CompositeDisposable _disposables = new CompositeDisposable();
+        CompositeDisposable _navigationDisposables;
 
 
         public FolderListupPageViewModel(
@@ -169,6 +173,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderLastIntractItemManager folderLastIntractItemManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             OpenPageCommand openPageCommand,
             OpenListupCommand openListupCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -191,6 +196,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             OpenPageCommand = openPageCommand;
             OpenListupCommand = openListupCommand;
             OpenFolderItemCommand = openFolderItemCommand;
@@ -212,14 +218,10 @@ namespace TsubameViewer.Presentation.ViewModels
             IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
                 .AddTo(_disposables);
 
-            Observable.CombineLatest(
-                SelectedFileSortType,
-                IsSortWithTitleDigitCompletion,
-                (sortType, withInterpolation) => (sortType, withInterpolation)
-                )
-                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
+            SelectedChildFileSortType = new ReactivePropertySlim<FileSortType?>(null)
                 .AddTo(_disposables);
         }
+
 
         public override async void OnNavigatedFrom(INavigationParameters parameters)
         {
@@ -246,6 +248,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 _ImageCollectionDisposer?.Dispose();
                 _ImageCollectionDisposer = null;
 
+                _navigationDisposables?.Dispose();
+                _navigationDisposables = null;
                 base.OnNavigatedFrom(parameters);
             }
         }
@@ -325,7 +329,21 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
-                            DisplayCurrentPath = _currentItem.Path;                            
+                            DisplayCurrentPath = _currentItem.Path;
+
+                            var settingPath = _currentArchiveFolderName != null
+                                ? Path.Combine(_currentPath, _currentArchiveFolderName)
+                                : _currentPath
+                                ;
+                            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
+                            if (settings != null)
+                            {
+                                SetSortAsyncUnsafe(settings.Sort, settings.IsTitleDigitInterpolation);
+                                SelectedFileSortType.Value = settings.Sort;
+                                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                            }
+
+                            SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(_currentPath);
                         }
 
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
@@ -378,6 +396,15 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 NowProcessing = false;
             }
+
+            _navigationDisposables = new CompositeDisposable();
+            Observable.CombineLatest(
+               SelectedFileSortType,
+               IsSortWithTitleDigitCompletion,
+               (sortType, withInterpolation) => (sortType, withInterpolation)
+               )
+               .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
+               .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
         }
@@ -536,12 +563,38 @@ namespace TsubameViewer.Presentation.ViewModels
             using (FileItemsView.DeferRefresh())
             {
                 FileItemsView.SortDescriptions.Clear();
+                FileItemsView.SortDescriptions.Add(new SortDescription(nameof(StorageItemViewModel.Type), SortDirection.Ascending));
                 foreach (var sort in sortDescriptions)
                 {
                     FileItemsView.SortDescriptions.Add(sort);
                 }
             }
+
+            _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
+                _currentArchiveFolderName != null ? Path.Combine(_currentPath, _currentArchiveFolderName) : _currentPath,
+                fileSort,
+                withNameInterpolation
+                );
         }
+
+
+        private DelegateCommand<object> _ChangeChildFileSortCommand;
+        public DelegateCommand<object> ChangeChildFileSortCommand =>
+            _ChangeChildFileSortCommand ??= new DelegateCommand<object>(sort =>
+            {
+                FileSortType? sortType = null;
+                if (sort is int num)
+                {
+                    sortType = (FileSortType)num;
+                }
+                else if (sort is FileSortType sortTypeExact)
+                {
+                    sortType = sortTypeExact;
+                }
+
+                SelectedChildFileSortType.Value = sortType;
+                _displaySettingsByPathRepository.SetFileParentSettings(_currentPath, sortType);
+            });
 
         #endregion
     }

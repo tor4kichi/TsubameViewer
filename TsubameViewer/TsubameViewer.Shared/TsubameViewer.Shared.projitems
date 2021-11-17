@@ -23,6 +23,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ApplicationSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ReadingFeature\BookmarkManager.cs" />

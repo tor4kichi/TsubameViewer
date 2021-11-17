@@ -245,7 +245,13 @@
 
             <Button.Flyout>
               <Flyout Placement="Bottom">
-                <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
+                <StackPanel Spacing="8">
+                  <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
+
+                  <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
+
+                  <Button Content="現在の並び替えをクリア" Command="{x:Bind _vm.ClearFileSortSettingCommand}" />
+                </StackPanel>
               </Flyout>
             </Button.Flyout>
           </Button>

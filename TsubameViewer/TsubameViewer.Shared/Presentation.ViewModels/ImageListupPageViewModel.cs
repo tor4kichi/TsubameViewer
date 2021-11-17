@@ -51,7 +51,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
-
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private bool _NowProcessing;
         public bool NowProcessing
         {
@@ -162,6 +162,7 @@ namespace TsubameViewer.Presentation.ViewModels
         IDisposable _ImageCollectionDisposer;
 
         CompositeDisposable _disposables = new CompositeDisposable();
+        CompositeDisposable _navigationDisposables = new CompositeDisposable();
 
         public ImageListupPageViewModel(
             BookmarkManager bookmarkManager,
@@ -172,6 +173,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
@@ -191,6 +193,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _folderListingSettings = folderListingSettings;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
@@ -203,7 +206,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
-            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
                 .AddTo(_disposables);
             IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
                 .AddTo(_disposables);
@@ -213,14 +216,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageLastIntractItem = new ReactivePropertySlim<int>()
                 .AddTo(_disposables);
 
-
-            Observable.CombineLatest(
-                SelectedFileSortType,
-                IsSortWithTitleDigitCompletion,
-                (sortType, withInterpolation) => (sortType, withInterpolation)
-                )
-                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
-                .AddTo(_disposables);                
+                   
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -314,7 +310,28 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
-                            DisplayCurrentPath = _currentItem.Path;                            
+                            DisplayCurrentPath = _currentItem.Path;
+
+                            var settingPath = _currentArchiveFolderName != null
+                                ? Path.Combine(_currentPath, _currentArchiveFolderName)
+                                : _currentPath
+                                ;
+                            var settings = _displaySettingsByPathRepository.GetFileSettings(settingPath);
+                            if (settings != null)
+                            {
+                                SetSortAsyncUnsafe(settings.Sort, settings.IsTitleDigitInterpolation);
+                                SelectedFileSortType.Value = settings.Sort;
+                                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                            }
+                            else if (_displaySettingsByPathRepository.GetFileParentSettings(_currentPath) is not null and var parentSort)
+                            {
+                                if (parentSort != null)
+                                {
+                                    SetSortAsyncUnsafe(parentSort.Value, true);
+                                    SelectedFileSortType.Value = parentSort.Value;
+                                    IsSortWithTitleDigitCompletion.Value = true;
+                                }
+                            }
                         }
 
                         if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
@@ -331,9 +348,12 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                         else
                         {
-                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+                            using (_FileItemsView.DeferRefresh())
+                            {
+                                await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
 
-                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                            }
                         }
 
                         HasFileItem = ImageFileItems.Any();
@@ -390,6 +410,10 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 NowProcessing = false;
             }
+
+            IsSortWithTitleDigitCompletion
+                .Subscribe(x => _ = SetSort(SelectedFileSortType.Value, x, _leavePageCancellationTokenSource?.Token ?? default))
+                .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
         }
@@ -516,6 +540,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (sortType.HasValue)
                 {
                     SelectedFileSortType.Value = sortType.Value;
+
+                    _displaySettingsByPathRepository.SetFileSettings(
+                        _currentArchiveFolderName != null ? Path.Combine(_currentPath, _currentArchiveFolderName) : _currentPath,
+                        sortType.Value,
+                        IsSortWithTitleDigitCompletion.Value
+                        );
+
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                 }
             });
 
@@ -544,6 +576,32 @@ namespace TsubameViewer.Presentation.ViewModels
 
             RaisePropertyChanged(nameof(ImageFileItems));
         }
+
+        private DelegateCommand _ClearFileSortSettingCommand;
+        public DelegateCommand ClearFileSortSettingCommand =>
+            _ClearFileSortSettingCommand ??= new DelegateCommand(() =>
+            {
+                if (_displaySettingsByPathRepository.GetFileParentSettings(_currentPath) is not null and var parentSort)
+                {
+                    if (parentSort != null)
+                    {
+                        SelectedFileSortType.Value = parentSort.Value;
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    }
+                }
+
+                _displaySettingsByPathRepository.ClearFileSettings(_currentPath);
+            });
+
+
+        private DelegateCommand _SetParentFileSortWithCurrentSettingCommand;
+        public DelegateCommand SetParentFileSortWithCurrentSettingCommand =>
+            _SetParentFileSortWithCurrentSettingCommand ??= new DelegateCommand(() =>
+            {
+                _displaySettingsByPathRepository.SetFileParentSettings(_currentPath, SelectedFileSortType.Value);
+            });
+
+
 
         #endregion
     }
