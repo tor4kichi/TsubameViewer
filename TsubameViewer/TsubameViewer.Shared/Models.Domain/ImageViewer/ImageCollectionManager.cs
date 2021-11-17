@@ -547,7 +547,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             if (parent.Key == null)
             {
-                return IsRootDirectoryPath(Path.GetDirectoryName(target.Key));
+                return IsRootDirectoryEntry(target);
             }
 
             return IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
@@ -646,15 +646,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
             // ディレクトリベースでフォルダ構造を見つける
-            var dir = Archive.Entries.Where(x => x.IsDirectory);
+            
+            var dir = Enumerable.Concat(
+                Archive.Entries.Where(x => x.IsDirectory),
+                Archive.Entries.Where(x => !x.IsDirectory)
+                    .Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    )
+                    .Distinct(ArchiveDirectoryEqualityComparer.Default);
 
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
-            if (!dir.Any())
-            {
-                dir = Archive.Entries.Where(x => !x.IsDirectory)
-                    .Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                    .Distinct(ArchiveDirectoryEqualityComparer.Default);
-            }
             _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
             if (_rootDirectoryToken == null || 
                 (_directories.Count == 1 && DirectoryPathHelper.IsRootDirectoryEntry(_directories[0].Entry))
@@ -681,28 +681,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public IEnumerable<ArchiveDirectoryToken> GetSubDirectories(ArchiveDirectoryToken token)
         {
             token ??= _rootDirectoryToken;
-            var dirs = _directories.Where(x => DirectoryPathHelper.IsChildDirectoryPath(token.Key, x.Key));
-            
-            //if (DirectoryPathHelper.IsRootDirectoryEntry(token))
-            //{
-            //    int depth = 1;
-            //    while (!dirs.Any())
-            //    {
-            //        dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
-            //        if (depth == 10) { break; }
-            //        depth++;
-            //    }
-
-            //    // もしルートフォルダにもう一段ルートフォルダを持ったアーカイブの場合に、そのフォルダだけスキップするように
-            //    if (dirs.Count() == 1 && !GetImagesFromDirectory(dirs.ElementAt(0)).Any())
-            //    {
-            //        dirs = _directories.Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) == depth);
-            //    }
-
-            //    dirs ??= Enumerable.Empty<ArchiveDirectoryToken>();
-            //}
-
-            return dirs;
+            return _directories
+                .Where(x => token != x)
+                .Where(x => DirectoryPathHelper.IsChildDirectoryPath(token, x));
         }
 
         public IEnumerable<ArchiveDirectoryToken> GetLeafFolders()
