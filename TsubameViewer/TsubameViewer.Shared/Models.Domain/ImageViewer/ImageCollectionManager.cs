@@ -275,7 +275,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             Guard.IsTrue(file.IsSupportedMangaFile(), "file.IsSupportedMangaFile");
 
-            var imageCollection = await GetImagesFromArchiveFileAsync(file, ct);
+            // Task.Runで包まないとUIが固まる
+            var imageCollection = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
             if (imageCollection is ArchiveImageCollection aic)
             {
                 var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : null;
@@ -356,14 +357,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var fileType = file.FileType.ToLower();
             IImageCollection result = fileType switch
             {
-                SupportedFileTypesHelper.ZipFileType => await GetImagesFromZipFileAsync(file),
-                SupportedFileTypesHelper.RarFileType => await GetImagesFromRarFileAsync(file),
-                SupportedFileTypesHelper.PdfFileType => await GetImagesFromPdfFileAsync(file),
-                SupportedFileTypesHelper.CbzFileType => await GetImagesFromZipFileAsync(file),
-                SupportedFileTypesHelper.CbrFileType => await GetImagesFromRarFileAsync(file),
-                SupportedFileTypesHelper.SevenZipFileType => await GetImagesFromSevenZipFileAsync(file),
-                SupportedFileTypesHelper.Cb7FileType => await GetImagesFromSevenZipFileAsync(file),
-                SupportedFileTypesHelper.TarFileType => await GetImagesFromTarFileAsync(file),
+                SupportedFileTypesHelper.ZipFileType => await GetImagesFromZipFileAsync(file, ct),
+                SupportedFileTypesHelper.RarFileType => await GetImagesFromRarFileAsync(file, ct),
+                SupportedFileTypesHelper.PdfFileType => await GetImagesFromPdfFileAsync(file, ct),
+                SupportedFileTypesHelper.CbzFileType => await GetImagesFromZipFileAsync(file, ct),
+                SupportedFileTypesHelper.CbrFileType => await GetImagesFromRarFileAsync(file, ct),
+                SupportedFileTypesHelper.SevenZipFileType => await GetImagesFromSevenZipFileAsync(file, ct),
+                SupportedFileTypesHelper.Cb7FileType => await GetImagesFromSevenZipFileAsync(file, ct),
+                SupportedFileTypesHelper.TarFileType => await GetImagesFromTarFileAsync(file, ct),
                 _ => throw new NotSupportedException("not supported file type: " + file.FileType),
             };
 
@@ -373,55 +374,98 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         
 
 
-        private async Task<ArchiveImageCollection> GetImagesFromZipFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var zipArchive = ZipArchive.Open(stream)
-                .AddTo(disposables);
-            return new ArchiveImageCollection(file, zipArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var zipArchive = ZipArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, zipArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
-        private async Task<PdfImageCollection> GetImagesFromPdfFileAsync(StorageFile file)
+        private async Task<PdfImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
         {
-            var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
+            var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
             return new PdfImageCollection(file, pdfDocument, _recyclableMemoryStreamManager, _thumbnailManager);
         }
 
 
-        private async Task<ArchiveImageCollection> GetImagesFromRarFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromRarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var rarArchive = RarArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            return new ArchiveImageCollection(file, rarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            try
+            {
+                var rarArchive = RarArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, rarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
 
-        private async Task<ArchiveImageCollection> GetImagesFromSevenZipFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromSevenZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var szArchive = SevenZipArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            return new ArchiveImageCollection(file, szArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            try
+            {
+                var szArchive = SevenZipArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, szArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
-        private async Task<ArchiveImageCollection> GetImagesFromTarFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromTarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var tarArchive = TarArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            return new ArchiveImageCollection(file, tarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            try
+            {
+                var tarArchive = TarArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, tarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
     }    
 

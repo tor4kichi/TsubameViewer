@@ -14,7 +14,9 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
   xmlns:mySS="using:TsubameViewer.Presentation.Views.StyleSelector" 
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
-  xmlns:searchModel="using:TsubameViewer.Models.Domain.Search"
+  xmlns:searchModel="using:TsubameViewer.Models.Domain.Search" 
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+  xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
 >
   <Page.Resources>
@@ -153,7 +155,92 @@
              />
     </NavigationView>
 
+    <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0">
+      <Grid.Background>
+        <SolidColorBrush Color="{ThemeResource SystemAltLowColor}" Opacity="0.5" />
+      </Grid.Background>
+      <StackPanel Spacing="32" VerticalAlignment="Center"
+                  HorizontalAlignment="Stretch"
+                  Background="{ThemeResource SystemChromeAltHighColor}"
+                  Padding="48"
+                  >
+
+        <muxc:ProgressRing x:Name="BusyWall_ProgressRing" IsActive="False"
+                         IsIndeterminate="True"
+                           Height="64"
+                           Width="64"
+                           HorizontalAlignment="Center"
+                         />
+
+        <Button Content="{i18Ext:Localize Key=Cancel}"
+                Command="{x:Bind CancelBusyWorkCommand}"
+                MinWidth="200"
+                Height="48"
+                HorizontalAlignment="Center"
+                Style="{ThemeResource AccentButtonStyle}"
+                />
+
+
+      </StackPanel>
+    </Grid>
+
+    <!--
+    <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
+      <Button Content="Show BusyWall">
+        <i:Interaction.Behaviors>
+          <core:EventTriggerBehavior EventName="Tapped">
+            <core:GoToStateAction StateName="VS_ShowBusyWall" />
+          </core:EventTriggerBehavior>
+        </i:Interaction.Behaviors>
+      </Button>
+      <Button Content="Hide BusyWall">
+        <i:Interaction.Behaviors>
+          <core:EventTriggerBehavior EventName="Tapped">
+            <core:GoToStateAction StateName="VS_HideBusyWall" />
+          </core:EventTriggerBehavior>
+        </i:Interaction.Behaviors>
+      </Button>
+    </StackPanel>
+    -->
+    
+
+
     <VisualStateManager.VisualStateGroups>
+
+      <!-- ファイルオープンなど時間の掛かる操作時に他アクションを阻害する壁の表示切替 -->
+      <VisualStateGroup>
+        <VisualState x:Name="VS_HideBusyWall">
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0.0"
+                               Storyboard.TargetName="BusyWall"
+                               Storyboard.TargetProperty="Opacity"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+          <VisualState.Setters>
+            <Setter Target="BusyWall.IsHitTestVisible" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="VS_ShowBusyWall">
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               BeginTime="0:0:0.75"
+                               To="1.0"
+                               Storyboard.TargetName="BusyWall"
+                               Storyboard.TargetProperty="Opacity"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+          <VisualState.Setters>
+            <Setter Target="BusyWall.IsHitTestVisible" Value="True" />
+            <Setter Target="BusyWall_ProgressRing.IsActive" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>

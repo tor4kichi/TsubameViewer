@@ -15,20 +15,25 @@ using System.Threading;
 using Uno.Disposables;
 using System.Linq;
 using System.IO;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System.Threading.Tasks;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenListupCommand : DelegateCommandBase
     {
         private INavigationService _navigationService;
+        private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
 
         public OpenListupCommand(
             INavigationService navigationService,
+            IMessenger messenger,
             FolderContainerTypeManager folderContainerTypeManager
             )
         {
             _navigationService = navigationService;
+            _messenger = messenger;
             _folderContainerTypeManager = folderContainerTypeManager;
         }
 
@@ -44,8 +49,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Archive)
                 {
                     var imageCollectionManager = App.Current.Container.Resolve<ImageCollectionManager>();
-                    CancellationToken ct = default;
-                    var collectionContext = await imageCollectionManager.GetArchiveImageCollectionContextAsync((item.Item as StorageItemImageSource).StorageItem as StorageFile, null, ct);
+                    CancellationToken ct = CancellationToken.None;
+                    var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((item.Item as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
                     try
                     {
                         if (await collectionContext.IsExistImageFileAsync(ct))
@@ -91,7 +96,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);

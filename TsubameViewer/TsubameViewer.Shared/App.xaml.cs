@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Prism;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -13,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
@@ -122,6 +124,7 @@ namespace TsubameViewer
 
         public override void RegisterTypes(IContainerRegistry container)
         {
+            container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
 
@@ -422,7 +425,7 @@ namespace TsubameViewer
             if (item is StorageFolder itemFolder)
             {
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
-                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
+                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
                     return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }

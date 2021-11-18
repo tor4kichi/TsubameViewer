@@ -274,11 +274,6 @@
       </Grid>
     </Grid>
 
-    <Grid>
-      <muxc:ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
-    </Grid>
-
-
 
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer" Margin="0 48 0 32">

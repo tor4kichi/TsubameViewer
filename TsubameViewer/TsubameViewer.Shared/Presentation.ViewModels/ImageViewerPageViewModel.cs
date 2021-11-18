@@ -42,6 +42,8 @@ using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 using TsubameViewer.Presentation.ViewModels.Sorting;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System.Windows.Input;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -158,6 +160,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageViewerSettings ImageViewerSettings { get; }
 
         private readonly IScheduler _scheduler;
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly ImageCollectionManager _imageCollectionManager;
@@ -169,6 +172,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerPageViewModel(
             IScheduler scheduler,
+            IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             PathReferenceCountManager PathReferenceCountManager,
             ImageCollectionManager imageCollectionManager,
@@ -183,6 +187,7 @@ namespace TsubameViewer.Presentation.ViewModels
             )
         {
             _scheduler = scheduler;
+            _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _PathReferenceCountManager = PathReferenceCountManager;
             _imageCollectionManager = imageCollectionManager;
@@ -385,7 +390,18 @@ namespace TsubameViewer.Presentation.ViewModels
             //    2. 前回の更新が未完了だった場合
             if (_currentFolderItem != null)
             {
-                await RefreshItems(_leavePageCancellationTokenSource.Token);
+                try
+                {
+#if DEBUG
+                    //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
+#endif
+                    await _messenger.WorkWithBusyWallAsync(RefreshItems, _leavePageCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    (BackNavigationCommand as ICommand).Execute(null);
+                    return;
+                }
             }
 
             // 表示する画像を決める
@@ -754,45 +770,38 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer = null;
 
             IImageCollectionContext imageCollectionContext = null;
-            try
+            if (_currentFolderItem is StorageFolder folder)
             {
-                if (_currentFolderItem is StorageFolder folder)
+                Debug.WriteLine(folder.Path);
+                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+            }
+            else if (_currentFolderItem is StorageFile file)
+            {
+                Debug.WriteLine(file.Path);
+                if (file.IsSupportedImageFile())
                 {
-                    Debug.WriteLine(folder.Path);
-                    imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
-                }
-                else if (_currentFolderItem is StorageFile file)
-                {
-                    Debug.WriteLine(file.Path);
-                    if (file.IsSupportedImageFile())
+                    try
                     {
-                        try
+                        var parentFolder = await file.GetParentAsync();
+                        imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken, Path.GetDirectoryName(_currentPath));
+                        if (parentItem is StorageFolder parentFolder)
                         {
-                            var parentFolder = await file.GetParentAsync();
                             imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
                         }
-                        catch (UnauthorizedAccessException)
-                        {
-                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken, Path.GetDirectoryName(_currentPath));
-                            if (parentItem is StorageFolder parentFolder)
-                            {
-                                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
-                            }
-                        }
-                    }
-                    else if (file.IsSupportedMangaFile())
-                    {
-                        imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
                     }
                 }
-                else
+                else if (file.IsSupportedMangaFile())
                 {
-                    throw new NotSupportedException();
+                    imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
                 }
             }
-            catch (OperationCanceledException)
+            else
             {
-
+                throw new NotSupportedException();
             }
 
             if (imageCollectionContext == null) { return; }
@@ -865,7 +874,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        #region Prefetch Images
+#region Prefetch Images
 
 
         PrefetchImageInfo[] _PrefetchImageDatum = new PrefetchImageInfo[2];
@@ -900,10 +909,10 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         
-        #endregion
+#endregion
 
 
-        #region Commands
+#region Commands
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
@@ -1023,9 +1032,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             });
 
-        #endregion
+#endregion
 
-        #region Single/Double View
+#region Single/Double View
 
         private bool _NowDoubleImageView;
         public bool NowDoubleImageView
@@ -1078,7 +1087,7 @@ namespace TsubameViewer.Presentation.ViewModels
             
         }
 
-        #endregion
+#endregion
 
 
     }
