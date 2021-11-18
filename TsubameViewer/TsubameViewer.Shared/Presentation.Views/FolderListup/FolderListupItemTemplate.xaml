@@ -43,7 +43,7 @@
              Style="{StaticResource FolderItemImageStyle}"
              />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
                     Opacity="0.35"
@@ -80,7 +80,7 @@
              Style="{StaticResource FolderItemImageStyle}"
              />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
           <FontIcon.RenderTransform>
