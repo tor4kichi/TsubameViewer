@@ -209,7 +209,8 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItemsView = new AdvancedCollectionView(FolderItems);
-            FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>();
+            FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>()
+                .AddTo(_disposables);
 
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
                 .AddTo(_disposables);
@@ -409,12 +410,15 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables = new CompositeDisposable();
             Observable.CombineLatest(
-               SelectedFileSortType,
-               IsSortWithTitleDigitCompletion,
-               (sortType, withInterpolation) => (sortType, withInterpolation)
-               )
-               .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
-               .AddTo(_navigationDisposables);
+                SelectedFileSortType,
+                IsSortWithTitleDigitCompletion,
+                (sortType, withInterpolation) => (sortType, withInterpolation)
+                )
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Select(x => x.NewItem)
+                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
+                .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
         }
@@ -580,6 +584,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
+            FolderLastIntractItem.Value = FileItemsView.FirstOrDefault() as StorageItemViewModel;
+            FolderLastIntractItem.Value = null;
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
                 _currentPath,
                 fileSort,
@@ -601,7 +607,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     sortType = sortTypeExact;
                 }
-
+                                
                 SelectedChildFileSortType.Value = sortType;
                 _displaySettingsByPathRepository.SetFileParentSettings(_currentPath, sortType);
             });

@@ -192,6 +192,9 @@
       <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
         <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
       </core:DataTriggerBehavior>
+      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="Equal">
+        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="DeselectItem" />
+      </core:DataTriggerBehavior>
 
     </i:Interaction.Behaviors>
 
