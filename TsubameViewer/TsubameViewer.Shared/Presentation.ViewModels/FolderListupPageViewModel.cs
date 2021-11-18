@@ -151,8 +151,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private string _currentArchiveFolderName;
 
-        private FolderAndArchiveDisplaySettingEntry _currentPathDisplaySetting;
-
         private string _DisplayCurrentArchiveFolderName;
         public string DisplayCurrentArchiveFolderName
         {
@@ -259,7 +257,7 @@ namespace TsubameViewer.Presentation.ViewModels
             PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
 
             base.OnNavigatingTo(parameters);
-        }
+        }        
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
@@ -331,16 +329,28 @@ namespace TsubameViewer.Presentation.ViewModels
                             _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
 
-                            var settingPath = _currentArchiveFolderName != null
-                                ? Path.Combine(_currentPath, _currentArchiveFolderName)
-                                : _currentPath
-                                ;
+                            var settingPath = _currentPath;
                             var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
                             if (settings != null)
                             {
-                                SetSortAsyncUnsafe(settings.Sort, settings.IsTitleDigitInterpolation);
                                 SelectedFileSortType.Value = settings.Sort;
                                 IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                            }
+                            else
+                            {
+                                if (_currentItem is StorageFolder)
+                                {
+                                    SelectedFileSortType.Value = FileSortType.TitleAscending;
+                                    IsSortWithTitleDigitCompletion.Value = false;
+                                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                                }
+                                else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
+                                {
+                                    SelectedFileSortType.Value = FileSortType.UpdateTimeDescThenTitleAsc;
+                                    IsSortWithTitleDigitCompletion.Value = false;
+                                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                                }
                             }
 
                             SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(_currentPath);
@@ -571,7 +581,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
-                _currentArchiveFolderName != null ? Path.Combine(_currentPath, _currentArchiveFolderName) : _currentPath,
+                _currentPath,
                 fileSort,
                 withNameInterpolation
                 );

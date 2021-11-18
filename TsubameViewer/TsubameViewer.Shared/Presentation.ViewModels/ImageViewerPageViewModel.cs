@@ -85,6 +85,18 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
+        public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+
+        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+
+        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+
+        private string _DisplaySortTypeInheritancePath;
+        public string DisplaySortTypeInheritancePath
+        {
+            get { return _DisplaySortTypeInheritancePath; }
+            private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
+        }
 
         public ReactiveProperty<double> CanvasWidth { get; }
         public ReactiveProperty<double> CanvasHeight { get; }
@@ -152,6 +164,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
@@ -164,6 +177,7 @@ namespace TsubameViewer.Presentation.ViewModels
             RecentlyAccessManager recentlyAccessManager,
             RecyclableMemoryStreamManager recyclableMemoryStreamManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
@@ -178,6 +192,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .Do(_ => 
@@ -200,6 +215,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
+
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
+                .AddTo(_disposables);
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+                .AddTo(_disposables);
+
 
             _SizeChangedSubject
                 .Where(x => x >= 0 && Images != null)
@@ -336,6 +357,25 @@ namespace TsubameViewer.Presentation.ViewModels
                         _currentItemRootFolderToken = token;
                         Images = default;
                         CurrentImageIndex = 0;
+
+                        DisplaySortTypeInheritancePath = null;
+                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
+                        if (settings != null)
+                        {
+                            SelectedFileSortType.Value = settings.Sort;
+                            IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                        }
+                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                        {
+                            DisplaySortTypeInheritancePath = parentSort.Path;
+                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                            IsSortWithTitleDigitCompletion.Value = true;
+                        }
+                        else
+                        {
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                            IsSortWithTitleDigitCompletion.Value = true;
+                        }
                     }
                 }
             }
@@ -408,7 +448,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 画像更新
             new [] 
             {
-                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit() 
+                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit(),
             }
                 .Merge()
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
@@ -418,6 +458,29 @@ namespace TsubameViewer.Presentation.ViewModels
                     await ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
+
+            Observable.CombineLatest(
+                IsSortWithTitleDigitCompletion,
+                SelectedFileSortType,
+                (x, y) => (x, y)
+                )
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(async _ =>
+                {
+                    await RefreshItems(_leavePageCancellationTokenSource.Token);
+                    await ResetImageIndex(CurrentImageIndex);
+                    RaisePropertyChanged(nameof(CurrentImageIndex));
+                })
+                .AddTo(_navigationDisposables);
+
+            IsSortWithTitleDigitCompletion
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
+                .AddTo(_navigationDisposables);
+
+
 
             await base.OnNavigatedToAsync(parameters);
         }
@@ -736,9 +799,25 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var images = await imageCollectionContext.GetAllImageFilesAsync(ct);
             {
-                // 初期ソート
-                images.Sort(ImageSourceTitleDigitCompletionComparer.Default);
-                Images = images.ToArray();
+                var sort = SelectedFileSortType.Value;
+                var withTitleDigitCompletion = IsSortWithTitleDigitCompletion.Value;
+                var sortedImages = sort switch
+                {
+                    FileSortType.UpdateTimeDescThenTitleAsc => withTitleDigitCompletion  
+                        ? images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path, TitleDigitCompletionComparer.Default)
+                        : images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path),
+                    FileSortType.TitleAscending => withTitleDigitCompletion
+                        ? images.OrderBy(x => x.Path, TitleDigitCompletionComparer.Default)
+                        : images.OrderBy(x => x.Path),
+                    FileSortType.TitleDecending => withTitleDigitCompletion
+                        ? images.OrderByDescending(x => x.Path, TitleDigitCompletionComparer.Default)
+                        : images.OrderByDescending(x => x.Path),
+                    FileSortType.UpdateTimeAscending => images.OrderBy(x => x.DateCreated),
+                    FileSortType.UpdateTimeDecending => images.OrderByDescending(x => x.DateCreated),
+                    _ => throw new NotSupportedException(sort.ToString()),
+                };
+                    
+                Images = sortedImages.ToArray();
                 if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
                 {
                     var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
@@ -904,6 +983,45 @@ namespace TsubameViewer.Presentation.ViewModels
             _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
         }
 
+
+
+        private DelegateCommand<object> _ChangeFileSortCommand;
+        public DelegateCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort =>
+            {
+                FileSortType? sortType = null;
+                if (sort is int num)
+                {
+                    sortType = (FileSortType)num;
+                }
+                else if (sort is FileSortType sortTypeExact)
+                {
+                    sortType = sortTypeExact;
+                }
+
+                if (sortType.HasValue)
+                {
+                    DisplaySortTypeInheritancePath = null;
+                    SelectedFileSortType.Value = sortType.Value;
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                }
+                else
+                {
+                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
+                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
+                    && parentSort.ChildItemDefaultSort != null
+                    )
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        DisplaySortTypeInheritancePath = null;
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                    }
+                }
+            });
 
         #endregion
 

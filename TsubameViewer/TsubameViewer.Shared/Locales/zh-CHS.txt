@@ -79,6 +79,9 @@ FileSortType.TitleDecending = 文件名（降序）
 FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
+Sort_InheritancePath = 排序继承源
+Sort_Unselected = 未指定
+Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序
 TitleDigitCompletion = 标题数字完成
 
 
@@ -103,6 +106,7 @@ IsEnableSpreadDisplay = 点差显示
 IsLeftBindingView = 左绑定显示
 
 SwitchFullScreen = 全屏切换
+DoubleViewCorrectPaging = 纠正传播的页面偏移
 
 
 #### EBookReaderPage

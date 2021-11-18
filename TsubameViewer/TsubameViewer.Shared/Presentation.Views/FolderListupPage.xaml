@@ -11,12 +11,12 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:wst="using:WindowsStateTriggers" 
-  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
+  xmlns:folderModels ="using:TsubameViewer.Models.Domain.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
-  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" xmlns:models="using:TsubameViewer.Models.Domain"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -69,27 +69,27 @@
                 <MenuFlyout>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                      <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                      <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                      <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>TitleAscending</models:FileSortType>
+                      <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>TitleDecending</models:FileSortType>
+                      <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
                     </MenuFlyoutItem.CommandParameter>
                   </MenuFlyoutItem>
                 </MenuFlyout>
@@ -107,38 +107,39 @@
                 <StackPanel Spacing="8">
                   <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
-                  <TextBlock Text="子フォルダのデフォルトソート" />
+                  <TextBlock x:Name="ChildFolderSortButtonHeaderText" Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}" Visibility="Collapsed" />
                   <DropDownButton x:Name="ChildFolderSortButton" 
                             Content="{x:Bind _vm.SelectedChildFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
+                                  Visibility="Collapsed"
                             >
                     <DropDownButton.Flyout>
                       <MenuFlyout>
-                        <MenuFlyoutItem Text="未設定" Command="{x:Bind _vm.ChangeChildFileSortCommand}" CommandParameter="{x:Null}">
+                        <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeChildFileSortCommand}" CommandParameter="{x:Null}">
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>
-                            <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                            <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>
-                            <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                            <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>
-                            <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                            <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>
-                            <models:FileSortType>TitleAscending</models:FileSortType>
+                            <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>
-                            <models:FileSortType>TitleDecending</models:FileSortType>
+                            <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                       </MenuFlyout>
@@ -196,11 +197,25 @@
 
     <VisualStateManager.VisualStateGroups>
       
+      <!-- フォルダまたはアーカイブ内フォルダかによる表示切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="{x:Bind models:StorageItemTypes.Folder}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ChildFolderSortButton.Visibility" Value="Visible" />
+            <Setter Target="ChildFolderSortButtonHeaderText.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+            <!-- x:Bind _vm.NowProcessing だと反映されないのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />

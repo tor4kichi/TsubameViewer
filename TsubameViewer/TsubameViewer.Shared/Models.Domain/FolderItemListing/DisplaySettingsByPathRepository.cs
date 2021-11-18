@@ -55,23 +55,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public sealed class InternalFileDisplaySettingsByPathRepository : LiteDBServiceBase<FileDisplaySettingEntry>
-        {
-            public InternalFileDisplaySettingsByPathRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
-            {
-            }
-
-            public FileDisplaySettingEntry FindById(string path)
-            {
-                return _collection.FindById(path);
-            }
-
-            public int DeleteUnderPath(string path)
-            {
-                return _collection.DeleteMany(x => x.Path.StartsWith(path));
-            }
-        }
-
         public sealed class InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository : LiteDBServiceBase<FolderAndArchiveChildFileDisplaySettingEntry>
         {
             public InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -91,19 +74,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
 
         private readonly InternalFolderAndArchiveDisplaySettingsByPathRepository _internalFolderAndArchiveRepository;
-        private readonly InternalFileDisplaySettingsByPathRepository _internalFileRepository;
         private readonly InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository _internalChildFileRepository;
 
         public DisplaySettingsByPathRepository(
             InternalFolderAndArchiveDisplaySettingsByPathRepository folderAndArchiveRepository,
-            InternalFileDisplaySettingsByPathRepository fileRepository,
             InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository childFileRepository
-
-
             )
         {
             _internalFolderAndArchiveRepository = folderAndArchiveRepository;
-            _internalFileRepository = fileRepository;
             _internalChildFileRepository = childFileRepository;
         }
 
@@ -122,43 +100,32 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             });
         }
 
-
-
-        public FileDisplaySettingEntry GetFileSettings(string path)
+        public void ClearFolderAndArchiveSettings(string path)
         {
-            return _internalFileRepository.FindById(path);
+            _internalFolderAndArchiveRepository.DeleteUnderPath(path);
         }
 
-
-        public void SetFileSettings(string path, FileSortType sortType, bool withTitleDigitInterpolation)
-        {
-            _internalFileRepository.UpdateItem(new FileDisplaySettingEntry()
-            {
-                Path = path,
-                Sort = sortType,
-                IsTitleDigitInterpolation = withTitleDigitInterpolation
-            });
-        }
-
-        public void ClearFileSettings(string path)
-        {
-            _internalFileRepository.DeleteUnderPath(path);
-        }
 
         public FileSortType? GetFileParentSettings(string path)
         {
+            return _internalChildFileRepository.FindById(path)?.ChildItemDefaultSort;
+        }
+
+        public FolderAndArchiveChildFileDisplaySettingEntry GetFileParentSettingsUpStreamToRoot(string path)
+        {
             while (!string.IsNullOrEmpty(path))
             {
-                if (_internalChildFileRepository.FindById(path) is not null and var entry && entry.ChildItemDefaultSort != null)
+                if (_internalChildFileRepository.FindById(path) is not null and var entry)
                 {
-                    return entry.ChildItemDefaultSort;
+                    return entry;
                 }
 
                 path = Path.GetDirectoryName(path);
             }
 
-            return default(FileSortType?);
+            return null;
         }
+
 
         public void SetFileParentSettings(string path, FileSortType? sort)
         {
@@ -173,7 +140,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public void DeleteUnderPath(string path)
         {
             _internalFolderAndArchiveRepository.DeleteUnderPath(path);
-            _internalFileRepository.DeleteUnderPath(path);
             _internalChildFileRepository.DeleteUnderPath(path);
         }
     }

@@ -198,6 +198,12 @@
 
         <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 8">
 
+          <Border uwpControls:DockPanel.Dock="Bottom" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+            <TextBlock Opacity="0.7">
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+          
           <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" Spacing="4">
             <TextBlock VerticalAlignment="Center" >
               <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
@@ -208,6 +214,10 @@
                             >
               <DropDownButton.Flyout>
                 <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
+                                  CommandParameter="{x:Null}"
+                                  />
+
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
@@ -236,7 +246,9 @@
                 </MenuFlyout>
               </DropDownButton.Flyout>
             </DropDownButton>
+
           </StackPanel>
+
 
           <Button Margin="8 0 0 0">
             <Button.Content>
@@ -248,9 +260,10 @@
                 <StackPanel Spacing="8">
                   <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
+                  <!--
                   <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
-
-                  <Button Content="現在の並び替えをクリア" Command="{x:Bind _vm.ClearFileSortSettingCommand}" />
+                  -->
+                  
                 </StackPanel>
               </Flyout>
             </Button.Flyout>
@@ -396,19 +409,10 @@
 
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
-        <!-- NowProcessing の変更が何故か反映されないケースがあるため、別プロパティで読み込み中表示をキャンセルするようにしている -->
-        <!-- ItemsRepeater上での読み込みが重いとかだろうか？ -->
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-          </VisualState.Setters>
-        </VisualState>
-        
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
+            <!-- x:Bind _vm.NowProcessing だと反映されないのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />

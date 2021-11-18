@@ -79,6 +79,9 @@ FileSortType.TitleDecending = Title Desc
 FileSortType.UpdateTimeAscending = Recent
 FileSortType.UpdateTimeDecending = Latest
 
+Sort_InheritancePath = Sort inheritance source
+Sort_Unselected = Unspecified
+Sort_DefaultChildItemSort = Sorting images in child folders
 TitleDigitCompletion = Title digit completion
 
 
@@ -103,6 +106,7 @@ IsEnableSpreadDisplay = Spread display
 IsLeftBindingView = Left binding display
 
 SwitchFullScreen = Full screen switching
+DoubleViewCorrectPaging = Correct the page shift of the spread
 
 
 #### EBookReaderPage

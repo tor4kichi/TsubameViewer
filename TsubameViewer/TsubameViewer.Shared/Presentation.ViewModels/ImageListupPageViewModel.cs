@@ -99,7 +99,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
+        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+
         public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+
+        private string _DisplaySortTypeInheritancePath;
+        public string DisplaySortTypeInheritancePath
+        {
+            get { return _DisplaySortTypeInheritancePath; }
+            private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
+        }
 
 
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
@@ -312,25 +321,30 @@ namespace TsubameViewer.Presentation.ViewModels
                             _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
 
-                            var settingPath = _currentArchiveFolderName != null
-                                ? Path.Combine(_currentPath, _currentArchiveFolderName)
-                                : _currentPath
-                                ;
-                            var settings = _displaySettingsByPathRepository.GetFileSettings(settingPath);
+                            
+                            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
                             if (settings != null)
                             {
-                                SetSortAsyncUnsafe(settings.Sort, settings.IsTitleDigitInterpolation);
+                                DisplaySortTypeInheritancePath = null;
                                 SelectedFileSortType.Value = settings.Sort;
                                 IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                             }
-                            else if (_displaySettingsByPathRepository.GetFileParentSettings(_currentPath) is not null and var parentSort)
+                            else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
+                                && parentSort.ChildItemDefaultSort != null
+                                )
                             {
-                                if (parentSort != null)
-                                {
-                                    SetSortAsyncUnsafe(parentSort.Value, true);
-                                    SelectedFileSortType.Value = parentSort.Value;
-                                    IsSortWithTitleDigitCompletion.Value = true;
-                                }
+                                DisplaySortTypeInheritancePath = parentSort.Path;
+                                SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                                IsSortWithTitleDigitCompletion.Value = true;
+                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                            }
+                            else
+                            {
+                                DisplaySortTypeInheritancePath = null;
+                                SelectedFileSortType.Value = DefaultFileSortType;
+                                IsSortWithTitleDigitCompletion.Value = true;
+                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                             }
                         }
 
@@ -540,14 +554,33 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (sortType.HasValue)
                 {
                     SelectedFileSortType.Value = sortType.Value;
+                    DisplaySortTypeInheritancePath = null;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
 
-                    _displaySettingsByPathRepository.SetFileSettings(
-                        _currentArchiveFolderName != null ? Path.Combine(_currentPath, _currentArchiveFolderName) : _currentPath,
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
+                        _currentPath,
                         sortType.Value,
                         IsSortWithTitleDigitCompletion.Value
                         );
+                }
+                else
+                {
+                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
 
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
+                    && parentSort.ChildItemDefaultSort != null
+                    )
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    }
+                    else
+                    {
+                        DisplaySortTypeInheritancePath = null;
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    }
                 }
             });
 
@@ -577,28 +610,11 @@ namespace TsubameViewer.Presentation.ViewModels
             RaisePropertyChanged(nameof(ImageFileItems));
         }
 
-        private DelegateCommand _ClearFileSortSettingCommand;
-        public DelegateCommand ClearFileSortSettingCommand =>
-            _ClearFileSortSettingCommand ??= new DelegateCommand(() =>
-            {
-                if (_displaySettingsByPathRepository.GetFileParentSettings(_currentPath) is not null and var parentSort)
-                {
-                    if (parentSort != null)
-                    {
-                        SelectedFileSortType.Value = parentSort.Value;
-                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-                    }
-                }
-
-                _displaySettingsByPathRepository.ClearFileSettings(_currentPath);
-            });
-
-
         private DelegateCommand _SetParentFileSortWithCurrentSettingCommand;
         public DelegateCommand SetParentFileSortWithCurrentSettingCommand =>
             _SetParentFileSortWithCurrentSettingCommand ??= new DelegateCommand(() =>
             {
-                _displaySettingsByPathRepository.SetFileParentSettings(_currentPath, SelectedFileSortType.Value);
+                _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentPath), SelectedFileSortType.Value);
             });
 
 

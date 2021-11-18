@@ -58,6 +58,24 @@
         </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyCollectionToObjectConverter>
 
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringNotEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
       <myConv:ColorToBrush x:Key="ColorToBrush" />
       <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
