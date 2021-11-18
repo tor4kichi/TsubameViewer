@@ -362,7 +362,7 @@
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>
