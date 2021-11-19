@@ -60,7 +60,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    return await file.GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, (uint)ListingImageConstants.LargeFileThumbnailImageHeight);
+                    return await file.GetThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem).AsTask(ct);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
