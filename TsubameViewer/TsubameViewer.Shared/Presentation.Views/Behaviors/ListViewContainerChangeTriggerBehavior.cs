@@ -34,18 +34,9 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             if (AssociatedObject != null)
             {
                 AssociatedObject.ChoosingItemContainer += AssociatedObject_ChoosingItemContainer;
-                AssociatedObject.ContainerContentChanging += AssociatedObject_ContainerContentChanging;
             }
 
             base.OnAttached();
-        }
-
-        private void AssociatedObject_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            if (args.Item is ViewModels.PageNavigation.StorageItemViewModel itemVM)
-            {
-                System.Diagnostics.Debug.WriteLine($"phase: {args.Phase}, {itemVM.Name}");
-            }
         }
 
         protected override void OnDetaching()
@@ -53,7 +44,6 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             if (AssociatedObject != null)
             {
                 AssociatedObject.ChoosingItemContainer -= AssociatedObject_ChoosingItemContainer;
-                AssociatedObject.ContainerContentChanging -= AssociatedObject_ContainerContentChanging;
             }
             _map.Clear();
             base.OnDetaching();
