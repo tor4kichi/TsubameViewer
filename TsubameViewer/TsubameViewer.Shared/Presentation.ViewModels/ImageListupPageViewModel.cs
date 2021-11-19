@@ -423,11 +423,23 @@ namespace TsubameViewer.Presentation.ViewModels
                 NowProcessing = false;
             }
 
+            Observable.CombineLatest(
+                IsSortWithTitleDigitCompletion,
+                SelectedFileSortType,
+                (x, y) => (x, y)
+                )
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(async _ =>
+                {
+                    await SetSort(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value, _leavePageCancellationTokenSource?.Token ?? default);
+                })
+                .AddTo(_navigationDisposables);
+
             IsSortWithTitleDigitCompletion
                 .Pairwise()
                 .Where(x => x.NewItem != x.OldItem)
-                .Select(x => x.NewItem)
-                .Subscribe(x => _ = SetSort(SelectedFileSortType.Value, x, _leavePageCancellationTokenSource?.Token ?? default))
+                .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
                 .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
@@ -557,33 +569,24 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (sortType.HasValue)
                 {
-                    SelectedFileSortType.Value = sortType.Value;
                     DisplaySortTypeInheritancePath = null;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
-                        _currentPath,
-                        sortType.Value,
-                        IsSortWithTitleDigitCompletion.Value
-                        );
+                    SelectedFileSortType.Value = sortType.Value;
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                 }
                 else
                 {
                     _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
-
                     if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
                     && parentSort.ChildItemDefaultSort != null
                     )
                     {
                         DisplaySortTypeInheritancePath = parentSort.Path;
                         SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                     else
                     {
                         DisplaySortTypeInheritancePath = null;
                         SelectedFileSortType.Value = DefaultFileSortType;
-                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                 }
             });
