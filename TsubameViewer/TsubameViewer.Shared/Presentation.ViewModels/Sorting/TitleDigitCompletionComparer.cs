@@ -28,7 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels.Sorting
             {
                 int keta = 1;
                 int number = 0;
-                foreach (var i in name.Reverse().SkipWhile(c => !char.IsDigit(c)).TakeWhile(c => char.IsDigit(c)))
+                foreach (var i in name.Reverse().SkipWhile(c => !char.IsDigit(c)).TakeWhile(c => char.IsDigit(c)).Select(x => x - '0'))
                 {
                     number += i * keta;
                     keta *= 10;
