@@ -184,6 +184,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     if (stream is null || stream.Size == 0) { return; }
 
                     var bitmapImage = new BitmapImage();
+                    bitmapImage.AutoPlay = false;                    
                     //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
                     await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;
