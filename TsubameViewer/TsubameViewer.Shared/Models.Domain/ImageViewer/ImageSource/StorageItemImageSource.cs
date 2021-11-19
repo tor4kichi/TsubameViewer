@@ -86,11 +86,5 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 throw new NotSupportedException();
             }
         }
-
-        public void CancelLoading()
-        {
-
-        }
-
     }
 }

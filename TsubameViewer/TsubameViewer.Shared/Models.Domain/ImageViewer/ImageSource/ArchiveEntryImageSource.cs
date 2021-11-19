@@ -69,10 +69,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             return memoryStream.AsRandomAccessStream();
         }
 
-        public void CancelLoading()
-        {
-        }
-
 
         internal static FastAsyncLock ArchiveEntryAccessLock = new FastAsyncLock();
 

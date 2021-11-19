@@ -17,6 +17,7 @@ using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
+using Uno.Disposables;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
@@ -184,7 +185,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                     var bitmapImage = new BitmapImage();
                     //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
-                    bitmapImage.SetSource(stream);
+                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;
                 }
 
@@ -227,6 +228,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void Dispose()
         {
+            Item.TryDispose();
+            Image = null;
             _cts?.Cancel();
             _cts?.Dispose();
         }

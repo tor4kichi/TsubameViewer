@@ -43,7 +43,7 @@
             </Button>
           </StackPanel>
 
-          <Border Visibility="{x:Bind _vm.HasFileItem, Converter={StaticResource BoolToVisibilityConverter}}"
+          <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                   uwpControls:DockPanel.Dock="Right"
                   >
             <Button Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
