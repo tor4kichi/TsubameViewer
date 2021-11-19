@@ -287,6 +287,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
+            _imageLoadingCts = new CancellationTokenSource();
 
             // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -1053,7 +1054,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void CalcViewResponsibleImageAmount(double canvasWidth, double canvasHeight)
         {
-            var images = _CurrentImages.ToArray();
+            var images = _CurrentImages?.ToArray();
             if (ImageViewerSettings.IsEnableSpreadDisplay)
             {
                 var aspectRatio = canvasWidth / canvasHeight;
@@ -1063,7 +1064,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     ViewResponsibleImageAmount = 2;
                     if (CurrentImages?.Length != 2)
                     {
-                        CurrentImages = new BitmapImage[2] { images.ElementAtOrDefault(0), null };
+                        CurrentImages = new BitmapImage[2] { images?.ElementAtOrDefault(0), null };
                     }
                 }
                 else
@@ -1071,7 +1072,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     ViewResponsibleImageAmount = 1;
                     if (CurrentImages?.Length != 1)
                     {
-                        CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                        CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
                     }
                 }
             }
@@ -1080,7 +1081,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 ViewResponsibleImageAmount = 1;
                 if (CurrentImages?.Length != 1)
                 {
-                    CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                    CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
                 }
             }
 

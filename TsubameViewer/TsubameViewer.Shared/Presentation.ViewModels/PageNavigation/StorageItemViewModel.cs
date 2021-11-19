@@ -178,10 +178,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 ct.ThrowIfCancellationRequested();
 
                 _isAppearingRequestButLoadingCancelled = false;
-                using (var stream = await Item.GetThumbnailImageStreamAsync(ct))
+                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
-                        
+
                     var bitmapImage = new BitmapImage();
                     bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
                     bitmapImage.SetSource(stream);

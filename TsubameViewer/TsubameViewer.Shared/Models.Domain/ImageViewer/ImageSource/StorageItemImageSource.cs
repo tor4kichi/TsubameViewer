@@ -66,10 +66,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
                     )
                 {
-                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file);
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
                     if (thumbnailFile == null) { return null; }
-                    var stream = await thumbnailFile.OpenStreamForReadAsync();
-                    return stream.AsRandomAccessStream();
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
                 }
                 else
                 {
@@ -78,10 +77,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
             else if (StorageItem is StorageFolder folder)
             {
-                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder);
+                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder, ct);
                 if (thumbnailFile == null) { return null; }
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await thumbnailFile.OpenReadAsync().AsTask(ct);
             }
             else
             {

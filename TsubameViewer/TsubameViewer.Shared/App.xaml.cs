@@ -20,6 +20,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
+using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
@@ -133,6 +134,13 @@ namespace TsubameViewer
             container.RegisterSingleton<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
             container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
             container.RegisterInstance(new RecyclableMemoryStreamManager());
+
+            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
+            container.RegisterSingleton<ImageListupPageViewModel>();
+            container.RegisterSingleton<FolderListupPageViewModel>();
+            container.RegisterSingleton<ImageViewerPageViewModel>();
+            container.RegisterSingleton<EBookReaderPageViewModel>();
+            container.RegisterSingleton<SearchResultPageViewModel>();
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<ImageListupPage>();
