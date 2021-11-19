@@ -158,17 +158,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public async void Initialize()
         {
             var ct = _cts.Token;
-            using var _ = await _imageLoadingLock.LockAsync(ct);
-
-            if (Item == null) { return; }
-            if (_isInitialized) { return; }
-
-            if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
-            if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
-            if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
-
             try
             {
+                using var _ = await _imageLoadingLock.LockAsync(ct);
+
+                if (Item == null) { return; }
+                if (_isInitialized) { return; }
+
+                if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
+                if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
+                if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
+
                 if (ct.IsCancellationRequested)
                 {
                     _isAppearingRequestButLoadingCancelled = true;
@@ -183,7 +183,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     if (stream is null || stream.Size == 0) { return; }
 
                     var bitmapImage = new BitmapImage();
-                    bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
+                    //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
                     bitmapImage.SetSource(stream);
                     Image = bitmapImage;
                 }
