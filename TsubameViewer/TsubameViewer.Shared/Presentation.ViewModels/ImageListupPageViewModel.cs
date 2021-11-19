@@ -171,7 +171,7 @@ namespace TsubameViewer.Presentation.ViewModels
         IDisposable _ImageCollectionDisposer;
 
         CompositeDisposable _disposables = new CompositeDisposable();
-        CompositeDisposable _navigationDisposables = new CompositeDisposable();
+        CompositeDisposable _navigationDisposables;
 
         public ImageListupPageViewModel(
             IScheduler scheduler,
@@ -248,6 +248,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            _navigationDisposables = new CompositeDisposable();
             IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
 
             NowProcessing = true;
