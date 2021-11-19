@@ -232,6 +232,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
+            _navigationDisposables?.Dispose();
 
             base.OnNavigatedFrom(parameters);
         }
@@ -328,7 +329,6 @@ namespace TsubameViewer.Presentation.ViewModels
                                 DisplaySortTypeInheritancePath = null;
                                 SelectedFileSortType.Value = settings.Sort;
                                 IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
-                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                             }
                             else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
                                 && parentSort.ChildItemDefaultSort != null
@@ -337,14 +337,12 @@ namespace TsubameViewer.Presentation.ViewModels
                                 DisplaySortTypeInheritancePath = parentSort.Path;
                                 SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
                                 IsSortWithTitleDigitCompletion.Value = true;
-                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                             }
                             else
                             {
                                 DisplaySortTypeInheritancePath = null;
                                 SelectedFileSortType.Value = DefaultFileSortType;
                                 IsSortWithTitleDigitCompletion.Value = true;
-                                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                             }
                         }
 
@@ -426,6 +424,9 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             IsSortWithTitleDigitCompletion
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Select(x => x.NewItem)
                 .Subscribe(x => _ = SetSort(SelectedFileSortType.Value, x, _leavePageCancellationTokenSource?.Token ?? default))
                 .AddTo(_navigationDisposables);
 
