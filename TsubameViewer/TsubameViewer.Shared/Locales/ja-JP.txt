@@ -72,18 +72,28 @@ ChangeViewToImageListupPage = 画像一覧ビューに切替
 
 
 
-FileSortTitle = 並べ替え
-FileSortType.TitleAscending = ファイル名（昇順）
-FileSortType.TitleDecending = ファイル名（降順）
+FileSortTitle = 並び替え
+FileSortType.UpdateTimeDescThenTitleAsc = 新しい順＆タイトル昇順
+FileSortType.TitleAscending = タイトル昇順
+FileSortType.TitleDecending = タイトル降順
 FileSortType.UpdateTimeAscending = 古い順
 FileSortType.UpdateTimeDecending = 新しい順
+
+Sort_InheritancePath = 並び替え継承元
+Sort_Unselected = 未指定
+Sort_DefaultChildItemSort = 子フォルダの画像並び替え
+TitleDigitCompletion = タイトルの桁数補完
+
 
 OpenImageViewer = リーダーで開く
 OpenFolderListup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
+OpenWithExternalApplication = 別アプリで開く
 
 AddSecondaryTile = スタートにピン留めする
 RemoveSecondaryTile = スタートのピン留めを解除
+
+SetThumbnailImage = サムネイル画像に設定
 
 FolderItemMenuNoActionSuggested = 選択可能なアクションはありません
 
@@ -96,6 +106,7 @@ IsEnableSpreadDisplay = 見開き表示
 IsLeftBindingView = 左綴じ表示
 
 SwitchFullScreen = 全画面切替
+DoubleViewCorrectPaging = 見開きのページズレを補正する
 
 
 #### EBookReaderPage

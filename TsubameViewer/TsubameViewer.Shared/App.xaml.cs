@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.IO;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Prism;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -13,11 +14,13 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reactive.Concurrency;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
+using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
@@ -122,6 +125,7 @@ namespace TsubameViewer
 
         public override void RegisterTypes(IContainerRegistry container)
         {
+            container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
 
@@ -130,6 +134,13 @@ namespace TsubameViewer
             container.RegisterSingleton<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
             container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
             container.RegisterInstance(new RecyclableMemoryStreamManager());
+
+            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
+            container.RegisterSingleton<ImageListupPageViewModel>();
+            container.RegisterSingleton<FolderListupPageViewModel>();
+            container.RegisterSingleton<ImageViewerPageViewModel>();
+            container.RegisterSingleton<EBookReaderPageViewModel>();
+            container.RegisterSingleton<SearchResultPageViewModel>();
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<ImageListupPage>();
@@ -261,6 +272,7 @@ namespace TsubameViewer
             var ns = shell.GetNavigationService();
             var unityContainer = Container.GetContainer();
             unityContainer.RegisterInstance<INavigationService>("PrimaryWindowNavigationService", ns);
+            unityContainer.RegisterInstance<INavigationService>(ns);
 
             Window.Current.Content = shell;
             Window.Current.Activate();
@@ -421,7 +433,7 @@ namespace TsubameViewer
             if (item is StorageFolder itemFolder)
             {
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
-                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
+                if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
                     return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }

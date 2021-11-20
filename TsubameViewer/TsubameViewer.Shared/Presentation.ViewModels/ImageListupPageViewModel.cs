@@ -5,10 +5,15 @@ using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,10 +27,12 @@ using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
+using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels
@@ -36,8 +43,7 @@ namespace TsubameViewer.Presentation.ViewModels
         static List<string> _CacheFolderListupItemsOrder = new List<string>();
 
         static Dictionary<string, CachedFolderListupItems> _CachedFolderListupItems = new Dictionary<string, CachedFolderListupItems>();
-
-
+        private readonly IScheduler _scheduler;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -45,7 +51,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
-
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private bool _NowProcessing;
         public bool NowProcessing
         {
@@ -61,6 +67,8 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
+        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
+        public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
 
@@ -91,6 +99,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
+        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+
+        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+
+        private string _DisplaySortTypeInheritancePath;
+        public string DisplaySortTypeInheritancePath
+        {
+            get { return _DisplaySortTypeInheritancePath; }
+            private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
+        }
+
+
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
         static FastAsyncLock _NavigationLock = new FastAsyncLock();
@@ -116,10 +136,16 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _CurrentFolderItem, value); }
         }
 
-        string _currentItemRootFolderToken;
+        StorageItemToken _currentItemRootFolderToken;
 
+        private string _currentArchiveFolderName;
 
-
+        private string _DisplayCurrentArchiveFolderName;
+        public string DisplayCurrentArchiveFolderName
+        {
+            get { return _DisplayCurrentArchiveFolderName; }
+            private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
+        }
 
 
         private bool _IsRestrictImageFileThumbnail;
@@ -142,8 +168,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
+        IDisposable _ImageCollectionDisposer;
+
+        CompositeDisposable _disposables = new CompositeDisposable();
+        CompositeDisposable _navigationDisposables;
 
         public ImageListupPageViewModel(
+            IScheduler scheduler,
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -152,15 +183,19 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             OpenPageCommand openPageCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
-            SecondaryTileRemoveCommand secondaryTileRemoveCommand
+            SecondaryTileRemoveCommand secondaryTileRemoveCommand,
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
             )
         {
+            _scheduler = scheduler;
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -169,6 +204,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _folderListingSettings = folderListingSettings;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             OpenPageCommand = openPageCommand;
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
@@ -176,15 +212,32 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
+            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+            OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
-            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending);
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
+                .AddTo(_disposables);
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+                .AddTo(_disposables);
 
-            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode);
-            ImageLastIntractItem = new ReactivePropertySlim<int>();
+            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
+                .AddTo(_disposables);
+            ImageLastIntractItem = new ReactivePropertySlim<int>()
+                .AddTo(_disposables);
+
+                   
         }
 
+        public override void OnNavigatedFrom(INavigationParameters parameters)
+        {
+            _ImageCollectionDisposer?.Dispose();
+            _ImageCollectionDisposer = null;
+            _navigationDisposables?.Dispose();
+
+            base.OnNavigatedFrom(parameters);
+        }
 
         public override void OnNavigatingTo(INavigationParameters parameters)
         {
@@ -195,6 +248,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            _navigationDisposables = new CompositeDisposable();
             IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
 
             NowProcessing = true;
@@ -212,6 +266,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
 
                 _leavePageCancellationTokenSource = new CancellationTokenSource();
+
+                _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
+                    ? Uri.UnescapeDataString(archiveFolderName)
+                    : null
+                    ;
+
 
                 if (mode == NavigationMode.New
                     || mode == NavigationMode.Forward
@@ -259,12 +319,34 @@ namespace TsubameViewer.Presentation.ViewModels
                                 }
                             }
 
-                            _currentItemRootFolderToken = token;
+                            _currentItemRootFolderToken = new StorageItemToken(_currentPath, token);
 
                             var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
                             _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), token, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+
+                            
+                            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
+                            if (settings != null)
+                            {
+                                DisplaySortTypeInheritancePath = null;
+                                SelectedFileSortType.Value = settings.Sort;
+                                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                            }
+                            else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
+                                && parentSort.ChildItemDefaultSort != null
+                                )
+                            {
+                                DisplaySortTypeInheritancePath = parentSort.Path;
+                                SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                                IsSortWithTitleDigitCompletion.Value = true;
+                            }
+                            else
+                            {
+                                DisplaySortTypeInheritancePath = null;
+                                SelectedFileSortType.Value = DefaultFileSortType;
+                                IsSortWithTitleDigitCompletion.Value = true;
+                            }
                         }
 
                         if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
@@ -276,17 +358,13 @@ namespace TsubameViewer.Presentation.ViewModels
                             ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
 
                             _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
-
-                                FileItemsView.SortDescriptions.Clear();
-                                FileItemsView.SortDescriptions.Add(sortDescription);
-                            }
-                            RaisePropertyChanged(nameof(FileItemsView));
+                            
+                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                         }
                         else
                         {
+                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                         }
 
@@ -305,21 +383,17 @@ namespace TsubameViewer.Presentation.ViewModels
                         ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
 
                         _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-                        using (FileItemsView.DeferRefresh())
-                        {
-                            var sortDescription = ToSortDescription(SelectedFileSortType.Value);
 
-                            FileItemsView.SortDescriptions.Clear();
-                            FileItemsView.SortDescriptions.Add(sortDescription);
-                        }
-                        RaisePropertyChanged(nameof(FileItemsView));
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                     else
                     {
                         await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
                     }
                 }
-                else
+                else 
                 {
                     // 前回読み込みキャンセルしていたものを改めて読み込むように
                     ImageFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
@@ -349,82 +423,182 @@ namespace TsubameViewer.Presentation.ViewModels
                 NowProcessing = false;
             }
 
+            Observable.CombineLatest(
+                IsSortWithTitleDigitCompletion,
+                SelectedFileSortType,
+                (x, y) => (x, y)
+                )
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(async _ =>
+                {
+                    await SetSort(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value, _leavePageCancellationTokenSource?.Token ?? default);
+                })
+                .AddTo(_navigationDisposables);
+
+            IsSortWithTitleDigitCompletion
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
+                .AddTo(_navigationDisposables);
+
+
+            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+            {
+                // アプリ内部操作も含めて変更を検知する
+                bool requireRefresh = false;
+                _imageCollectionContext.CreateImageFileChangedObserver()
+                    .Subscribe(_ =>
+                    {
+                        requireRefresh = true;
+                        Debug.WriteLine("Images Update required. " + _currentPath);
+                    })
+                    .AddTo(_navigationDisposables);
+
+                ApplicationLifecycleObservable.WindowActivationStateChanged()
+                    .Subscribe(async visible =>
+                    {
+                        if (visible && requireRefresh && _imageCollectionContext is not null)
+                        {
+                            requireRefresh = false;
+                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            Debug.WriteLine("Images Updated. " + _currentPath);
+                        }
+                    })
+                    .AddTo(_navigationDisposables);
+            }
+
             await base.OnNavigatedToAsync(parameters);
         }
 
         #region Refresh Item
 
+        IImageCollectionContext _imageCollectionContext;
         static FastAsyncLock _RefreshLock = new FastAsyncLock();
         private async Task RefreshFolderItems(CancellationToken ct)
         {
-            using var _ = await _RefreshLock.LockAsync(ct);
+            using var lockObject = await _RefreshLock.LockAsync(ct);
 
-            _isCompleteEnumeration = false;
-            try
-            {
-                if (_currentItem is StorageFolder folder)
-                {
-                    Debug.WriteLine(folder.Path);
-                    await RefreshFolderItems(folder, ct);
-                }
-                else if (_currentItem is StorageFile file)
-                {
-                    Debug.WriteLine(file.Path);
-                    await RefreshFolderItems(file, ct);
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-
-                _isCompleteEnumeration = true;
-            }
-            catch (OperationCanceledException)
-            {
-
-            }
-        }
-        private async ValueTask RefreshFolderItems(IStorageItem storageItem, CancellationToken ct)
-        {
+            _ImageCollectionDisposer?.Dispose();
+            _ImageCollectionDisposer = null;
             ImageFileItems.Clear();
 
-            var result = await _imageCollectionManager.GetImagesAsync(storageItem, ct);
-            if (result.Images?.Any() != true)
+            _imageCollectionContext = null;
+            _isCompleteEnumeration = false;
+            IImageCollectionContext imageCollectionContext = null;
+            if (_currentItem is StorageFolder folder)
             {
-                return;
+                Debug.WriteLine(folder.Path);
+                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+                CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
             }
-
-            foreach (var folderItem in result.Images)
+            else if (_currentItem is StorageFile file)
             {
-                _PathReferenceCountManager.Upsert(folderItem.StorageItem.Path, _currentItemRootFolderToken);
-                ct.ThrowIfCancellationRequested();
-                var item = new StorageItemViewModel(folderItem, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
-                if (item.Type == StorageItemTypes.Image)
+                Debug.WriteLine(file.Path);
+                if (file.IsSupportedImageFile())
                 {
-                    ImageFileItems.Add(item);
+                    try
+                    {
+                        var parentFolder = await file.GetParentAsync();
+                        imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken.TokenString, Path.GetDirectoryName(_currentPath));
+                        if (parentItem is StorageFolder parentFolder)
+                        {
+                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        }
+                    }
+
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                }
+                else if (file.IsSupportedMangaFile())
+                {
+                    imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, _currentArchiveFolderName ?? String.Empty, ct);
+                    DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
+                    if (_currentArchiveFolderName == null)
+                    {
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                    }
+                    else if (imageCollectionContext is ArchiveImageCollectionContext aic)
+                    {
+                        CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                    }
                 }
             }
+            else
+            {
+                throw new NotSupportedException();
+            }
 
-            HasFileItem = ImageFileItems.Any();
-            HasFolderOrBookItem = storageItem is StorageFolder folder
-                ? await _imageCollectionManager.IsExistFolderOrArchiveFileAsync(folder, ct)
-                : false
-                ;
+            _isCompleteEnumeration = true;
+
+            if (imageCollectionContext == null) { return; }
+
+            _imageCollectionContext = imageCollectionContext;
+            _ImageCollectionDisposer = imageCollectionContext as IDisposable;
+
+            await ReloadItemsAsync(_imageCollectionContext, ct);
         }
 
-        #endregion
-
-        #region FileSortType
-
-
-        public static SortDescription ToSortDescription(FileSortType fileSortType)
+        private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
+            var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
+            var newItems = await imageCollectionContext.GetImageFilesAsync(ct);
+            var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
+                .Where(x => oldItemPathMap.Contains(x))
+                .ToHashSet();
+
+            using (FileItemsView.DeferRefresh())
+            {
+                // 削除アイテム
+                Debug.WriteLine($"items count : {ImageFileItems.Count}");
+                ImageFileItems.Remove(itemVM =>
+                {
+                    var delete = deletedItems.Contains(itemVM.Path);
+                    if (delete) { itemVM.Dispose(); }
+                    return delete;
+                });
+                Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+                // 新規アイテム
+                foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
+                {
+                    ImageFileItems.Add(new StorageItemViewModel(item, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                }
+                Debug.WriteLine($"after added : {ImageFileItems.Count}");
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            HasFileItem = ImageFileItems.Any();
+            _ = Task.Run(async () =>
+            {
+                bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
+                _scheduler.Schedule(() => HasFolderOrBookItem = exist);
+
+                foreach (var item in newItems)
+                {
+                    _PathReferenceCountManager.Upsert(item.Path, _currentItemRootFolderToken.TokenString);
+                }
+            }, ct);
+        }
+
+#endregion
+
+#region FileSortType
+
+
+        public static IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType, bool withTitleDigitCompletion)
+        {
+            IComparer TitleDigitCompletionComparer = withTitleDigitCompletion ? Sorting.TitleDigitCompletionComparer.Default : null;
             return fileSortType switch
             {
-                FileSortType.TitleAscending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending),
-                FileSortType.TitleDecending => new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending),
-                FileSortType.UpdateTimeAscending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending),
-                FileSortType.UpdateTimeDecending => new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending),
+                FileSortType.UpdateTimeDescThenTitleAsc => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending), new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
+                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
+                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, TitleDigitCompletionComparer) },
+                FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
+                FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
                 _ => throw new NotSupportedException(),
             };
         }
@@ -445,27 +619,58 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (sortType.HasValue)
                 {
+                    DisplaySortTypeInheritancePath = null;
                     SelectedFileSortType.Value = sortType.Value;
-
-                    using (await _RefreshLock.LockAsync(_leavePageCancellationTokenSource.Token))
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                }
+                else
+                {
+                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
+                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
+                    && parentSort.ChildItemDefaultSort != null
+                    )
                     {
-                        if (ImageFileItems.Any())
-                        {
-                            using (FileItemsView.DeferRefresh())
-                            {
-                                var sortDescription = ToSortDescription(SelectedFileSortType.Value);
-
-                                FileItemsView.SortDescriptions.Clear();
-                                FileItemsView.SortDescriptions.Add(sortDescription);
-                            }
-                        }
-
-                        RaisePropertyChanged(nameof(ImageFileItems));
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        DisplaySortTypeInheritancePath = null;
+                        SelectedFileSortType.Value = DefaultFileSortType;
                     }
                 }
             });
 
+        private async Task SetSort(FileSortType fileSort, bool withNameInterpolation, CancellationToken ct)
+        {
+            using (await _RefreshLock.LockAsync(ct))
+            {
+                SetSortAsyncUnsafe(fileSort, withNameInterpolation);
+            }
+        }
 
-        #endregion
+        private void SetSortAsyncUnsafe(FileSortType fileSort, bool withNameInterpolation)
+        {
+            var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
+            using (FileItemsView.DeferRefresh())
+            {
+                FileItemsView.SortDescriptions.Clear();
+                foreach (var sort in sortDescriptions)
+                {
+                    FileItemsView.SortDescriptions.Add(sort);
+                }
+            }
+        }
+
+        private DelegateCommand _SetParentFileSortWithCurrentSettingCommand;
+        public DelegateCommand SetParentFileSortWithCurrentSettingCommand =>
+            _SetParentFileSortWithCurrentSettingCommand ??= new DelegateCommand(() =>
+            {
+                _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentPath), SelectedFileSortType.Value);
+            });
+
+
+
+#endregion
     }
 }

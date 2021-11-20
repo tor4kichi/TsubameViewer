@@ -119,73 +119,10 @@ namespace TsubameViewer.Presentation.Views
             flyout.ShowAt(args.OriginalSource as FrameworkElement);
         }
 
-        private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
+        public void DeselectItem()
         {
-            var flyout = sender as FlyoutBase;
-            var pageVM = DataContext as FolderListupPageViewModel;
-
-            StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
-            if (itemVM == null && flyout.Target is Control content)
-            {
-                itemVM = (content as ContentControl)?.Content as StorageItemViewModel;
-            }
-
-            if (itemVM == null)
-            {
-                flyout.Hide();
-                return;
-            }
-
-            if (itemVM.Item is StorageItemImageSource == false)
-            {
-                NoActionDescMenuItem.Visibility = Visibility.Visible;
-
-                OpenListupItem.Visibility = Visibility.Collapsed;
-                AddSecondaryTile.Visibility = Visibility.Collapsed;
-                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
-                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Command = pageVM.OpenFolderItemSecondaryCommand;
-                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
-
-                AddSecondaryTile.CommandParameter = itemVM;
-                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-                AddSecondaryTile.Visibility = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-
-                RemoveSecondaryTile.CommandParameter = itemVM;
-                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
-
-                OpenWithExplorerItem.CommandParameter = itemVM;
-                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-                OpenWithExplorerItem.Visibility = Visibility.Visible;
-                ;
-
-                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-            }
+            FoldersAdaptiveGridView.DeselectAll();
         }
-
-
-
-
-
 
         public async void BringIntoViewLastIntractItem()
         {
@@ -197,6 +134,8 @@ namespace TsubameViewer.Presentation.Views
                 {
                     FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
 
+                    // 並び替えを伴う場合にスクロール位置がズレる問題を回避するためDelayを入れてる
+                    await Task.Delay(100);
                     {
                         DependencyObject item;
                         do

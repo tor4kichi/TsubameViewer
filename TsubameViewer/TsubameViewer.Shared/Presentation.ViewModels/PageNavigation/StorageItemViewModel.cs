@@ -17,10 +17,16 @@ using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
+using Uno.Disposables;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
+
+    public record StorageItemToken(string RootItemPath, string TokenString)
+    {
+    }
+
 
     public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
@@ -33,10 +39,21 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
             }
+            else if (vm.Type == StorageItemTypes.ArchiveFolder)
+            {
+                var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
+                
+                return CreateArchiveFolderPageParameter(escapedPath, Uri.EscapeDataString(archiveFolderImageSource.Path));
+            }
             else
             {
                 return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
             }
+        }
+
+        public static NavigationParameters CreateArchiveFolderPageParameter(string filePath, string archiveFolderPath)
+        {
+            return new NavigationParameters((PageNavigationConstants.Path, filePath), (PageNavigationConstants.ArchiveFolderName, archiveFolderPath));
         }
 
         #endregion
@@ -49,7 +66,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public IImageSource Item { get; }
 
 
-        public string Token { get; }
+        public StorageItemToken Token { get; }
 
         
         public string Name { get; }
@@ -69,8 +86,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public StorageItemTypes Type { get; }
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
-        private static SemaphoreSlim _loadinLock = new SemaphoreSlim(3, 3);
-
+        private static FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private double _ReadParcentage;
         public double ReadParcentage
@@ -98,7 +114,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, string token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
+        public StorageItemViewModel(IImageSource item, StorageItemToken token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
              : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
         {
             Item = item;
@@ -134,9 +150,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void StopImageLoading()
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
+            // do nothing.
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -144,16 +158,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
-            if (Item == null) { return; }
-            if (_isInitialized) { return; }
-
-            if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
-            if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
-            if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
-
             var ct = _cts.Token;
             try
             {
+                using var _ = await _imageLoadingLock.LockAsync(ct);
+
+                if (Item == null) { return; }
+                if (_isInitialized) { return; }
+
+                if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
+                if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
+                if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
+
                 if (ct.IsCancellationRequested)
                 {
                     _isAppearingRequestButLoadingCancelled = true;
@@ -162,23 +178,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                 ct.ThrowIfCancellationRequested();
 
-                await _loadinLock.WaitAsync(ct);
-
-                try
+                _isAppearingRequestButLoadingCancelled = false;
+                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
-                    ct.ThrowIfCancellationRequested();
+                    if (stream is null || stream.Size == 0) { return; }
 
-                    _isAppearingRequestButLoadingCancelled = false;
-                    Image = await Item.GenerateThumbnailBitmapImageAsync(ct);
-
-                    await Task.Delay(10);
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.AutoPlay = false;                    
+                    //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
+                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
+                    Image = bitmapImage;
                 }
-                finally
-                {
-                    _loadinLock.Release();
-                }
-
-                Debug.WriteLine("Thumbnail Load: " + Name);
 
                 _isInitialized = true;
             }
@@ -211,8 +221,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             }
         }
 
+        public void ThumbnailChanged()
+        {
+            Image = null;
+            _isInitialized = false;
+        }
+
         public void Dispose()
         {
+            Item.TryDispose();
+            Image = null;
             _cts?.Cancel();
             _cts?.Dispose();
         }

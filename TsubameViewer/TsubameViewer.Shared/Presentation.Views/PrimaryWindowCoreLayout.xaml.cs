@@ -1,4 +1,6 @@
-﻿using Microsoft.Toolkit.Uwp.UI.Extensions;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.UI.Extensions;
 using Prism.Commands;
 using Prism.Navigation;
 using Reactive.Bindings.Extensions;
@@ -8,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
@@ -38,11 +41,18 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class PrimaryWindowCoreLayout : Page
     {
-        public PrimaryWindowCoreLayout(PrimaryWindowCoreLayoutViewModel viewModel)
+        private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
+        private readonly IMessenger _messenger;
+
+        public PrimaryWindowCoreLayout(
+            PrimaryWindowCoreLayoutViewModel viewModel, 
+            IMessenger messenger
+            )
         {
             this.InitializeComponent();
 
             DataContext = _viewModel = viewModel;
+            _messenger = messenger;
 
             // Navigation Handling
             ContentFrame.Navigated += Frame_Navigated;
@@ -61,8 +71,26 @@ namespace TsubameViewer.Presentation.Views
 
             SetTheme(_viewModel.ApplicationSettings.Theme);
 
-            AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;            
+            AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
+
+            _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) => 
+            {
+                VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            });
+
+            _messenger.Register<BusyWallExitRequestMessage>(this, (r, m) =>
+            {
+                VisualStateManager.GoToState(this, VS_HideBusyWall.Name, true);
+            });
+
+
+            CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
         }
+
+        private bool NowShowingBusyWork => BusyWall.IsHitTestVisible;
+
+        private RelayCommand CancelBusyWorkCommand { get; }
+        
 
         private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
         {
@@ -222,7 +250,6 @@ namespace TsubameViewer.Presentation.Views
             _isFirstNavigation = false;
         }
 
-        private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         IPlatformNavigationService _navigationService;
         public IPlatformNavigationService GetNavigationService()
         {
@@ -396,6 +423,12 @@ namespace TsubameViewer.Presentation.Views
 
         bool HandleBackRequest()
         {
+            if (NowShowingBusyWork)
+            {
+                CancelBusyWorkCommand.Execute(null);
+                return false;
+            }
+
             var currentPageType = ContentFrame.Content?.GetType();
             if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
             {
@@ -406,7 +439,9 @@ namespace TsubameViewer.Presentation.Views
             if (_navigationService.CanGoBack())
             {
                 var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath))
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath)
+                    && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName) is false
+                    )
                 {
                     while (BackParametersStack.SkipLast(1).LastOrDefault() is not null and var lastNavigationParameters
                         && lastNavigationParameters.TryGetValue(PageNavigationConstants.Path, out string lastPath)

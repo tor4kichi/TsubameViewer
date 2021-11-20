@@ -1,0 +1,29 @@
+﻿<MenuFlyout
+    x:Class="TsubameViewer.Presentation.Views.Flyouts.StorageItemMenuFlyout"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views.Flyouts"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  Opened="FolderAndArchiveMenuFlyout_Opened"
+    >
+
+  <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
+  <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
+  
+  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
+  <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
+  <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{i18nExt:Localize Key=RemoveSecondaryTile}" />
+  
+  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
+  <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
+  <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
+  
+  <MenuFlyoutSeparator x:Name="SourceManageSeparetor" />
+  <MenuFlyoutSubItem x:Name="SourceManageSubItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}">
+    <MenuFlyoutItem x:Name="RemoveSourceStorageItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" />
+  </MenuFlyoutSubItem>
+  
+  <MenuFlyoutItem x:Name="NoActionDescMenuItem" Text="{i18nExt:Localize Key=FolderItemMenuNoActionSuggested}" IsEnabled="False" />
+</MenuFlyout>

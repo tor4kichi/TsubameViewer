@@ -23,6 +23,7 @@ namespace TsubameViewer.Models.UseCase
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ApplicationDataUpdateWhenPathReferenceCountChanged(
@@ -33,7 +34,8 @@ namespace TsubameViewer.Models.UseCase
             FolderContainerTypeManager folderContainerTypeManager,
             ThumbnailManager thumbnailManager,
             SecondaryTileManager secondaryTileManager,
-            FolderLastIntractItemManager folderLastIntractItemManager
+            FolderLastIntractItemManager folderLastIntractItemManager,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository
             )
         {
             _eventAggregator = eventAggregator;
@@ -43,6 +45,7 @@ namespace TsubameViewer.Models.UseCase
             _folderContainerTypeManager = folderContainerTypeManager;
             _thumbnailManager = thumbnailManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             _eventAggregator.GetEvent<PathReferenceCountManager.PathReferenceAddedEvent>()
                 .Subscribe(args => 
                 {
@@ -61,6 +64,7 @@ namespace TsubameViewer.Models.UseCase
                     _folderLastIntractItemManager.Remove(args.Path);
                     await _thumbnailManager.DeleteFromPath(args.Path);
                     await secondaryTileManager.RemoveSecondaryTile(args.Path);
+                    _displaySettingsByPathRepository.DeleteUnderPath(args.Path);
                 }
                 , keepSubscriberReferenceAlive: true
                 )

@@ -28,22 +28,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Archive)
+                if (item.Type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
-                }
-                else if (item.Type == StorageItemTypes.Folder)
-                {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
-                }
-                else if (item.Type == StorageItemTypes.EBook)
-                {
-
-                }
-                else if (item.Type == StorageItemTypes.None)
-                {
                 }
             }
         }

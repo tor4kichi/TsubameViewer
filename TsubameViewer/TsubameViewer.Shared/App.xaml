@@ -12,7 +12,9 @@
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
   xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup"
-  xmlns:muxc="using:Microsoft.UI.Xaml.Controls">
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:myFlyouts="using:TsubameViewer.Presentation.Views.Flyouts"
+  >
 
   <prism:PrismApplication.Resources>
     <ResourceDictionary>
@@ -34,7 +36,10 @@
       </ResourceDictionary.ThemeDictionaries>
 
       <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
-      
+
+
+      <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" />
+
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
@@ -52,6 +57,24 @@
           <x:Boolean>False</x:Boolean>
         </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyCollectionToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringNotEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
 
       <myConv:ColorToBrush x:Key="ColorToBrush" />
       <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />

@@ -73,17 +73,27 @@ ChangeViewToImageListupPage = 切换到图像列表视图
 
 
 FileSortTitle = 排序
+FileSortType.UpdateTimeDescThenTitleAsc = 新订单和标题升序
 FileSortType.TitleAscending = 文件名（升序）
 FileSortType.TitleDecending = 文件名（降序）
 FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
+Sort_InheritancePath = 排序继承源
+Sort_Unselected = 未指定
+Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序
+TitleDigitCompletion = 标题数字完成
+
+
 OpenImageViewer = 在阅读器中打开
 OpenFolderListup = 列出档案
 OpenWithExplorer = 在资源管理器中打开
+OpenWithExternalApplication = 在另一个应用程序中打开
 
 AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始
+
+SetThumbnailImage = 设置为缩略图
 
 FolderItemMenuNoActionSuggested = 没有可用的动作
 
@@ -96,6 +106,7 @@ IsEnableSpreadDisplay = 点差显示
 IsLeftBindingView = 左绑定显示
 
 SwitchFullScreen = 全屏切换
+DoubleViewCorrectPaging = 纠正传播的页面偏移
 
 
 #### EBookReaderPage

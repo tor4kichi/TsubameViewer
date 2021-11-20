@@ -79,50 +79,5 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
         }
-
-
-        private void FoldersMenuFlyout_Opened(object sender, object e)
-        {
-            var flyout = sender as FlyoutBase;
-            var pageVM = DataContext as SourceStorageItemsPageViewModel;
-            StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
-            if (itemVM == null && flyout.Target is Control content)
-            {
-                itemVM = (content as ContentControl)?.Content as StorageItemViewModel;
-            }
-
-            if (itemVM == null)
-            {
-                flyout.Hide();
-                return;
-            }
-
-            OpenListupItem.CommandParameter = itemVM;
-            OpenListupItem.Command = pageVM.OpenFolderItemSecondaryCommand;
-            OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                ? Visibility.Visible
-                : Visibility.Collapsed
-                ;
-            AddSecondaryTile.CommandParameter = itemVM;
-            AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-            AddSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Collapsed : Visibility.Visible;
-
-            RemoveSecondaryTile.CommandParameter = itemVM;
-            RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-            RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path) ? Visibility.Visible : Visibility.Collapsed;
-
-            OpenWithExplorerItem.CommandParameter = itemVM;
-            OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-
-            RemoveSourceStorageItem.CommandParameter = itemVM;
-            RemoveSourceStorageItem.Command = pageVM.DeleteStoredFolderCommand;
-            SourceManageSeparetor.Visibility =
-            SourceManageSubItem.Visibility =
-                itemVM.Item.StorageItem.Path == itemVM.Path
-                ? Visibility.Visible
-                : Visibility.Collapsed
-                ;
-
-        }
     }
 }

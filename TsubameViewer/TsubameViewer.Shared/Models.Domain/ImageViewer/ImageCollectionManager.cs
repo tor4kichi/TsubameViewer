@@ -1,6 +1,8 @@
 ﻿using Microsoft.IO;
+using Microsoft.Toolkit.Diagnostics;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
+using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
@@ -12,7 +14,9 @@ using System.ComponentModel;
 using System.IO;
 //using System.IO.Compression;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -35,8 +39,210 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
     }
 
+    public interface IImageCollectionContext
+    {
+        string Name { get; }
+
+        Task<bool> IsExistImageFileAsync(CancellationToken ct);
+        Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct);
+        Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct);
+
+        Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct);
+
+        Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct);
+        Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct);
+
+        bool IsSupportedFolderContentsChanged { get; }
+
+        IObservable<Unit> CreateFolderAndArchiveFileChangedObserver();
+        IObservable<Unit> CreateImageFileChangedObserver();
+    }
+
+
     public sealed class ImageCollectionManager
     {
+
+        public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDisposable
+        {
+            public ArchiveImageCollection ArchiveImageCollection { get; }
+            public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
+            private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+            private readonly ThumbnailManager _thumbnailManager;
+
+            public string Name => ArchiveImageCollection.Name;
+
+
+            public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+            {
+                ArchiveImageCollection = archiveImageCollection;
+                ArchiveDirectoryToken = archiveDirectoryToken;
+                _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+                _thumbnailManager = thumbnailManager;
+            }
+
+            public Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            {
+                // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
+                // アーカイブ内のアーカイブは対応しない
+                return Task.FromResult(ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
+                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
+                    .ToList()
+                    );
+            }
+
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetLeafFolders()
+                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
+                    .ToList());
+            }
+
+            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetAllImages());
+            }
+
+            public Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken));
+            }
+
+            public Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken).Any());
+            }
+
+            public Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            {
+                return Task.FromResult(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).Any());
+            }
+
+            public bool IsSupportedFolderContentsChanged => false;
+
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
+
+            public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
+
+            public void Dispose()
+            {
+                ((IDisposable)ArchiveImageCollection).Dispose();
+            }
+        }
+
+        public sealed class PdfImageCollectionContext : IImageCollectionContext
+        {
+            private readonly PdfImageCollection _pdfImageCollection;
+
+            public PdfImageCollectionContext(PdfImageCollection pdfImageCollection)
+            {
+                _pdfImageCollection = pdfImageCollection;
+            }
+
+            public string Name => _pdfImageCollection.Name;
+
+            public bool IsSupportedFolderContentsChanged => false;
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
+            public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
+
+            public Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            {
+                return Task.FromResult(new List<IImageSource>());
+            }
+
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(new List<IImageSource>());
+            }
+
+            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            {
+                return Task.FromResult(_pdfImageCollection.GetAllImages());
+            }
+
+            public Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            {
+                return Task.FromResult(_pdfImageCollection.GetAllImages());
+            }
+
+            public Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            {
+                return Task.FromResult(false);
+            }
+
+            public Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            {
+                return Task.FromResult(_pdfImageCollection.GetAllImages().Any());
+            }
+        }
+
+        public sealed class FolderImageCollectionContext : IImageCollectionContext
+        {
+            private readonly ThumbnailManager _thumbnailManager;
+            private StorageItemQueryResult _folderAndArchiveFileSearchQuery;
+            private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(ImageCollectionManager.FoldersAndArchiveFileSearchQueryOptions);
+
+            private StorageFileQueryResult _imageFileSearchQuery;
+            private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(ImageCollectionManager.ImageFileSearchQueryOptions);
+
+            public string Name => Folder.Name;
+
+            public FolderImageCollectionContext(StorageFolder storageFolder, ThumbnailManager thumbnailManager)
+            {
+                Folder = storageFolder;
+                _thumbnailManager = thumbnailManager;
+            }
+
+            public StorageFolder Folder { get; }
+
+            public async Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            {
+                var items = await FolderAndArchiveFileSearchQuery.GetItemsAsync().AsTask(ct);
+                return items.Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToList();
+            }
+
+            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            {
+                return Task.FromResult(new List<IImageSource>());
+            }
+
+            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            {
+                return GetImageFilesAsync(ct);
+            }
+
+            public async Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            {
+                var items = await ImageFileSearchQuery.GetFilesAsync().AsTask(ct);
+                return items.Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToList();
+            }
+
+            public async Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            {
+                var count = await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
+                return count > 0;
+            }
+
+            public async Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            {
+                var count = await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
+                return count > 0;
+            }
+
+            public bool IsSupportedFolderContentsChanged => true;
+
+
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
+            {
+                return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => FolderAndArchiveFileSearchQuery.ContentsChanged += h, h => FolderAndArchiveFileSearchQuery.ContentsChanged -= h).ToUnit();
+            }
+
+            public IObservable<Unit> CreateImageFileChangedObserver()
+            {
+                return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => ImageFileSearchQuery.ContentsChanged += h, h => ImageFileSearchQuery.ContentsChanged -= h).ToUnit();
+            }
+
+        }
+
         private readonly ThumbnailManager _thumbnailManager;
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
@@ -49,263 +255,70 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         }
 
-        public async Task<bool> IsExistImageFileAsync(IStorageItem storageItem, CancellationToken ct)
+        public bool IsSupportGetArchiveImageCollectionContext(IStorageItem storageItem, CancellationToken ct)
         {
-            if (storageItem is StorageFolder folder)
+            if (storageItem is StorageFile file)
             {
-                var query = MakeImageFileSearchQueryResult(folder);
-                var count = await query.GetItemCountAsync().AsTask(ct);
-                return count > 0;
-            }
-            else if (storageItem is StorageFile file && file.IsSupportedMangaFile())
-            {
-                return true;
+                return file.IsSupportedMangaFile();
             }
             else
             {
                 return false;
             }
-            
         }
 
-        public async Task<bool> IsExistFolderOrArchiveFileAsync(StorageFolder folder, CancellationToken ct)
-        {
-            var query = MakeFoldersAndArchiveFileSearchQueryResult(folder);
-            var count = await query.GetItemCountAsync().AsTask(ct);
-            return count > 0;
-        }
-
-        public Task<ImageCollectionResult> GetImagesAsync(IStorageItem storageItem, CancellationToken ct = default)
+        public bool IsSupportGetImageCollectionContext(IStorageItem storageItem, CancellationToken ct)
         {
             if (storageItem is StorageFile file)
             {
-                return GetImagesFromFileAsync(file, ct);
+                return file.IsSupportedMangaFile();
             }
-            // フォルダ内のフォルダ、画像ファイル、圧縮ファイルを列挙して返す
             else if (storageItem is StorageFolder folder)
             {
-                return GetImagesFromFolderAsync(folder, ct);
+                return true;
             }
             else
             {
                 throw new NotSupportedException();
             }
         }
-        public async Task<ImageCollectionResult> GetFolderOrArchiveFileAsync(IStorageItem storageItem, CancellationToken ct)
+
+        public async Task<IImageCollectionContext> GetArchiveImageCollectionContextAsync(StorageFile file, string? archiveDirectoryPath, CancellationToken ct)
         {
-            // フォルダ内のフォルダを列挙して返す
-            if (storageItem is StorageFolder folder)
-            {
-                var result = await GetSubFoldersAndArchiveFileAsync(folder, ct);
+            Guard.IsTrue(file.IsSupportedMangaFile(), "file.IsSupportedMangaFile");
 
-                try
+            // Task.Runで包まないとUIが固まる
+            var imageCollection = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
+            if (imageCollection is ArchiveImageCollection aic)
+            {
+                var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : null;
+                if (archiveDirectoryPath is not null && directoryToken is null)
                 {
-                    var images = new IImageSource[result.ItemsCount];
-                    int index = 0;
-
-                    bool isAllImageFile = true;
-                    await foreach (var item in result.Images.WithCancellation(ct))
-                    {
-                        images[index] = item;
-                        index++;
-
-                        isAllImageFile &= (item as StorageItemImageSource)?.ItemTypes == StorageItemTypes.Image;
-                    }
-
-                    return new ImageCollectionResult()
-                    {
-                        Images = images,
-                        ItemsEnumeratorDisposer = Disposable.Empty,
-                        FirstSelectedIndex = 0,
-                        ParentFolderOrArchiveName = String.Empty,
-                    };
+                    throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
                 }
-                catch (OperationCanceledException)
-                {
-                    return null;
-                }
+                return new ArchiveImageCollectionContext(aic, directoryToken, _recyclableMemoryStreamManager, _thumbnailManager);
             }
-            else 
+            else if (imageCollection is PdfImageCollection pdfImageCollection)
             {
-                throw new NotSupportedException(); 
-            }
-        }
-
-        private Task<ImageCollectionResult> GetImagesFromFileAsync(StorageFile file, CancellationToken ct)
-        {
-            // 画像ファイルを指定された場合だけ特殊対応として、その親フォルダの内容を列挙して返す
-            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-            {
-                return GetParentFolderImagesAsync(file, ct);
-            }
-            // 圧縮ファイルを展開した中身を列挙して返す
-            else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-            {
-                return GetArchiveFileImagesAsync(file, ct);
+                return new PdfImageCollectionContext(pdfImageCollection);
             }
             else
             {
                 throw new NotSupportedException();
             }
+
         }
-        private async Task<ImageCollectionResult> GetParentFolderImagesAsync(StorageFile file, CancellationToken ct)
+
+        public Task<FolderImageCollectionContext> GetFolderImageCollectionContextAsync(StorageFolder folder, CancellationToken ct)
         {
-            // Note: 親フォルダへのアクセス権限無い場合が想定されるが
-            // 　　　アプリとしてユーザーに選択可能としているのはフォルダのみなので無視できる？
-
-            // TODO: 外部からアプリに画像が渡された時、親フォルダへのアクセス権が無いケースに対応する
-            var parentFolder = await file.GetParentAsync();
-
-            // 画像ファイルが選ばれた時、そのファイルの所属フォルダをコレクションとして表示する
-            var result = await Task.Run(async () => await GetFolderImagesAsync(parentFolder, ct));
-            try
-            {
-                List<IImageSource> images = new List<IImageSource>();
-                int firstSelectedIndex = 0;
-                if (result.Images != null)
-                {
-                    int index = 0;
-                    await foreach (var item in result.Images?.WithCancellation(ct))
-                    {
-                        images.Add(item);
-                        if (item.Name == file.Name)
-                        {
-                            firstSelectedIndex = index;
-                        }
-                        index++;
-                    }
-
-                    images.Sort(ImageSourceNameInterporatedComparer.Default);
-                }
-                else
-                {
-                    images = new List<IImageSource>() { new StorageItemImageSource(file, _thumbnailManager) };
-                }
-
-                return new ImageCollectionResult()
-                {
-                    Images = images.ToArray(),
-                    ItemsEnumeratorDisposer = Disposable.Empty,
-                    FirstSelectedIndex = firstSelectedIndex,
-                    ParentFolderOrArchiveName = parentFolder?.Name
-                };
-            }
-            catch (OperationCanceledException)
-            {
-                return null;
-            }
+            return Task.FromResult(new FolderImageCollectionContext(folder, _thumbnailManager));
         }
 
 
-        private async Task<ImageCollectionResult> GetArchiveFileImagesAsync(StorageFile file, CancellationToken ct)
-        {
-            try
-            {
-                var result = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
+        
 
-                result.Images.Sort(ImageSourceNameInterporatedComparer.Default);
+        public static readonly QueryOptions ImageFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions);
 
-                return new ImageCollectionResult()
-                {
-                    Images = result.Images.ToArray(),
-                    ItemsEnumeratorDisposer = result.Disposer,
-                    FirstSelectedIndex = 0,
-                    ParentFolderOrArchiveName = file.Name
-                };
-            }
-            catch (OperationCanceledException)
-            {
-                return null;
-            }
-        }
-
-
-
-        private async Task<ImageCollectionResult> GetImagesFromFolderAsync(StorageFolder folder, CancellationToken ct)
-        {
-            var result = await GetFolderImagesAsync(folder, ct);
-            try
-            {
-                var images = new IImageSource[result.ItemsCount];
-                int index = 0;
-
-                await foreach (var item in result.Images.WithCancellation(ct))
-                {
-                    images[index] = item;
-                    index++;
-                }
-
-                return new ImageCollectionResult()
-                {
-                    Images = images,
-                    ItemsEnumeratorDisposer = Disposable.Empty,
-                    FirstSelectedIndex = 0,
-                    ParentFolderOrArchiveName = String.Empty,
-                };
-            }
-            catch (OperationCanceledException)
-            {
-                return null;
-            }
-        }
-
-        public struct GetImagesFromArchiveResult
-        {
-            public uint ItemsCount { get; set; }
-            public IDisposable Disposer { get; set; }
-            public List<IImageSource> Images { get; set; }
-        }
-
-
-        private class ImageSourceNameInterporatedComparer : IComparer<IImageSource>
-        {
-            public static readonly ImageSourceNameInterporatedComparer Default = new ImageSourceNameInterporatedComparer();
-            private ImageSourceNameInterporatedComparer() { }
-            public int Compare(IImageSource x, IImageSource y)
-            {
-                var xDictPath = Path.GetDirectoryName(x.Name);
-                var yDictPath = Path.GetDirectoryName(y.Name);
-
-                if (xDictPath != yDictPath)
-                {
-                    return String.CompareOrdinal(x.Name, y.Name);
-                }
-
-                static bool TryGetPageNumber(string name, out int pageNumber)
-                {
-                    int keta = 1;
-                    int number = 0;
-                    foreach (var i in name.Reverse().SkipWhile(c => !char.IsDigit(c)).TakeWhile(c => char.IsDigit(c)))
-                    {
-                        number += i * keta;
-                        keta *= 10;
-                    }
-
-                    pageNumber = number;
-                    return number > 0;
-                }
-
-                var xName = Path.GetFileNameWithoutExtension(x.Name);
-                if (!TryGetPageNumber(xName, out int xPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
-
-                var yName = Path.GetFileNameWithoutExtension(y.Name);
-                if (!TryGetPageNumber(yName, out int yPageNumber)) { return String.CompareOrdinal(x.Name, y.Name); }
-
-                return xPageNumber - yPageNumber;
-            }
-        }
-
-
-        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetFolderItemsAsync(StorageFolder storageFolder, CancellationToken ct)
-        {
-#if WINDOWS_UWP
-            var query = storageFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
-            var itemsCount = await query.GetItemCountAsync();
-            return (itemsCount, AsyncEnumerableItems(itemsCount, query, ct));
-#else
-            return (itemsCount, AsyncEnumerableImages(
-#endif
-        }
 #if WINDOWS_UWP
         private async IAsyncEnumerable<IImageSource> AsyncEnumerableItems(uint count, StorageItemQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
         {
@@ -318,21 +331,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 
 #endif
 
-        private StorageItemQueryResult MakeFoldersAndArchiveFileSearchQueryResult(StorageFolder folder)
-        {
-            return folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)));
-        }
+        public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions));
 
-        private async Task<(uint ItemsCount, IAsyncEnumerable<IImageSource> Images)> GetSubFoldersAndArchiveFileAsync(StorageFolder storageFolder, CancellationToken ct)
-        {
-#if WINDOWS_UWP
-            var query = MakeFoldersAndArchiveFileSearchQueryResult(storageFolder);
-            var itemsCount = await query.GetItemCountAsync();
-            return (itemsCount, AsyncEnumerableItems(itemsCount, query, ct));
-#else
-            return (itemsCount, AsyncEnumerableImages(
-#endif
-        }
 
         private StorageFileQueryResult MakeImageFileSearchQueryResult(StorageFolder storageFolder)
         {
@@ -364,19 +364,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
 
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
+        private async Task<IImageCollection> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
         {
             var fileType = file.FileType.ToLower();
-            var result = fileType switch
+            IImageCollection result = fileType switch
             {
-                SupportedFileTypesHelper.ZipFileType => await GetImagesFromZipFileAsync(file),
-                SupportedFileTypesHelper.RarFileType => await GetImagesFromRarFileAsync(file),
-                SupportedFileTypesHelper.PdfFileType => await GetImagesFromPdfFileAsync(file),
-                SupportedFileTypesHelper.CbzFileType => await GetImagesFromZipFileAsync(file),
-                SupportedFileTypesHelper.CbrFileType => await GetImagesFromRarFileAsync(file),
-                SupportedFileTypesHelper.SevenZipFileType => await GetImagesFromSevenZipFileAsync(file),
-                SupportedFileTypesHelper.Cb7FileType => await GetImagesFromSevenZipFileAsync(file),
-                SupportedFileTypesHelper.TarFileType => await GetImagesFromTarFileAsync(file),
+                SupportedFileTypesHelper.ZipFileType => await GetImagesFromZipFileAsync(file, ct),
+                SupportedFileTypesHelper.RarFileType => await GetImagesFromRarFileAsync(file, ct),
+                SupportedFileTypesHelper.PdfFileType => await GetImagesFromPdfFileAsync(file, ct),
+                SupportedFileTypesHelper.CbzFileType => await GetImagesFromZipFileAsync(file, ct),
+                SupportedFileTypesHelper.CbrFileType => await GetImagesFromRarFileAsync(file, ct),
+                SupportedFileTypesHelper.SevenZipFileType => await GetImagesFromSevenZipFileAsync(file, ct),
+                SupportedFileTypesHelper.Cb7FileType => await GetImagesFromSevenZipFileAsync(file, ct),
+                SupportedFileTypesHelper.TarFileType => await GetImagesFromTarFileAsync(file, ct),
                 _ => throw new NotSupportedException("not supported file type: " + file.FileType),
             };
 
@@ -386,109 +386,420 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         
 
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromZipFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var zipArchive = ZipArchive.Open(stream)
-                .AddTo(disposables);
-            
-            var supportedEntries = zipArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToList();
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            return new GetImagesFromArchiveResult()
+            try
             {
-                ItemsCount = (uint)supportedEntries.Count,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
+                ct.ThrowIfCancellationRequested();
+
+                var zipArchive = ZipArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, zipArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromPdfFileAsync(StorageFile file)
+        private async Task<PdfImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
         {
-            var pdfDocument = await PdfDocument.LoadFromFileAsync(file);
-
-            var supportedEntries = Enumerable.Range(0, (int)pdfDocument.PageCount)
-                .Select(x => pdfDocument.GetPage((uint)x))
-                .Select(x => (IImageSource)new PdfPageImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToList();
-
-            return new GetImagesFromArchiveResult()
-            {
-                ItemsCount = pdfDocument.PageCount,
-                Disposer = Disposable.Empty,
-                Images = supportedEntries,
-            };
+            var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
+            return new PdfImageCollection(file, pdfDocument, _recyclableMemoryStreamManager, _thumbnailManager);
         }
 
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromRarFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromRarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var rarArchive = RarArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-
-            var supportedEntries = rarArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToList();
-
-            return new GetImagesFromArchiveResult()
+            try
             {
-                ItemsCount = (uint)supportedEntries.Count,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
+                var rarArchive = RarArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, rarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromSevenZipFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromSevenZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var zipArchive = SevenZipArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            var supportedEntries = zipArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToList();
-
-            return new GetImagesFromArchiveResult()
+            try
             {
-                ItemsCount = (uint)supportedEntries.Count,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
+                var szArchive = SevenZipArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, szArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
         }
 
-        private async Task<GetImagesFromArchiveResult> GetImagesFromTarFileAsync(StorageFile file)
+        private async Task<ArchiveImageCollection> GetImagesFromTarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenStreamForReadAsync()
-                .AddTo(disposables);
-            var zipArchive = TarArchive.Open(stream)
-                .AddTo(disposables);
+            var stream = await file.OpenReadAsync().AsTask(ct);
+            disposables.Add(stream);
 
-            var supportedEntries = zipArchive.Entries
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, file, _recyclableMemoryStreamManager))
-                .ToList();
-
-            return new GetImagesFromArchiveResult()
+            try
             {
-                ItemsCount = (uint)supportedEntries.Count,
-                Disposer = disposables,
-                Images = supportedEntries,
-            };
+                var tarArchive = TarArchive.Open(stream.AsStreamForRead())
+                    .AddTo(disposables);
+
+                ct.ThrowIfCancellationRequested();
+                return new ArchiveImageCollection(file, tarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+            }
+            catch
+            {
+                disposables.Dispose();
+                throw;
+            }
+        }
+    }    
+
+    public interface IImageCollection
+    {
+        string Name { get; }
+        List<IImageSource> GetAllImages();
+    }
+
+    public interface IImageCollectionWithDirectory : IImageCollection
+    {
+        ArchiveDirectoryToken GetDirectoryTokenFromPath(string path);
+        IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths();
+        List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token);
+    }
+
+    public interface IImageCollectionDirectoryToken
+    {
+        string Key { get; }
+    }
+    public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry) : IImageCollectionDirectoryToken
+    {
+        private string _key;
+        public string Key => _key ??= ( Entry?.Key is not null ? (Entry.IsDirectory ? Entry.Key : Path.GetDirectoryName(Entry.Key)) : null);
+    }
+
+    public sealed class PdfImageCollection : IImageCollection
+    {
+        private readonly PdfDocument _pdfDocument;
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+        private readonly ThumbnailManager _thumbnailManager;
+
+        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        {
+            _pdfDocument = pdfDocument;
+            File = file;
+            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+            _thumbnailManager = thumbnailManager;
+        }
+        public string Name => File.Name;
+
+        public StorageFile File { get; }
+
+        public List<IImageSource> GetAllImages()
+        {
+            return Enumerable.Range(0, (int)_pdfDocument.PageCount)
+              .Select(x => _pdfDocument.GetPage((uint)x))
+              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _recyclableMemoryStreamManager, _thumbnailManager))
+              .ToList();
+        }
+    }
+
+    public static class DirectoryPathHelper
+    {
+        public static bool IsSameDirectoryPath(string pathA, string pathB)
+        {
+            if (pathA == pathB) { return true; }
+
+            bool pathAEmpty = string.IsNullOrEmpty(pathA);
+            bool pathBEmpty = string.IsNullOrEmpty(pathB);
+            if (pathAEmpty && pathBEmpty) { return true; }
+            else if (pathAEmpty ^ pathBEmpty) { return false; }
+
+            bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
+            bool isSkipBLastChar = pathB.EndsWith(Path.DirectorySeparatorChar) || pathB.EndsWith(Path.AltDirectorySeparatorChar);
+            if (isSkipALastChar && isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB.SkipLast(1))) { return true; }
+            }
+            else if (isSkipALastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA.SkipLast(1), pathB)) { return true; }
+            }
+            else if (isSkipBLastChar)
+            {
+                if (Enumerable.SequenceEqual(pathA, pathB.SkipLast(1))) { return true; }
+            }
+
+            return false;
+        }
+
+        public static bool IsSameDirectoryPath(IArchiveEntry x, IArchiveEntry y)
+        {
+            if (x == null && y == null) { throw new NotSupportedException(); }
+
+            if (x == null)
+            {
+                return IsRootDirectoryEntry(y);
+            }
+            else if (y == null)
+            {
+                return IsRootDirectoryEntry(x);
+            }
+            else
+            {
+                var pathX = x.IsDirectory ? x.Key : Path.GetDirectoryName(x.Key);
+                var pathY = y.IsDirectory ? y.Key : Path.GetDirectoryName(y.Key);
+
+                //ReadOnlySpan<char> 
+                return IsSameDirectoryPath(pathX, pathY);
+            }
+        }
+
+        public static bool IsSameDirectoryPath(ArchiveDirectoryToken x, ArchiveDirectoryToken y)
+        {
+            if (x == null && y == null) { throw new NotSupportedException(); }
+
+            if (x.Key == null)
+            {
+                return IsRootDirectoryEntry(y);
+            }
+            else if (x.Key == null)
+            {
+                return IsRootDirectoryEntry(x);
+            }
+            else
+            {
+                return IsSameDirectoryPath(x.Key, y.Key);
+            }
+        }
+
+        public static bool IsChildDirectoryPath(ArchiveDirectoryToken parent, ArchiveDirectoryToken target)
+        {
+            if (parent.Key == null)
+            {
+                return IsRootDirectoryEntry(target);
+            }
+
+            return IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
+        }
+
+        public static bool IsChildDirectoryPath(string parent, string target)
+        {
+            return IsSameDirectoryPath(parent, Path.GetDirectoryName(target));
+        }
+
+        public static bool IsRootDirectoryEntry(ArchiveDirectoryToken token)
+        {
+            if (token.Key == null) { return true; }
+            else { return IsRootDirectoryEntry(token.Entry); }
+        }
+
+        public static bool IsRootDirectoryEntry(IArchiveEntry entry)
+        {
+            //return IsRootDirectoryPath(entry.IsDirectory ? entry.Key : Path.GetDirectoryName(entry.Key));
+            return IsRootDirectoryPath(Path.GetDirectoryName(entry.Key));
+        }
+
+        public static bool IsRootDirectoryPath(string path)
+        {
+            if (path == String.Empty) 
+            {
+                return true; 
+            }
+            else if (path.EndsWith(Path.DirectorySeparatorChar)
+                    || path.EndsWith(Path.AltDirectorySeparatorChar)
+                    )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
+
+        public static int GetDirectoryDepth(string path)
+        {
+            return path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar);
         }
 
     }
+
+    public class ArchiveDirectoryEqualityComparer : IEqualityComparer<IArchiveEntry>
+    {
+        public static readonly ArchiveDirectoryEqualityComparer Default = new ArchiveDirectoryEqualityComparer();
+        private ArchiveDirectoryEqualityComparer() { }
+
+        public bool Equals(IArchiveEntry x, IArchiveEntry y)
+        {
+            return DirectoryPathHelper.IsSameDirectoryPath(x, y);
+        }
+
+        public int GetHashCode(IArchiveEntry obj)
+        {
+            var pathX = obj.IsDirectory ? obj.Key : Path.GetDirectoryName(obj.Key);
+            if (pathX.EndsWith(Path.DirectorySeparatorChar))
+            {
+                return pathX.GetHashCode();
+            }
+            else if (pathX.EndsWith(Path.AltDirectorySeparatorChar))
+            {
+                return (pathX.Remove(pathX.Length - 1) + Path.DirectorySeparatorChar).GetHashCode();
+            }
+            else
+            {
+                return (pathX + Path.DirectorySeparatorChar).GetHashCode();
+            }
+        }
+    }
+
+    public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDisposable
+    {
+
+        public StorageFile File { get; }
+        public IArchive Archive { get; }
+
+        private readonly CompositeDisposable _disposables;
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+        private readonly ThumbnailManager _thumbnailManager;
+        private readonly ImmutableList<ArchiveDirectoryToken> _directories;
+
+        private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new ();
+        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        {
+            File = file;
+            Archive = archive;
+            _disposables = disposables;
+            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+            _thumbnailManager = thumbnailManager;
+            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+
+            // ディレクトリベースでフォルダ構造を見つける
+            
+            var dir = Enumerable.Concat(
+                Archive.Entries.Where(x => x.IsDirectory),
+                Archive.Entries.Where(x => !x.IsDirectory)
+                    .Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    )
+                    .Distinct(ArchiveDirectoryEqualityComparer.Default);
+
+            // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
+            _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
+            if (_rootDirectoryToken == null || 
+                (_directories.Count == 1 && DirectoryPathHelper.IsRootDirectoryEntry(_directories[0].Entry))
+                )
+            {
+                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+            }
+        }
+
+        
+
+        private readonly ArchiveDirectoryToken _rootDirectoryToken;
+
+        public string Name => File.Name;
+
+        public ArchiveDirectoryToken GetDirectoryTokenFromPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) { return _rootDirectoryToken; }
+
+            return _directories.FirstOrDefault(x => x.Key == path);
+        }
+
+        
+        public IEnumerable<ArchiveDirectoryToken> GetSubDirectories(ArchiveDirectoryToken token)
+        {
+            token ??= _rootDirectoryToken;
+            return _directories
+                .Where(x => token != x)
+                .Where(x => DirectoryPathHelper.IsChildDirectoryPath(token, x));
+        }
+
+        public IEnumerable<ArchiveDirectoryToken> GetLeafFolders()
+        {
+            return _directories.Where(x => !GetSubDirectories(x).Any());
+        }
+
+        public IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths()
+        {
+            return _directories;
+        }
+
+        public IImageSource GetThumbnailImageFromDirectory(ArchiveDirectoryToken token)
+        {
+            return GetImagesFromDirectory(token).FirstOrDefault();
+        }
+
+        public List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token)
+        {
+            token ??= _rootDirectoryToken;
+
+            if (_entriesCacheByDirectory.TryGetValue(token, out var entries)) { return entries; }
+            if (token != _rootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
+
+            var imageSourceItems = (token?.Key is null 
+                ? Archive.Entries.Where(x => DirectoryPathHelper.IsRootDirectoryEntry(x))
+                : Archive.Entries.Where(x => DirectoryPathHelper.IsSameDirectoryPath(x, token.Entry))
+                )
+                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _recyclableMemoryStreamManager, _thumbnailManager))
+                .ToList();
+
+            _entriesCacheByDirectory.Add(token, imageSourceItems);
+            return imageSourceItems;
+        }
+
+        
+        public void Dispose()
+        {
+            ((IDisposable)_disposables).Dispose();
+        }
+
+        public List<IImageSource> GetAllImages()
+        {
+            if (_directories.Count == 0)
+            {
+                return GetImagesFromDirectory(_rootDirectoryToken);
+            }
+            /*
+            else if (_directories.Count == 1 && IsRootDirectoryEntry(_directories[0].Entry))
+            {
+                return GetImagesFromDirectory(_rootDirectoryToken);
+            }
+            */
+            else
+            {
+                return _directories.SelectMany(x => GetImagesFromDirectory(x)).ToList();
+            }
+        }
+    }
+
 }

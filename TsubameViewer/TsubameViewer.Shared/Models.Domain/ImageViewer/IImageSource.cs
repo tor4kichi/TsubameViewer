@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
@@ -12,8 +13,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         IStorageItem StorageItem { get; }
         string Name { get; }
+
+        string Path { get; }
         DateTime DateCreated { get; }
-        Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct = default);
-        Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct = default);
+        Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default);
+
+        Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);
     }
 }

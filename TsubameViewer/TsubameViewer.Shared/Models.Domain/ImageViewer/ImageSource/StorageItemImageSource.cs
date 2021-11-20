@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using Windows.Storage;
 using Windows.Storage.Search;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class StorageItemImageSource : IImageSource, IDisposable
+    public sealed class StorageItemImageSource : IImageSource
     {
         private readonly ThumbnailManager _thumbnailManager;
 
@@ -40,24 +41,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             ItemTypes = SupportedFileTypesHelper.StorageItemToStorageItemTypes(StorageItem);
         }
 
-        public void Dispose()
-        {
-        }
-
-        public async Task<BitmapImage> GenerateBitmapImageAsync(CancellationToken ct)
+        public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
             if (StorageItem is StorageFile file
                 && SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
             {
-                using (var stream = await file.OpenReadAsync().AsTask(ct))
-                {
-                    var bitmapImage = new BitmapImage();
-                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
-
-                    ct.ThrowIfCancellationRequested();
-
-                    return bitmapImage;
-                }
+                return await file.OpenReadAsync().AsTask(ct);
             }
             else
             {
@@ -65,51 +54,39 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
         }
 
-        public async Task<BitmapImage> GenerateThumbnailBitmapImageAsync(CancellationToken ct)
+        public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
             if (StorageItem is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    //var image = new BitmapImage(new Uri(file.Path, UriKind.Absolute));
-                    using (var thumbImage = await file.GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, (uint)ListingImageConstants.LargeFileThumbnailImageHeight))
-                    {
-                        var image = new BitmapImage();
-                        image.SetSource(thumbImage);
-                        return image;
-                    }
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
+                    if (thumbnailFile == null) { return null; }
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
                     )
                 {
-                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file);
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
                     if (thumbnailFile == null) { return null; }
-                    var image = new BitmapImage();
-
-                    using (var stream = await thumbnailFile.OpenStreamForReadAsync())
-                    {
-                        image.SetSource(stream.AsRandomAccessStream());
-                    }
-
-                    return image;
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                }
+                else
+                {
+                    throw new NotSupportedException();
                 }
             }
             else if (StorageItem is StorageFolder folder)
             {
-                var uri = await _thumbnailManager.GetFolderThumbnailAsync(folder);
-                if (uri == null) { return null; }
-                var image = new BitmapImage(uri);
-                return image;
+                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder, ct);
+                if (thumbnailFile == null) { return null; }
+                return await thumbnailFile.OpenReadAsync().AsTask(ct);
             }
-
-            return new BitmapImage();
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
-
-        public void CancelLoading()
-        {
-
-        }
-
     }
 }

@@ -14,16 +14,21 @@
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:domainModels="using:TsubameViewer.Models.Domain" 
-  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
+  xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
 
+  <!--
   <i:Interaction.Behaviors>
     <core:EventTriggerBehavior EventName="Unloaded">
       <core:CallMethodAction TargetObject="{Binding}" MethodName="Dispose" />
     </core:EventTriggerBehavior>
   </i:Interaction.Behaviors>
+  -->
   
   <Page.Resources>
 
@@ -31,6 +36,7 @@
 
     <Flyout x:Key="SettingsFlyout">
       <StackPanel Spacing="16">
+        
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=TwoWay}"
                     Header="{Binding Source=IsReverseImageFliping_MouseWheel, Converter={StaticResource LocalizeConverter}}"
                     />
@@ -49,17 +55,17 @@
 
     <Flyout x:Key="PageFlyout">
 
-      <StackPanel>
+      <StackPanel Spacing="16">
 
         <ComboBox x:Name="PageFolderNamesSelector"
-                          ItemsSource="{Binding PageFolderNames}"
-                            SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                          SelectionChangedTrigger="Committed"
-                            Header="{Binding Source=CurrentFolder_InArchive, Converter={StaticResource LocalizeConverter}}"
-                            MinWidth="240"
-                            Visibility="Collapsed"
+                  ItemsSource="{Binding PageFolderNames}"
+                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                  SelectionChangedTrigger="Committed"
+                  Header="{Binding Source=CurrentFolder_InArchive, Converter={StaticResource LocalizeConverter}}"
+                  MinWidth="240"
+                  Visibility="Collapsed"
                   Margin="0 0 0 16"
-                          >
+                  >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="SelectionChanged">
               <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
@@ -69,18 +75,19 @@
 
         </ComboBox>
 
+        
         <Slider x:Name="PageSelector"
-                          Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Width="240"
-                          Minimum="0"
-                          Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                          ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                          TickFrequency="1"
-                          StepFrequency="1"
-                          Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
+                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Width="240"
+                Minimum="0"
+                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                TickFrequency="1"
+                StepFrequency="1"
+                Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
                 Margin="4 0"
-                FlowDirection="RightToLeft"
-                          >
+                Padding="0"
+                >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="ValueChanged">
               <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
@@ -88,9 +95,58 @@
           </i:Interaction.Behaviors>
         </Slider>
 
-        <Button x:Name="DoubleViewCorrectButton" Content="見開きのページズレを補正する" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
+        <TextBlock Text="{i18nExt:Localize Key=FileSortTitle}" />
+        <DropDownButton x:Name="FileSortButton" 
+                            Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                            Background="Transparent"
+                            >
+          <DropDownButton.Flyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
+                              CommandParameter="{x:Null}" />
+              
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                <MenuFlyoutItem.CommandParameter>
+                  <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                </MenuFlyoutItem.CommandParameter>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                <MenuFlyoutItem.CommandParameter>
+                  <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                </MenuFlyoutItem.CommandParameter>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                <MenuFlyoutItem.CommandParameter>
+                  <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                </MenuFlyoutItem.CommandParameter>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                <MenuFlyoutItem.CommandParameter>
+                  <models:FileSortType>TitleAscending</models:FileSortType>
+                </MenuFlyoutItem.CommandParameter>
+              </MenuFlyoutItem>
+              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                <MenuFlyoutItem.CommandParameter>
+                  <models:FileSortType>TitleDecending</models:FileSortType>
+                </MenuFlyoutItem.CommandParameter>
+              </MenuFlyoutItem>
+            </MenuFlyout>
+          </DropDownButton.Flyout>
+        </DropDownButton>
+
+        <Border uwpControls:DockPanel.Dock="Top" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+          <TextBlock Opacity="0.7" TextWrapping="Wrap">
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" /> <LineBreak /> <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+          </TextBlock>
+        </Border>
+
+        <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
+
+
+        <Button x:Name="DoubleViewCorrectButton" Content="{i18nExt:Localize Key=DoubleViewCorrectPaging}" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
                 Margin="0 16 0 0"
                 />
+
 
       </StackPanel>
     </Flyout>
@@ -219,11 +275,6 @@
         <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
       </Grid>
     </Grid>
-
-    <Grid>
-      <ProgressRing Name="ImageLodingProgress" Width="64" Height="64" VerticalAlignment="Center" HorizontalAlignment="Center" />
-    </Grid>
-
 
 
     <!-- コントロールUI（共通）-->
@@ -558,7 +609,6 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ImageContainerPanel.FlowDirection" Value="LeftToRight" />
-            <Setter Target="PageSelector.FlowDirection" Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

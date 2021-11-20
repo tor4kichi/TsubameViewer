@@ -1,9 +1,11 @@
-﻿using Microsoft.Xaml.Interactivity;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Xaml.Interactivity;
 using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
@@ -18,16 +20,19 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
     public sealed class OpenFolderItemCommand : DelegateCommandBase
     {
         private readonly INavigationService _navigationService;
+        private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly SourceChoiceCommand _sourceChoiceCommand;
 
         public OpenFolderItemCommand(
             INavigationService navigationService,
+            IMessenger messenger,
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand
             )
         {
             _navigationService = navigationService;
+            _messenger = messenger;
             _folderContainerTypeManager = folderContainerTypeManager;
             _sourceChoiceCommand = sourceChoiceCommand;
         }
@@ -41,14 +46,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
+                if (item.Type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);

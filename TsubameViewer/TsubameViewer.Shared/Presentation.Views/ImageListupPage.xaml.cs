@@ -9,6 +9,8 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.Helpers;
+using Uno.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -129,8 +131,6 @@ namespace TsubameViewer.Presentation.Views
 
         #endregion
 
-
-
         private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
             if (args.Element is FrameworkElement fe
@@ -161,6 +161,13 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.020f, 1.020f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+            if (item.DataContext is StorageItemViewModel itemVM)
+            {
+                if (itemVM.Image?.IsAnimatedBitmap ?? false)
+                {
+                    itemVM.Image.Play();
+                }
+            }
         }
 
         private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
@@ -168,6 +175,13 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+            if (item.DataContext is StorageItemViewModel itemVM)
+            {
+                if (itemVM.Image?.IsAnimatedBitmap ?? false)
+                {
+                    itemVM.Image.Stop();
+                }
+            }
         }
 
 
@@ -181,67 +195,5 @@ namespace TsubameViewer.Presentation.Views
             flyout.ShowAt(args.OriginalSource as FrameworkElement);
         }
 
-        private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
-        {
-            var flyout = sender as FlyoutBase;
-            var pageVM = DataContext as ImageListupPageViewModel;
-
-            StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
-            if (itemVM == null && flyout.Target is Control content)
-            {
-                itemVM = (content as ContentControl)?.Content as StorageItemViewModel;
-            }
-
-            if (itemVM == null)
-            {
-                flyout.Hide();
-                return;
-            }
-
-            if (itemVM.Item is StorageItemImageSource == false)
-            {
-                NoActionDescMenuItem.Visibility = Visibility.Visible;
-
-                OpenListupItem.Visibility = Visibility.Collapsed;
-                AddSecondaryTile.Visibility = Visibility.Collapsed;
-                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
-                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Command = pageVM.OpenFolderListupCommand;
-                OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
-
-                AddSecondaryTile.CommandParameter = itemVM;
-                AddSecondaryTile.Command = pageVM.SecondaryTileAddCommand;
-                AddSecondaryTile.Visibility = !pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-
-                RemoveSecondaryTile.CommandParameter = itemVM;
-                RemoveSecondaryTile.Command = pageVM.SecondaryTileRemoveCommand;
-                RemoveSecondaryTile.Visibility = pageVM.SecondaryTileManager.ExistTile(itemVM.Path)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed
-                    ;
-
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
-
-                OpenWithExplorerItem.CommandParameter = itemVM;
-                OpenWithExplorerItem.Command = pageVM.OpenWithExplorerCommand;
-                OpenWithExplorerItem.Visibility = Visibility.Visible;
-                ;
-
-                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-            }
-        }
     }
 }
