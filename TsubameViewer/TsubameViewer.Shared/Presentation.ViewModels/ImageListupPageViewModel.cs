@@ -455,7 +455,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     })
                     .AddTo(_navigationDisposables);
 
-                ApplicationLifecycleObservable.WindwoActivationStateChanged()
+                ApplicationLifecycleObservable.WindowActivationStateChanged()
                     .Subscribe(async visible =>
                     {
                         if (visible && requireRefresh && _imageCollectionContext is not null)

@@ -292,6 +292,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_navigationDisposables);
             _imageLoadingCts = new CancellationTokenSource();
             _imageCollectionContext = null;
+            PageName = null;
+            Title = null;
+            PageFolderName = null;
 
             // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -367,6 +370,9 @@ namespace TsubameViewer.Presentation.ViewModels
                         _currentItemRootFolderToken = token;
                         Images = default;
                         CurrentImageIndex = 0;
+
+                        _appView.Title = _currentFolderItem.Name;
+                        Title = _currentFolderItem.Name;
 
                         DisplaySortTypeInheritancePath = null;
                         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
@@ -515,7 +521,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     })
                     .AddTo(_navigationDisposables);
 
-                ApplicationLifecycleObservable.WindwoActivationStateChanged()
+                ApplicationLifecycleObservable.WindowActivationStateChanged()
                     .Subscribe(async visible =>
                     {
                         if (visible && requireRefresh && _imageCollectionContext is not null)
@@ -848,6 +854,11 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer = imageCollectionContext as IDisposable;
             _imageCollectionContext = imageCollectionContext;
 
+            ParentFolderOrArchiveName = imageCollectionContext.Name;
+            ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
+            _appView.Title = _currentFolderItem.Name;
+            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
+
             await ReloadItemsAsync(imageCollectionContext, ct);
             
             {
@@ -858,8 +869,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else { CurrentImageIndex = 0; }
             }
-
-            ParentFolderOrArchiveName = imageCollectionContext.Name;
 
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
@@ -877,12 +886,6 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 PageFolderNames = new string[0];
             }
-
-
-            ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
-
-            _appView.Title = _currentFolderItem.Name;
-            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
 
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();

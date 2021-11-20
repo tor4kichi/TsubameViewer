@@ -16,7 +16,7 @@ namespace TsubameViewer.Presentation.Services.UWP
                 .Select(args => args.EventArgs.Visible);
         }
 
-        public static IObservable<bool> WindwoActivationStateChanged()
+        public static IObservable<bool> WindowActivationStateChanged()
         {
             return Observable.FromEventPattern<WindowActivatedEventHandler, WindowActivatedEventArgs>(h => Window.Current.Activated += h, h => Window.Current.Activated -= h)
                 .Select(args => args.EventArgs.WindowActivationState != CoreWindowActivationState.Deactivated)

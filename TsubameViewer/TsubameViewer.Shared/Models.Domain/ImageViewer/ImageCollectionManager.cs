@@ -622,7 +622,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public static bool IsRootDirectoryEntry(IArchiveEntry entry)
         {
-            return IsRootDirectoryPath(entry.IsDirectory ? entry.Key : Path.GetDirectoryName(entry.Key));
+            //return IsRootDirectoryPath(entry.IsDirectory ? entry.Key : Path.GetDirectoryName(entry.Key));
+            return IsRootDirectoryPath(Path.GetDirectoryName(entry.Key));
         }
 
         public static bool IsRootDirectoryPath(string path)
