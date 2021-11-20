@@ -442,11 +442,38 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
                 .AddTo(_navigationDisposables);
 
+
+            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+            {
+                // アプリ内部操作も含めて変更を検知する
+                bool requireRefresh = false;
+                _imageCollectionContext.CreateImageFileChangedObserver()
+                    .Subscribe(_ =>
+                    {
+                        requireRefresh = true;
+                        Debug.WriteLine("Images Update required. " + _currentPath);
+                    })
+                    .AddTo(_navigationDisposables);
+
+                ApplicationLifecycleObservable.WindwoActivationStateChanged()
+                    .Subscribe(async visible =>
+                    {
+                        if (visible && requireRefresh && _imageCollectionContext is not null)
+                        {
+                            requireRefresh = false;
+                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            Debug.WriteLine("Images Updated. " + _currentPath);
+                        }
+                    })
+                    .AddTo(_navigationDisposables);
+            }
+
             await base.OnNavigatedToAsync(parameters);
         }
 
         #region Refresh Item
 
+        IImageCollectionContext _imageCollectionContext;
         static FastAsyncLock _RefreshLock = new FastAsyncLock();
         private async Task RefreshFolderItems(CancellationToken ct)
         {
@@ -456,6 +483,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer = null;
             ImageFileItems.Clear();
 
+            _imageCollectionContext = null;
             _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
             if (_currentItem is StorageFolder folder)
@@ -508,26 +536,48 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (imageCollectionContext == null) { return; }
 
+            _imageCollectionContext = imageCollectionContext;
             _ImageCollectionDisposer = imageCollectionContext as IDisposable;
 
-            var items = await imageCollectionContext.GetImageFilesAsync(ct);
-            using (_FileItemsView.DeferRefresh())
+            await ReloadItemsAsync(_imageCollectionContext, ct);
+        }
+
+        private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+        {
+            var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
+            var newItems = await imageCollectionContext.GetImageFilesAsync(ct);
+            var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
+                .Where(x => oldItemPathMap.Contains(x))
+                .ToHashSet();
+
+            using (FileItemsView.DeferRefresh())
             {
-                foreach (var item in items)
+                // 削除アイテム
+                Debug.WriteLine($"items count : {ImageFileItems.Count}");
+                ImageFileItems.Remove(itemVM =>
+                {
+                    var delete = deletedItems.Contains(itemVM.Path);
+                    if (delete) { itemVM.Dispose(); }
+                    return delete;
+                });
+                Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+                // 新規アイテム
+                foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
                     ImageFileItems.Add(new StorageItemViewModel(item, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                 }
+                Debug.WriteLine($"after added : {ImageFileItems.Count}");
             }
 
             ct.ThrowIfCancellationRequested();
 
             HasFileItem = ImageFileItems.Any();
-            _ = Task.Run(async () => 
+            _ = Task.Run(async () =>
             {
                 bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
                 _scheduler.Schedule(() => HasFolderOrBookItem = exist);
 
-                foreach (var item in items)
+                foreach (var item in newItems)
                 {
                     _PathReferenceCountManager.Upsert(item.Path, _currentItemRootFolderToken.TokenString);
                 }

@@ -14,7 +14,9 @@ using System.ComponentModel;
 using System.IO;
 //using System.IO.Compression;
 using System.Linq;
+using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -52,7 +54,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         bool IsSupportedFolderContentsChanged { get; }
 
-        IObservable<object> CreateFolderContentChangedObserver();
+        IObservable<Unit> CreateFolderAndArchiveFileChangedObserver();
+        IObservable<Unit> CreateImageFileChangedObserver();
     }
 
 
@@ -116,7 +119,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public bool IsSupportedFolderContentsChanged => false;
 
-            public IObservable<object> CreateFolderContentChangedObserver() => throw new NotSupportedException();
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
+
+            public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
 
             public void Dispose()
             {
@@ -136,11 +141,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public string Name => _pdfImageCollection.Name;
 
             public bool IsSupportedFolderContentsChanged => false;
-
-            public IObservable<object> CreateFolderContentChangedObserver()
-            {
-                throw new NotSupportedException();
-            }
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
+            public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
 
             public Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
@@ -228,7 +230,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public bool IsSupportedFolderContentsChanged => true;
 
-            public IObservable<object> CreateFolderContentChangedObserver() => throw new NotImplementedException();
+
+            public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
+            {
+                return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => FolderAndArchiveFileSearchQuery.ContentsChanged += h, h => FolderAndArchiveFileSearchQuery.ContentsChanged -= h).ToUnit();
+            }
+
+            public IObservable<Unit> CreateImageFileChangedObserver()
+            {
+                return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => ImageFileSearchQuery.ContentsChanged += h, h => ImageFileSearchQuery.ContentsChanged -= h).ToUnit();
+            }
+
         }
 
         private readonly ThumbnailManager _thumbnailManager;

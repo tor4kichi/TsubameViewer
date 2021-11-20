@@ -265,6 +265,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            _navigationDisposables = new CompositeDisposable();
+
             NowProcessing = true;
             try
             {
@@ -411,7 +413,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 NowProcessing = false;
             }
 
-            _navigationDisposables = new CompositeDisposable();
             Observable.CombineLatest(
                 SelectedFileSortType,
                 IsSortWithTitleDigitCompletion,
@@ -420,12 +421,38 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Pairwise()
                 .Where(x => x.NewItem != x.OldItem)
                 .Select(x => x.NewItem)
-                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? default))
+                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None))
                 .AddTo(_navigationDisposables);
+
+            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+            {
+                // アプリ内部操作も含めて変更を検知する
+                bool requireRefresh = false;
+                _imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
+                    .Subscribe(_ =>
+                    {
+                        requireRefresh = true;
+                        Debug.WriteLine("Folder andor Archive Update required. " + _currentPath);
+                    })
+                    .AddTo(_navigationDisposables);
+
+                ApplicationLifecycleObservable.WindwoActivationStateChanged()
+                    .Subscribe(async visible =>
+                    {
+                        if (visible && requireRefresh && _imageCollectionContext is not null)
+                        {
+                            requireRefresh = false;
+                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            Debug.WriteLine("Folder andor Archive Updated. " + _currentPath);
+                        }
+                    })
+                    .AddTo(_navigationDisposables);
+            }
 
             await base.OnNavigatedToAsync(parameters);
         }
 
+        IImageCollectionContext _imageCollectionContext;
 
         #region Refresh Item
 
@@ -438,6 +465,7 @@ namespace TsubameViewer.Presentation.ViewModels
             DisplayCurrentArchiveFolderName = null;
             CurrentFolderItem = null;
 
+            _imageCollectionContext = null;
             _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
             try
@@ -493,36 +521,65 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             catch (OperationCanceledException)
             {
-
+                CurrentFolderItem = null;
+                DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
+                return;
+            }
+            catch
+            {
+                CurrentFolderItem = null;
+                DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
+                throw;
             }
 
             if (imageCollectionContext == null) { return; }
 
+            _imageCollectionContext = imageCollectionContext;
             _ImageCollectionDisposer = imageCollectionContext as IDisposable;
 
-            var items = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
+            await ReloadItemsAsync(_imageCollectionContext, ct);
+        }
+        
+        private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+        {
+            var oldItemPathMap = FolderItems.Select(x => x.Path).ToHashSet();
+            var newItems = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
+            var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
+                .Where(x => oldItemPathMap.Contains(x))
+                .ToHashSet();
+            
             using (FileItemsView.DeferRefresh())
             {
-                foreach (var item in items)
+                // 削除アイテム
+                Debug.WriteLine($"items count : {FolderItems.Count}");
+                FolderItems.Remove(itemVM => 
+                {
+                    var delete = deletedItems.Contains(itemVM.Path);
+                    if (delete) { itemVM.Dispose(); }
+                    return delete;
+                });
+
+                Debug.WriteLine($"after deleted : {FolderItems.Count}");
+                // 新規アイテム
+                foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
                     FolderItems.Add(new StorageItemViewModel(item, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                 }
+                Debug.WriteLine($"after added : {FolderItems.Count}");
             }
 
             ct.ThrowIfCancellationRequested();
 
-            _ = Task.Run(async () => 
+            _ = Task.Run(async () =>
             {
                 bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
                 _scheduler.Schedule(() => HasFileItem = exist);
 
-                foreach (var item in items)
+                foreach (var item in newItems)
                 {
                     _PathReferenceCountManager.Upsert(item.Path, _currentItemRootFolderToken.TokenString);
                 }
             }, ct);
-
-            
         }
 
 #endregion

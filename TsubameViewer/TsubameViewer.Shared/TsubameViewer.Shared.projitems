@@ -24,6 +24,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Locales\LocalizeExtension.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ApplicationSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderItemsCacheRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ReadingFeature\BookmarkManager.cs" />
@@ -54,6 +55,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PathReferenceCountUpdateWhenSourceManagementChanged.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\ApplicationDataUpdateWhenPathReferenceCountChanged.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
