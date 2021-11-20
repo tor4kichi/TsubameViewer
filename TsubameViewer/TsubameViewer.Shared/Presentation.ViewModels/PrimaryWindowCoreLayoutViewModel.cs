@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
@@ -38,6 +39,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public INavigationService NavigationService => _navigationServiceLazy.Value;
         private readonly Lazy<INavigationService> _navigationServiceLazy;
         private readonly IScheduler _scheduler;
+        private readonly IMessenger _messenger;
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly StorageItemSearchManager _storageItemSearchManager;
@@ -50,6 +52,7 @@ namespace TsubameViewer.Presentation.ViewModels
             [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
             IEventAggregator eventAggregator,
             IScheduler scheduler,
+            IMessenger messenger,
             ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -69,6 +72,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationServiceLazy = navigationServiceLazy;
             EventAggregator = eventAggregator;
             _scheduler = scheduler;
+            _messenger = messenger;
             ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
             SourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -175,7 +179,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (storageItem is StorageFolder itemFolder)
             {
-                if (await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder) == FolderContainerType.OnlyImages)
+                var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, ct), CancellationToken.None);
+                if (containerType == FolderContainerType.OnlyImages)
                 {
                     await NavigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
                     return;

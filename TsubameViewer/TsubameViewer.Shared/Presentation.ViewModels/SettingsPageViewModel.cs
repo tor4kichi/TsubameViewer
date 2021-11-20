@@ -1,4 +1,5 @@
 ﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
@@ -33,6 +34,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public sealed class SettingsPageViewModel : ViewModelBase, IDisposable
     {
         private readonly IEventAggregator _eventAggregator;
+        private readonly IMessenger _messenger;
         private readonly ApplicationSettings _applicationSettings;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -45,6 +47,7 @@ namespace TsubameViewer.Presentation.ViewModels
         
         public SettingsPageViewModel(
             IEventAggregator eventAggregator,
+            IMessenger messenger,
             ApplicationSettings applicationSettings,
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -53,6 +56,7 @@ namespace TsubameViewer.Presentation.ViewModels
             )
         {
             _eventAggregator = eventAggregator;
+            _messenger = messenger;
             _applicationSettings = applicationSettings;
             _folderListingSettings = folderListingSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;

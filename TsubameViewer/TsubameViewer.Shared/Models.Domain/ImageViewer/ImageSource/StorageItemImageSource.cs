@@ -14,7 +14,7 @@ using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class StorageItemImageSource : IImageSource, IDisposable
+    public sealed class StorageItemImageSource : IImageSource
     {
         private readonly ThumbnailManager _thumbnailManager;
 
@@ -41,10 +41,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             ItemTypes = SupportedFileTypesHelper.StorageItemToStorageItemTypes(StorageItem);
         }
 
-        public void Dispose()
-        {
-        }
-
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
             if (StorageItem is StorageFile file
@@ -64,16 +60,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    return await file.GetScaledImageAsThumbnailAsync(Windows.Storage.FileProperties.ThumbnailMode.SingleItem, (uint)ListingImageConstants.LargeFileThumbnailImageHeight);
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
+                    if (thumbnailFile == null) { return null; }
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
                     )
                 {
-                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file);
+                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
                     if (thumbnailFile == null) { return null; }
-                    var stream = await thumbnailFile.OpenStreamForReadAsync();
-                    return stream.AsRandomAccessStream();
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
                 }
                 else
                 {
@@ -82,21 +79,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
             else if (StorageItem is StorageFolder folder)
             {
-                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder);
+                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder, ct);
                 if (thumbnailFile == null) { return null; }
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await thumbnailFile.OpenReadAsync().AsTask(ct);
             }
             else
             {
                 throw new NotSupportedException();
             }
         }
-
-        public void CancelLoading()
-        {
-
-        }
-
     }
 }

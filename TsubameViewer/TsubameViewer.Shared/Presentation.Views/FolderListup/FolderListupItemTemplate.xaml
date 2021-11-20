@@ -43,7 +43,7 @@
              Style="{StaticResource FolderItemImageStyle}"
              />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
                     Opacity="0.35"
@@ -80,7 +80,7 @@
              Style="{StaticResource FolderItemImageStyle}"
              />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
           <FontIcon.RenderTransform>
@@ -113,6 +113,24 @@
     </uwpControls:DockPanel>
   </DataTemplate>
 
+  <DataTemplate x:Key="ArchiveFolderTemplate" x:DataType="vm:StorageItemViewModel">
+    <Grid Background="Transparent" IsHitTestVisible="True">
+      <Image Source="{x:Bind Image, Mode=OneWay}"
+             x:Name="ImageControl"
+             Style="{StaticResource FolderItemImageStyle}"
+             />
+      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF012;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+    </Grid>
+  </DataTemplate>
 
 
   <DataTemplate x:Key="ImageFileTemplate" x:DataType="vm:StorageItemViewModel">
@@ -144,6 +162,7 @@
                                     Folder="{StaticResource FolderTemplate}"
                                     AddNewFolder="{StaticResource AddNewFolderTemplate}"
                                    Archive="{StaticResource ArchiveFileTemplate}"
+                                 ArchiveFolder="{StaticResource ArchiveFolderTemplate}"
                                    Image="{StaticResource ImageFileTemplate}"
                                    EBook="{StaticResource EBookFileTemplate}"
                                      >

@@ -6,6 +6,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 {
     public enum FileSortType
     {
+        UpdateTimeDescThenTitleAsc,
         TitleAscending,
         TitleDecending,
         UpdateTimeAscending,

@@ -119,6 +119,10 @@ namespace TsubameViewer.Presentation.Views
             flyout.ShowAt(args.OriginalSource as FrameworkElement);
         }
 
+        public void DeselectItem()
+        {
+            FoldersAdaptiveGridView.DeselectAll();
+        }
 
         public async void BringIntoViewLastIntractItem()
         {
@@ -130,6 +134,8 @@ namespace TsubameViewer.Presentation.Views
                 {
                     FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
 
+                    // 並び替えを伴う場合にスクロール位置がズレる問題を回避するためDelayを入れてる
+                    await Task.Delay(100);
                     {
                         DependencyObject item;
                         do

@@ -39,6 +39,14 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
+using TsubameViewer.Presentation.ViewModels.Sorting;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System.Windows.Input;
+using TsubameViewer.Presentation.Services.UWP;
+using Uno.Disposables;
+using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -52,6 +60,8 @@ namespace TsubameViewer.Presentation.ViewModels
         IDisposable _ImageEnumerationDisposer;
 
         private IImageSource[] _Images;
+        private string _currentItemRootFolderToken;
+
         public IImageSource[] Images
         {
             get { return _Images; }
@@ -80,6 +90,18 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
+        public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+
+        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+
+        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+
+        private string _DisplaySortTypeInheritancePath;
+        public string DisplaySortTypeInheritancePath
+        {
+            get { return _DisplaySortTypeInheritancePath; }
+            private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
+        }
 
         public ReactiveProperty<double> CanvasWidth { get; }
         public ReactiveProperty<double> CanvasHeight { get; }
@@ -141,16 +163,19 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageViewerSettings ImageViewerSettings { get; }
 
         private readonly IScheduler _scheduler;
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ImageViewerPageViewModel(
             IScheduler scheduler,
+            IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             PathReferenceCountManager PathReferenceCountManager,
             ImageCollectionManager imageCollectionManager,
@@ -159,11 +184,13 @@ namespace TsubameViewer.Presentation.ViewModels
             RecentlyAccessManager recentlyAccessManager,
             RecyclableMemoryStreamManager recyclableMemoryStreamManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
             )
         {
             _scheduler = scheduler;
+            _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _PathReferenceCountManager = PathReferenceCountManager;
             _imageCollectionManager = imageCollectionManager;
@@ -173,6 +200,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .Do(_ => 
@@ -180,7 +208,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (Images == null || !Images.Any()) { return; }
 
                     var imageSource = Images[CurrentImageIndex];
-                    var names = imageSource.Name.Split(SeparateChars);
+                    var names = imageSource.Path.Split(SeparateChars);
                     PageName = names[names.Length - 1];
                     PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
                     _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
@@ -195,6 +223,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_disposables);
 
             _appView = ApplicationView.GetForCurrentView();
+
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
+                .AddTo(_disposables);
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+                .AddTo(_disposables);
+
 
             _SizeChangedSubject
                 .Where(x => x >= 0 && Images != null)
@@ -224,7 +258,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (Images?.Any() ?? false)
             {
-                Images.ForEach(x => (x as IDisposable)?.Dispose());
+                Images.ForEach((IImageSource x) => x.TryDispose());
                 Images = null;
             }
 
@@ -256,6 +290,11 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
+            _imageLoadingCts = new CancellationTokenSource();
+            _imageCollectionContext = null;
+            PageName = null;
+            Title = null;
+            PageFolderName = null;
 
             // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -328,8 +367,31 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
+                        _currentItemRootFolderToken = token;
                         Images = default;
                         CurrentImageIndex = 0;
+
+                        _appView.Title = _currentFolderItem.Name;
+                        Title = _currentFolderItem.Name;
+
+                        DisplaySortTypeInheritancePath = null;
+                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
+                        if (settings != null)
+                        {
+                            SelectedFileSortType.Value = settings.Sort;
+                            IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+                        }
+                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                        {
+                            DisplaySortTypeInheritancePath = parentSort.Path;
+                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                            IsSortWithTitleDigitCompletion.Value = true;
+                        }
+                        else
+                        {
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                            IsSortWithTitleDigitCompletion.Value = true;
+                        }
                     }
                 }
             }
@@ -339,7 +401,18 @@ namespace TsubameViewer.Presentation.ViewModels
             //    2. 前回の更新が未完了だった場合
             if (_currentFolderItem != null)
             {
-                await RefreshItems(_leavePageCancellationTokenSource.Token);
+                try
+                {
+#if DEBUG
+                    //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
+#endif
+                    await _messenger.WorkWithBusyWallAsync(RefreshItems, _leavePageCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    (BackNavigationCommand as ICommand).Execute(null);
+                    return;
+                }
             }
 
             // 表示する画像を決める
@@ -361,8 +434,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName)
-                )
+            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName))
             {
                 if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
                 {
@@ -380,6 +452,21 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 }
             }
+            
+            if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName))
+            {
+                if (parameters.TryGetValue<string>(PageNavigationConstants.ArchiveFolderName, out string folderName))
+                {
+                    var unescapedFolderName = Uri.UnescapeDataString(folderName);
+                    var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
+                    if (pageFirstItem != null)
+                    {
+                        CurrentImageIndex = Images.IndexOf(pageFirstItem);
+                    }
+                }
+            }
+
+            RaisePropertyChanged(nameof(CurrentImageIndex));
 
             // 表示画像が揃ったら改めてボタンを有効化
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -388,7 +475,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 画像更新
             new [] 
             {
-                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit() 
+                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay).ToUnit(),
             }
                 .Merge()
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
@@ -398,6 +485,62 @@ namespace TsubameViewer.Presentation.ViewModels
                     await ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
+
+            Observable.CombineLatest(
+                IsSortWithTitleDigitCompletion,
+                SelectedFileSortType,
+                (x, y) => (x, y)
+                )
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(async _ =>
+                {
+                    if (Images == null) { return; }
+
+                    var currentItemPath = Images[CurrentImageIndex].Path;
+                    Images = ToSortedImages(Images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
+                    await ResetImageIndex(Images.IndexOf(null, (x, y) => y.Path == currentItemPath));
+                })
+                .AddTo(_navigationDisposables);
+
+            IsSortWithTitleDigitCompletion
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
+                .AddTo(_navigationDisposables);
+
+            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+            {
+                // アプリ内部操作も含めて変更を検知する
+                bool requireRefresh = false;
+                _imageCollectionContext.CreateImageFileChangedObserver()
+                    .Subscribe(_ =>
+                    {
+                        requireRefresh = true;
+                        Debug.WriteLine("Images Update required. " + _currentPath);
+                    })
+                    .AddTo(_navigationDisposables);
+
+                ApplicationLifecycleObservable.WindowActivationStateChanged()
+                    .Subscribe(async visible =>
+                    {
+                        if (visible && requireRefresh && _imageCollectionContext is not null)
+                        {
+                            requireRefresh = false;
+                            var currentItemPath = Images[CurrentImageIndex].Path;
+                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+
+                            var index = Images.IndexOf(null, (x, y) => y.Path == currentItemPath);
+                            if (index < 0)
+                            {
+                                index = 0;
+                            }
+                            await ResetImageIndex(index);
+                            Debug.WriteLine("Images Updated. " + _currentPath);
+                        }
+                    })
+                    .AddTo(_navigationDisposables);
+            }
 
             await base.OnNavigatedToAsync(parameters);
         }
@@ -409,7 +552,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (Images == null || Images.Length == 0) { return; }
 
-            if (direction != IndexMoveDirection.Backward)
+            if (direction != IndexMoveDirection.Forward)
             {
                 ClearPrefetch();
             }
@@ -627,7 +770,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (bitmapImage == null)
             {
-                using (var stream = await imageSource.GetThumbnailImageStreamAsync(ct))
+                using (var stream = await imageSource.GetImageStreamAsync(ct))
                 {
                     bitmapImage = new BitmapImage();
                     bitmapImage.SetSource(stream);
@@ -662,6 +805,7 @@ namespace TsubameViewer.Presentation.ViewModels
             Backward,
         }
 
+        IImageCollectionContext _imageCollectionContext;
         CancellationTokenSource _imageLoadingCts;
         FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
@@ -670,40 +814,117 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
 
-            var result = await _imageCollectionManager.GetImagesAsync(_currentFolderItem);
-            if (result != null)
+            IImageCollectionContext imageCollectionContext = null;
+            if (_currentFolderItem is StorageFolder folder)
             {
-                Images = result.Images;
-                CurrentImageIndex = result.FirstSelectedIndex;
-                _ImageEnumerationDisposer = result.ItemsEnumeratorDisposer;
-                ParentFolderOrArchiveName = result.ParentFolderOrArchiveName;
-
-                if (_currentFolderItem is StorageFolder ||
-                    (_currentFolderItem is StorageFile file && SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                    )
+                Debug.WriteLine(folder.Path);
+                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+            }
+            else if (_currentFolderItem is StorageFile file)
+            {
+                Debug.WriteLine(file.Path);
+                if (file.IsSupportedImageFile())
                 {
-                    PageFolderNames = Images.Select(x => SeparateChars.Any(sc => x.Name.Contains(sc)) ? x.Name.Split(SeparateChars).TakeLast(2).First() : string.Empty).Distinct().Where(x => !string.IsNullOrEmpty(x)).ToArray();
+                    try
+                    {
+                        var parentFolder = await file.GetParentAsync();
+                        imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken, Path.GetDirectoryName(_currentPath));
+                        if (parentItem is StorageFolder parentFolder)
+                        {
+                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        }
+                    }
                 }
-                else
+                else if (file.IsSupportedMangaFile())
+                {
+                    imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+            if (imageCollectionContext == null) { return; }
+
+            _ImageEnumerationDisposer = imageCollectionContext as IDisposable;
+            _imageCollectionContext = imageCollectionContext;
+
+            ParentFolderOrArchiveName = imageCollectionContext.Name;
+            ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
+            _appView.Title = _currentFolderItem.Name;
+            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
+
+            await ReloadItemsAsync(imageCollectionContext, ct);
+            
+            {
+                if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
+                {
+                    var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
+                    CurrentImageIndex = Images.IndexOf(item);
+                }
+                else { CurrentImageIndex = 0; }
+            }
+
+            if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
+            {
+                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct);
+                if (folders.Count <= 1)
                 {
                     PageFolderNames = new string[0];
                 }
-
-
-                ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
-
-                _appView.Title = _currentFolderItem.Name;
-                Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
-
-                GoNextImageCommand.RaiseCanExecuteChanged();
-                GoPrevImageCommand.RaiseCanExecuteChanged();
-
-                _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
+                else
+                {
+                    PageFolderNames = folders.Select(x => x.Name).ToArray();
+                }
             }
+            else
+            {
+                PageFolderNames = new string[0];
+            }
+
+            GoNextImageCommand.RaiseCanExecuteChanged();
+            GoPrevImageCommand.RaiseCanExecuteChanged();
+
+            _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
         }
 
 
-        #region Prefetch Images
+        private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+        {
+            foreach (var oldImage in Images ?? Enumerable.Empty<IImageSource>())
+            {
+                oldImage.TryDispose();
+            }
+
+            var images = await imageCollectionContext.GetAllImageFilesAsync(ct);            
+            Images = ToSortedImages(images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
+        }
+
+
+        IOrderedEnumerable<IImageSource> ToSortedImages(IEnumerable<IImageSource> images, FileSortType sort, bool withTitleDigitCompletion)
+        {
+            return sort switch
+            {
+                FileSortType.UpdateTimeDescThenTitleAsc => withTitleDigitCompletion
+                    ? images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path, TitleDigitCompletionComparer.Default)
+                    : images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path),
+                FileSortType.TitleAscending => withTitleDigitCompletion
+                    ? images.OrderBy(x => x.Path, TitleDigitCompletionComparer.Default)
+                    : images.OrderBy(x => x.Path),
+                FileSortType.TitleDecending => withTitleDigitCompletion
+                    ? images.OrderByDescending(x => x.Path, TitleDigitCompletionComparer.Default)
+                    : images.OrderByDescending(x => x.Path),
+                FileSortType.UpdateTimeAscending => images.OrderBy(x => x.DateCreated),
+                FileSortType.UpdateTimeDecending => images.OrderByDescending(x => x.DateCreated),
+                _ => throw new NotSupportedException(sort.ToString()),
+            };
+        }
+#region Prefetch Images
 
 
         PrefetchImageInfo[] _PrefetchImageDatum = new PrefetchImageInfo[2];
@@ -738,10 +959,10 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         
-        #endregion
+#endregion
 
 
-        #region Commands
+#region Commands
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
@@ -794,7 +1015,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ExecuteChangePageFolderCommand(string pageName)
         {
-            var pageFirstItem = Images.FirstOrDefault(x => x.Name.Contains(pageName));
+            var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(pageName));
             if (pageFirstItem == null) { return; }
 
             var pageFirstItemIndex = Images.IndexOf(pageFirstItem);
@@ -822,9 +1043,48 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        #endregion
 
-        #region Single/Double View
+        private DelegateCommand<object> _ChangeFileSortCommand;
+        public DelegateCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort =>
+            {
+                FileSortType? sortType = null;
+                if (sort is int num)
+                {
+                    sortType = (FileSortType)num;
+                }
+                else if (sort is FileSortType sortTypeExact)
+                {
+                    sortType = sortTypeExact;
+                }
+
+                if (sortType.HasValue)
+                {
+                    DisplaySortTypeInheritancePath = null;
+                    SelectedFileSortType.Value = sortType.Value;
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                }
+                else
+                {
+                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
+                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
+                    && parentSort.ChildItemDefaultSort != null
+                    )
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        DisplaySortTypeInheritancePath = null;
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                    }
+                }
+            });
+
+#endregion
+
+#region Single/Double View
 
         private bool _NowDoubleImageView;
         public bool NowDoubleImageView
@@ -843,7 +1103,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void CalcViewResponsibleImageAmount(double canvasWidth, double canvasHeight)
         {
-            var images = _CurrentImages.ToArray();
+            var images = _CurrentImages?.ToArray();
             if (ImageViewerSettings.IsEnableSpreadDisplay)
             {
                 var aspectRatio = canvasWidth / canvasHeight;
@@ -853,7 +1113,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     ViewResponsibleImageAmount = 2;
                     if (CurrentImages?.Length != 2)
                     {
-                        CurrentImages = new BitmapImage[2] { images.ElementAtOrDefault(0), null };
+                        CurrentImages = new BitmapImage[2] { images?.ElementAtOrDefault(0), null };
                     }
                 }
                 else
@@ -861,7 +1121,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     ViewResponsibleImageAmount = 1;
                     if (CurrentImages?.Length != 1)
                     {
-                        CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                        CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
                     }
                 }
             }
@@ -870,14 +1130,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 ViewResponsibleImageAmount = 1;
                 if (CurrentImages?.Length != 1)
                 {
-                    CurrentImages = new BitmapImage[1] { images.ElementAtOrDefault(0) };
+                    CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
                 }
             }
 
             
         }
 
-        #endregion
+#endregion
 
 
     }

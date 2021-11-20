@@ -39,8 +39,6 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
-            Loaded += ImageViewerPage_Loaded;
-
             Loaded += ResetAnimationUIContainer_Loaded1;
             Unloaded += TapAndController_Unloaded;
             DataContextChanged += OnDataContextChanged;
@@ -220,38 +218,6 @@ namespace TsubameViewer.Presentation.Views
             ToggleOpenCloseBottomUI();
         }
 
-
-        private async void ImageViewerPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            using (var cts = new CancellationTokenSource(60000))
-            {                
-                try
-                {
-                    ImagesContainer.Opacity = 0.0;
-                    bool isLongLoding = false;
-                    DateTime loadingStarted = DateTime.Now;
-                    ImageLodingProgress.Opacity = 0.0;
-                    while (!ImageItemsControl.Items.Any())
-                    {
-                        await Task.Delay(50, cts.Token);
-
-                        if (!isLongLoding && (DateTime.Now - loadingStarted) > TimeSpan.FromSeconds(0.5))
-                        {
-                            isLongLoding = true;
-                            ImageLodingProgress.IsActive = true;
-                            ImageLodingProgress.Opacity = 1.0;
-                        }
-                    }
-                }
-                finally
-                {
-                    ImageLodingProgress.IsActive = false;
-                    ImageLodingProgress.Opacity = 0.0;
-                    ImagesContainer.Fade(1.0f, 175f)
-                        .Start();
-                }
-            }
-        }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {

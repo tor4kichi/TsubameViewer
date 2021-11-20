@@ -10,6 +10,7 @@ namespace TsubameViewer.Models.Domain
         Folder,
         Image,
         Archive,
+        ArchiveFolder,
         EBook,
     }
 }

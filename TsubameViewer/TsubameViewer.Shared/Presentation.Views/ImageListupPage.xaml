@@ -87,7 +87,7 @@
     <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
       <ts:FileDisplayModeTemplateSelector.Line>
         <DataTemplate>
-          <Grid Height="13">
+          <Grid Height="13" Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="5" Width="13"
                     VerticalAlignment="Top"
@@ -101,7 +101,7 @@
       </ts:FileDisplayModeTemplateSelector.Line>
       <ts:FileDisplayModeTemplateSelector.Small>
         <DataTemplate >
-          <Grid>
+          <Grid Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
@@ -120,7 +120,7 @@
       </ts:FileDisplayModeTemplateSelector.Small>
       <ts:FileDisplayModeTemplateSelector.Midium>
         <DataTemplate >
-          <Grid>
+          <Grid Width="20">
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
@@ -128,20 +128,24 @@
                   Height="7" Width="7"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
+                    Margin="4 0 0 0"
                   />
             <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="7" Width="7"
                   HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
+                    Margin="0 0 3 0"
                   />
           </Grid>
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Midium>
       <ts:FileDisplayModeTemplateSelector.Large>
         <DataTemplate >
-          <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+          <Border Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
                   Height="13" Width="13"
                   />
+          </Border>
         </DataTemplate>
       </ts:FileDisplayModeTemplateSelector.Large>
     </ts:FileDisplayModeTemplateSelector>
@@ -161,9 +165,15 @@
 
           <StackPanel x:Name="HeaderStackPanel"
                   uwpControls:DockPanel.Dock="Left"
+                      Spacing="8"
                   >
 
-            <TextBlock Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" Opacity="0.7" />
+            <uwpControls:WrapPanel Orientation="Horizontal">
+            <TextBlock Opacity="0.7" TextWrapping="Wrap">
+              <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
+            </TextBlock>
+              
+            </uwpControls:WrapPanel>
             <Button x:Name="ReturnSourceFolderPageButton"
               Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
               Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
@@ -186,20 +196,33 @@
 
         </uwpControls:DockPanel>
 
-        <uwpControls:DockPanel x:Name="FilesActionLayout" >
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 8">
 
-          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
-            <TextBlock VerticalAlignment="Center">
+          <Border uwpControls:DockPanel.Dock="Bottom" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+            <TextBlock Opacity="0.7">
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+          
+          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" Spacing="4">
+            <TextBlock VerticalAlignment="Center" >
               <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
             </TextBlock>
             <DropDownButton x:Name="FileSortButton" 
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
-                            Padding="8"
                             Background="Transparent"
-                              Height="40"
                             >
               <DropDownButton.Flyout>
                 <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
+                                  CommandParameter="{x:Null}"
+                                  />
+
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                     <MenuFlyoutItem.CommandParameter>
                       <models:FileSortType>UpdateTimeDecending</models:FileSortType>
@@ -223,7 +246,28 @@
                 </MenuFlyout>
               </DropDownButton.Flyout>
             </DropDownButton>
+
           </StackPanel>
+
+
+          <Button Margin="8 0 0 0">
+            <Button.Content>
+              <SymbolIcon Symbol="More" />
+            </Button.Content>
+
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <StackPanel Spacing="8">
+                  <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
+
+                  <!--
+                  <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
+                  -->
+                  
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
 
 
 
@@ -239,7 +283,10 @@
                     >
             <ListView.ItemContainerStyle>
               <Style TargetType="ListViewItem">
-                <Setter Property="MinWidth" Value="32" />
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Padding" Value="0 0 0 0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
               </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemsPanel>
@@ -315,7 +362,7 @@
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>
@@ -362,22 +409,13 @@
 
       <!-- 表示内容切替中の全体の表示切替 -->
       <VisualStateGroup>
-        <!-- NowProcessing の変更が何故か反映されないケースがあるため、別プロパティで読み込み中表示をキャンセルするようにしている -->
-        <!-- ItemsRepeater上での読み込みが重いとかだろうか？ -->
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
+            <!-- x:Bind _vm.NowProcessing だと反映されないのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-          </VisualState.Setters>
-        </VisualState>
-        
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.NowProcessing, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
+            <Setter Target="FileItemsContainer.Opacity" Value="0.0" />
             <Setter Target="FileSortButton.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>

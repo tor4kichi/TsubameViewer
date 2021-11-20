@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Windows.Storage;
@@ -24,26 +25,26 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderContainerTypeRepository = folderContainerTypeRepository;
         }
 
-        public async ValueTask<FolderContainerType> GetFolderContainerTypeWithCacheAsync(StorageFolder folder)
+        public async ValueTask<FolderContainerType> GetFolderContainerTypeWithCacheAsync(StorageFolder folder, CancellationToken ct)
         {
             var containerType = _folderContainerTypeRepository.GetContainerType(folder.Path);
             
             if (containerType != null) { return containerType.Value; }
 
-            return await GetLatestFolderContainerTypeAndUpdateCacheAsync(folder);
+            return await GetLatestFolderContainerTypeAndUpdateCacheAsync(folder, ct);
         }
 
-        public async Task<FolderContainerType> GetLatestFolderContainerTypeAndUpdateCacheAsync(StorageFolder folder)
+        public async Task<FolderContainerType> GetLatestFolderContainerTypeAndUpdateCacheAsync(StorageFolder folder, CancellationToken ct)
         {
             var query = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = Windows.Storage.Search.FolderDepth.Shallow });
-            var count = await query.GetItemCountAsync();
+            var count = await query.GetItemCountAsync().AsTask(ct);
             if (count == 0)
             {
                 _folderContainerTypeRepository.SetContainerType(folder.Path, FolderContainerType.Other);
                 return FolderContainerType.Other;
             }
 
-            var items = await query.GetFilesAsync(0, count);
+            var items = await query.GetFilesAsync(0, count).AsTask(ct);
             var containerType = items.All(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType))
                 ? FolderContainerType.OnlyImages
                 : FolderContainerType.Other

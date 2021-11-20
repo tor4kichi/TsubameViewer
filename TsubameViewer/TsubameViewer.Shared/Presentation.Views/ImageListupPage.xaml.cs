@@ -161,6 +161,13 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.020f, 1.020f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+            if (item.DataContext is StorageItemViewModel itemVM)
+            {
+                if (itemVM.Image?.IsAnimatedBitmap ?? false)
+                {
+                    itemVM.Image.Play();
+                }
+            }
         }
 
         private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
@@ -168,6 +175,13 @@ namespace TsubameViewer.Presentation.Views
             var item = sender as FrameworkElement;
             item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
                 .Start();
+            if (item.DataContext is StorageItemViewModel itemVM)
+            {
+                if (itemVM.Image?.IsAnimatedBitmap ?? false)
+                {
+                    itemVM.Image.Stop();
+                }
+            }
         }
 
 

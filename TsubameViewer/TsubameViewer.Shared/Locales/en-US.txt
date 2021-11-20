@@ -73,15 +73,22 @@ ChangeViewToImageListupPage = Switch to image list view
 
 
 FileSortTitle = Sorting
-FileSortType.TitleAscending = File name (ascending order)
-FileSortType.TitleDecending = File name (descending order)
-FileSortType.UpdateTimeAscending = Recent first
-FileSortType.UpdateTimeDecending = Latest first
+FileSortType.UpdateTimeDescThenTitleAsc = Latest & Title Asc
+FileSortType.TitleAscending = Title Asc
+FileSortType.TitleDecending = Title Desc
+FileSortType.UpdateTimeAscending = Recent
+FileSortType.UpdateTimeDecending = Latest
+
+Sort_InheritancePath = Sort inheritance source
+Sort_Unselected = Unspecified
+Sort_DefaultChildItemSort = Sorting images in child folders
+TitleDigitCompletion = Title digit completion
+
 
 OpenImageViewer = Open in reader
 OpenFolderListup = List files
 OpenWithExplorer = Open in explorer
-OpenWithExternalApplication = Open with an external app
+OpenWithExternalApplication = Open with
 
 AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start
@@ -99,6 +106,7 @@ IsEnableSpreadDisplay = Spread display
 IsLeftBindingView = Left binding display
 
 SwitchFullScreen = Full screen switching
+DoubleViewCorrectPaging = Correct the page shift of the spread
 
 
 #### EBookReaderPage

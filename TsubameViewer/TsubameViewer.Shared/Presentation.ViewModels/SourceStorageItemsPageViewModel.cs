@@ -126,7 +126,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(args =>
                 {
 
-                    var existInFolders = Folders.FirstOrDefault(x => x.Token.TokenString == args.Token);
+                    var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Token.TokenString == args.Token);
                     if (existInFolders != null)
                     {
                         Folders.Remove(existInFolders);
@@ -157,7 +157,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _eventAggregator.GetEvent<SourceStorageItemsRepository.RemovedEvent>()
                 .Subscribe(args =>
                 {
-                    var existInFolders = Folders.FirstOrDefault(x => x.Token.TokenString == args.Token);
+                    var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Token.TokenString == args.Token);
                     if (existInFolders != null)
                     {
                         Folders.Remove(existInFolders);
