@@ -75,7 +75,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
@@ -313,8 +313,7 @@
                                Visibility="Collapsed"                              
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
-                                      />
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>
@@ -337,8 +336,7 @@
                                Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
-                                      />
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>

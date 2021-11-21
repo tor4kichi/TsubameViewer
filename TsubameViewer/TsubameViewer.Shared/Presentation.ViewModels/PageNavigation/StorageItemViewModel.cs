@@ -85,7 +85,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemTypes Type { get; }
 
-        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private CancellationTokenSource _cts;
         private static FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private double _ReadParcentage;
@@ -150,7 +150,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void StopImageLoading()
         {
-            // do nothing.
+            _cts.Cancel();
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -158,13 +158,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
+            if (_isInitialized) { return; }
+
+            // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
+            // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
+            _cts = new CancellationTokenSource();
             var ct = _cts.Token;
             try
             {
                 using var _ = await _imageLoadingLock.LockAsync(ct);
 
                 if (Item == null) { return; }
-                if (_isInitialized) { return; }
 
                 if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
                 if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
