@@ -169,7 +169,7 @@
   </ts:FolderItemTemplateSelector>
 
 
-  <x:Double x:Key="FolderItemCornerRadius">4</x:Double>
+  <x:Double x:Key="FolderItemCornerRadius">6</x:Double>
 
 
   <Style x:Key="FolderStyle" TargetType="GridViewItem" BasedOn="{StaticResource GridViewItemExpanded}">
