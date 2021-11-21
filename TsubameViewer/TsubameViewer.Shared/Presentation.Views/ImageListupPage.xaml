@@ -40,11 +40,17 @@
                UserControlによるカーソル移動サポートを有効化している -->
 
     <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
-        <Grid Background="{ThemeResource SystemBaseLowColor}" Padding="12 6">
+        <Grid 
+          CornerRadius="4"
+          BorderThickness="0.25"
+          BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          Padding="12 6"
+          >
           <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
             <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
             <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
@@ -58,28 +64,52 @@
 
     <DataTemplate x:Key="FileItemTemplate_Small">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Grid
+          CornerRadius="4"
+          BorderThickness="0.25"
+          BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          >
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" 
+                 />
+        </Grid>
+
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Grid
+          CornerRadius="4"
+          BorderThickness="0.25"
+          BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          >
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        </Grid>
+
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        <Grid
+          CornerRadius="4"
+          BorderThickness="0.25"
+          BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          >
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        </Grid>
       </UserControl>
     </DataTemplate>
 
