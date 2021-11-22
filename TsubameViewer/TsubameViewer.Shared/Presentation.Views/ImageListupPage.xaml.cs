@@ -196,4 +196,26 @@ namespace TsubameViewer.Presentation.Views
         }
 
     }
+
+
+    public class ImageItemWidthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (value is double ratioWH)
+            {
+                double itemHeight = (int)parameter;
+                return itemHeight * ratioWH;
+            }
+            else 
+            {
+                return double.NaN;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotSupportedException();
+        }
+    }
 }

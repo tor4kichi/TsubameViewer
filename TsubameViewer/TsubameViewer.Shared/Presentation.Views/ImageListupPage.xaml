@@ -36,6 +36,8 @@
 
   <Page.Resources>
 
+    <local:ImageItemWidthConverter x:Key="ImageItemWidthConverter" />
+    
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
 
@@ -66,7 +68,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
         <Grid Style="{StaticResource ImageItemGridStyle}">
           <ToolTipService.ToolTip>
             <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -77,7 +79,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
         <Grid Style="{StaticResource ImageItemGridStyle}">
           <ToolTipService.ToolTip>
             <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -88,7 +90,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
         <Grid Style="{StaticResource ImageItemGridStyle}">
           <ToolTipService.ToolTip>
             <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />

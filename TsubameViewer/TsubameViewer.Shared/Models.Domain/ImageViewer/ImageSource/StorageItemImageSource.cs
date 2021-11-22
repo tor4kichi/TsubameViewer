@@ -88,5 +88,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 throw new NotSupportedException();
             }
         }
+
+        public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+        {
+            return _thumbnailManager.GetThubmnailOriginalSize(StorageItem);
+        }
     }
 }

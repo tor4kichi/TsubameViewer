@@ -21,6 +21,7 @@ using Uno.Disposables;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
+    using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
     public record StorageItemToken(string RootItemPath, string TokenString)
@@ -83,6 +84,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             private set { SetProperty(ref _image, value); }
         }
 
+        private double? _ImageAspectRatioWH;
+        public double? ImageAspectRatioWH
+        {
+            get { return _ImageAspectRatioWH; }
+            set { SetProperty(ref _ImageAspectRatioWH, value); }
+        }
+
+
+
         public StorageItemTypes Type { get; }
 
         private CancellationTokenSource _cts;
@@ -127,6 +137,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 Path = storageItemImageSource.Path;
             }
+
+            _ImageAspectRatioWH = Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
 
             UpdateLastReadPosition();
         }
@@ -193,6 +205,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;
                 }
+
+                ImageAspectRatioWH ??= Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
 
                 _isInitialized = true;
             }

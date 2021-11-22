@@ -49,9 +49,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
-        public ThumbnailSize? GetThubmnailOriginalSize(StorageFile file)
+        public ThumbnailSize? GetThubmnailOriginalSize(IStorageItem file)
         {
             return _thumbnailImageInfoRepository.GetSize(file.Path);
+        }
+
+        public ThumbnailSize? GetThubmnailOriginalSize(string path)
+        {
+            return _thumbnailImageInfoRepository.GetSize(path);
         }
 
 
