@@ -1,6 +1,8 @@
 ﻿using LiteDB;
 using Microsoft.IO;
 using Microsoft.Toolkit.Uwp.Helpers;
+using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -12,7 +14,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
@@ -46,8 +50,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
             _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+
+            _TitlePriorityRegex ??= _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegexString)
+                .Select(x => x is not null ? new Regex(x) : null)
+                .ToReadOnlyReactivePropertySlim();
         }
 
+
+        static ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 
         public ThumbnailSize? GetThubmnailOriginalSize(IStorageItem file)
         {
@@ -369,10 +379,18 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var zipArchive = new ZipArchive(archiveStream))
             {
                 ct.ThrowIfCancellationRequested();
-                var archiveImageItem = zipArchive.Entries.OrderBy(x=> x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
-                if (archiveImageItem == null) { return false; }
 
-                using (var inputStream = archiveImageItem.Open())
+                ZipArchiveEntry entry = null;
+                if (_TitlePriorityRegex.Value is not null and Regex regex)
+                {
+                    entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
+                }
+
+                entry ??= zipArchive.Entries.OrderBy(x => x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
+
+                if (entry == null) { return false; }
+
+                using (var inputStream = entry.Open())
                 {
                     await inputStream.CopyToAsync(outputStream, 81920, ct);
                     ct.ThrowIfCancellationRequested();
@@ -388,10 +406,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var rarArchive = RarArchive.Open(archiveStream))
             {
-                var archiveImageItem = rarArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));                
-                if (archiveImageItem == null) { return false; }
+                RarArchiveEntry entry = null;
+                if (_TitlePriorityRegex.Value is not null and Regex regex)
+                {
+                    entry = rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                }
 
-                using (var inputStream = archiveImageItem.OpenEntryStream())
+                entry ??= rarArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+
+                if (entry == null) { return false; }
+
+                using (var inputStream = entry.OpenEntryStream())
                 {
                     await inputStream.CopyToAsync(outputStream, 81920, ct);
                     await outputStream.FlushAsync();
@@ -404,12 +429,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private static async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-            using (var zipArchive = SevenZipArchive.Open(archiveStream))
+            using (var archive = SevenZipArchive.Open(archiveStream))
             {
-                var archiveImageItem = zipArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
-                if (archiveImageItem == null) { return false; }
+                SevenZipArchiveEntry entry = null;
+                if (_TitlePriorityRegex.Value is not null and Regex regex)
+                {
+                    entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                }
 
-                using (var inputStream = archiveImageItem.OpenEntryStream())
+                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+
+                if (entry == null) { return false; }
+
+                using (var inputStream = entry.OpenEntryStream())
                 {
                     await inputStream.CopyToAsync(outputStream, 81920, ct);
                     await outputStream.FlushAsync();
@@ -422,12 +454,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private static async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-            using (var zipArchive = TarArchive.Open(archiveStream))
+            using (var archive = TarArchive.Open(archiveStream))
             {
-                var archiveImageItem = zipArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
-                if (archiveImageItem == null) { return false; }
+                TarArchiveEntry entry = null;
+                if (_TitlePriorityRegex.Value is not null and Regex regex)
+                {
+                    entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                }
 
-                using (var inputStream = archiveImageItem.OpenEntryStream())
+                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+
+                if (entry == null) { return false; }
+
+                using (var inputStream = entry.OpenEntryStream())
                 {
                     await inputStream.CopyToAsync(outputStream, 81920, ct);
                     await outputStream.FlushAsync();
@@ -463,6 +502,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+        readonly static QueryOptions _CoverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
+        {
+            FolderDepth = FolderDepth.Deep,
+            ApplicationSearchFilter = "System.FileName:*cover*"
+        };
+
+        readonly static QueryOptions _AllSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
+
         public async Task<StorageFile> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct)
         {
             var itemId = GetStorageItemId(folder);
@@ -473,16 +520,30 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             else
             {
 #if WINDOWS_UWP
-                var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
-                var count = await query.GetItemCountAsync();
+                var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
 
-                if (count == 0) { return null; }
+                StorageFile file = null;
+                if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
+                {
+                    var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
+                    file = files[0];
+                }
+                
+                if (file == null)
+                {
+                    var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
+                    var count = await query.GetItemCountAsync();
+
+                    if (count == 0) { return null; }
+
+                    var files = await query.GetFilesAsync(0, 1);
+                    file = files[0];
+                }
 
                 var tempFolder = await GetTempFolderAsync();
 
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId);
-                var files = await query.GetFilesAsync(0, 1);
-                return await GenerateThumbnailImageAsync(files[0], thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
                 return null;
 #endif

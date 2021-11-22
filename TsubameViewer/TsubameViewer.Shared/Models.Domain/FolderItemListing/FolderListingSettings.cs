@@ -12,6 +12,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public const double DefaultFolderImageWidth = 200d;
         public const double DefaultFolderItemTitleHeight = 52d;
 
+        public const string DefaultThumbnailPriorityTitleRegexString = "cover|Cover|COVER|カバー";
         public FolderListingSettings()
         {
             _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
@@ -23,6 +24,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             
             _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
             _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
+            
+            _ThumbnailPriorityTitleRegexString = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegexString));
         }
 
         private FileDisplayMode _FileDisplayMode;
@@ -72,6 +75,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             get { return _FolderItemTitleHeight; }
             set { SetProperty(ref _FolderItemTitleHeight, value); }
+        }
+
+
+        private string _ThumbnailPriorityTitleRegexString;
+        public string ThumbnailPriorityTitleRegexString
+        {
+            get { return _ThumbnailPriorityTitleRegexString; }
+            set { SetProperty(ref _ThumbnailPriorityTitleRegexString, value); }
         }
     }
 }
