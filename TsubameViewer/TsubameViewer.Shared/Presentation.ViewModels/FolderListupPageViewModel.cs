@@ -235,6 +235,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 _leavePageCancellationTokenSource = null;
 
                 FolderItems.AsParallel().ForEach(x => x.Dispose());
+                FolderItems.Clear();
 
                 _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
                 _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
@@ -245,13 +246,16 @@ namespace TsubameViewer.Presentation.ViewModels
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
 
-                FolderItems.Clear();
 
                 _ImageCollectionDisposer?.Dispose();
                 _ImageCollectionDisposer = null;
 
                 _navigationDisposables?.Dispose();
                 _navigationDisposables = null;
+
+                CurrentFolderItem?.Dispose();
+                CurrentFolderItem = null;
+
                 base.OnNavigatedFrom(parameters);
             }
         }

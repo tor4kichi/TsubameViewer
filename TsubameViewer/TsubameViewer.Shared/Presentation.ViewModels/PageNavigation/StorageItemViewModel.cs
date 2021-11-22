@@ -145,6 +145,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void ClearImage()
         {
+            if (_disposed) { return; }
+
 #if DEBUG
             if (Image == null)
             {
@@ -162,7 +164,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void StopImageLoading()
         {
-            _cts.Cancel();
+            if (_disposed) { return; }
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -171,6 +177,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public async void Initialize()
         {
             if (_isInitialized) { return; }
+            if (_disposed) { return; }
 
             // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
             // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
@@ -195,7 +202,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 ct.ThrowIfCancellationRequested();
 
                 _isAppearingRequestButLoadingCancelled = false;
-                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
+                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct), ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
 
@@ -247,10 +254,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void Dispose()
         {
-            Item.TryDispose();
-            Image = null;
+            if (_disposed) { return; }
+            
+            _disposed = true;
             _cts?.Cancel();
             _cts?.Dispose();
+            Item.TryDispose();
+            Image = null;
         }
+        bool _disposed;
     }
 }

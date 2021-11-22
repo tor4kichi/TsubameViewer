@@ -237,6 +237,12 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer = null;
             _navigationDisposables?.Dispose();
 
+            ImageFileItems.AsParallel().ForEach(x => x.Dispose());
+            ImageFileItems.Clear();
+            
+            CurrentFolderItem?.Dispose();
+            CurrentFolderItem = null;
+
             base.OnNavigatedFrom(parameters);
         }
 
