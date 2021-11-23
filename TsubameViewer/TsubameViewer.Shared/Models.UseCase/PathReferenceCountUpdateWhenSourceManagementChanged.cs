@@ -73,17 +73,15 @@ namespace TsubameViewer.Models.UseCase
             _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
                 .Subscribe(async args =>
                 {
+                    using (await _lock.LockAsync(default))
+                    {
+                        _storageItemSearchManager.Update(args.StorageItem);
+                        _PathReferenceCountManager.Upsert(args.StorageItem.Path, args.Token);
+                    }
+
                     if (args.StorageItem is StorageFolder)
                     {
                         RegistrationUpdateIndex(args.Token);
-                    }
-                    else 
-                    {
-                        using (await _lock.LockAsync(default))
-                        {
-                            _storageItemSearchManager.Update(args.StorageItem);
-                            _PathReferenceCountManager.Upsert(args.StorageItem.Path, args.Token);
-                        }
                     }
                 }
                 , keepSubscriberReferenceAlive: true
@@ -245,7 +243,7 @@ namespace TsubameViewer.Models.UseCase
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    var items = await query.GetItemsAsync(currentIndex, 10);
+                    var items = await query.GetItemsAsync(currentIndex, 100);
 
                     currentIndex += (uint)items.Count;
 
