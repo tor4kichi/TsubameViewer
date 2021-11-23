@@ -93,5 +93,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
             return _archiveDirectoryToken.Entry;
         }
+
+        public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+        {
+            return _thumbnailManager.GetThubmnailOriginalSize(_thumbnailManager.GetArchiveEntryPath(StorageItem, _entry));
+        }
     }
 }

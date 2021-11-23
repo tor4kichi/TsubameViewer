@@ -36,15 +36,26 @@
 
   <Page.Resources>
 
+    <local:ImageItemWidthConverter x:Key="ImageItemWidthConverter" />
+    
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
 
+    <Style x:Key="ImageItemGridStyle" TargetType="Grid">
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseLowBrush}" />
+      <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+    </Style>
+    
     <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
-        <Grid Background="{ThemeResource SystemBaseLowColor}" Padding="12 6">
+        <Grid Style="{StaticResource ImageItemGridStyle}"
+          Padding="12 6"
+          >
           <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
             <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
             <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
@@ -57,29 +68,35 @@
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
+        <Grid Style="{StaticResource ImageItemGridStyle}">
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        </Grid>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
+        <Grid Style="{StaticResource ImageItemGridStyle}">
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        </Grid>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="210" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <ToolTipService.ToolTip>
-          <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
-        </ToolTipService.ToolTip>
-        <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
+        <Grid Style="{StaticResource ImageItemGridStyle}">
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+        </Grid>
       </UserControl>
     </DataTemplate>
 
@@ -313,8 +330,7 @@
                                Visibility="Collapsed"                              
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
-                                      />
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>
@@ -337,8 +353,7 @@
                                Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6"
-                                      />
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
 
             <i:Interaction.Behaviors>

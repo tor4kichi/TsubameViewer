@@ -21,6 +21,7 @@ using Uno.Disposables;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
+    using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
     public record StorageItemToken(string RootItemPath, string TokenString)
@@ -83,9 +84,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             private set { SetProperty(ref _image, value); }
         }
 
+        private double? _ImageAspectRatioWH;
+        public double? ImageAspectRatioWH
+        {
+            get { return _ImageAspectRatioWH; }
+            set { SetProperty(ref _ImageAspectRatioWH, value); }
+        }
+
+
+
         public StorageItemTypes Type { get; }
 
-        private CancellationTokenSource _cts = new CancellationTokenSource();
+        private CancellationTokenSource _cts;
         private static FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private double _ReadParcentage;
@@ -128,11 +138,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 Path = storageItemImageSource.Path;
             }
 
+            _ImageAspectRatioWH = Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
+
             UpdateLastReadPosition();
         }
 
         public void ClearImage()
         {
+            if (_disposed) { return; }
+
 #if DEBUG
             if (Image == null)
             {
@@ -150,7 +164,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void StopImageLoading()
         {
-            // do nothing.
+            if (_disposed) { return; }
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
@@ -158,13 +176,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
+            if (_isInitialized) { return; }
+            if (_disposed) { return; }
+
+            // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
+            // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
+            _cts = new CancellationTokenSource();
             var ct = _cts.Token;
             try
             {
                 using var _ = await _imageLoadingLock.LockAsync(ct);
 
                 if (Item == null) { return; }
-                if (_isInitialized) { return; }
 
                 if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
                 if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
@@ -179,7 +202,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 ct.ThrowIfCancellationRequested();
 
                 _isAppearingRequestButLoadingCancelled = false;
-                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
+                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct), ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
 
@@ -189,6 +212,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;
                 }
+
+                ImageAspectRatioWH ??= Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
 
                 _isInitialized = true;
             }
@@ -229,10 +254,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void Dispose()
         {
-            Item.TryDispose();
-            Image = null;
+            if (_disposed) { return; }
+            
+            _disposed = true;
             _cts?.Cancel();
             _cts?.Dispose();
+            Item.TryDispose();
+            Image = null;
         }
+        bool _disposed;
     }
 }

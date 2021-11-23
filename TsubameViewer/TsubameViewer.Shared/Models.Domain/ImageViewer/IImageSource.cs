@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
+using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
@@ -16,6 +17,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         string Path { get; }
         DateTime DateCreated { get; }
+
+        ThumbnailSize? GetThumbnailSize();
+
         Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default);
 
         Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);

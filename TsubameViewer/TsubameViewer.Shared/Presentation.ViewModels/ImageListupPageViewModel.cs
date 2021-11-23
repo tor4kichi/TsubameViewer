@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -236,6 +237,12 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer = null;
             _navigationDisposables?.Dispose();
 
+            ImageFileItems.AsParallel().ForEach(x => x.Dispose());
+            ImageFileItems.Clear();
+            
+            CurrentFolderItem?.Dispose();
+            CurrentFolderItem = null;
+
             base.OnNavigatedFrom(parameters);
         }
 
@@ -364,7 +371,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         else
                         {
                             SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-
                             await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
                         }
 
@@ -651,15 +657,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void SetSortAsyncUnsafe(FileSortType fileSort, bool withNameInterpolation)
         {
-            var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
-            using (FileItemsView.DeferRefresh())
+            try
             {
+                var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
                 FileItemsView.SortDescriptions.Clear();
                 foreach (var sort in sortDescriptions)
                 {
                     FileItemsView.SortDescriptions.Add(sort);
                 }
+
+                FileItemsView.RefreshSorting();
             }
+            catch (COMException) { }
         }
 
         private DelegateCommand _SetParentFileSortWithCurrentSettingCommand;

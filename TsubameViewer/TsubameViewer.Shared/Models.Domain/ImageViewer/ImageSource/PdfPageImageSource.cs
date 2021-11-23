@@ -71,5 +71,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             ((IDisposable)_pdfPage).Dispose();
         }
 
+        public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+        {
+            return _thumbnailManager.GetThubmnailOriginalSize(_thumbnailManager.GetArchiveEntryPath(StorageItem, _pdfPage));
+        }
     }
 }
