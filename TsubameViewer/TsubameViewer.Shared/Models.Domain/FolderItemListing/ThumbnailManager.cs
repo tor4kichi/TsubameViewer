@@ -89,7 +89,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
             using (await _fileReadWriteLock.LockAsync(ct))
             {
-                await CopyAsJpegAsync(targetItem.Path, bitmapImage, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToFileAsync(targetItem.Path, bitmapImage, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             }
         }
 
@@ -102,7 +102,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
             using (await _fileReadWriteLock.LockAsync(ct))
             {
-                await CopyAsJpegAsync(path, bitmapImage, thumbnailFile, entry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToFileAsync(path, bitmapImage, thumbnailFile, entry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -229,7 +229,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     ct.ThrowIfCancellationRequested();
                 }
 
-                await CopyAsJpegAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToFileAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -261,7 +261,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 ct.ThrowIfCancellationRequested();
 
-                await CopyAsJpegAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToFileAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -315,7 +315,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         if (!result || stream.Length == 0) { return null; }
 
                         ct.ThrowIfCancellationRequested();
-                        await CopyAsJpegAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
+                        await TranscodeThumbnailImageToFileAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
 
                         return outputFile;
                     }
@@ -328,13 +328,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }, ct);
         }
 
-        const double ThumbanialImageQuality = 0.75d;
-        static BitmapPropertySet _jpegPropertySet = new BitmapPropertySet()
+        // see@ https://docs.microsoft.com/ja-jp/windows/win32/wic/jpeg-xr-codec
+        
+        static readonly BitmapPropertySet _jpegPropertySet = new BitmapPropertySet()
         {
-            { "ImageQuality", new BitmapTypedValue(ThumbanialImageQuality, Windows.Foundation.PropertyType.Single) }
+            { "ImageQuality", new BitmapTypedValue(0.75d, Windows.Foundation.PropertyType.Single) },
         };
 
-        private async Task CopyAsJpegAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        private Task TranscodeThumbnailImageToFileAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            return TranscodeToFileAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputFile, setupEncoder, ct);
+        }
+
+        private async Task TranscodeToFileAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
 
@@ -355,7 +361,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (await _fileReadWriteLock.LockAsync(ct))
             using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite).AsTask(ct))
             {
-                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, fileStream, _jpegPropertySet);
+                var encoder = await BitmapEncoder.CreateAsync(encoderId, fileStream, propertySet);
 
                 setupEncoder(decoder, encoder);
 
