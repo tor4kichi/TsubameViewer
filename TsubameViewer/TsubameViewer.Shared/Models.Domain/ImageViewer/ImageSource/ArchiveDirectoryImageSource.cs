@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Microsoft.Toolkit.Diagnostics;
+﻿using Microsoft.Toolkit.Diagnostics;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;

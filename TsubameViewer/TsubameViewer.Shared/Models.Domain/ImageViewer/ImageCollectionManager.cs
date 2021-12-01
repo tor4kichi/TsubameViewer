@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Microsoft.Toolkit.Diagnostics;
+﻿using Microsoft.Toolkit.Diagnostics;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
@@ -66,17 +65,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             public ArchiveImageCollection ArchiveImageCollection { get; }
             public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
-            private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
             private readonly ThumbnailManager _thumbnailManager;
 
             public string Name => ArchiveImageCollection.Name;
 
 
-            public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+            public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, ThumbnailManager thumbnailManager)
             {
                 ArchiveImageCollection = archiveImageCollection;
                 ArchiveDirectoryToken = archiveDirectoryToken;
-                _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
                 _thumbnailManager = thumbnailManager;
             }
 
@@ -244,15 +241,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
         public ImageCollectionManager(
-            ThumbnailManager thumbnailManager,
-            RecyclableMemoryStreamManager recyclableMemoryStreamManager
+            ThumbnailManager thumbnailManager
             )
         {
             _thumbnailManager = thumbnailManager;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         }
 
         public bool IsSupportGetArchiveImageCollectionContext(IStorageItem storageItem, CancellationToken ct)
@@ -296,7 +290,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
                 }
-                return new ArchiveImageCollectionContext(aic, directoryToken, _recyclableMemoryStreamManager, _thumbnailManager);
+                return new ArchiveImageCollectionContext(aic, directoryToken, _thumbnailManager);
             }
             else if (imageCollection is PdfImageCollection pdfImageCollection)
             {
@@ -400,7 +394,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .AddTo(disposables);
 
                 ct.ThrowIfCancellationRequested();
-                return new ArchiveImageCollection(file, zipArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+                return new ArchiveImageCollection(file, zipArchive, disposables, _thumbnailManager);
             }
             catch
             {
@@ -412,7 +406,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<PdfImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
-            return new PdfImageCollection(file, pdfDocument, _recyclableMemoryStreamManager, _thumbnailManager);
+            return new PdfImageCollection(file, pdfDocument, _thumbnailManager);
         }
 
 
@@ -428,7 +422,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .AddTo(disposables);
 
                 ct.ThrowIfCancellationRequested();
-                return new ArchiveImageCollection(file, rarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+                return new ArchiveImageCollection(file, rarArchive, disposables, _thumbnailManager);
             }
             catch
             {
@@ -450,7 +444,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .AddTo(disposables);
 
                 ct.ThrowIfCancellationRequested();
-                return new ArchiveImageCollection(file, szArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+                return new ArchiveImageCollection(file, szArchive, disposables, _thumbnailManager);
             }
             catch
             {
@@ -471,7 +465,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .AddTo(disposables);
 
                 ct.ThrowIfCancellationRequested();
-                return new ArchiveImageCollection(file, tarArchive, disposables, _recyclableMemoryStreamManager, _thumbnailManager);
+                return new ArchiveImageCollection(file, tarArchive, disposables, _thumbnailManager);
             }
             catch
             {
@@ -507,14 +501,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class PdfImageCollection : IImageCollection
     {
         private readonly PdfDocument _pdfDocument;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, ThumbnailManager thumbnailManager)
         {
             _pdfDocument = pdfDocument;
             File = file;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
         }
         public string Name => File.Name;
@@ -525,7 +517,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
-              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _recyclableMemoryStreamManager, _thumbnailManager))
+              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _thumbnailManager))
               .ToList();
         }
     }
@@ -688,17 +680,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public IArchive Archive { get; }
 
         private readonly CompositeDisposable _disposables;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
         private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new ();
-        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, ThumbnailManager thumbnailManager)
         {
             File = file;
             Archive = archive;
             _disposables = disposables;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
@@ -770,7 +760,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 : Archive.Entries.Where(x => DirectoryPathHelper.IsSameDirectoryPath(x, token.Entry))
                 )
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _recyclableMemoryStreamManager, _thumbnailManager))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _thumbnailManager))
                 .ToList();
 
             _entriesCacheByDirectory.Add(token, imageSourceItems);
