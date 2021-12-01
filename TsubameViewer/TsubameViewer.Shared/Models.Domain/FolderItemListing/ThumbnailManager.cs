@@ -93,7 +93,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
             using (await _fileReadWriteLock.LockAsync(ct))
             {
-                await CopyImageToFile(targetItem.Path, bitmapImage, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await CopyAsJpegAsync(targetItem.Path, bitmapImage, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             }
         }
 
@@ -106,7 +106,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
             using (await _fileReadWriteLock.LockAsync(ct))
             {
-                await CopyImageToFile(path, bitmapImage, thumbnailFile, entry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                await CopyAsJpegAsync(path, bitmapImage, thumbnailFile, entry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -233,7 +233,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     ct.ThrowIfCancellationRequested();
                 }
 
-                await CopyImageToFile(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                await CopyAsJpegAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -265,7 +265,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 ct.ThrowIfCancellationRequested();
 
-                await CopyImageToFile(path, memoryStream.AsRandomAccessStream(), thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
+                await CopyAsJpegAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
             }
 
             return thumbnailFile;
@@ -283,13 +283,13 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private Task<StorageFile> GenerateThumbnailImageAsync(StorageFile file, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            return Task.Run(async () => 
+            return Task.Run(async () =>
             {
                 try
                 {
                     using (var stream = _recyclableMemoryStreamManager.GetStream())
                     using (await _fileReadWriteLock.LockAsync(ct))
-                    { 
+                    {
                         var result = await (file.FileType switch
                         {
                             SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
@@ -319,7 +319,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         if (!result || stream.Length == 0) { return null; }
 
                         ct.ThrowIfCancellationRequested();
-                        await CopyImageToFile(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
+                        await CopyAsJpegAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
 
                         return outputFile;
                     }
@@ -331,37 +331,43 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 }
             }, ct);
         }
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManagerForCopy = new RecyclableMemoryStreamManager();
-        private async Task CopyImageToFile(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+
+        const double ThumbanialImageQuality = 0.75d;
+        static BitmapPropertySet _jpegPropertySet = new BitmapPropertySet()
         {
+            { "ImageQuality", new BitmapTypedValue(ThumbanialImageQuality, Windows.Foundation.PropertyType.Single) }
+        };
+
+        private async Task CopyAsJpegAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
+
             var decoder = await BitmapDecoder.CreateAsync(stream);
 
-
-            //using (var memStream = _recyclableMemoryStreamManagerForCopy.GetStream().AsRandomAccessStream())
-            using (var memStream = new InMemoryRandomAccessStream())
+            // サムネイルサイズ情報を記録
+            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
             {
-                var encoder = await BitmapEncoder.CreateForTranscodingAsync(memStream, decoder);
+                Path = path,
+                ImageWidth = decoder.PixelWidth,
+                ImageHeight = decoder.PixelHeight
+            });
 
-                // サムネイルサイズ情報を記録
-                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
-                {
-                    Path = path,
-                    ImageWidth = decoder.PixelWidth,
-                    ImageHeight = decoder.PixelHeight
-                });
+            var pixelData = await decoder.GetPixelDataAsync();
+            var detachedPixelData = pixelData.DetachPixelData();
+            pixelData = null;
+
+            using (await _fileReadWriteLock.LockAsync(ct))
+            using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite).AsTask(ct))
+            {
+                var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, fileStream, _jpegPropertySet);
 
                 setupEncoder(decoder, encoder);
 
                 Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+                encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
 
                 await encoder.FlushAsync().AsTask(ct);
-
-                memStream.Seek(0);
-                using (await _fileReadWriteLock.LockAsync(ct))
-                using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite).AsTask(ct))
-                {
-                    await RandomAccessStream.CopyAsync(memStream, fileStream).AsTask(ct);
-                }
+                await fileStream.FlushAsync().AsTask(ct);
             }
         }
 
