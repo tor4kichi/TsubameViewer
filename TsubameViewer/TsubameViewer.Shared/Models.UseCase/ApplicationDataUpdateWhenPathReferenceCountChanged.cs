@@ -11,11 +11,14 @@ using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
+using System.Threading.Tasks;
+using Microsoft.Toolkit.Mvvm.Messaging;
 
 namespace TsubameViewer.Models.UseCase
 {
     public sealed class ApplicationDataUpdateWhenPathReferenceCountChanged
     {
+        private readonly IMessenger _messenger;
         private readonly IEventAggregator _eventAggregator;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly BookmarkManager _bookmarkManager;
@@ -27,6 +30,7 @@ namespace TsubameViewer.Models.UseCase
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public ApplicationDataUpdateWhenPathReferenceCountChanged(
+            IMessenger messenger,
             IEventAggregator eventAggregator,
             RecentlyAccessManager recentlyAccessManager,
             BookmarkManager bookmarkManager,
@@ -38,6 +42,7 @@ namespace TsubameViewer.Models.UseCase
             DisplaySettingsByPathRepository displaySettingsByPathRepository
             )
         {
+            _messenger = messenger;
             _eventAggregator = eventAggregator;
             _recentlyAccessManager = recentlyAccessManager;
             _bookmarkManager = bookmarkManager;
@@ -57,14 +62,22 @@ namespace TsubameViewer.Models.UseCase
             _eventAggregator.GetEvent<PathReferenceCountManager.PathReferenceRemovedEvent>()
                 .Subscribe(async args =>
                 {
-                    _recentlyAccessManager.Delete(args.Path);
-                    _bookmarkManager.RemoveBookmark(args.Path);
-                    _storageItemSearchManager.Remove(args.Path);
-                    _folderContainerTypeManager.Delete(args.Path);
-                    _folderLastIntractItemManager.Remove(args.Path);
-                    await _thumbnailManager.DeleteFromPath(args.Path);
-                    await secondaryTileManager.RemoveSecondaryTile(args.Path);
-                    _displaySettingsByPathRepository.DeleteUnderPath(args.Path);
+                    await Task.Run(async () => 
+                    {
+                        var tasks = new[] {
+                             _thumbnailManager.DeleteFromPath(args.Path),
+                             secondaryTileManager.RemoveSecondaryTile(args.Path)
+                        };
+                        
+                        _recentlyAccessManager.Delete(args.Path);
+                        _bookmarkManager.RemoveBookmark(args.Path);
+                        _storageItemSearchManager.Remove(args.Path);
+                        _folderContainerTypeManager.Delete(args.Path);
+                        _folderLastIntractItemManager.Remove(args.Path);
+                        _displaySettingsByPathRepository.DeleteUnderPath(args.Path);
+
+                        await Task.WhenAll(tasks);
+                    });
                 }
                 , keepSubscriberReferenceAlive: true
                 )
