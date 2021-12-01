@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Prism.Mvvm;
+﻿using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -20,16 +19,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
         private readonly PdfPage _pdfPage;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, ThumbnailManager thumbnailManager)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
             DateCreated = storageItem.DateCreated.DateTime;
             StorageItem = storageItem;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
         }
 
@@ -50,20 +47,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
-            var memoryStream = _recyclableMemoryStreamManager.GetStream();
-            var stream = memoryStream.AsRandomAccessStream();
+            var memoryStream = new InMemoryRandomAccessStream();
             {
-                await _pdfPage.RenderToStreamAsync(stream).AsTask(ct);
+                await _pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
 
                 ct.ThrowIfCancellationRequested();
 
                 await memoryStream.FlushAsync();
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                memoryStream.Seek(0);
 
                 ct.ThrowIfCancellationRequested();
             }
 
-            return stream;
+            return memoryStream;
         }
 
         public void Dispose()

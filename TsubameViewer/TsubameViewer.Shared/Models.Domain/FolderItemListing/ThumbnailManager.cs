@@ -1,5 +1,4 @@
 ﻿using LiteDB;
-using Microsoft.IO;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -38,18 +37,15 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly FastAsyncLock _fileReadWriteLock = new FastAsyncLock();
 
         public ThumbnailManager(
             FolderListingSettings folderListingSettings,
-            ThumbnailImageInfoRepository thumbnailImageInfoRepository,
-            RecyclableMemoryStreamManager recyclableMemoryStreamManager
+            ThumbnailImageInfoRepository thumbnailImageInfoRepository
             )
         {
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
 
             _TitlePriorityRegex ??= _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegexString)
                 .Select(x => x is not null ? new Regex(x) : null)
@@ -222,7 +218,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (archiveEntry.IsDirectory) { return null; }
 
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+            using (var memoryStream = new InMemoryRandomAccessStream().AsStream())
             using (await _fileReadWriteLock.LockAsync(ct))
             {
                 using (var entryStream = archiveEntry.OpenEntryStream())
@@ -257,7 +253,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
 
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
-            using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+            using (var memoryStream = new InMemoryRandomAccessStream().AsStream())
             using (await _fileReadWriteLock.LockAsync(ct))
             {
                 await pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
@@ -287,7 +283,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             {
                 try
                 {
-                    using (var stream = _recyclableMemoryStreamManager.GetStream())
+                    using (var stream = new InMemoryRandomAccessStream().AsStream())
                     using (await _fileReadWriteLock.LockAsync(ct))
                     {
                         var result = await (file.FileType switch

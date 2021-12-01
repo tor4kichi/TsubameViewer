@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Microsoft.Toolkit.Uwp.UI.Converters;
+﻿using Microsoft.Toolkit.Uwp.UI.Converters;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
@@ -182,7 +181,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
-            RecyclableMemoryStreamManager recyclableMemoryStreamManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,

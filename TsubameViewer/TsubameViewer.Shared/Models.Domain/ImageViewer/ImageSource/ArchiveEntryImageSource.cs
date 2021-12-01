@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Prism.Mvvm;
+﻿using Prism.Mvvm;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
@@ -28,16 +27,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         private readonly IArchiveEntry _entry;
         private readonly ArchiveDirectoryToken _archiveDirectoryToken;
         private readonly ArchiveImageCollection _archiveImageCollection;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, RecyclableMemoryStreamManager recyclableMemoryStreamManager, ThumbnailManager thumbnailManager)
+        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, ThumbnailManager thumbnailManager)
         {
             _entry = entry;
             _archiveDirectoryToken = archiveDirectoryToken;
             _archiveImageCollection = archiveImageCollection;
             StorageItem = _archiveImageCollection.File;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _thumbnailManager = thumbnailManager;
             DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
         }
@@ -57,16 +54,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             using var mylock = await ArchiveEntryAccessLock.LockAsync(ct);
 
-            var memoryStream = _recyclableMemoryStreamManager.GetStream();
+            var memoryStream = new InMemoryRandomAccessStream();
             using (var entryStream = _entry.OpenEntryStream())
             {
-                entryStream.CopyTo(memoryStream);
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                entryStream.CopyTo(memoryStream.AsStream());
+                memoryStream.Seek(0);
 
                 ct.ThrowIfCancellationRequested();
             }
 
-            return memoryStream.AsRandomAccessStream();
+            return memoryStream;
         }
 
 

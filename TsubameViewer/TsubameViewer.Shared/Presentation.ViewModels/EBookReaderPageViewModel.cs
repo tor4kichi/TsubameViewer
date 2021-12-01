@@ -1,5 +1,4 @@
-﻿using Microsoft.IO;
-using Prism.Commands;
+﻿using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -152,7 +151,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ThumbnailManager _thumbnailManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ApplicationSettings _applicationSettings;
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         private readonly IScheduler _scheduler;
 
         public EBookReaderSettings EBookReaderSettings { get; }
@@ -174,7 +172,6 @@ namespace TsubameViewer.Presentation.ViewModels
             RecentlyAccessManager recentlyAccessManager,
             ApplicationSettings applicationSettings,
             EBookReaderSettings themeSettings,
-            RecyclableMemoryStreamManager recyclableMemoryStreamManager,
             IScheduler scheduler,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand
@@ -189,7 +186,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
             EBookReaderSettings = themeSettings;
-            _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
             _scheduler = scheduler;
 
             DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
@@ -526,7 +522,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (image.Key == key)
                     {
-                        return _recyclableMemoryStreamManager.GetStream(image.Value.ReadContentAsBytes());
+                        return new MemoryStream(image.Value.ReadContentAsBytes());
                     }
                 }
 
