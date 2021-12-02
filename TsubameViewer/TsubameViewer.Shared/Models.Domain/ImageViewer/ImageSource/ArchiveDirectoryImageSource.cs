@@ -52,21 +52,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
         {
-            using var mylock = await ArchiveEntryImageSource.ArchiveEntryAccessLock.LockAsync(ct);
-
             var file = await _thumbnailManager.GetArchiveEntryThumbnailImageAsync(StorageItem, ArchiveEntry, ct);
             if (file is null)
             {
                 var imageSource = GetNearestImageFromDirectory(_directoryToken);
                 if (imageSource == null) { return null; }
 
-                var stream = await imageSource.GetThumbnailImageStreamAsync(ct);
-                {
-                    file = await _thumbnailManager.SetArchiveEntryThumbnailAsync(StorageItem, ArchiveEntry, stream, ct);
-                }
-
-                stream.Seek(0);
-                return stream;
+                return await imageSource.GetThumbnailImageStreamAsync(ct);
             }
 
             if (file == null) { return null; }

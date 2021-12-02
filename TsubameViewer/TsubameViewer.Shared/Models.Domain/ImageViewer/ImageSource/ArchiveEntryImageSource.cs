@@ -67,12 +67,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
 
-        internal static FastAsyncLock ArchiveEntryAccessLock = new FastAsyncLock();
+        internal static readonly FastAsyncLock ArchiveEntryAccessLock = new FastAsyncLock();
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            using var mylock = await ArchiveEntryAccessLock.LockAsync(ct);
-
             var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageAsync(StorageItem, _entry, ct);
             var stream = await thumbnailFile.OpenStreamForReadAsync();
             return stream.AsRandomAccessStream();

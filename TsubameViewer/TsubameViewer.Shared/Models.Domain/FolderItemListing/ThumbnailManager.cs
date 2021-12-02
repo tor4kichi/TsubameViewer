@@ -37,7 +37,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
-        private readonly FastAsyncLock _fileReadWriteLock = new FastAsyncLock();
+        private readonly static FastAsyncLock _fileReadWriteLock = new ();
 
         public ThumbnailManager(
             FolderListingSettings folderListingSettings,
@@ -68,9 +68,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
 
 
-        public static async ValueTask<StorageFolder> GetTempFolderAsync()
+        public static ValueTask<StorageFolder> GetTempFolderAsync()
         {
-            return await Task.FromResult(ApplicationData.Current.TemporaryFolder);
+            return new (ApplicationData.Current.TemporaryFolder);
         }
 
 
@@ -177,7 +177,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (await tempFolder.FileExistsAsync(itemId))
             {
                 var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);
-                using (var stream = await cachedThumbnailFile.OpenReadAsync())
+                using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
                 {
                     if (stream.Size != 0)
                     {
@@ -186,7 +186,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 }
             }
 
-            var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
+            var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
             if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                 )
             {
@@ -198,6 +198,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+
+        static readonly object _lockForReadArchiveEntry = new object();
+
         public async Task<StorageFile> GetArchiveEntryThumbnailImageAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
         {
             var tempFolder = await GetTempFolderAsync();
@@ -207,7 +210,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             {
                 var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
                 using (await _fileReadWriteLock.LockAsync(ct))
-                using (var stream = await cachedThumbnailFile.OpenReadAsync())
+                using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
                 {
                     if (stream.Size != 0)
                     {
@@ -219,19 +222,21 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (archiveEntry.IsDirectory) { return null; }
 
             using (await _fileReadWriteLock.LockAsync(ct))
-            using (var memoryStream = new InMemoryRandomAccessStream().AsStream())            
+            using (var memoryStream = new MemoryStream())
             {
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
+                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
+
+                // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
+                lock (_lockForReadArchiveEntry)
                 using (var entryStream = archiveEntry.OpenEntryStream())
                 {
-                    await entryStream.CopyToAsync(memoryStream, 81920, ct);
+                    entryStream.CopyTo(memoryStream);
                     memoryStream.Seek(0, SeekOrigin.Begin);
 
                     ct.ThrowIfCancellationRequested();
                 }
 
                 await TranscodeThumbnailImageToFileAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
-
                 return thumbnailFile;
             }
         }
@@ -253,16 +258,16 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 }
             }
 
-            using (var memoryStream = new InMemoryRandomAccessStream().AsStream())
+            using (var memoryStream = new InMemoryRandomAccessStream())
             using (await _fileReadWriteLock.LockAsync(ct))
             {
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
-                await pdfPage.RenderToStreamAsync(memoryStream.AsRandomAccessStream()).AsTask(ct);
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
+                memoryStream.Seek(0);
 
                 ct.ThrowIfCancellationRequested();
 
-                await TranscodeThumbnailImageToFileAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
+                await TranscodeThumbnailImageToFileAsync(path, memoryStream, thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
 
                 return thumbnailFile;
             }
@@ -330,7 +335,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         
         static readonly BitmapPropertySet _jpegPropertySet = new BitmapPropertySet()
         {
-            { "ImageQuality", new BitmapTypedValue(0.75d, Windows.Foundation.PropertyType.Single) },
+            { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
         };
 
         private Task TranscodeThumbnailImageToFileAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -341,7 +346,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private async Task TranscodeToFileAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
-
+                
             var decoder = await BitmapDecoder.CreateAsync(stream);
 
             // サムネイルサイズ情報を記録
