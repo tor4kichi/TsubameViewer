@@ -28,7 +28,7 @@
       <Version>6.1.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.UI.Xaml">
-      <Version>2.8.0-prerelease.210927001</Version>
+      <Version>2.7.1-prerelease.211026002</Version>
     </PackageReference>
     <PackageReference Include="ReactiveProperty">
       <Version>7.2.0</Version>
