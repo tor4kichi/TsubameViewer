@@ -1,4 +1,6 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
@@ -14,6 +16,7 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +34,7 @@ using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
+using Xamarin.Essentials;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -143,6 +147,22 @@ namespace TsubameViewer.Presentation.ViewModels
         public RefreshNavigationCommand RefreshNavigationCommand { get; }
         public OpenPageCommand OpenPageCommand { get; }
 
+
+        public RelayCommand SendFeedbackWithMashmallowCommand { get; } = 
+            new RelayCommand(async () => 
+            {
+                var assem = App.Current.GetType().Assembly;
+                StringBuilder sb = new StringBuilder();
+                sb.Append(SystemInformation.ApplicationName)
+               .Append(" v").Append(SystemInformation.ApplicationVersion.ToFormattedString())
+               .AppendLine();
+                sb.Append(SystemInformation.OperatingSystem).Append(" ").Append(SystemInformation.OperatingSystemArchitecture)
+                .Append("(").Append(SystemInformation.OperatingSystemVersion).Append(")")
+                .Append(" ").Append(DeviceInfo.Idiom)
+                ;
+                await Clipboard.SetTextAsync(sb.ToString());
+                await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
+            });
 
 
         #region Search

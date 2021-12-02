@@ -58,7 +58,7 @@
     </ResourceDictionary>
   </Page.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop">
-    <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems, Mode=OneWay}" PaneDisplayMode="Top"
+    <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
                     IsBackButtonVisible="Collapsed"
                     IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
@@ -111,7 +111,7 @@
                       <StackPanel>
                         <TextBlock Text="{Binding Source=SearchIndexUpdating, Converter={StaticResource LocalizeConverter}}" />
                         <TextBlock>
-                          <Run Text="{Binding SearchIndexUpdateProgressCount}" /> / <Run Text="{Binding SearchIndexUpdateTotalCount}" />
+                          <Run Text="{Binding SearchIndexUpdateProgressCount, Mode=OneWay}" /> / <Run Text="{Binding SearchIndexUpdateTotalCount, Mode=OneWay}" />
                         </TextBlock>
                       </StackPanel>
                     </DataTemplate>
@@ -141,11 +141,15 @@
                     Background="Transparent"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" Icon="NewFolder" Command="{Binding SourceChoiceCommand}" />
+            <AppBarButton Label="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" Icon="NewFolder" Command="{x:Bind _viewModel.SourceChoiceCommand}" />
           </CommandBar.PrimaryCommands>
           <CommandBar.SecondaryCommands>
-            <AppBarButton Label="{Binding Source=RefreshLatest, Converter={StaticResource LocalizeConverter}}" Icon="Refresh" Command="{Binding RefreshNavigationCommand}" />
-            <AppBarButton Label="{Binding Source=Settings, Converter={StaticResource LocalizeConverter}}" Icon="Setting" Command="{Binding OpenPageCommand}" CommandParameter="SettingsPage"/>
+            <AppBarButton Label="{Binding Source=RefreshLatest, Converter={StaticResource LocalizeConverter}}" Icon="Refresh" Command="{x:Bind _viewModel.RefreshNavigationCommand}" />
+            <AppBarButton Label="{Binding Source=Settings, Converter={StaticResource LocalizeConverter}}" Icon="Setting" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage"/>
+
+            <AppBarSeparator />
+            <AppBarButton Label="{Binding Source=SendFeedbackWithMashmallow, Converter={StaticResource LocalizeConverter}}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" />
+
           </CommandBar.SecondaryCommands>
         </CommandBar>
       </NavigationView.PaneFooter>

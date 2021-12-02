@@ -9,6 +9,7 @@
   xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:wst="using:WindowsStateTriggers"
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
+  xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
   
@@ -167,6 +168,18 @@
     <uwpControls:DockPanel>
       <Grid uwpControls:DockPanel.Dock="Top" Padding="32 16">
         <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" />
+
+        <TextBlock Text="{x:Bind _vm.ReportUserEnvString}" IsTextSelectionEnabled="True" HorizontalAlignment="Right"
+                   TextAlignment="Right"
+                   Opacity="0.7"
+                   FontSize="15"
+                   >
+          <TextBlock.ContextFlyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}" Command="{x:Bind _vm.AppInfoCopyToClipboard}" />
+            </MenuFlyout>
+          </TextBlock.ContextFlyout>
+        </TextBlock>
       </Grid>
 
       <ScrollViewer>

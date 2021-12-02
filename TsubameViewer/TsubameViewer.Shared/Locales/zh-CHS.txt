@@ -1,5 +1,7 @@
 #### General
 
+Copy = 复制
+CopyToClipboard = 复制到剪贴板
 Cancel = 取消
 
 ApplicationTheme = 主题
@@ -14,6 +16,7 @@ AddNewFolder = 新增文件夹
 Import = 进口
 RefreshLatest = 更新到最新信息
 Settings = 组态
+SendFeedbackWithMashmallow = 发送反馈
 
 SourceStorageItemsPage = 夹
 CollectionPage = 采集
