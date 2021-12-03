@@ -1,5 +1,7 @@
 #### General
 
+Copy = コピー
+CopyToClipboard = クリップボードにコピー
 Cancel = キャンセル
 
 ApplicationTheme = テーマ
@@ -14,6 +16,7 @@ AddNewFolder = フォルダを追加
 Import = インポート
 RefreshLatest = 最新の情報に更新
 Settings = 設定
+SendFeedbackWithMashmallow = フィードバックを送る
 
 SourceStorageItemsPage = フォルダー
 CollectionPage = コレクション

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Infrastructure;
@@ -100,7 +101,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             }
 
             var tileId = _secondaryTileIdRepository.GetTileId(storageItem.Path);
-            var tileThubmnails = await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem);
+            var tileThubmnails = await Task.Run(async () => await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem, CancellationToken.None));
             var json = JsonSerializer.Serialize(arguments);
             var tile = new SecondaryTile(
                 tileId, 

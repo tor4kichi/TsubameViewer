@@ -11,7 +11,7 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:wst="using:WindowsStateTriggers"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
@@ -21,64 +21,54 @@
 
   <Grid Margin="0 0 0 0">
 
-    <Border VerticalAlignment="Top"
-            Height="{x:Bind HeaderLayout.(uwpUIExtensions:FrameworkElementExtensions.ActualHeight), Mode=OneWay}"
-            >
-
-    </Border>
-
-    
-    <uwpControls:AdaptiveGridView
-      ItemsSource="{Binding SearchResultItems}"
-      x:Name="FoldersAdaptiveGridView"
-      StretchContentForSingleRow="False"
-      OneRowModeEnabled="False"
-      VerticalAlignment="Top"
-      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
-      ItemContainerStyle="{StaticResource FolderStyle}"
-      DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
-      ItemHeight="{StaticResource FolderGridViewItemHeight}"
-      IsItemClickEnabled="True"
-      ItemClickCommand="{Binding OpenFolderItemCommand}"
-      IsSynchronizedWithCurrentItem="False"
-      SelectionMode="None"
-      XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
-      IsTabStop="False"
-      ContextFlyout="{StaticResource StorageItemMenuFlyout}"
-      >
-
-      <GridView.ItemContainerTransitions>
-        <TransitionCollection />
-      </GridView.ItemContainerTransitions>
-
-      <i:Interaction.Behaviors>
-        <myBehaior:StickyHeaderBehavior />
-
-        <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-          <core:CallMethodAction MethodName="Initialize" />
-        </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-      </i:Interaction.Behaviors>
-
-      
-      <GridView.Header>
-        <StackPanel 
+    <uwpControls:DockPanel>
+      <StackPanel 
           uwpControls:DockPanel.Dock="Top" 
           x:Name="HeaderLayout"
-          Background="{ThemeResource ApplicationContentBackgroundBrush}"
-          uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"          
           Padding="8 8"
           >
 
-          <Border Height="16" />
-          <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
+        <Border Height="16" />
+        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
             <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
-          </TextBlock>
+        </TextBlock>
 
 
-        </StackPanel>
-      </GridView.Header>
-    </uwpControls:AdaptiveGridView>
-    
+      </StackPanel>
+
+
+
+      <uwpControls:AdaptiveGridView
+        ItemsSource="{Binding SearchResultItems}"
+        x:Name="FoldersAdaptiveGridView"
+        StretchContentForSingleRow="False"
+        OneRowModeEnabled="False"
+        VerticalAlignment="Top"
+        ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+        ItemContainerStyle="{StaticResource FolderStyle}"
+        DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
+        ItemHeight="{StaticResource FolderGridViewItemHeight}"
+        IsItemClickEnabled="True"
+        ItemClickCommand="{Binding OpenFolderItemCommand}"
+        IsSynchronizedWithCurrentItem="False"
+        SelectionMode="None"
+        XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
+        IsTabStop="False"
+        ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+        >
+
+        <GridView.ItemContainerTransitions>
+          <TransitionCollection />
+        </GridView.ItemContainerTransitions>
+
+        <i:Interaction.Behaviors>
+          <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+            <core:CallMethodAction MethodName="Initialize" />
+          </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+        </i:Interaction.Behaviors>
+      </uwpControls:AdaptiveGridView>
+    </uwpControls:DockPanel>
 
     <VisualStateManager.VisualStateGroups>
       <!-- 画面サイズによる表示切り替え -->

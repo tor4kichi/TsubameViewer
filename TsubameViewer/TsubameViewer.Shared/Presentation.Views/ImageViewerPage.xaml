@@ -11,7 +11,7 @@
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:domainModels="using:TsubameViewer.Models.Domain" 
   xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 

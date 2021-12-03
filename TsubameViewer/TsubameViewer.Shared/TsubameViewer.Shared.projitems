@@ -53,6 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\PathReferenceCountUpdateWhenSourceManagementChanged.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\ApplicationDataUpdateWhenPathReferenceCountChanged.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
@@ -91,8 +92,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedQuickReturnHeader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\FixedStickyHeader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>

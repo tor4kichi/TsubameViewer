@@ -16,10 +16,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using Microsoft.Toolkit.Uwp.UI.Animations.Effects;
-using Microsoft.Toolkit.Uwp.UI.Animations;
 using Xamarin.Essentials;
-using Microsoft.Toolkit.Uwp.UI.Extensions;
 using System.Reactive;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
@@ -32,6 +29,7 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 using Uno.UI.Toolkit;
 using TsubameViewer.Presentation.Views.Helpers;
+using Microsoft.Toolkit.Uwp.UI;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 

@@ -1,5 +1,7 @@
 ﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
@@ -28,6 +30,7 @@ using Uno.Disposables;
 using Windows.Storage;
 using Windows.UI.Popups;
 using Windows.UI.Xaml.Controls;
+using Xamarin.Essentials;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -44,7 +47,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
-        
+        public RelayCommand AppInfoCopyToClipboard { get; }
+
+        public string ReportUserEnvString { get; } 
         public SettingsPageViewModel(
             IEventAggregator eventAggregator,
             IMessenger messenger,
@@ -65,6 +70,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
+
+            AppInfoCopyToClipboard = new RelayCommand(async () =>
+            {
+                await Clipboard.SetTextAsync(ReportUserEnvString);
+            });
 
             SettingGroups = new[]
             {
@@ -118,6 +128,16 @@ namespace TsubameViewer.Presentation.ViewModels
                     */
                 },
             };
+
+            StringBuilder sb = new StringBuilder();
+            sb.Append(SystemInformation.Instance.ApplicationName)
+                .Append(" v").Append(SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+                .AppendLine();
+            sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
+                .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
+                .Append(" ").Append(DeviceInfo.Idiom)
+                ;
+            ReportUserEnvString = sb.ToString();
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -185,6 +205,7 @@ namespace TsubameViewer.Presentation.ViewModels
             var conv = new ToKMGTPEZYConverter();
             return (string)conv.Convert(size, typeof(string), null, CultureInfo.CurrentCulture.Name);
         }
+
 
     }
 

@@ -96,7 +96,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public StorageItemTypes Type { get; }
 
         private CancellationTokenSource _cts;
-        private static FastAsyncLock _imageLoadingLock = new FastAsyncLock();
 
         private double _ReadParcentage;
         public double ReadParcentage
@@ -181,12 +180,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
             // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
             // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
+            _cts?.Dispose();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
             try
             {
-                using var _ = await _imageLoadingLock.LockAsync(ct);
-
                 if (Item == null) { return; }
 
                 if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
@@ -202,12 +200,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 ct.ThrowIfCancellationRequested();
 
                 _isAppearingRequestButLoadingCancelled = false;
-                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct), ct))
+                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
 
                     var bitmapImage = new BitmapImage();
-                    bitmapImage.AutoPlay = false;                    
+                    bitmapImage.AutoPlay = false;
                     //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
                     await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;

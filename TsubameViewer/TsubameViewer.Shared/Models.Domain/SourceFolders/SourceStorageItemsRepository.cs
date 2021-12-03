@@ -278,11 +278,21 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         {
 #if WINDOWS_UWP
             var myItems = StorageApplicationPermissions.MostRecentlyUsedList.Entries;
+            
             foreach (var item in myItems)
             {
                 ct.ThrowIfCancellationRequested();
-                var storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(item.Token);
-                yield return (storageItem, item.Token, item.Metadata);
+                IStorageItem storageItem = null;
+                try
+                {
+                    storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(item.Token);
+                }
+                catch (FileNotFoundException) { }
+
+                if (storageItem is not null)
+                {
+                    yield return (storageItem, item.Token, item.Metadata);
+                }
             }
 #else
             // TODO: GetSourceFolders() UWP以外での対応

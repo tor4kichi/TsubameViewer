@@ -1,6 +1,7 @@
-﻿using Microsoft.Toolkit.Uwp.UI.Animations;
-using Microsoft.Toolkit.Uwp.UI.Extensions;
+﻿using Microsoft.Toolkit.Uwp.UI;
+using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Toolkit.Uwp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +21,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using System.Numerics;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -159,8 +161,12 @@ namespace TsubameViewer.Presentation.Views
         private void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
-            item.Scale(1.020f, 1.020f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
-                .Start();
+
+            AnimationBuilder.Create()
+                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50))
+                .Start(item);
+
             if (item.DataContext is StorageItemViewModel itemVM)
             {
                 if (itemVM.Image?.IsAnimatedBitmap ?? false)
@@ -170,11 +176,16 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        
         private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
-            item.Scale(1.0f, 1.0f, centerX: (float)item.ActualWidth * 0.5f, centerY: (float)item.ActualHeight * 0.5f, duration: 50)
-                .Start();
+
+            AnimationBuilder.Create()
+                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(50))
+                .Start(item);
+
             if (item.DataContext is StorageItemViewModel itemVM)
             {
                 if (itemVM.Image?.IsAnimatedBitmap ?? false)
@@ -182,6 +193,7 @@ namespace TsubameViewer.Presentation.Views
                     itemVM.Image.Stop();
                 }
             }
+            
         }
 
 

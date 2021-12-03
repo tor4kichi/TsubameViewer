@@ -1,5 +1,7 @@
 #### General
 
+Copy = copy
+CopyToClipboard = Copy to clipboard
 Cancel = Cancel
 
 ApplicationTheme = Theme
@@ -14,6 +16,7 @@ AddNewFolder = Add Folder
 Import = Import
 RefreshLatest = Update to the latest information
 Settings = Setting
+SendFeedbackWithMashmallow = Send feedback
 
 SourceStorageItemsPage = Folder
 CollectionPage = Collection
