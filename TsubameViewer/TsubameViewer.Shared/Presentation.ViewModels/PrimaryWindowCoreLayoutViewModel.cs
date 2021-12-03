@@ -153,13 +153,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var assem = App.Current.GetType().Assembly;
                 StringBuilder sb = new StringBuilder();
-                sb.Append(SystemInformation.ApplicationName)
-               .Append(" v").Append(SystemInformation.ApplicationVersion.ToFormattedString())
-               .AppendLine();
-                sb.Append(SystemInformation.OperatingSystem).Append(" ").Append(SystemInformation.OperatingSystemArchitecture)
-                .Append("(").Append(SystemInformation.OperatingSystemVersion).Append(")")
-                .Append(" ").Append(DeviceInfo.Idiom)
-                ;
+                sb.Append(SystemInformation.Instance.ApplicationName)
+                    .Append(" v").Append(SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+                    .AppendLine();
+                sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
+                    .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
+                    .Append(" ").Append(DeviceInfo.Idiom)
+                    ;
                 await Clipboard.SetTextAsync(sb.ToString());
                 await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
             });

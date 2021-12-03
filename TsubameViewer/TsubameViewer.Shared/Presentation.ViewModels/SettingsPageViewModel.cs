@@ -130,13 +130,13 @@ namespace TsubameViewer.Presentation.ViewModels
             };
 
             StringBuilder sb = new StringBuilder();
-            sb.Append(SystemInformation.ApplicationName)
-            .Append(" v").Append(SystemInformation.ApplicationVersion.ToFormattedString())
-            .AppendLine();
-            sb.Append(SystemInformation.OperatingSystem).Append(" ").Append(SystemInformation.OperatingSystemArchitecture)
-            .Append("(").Append(SystemInformation.OperatingSystemVersion).Append(")")
-            .Append(" ").Append(DeviceInfo.Idiom)
-            ;
+            sb.Append(SystemInformation.Instance.ApplicationName)
+                .Append(" v").Append(SystemInformation.Instance.ApplicationVersion.ToFormattedString())
+                .AppendLine();
+            sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
+                .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
+                .Append(" ").Append(DeviceInfo.Idiom)
+                ;
             ReportUserEnvString = sb.ToString();
         }
 

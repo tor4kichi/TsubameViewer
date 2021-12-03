@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Uwp.UI.Behaviors;
-using Microsoft.Xaml.Interactivity;
+﻿using Microsoft.Xaml.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,7 +10,7 @@ using Windows.UI.Xaml.Markup;
 namespace TsubameViewer.Presentation.Views.Behaviors
 {
     [ContentProperty(Name = nameof(Actions))]
-    public class ListViewBaseFirstAppearTriggerBehavior : BehaviorBase<ListViewBase>
+    public class ListViewBaseFirstAppearTriggerBehavior : Behavior<ListViewBase>
     {
         public ActionCollection Actions
         {

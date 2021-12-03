@@ -12,13 +12,21 @@ using Windows.Storage;
 
 namespace TsubameViewer.Models.Infrastructure
 {
+
+    public class JsonObjectSerializer : Microsoft.Toolkit.Helpers.IObjectSerializer
+    {
+        public string Serialize<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value);
+
+        public T Deserialize<T>(string value) => System.Text.Json.JsonSerializer.Deserialize<T>(value as string);
+    }
+
     public class FlagsRepositoryBase : BindableBase
     {
-        private readonly LocalObjectStorageHelper _LocalStorageHelper;
+        private readonly ApplicationDataStorageHelper _LocalStorageHelper;
         FastAsyncLock _fileUpdateLock = new FastAsyncLock();
         public FlagsRepositoryBase()
-        {
-            _LocalStorageHelper = new Microsoft.Toolkit.Uwp.Helpers.LocalObjectStorageHelper();
+        {            
+            _LocalStorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
         }
 
         protected T Read<T>(T @default = default, [CallerMemberName] string propertyName = null)
@@ -39,11 +47,11 @@ namespace TsubameViewer.Models.Infrastructure
             _LocalStorageHelper.Save(propertyName, value);
         }
 
-        protected async Task<StorageFile> SaveFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
+        protected async Task SaveFileAsync<T>(T value, [CallerMemberName] string propertyName = null)
         {
             using (await _fileUpdateLock.LockAsync(default))
             {
-                return await _LocalStorageHelper.SaveFileAsync(propertyName, value);
+                await _LocalStorageHelper.CreateFileAsync(propertyName, value);
             }
         }
 

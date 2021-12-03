@@ -17,7 +17,7 @@
   xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
-  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI.Extensions" 
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
   >
 

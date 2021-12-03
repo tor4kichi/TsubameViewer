@@ -1,6 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Helpers;
-using Microsoft.Toolkit.Uwp.UI.Animations;
-using Newtonsoft.Json;
+using Microsoft.Toolkit.Uwp.UI;
 using Prism.Commands;
 using Reactive.Bindings.Extensions;
 using System;
@@ -12,6 +11,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Models.Domain.EBook;
@@ -627,7 +628,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                     "
                 });
                 Debug.WriteLine(sizeList);
-                var sizeItems = JsonConvert.DeserializeObject<int[]>(sizeList).Distinct();
+                var sizeItems = JsonSerializer.Deserialize<int[]>(sizeList).Distinct();
                 var first = sizeItems.ElementAtOrDefault(0);
                 sizeItems = sizeItems.Select(x => x - first).ToArray();
                 var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();

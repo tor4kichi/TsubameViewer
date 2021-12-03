@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Uwp.UI.Behaviors;
-using Microsoft.Xaml.Interactivity;
+﻿using Microsoft.Xaml.Interactivity;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +8,7 @@ using Windows.UI.Xaml.Markup;
 namespace TsubameViewer.Presentation.Views.Behaviors
 {
 	[ContentProperty(Name = nameof(CenterClickActions))]
-    public sealed class MouseCenterClickTrigger : BehaviorBase<FrameworkElement>
+    public sealed class MouseCenterClickTrigger : Behavior<FrameworkElement>
     {
 		public ActionCollection CenterClickActions
 		{

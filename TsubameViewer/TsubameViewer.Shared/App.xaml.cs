@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.Helpers;
 using Prism;
 using Prism.Ioc;
 using Prism.Mvvm;
@@ -18,6 +19,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Models.UseCase.Migrate;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -60,7 +62,7 @@ namespace TsubameViewer
 
             RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
             
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);            
         }
 
         FastAsyncLock _InitializeLock = new FastAsyncLock();
@@ -162,7 +164,10 @@ namespace TsubameViewer
             }
 #endif
 
-
+            if (args.Arguments is IActivatedEventArgs activated)
+            {
+                SystemInformation.Instance.TrackAppUse(activated);
+            }
 
             if (args.Arguments is LaunchActivatedEventArgs launchActivatedEvent)
             {
@@ -222,6 +227,22 @@ namespace TsubameViewer
         public override async void OnInitialized()
         {
             using var releaser = await _InitializeLock.LockAsync(default);
+
+            if (Container.Resolve<MigrateLocalStorageHelperToApplicationDataStorageHelper>() is IMigarater migarater
+                && migarater.IsRequireMigrate
+                )
+            {
+                Debug.WriteLine($"Start migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
+
+                migarater.Migrate();
+
+                Debug.WriteLine($"Done migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
+            }
+            else
+            {
+                Debug.WriteLine($"Skip migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
+            }
+
 
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 

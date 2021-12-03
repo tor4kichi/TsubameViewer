@@ -63,7 +63,9 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 0 ).Start();
+            AnimationBuilder.Create()
+                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight)
+                .Start(AnimationUICommandBar);
             
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
@@ -170,14 +172,22 @@ namespace TsubameViewer.Presentation.Views
 
         private void CloseBottomUI()
         {
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 175).Start();
-            AnimationUIContainer.Fade(0.0f, duration: 175).Start();
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUIContainer);
+            AnimationBuilder.Create()
+                .Offset(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUICommandBar);
         }
 
         private async Task CompleteOpenBottomUI()
         {
-            AnimationUIContainer.Fade(1.0f, duration: 175).Start();
-            await AnimationUICommandBar.Offset(offsetY: 0, duration: 175).StartAsync();
+            AnimationBuilder.Create()
+                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUIContainer);
+            await AnimationBuilder.Create()
+                .Offset(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
+                .StartAsync(AnimationUICommandBar);
         }
 
 

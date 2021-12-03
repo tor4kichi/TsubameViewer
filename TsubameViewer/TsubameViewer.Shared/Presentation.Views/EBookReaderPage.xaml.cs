@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
-using Newtonsoft.Json;
 using Prism.Commands;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -148,7 +147,9 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight + 24, duration: 175, delay: 1000).Start();
+            AnimationBuilder.Create()
+                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight + 24, duration: TimeSpan.FromMilliseconds(175), delay: TimeSpan.FromMilliseconds(1000))
+                .Start(AnimationUICommandBar);
 
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
@@ -262,15 +263,26 @@ namespace TsubameViewer.Presentation.Views
         private void CloseBottomUI()
         {
             IsOpenBottomMenu = false;
-            AnimationUIContainer.Fade(0.0f, duration: 175).Start();
-            AnimationUICommandBar.Offset(offsetY: (float)AnimationUICommandBar.ActualHeight, duration: 175).Start();
+            AnimationBuilder.Create()
+                .Opacity(0.0, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUIContainer);
+
+            AnimationBuilder.Create()
+                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUICommandBar);
         }
 
         private async Task CompleteOpenBottomUI()
         {
             IsOpenBottomMenu = true;
-            AnimationUIContainer.Fade(1.0f, duration: 175).Start();
-            await AnimationUICommandBar.Offset(offsetY: 0, duration: 175).StartAsync();
+
+            AnimationBuilder.Create()
+                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUIContainer);
+
+            await AnimationBuilder.Create()
+                .Offset(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
+                .StartAsync(AnimationUICommandBar);
         }
 
 
@@ -404,7 +416,12 @@ namespace TsubameViewer.Presentation.Views
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
         {
             (DataContext as EBookReaderPageViewModel).CompletePageLoading();
-            WebView.Fade(1.0f, 100).Start();
+
+            AnimationBuilder.Create()
+                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(100))
+                .Start(WebView);
+                
+            //WebView.Fade(1.0f, 100).Start();
         }
 
         public ICommand InnerGoNextImageCommand
@@ -434,7 +451,9 @@ namespace TsubameViewer.Presentation.Views
                     var pageVM = DataContext as EBookReaderPageViewModel;
                     if (pageVM.CanGoNext())
                     {
-                        await WebView.Fade(0, 50).StartAsync();
+                        await AnimationBuilder.Create()
+                            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
+                            .StartAsync(WebView);
 
                         WebView.PrepareGoNext();
                         await pageVM.GoNextImageAsync();
@@ -472,7 +491,9 @@ namespace TsubameViewer.Presentation.Views
                     var pageVM = DataContext as EBookReaderPageViewModel;
                     if (pageVM.CanGoPrev())
                     {
-                        await WebView.Fade(0, 50).StartAsync();
+                        await AnimationBuilder.Create()
+                            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
+                            .StartAsync(WebView);
 
                         WebView.PrepareGoPreview();
                         await pageVM.GoPrevImageAsync();
