@@ -116,7 +116,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             public void Add(TokenListType tokenListType, string token, string path)
             {
-                _collection.Insert(new TokenToPathEntry() 
+                _collection.Upsert(new TokenToPathEntry() 
                 {
                     TokenListType = tokenListType,
                     Path = path,
