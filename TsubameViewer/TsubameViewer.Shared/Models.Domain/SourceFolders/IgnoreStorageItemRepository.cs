@@ -10,8 +10,6 @@ namespace TsubameViewer.Models.Domain.SourceFolders
     public class IgnoreStorageItemEntry
     {
         [BsonId(true)]
-        public int _id { get; set; }
-
         public string Path { get; set; }
     }
 
@@ -19,6 +17,13 @@ namespace TsubameViewer.Models.Domain.SourceFolders
     {
         public IgnoreStorageItemRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
+            liteDatabase.DropCollection(nameof(IgnoreStorageItemEntry));
+            _collection.EnsureIndex(x => x.Path);
+        }
+
+        public bool IsIgnoredPath(string path)
+        {
+            return _collection.Exists(x => x.Path == path);
         }
 
         public bool TryPeek(out IgnoreStorageItemEntry outEntry)
@@ -33,7 +38,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 outEntry = _collection.FindAll().First();
                 return true;
             }
-        }
+        }        
 
         public bool Any()
         {
@@ -42,7 +47,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public void Delete(IgnoreStorageItemEntry entry)
         {
-            _collection.Delete(entry._id);
+            _collection.Delete(entry.Path);
         }
     }
 

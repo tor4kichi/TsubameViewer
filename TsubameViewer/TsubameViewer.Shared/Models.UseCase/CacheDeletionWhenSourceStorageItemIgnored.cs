@@ -62,6 +62,7 @@ namespace TsubameViewer.Models.UseCase
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
 
+            _messenger.RegisterAll(this);
         }
 
 
@@ -107,11 +108,11 @@ namespace TsubameViewer.Models.UseCase
             {
                 while (_ignoreStorageItemRepository.TryPeek(out IgnoreStorageItemEntry entry))
                 {
-                    Debug.WriteLine($"start cache deletion: {entry.Path}");
+                    Debug.WriteLine($"Start cache deletion: {entry.Path}");
                     await DeleteCacheWithDescendantsAsync(entry.Path);
-                    Debug.WriteLine($"done cache deletion: {entry.Path}");
+                    Debug.WriteLine($"Done cache deletion: {entry.Path}");
                     _ignoreStorageItemRepository.Delete(entry);
-                    Debug.WriteLine($"remove ignored StorageItem from Db : {entry.Path}");
+                    Debug.WriteLine($"Remove ignored StorageItem from Db : {entry.Path}");
                 }
             }
             finally
@@ -127,18 +128,22 @@ namespace TsubameViewer.Models.UseCase
 
         async Task DeleteCacheWithDescendantsAsync(string path)
         {
-            var (_, item) = await _storageItemsRepository.GetSourceStorageItem(path);
+            var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
             if (item is StorageFolder folder)
             {
                 await foreach(var deletePath in GetAllDeletionPathsAsync(folder))
                 {
+                    Debug.WriteLine($"Delete cache: {deletePath}");
                     await DeleteCacheAsync(deletePath);
                 }
             }
             else
             {
+                Debug.WriteLine($"Delete cache: {path}");
                 await DeleteCacheAsync(path);
             }
+
+            _storageItemsRepository.RemoveFolder(token);
         }
 
         async Task DeleteCacheAsync(string path)
@@ -168,13 +173,13 @@ namespace TsubameViewer.Models.UseCase
             }
 
             var query = folder.CreateItemQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = Windows.Storage.Search.FolderDepth.Deep });
-            var count = await query.GetItemCountAsync();
-            uint processed = 0;
+            var totalCount = await query.GetItemCountAsync();
+            uint processedCount = 0;
             List<string> paths = new List<string>();
-            while (count < processed)
+            while (processedCount < totalCount)
             {
-                var items = await query.GetItemsAsync(processed, 100);
-                processed += (uint)items.Count;
+                var items = await query.GetItemsAsync(processedCount, 100);
+                processedCount += (uint)items.Count;
 
                 foreach (var folderItem in items)
                 {

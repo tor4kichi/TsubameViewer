@@ -45,6 +45,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IMessenger _messenger;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly IgnoreStorageItemRepository _ignoreStorageItemRepository;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         
@@ -71,6 +72,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            IgnoreStorageItemRepository ignoreStorageItemRepository,
             FolderLastIntractItemManager folderLastIntractItemManager,
             RecentlyAccessManager recentlyAccessManager,
             SecondaryTileManager secondaryTileManager,
@@ -91,6 +93,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _ignoreStorageItemRepository = ignoreStorageItemRepository;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _recentlyAccessManager = recentlyAccessManager;
             SecondaryTileManager = secondaryTileManager;
@@ -134,6 +137,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager) { });
                 await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                 {
+                    if (_ignoreStorageItemRepository.IsIgnoredPath(item.item.Path))
+                    {
+                        continue;
+                    }
+
                     var storageItemImageSource = new StorageItemImageSource(item.item, _thumbnailManager);
                     if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                     {
@@ -171,6 +179,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 RecentlyItems.Clear();
                 foreach (var item in recentlyAccessItems)
                 {
+                    if (_ignoreStorageItemRepository.IsIgnoredPath(item.Path))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         RecentlyItems.Add(await ToStorageItemViewModel(item));
@@ -224,48 +237,44 @@ namespace TsubameViewer.Presentation.ViewModels
             _messenger.Register<SourceStorageItemsRepository.SourceStorageItemAddedMessage>(this, (r, m) =>
             {
                 var args = m.Value;
-                var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == args.StorageItem.Path);
-                if (existInFolders != null)
-                {
-                    Folders.Remove(existInFolders);
-                }
-
-                var existInFiles = RecentlyItems.FirstOrDefault(x => x.Path == args.StorageItem.Path);
-                if (existInFiles != null)
-                {
-                    RecentlyItems.Remove(existInFiles);
-                }
+                RemoveItem(args.StorageItem.Path);
 
                 var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _thumbnailManager);
-                if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
+                if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
                 {
                     // 追加用ボタンの次に配置するための 1
                     Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                 }
-                else if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Image
-                    || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Archive
-                    || storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.EBook
-                    )
+                else
                 {
-                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
-                }
+//                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                }                
+            });
+
+            _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) => 
+            {
+                RemoveItem(m.Value);
             });
 
             _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>
             {
-                var args = m.Value;
-                var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == args.Path);
-                if (existInFolders != null)
-                {
-                    Folders.Remove(existInFolders);
-                }
-
-                var existInFiles = RecentlyItems.Where(x => x.Path == args.Path).ToList();
-                foreach (var item in existInFiles)
-                {
-                    RecentlyItems.Remove(item);
-                }
+                RemoveItem(m.Value.Path);
             });
+        }
+
+        void RemoveItem(string path)
+        {
+            var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == path);
+            if (existInFolders != null)
+            {
+                Folders.Remove(existInFolders);
+            }
+
+            var existInFiles = RecentlyItems.Where(x => x.Path == path).ToList();
+            foreach (var item in existInFiles)
+            {
+                RecentlyItems.Remove(item);
+            }
         }
     }
 

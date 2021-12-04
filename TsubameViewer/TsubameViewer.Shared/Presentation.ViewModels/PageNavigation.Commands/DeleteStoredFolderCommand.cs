@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,11 +9,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class DeleteStoredFolderCommand : DelegateCommandBase
     {
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly IMessenger _messenger;
 
-        public DeleteStoredFolderCommand(SourceStorageItemsRepository sourceStorageItemsRepository)
+        public DeleteStoredFolderCommand(IMessenger messenger)
         {
-            _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -24,7 +25,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                _sourceStorageItemsRepository.RemoveFolder(itemVM.Path);
+                _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new (itemVM.Path));
             }
         }
     }

@@ -62,6 +62,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             public string Token { get; set; }
             public IStorageItem StorageItem { get; set; }
             public string Metadata { get; set; }
+            public TokenListType ListType { get; set; }
         }
 
         public sealed class SourceStorageItemAddedMessage : ValueChangedMessage<SourceStorageItemAddedMessageData>
@@ -99,7 +100,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             public TokenListType TokenListType { get; set; }
         }
 
-        private enum TokenListType
+        public enum TokenListType
         {
             MostRecentlyUsedList,
             FutureAccessList
@@ -245,7 +246,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             {
                 Token = token,
                 StorageItem = storageItem,
-                Metadata = metadata
+                Metadata = metadata,
+                ListType = TokenListType.MostRecentlyUsedList,
             }));
 
             return token;
@@ -287,7 +289,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             {
                 Token = token,
                 StorageItem = storageItem,
-                Metadata = metadata
+                Metadata = metadata,
+                ListType = TokenListType.FutureAccessList,
             }));
 
             return token;
@@ -368,10 +371,9 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
 
 
-        public void RemoveFolder(string path)
+        public void RemoveFolder(string token)
         {
-            var entry = _tokenToPathRepository.GetTokenFromPathExact(path);
-            var token = entry.Token;
+            var entry = _tokenToPathRepository.GetPathFromToken(token);
             bool isRemoved = false;
 #if WINDOWS_UWP
             if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))

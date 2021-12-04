@@ -229,8 +229,9 @@ namespace TsubameViewer
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
+#if DEBUG
             Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
-
+#endif
             Type[] migraterTypes = new[]
             {
                 typeof(DropSearchIndexDb),
