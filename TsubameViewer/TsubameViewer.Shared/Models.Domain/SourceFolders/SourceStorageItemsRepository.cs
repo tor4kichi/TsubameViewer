@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
+using Windows.Storage.Search;
 
 namespace TsubameViewer.Models.Domain.SourceFolders
 {
@@ -422,7 +423,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 {
                     storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(item.Token);
                 }
-                catch (FileNotFoundException) { }
+                catch (FileNotFoundException) 
+                {
+                    StorageApplicationPermissions.MostRecentlyUsedList.Remove(item.Token);
+                }
 
                 if (storageItem is not null)
                 {
@@ -434,5 +438,64 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             throw new NotImplementedException();
 #endif
         }
+
+
+        public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)
+        {
+            static async IAsyncEnumerable<IStorageItem> SearchInFolder(StorageFolder folder, QueryOptions queryOptions, [EnumeratorCancellation] CancellationToken ct)
+            {
+                var query = folder.CreateItemQueryWithOptions(queryOptions);
+                int count = (int)await query.GetItemCountAsync().AsTask(ct);
+                int current = 0;
+                while (current < count)
+                {
+                    var items = await query.GetItemsAsync((uint)current, 100).AsTask(ct);
+                    foreach (var item in items)
+                    {
+                        yield return item;
+                    }
+                    current += items.Count;
+                }
+            }
+
+            QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
+            {
+                ApplicationSearchFilter = $"System.FileName:*{keyword}*" 
+            };
+
+            await foreach (var (item, token, metadata) in GetParsistantItems(ct))
+            {
+                if (item.Name.Contains(keyword))
+                {
+                    yield return item;
+                }
+
+                if (item is StorageFolder folder)
+                {                    
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    {
+                        yield return folderItem;
+                    }
+                }
+            }
+
+            await foreach (var (item, token, metadata) in GetTemporaryItems(ct))
+            {
+                if (item.Name.Contains(keyword))
+                {
+                    yield return item;
+                }
+
+                if (item is StorageFolder folder)
+                {
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    {
+                        yield return folderItem;
+                    }
+                }
+            }
+        }
+
+        
     }
 }

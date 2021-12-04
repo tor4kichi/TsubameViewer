@@ -11,7 +11,6 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
-using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -24,7 +23,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class SearchResultPageViewModel : ViewModelBase
     {
-        private readonly StorageItemSearchManager _storageItemSearchManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
@@ -50,7 +48,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
 
         public SearchResultPageViewModel(
-            StorageItemSearchManager storageItemSearchManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
@@ -67,7 +64,6 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileRemoveCommand secondaryTileRemoveCommand
             )
         {
-            _storageItemSearchManager = storageItemSearchManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
@@ -103,29 +99,16 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 SearchText = q;
 
-                var result = await Task.Run(() => _storageItemSearchManager.SearchAsync(q.Trim(), 0, 100), ct);
-                foreach (var entry in result.Entries)
+                try
                 {
-                    try
+                    await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct))
                     {
                         SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
-                    }
-                    catch 
-                    {
-                        _storageItemSearchManager.Remove(entry.Path);
                     }
                 }
-
-                int totalCount = result.TotalCount;
-                while (totalCount > SearchResultItems.Count)
+                catch (OperationCanceledException) 
                 {
-                    result = await Task.Run(() => _storageItemSearchManager.SearchAsync(q.Trim(), SearchResultItems.Count, 100), ct);
-                    foreach (var entry in result.Entries)
-                    {
-                        SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
-                    }
-
-                    ct.ThrowIfCancellationRequested();
+                    SearchResultItems.Clear();
                 }
             }
             else
@@ -136,9 +119,8 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
-        private async Task<StorageItemViewModel> ConvertStorageItemViewModel(StorageItemSearchEntry entry)
+        private async Task<StorageItemViewModel> ConvertStorageItemViewModel(IStorageItem storageItem)
         {
-            var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
             var storageItemImageSource = new StorageItemImageSource(storageItem, _thumbnailManager);
             return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
         }

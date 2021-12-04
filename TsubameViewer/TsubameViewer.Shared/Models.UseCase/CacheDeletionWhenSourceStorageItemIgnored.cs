@@ -8,7 +8,6 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
-using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
 using System.Threading.Tasks;
@@ -33,7 +32,6 @@ namespace TsubameViewer.Models.UseCase
         private readonly IgnoreStorageItemRepository _ignoreStorageItemRepository;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly BookmarkManager _bookmarkManager;
-        private readonly StorageItemSearchManager _storageItemSearchManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly SecondaryTileManager _secondaryTileManager;
@@ -46,7 +44,6 @@ namespace TsubameViewer.Models.UseCase
             IgnoreStorageItemRepository ignoreStorageItemRepository,
             RecentlyAccessManager recentlyAccessManager,
             BookmarkManager bookmarkManager,
-            StorageItemSearchManager storageItemSearchManager,
             FolderContainerTypeManager folderContainerTypeManager,
             ThumbnailManager thumbnailManager,
             SecondaryTileManager secondaryTileManager,
@@ -59,7 +56,6 @@ namespace TsubameViewer.Models.UseCase
             _ignoreStorageItemRepository = ignoreStorageItemRepository;
             _recentlyAccessManager = recentlyAccessManager;
             _bookmarkManager = bookmarkManager;
-            _storageItemSearchManager = storageItemSearchManager;
             _folderContainerTypeManager = folderContainerTypeManager;
             _thumbnailManager = thumbnailManager;
             _secondaryTileManager = secondaryTileManager;
@@ -93,7 +89,13 @@ namespace TsubameViewer.Models.UseCase
             {
                 if (_nowProgress) 
                 {
-                    Debug.WriteLine($"Skip cache delete process.");
+                    Debug.WriteLine($"Skip cache delete process. (Now Progress)");
+                    return; 
+                }
+
+                if (_ignoreStorageItemRepository.Any() is false) 
+                {
+                    Debug.WriteLine($"Skip cache delete process. (No items)");
                     return; 
                 }
 
@@ -148,7 +150,6 @@ namespace TsubameViewer.Models.UseCase
 
             _recentlyAccessManager.Delete(path);
             _bookmarkManager.RemoveBookmark(path);
-            _storageItemSearchManager.Remove(path);
             _folderContainerTypeManager.Delete(path);
             _folderLastIntractItemManager.Remove(path);
             _displaySettingsByPathRepository.DeleteUnderPath(path);

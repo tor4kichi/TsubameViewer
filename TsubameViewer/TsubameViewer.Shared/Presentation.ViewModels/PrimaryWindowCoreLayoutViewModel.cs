@@ -23,7 +23,6 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
-using TsubameViewer.Models.Domain.Search;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -45,7 +44,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
-        private readonly StorageItemSearchManager _storageItemSearchManager;
 
         public List<object> MenuItems { get;  }
 
@@ -60,7 +58,6 @@ namespace TsubameViewer.Presentation.ViewModels
             RestoreNavigationManager restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderContainerTypeManager folderContainerTypeManager,
-            StorageItemSearchManager storageItemSearchManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
             OpenPageCommand openPageCommand
@@ -79,7 +76,6 @@ namespace TsubameViewer.Presentation.ViewModels
             RestoreNavigationManager = restoreNavigationManager;
             SourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderContainerTypeManager = folderContainerTypeManager;
-            _storageItemSearchManager = storageItemSearchManager;
             SourceChoiceCommand = sourceChoiceCommand;
             SourceChoiceCommand.OpenAfterChoice = true;
             RefreshNavigationCommand = refreshNavigationCommand;
@@ -93,24 +89,13 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
-            _messenger.Register<PathReferenceCountUpdateWhenSourceManagementChanged.SearchIndexUpdateProgressMessage>(this, (r, m) =>
-            {
-                var args = m.Value;
-                _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateProgressCount = args.ProcessedCount;
-                _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateTotalCount = args.TotalCount;
-
-                Debug.WriteLine($"[SearchIndexUpdate] progress: {args.ProcessedCount}/{args.TotalCount} ");
-            });
-
             AutoSuggestBoxItems = new[]
             {
                 _AutoSuggestItemsGroup,
-                _autoSuggestBoxSearchIndexGroup
             };
         }
 
         AutoSuggestBoxGroupBase _AutoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
-        AutoSuggestBoxSearchIndexGroup _autoSuggestBoxSearchIndexGroup = new AutoSuggestBoxSearchIndexGroup();
 
         public object[] AutoSuggestBoxItems { get; }
 
@@ -170,16 +155,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 _AutoSuggestItemsGroup.Items.Clear();
                 if (string.IsNullOrWhiteSpace(parameter)) { return; }
 
-                var result = await Task.Run(() => _storageItemSearchManager.SearchAsync(parameter.Trim(), 0, 3));
-                _AutoSuggestItemsGroup.Items.AddRange(result.Entries);
+                var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), CancellationToken.None).Take(3).ToListAsync());
+                _AutoSuggestItemsGroup.Items.AddRange(result);
             }
         }
 
-        private DelegateCommand<StorageItemSearchEntry> _SuggestChosenCommand;
-        public DelegateCommand<StorageItemSearchEntry> SuggestChosenCommand =>
-            _SuggestChosenCommand ?? (_SuggestChosenCommand = new DelegateCommand<StorageItemSearchEntry>(ExecuteSuggestChosenCommand));
+        private DelegateCommand<IStorageItem> _SuggestChosenCommand;
+        public DelegateCommand<IStorageItem> SuggestChosenCommand =>
+            _SuggestChosenCommand ?? (_SuggestChosenCommand = new DelegateCommand<IStorageItem>(ExecuteSuggestChosenCommand));
 
-        async void ExecuteSuggestChosenCommand(StorageItemSearchEntry entry)
+        async void ExecuteSuggestChosenCommand(IStorageItem entry)
         {
             var path = entry.Path;
 
@@ -231,7 +216,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 検索ページを開く
                 NavigationService.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
             }
-            else if (parameter is StorageItemSearchEntry entry)
+            else if (parameter is IStorageItem entry)
             {
                 ExecuteSuggestChosenCommand(entry);
             }
@@ -245,25 +230,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public class AutoSuggestBoxGroupBase : BindableBase
     {
         public string Label { get; set; }
-        public ObservableCollection<StorageItemSearchEntry> Items { get; } = new ObservableCollection<StorageItemSearchEntry>();
-    }
-
-    public class AutoSuggestBoxSearchIndexGroup : AutoSuggestBoxGroupBase
-    {
-        private uint _SearchIndexUpdateProgressCount;
-        public uint SearchIndexUpdateProgressCount
-        {
-            get { return _SearchIndexUpdateProgressCount; }
-            set { SetProperty(ref _SearchIndexUpdateProgressCount, value); }
-        }
-
-        private uint _SearchIndexUpdateTotalCount;
-        public uint SearchIndexUpdateTotalCount
-        {
-            get { return _SearchIndexUpdateTotalCount; }
-            set { SetProperty(ref _SearchIndexUpdateTotalCount, value); }
-        }
-
+        public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();
     }
 
 

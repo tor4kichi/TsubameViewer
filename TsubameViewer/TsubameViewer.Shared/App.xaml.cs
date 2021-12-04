@@ -26,6 +26,7 @@ using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
+using Uno.Extensions;
 using Uno.Threading;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -134,7 +135,6 @@ namespace TsubameViewer
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
             container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
-            container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
             
             container.RegisterSingleton<SourceStorageItemsPageViewModel>();
             container.RegisterSingleton<ImageListupPageViewModel>();
@@ -229,8 +229,12 @@ namespace TsubameViewer
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
+            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+
             Type[] migraterTypes = new[]
             {
+                typeof(DropSearchIndexDb),
+                typeof(DropPathReferenceCountDb),
                 typeof(MigrateAsyncStorageApplicationPermissionToDb),
                 typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
             };
@@ -350,10 +354,6 @@ namespace TsubameViewer
             // セカンダリタイル管理の初期化
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
             
-            // ソース管理に変更が加えられた時にアプリが把握しているストレージアイテムのパスと
-            // そのストレージアイテムを引く際に必要なフォルダアクセス権とを紐付ける
-            Container.Resolve<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>().Initialize();
-
             // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
             // ローカルDBや画像サムネイルの破棄などを行う
             // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので

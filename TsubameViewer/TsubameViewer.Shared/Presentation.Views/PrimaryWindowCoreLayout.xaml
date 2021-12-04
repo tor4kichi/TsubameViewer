@@ -14,7 +14,6 @@
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
   xmlns:mySS="using:TsubameViewer.Presentation.Views.StyleSelector" 
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
-  xmlns:searchModel="using:TsubameViewer.Models.Domain.Search" 
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
@@ -93,33 +92,6 @@
                         AutoMaximizeSuggestionArea="True"
                         IsSuggestionListOpen="True"   
                             >
-          <AutoSuggestBox.GroupStyleSelector>
-            <mySS:SearchAutoSuggestBoxGroupStyleSelector>
-              <mySS:SearchAutoSuggestBoxGroupStyleSelector.ItemsGroupStyle>
-                <GroupStyle>
-                  <GroupStyle.HeaderTemplate>
-                    <DataTemplate>
-                      <TextBlock Text="{Binding Source=SearchResultFilesAndFolders, Converter={StaticResource LocalizeConverter}}" />
-                    </DataTemplate>
-                  </GroupStyle.HeaderTemplate> 
-                </GroupStyle>
-              </mySS:SearchAutoSuggestBoxGroupStyleSelector.ItemsGroupStyle>
-              <mySS:SearchAutoSuggestBoxGroupStyleSelector.SearchIndexGroupStyle>
-                <GroupStyle HidesIfEmpty="False">
-                  <GroupStyle.HeaderTemplate>
-                    <DataTemplate>
-                      <StackPanel>
-                        <TextBlock Text="{Binding Source=SearchIndexUpdating, Converter={StaticResource LocalizeConverter}}" />
-                        <TextBlock>
-                          <Run Text="{Binding SearchIndexUpdateProgressCount, Mode=OneWay}" /> / <Run Text="{Binding SearchIndexUpdateTotalCount, Mode=OneWay}" />
-                        </TextBlock>
-                      </StackPanel>
-                    </DataTemplate>
-                  </GroupStyle.HeaderTemplate>
-                </GroupStyle>
-              </mySS:SearchAutoSuggestBoxGroupStyleSelector.SearchIndexGroupStyle>
-            </mySS:SearchAutoSuggestBoxGroupStyleSelector>
-          </AutoSuggestBox.GroupStyleSelector>
           <i:Interaction.Behaviors>
 
             <core:EventTriggerBehavior EventName="QuerySubmitted">
@@ -128,8 +100,8 @@
           </i:Interaction.Behaviors>
 
           <AutoSuggestBox.ItemTemplate>
-            <DataTemplate x:DataType="searchModel:StorageItemSearchEntry">
-              <TextBlock Text="{x:Bind Title}" FontSize="12" TextWrapping="Wrap" />
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}" FontSize="12" TextWrapping="Wrap" />
             </DataTemplate>
           </AutoSuggestBox.ItemTemplate>
         </AutoSuggestBox>
