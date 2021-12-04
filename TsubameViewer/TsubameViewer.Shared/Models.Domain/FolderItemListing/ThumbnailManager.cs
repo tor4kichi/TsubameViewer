@@ -127,7 +127,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             });
         }
 
-        public async Task DeleteFromPath(string path)
+        public async Task DeleteThumbnailFromPathAsync(string path)
         {
             _thumbnailImageInfoRepository.DeleteItem(path);
             var tempFolder = await GetTempFolderAsync();

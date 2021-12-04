@@ -64,13 +64,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             {
                 NoActionDescMenuItem.Visibility = Visibility.Collapsed;
 
-                bool isSourceStorageItem = (itemVM.Token.RootItemPath == itemVM.Path);
-
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = (isSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+                SetThumbnailImageMenuItem.Visibility = (itemVM.IsSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -98,14 +96,12 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.Visibility = (itemVM.Item is StorageItemImageSource item && item.StorageItem is StorageFile).TrueToVisible();
 
                 RemoveSourceStorageItem.CommandParameter = itemVM;
-                SourceManageSeparetor.Visibility = isSourceStorageItem.TrueToVisible();
-                SourceManageSubItem.Visibility = isSourceStorageItem.TrueToVisible();
+                SourceManageSeparetor.Visibility = itemVM.IsSourceStorageItem.TrueToVisible();
+                SourceManageSubItem.Visibility = itemVM.IsSourceStorageItem.TrueToVisible();
             }
             else if (itemVM.Item is ArchiveDirectoryImageSource)
             {
                 NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-
-                bool isSourceStorageItem = (itemVM.Token.RootItemPath == itemVM.Path);
 
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;

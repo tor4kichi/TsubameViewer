@@ -44,7 +44,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly Lazy<INavigationService> _navigationServiceLazy;
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly StorageItemSearchManager _storageItemSearchManager;
 
@@ -60,7 +59,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ApplicationSettings applicationSettings,
             RestoreNavigationManager restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager,
             FolderContainerTypeManager folderContainerTypeManager,
             StorageItemSearchManager storageItemSearchManager,
             SourceChoiceCommand sourceChoiceCommand,
@@ -80,7 +78,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ApplicationSettings = applicationSettings;
             RestoreNavigationManager = restoreNavigationManager;
             SourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
             _folderContainerTypeManager = folderContainerTypeManager;
             _storageItemSearchManager = storageItemSearchManager;
             SourceChoiceCommand = sourceChoiceCommand;
@@ -96,18 +93,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
-            EventAggregator.GetEvent<PathReferenceCountUpdateWhenSourceManagementChanged.SearchIndexUpdateProgressEvent>()
-                .Subscribe(args => 
-                {
-                    _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateProgressCount = args.ProcessedCount;
-                    _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateTotalCount = args.TotalCount;
+            _messenger.Register<PathReferenceCountUpdateWhenSourceManagementChanged.SearchIndexUpdateProgressMessage>(this, (r, m) =>
+            {
+                var args = m.Value;
+                _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateProgressCount = args.ProcessedCount;
+                _autoSuggestBoxSearchIndexGroup.SearchIndexUpdateTotalCount = args.TotalCount;
 
-                    Debug.WriteLine($"[SearchIndexUpdate] progress: {args.ProcessedCount}/{args.TotalCount} ");
-                }
-                , ThreadOption.UIThread
-                , keepSubscriberReferenceAlive: true
-                )
-                .AddTo(_disposables);
+                Debug.WriteLine($"[SearchIndexUpdate] progress: {args.ProcessedCount}/{args.TotalCount} ");
+            });
 
             AutoSuggestBoxItems = new[]
             {
@@ -192,8 +185,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var parameters = new NavigationParameters();
 
-            var token = _PathReferenceCountManager.GetToken(entry.Path);
-            var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(token, entry.Path);
+            var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
 
             parameters.Add(PageNavigationConstants.Path, entry.Path);
 

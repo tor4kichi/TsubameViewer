@@ -24,22 +24,17 @@ namespace TsubameViewer.Models.Domain.Search
         private readonly IEventAggregator _eventAggregator;
         
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         
 
         public StorageItemSearchManager(
             StorageItemSearchRepository storageItemSearchRepository,
             IEventAggregator eventAggregator,
-            
-            SourceFolders.SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager
+            SourceFolders.SourceStorageItemsRepository sourceStorageItemsRepository
             )
         {
             _storageItemSearchRepository = storageItemSearchRepository;
             _eventAggregator = eventAggregator;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
-            
         }
 
         FastAsyncLock _lock = new FastAsyncLock();

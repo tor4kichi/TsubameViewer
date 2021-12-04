@@ -1,4 +1,5 @@
-﻿using Prism.Events;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -20,14 +21,18 @@ namespace TsubameViewer.Models.UseCase
 {
     public sealed class PathReferenceCountUpdateWhenSourceManagementChanged : IDisposable
     {
-        public class SearchIndexUpdateProgressEventArgs
+        public sealed class SearchIndexUpdateProgressMessageData
         {
             public uint TotalCount { get; set; }
             public uint ProcessedCount { get; set; }
         }
 
-        public class SearchIndexUpdateProgressEvent : PubSubEvent<SearchIndexUpdateProgressEventArgs>
-        { }
+        public class SearchIndexUpdateProgressMessage : ValueChangedMessage<SearchIndexUpdateProgressMessageData>
+        {
+            public SearchIndexUpdateProgressMessage(SearchIndexUpdateProgressMessageData value) : base(value)
+            {
+            }
+        }
 
 
         public class SearchIndexUpdateProcessSettings : FlagsRepositoryBase
@@ -48,59 +53,46 @@ namespace TsubameViewer.Models.UseCase
 
         }
 
-        private readonly IEventAggregator _eventAggregator;
         private readonly StorageItemSearchManager _storageItemSearchManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
+        private readonly IMessenger _messenger;
         private readonly SearchIndexUpdateProcessSettings _settings;
         CompositeDisposable _disposables = new CompositeDisposable();
-        SearchIndexUpdateProgressEvent _ProgressEvent;
+        SearchIndexUpdateProgressMessage _ProgressEvent;
         public PathReferenceCountUpdateWhenSourceManagementChanged(
-            IEventAggregator eventAggregator,
+            IMessenger messenger,
             SearchIndexUpdateProcessSettings settings,
             StorageItemSearchManager storageItemSearchManager,
-            SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager
+            SourceStorageItemsRepository sourceStorageItemsRepository
             )
         {
-            _eventAggregator = eventAggregator;
+            _messenger = messenger;
             _settings = settings;
             _storageItemSearchManager = storageItemSearchManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
-            _ProgressEvent = _eventAggregator.GetEvent<SearchIndexUpdateProgressEvent>();
 
-            _eventAggregator.GetEvent<SourceStorageItemsRepository.AddedEvent>()
-                .Subscribe(async args =>
+            _messenger.Register<SourceStorageItemsRepository.SourceStorageItemAddedMessage>(this, async (r, m) => 
+            {
+                using (await _lock.LockAsync(default))
                 {
-                    using (await _lock.LockAsync(default))
-                    {
-                        _storageItemSearchManager.Update(args.StorageItem);
-                        _PathReferenceCountManager.Upsert(args.StorageItem.Path, args.Token);
-                    }
-
-                    if (args.StorageItem is StorageFolder)
-                    {
-                        RegistrationUpdateIndex(args.Token);
-                    }
+                    _storageItemSearchManager.Update(m.Value.StorageItem);
                 }
-                , keepSubscriberReferenceAlive: true
-                )
-                .AddTo(_disposables);
 
-            _eventAggregator.GetEvent<SourceStorageItemsRepository.RemovedEvent>()
-                .Subscribe(async args =>
+                if (m.Value.StorageItem is StorageFolder)
                 {
-                    using (await _lock.LockAsync(default))
-                    {
-                        Debug.WriteLine("[SearchIndexUpdat] Start delete search index : " + args.Token);
-                        PathReferenceCountManager.Remove(args.Token);
-                        Debug.WriteLine("[SearchIndexUpdat] Complete deletion : " + args.Token);
-                    }
+                    RegistrationUpdateIndex(m.Value.Token);
                 }
-                , keepSubscriberReferenceAlive: true
-                )
-                .AddTo(_disposables);
+            });
+
+            _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, async (r, m) =>
+            {
+                using (await _lock.LockAsync(default))
+                {
+                    Debug.WriteLine("[SearchIndexUpdat] Start delete search index : " + m.Value.Token);
+                    Debug.WriteLine("[SearchIndexUpdat] Complete deletion : " + m.Value.Token);
+                }
+            });
+
         }
 
         public void Initialize()
@@ -134,7 +126,7 @@ namespace TsubameViewer.Models.UseCase
         private async Task TryRunUpdateIndexNextFolder(uint prevProcessCount = 0)
         {
             var totalCount = await GetRequireUpdateIndexiesTokenFoldersItemsCountAsync();
-            _ProgressEvent.Publish(new SearchIndexUpdateProgressEventArgs() { TotalCount = totalCount, ProcessedCount = prevProcessCount });
+            _messenger.Send(new SearchIndexUpdateProgressMessage(new (){ TotalCount = totalCount, ProcessedCount = prevProcessCount }));
 
             if (_currentlyUpdateToken != null) { return; }
 
@@ -154,7 +146,7 @@ namespace TsubameViewer.Models.UseCase
                         Action<uint> progressUpdate = (cnt) =>
                         {
                             processCount = cnt;
-                            _ProgressEvent.Publish(new SearchIndexUpdateProgressEventArgs() { TotalCount = totalCount, ProcessedCount = prevProcessCount + processCount });
+                            _messenger.Send(new SearchIndexUpdateProgressMessage(new() { TotalCount = totalCount, ProcessedCount = prevProcessCount + processCount }));
                         };
 
                         await RegistrationFolderAsync(token, folder, progressUpdate, _ctsForToken.Token);
@@ -165,7 +157,7 @@ namespace TsubameViewer.Models.UseCase
                         { 
                             _storageItemSearchManager.Update(storageItem);
                             processCount = 1;
-                            _ProgressEvent.Publish(new SearchIndexUpdateProgressEventArgs() { TotalCount = totalCount, ProcessedCount = prevProcessCount + processCount });
+                            _messenger.Send(new SearchIndexUpdateProgressMessage(new () { TotalCount = totalCount, ProcessedCount = prevProcessCount + processCount }));
                         }
                     }
                 }
@@ -236,7 +228,6 @@ namespace TsubameViewer.Models.UseCase
                 var count = await query.GetItemCountAsync();
 
                 _storageItemSearchManager.Update(folder);
-                _PathReferenceCountManager.Upsert(folder.Path, token);
 
                 uint currentIndex = 0;
                 while (currentIndex < count)
@@ -252,7 +243,6 @@ namespace TsubameViewer.Models.UseCase
                         foreach (var item in items)
                         {
                             _storageItemSearchManager.Update(item);
-                            _PathReferenceCountManager.Upsert(item.Path, token);
                             ct.ThrowIfCancellationRequested();
                         }
                     }

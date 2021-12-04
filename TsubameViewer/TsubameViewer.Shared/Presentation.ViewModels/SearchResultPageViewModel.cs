@@ -26,7 +26,6 @@ namespace TsubameViewer.Presentation.ViewModels
     {
         private readonly StorageItemSearchManager _storageItemSearchManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
@@ -53,7 +52,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public SearchResultPageViewModel(
             StorageItemSearchManager storageItemSearchManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
@@ -71,7 +69,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _storageItemSearchManager = storageItemSearchManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
             _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
@@ -141,10 +138,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private async Task<StorageItemViewModel> ConvertStorageItemViewModel(StorageItemSearchEntry entry)
         {
-            var token = _PathReferenceCountManager.GetToken(entry.Path);
-            var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, entry.Path);
+            var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
             var storageItemImageSource = new StorageItemImageSource(storageItem, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, null, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)

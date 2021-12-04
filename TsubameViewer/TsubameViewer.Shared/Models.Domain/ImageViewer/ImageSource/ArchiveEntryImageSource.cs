@@ -43,8 +43,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         IStorageItem IImageSource.StorageItem => StorageItem;
 
+
+        // Note: NameをImageViewerで表示時のページ名として扱っている
+        // フォルダ名をスキップしてしまうとアーカイブ内に別フォルダに同名ファイルがある場合に
+        // 常に最初のフォルダの同名ファイルが選ばれてしまう問題が起きる
         private string _name;
-        public string Name => _name ??= System.IO.Path.GetFileName(_entry.Key);
+        //public string Name => _name ??= System.IO.Path.GetFileName(_entry.Key);
+        public string Name => _name ??= _entry.Key;
 
         public string Path => _entry.Key;
 

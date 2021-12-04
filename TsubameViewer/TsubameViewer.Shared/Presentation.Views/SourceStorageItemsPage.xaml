@@ -54,6 +54,10 @@
 
       </GridView.Header>
 
+      <!-- 表示がチラつくのでGridViewItemのアニメーションを無効にしている -->
+      <GridView.ItemContainerTransitions>
+        <TransitionCollection />
+      </GridView.ItemContainerTransitions>
       <GridView.GroupStyle>
         <GroupStyle HidesIfEmpty="True"
                     >

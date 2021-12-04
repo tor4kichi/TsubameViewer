@@ -24,7 +24,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                _sourceStorageItemsRepository.RemoveFolder(itemVM.Token.TokenString);
+                _sourceStorageItemsRepository.RemoveFolder(itemVM.Path);
             }
         }
     }
