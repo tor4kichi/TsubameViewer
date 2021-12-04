@@ -27,6 +27,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 {
     public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
+        public bool IsListupActionEnabled { get; set; } = true;
+
         public StorageItemMenuFlyout()
         {
             this.InitializeComponent();
@@ -129,6 +131,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
+            }
+
+            if (IsListupActionEnabled is false)
+            {
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             }
         }
     }

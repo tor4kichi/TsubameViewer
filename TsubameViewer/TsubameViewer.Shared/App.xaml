@@ -39,6 +39,7 @@
 
 
       <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" />
+      <myFlyouts:StorageItemMenuFlyout x:Key="NoListUpActionStorageItemMenuFlyout" IsListupActionEnabled="False" />
 
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />

@@ -27,9 +27,9 @@
           x:Name="HeaderLayout"
           Background="{ThemeResource ApplicationContentBackgroundBrush}"          
           Padding="8 8"
+        Margin="0 24 0 16"
           >
 
-        <Border Height="16" />
         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
             <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
         </TextBlock>
@@ -55,7 +55,7 @@
         SelectionMode="None"
         XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
         IsTabStop="False"
-        ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+        ContextFlyout="{StaticResource NoListUpActionStorageItemMenuFlyout}"
         >
 
         <GridView.ItemContainerTransitions>
@@ -80,6 +80,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 27" />
+            <Setter Target="HeaderLayout.Padding" Value="48 0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -88,6 +89,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="280 0 280 32" />
+            <Setter Target="HeaderLayout.Padding" Value="280 0" />
           </VisualState.Setters>
         </VisualState>
 
@@ -97,6 +99,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 0 140 32" />
+            <Setter Target="HeaderLayout.Padding" Value="140 0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -105,6 +108,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 32" />
+            <Setter Target="HeaderLayout.Padding" Value="48 0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -113,6 +117,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
+            <Setter Target="HeaderLayout.Padding" Value="8 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

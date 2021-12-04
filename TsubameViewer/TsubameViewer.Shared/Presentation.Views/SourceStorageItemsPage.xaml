@@ -12,7 +12,7 @@
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
-  xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
+  xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels" xmlns:myFlyouts="using:TsubameViewer.Presentation.Views.Flyouts"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
@@ -32,20 +32,20 @@
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
             />
     <uwpControls:AdaptiveGridView 
-            x:Name="FoldersAdaptiveGridView"
-            StretchContentForSingleRow="False"
-            OneRowModeEnabled="False"
-            ItemsSource="{Binding Source={StaticResource ItemsCollectionViewSource}}" 
-            ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
-            ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-            DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
-            ItemHeight="{StaticResource FolderGridViewItemHeight}"
-            IsItemClickEnabled="True"
-            ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
-            IsSynchronizedWithCurrentItem="False"
-            SelectionMode="None"
-      ContextFlyout="{StaticResource StorageItemMenuFlyout}"
-              >
+      x:Name="FoldersAdaptiveGridView"
+      StretchContentForSingleRow="False"
+      OneRowModeEnabled="False"
+      ItemsSource="{Binding Source={StaticResource ItemsCollectionViewSource}}" 
+      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
+      ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+      DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
+      ItemHeight="{StaticResource FolderGridViewItemHeight}"
+      IsItemClickEnabled="True"
+      ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
+      IsSynchronizedWithCurrentItem="False"
+      SelectionMode="None"
+      ContextFlyout="{StaticResource NoListUpActionStorageItemMenuFlyout}"
+      >
       
       <GridView.Header>
         <Grid HorizontalAlignment="Right">
