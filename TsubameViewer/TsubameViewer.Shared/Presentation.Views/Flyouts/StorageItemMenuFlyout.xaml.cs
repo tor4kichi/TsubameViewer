@@ -38,7 +38,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
             OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
-            RemoveSourceStorageItem.Command = container.Resolve<DeleteStoredFolderCommand>();
             _secondaryTileManager = container.Resolve<SecondaryTileManager>();
         }
 
@@ -94,10 +93,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;                
                 OpenWithExternalAppMenuItem.Visibility = (itemVM.Item is StorageItemImageSource item && item.StorageItem is StorageFile).TrueToVisible();
-
-                RemoveSourceStorageItem.CommandParameter = itemVM;
-                SourceManageSeparetor.Visibility = itemVM.IsSourceStorageItem.TrueToVisible();
-                SourceManageSubItem.Visibility = itemVM.IsSourceStorageItem.TrueToVisible();
             }
             else if (itemVM.Item is ArchiveDirectoryImageSource)
             {
@@ -121,10 +116,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
-
-                RemoveSourceStorageItem.CommandParameter = itemVM;
-                SourceManageSeparetor.Visibility = Visibility.Collapsed;
-                SourceManageSubItem.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -138,8 +129,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
-                SourceManageSeparetor.Visibility = Visibility.Collapsed;
-                SourceManageSubItem.Visibility = Visibility.Collapsed;
             }
         }
     }
