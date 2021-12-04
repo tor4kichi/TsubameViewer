@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 //using System.IO.Compression;
 using System.Linq;
@@ -282,7 +283,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             Guard.IsTrue(file.IsSupportedMangaFile(), "file.IsSupportedMangaFile");
 
             // Task.Runで包まないとUIが固まる
-            var imageCollection = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct));
+            var imageCollection = await Task.Run(async () => await GetImagesFromArchiveFileAsync(file, ct), ct);
             if (imageCollection is ArchiveImageCollection aic)
             {
                 var directoryToken = archiveDirectoryPath is not null ? aic.GetDirectoryTokenFromPath(archiveDirectoryPath) : null;
@@ -300,7 +301,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 throw new NotSupportedException();
             }
-
         }
 
         public Task<FolderImageCollectionContext> GetFolderImageCollectionContextAsync(StorageFolder folder, CancellationToken ct)
@@ -383,17 +383,18 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<ArchiveImageCollection> GetImagesFromZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenReadAsync().AsTask(ct);
+            var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
             try
             {
                 ct.ThrowIfCancellationRequested();
-
-                var zipArchive = ZipArchive.Open(stream.AsStreamForRead())
+                var zipArchive = ZipArchive.Open(stream)
                     .AddTo(disposables);
-
-                ct.ThrowIfCancellationRequested();
+                foreach (var _ in zipArchive.Entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
                 return new ArchiveImageCollection(file, zipArchive, disposables, _thumbnailManager);
             }
             catch
@@ -413,15 +414,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<ArchiveImageCollection> GetImagesFromRarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenReadAsync().AsTask(ct);
+            var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
             try
             {
-                var rarArchive = RarArchive.Open(stream.AsStreamForRead())
+                var rarArchive = RarArchive.Open(stream)
                     .AddTo(disposables);
-
-                ct.ThrowIfCancellationRequested();
+                foreach (var _ in rarArchive.Entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
                 return new ArchiveImageCollection(file, rarArchive, disposables, _thumbnailManager);
             }
             catch
@@ -435,15 +438,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<ArchiveImageCollection> GetImagesFromSevenZipFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenReadAsync().AsTask(ct);
+            var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
             try
             {
-                var szArchive = SevenZipArchive.Open(stream.AsStreamForRead())
+                var szArchive = SevenZipArchive.Open(stream)
                     .AddTo(disposables);
-
-                ct.ThrowIfCancellationRequested();
+                foreach (var _ in szArchive.Entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
                 return new ArchiveImageCollection(file, szArchive, disposables, _thumbnailManager);
             }
             catch
@@ -456,15 +461,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<ArchiveImageCollection> GetImagesFromTarFileAsync(StorageFile file, CancellationToken ct)
         {
             CompositeDisposable disposables = new CompositeDisposable();
-            var stream = await file.OpenReadAsync().AsTask(ct);
+            var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
             try
             {
-                var tarArchive = TarArchive.Open(stream.AsStreamForRead())
+                var tarArchive = TarArchive.Open(stream)
                     .AddTo(disposables);
-
-                ct.ThrowIfCancellationRequested();
+                foreach (var _ in tarArchive.Entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
                 return new ArchiveImageCollection(file, tarArchive, disposables, _thumbnailManager);
             }
             catch
@@ -693,13 +700,21 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
             // ディレクトリベースでフォルダ構造を見つける
-            
-            var dir = Enumerable.Concat(
-                Archive.Entries.Where(x => x.IsDirectory),
-                Archive.Entries.Where(x => !x.IsDirectory)
-                    .Where(x => DirectoryPathHelper.GetDirectoryDepth(x.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                    )
-                    .Distinct(ArchiveDirectoryEqualityComparer.Default);
+            List<IArchiveEntry> notDirectoryItem = new List<IArchiveEntry>();
+            List<IArchiveEntry> directoryItem = new List<IArchiveEntry>();
+            foreach (var entry in Archive.Entries)
+            {
+                if (entry.IsDirectory)
+                {
+                    directoryItem.Add(entry);
+                }
+                else if (DirectoryPathHelper.GetDirectoryDepth(entry.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(entry.Key))
+                {
+                    notDirectoryItem.Add(entry);
+                }
+            }
+
+            var dir = Enumerable.Concat(directoryItem, notDirectoryItem).Distinct(ArchiveDirectoryEqualityComparer.Default);
 
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
             _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
