@@ -1,4 +1,6 @@
-﻿using Prism.Events;
+﻿using LiteDB;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,42 +12,218 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
+using Windows.Storage.Search;
 
 namespace TsubameViewer.Models.Domain.SourceFolders
 {
+    // StorageApplicationPermissionsについて
+    // https://docs.microsoft.com/ja-jp/windows/uwp/files/how-to-track-recently-used-files-and-folders#use-a-token-to-retrieve-an-item-from-the-mru
+    //
+    // MostRecentlyUsedList と FutureAccessList のアイテムに対するtokenとパスの組に対する検索が出来るようにした    
+
     public sealed class SourceStorageItemsRepository
     {
-        public sealed class AddedEventArgs
+        internal async Task RefreshTokenToPathDbAsync()
         {
-            internal AddedEventArgs() { }
+            _tokenToPathRepository.Clear();
+
+            foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
+            {
+                try
+                {
+                    var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                    _tokenToPathRepository.Add(TokenListType.FutureAccessList, entry.Token, item.Path);
+                }
+                catch
+                {
+
+                }
+            }
+
+            foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
+            {
+                try
+                {
+                    var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                    _tokenToPathRepository.Add(TokenListType.MostRecentlyUsedList, entry.Token, item.Path);
+                }
+                catch
+                {
+
+                }
+            }
+        }
+
+
+        public sealed class SourceStorageItemAddedMessageData
+        {
+            internal SourceStorageItemAddedMessageData() { }
 
             public string Token { get; set; }
             public IStorageItem StorageItem { get; set; }
             public string Metadata { get; set; }
+            public TokenListType ListType { get; set; }
         }
 
-        public sealed class AddedEvent : PubSubEvent<AddedEventArgs> { }
-
-
-
-        public sealed class RemovedEventArgs
+        public sealed class SourceStorageItemAddedMessage : ValueChangedMessage<SourceStorageItemAddedMessageData>
         {
-            internal RemovedEventArgs() { }
+            public SourceStorageItemAddedMessage(SourceStorageItemAddedMessageData value) : base(value)
+            {
+            }
+        }
+
+
+
+        public sealed class SourceStorageItemRemovedMessageData
+        {
+            internal SourceStorageItemRemovedMessageData() { }
 
             public string Token { get; set; }
+
+            public string Path { get; set; }
         }
 
-        public sealed class RemovedEvent : PubSubEvent<RemovedEventArgs> { }
-
-
-
-
-
-        private readonly IEventAggregator _eventAggregator;
-
-        public SourceStorageItemsRepository(IEventAggregator eventAggregator)
+        public sealed class SourceStorageItemRemovedMessage : ValueChangedMessage<SourceStorageItemRemovedMessageData>
         {
-            _eventAggregator = eventAggregator;
+            public SourceStorageItemRemovedMessage(SourceStorageItemRemovedMessageData value) : base(value)
+            {
+            }
+        }
+
+
+        public sealed class SourceStorageItemMovedOrRenameMessageData
+        {
+            public string Token { get; set; }
+
+            public string OldPath { get; set; }
+
+            public string NewPath { get; set; }
+
+            public bool IsRename => Path.GetDirectoryName(OldPath) == Path.GetDirectoryName(NewPath);
+        }
+
+        public sealed class SourceStorageItemMovedOrRenameMessage : ValueChangedMessage<SourceStorageItemMovedOrRenameMessageData>
+        {
+            public SourceStorageItemMovedOrRenameMessage(SourceStorageItemMovedOrRenameMessageData value) : base(value)
+            {
+            }
+        }
+
+        private sealed class TokenToPathEntry
+        {
+            [BsonId]
+            public string Token { get; set; }
+
+            public string Path { get; set; }
+
+            public TokenListType TokenListType { get; set; }
+        }
+
+        public enum TokenListType
+        {
+            MostRecentlyUsedList,
+            FutureAccessList
+        }
+
+        private sealed class TokenToPathRepository : Infrastructure.LiteDBServiceBase<TokenToPathEntry>
+        {
+            public TokenToPathRepository(LiteDB.ILiteDatabase liteDatabase) : base(liteDatabase)
+            {
+                _collection.EnsureIndex(x => x.Path);
+                _collection.EnsureIndex(x => x.TokenListType);
+            }
+
+            public void Add(TokenListType tokenListType, string token, string path)
+            {
+                _collection.Upsert(new TokenToPathEntry() 
+                {
+                    TokenListType = tokenListType,
+                    Path = path,
+                    Token = token,
+                });
+            }
+
+            internal TokenToPathEntry GetPathFromToken(string token)
+            {
+                return _collection.FindOne(x => x.Token == token);
+            }
+
+            internal TokenToPathEntry GetTokenFromPathExact(string exactPath)
+            {
+                return _collection.Find(x => x.Path == exactPath).FirstOrDefault();
+            }
+
+            internal TokenToPathEntry GetTokenFromPath(string path)
+            {
+                return _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
+            }
+
+            public bool IsExistPath(string path)
+            {
+                return _collection.Exists(x => x.Path == path);
+            }
+
+            internal void Clear()
+            {
+                _collection.DeleteAll();
+            }
+        }
+
+        private readonly TokenToPathRepository _tokenToPathRepository;
+        private readonly IMessenger _messenger;
+
+        public SourceStorageItemsRepository(
+            IMessenger messenger,
+            LiteDB.ILiteDatabase liteDatabase
+            )
+        {
+            _tokenToPathRepository = new TokenToPathRepository(liteDatabase);
+
+            StorageApplicationPermissions.MostRecentlyUsedList.ItemRemoved += MostRecentlyUsedList_ItemRemoved;
+            _messenger = messenger;
+        }
+
+        private void MostRecentlyUsedList_ItemRemoved(StorageItemMostRecentlyUsedList sender, ItemRemovedEventArgs args)
+        {
+            _tokenToPathRepository.DeleteItem(args.RemovedEntry.Token);
+
+            // TODO: 削除済みをトリガー
+        }
+
+
+        public bool IsSourceStorageItem(string path)
+        {
+            if (string.IsNullOrEmpty(path)) { return false; }
+
+            return _tokenToPathRepository.IsExistPath(path);
+        }
+
+        public async Task<(string Token, IStorageItem Item)> GetSourceStorageItem(string path)
+        {
+            var token = _tokenToPathRepository.GetTokenFromPathExact(path);
+            return (token.Token, await GetItemAsync(token.Token));
+        }
+
+
+        public async IAsyncEnumerable<string> GetDescendantItemPathsAsync(string parentPath)
+        {
+            foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
+            {
+                var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+                {
+                    yield return item.Path;
+                }
+            }
+
+            foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
+            {
+                var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+                {
+                    yield return item.Path;
+                }
+            }
         }
 
         public async Task<string> AddFileTemporaryAsync(StorageFile storageItem, string metadata)
@@ -81,12 +259,15 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 #else
             throw new NotImplementedException();
 #endif
-            _eventAggregator.GetEvent<AddedEvent>().Publish(new AddedEventArgs()
+            _tokenToPathRepository.Add(TokenListType.MostRecentlyUsedList, token, storageItem.Path);
+
+            _messenger.Send(new SourceStorageItemAddedMessage(new () 
             {
                 Token = token,
                 StorageItem = storageItem,
-                Metadata = metadata
-            });
+                Metadata = metadata,
+                ListType = TokenListType.MostRecentlyUsedList,
+            }));
 
             return token;
         }
@@ -121,12 +302,15 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 #else
             throw new NotImplementedException();
 #endif
-            _eventAggregator.GetEvent<AddedEvent>().Publish(new AddedEventArgs() 
+            _tokenToPathRepository.Add(TokenListType.FutureAccessList, token, storageItem.Path);
+
+            _messenger.Send(new SourceStorageItemAddedMessage(new()
             {
                 Token = token,
                 StorageItem = storageItem,
-                Metadata = metadata
-            });
+                Metadata = metadata,
+                ListType = TokenListType.FutureAccessList,
+            }));
 
             return token;
         }
@@ -164,72 +348,74 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             return item;
         }
-
-
-        public async Task<StorageFolder> GetFolderAsync(string token)
+        
+        private async Task<TokenToPathEntry> CheckAndGetTokenToPathAfterRefreshDb(string targetPath)
         {
-            return await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(token);
+            // 一旦全てのトークンとパスの組み合わせをバッファ
+            var oldTokenToPathMap = _tokenToPathRepository.ReadAllItems().ToDictionary(x => x.Token, x => x.Path);
+
+            // TokenToPathRepositoryを再構築する
+            await RefreshTokenToPathDbAsync();
+
+            // 改めてtargetPathと組になっているトークンを取り出す
+            // ここで取れなかった場合や、意図しないフォルダが取れてしまった場合はユーザーにフォルダの再登録を要求する必要がある
+            var token = _tokenToPathRepository.GetTokenFromPath(targetPath);
+
+            // トークンと一致するバッファした組におけるパスが旧パスである
+            var oldPath = oldTokenToPathMap[token.Token];
+
+            // トークンに対応するアイテムを取得する（targetPathとトークンが示すアイテムのPathが異なる可能性がある）
+            var storageItem = await GetItemAsync(token.Token);
+
+            // トークン、パス、旧パスを元にフォルダ変更イベントをトリガーする
+            _messenger.Send(new SourceStorageItemMovedOrRenameMessage(new() { Token = token.Token, OldPath = oldPath, NewPath = storageItem.Path }));
+
+            return token;
         }
 
-        public async Task<(IStorageItem item, string metadata)> GetParsistantItemAsync(string token)
+        public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {
-            var entry = StorageApplicationPermissions.FutureAccessList.Entries.FirstOrDefault(x => x.Token == token);
-            if (entry.Token == null) { return default; }
+            var tokenEntry = _tokenToPathRepository.GetTokenFromPath(path);
 
-            var storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(token);
+            // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
+            // 理想的には変更部分だけを差分更新するべき
+            if (tokenEntry is null)
+            {
+                tokenEntry = await CheckAndGetTokenToPathAfterRefreshDb(path);
+            }
 
-            return (storageItem, entry.Metadata);
-        }
-
-        public async Task<(IStorageItem item, string metadata)> GetTemporaryItemAsync(string token)
-        {
-            var entry = StorageApplicationPermissions.MostRecentlyUsedList.Entries.FirstOrDefault(x => x.Token == token);
-            if (entry.Token == null) { return default; }
-
-            var storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(token);
-
-            return (storageItem, entry.Metadata);
-        }
-
-
-        public async Task<IStorageItem> GetStorageItemFromPath(string token, string path)
-        {
-            var tokenStorageItem = await GetItemAsync(token);
+            var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
 
             if (tokenStorageItem?.Path == path)
             {
                 return tokenStorageItem;
             }
-            else
-            {
-                // tokenからファイルやフォルダが取れなかった場合はpathをヒントにStorageFolderの取得を試みる
-                await foreach (var item in GetParsistantItems())
-                {
-                    var folderPath = item.item.Path;
-                    string dirName = Path.GetDirectoryName(path);
-                    do
-                    {
-                        if (folderPath.Equals(dirName))
-                        {
-                            tokenStorageItem = item.item;
-                            break;
-                        }
-                        dirName = Path.GetDirectoryName(dirName);
-                    }
-                    while (!string.IsNullOrEmpty(dirName));
-
-                    if (tokenStorageItem != null) { break; }
-                }
-            }
-
-            if (tokenStorageItem is StorageFolder folder)
+            else if (tokenStorageItem is StorageFolder folder)
             {
                 var subtractPath = path.Substring(tokenStorageItem.Path.Length);
                 return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
             }
             else
             {
-                throw new Exception();
+                throw new ArgumentException();
+                // tokenからファイルやフォルダが取れなかった場合はpathをヒントにStorageFolderの取得を試みる
+                //await foreach (var item in GetParsistantItems())
+                //{
+                //    var folderPath = item.item.Path;
+                //    string dirName = Path.GetDirectoryName(path);
+                //    do
+                //    {
+                //        if (folderPath.Equals(dirName))
+                //        {
+                //            tokenStorageItem = item.item;
+                //            break;
+                //        }
+                //        dirName = Path.GetDirectoryName(dirName);
+                //    }
+                //    while (!string.IsNullOrEmpty(dirName));
+
+                //    if (tokenStorageItem != null) { break; }
+                //}
             }
         }
 
@@ -237,6 +423,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public void RemoveFolder(string token)
         {
+            var entry = _tokenToPathRepository.GetPathFromToken(token);
             bool isRemoved = false;
 #if WINDOWS_UWP
             if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))
@@ -244,7 +431,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 StorageApplicationPermissions.MostRecentlyUsedList.Remove(token);
                 isRemoved = true;
             }
-            if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
+            else if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))
             {
                 StorageApplicationPermissions.FutureAccessList.Remove(token);
                 isRemoved = true;
@@ -254,7 +441,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 #endif
             if (isRemoved)
             {
-                _eventAggregator.GetEvent<RemovedEvent>().Publish(new RemovedEventArgs() { Token = token });
+                _tokenToPathRepository.DeleteItem(token);
+                _messenger.Send(new SourceStorageItemRemovedMessage(new () { Token = token, Path = entry.Path }));
             }
         }
 
@@ -287,7 +475,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 {
                     storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(item.Token);
                 }
-                catch (FileNotFoundException) { }
+                catch (FileNotFoundException) 
+                {
+                    StorageApplicationPermissions.MostRecentlyUsedList.Remove(item.Token);
+                }
 
                 if (storageItem is not null)
                 {
@@ -301,13 +492,62 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         }
 
 
-        public bool CanAddItem()
+        public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)
         {
-#if WINDOWS_UWP
-            return StorageApplicationPermissions.FutureAccessList.Entries.Count < StorageApplicationPermissions.FutureAccessList.MaximumItemsAllowed;
-#else
-            return false;
-#endif
-        }        
+            static async IAsyncEnumerable<IStorageItem> SearchInFolder(StorageFolder folder, QueryOptions queryOptions, [EnumeratorCancellation] CancellationToken ct)
+            {
+                var query = folder.CreateItemQueryWithOptions(queryOptions);
+                int count = (int)await query.GetItemCountAsync().AsTask(ct);
+                int current = 0;
+                while (current < count)
+                {
+                    var items = await query.GetItemsAsync((uint)current, 100).AsTask(ct);
+                    foreach (var item in items)
+                    {
+                        yield return item;
+                    }
+                    current += items.Count;
+                }
+            }
+
+            QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
+            {
+                ApplicationSearchFilter = $"System.FileName:*{keyword}*" 
+            };
+
+            await foreach (var (item, token, metadata) in GetParsistantItems(ct))
+            {
+                if (item.Name.Contains(keyword))
+                {
+                    yield return item;
+                }
+
+                if (item is StorageFolder folder)
+                {                    
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    {
+                        yield return folderItem;
+                    }
+                }
+            }
+
+            await foreach (var (item, token, metadata) in GetTemporaryItems(ct))
+            {
+                if (item.Name.Contains(keyword))
+                {
+                    yield return item;
+                }
+
+                if (item is StorageFolder folder)
+                {
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    {
+                        yield return folderItem;
+                    }
+                }
+            }
+        }
+
+        
     }
 }

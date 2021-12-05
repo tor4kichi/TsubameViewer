@@ -1,7 +1,9 @@
 ﻿using LiteDB;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 
@@ -53,6 +55,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             {
                 return _collection.DeleteMany(x => x.Path.StartsWith(path));
             }
+
+            internal void FolderChanged(string oldPath, string newPath)
+            {
+                var entries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+                foreach (var entry in entries)
+                {
+                    var newEntry = entry with { Path = entry.Path.Replace(oldPath, newPath) };
+                    _collection.Update(newEntry);
+                    Debug.WriteLine($"FnADisplaySettings path {entry.Path} ===> {newEntry.Path}");
+                }
+            }
         }
 
         public sealed class InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository : LiteDBServiceBase<FolderAndArchiveChildFileDisplaySettingEntry>
@@ -69,6 +82,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public int DeleteUnderPath(string path)
             {
                 return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            }
+
+            internal void FolderChanged(string oldPath, string newPath)
+            {
+                var entries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+                foreach (var entry in entries)
+                {
+                    var newEntry = entry with { Path = entry.Path.Replace(oldPath, newPath) };
+                    _collection.Update(newEntry);
+                    Debug.WriteLine($"FnAChildFileDisplaySettings path {entry.Path} ===> {newEntry.Path}");
+                }
             }
         }
 
@@ -141,6 +165,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             _internalFolderAndArchiveRepository.DeleteUnderPath(path);
             _internalChildFileRepository.DeleteUnderPath(path);
+        }
+
+        public void FolderChanged(string oldPath, string newPath)
+        {
+            _internalFolderAndArchiveRepository.FolderChanged(oldPath, newPath);
+            _internalChildFileRepository.FolderChanged(oldPath, newPath);
         }
     }
 }

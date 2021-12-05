@@ -146,7 +146,6 @@ namespace TsubameViewer.Presentation.ViewModels
         
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -166,7 +165,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager,
             BookmarkManager bookmarkManager,
             ThumbnailManager thumbnailManager,
             RecentlyAccessManager recentlyAccessManager,
@@ -178,7 +176,6 @@ namespace TsubameViewer.Presentation.ViewModels
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
             _recentlyAccessManager = recentlyAccessManager;
@@ -245,28 +242,14 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         _currentPath = unescapedPath;
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
-                        string token = null;
                         foreach (var _ in Enumerable.Repeat(0, 100))
                         {
-                            token = _PathReferenceCountManager.GetToken(_currentPath);
-                            if (token != null)
+                            _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath) as StorageFile;
+                            if (_currentFolderItem != null)
                             {
                                 break;
                             }
                             await Task.Delay(100);
-                        }
-
-                        foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
-                        {
-                            try
-                            {
-                                _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath) as StorageFile;
-                                token = tempToken;
-                            }
-                            catch
-                            {
-                                _PathReferenceCountManager.Remove(tempToken);
-                            }
                         }
 
                         if (_currentFolderItem == null)

@@ -19,11 +19,6 @@
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
   <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
   <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
-  
-  <MenuFlyoutSeparator x:Name="SourceManageSeparetor" />
-  <MenuFlyoutSubItem x:Name="SourceManageSubItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}">
-    <MenuFlyoutItem x:Name="RemoveSourceStorageItem" Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" />
-  </MenuFlyoutSubItem>
-  
+    
   <MenuFlyoutItem x:Name="NoActionDescMenuItem" Text="{i18nExt:Localize Key=FolderItemMenuNoActionSuggested}" IsEnabled="False" />
 </MenuFlyout>

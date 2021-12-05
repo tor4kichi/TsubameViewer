@@ -24,11 +24,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
     using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public record StorageItemToken(string RootItemPath, string TokenString)
-    {
-    }
-
-
     public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
         #region Navigation Parameters
@@ -65,10 +60,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private readonly BookmarkManager _bookmarkManager;
 
         public IImageSource Item { get; }
-
-
-        public StorageItemToken Token { get; }
-
         
         public string Name { get; }
 
@@ -119,16 +110,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 #endif
         }
 
+        public bool IsSourceStorageItem => _sourceStorageItemsRepository.IsSourceStorageItem(Path);
 
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, StorageItemToken token, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
              : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
         {
             Item = item;
             DateCreated = Item.DateCreated;
-            Token = token;
             
             Name = Item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);

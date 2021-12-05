@@ -19,12 +19,14 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Models.UseCase.Migrate;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using Unity;
+using Uno.Extensions;
 using Uno.Threading;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -132,8 +134,7 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
-            container.RegisterSingleton<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
-            container.RegisterSingleton<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>();
+            container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
             
             container.RegisterSingleton<SourceStorageItemsPageViewModel>();
             container.RegisterSingleton<ImageListupPageViewModel>();
@@ -228,21 +229,76 @@ namespace TsubameViewer
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
-            if (Container.Resolve<MigrateLocalStorageHelperToApplicationDataStorageHelper>() is IMigarater migarater
-                && migarater.IsRequireMigrate
-                )
+#if DEBUG
+            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+#endif
+            Type[] migraterTypes = new[]
             {
-                Debug.WriteLine($"Start migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
+                typeof(DropSearchIndexDb),
+                typeof(DropPathReferenceCountDb),
+                typeof(MigrateAsyncStorageApplicationPermissionToDb),
+                typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+            };
 
-                migarater.Migrate();
-
-                Debug.WriteLine($"Done migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
-            }
-            else
+            await Task.Run(async () =>
             {
-                Debug.WriteLine($"Skip migrate: MigrateLocalStorageHelperToApplicationDataStorageHelper");
-            }
+                foreach (var migratorType in migraterTypes)
+                {
+                    var migratorInstance = Container.Resolve(migratorType);
+                    if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                    {
+                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
+                        migrater.Migrate();
+
+                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                    }
+                    else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                    {
+                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
+
+                        await asyncMigrater.MigrateAsync();
+
+                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Skip migrate: {migratorType.Name}");
+                    }
+                }
+            });
+
+
+            Type[] restoreTypes = new[]
+            {
+                typeof(CacheDeletionWhenSourceStorageItemIgnored),
+            };
+
+            await Task.Run(() =>
+            {
+                foreach (var restoreType in restoreTypes)
+                {
+                    var restorableInstance = Container.Resolve(restoreType);
+                    if (restorableInstance is IRestorable restorable)
+                    {
+                        Debug.WriteLine($"Start restore: {restoreType.Name}");
+
+                        try
+                        {
+                            restorable.Restore();
+                            Debug.WriteLine($"Done restore: {restoreType.Name}");
+                        }
+                        catch 
+                        {
+                            Debug.WriteLine($"Failed restore: {restoreType.Name}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Skip restore: {restoreType.Name}");
+                    }
+                }
+            });
 
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
@@ -299,15 +355,11 @@ namespace TsubameViewer
             // セカンダリタイル管理の初期化
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
             
-            // ソース管理に変更が加えられた時にアプリが把握しているストレージアイテムのパスと
-            // そのストレージアイテムを引く際に必要なフォルダアクセス権とを紐付ける
-            Container.Resolve<Models.UseCase.PathReferenceCountUpdateWhenSourceManagementChanged>().Initialize();
-
             // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
             // ローカルDBや画像サムネイルの破棄などを行う
             // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
-            // ストレージアイテムのパスごとに参照数を管理し、参照がゼロになった時に限って破棄するような仕組みにしている
-            Container.Resolve<Models.UseCase.ApplicationDataUpdateWhenPathReferenceCountChanged>();
+            // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
+            Container.Resolve<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
             
             base.OnInitialized();
         }
@@ -401,37 +453,6 @@ namespace TsubameViewer
         {
             var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
             var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
-            var referenceCountRepository = Container.Resolve<PathReferenceCountManager>();
-
-            string tokenGettingPath = info.Path;
-            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(Path.GetExtension(info.Path)))
-            {
-                tokenGettingPath = Path.GetDirectoryName(info.Path);
-            }
-
-            var tokens = referenceCountRepository.GetTokens(tokenGettingPath);
-
-            if (tokens == null) { return null; }
-
-            string finalToken = null;
-            foreach (var token in tokens)
-            {
-                try
-                {
-                    var temp = await sourceFolderRepository.GetItemAsync(token);
-                    if (temp is null)
-                    {
-                        throw new Exception();
-                    }
-
-                    finalToken = token;
-                    break;
-                }
-                catch 
-                {
-                    referenceCountRepository.Remove(token);
-                }
-            }
 
             NavigationParameters parameters = new NavigationParameters();
 
@@ -447,7 +468,7 @@ namespace TsubameViewer
                 parameters.Add(PageNavigationConstants.PageName, info.PageName);
             }
 
-            var item = await sourceFolderRepository.GetStorageItemFromPath(finalToken, info.Path);
+            var item = await sourceFolderRepository.GetStorageItemFromPath(info.Path);
 
             if (item is StorageFolder itemFolder)
             {

@@ -59,8 +59,6 @@ namespace TsubameViewer.Presentation.ViewModels
         IDisposable _ImageEnumerationDisposer;
 
         private IImageSource[] _Images;
-        private string _currentItemRootFolderToken;
-
         public IImageSource[] Images
         {
             get { return _Images; }
@@ -80,6 +78,8 @@ namespace TsubameViewer.Presentation.ViewModels
             get => _CurrentImageIndex;
             set => SetProperty(ref _CurrentImageIndex, value);
         }
+
+        private string _pathForSettings = null;
 
         private string _ParentFolderOrArchiveName;
         public string ParentFolderOrArchiveName
@@ -164,7 +164,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -176,7 +175,6 @@ namespace TsubameViewer.Presentation.ViewModels
             IScheduler scheduler,
             IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
@@ -190,7 +188,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _scheduler = scheduler;
             _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
@@ -209,8 +206,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     var names = imageSource.Path.Split(SeparateChars);
                     PageName = names[names.Length - 1];
                     PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
-                    _folderLastIntractItemManager.SetLastIntractItemName(_currentFolderItem.Path, imageSource.Name);
+                    _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
+                    _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Name);
                 })
                 .ToReadOnlyReactivePropertySlim()
                 .AddTo(_disposables);
@@ -312,60 +309,18 @@ namespace TsubameViewer.Presentation.ViewModels
                         _currentPath = unescapedPath;
 
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
-                        string token = null;
-                        var ext = Path.GetExtension(_currentPath);
-                        var directoryPath = Path.GetDirectoryName(_currentPath);
-                        var rawPath = _currentPath;
                         foreach (var _ in Enumerable.Repeat(0, 10))
                         {
-                            // PathReferenceCountManagerに対して画像ファイルは登録していないため
-                            // 画像ファイルの場合は親フォルダのパスを利用する
-                            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(ext))
+                            _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                            if (_currentFolderItem != null)
                             {
-                                token = _PathReferenceCountManager.GetToken(directoryPath);
-                                if (token != null)
-                                {
-                                    _currentPath = directoryPath;
-                                    break;
-                                }
-                            }
-
-                            // 画像をファイルアクティベーションした場合には
-                            // 例外的に画像ファイルのパスが渡される
-                            token = _PathReferenceCountManager.GetToken(rawPath);
-                            if (token != null)
-                            {
-                                _currentPath = rawPath;
+                                _currentPath = _currentFolderItem.Path;
                                 break;
                             }
 
                             await Task.Delay(100);
                         }
 
-                        foreach (var _ in Enumerable.Repeat(0, 10))
-                        {
-                            token = _PathReferenceCountManager.GetToken(_currentPath);
-                            if (token != null)
-                            {
-                                break;
-                            }
-                            await Task.Delay(100);
-                        }
-
-                        foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
-                        {
-                            try
-                            {
-                                _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath);
-                                token = tempToken;
-                            }
-                            catch
-                            {
-                                _PathReferenceCountManager.Remove(tempToken);
-                            }
-                        }
-
-                        _currentItemRootFolderToken = token;
                         Images = default;
                         CurrentImageIndex = 0;
 
@@ -373,13 +328,17 @@ namespace TsubameViewer.Presentation.ViewModels
                         Title = _currentFolderItem.Name;
 
                         DisplaySortTypeInheritancePath = null;
-                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
+                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath) 
+                            ? Path.GetDirectoryName(_currentPath)
+                            : _currentPath;
+
+                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
                         if (settings != null)
                         {
                             SelectedFileSortType.Value = settings.Sort;
                             IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
                         }
-                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
                         {
                             DisplaySortTypeInheritancePath = parentSort.Path;
                             SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
@@ -419,7 +378,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
                 )
             {
-                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_currentFolderItem.Path);
+                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
                 if (bookmarkPageName != null)
                 {
                     for (var i = 0; i < Images.Length; i++)
@@ -817,6 +776,8 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 Debug.WriteLine(folder.Path);
                 imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+
+                _recentlyAccessManager.AddWatched(_currentPath);
             }
             else if (_currentFolderItem is StorageFile file)
             {
@@ -827,10 +788,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         var parentFolder = await file.GetParentAsync();
                         imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        _recentlyAccessManager.AddWatched(parentFolder.Path);
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken, Path.GetDirectoryName(_currentPath));
+                        _recentlyAccessManager.AddWatched(_currentPath);
+
+                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                         if (parentItem is StorageFolder parentFolder)
                         {
                             imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
@@ -840,6 +804,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 else if (file.IsSupportedMangaFile())
                 {
                     imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
+                    _recentlyAccessManager.AddWatched(file.Path);
                 }
             }
             else
@@ -865,7 +830,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
                     CurrentImageIndex = Images.IndexOf(item);
                 }
-                else { CurrentImageIndex = 0; }
+                //else { CurrentImageIndex = 0; }
             }
 
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
@@ -886,9 +851,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
-
-            _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
+            GoPrevImageCommand.RaiseCanExecuteChanged();            
         }
 
 

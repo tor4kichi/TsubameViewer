@@ -1,6 +1,8 @@
 ﻿using LiteDB;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 
@@ -69,6 +71,10 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
             _bookmarkRepository.Remove(path);
         }
 
+        public void FolderChanged(string oldPath, string newPath)
+        {
+            _bookmarkRepository.FolderChanged(oldPath, newPath);
+        }
 
         public sealed class BookmarkRepository : LiteDBServiceBase<BookmarkEntry>
         {
@@ -128,6 +134,18 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
             public void Remove(string path)
             {
                 _collection.DeleteMany(x => x.Path == path);
+            }
+
+            public void FolderChanged(string oldPath, string newPath)
+            {
+                var bookmarkEntries =_collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+                foreach (var entry in bookmarkEntries)
+                {
+                    var prevPath = entry.Path;
+                    entry.Path = entry.Path.Replace(oldPath, newPath);
+                    _collection.Update(entry);
+                    Debug.WriteLine($"Bookmark path {prevPath} ===> {entry.Path}");
+                }
             }
         }
 
