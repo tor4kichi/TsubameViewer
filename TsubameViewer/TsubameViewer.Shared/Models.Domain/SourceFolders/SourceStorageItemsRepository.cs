@@ -90,6 +90,25 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             }
         }
 
+
+        public sealed class SourceStorageItemMovedOrRenameMessageData
+        {
+            public string Token { get; set; }
+
+            public string OldPath { get; set; }
+
+            public string NewPath { get; set; }
+
+            public bool IsRename => Path.GetDirectoryName(OldPath) == Path.GetDirectoryName(NewPath);
+        }
+
+        public sealed class SourceStorageItemMovedOrRenameMessage : ValueChangedMessage<SourceStorageItemMovedOrRenameMessageData>
+        {
+            public SourceStorageItemMovedOrRenameMessage(SourceStorageItemMovedOrRenameMessageData value) : base(value)
+            {
+            }
+        }
+
         private sealed class TokenToPathEntry
         {
             [BsonId]
@@ -329,10 +348,41 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             return item;
         }
+        
+        private async Task<TokenToPathEntry> CheckAndGetTokenToPathAfterRefreshDb(string targetPath)
+        {
+            // 一旦全てのトークンとパスの組み合わせをバッファ
+            var oldTokenToPathMap = _tokenToPathRepository.ReadAllItems().ToDictionary(x => x.Token, x => x.Path);
+
+            // TokenToPathRepositoryを再構築する
+            await RefreshTokenToPathDbAsync();
+
+            // 改めてtargetPathと組になっているトークンを取り出す
+            // ここで取れなかった場合や、意図しないフォルダが取れてしまった場合はユーザーにフォルダの再登録を要求する必要がある
+            var token = _tokenToPathRepository.GetTokenFromPath(targetPath);
+
+            // トークンと一致するバッファした組におけるパスが旧パスである
+            var oldPath = oldTokenToPathMap[token.Token];
+
+            // トークンに対応するアイテムを取得する（targetPathとトークンが示すアイテムのPathが異なる可能性がある）
+            var storageItem = await GetItemAsync(token.Token);
+
+            // トークン、パス、旧パスを元にフォルダ変更イベントをトリガーする
+            _messenger.Send(new SourceStorageItemMovedOrRenameMessage(new() { Token = token.Token, OldPath = oldPath, NewPath = storageItem.Path }));
+
+            return token;
+        }
 
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {
             var tokenEntry = _tokenToPathRepository.GetTokenFromPath(path);
+
+            // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
+            // 理想的には変更部分だけを差分更新するべき
+            if (tokenEntry is null)
+            {
+                tokenEntry = await CheckAndGetTokenToPathAfterRefreshDb(path);
+            }
 
             var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
 

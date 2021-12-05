@@ -142,6 +142,33 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+        public async Task FolderChangedAsync(string oldPath, string newPath)
+        {
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+            {
+                var oldPathId = GetStorageItemId(oldPath);
+                var newPathId = GetStorageItemId(newPath);
+
+                var tempFolder = await GetTempFolderAsync();
+                var oldFilesQuery = tempFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
+                {
+                    ApplicationSearchFilter = $"System.FileName:{oldPathId}*"
+                });
+
+                int currentIndex = 0;
+                while (await oldFilesQuery.GetItemsAsync((uint)currentIndex, 100) is not null and var items && items.Any())
+                {
+                    currentIndex += items.Count;
+                    foreach (var item in items)
+                    {
+                        var oldName = item.Name;
+                        await item.RenameAsync(item.Name.Replace(oldPathId, newPathId), NameCollisionOption.ReplaceExisting);
+                        Debug.WriteLine($"rename {oldName} ===> {item.Name}");
+                    }
+                }
+            }
+        }
+
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
@@ -206,6 +233,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var tempFolder = await GetTempFolderAsync();
             var path = GetArchiveEntryPath(sourceFile, archiveEntry);
             var itemId = GetStorageItemId(path);
+
+            using (await _fileReadWriteLock.LockAsync(ct))
             if (await tempFolder.FileExistsAsync(itemId))
             {
                 var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
@@ -246,6 +275,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var tempFolder = await GetTempFolderAsync();
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
             var itemId = GetStorageItemId(path);
+
+            using (await _fileReadWriteLock.LockAsync(ct))
             if (await tempFolder.FileExistsAsync(itemId))
             {
                 var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);

@@ -25,6 +25,7 @@ namespace TsubameViewer.Models.UseCase
 
     public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         IRecipient<SourceStorageItemIgnoringRequestMessage>,
+        IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>,
         IRestorable
     {
         private readonly IMessenger _messenger;
@@ -63,6 +64,46 @@ namespace TsubameViewer.Models.UseCase
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
 
             _messenger.RegisterAll(this);
+        }
+
+        public async void Receive(SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage message)
+        {
+            var oldPath = message.Value.OldPath;
+            var newPath = message.Value.NewPath;
+
+            Debug.WriteLine($"Start folder change process.");
+            Debug.WriteLine($"OldPath = {oldPath}");
+            Debug.WriteLine($"NewPath = {newPath}");
+
+            try
+            {
+                var tasks = new[] {
+                    _thumbnailManager.FolderChangedAsync(oldPath, newPath),
+                    _secondaryTileManager.RemoveSecondaryTile(newPath)
+                };
+
+                _displaySettingsByPathRepository.FolderChanged(oldPath, newPath);
+                _bookmarkManager.FolderChanged(oldPath, newPath);
+
+                _recentlyAccessManager.Delete(oldPath);
+                _folderContainerTypeManager.Delete(oldPath);
+                _folderLastIntractItemManager.Remove(oldPath);
+
+                await Task.WhenAll(tasks);
+
+                Debug.WriteLine($"Done folder change process.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed folder change process.");
+                Debug.WriteLine(ex.ToString());
+#if DEBUG
+                if (Debugger.IsAttached)
+                {
+                    Debugger.Break();
+                }
+#endif
+            }
         }
 
 
@@ -190,6 +231,5 @@ namespace TsubameViewer.Models.UseCase
                 }
             }
         }
-
     }
 }
