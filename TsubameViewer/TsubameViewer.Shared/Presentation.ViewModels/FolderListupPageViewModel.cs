@@ -71,7 +71,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly PathReferenceCountManager _PathReferenceCountManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
@@ -142,8 +141,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IDisposable _ImageCollectionDisposer;
 
-        StorageItemToken _currentItemRootFolderToken;
-
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
 
@@ -169,7 +166,6 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            PathReferenceCountManager PathReferenceCountManager,
             SecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             ThumbnailManager thumbnailManager,
@@ -193,7 +189,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _PathReferenceCountManager = PathReferenceCountManager;
             SecondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _thumbnailManager = thumbnailManager;
@@ -304,39 +299,21 @@ namespace TsubameViewer.Presentation.ViewModels
                             _currentItem = null;
                            
                             // PathReferenceCountManagerへの登録が遅延する可能性がある
-                            string token = null;
                             foreach (var _ in Enumerable.Repeat(0, 10))
                             {
-                                token = _PathReferenceCountManager.GetToken(_currentPath);
-                                if (token != null)
+                                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                                if (_currentItem != null)
                                 {
                                     break;
                                 }
                                 await Task.Delay(100);
                             }
 
-                            if (token == null)
+                            if (_currentItem == null)
                             {
                                 throw new Exception();
                             }
 
-                            foreach (var tempToken in _PathReferenceCountManager.GetTokens(_currentPath))
-                            {
-                                try
-                                {
-                                    _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(tempToken, _currentPath);
-                                    token = tempToken;
-                                }
-                                catch
-                                {
-                                    _PathReferenceCountManager.Remove(tempToken);
-                                }
-                            }
-
-                            _currentItemRootFolderToken = new StorageItemToken(_currentPath, token);
-
-                            var currentPathItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(token, _currentPath);
-                            _currentItem = currentPathItem;
                             DisplayCurrentPath = _currentItem.Path;
 
                             var settingPath = _currentPath;
@@ -478,7 +455,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -492,14 +469,14 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                         catch (UnauthorizedAccessException)
                         {
-                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentItemRootFolderToken.TokenString, Path.GetDirectoryName(_currentPath));
+                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                             if (parentItem is StorageFolder parentFolder)
                             {
                                 imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -508,11 +485,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
                         }
                     }
                 }
@@ -567,7 +544,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    FolderItems.Add(new StorageItemViewModel(item, _currentItemRootFolderToken, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
                 }
                 Debug.WriteLine($"after added : {FolderItems.Count}");
             }
@@ -578,11 +555,6 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
                 _scheduler.Schedule(() => HasFileItem = exist);
-
-                foreach (var item in newItems)
-                {
-                    _PathReferenceCountManager.Upsert(item.Path, _currentItemRootFolderToken.TokenString);
-                }
             }, ct);
         }
 

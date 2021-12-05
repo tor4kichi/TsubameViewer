@@ -51,7 +51,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.Item is StorageItemViewModel itemVM && itemVM.Token != null)
+            if (args.Item is StorageItemViewModel itemVM && itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
             }

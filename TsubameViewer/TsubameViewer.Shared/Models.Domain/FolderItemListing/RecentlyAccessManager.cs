@@ -17,6 +17,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _recentlyAccessRepository = recentlyAccessRepository;
         }
 
+        public void AddWatched(string path)
+        {
+            _recentlyAccessRepository.Upsert(path, DateTimeOffset.Now);
+        }
+
         public void AddWatched(string path, DateTimeOffset lastAccess)
         {
             _recentlyAccessRepository.Upsert(path, lastAccess);

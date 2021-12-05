@@ -27,6 +27,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 {
     public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
+        public bool IsListupActionEnabled { get; set; } = true;
+
         public StorageItemMenuFlyout()
         {
             this.InitializeComponent();
@@ -38,7 +40,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
             OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
-            RemoveSourceStorageItem.Command = container.Resolve<DeleteStoredFolderCommand>();
             _secondaryTileManager = container.Resolve<SecondaryTileManager>();
         }
 
@@ -64,13 +65,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             {
                 NoActionDescMenuItem.Visibility = Visibility.Collapsed;
 
-                bool isSourceStorageItem = (itemVM.Token.RootItemPath == itemVM.Path);
-
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = (isSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+                SetThumbnailImageMenuItem.Visibility = (itemVM.IsSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -96,16 +95,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;                
                 OpenWithExternalAppMenuItem.Visibility = (itemVM.Item is StorageItemImageSource item && item.StorageItem is StorageFile).TrueToVisible();
-
-                RemoveSourceStorageItem.CommandParameter = itemVM;
-                SourceManageSeparetor.Visibility = isSourceStorageItem.TrueToVisible();
-                SourceManageSubItem.Visibility = isSourceStorageItem.TrueToVisible();
             }
             else if (itemVM.Item is ArchiveDirectoryImageSource)
             {
                 NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-
-                bool isSourceStorageItem = (itemVM.Token.RootItemPath == itemVM.Path);
 
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;
@@ -125,10 +118,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
-
-                RemoveSourceStorageItem.CommandParameter = itemVM;
-                SourceManageSeparetor.Visibility = Visibility.Collapsed;
-                SourceManageSubItem.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -142,8 +131,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
                 FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
-                SourceManageSeparetor.Visibility = Visibility.Collapsed;
-                SourceManageSubItem.Visibility = Visibility.Collapsed;
+            }
+
+            if (IsListupActionEnabled is false)
+            {
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             }
         }
     }
