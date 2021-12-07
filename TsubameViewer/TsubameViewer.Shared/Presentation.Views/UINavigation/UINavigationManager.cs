@@ -43,7 +43,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
         UINavigationButtons _ProcessedHoldingButtons;
         Dictionary<UINavigationButtons, TimeSpan> _ButtonHold = new Dictionary<UINavigationButtons, TimeSpan>();
 
-        FastAsyncLock _UpdateLock = new FastAsyncLock();
+        AsyncLock _UpdateLock = new ();
 
         bool _IsDisposed;
 

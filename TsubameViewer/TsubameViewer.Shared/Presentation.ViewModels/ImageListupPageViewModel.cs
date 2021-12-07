@@ -109,7 +109,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
-        static FastAsyncLock _NavigationLock = new FastAsyncLock();
+        private static readonly Models.Infrastructure.AsyncLock _NavigationLock = new ();
 
         private string _currentPath;
         private IStorageItem _currentItem;
@@ -415,7 +415,7 @@ namespace TsubameViewer.Presentation.ViewModels
         #region Refresh Item
 
         IImageCollectionContext _imageCollectionContext;
-        static FastAsyncLock _RefreshLock = new FastAsyncLock();
+        private static readonly Models.Infrastructure.AsyncLock _RefreshLock = new ();
         private async Task RefreshFolderItems(CancellationToken ct)
         {
             using var lockObject = await _RefreshLock.LockAsync(ct);

@@ -37,7 +37,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
-        private readonly static FastAsyncLock _fileReadWriteLock = new ();
+        private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
 
         public ThumbnailManager(
             FolderListingSettings folderListingSettings,
@@ -132,13 +132,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _thumbnailImageInfoRepository.DeleteItem(path);
             var tempFolder = await GetTempFolderAsync();
             var itemId = GetStorageItemId(path);
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             if (await tempFolder.FileExistsAsync(itemId))
             {
-                using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-                {
-                    var file = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                    await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
-                }
+                var file = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
+                await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
             }
         }
 
@@ -204,7 +202,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (await tempFolder.FileExistsAsync(itemId))
             {
                 var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
-                using (await _fileReadWriteLock.LockAsync(ct))
                 using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
                 {
                     if (stream.Size != 0)
@@ -229,28 +226,25 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
 
             StorageFile file = null;
-            using (await _fileReadWriteLock.LockAsync(ct))
+            // タイトルに "cover" を含む画像を優先してサムネイルとして採用する
+            var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
+            if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
             {
-                // タイトルに "cover" を含む画像を優先してサムネイルとして採用する
-                var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
-                if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
-                {
-                    var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
-                    file = files[0];
-                }
-
-                if (file == null)
-                {
-                    var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
-                    var count = await query.GetItemCountAsync();
-
-                    if (count == 0) { return null; }
-
-                    var files = await query.GetFilesAsync(0, 1);
-                    file = files[0];
-                }
+                var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
+                file = files[0];
             }
-            
+
+            if (file == null)
+            {
+                var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
+                var count = await query.GetItemCountAsync();
+
+                if (count == 0) { return null; }
+
+                var files = await query.GetFilesAsync(0, 1);
+                file = files[0];
+            }
+
             var tempFolder = await GetTempFolderAsync();
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
             return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
@@ -376,7 +370,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             try
             {
-                using (await _fileReadWriteLock.LockAsync(ct))
                 using (var stream = new InMemoryRandomAccessStream().AsStream())
                 {
                     var result = await(file.FileType switch
@@ -409,7 +402,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     if (!result || stream.Length == 0) { return null; }
 
                     ct.ThrowIfCancellationRequested();
-                    await TranscodeThumbnailImageToFileAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
+                    using (await _fileReadWriteLock.LockAsync(ct))
+                    {
+                        await TranscodeThumbnailImageToFileAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
+                    }
 
                     return outputFile;
                 }

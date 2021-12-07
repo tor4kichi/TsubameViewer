@@ -72,11 +72,13 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
         #region 初期フォーカス設定
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+            ConnectedAnimationService.GetForCurrentView()
+                        .GetAnimation("ImageJumpInAnimation")?.Cancel();
+
             base.OnNavigatedTo(e);
 
             var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
