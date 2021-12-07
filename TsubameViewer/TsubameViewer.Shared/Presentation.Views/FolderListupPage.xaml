@@ -19,9 +19,10 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" xmlns:models="using:TsubameViewer.Models.Domain"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
+  NavigationCacheMode="Enabled"
   >
   <Page.Resources>
-
+    
   </Page.Resources>
   <Grid >
 
@@ -163,7 +164,7 @@
         DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
         ItemHeight="{StaticResource FolderGridViewItemHeight}"
         IsItemClickEnabled="True"
-        ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
+        ItemClickCommand="{x:Bind OpenItemCommand}"
         IsSynchronizedWithCurrentItem="False"
         SelectionMode="None"
         XYFocusDownNavigationStrategy="NavigationDirectionDistance"  

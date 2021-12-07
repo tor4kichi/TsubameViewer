@@ -63,41 +63,32 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
 
             public PageEntry GetCurrentNavigationEntry()
             {
-                var json = Read<byte[]>(null, CurrentNavigationEntryName);
-                if (json == null) { return null; }
-                return JsonSerializer.Deserialize<PageEntry>(json);
+                return Read<PageEntry>(null, CurrentNavigationEntryName);
             }
 
             public void SetCurrentNavigationEntry(PageEntry entry)
             {
-                var bytes = JsonSerializer.SerializeToUtf8Bytes(entry);
-                Save(bytes, CurrentNavigationEntryName);
+                Save(entry, CurrentNavigationEntryName);
             }
 
             public async Task<PageEntry[]> GetBackNavigationEntriesAsync()
             {
-                var json = await ReadFileAsync<byte[]>(null, BackNavigationEntriesName);
-                if (json == null) { return new PageEntry[0]; }
-                return JsonSerializer.Deserialize<PageEntry[]>(json);
+                return await ReadFileAsync<PageEntry[]>(null, BackNavigationEntriesName);
             }
 
             public async Task SetBackNavigationEntriesAsync(PageEntry[] entries)
             {
-                var bytes = JsonSerializer.SerializeToUtf8Bytes(entries);
-                await SaveFileAsync(bytes, BackNavigationEntriesName);
+                await SaveFileAsync(entries, BackNavigationEntriesName);
             }
 
             public async Task<PageEntry[]> GetForwardNavigationEntriesAsync()
             {
-                var json = await ReadFileAsync<byte[]>(null, ForwardNavigationEntriesName);
-                if (json == null) { return new PageEntry[0]; }
-                return JsonSerializer.Deserialize<PageEntry[]>(json);
+                return await ReadFileAsync<PageEntry[]>(null, ForwardNavigationEntriesName);
             }
 
             public async Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
             {
-                var bytes = JsonSerializer.SerializeToUtf8Bytes(entries);
-                await SaveFileAsync(bytes, ForwardNavigationEntriesName);
+                await SaveFileAsync(entries, ForwardNavigationEntriesName);
             }
         }
     }

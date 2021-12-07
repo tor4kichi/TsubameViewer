@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Infrastructure;
 using Windows.ApplicationModel;
+using Windows.ApplicationModel.Activation;
 
 namespace TsubameViewer.Models.UseCase.Migrate
 {
@@ -22,7 +23,7 @@ namespace TsubameViewer.Models.UseCase.Migrate
         void IMigrater.Migrate()
         {
             var strorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
-            strorageHelper.Clear();
+            strorageHelper.Clear();            
         }
     }
 }

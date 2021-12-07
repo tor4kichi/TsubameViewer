@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Unity.Attributes;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
@@ -26,7 +27,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is string pageName)
             {
-                _navigationService.NavigateAsync(pageName);
+                _navigationService.NavigateAsync(pageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(pageName));
             }
         }
     }

@@ -22,11 +22,10 @@ namespace TsubameViewer.Models.Infrastructure
 
     public class FlagsRepositoryBase : BindableBase
     {
-        private readonly ApplicationDataStorageHelper _LocalStorageHelper;
+        private readonly static ApplicationDataStorageHelper _LocalStorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
         FastAsyncLock _fileUpdateLock = new FastAsyncLock();
         public FlagsRepositoryBase()
         {            
-            _LocalStorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
         }
 
         protected T Read<T>(T @default = default, [CallerMemberName] string propertyName = null)
