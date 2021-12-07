@@ -40,10 +40,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class ImageListupPageViewModel : ViewModelBase
     {
-        const int FolderListupItemsCacheCount = 200;
-        static List<string> _CacheFolderListupItemsOrder = new List<string>();
-
-        static Dictionary<string, CachedFolderListupItems> _CachedFolderListupItems = new Dictionary<string, CachedFolderListupItems>();
         private readonly IScheduler _scheduler;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
@@ -228,17 +224,22 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
+            _navigationDisposables?.Dispose();
+
+            base.OnNavigatedFrom(parameters);
+        }
+
+
+        void ClearCurrentContent()
+        {
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
-            _navigationDisposables?.Dispose();
 
             ImageFileItems.AsParallel().ForEach(x => x.Dispose());
             ImageFileItems.Clear();
-            
+
             CurrentFolderItem?.Dispose();
             CurrentFolderItem = null;
-
-            base.OnNavigatedFrom(parameters);
         }
 
         public override void OnNavigatingTo(INavigationParameters parameters)
@@ -248,10 +249,74 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatingTo(parameters);
         }
 
+        async Task ResetContent(string path, CancellationToken ct)
+        {
+            using var lockReleaser = await _NavigationLock.LockAsync(ct);
+
+
+            HasFileItem = false;
+           
+            _currentPath = path;
+            _currentItem = null;
+
+            // SourceStorageItemsRepositoryへの登録が遅延する可能性がある
+            foreach (var _ in Enumerable.Repeat(0, 10))
+            {
+                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                if (_currentItem != null)
+                {
+                    break;
+                }
+                await Task.Delay(100);
+            }
+
+            if (_currentItem == null)
+            {
+                throw new Exception();
+            }
+
+            DisplayCurrentPath = _currentItem.Path;
+
+
+            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
+            if (settings != null)
+            {
+                DisplaySortTypeInheritancePath = null;
+                SelectedFileSortType.Value = settings.Sort;
+                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
+            }
+            else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
+                && parentSort.ChildItemDefaultSort != null
+                )
+            {
+                DisplaySortTypeInheritancePath = parentSort.Path;
+                SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                IsSortWithTitleDigitCompletion.Value = true;
+            }
+            else
+            {
+                DisplaySortTypeInheritancePath = null;
+                SelectedFileSortType.Value = DefaultFileSortType;
+                IsSortWithTitleDigitCompletion.Value = true;
+            }
+
+            
+            await SetSort(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value, ct);
+            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
+
+            HasFileItem = ImageFileItems.Any();
+
+            RaisePropertyChanged(nameof(ImageFileItems));
+        }
+
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _navigationDisposables = new CompositeDisposable();
             IsRestrictImageFileThumbnail = !_folderListingSettings.IsImageFileThumbnailEnabled;
+            _leavePageCancellationTokenSource = new CancellationTokenSource();
+            _navigationDisposables.Add(_leavePageCancellationTokenSource);
+
+            var ct = _leavePageCancellationTokenSource.Token;
 
             NowProcessing = true;
             try
@@ -261,131 +326,24 @@ namespace TsubameViewer.Presentation.ViewModels
                 await Task.Delay(50);
 
                 var mode = parameters.GetNavigationMode();
-
                 if (mode == NavigationMode.Refresh)
                 {
-                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();
+                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();                    
                 }
-
-                _leavePageCancellationTokenSource = new CancellationTokenSource();
 
                 _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)
                     : null
                     ;
 
-
-                if (mode == NavigationMode.New
-                    || mode == NavigationMode.Forward
-                    || mode == NavigationMode.Back
-                    || mode == NavigationMode.Refresh
-                    )
+                if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
-                    HasFileItem = false;
-
-                    using (await _NavigationLock.LockAsync(default))
+                    var unescapedPath = Uri.UnescapeDataString(path);
+                    if (unescapedPath != _currentPath)
                     {
-                        if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
-                        {
-                            var unescapedPath = Uri.UnescapeDataString(path);
-                            _currentPath = unescapedPath;
-                            _currentItem = null;
-
-                            // SourceStorageItemsRepositoryへの登録が遅延する可能性がある
-                            foreach (var _ in Enumerable.Repeat(0, 10))
-                            {
-                                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
-                                if (_currentItem != null)
-                                {
-                                    break;
-                                }
-                                await Task.Delay(100);
-                            }
-
-                            if (_currentItem == null)
-                            {
-                                throw new Exception();
-                            }
-
-                            DisplayCurrentPath = _currentItem.Path;
-
-                            
-                            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
-                            if (settings != null)
-                            {
-                                DisplaySortTypeInheritancePath = null;
-                                SelectedFileSortType.Value = settings.Sort;
-                                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
-                            }
-                            else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
-                                && parentSort.ChildItemDefaultSort != null
-                                )
-                            {
-                                DisplaySortTypeInheritancePath = parentSort.Path;
-                                SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                                IsSortWithTitleDigitCompletion.Value = true;
-                            }
-                            else
-                            {
-                                DisplaySortTypeInheritancePath = null;
-                                SelectedFileSortType.Value = DefaultFileSortType;
-                                IsSortWithTitleDigitCompletion.Value = true;
-                            }
-                        }
-
-                        if (_currentPath != null && _CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
-                        {
-                            ImageFileItems = cachedItems.FolderItems;
-
-
-                            // 最後に読んだ位置を更新
-                            ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
-
-                            _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-                            
-                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-                        }
-                        else
-                        {
-                            SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-                            await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-                        }
-
-                        HasFileItem = ImageFileItems.Any();
+                        await ResetContent(unescapedPath, ct);
                     }
                 }
-                else if (!_isCompleteEnumeration
-                    || _LastIsImageFileThumbnailEnabled != _folderListingSettings.IsImageFileThumbnailEnabled
-                    )
-                {
-                    if (_CachedFolderListupItems.Remove(_currentPath, out var cachedItems))
-                    {
-                        ImageFileItems = cachedItems.FolderItems;
-
-                        // 最後に読んだ位置を更新
-                        ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
-
-                        _FileItemsView = new AdvancedCollectionView(ImageFileItems);
-
-                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-                    }
-                    else
-                    {
-                        await RefreshFolderItems(_leavePageCancellationTokenSource.Token);
-
-                        SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
-                    }
-                }
-                else 
-                {
-                    // 前回読み込みキャンセルしていたものを改めて読み込むように
-                    ImageFileItems.ForEach(x => x.RestoreThumbnailLoadingTask());
-
-                    // 最後に読んだ位置を更新
-                    ImageFileItems.ForEach(x => x.UpdateLastReadPosition());
-                }
-
-                RaisePropertyChanged(nameof(ImageFileItems));
 
                 if (mode != NavigationMode.New)
                 {
@@ -415,7 +373,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Where(x => x.NewItem != x.OldItem)
                 .Subscribe(async _ =>
                 {
-                    await SetSort(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value, _leavePageCancellationTokenSource?.Token ?? default);
+                    await SetSort(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value, ct);
                 })
                 .AddTo(_navigationDisposables);
 
@@ -444,7 +402,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (visible && requireRefresh && _imageCollectionContext is not null)
                         {
                             requireRefresh = false;
-                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
                             Debug.WriteLine("Images Updated. " + _currentPath);
                         }
                     })
@@ -632,7 +590,10 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
-                FileItemsView.SortDescriptions.Clear();
+                if (FileItemsView.SortDescriptions.Any())
+                {
+                    FileItemsView.SortDescriptions.Clear();
+                }
                 foreach (var sort in sortDescriptions)
                 {
                     FileItemsView.SortDescriptions.Add(sort);

@@ -1,10 +1,12 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
 using Prism.Commands;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +26,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
@@ -228,8 +231,7 @@ namespace TsubameViewer.Presentation.Views
             ToggleOpenCloseBottomUI();
         }
 
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
@@ -245,7 +247,26 @@ namespace TsubameViewer.Presentation.Views
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
 
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
+            if (animation != null)
+            {
+                // Note: コメントアウトしたやり方でも画面全体に対する拡大アニメーションとして表示されるのでシンプルなやり方を採用
+                /*
+                await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)
+                    .Where(x => ImageItemsControl.Items.Any() && ImageItemsControl.Items[0] != null)
+                    .Take(1)
+                    .ToAsyncAction();
+
+                animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
+                */
+                // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく
+                await Task.Delay(175);
+
+                animation.TryStart(ImagesContainer);
+            }
+
             base.OnNavigatedTo(e);
+
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)

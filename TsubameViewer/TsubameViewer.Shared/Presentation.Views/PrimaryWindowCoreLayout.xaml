@@ -17,7 +17,8 @@
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
->
+  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+  >
   <Page.Resources>
 
     <ResourceDictionary>
@@ -126,7 +127,7 @@
         </CommandBar>
       </NavigationView.PaneFooter>
 
-      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="2"
+      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="5"
              XYFocusDownNavigationStrategy="RectilinearDistance"
              />
     </NavigationView>

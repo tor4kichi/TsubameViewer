@@ -30,6 +30,9 @@ using Windows.Storage;
 using Uno.UI.Toolkit;
 using TsubameViewer.Presentation.Views.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
+using Microsoft.Toolkit.Mvvm.Input;
+using System.Windows.Input;
+using Windows.UI.Xaml.Media.Animation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -202,5 +205,19 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+
+        RelayCommand<StorageItemViewModel> _OpenItemCommand;
+        public RelayCommand<StorageItemViewModel> OpenItemCommand => _OpenItemCommand ??= new RelayCommand<StorageItemViewModel>(itemVM => 
+        {
+            var container = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
+            if (container is GridViewItem gvi)
+            {
+                var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
+                ConnectedAnimationService.GetForCurrentView()
+                    .PrepareToAnimate("ImageJumpInAnimation", image);
+            }
+
+            (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);
+        });
     }
 }

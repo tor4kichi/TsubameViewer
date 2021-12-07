@@ -136,12 +136,12 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
             
-            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
-            container.RegisterSingleton<ImageListupPageViewModel>();
-            container.RegisterSingleton<FolderListupPageViewModel>();
+            //container.RegisterSingleton<SourceStorageItemsPageViewModel>();
+            //container.RegisterSingleton<ImageListupPageViewModel>();
+            //container.RegisterSingleton<FolderListupPageViewModel>();
             container.RegisterSingleton<ImageViewerPageViewModel>();
             container.RegisterSingleton<EBookReaderPageViewModel>();
-            container.RegisterSingleton<SearchResultPageViewModel>();
+            //container.RegisterSingleton<SearchResultPageViewModel>();
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<ImageListupPage>();
@@ -151,7 +151,6 @@ namespace TsubameViewer
             container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
             container.RegisterForNavigation<SearchResultPage>();
-
         }
 
         bool isRestored = false;
@@ -237,7 +236,9 @@ namespace TsubameViewer
                 typeof(DropSearchIndexDb),
                 typeof(DropPathReferenceCountDb),
                 typeof(MigrateAsyncStorageApplicationPermissionToDb),
-                typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+
+                // IsFirstRunを条件としているが設定をクリアする挙動のため次回起動時が必ずIsFirstRunに引っかかってしまうので一旦動作を停止する
+                //typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
             };
 
             await Task.Run(async () =>
@@ -475,11 +476,11 @@ namespace TsubameViewer
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
                 }
                 else
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, new DrillInNavigationTransitionInfo());
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
                 }
             }
             else if  (item is StorageFile file)
@@ -489,11 +490,11 @@ namespace TsubameViewer
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, new SuppressNavigationTransitionInfo());
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, new SuppressNavigationTransitionInfo());
+                    return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
                 }
             }
 

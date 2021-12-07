@@ -19,7 +19,11 @@
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
-  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters">
+  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
+  NavigationCacheMode="Enabled"
+  >
+  
 
   <!-- NavigaitonCacheMode = Enabled にすると
     ItemsRepeaterの中身が残る？ためキャッシュは利用していない
@@ -308,6 +312,9 @@
                   XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
                   
                     >
+            <ListView.ItemContainerTransitions>
+              <TransitionCollection />
+            </ListView.ItemContainerTransitions>
             <ListView.ItemContainerStyle>
               <Style TargetType="ListViewItem">
                 <Setter Property="MinWidth" Value="40" />
@@ -368,11 +375,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -392,11 +399,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
@@ -416,11 +423,11 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
+                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>

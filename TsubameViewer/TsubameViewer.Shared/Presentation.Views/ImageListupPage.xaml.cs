@@ -22,6 +22,9 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using System.Numerics;
+using Microsoft.Toolkit.Mvvm.Input;
+using Windows.UI.Xaml.Media.Animation;
+using System.Windows.Input;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -207,6 +210,18 @@ namespace TsubameViewer.Presentation.Views
             flyout.ShowAt(args.OriginalSource as FrameworkElement);
         }
 
+
+
+        RelayCommand<TappedRoutedEventArgs> _OpenItemCommand;
+        public RelayCommand<TappedRoutedEventArgs> OpenItemWithConnectedAnimationCommand => _OpenItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(itemVM =>
+        {
+            var container = itemVM.OriginalSource as FrameworkElement;
+            var image = container.FindDescendantOrSelf<Image>();
+            ConnectedAnimationService.GetForCurrentView()
+                .PrepareToAnimate("ImageJumpInAnimation", image);
+
+            (_vm.OpenFolderItemCommand as ICommand).Execute(container.DataContext);
+        });
     }
 
 
