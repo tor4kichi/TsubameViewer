@@ -213,8 +213,11 @@ namespace TsubameViewer.Presentation.Views
             if (container is GridViewItem gvi)
             {
                 var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
-                ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                if (image.IsLoaded)
+                {
+                    ConnectedAnimationService.GetForCurrentView()
+                        .PrepareToAnimate("ImageJumpInAnimation", image);
+                }
             }
 
             (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);

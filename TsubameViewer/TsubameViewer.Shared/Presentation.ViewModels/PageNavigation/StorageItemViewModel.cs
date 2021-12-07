@@ -166,6 +166,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize()
         {
+            Debug.WriteLine($"Init {Name}");
             if (_isInitialized) { return; }
             if (_disposed) { return; }
 

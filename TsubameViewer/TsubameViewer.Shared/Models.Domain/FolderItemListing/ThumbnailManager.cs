@@ -197,13 +197,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 ;
         }
 
-        public async Task<StorageFile> GetFileThumbnailImageAsync(StorageFile file, CancellationToken ct)
+        private async Task<StorageFile> GetThumbnailFromIdAsync(string itemId, CancellationToken ct)
         {
             var tempFolder = await GetTempFolderAsync();
-            var itemId = GetStorageItemId(file);
+            using (await _fileReadWriteLock.LockAsync(ct))
             if (await tempFolder.FileExistsAsync(itemId))
             {
-                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);
+                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
+                using (await _fileReadWriteLock.LockAsync(ct))
                 using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
                 {
                     if (stream.Size != 0)
@@ -213,6 +214,82 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 }
             }
 
+            return null;
+        }
+
+        public async Task<StorageFile> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct)
+        {
+            var itemId = GetStorageItemId(folder);
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
+            {
+                return cachedFile;
+            }
+
+#if WINDOWS_UWP
+
+
+            StorageFile file = null;
+            using (await _fileReadWriteLock.LockAsync(ct))
+            {
+                // タイトルに "cover" を含む画像を優先してサムネイルとして採用する
+                var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
+                if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
+                {
+                    var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
+                    file = files[0];
+                }
+
+                if (file == null)
+                {
+                    var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
+                    var count = await query.GetItemCountAsync();
+
+                    if (count == 0) { return null; }
+
+                    var files = await query.GetFilesAsync(0, 1);
+                    file = files[0];
+                }
+            }
+            
+            var tempFolder = await GetTempFolderAsync();
+            var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
+            return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+#else
+            return null;
+#endif
+
+        }
+
+        private void EncodingForFolderOrArchiveFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
+        {
+            if (decoder.PixelHeight > decoder.PixelWidth)
+            {
+                // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
+                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Width / decoder.PixelWidth;
+                encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio);
+                encoder.BitmapTransform.ScaledWidth = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Width;
+            }
+            else
+            {
+                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Height / decoder.PixelHeight;
+                encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
+                encoder.BitmapTransform.ScaledHeight = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Height;
+            }
+            //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = encoder.BitmapTransform.ScaledHeight, Width = encoder.BitmapTransform.ScaledWidth };
+            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
+        }
+
+
+
+        public async Task<StorageFile> GetFileThumbnailImageAsync(StorageFile file, CancellationToken ct)
+        {
+            var itemId = GetStorageItemId(file);
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
+            {
+                return cachedFile;
+            }
+
+            var tempFolder = await GetTempFolderAsync();
             var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
             if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                 )
@@ -230,22 +307,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<StorageFile> GetArchiveEntryThumbnailImageAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
         {
-            var tempFolder = await GetTempFolderAsync();
             var path = GetArchiveEntryPath(sourceFile, archiveEntry);
             var itemId = GetStorageItemId(path);
-
-            using (await _fileReadWriteLock.LockAsync(ct))
-            if (await tempFolder.FileExistsAsync(itemId))
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
-                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
-                using (await _fileReadWriteLock.LockAsync(ct))
-                using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
-                {
-                    if (stream.Size != 0)
-                    {
-                        return cachedThumbnailFile;
-                    }
-                }
+                return cachedFile;
             }
 
             if (archiveEntry.IsDirectory) { return null; }
@@ -253,6 +319,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (await _fileReadWriteLock.LockAsync(ct))
             using (var memoryStream = new MemoryStream())
             {
+                var tempFolder = await GetTempFolderAsync();
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
 
                 // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
@@ -272,26 +339,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<StorageFile> GetPdfPageThumbnailImageAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
         {
-            var tempFolder = await GetTempFolderAsync();
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
             var itemId = GetStorageItemId(path);
-
-            using (await _fileReadWriteLock.LockAsync(ct))
-            if (await tempFolder.FileExistsAsync(itemId))
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
-                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);
-                using (var stream = await cachedThumbnailFile.OpenReadAsync())
-                {
-                    if (stream.Size != 0)
-                    {
-                        return cachedThumbnailFile;
-                    }
-                }
+                return cachedFile;
             }
 
             using (var memoryStream = new InMemoryRandomAccessStream())
             using (await _fileReadWriteLock.LockAsync(ct))
             {
+                var tempFolder = await GetTempFolderAsync();
                 var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
                 await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
                 memoryStream.Seek(0);
@@ -318,8 +376,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             try
             {
-                using (var stream = new InMemoryRandomAccessStream().AsStream())
                 using (await _fileReadWriteLock.LockAsync(ct))
+                using (var stream = new InMemoryRandomAccessStream().AsStream())
                 {
                     var result = await(file.FileType switch
                     {
@@ -342,6 +400,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                         SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                         SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                        SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
 
                         SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
                         _ => throw new NotSupportedException(file.FileType)
@@ -551,65 +610,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         readonly static QueryOptions _AllSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
 
-        public async Task<StorageFile> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct)
-        {
-            var itemId = GetStorageItemId(folder);
-            if (await ApplicationData.Current.TemporaryFolder.FileExistsAsync(itemId))
-            {
-                return await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-            }
-            else
-            {
-#if WINDOWS_UWP
-                var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
-
-                StorageFile file = null;
-                if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
-                {
-                    var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
-                    file = files[0];
-                }
-                
-                if (file == null)
-                {
-                    var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
-                    var count = await query.GetItemCountAsync();
-
-                    if (count == 0) { return null; }
-
-                    var files = await query.GetFilesAsync(0, 1);
-                    file = files[0];
-                }
-
-                var tempFolder = await GetTempFolderAsync();
-
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId);
-                return await GenerateThumbnailImageAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-#else
-                return null;
-#endif
-            }
-        }
-
-        private void EncodingForFolderOrArchiveFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
-        {
-            if (decoder.PixelHeight > decoder.PixelWidth)
-            {
-                // 縦横比を維持したまま 高さ = LargeFileThumbnailImageHeight になるようにスケーリング
-                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Width / decoder.PixelWidth;
-                encoder.BitmapTransform.ScaledHeight = (uint)Math.Floor(decoder.PixelHeight * ratio);
-                encoder.BitmapTransform.ScaledWidth = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Width;
-            }
-            else
-            {
-                var ratio = _folderListingSettings.FolderItemThumbnailImageSize.Height / decoder.PixelHeight;
-                encoder.BitmapTransform.ScaledWidth = (uint)Math.Floor(decoder.PixelWidth * ratio);
-                encoder.BitmapTransform.ScaledHeight = (uint)_folderListingSettings.FolderItemThumbnailImageSize.Height;
-            }
-            //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Height = encoder.BitmapTransform.ScaledHeight, Width = encoder.BitmapTransform.ScaledWidth };
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
-        }
-
 
 
         private async Task<bool> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
@@ -776,6 +776,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
+                        SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         _ => throw new NotSupportedException(file.FileType)
                     });

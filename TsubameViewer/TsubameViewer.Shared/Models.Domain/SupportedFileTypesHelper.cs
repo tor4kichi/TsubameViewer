@@ -21,7 +21,7 @@ namespace TsubameViewer.Models.Domain
                 CbzFileType,
                 SevenZipFileType,
                 Cb7FileType,
-                TarFileType
+                TarFileType,                
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
@@ -37,6 +37,7 @@ namespace TsubameViewer.Models.Domain
                 TifFileType,
                 TiffFileType,
                 SvgFileType,
+                WebpFileType,
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
@@ -57,8 +58,7 @@ namespace TsubameViewer.Models.Domain
         public const string SevenZipFileType = ".7z";
         public const string Cb7FileType = ".cb7";
         public const string TarFileType = ".tar";
-
-
+        
         public const string JpgFileType = ".jpg";
         public const string JpegFileType = ".jpeg";
         public const string JfifFileType = ".jfif";
@@ -68,6 +68,7 @@ namespace TsubameViewer.Models.Domain
         public const string TifFileType = ".tif";
         public const string TiffFileType = ".tiff";
         public const string SvgFileType = ".svg";
+        public const string WebpFileType = ".webp";
 
         public const string EPubFileType = ".epub";
 
