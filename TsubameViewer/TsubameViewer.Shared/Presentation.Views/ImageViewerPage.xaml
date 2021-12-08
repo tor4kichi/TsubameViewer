@@ -520,6 +520,15 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentImages, Mode=OneWay}" EqualTo="{x:Null}" />
+            <wst:EqualsStateTrigger Value="{Binding CurrentImages.Length, Mode=OneWay}" EqualTo="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
             <wst:CompositeStateTrigger Operator="And">
               <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
               <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
