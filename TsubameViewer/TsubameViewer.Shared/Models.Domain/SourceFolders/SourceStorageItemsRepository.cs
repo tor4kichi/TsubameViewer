@@ -608,7 +608,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
             {
-                ApplicationSearchFilter = $"System.FileName:*{keyword}*" 
+                ApplicationSearchFilter = $"System.FileName:\"*{keyword}*\"" 
             };
 
             await foreach (var (item, token, metadata) in GetParsistantItems(ct))
