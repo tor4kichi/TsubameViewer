@@ -160,6 +160,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             });
         }
 
+        public void Delete(string path)
+        {
+            _internalFolderAndArchiveRepository.DeleteItem(path);
+            _internalChildFileRepository.DeleteItem(path);
+        }
+
 
         public void DeleteUnderPath(string path)
         {

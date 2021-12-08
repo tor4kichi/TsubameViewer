@@ -83,7 +83,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "SourceFoldersSettings".Translate(),
                     Items =
                     {
-                        new StoredFoldersSettingItemViewModel(_sourceStorageItemsRepository),
+                        new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
                     }
                 },
                 new SettingsGroupViewModel
@@ -225,13 +225,15 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBase
     {
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
         public ObservableCollection<StoredFolderViewModel> Folders { get; }
         public ObservableCollection<StoredFolderViewModel> TempFiles { get; }
 
-        public StoredFoldersSettingItemViewModel(SourceStorageItemsRepository SourceStorageItemsRepository)
+        public StoredFoldersSettingItemViewModel(IMessenger messenger, SourceStorageItemsRepository SourceStorageItemsRepository)
         {
+            _messenger = messenger;
             _SourceStorageItemsRepository = SourceStorageItemsRepository;
             Folders = new ObservableCollection<StoredFolderViewModel>();
             TempFiles = new ObservableCollection<StoredFolderViewModel>();
@@ -240,10 +242,12 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         async void Init()
-        {
+        {            
             await foreach (var item in _SourceStorageItemsRepository.GetParsistantItems())
             {
-                Folders.Add(new StoredFolderViewModel(_SourceStorageItemsRepository, this)
+                if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
+
+                Folders.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -254,7 +258,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
             await foreach (var item in _SourceStorageItemsRepository.GetTemporaryItems())
             {
-                TempFiles.Add(new StoredFolderViewModel(_SourceStorageItemsRepository, this)
+                if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
+
+                TempFiles.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -273,11 +279,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class StoredFolderViewModel
     {
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
 
-        public StoredFolderViewModel(SourceStorageItemsRepository SourceStorageItemsRepository, StoredFoldersSettingItemViewModel parentVM)
+        public StoredFolderViewModel(IMessenger messenger, SourceStorageItemsRepository SourceStorageItemsRepository, StoredFoldersSettingItemViewModel parentVM)
         {
+            _messenger = messenger;
             _SourceStorageItemsRepository = SourceStorageItemsRepository;
             _parentVM = parentVM;
         }
@@ -292,7 +300,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public DelegateCommand DeleteStoredFolderCommand =>
             _DeleteStoredFolderCommand ??= new DelegateCommand(async () => 
             {
-                _SourceStorageItemsRepository.RemoveFolder(Token);
+                _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
+
+                //_SourceStorageItemsRepository.RemoveFolder(Token);
                 _parentVM.RemoveItem(this);
 
                 /*

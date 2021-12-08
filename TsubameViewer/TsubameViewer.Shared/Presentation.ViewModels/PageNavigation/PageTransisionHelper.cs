@@ -11,7 +11,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
         private readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
         private readonly static SlideNavigationTransitionInfo _searchTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
-        private readonly static SlideNavigationTransitionInfo _otherTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
+        private readonly static SlideNavigationTransitionInfo _settingsTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
+        private readonly static SuppressNavigationTransitionInfo _otherTransison = new SuppressNavigationTransitionInfo();
         
         public static NavigationTransitionInfo MakeNavigationTransitionInfoFromPageName(string pageName)
         {
@@ -22,6 +23,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 nameof(FolderListupPage) => _listupTransison,
                 nameof(ImageListupPage) => _listupTransison,
                 nameof(SearchResultPage) => _searchTransison,
+                nameof(SettingsPage) => _settingsTransison,
                 _ => _otherTransison,
             };
         }

@@ -35,6 +35,11 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
             _folderLastIntractItemRepository.DeleteItem(path);
         }
 
+        public void RemoveAllUnderPath(string path)
+        {
+            _folderLastIntractItemRepository.DeleteAllUnderPath(path);
+        }
+
         public class FolderLastIntractItemRepository : LiteDBServiceBase<FolderLastIntractItem>
         {
             public FolderLastIntractItemRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -49,6 +54,11 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
             public void SetLastIntractItemName(string path, string itemName)
             {
                 _collection.Upsert(new FolderLastIntractItem() { Path = path, ItemName = itemName });
+            }
+
+            internal void DeleteAllUnderPath(string path)
+            {
+                _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
         }
     }

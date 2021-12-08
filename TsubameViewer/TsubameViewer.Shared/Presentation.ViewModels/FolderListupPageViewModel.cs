@@ -232,6 +232,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 _navigationDisposables?.Dispose();
                 _navigationDisposables = null;
 
+                FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
+
                 if (_currentPath != null && parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
@@ -243,7 +245,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ClearContent()
         {
-            FolderItems.AsParallel().ForEach(x => x.Dispose());
+            FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
             FolderItems.Clear();
 
             _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
@@ -343,10 +345,18 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
-                    if (_currentPath != unescapedPath)
+                    if (_sourceStorageItemsRepository.IsIgnoredPath(unescapedPath))
+                    {
+                        throw new InvalidOperationException();
+                    }
+                    else if (_currentPath != unescapedPath)
                     {                        
                         ClearContent();
                         await ResetContent(unescapedPath, ct);
+                    }
+                    else
+                    {
+                        FolderItems?.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
                     }
 
                     _currentPath = unescapedPath;

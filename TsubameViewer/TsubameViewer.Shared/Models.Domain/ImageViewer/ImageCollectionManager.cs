@@ -316,7 +316,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 #if WINDOWS_UWP
         private async IAsyncEnumerable<IImageSource> AsyncEnumerableItems(uint count, StorageItemQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
         {
-            await foreach (var item in FolderHelper.GetEnumerator(queryResult, count, ct))
+            await foreach (var item in FolderHelper.ToAsyncEnumerable(queryResult, ct))
             {
                 yield return new StorageItemImageSource(item, _thumbnailManager);
             }
@@ -347,7 +347,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 #if WINDOWS_UWP
         private async IAsyncEnumerable<IImageSource> AsyncEnumerableImages(uint count, StorageFileQueryResult queryResult, [EnumeratorCancellation] CancellationToken ct = default)
         {
-            await foreach (var item in FolderHelper.GetEnumerator(queryResult, count, ct))
+            await foreach (var item in FolderHelper.ToAsyncEnumerable(queryResult, ct))
             {
                 yield return new StorageItemImageSource(item as StorageFile, _thumbnailManager);
             }

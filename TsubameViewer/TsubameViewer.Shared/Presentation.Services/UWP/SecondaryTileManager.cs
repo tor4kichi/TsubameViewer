@@ -45,6 +45,12 @@ namespace TsubameViewer.Presentation.Services.UWP
                 return tileId;
             }
 
+
+            public IEnumerable<string> GetAllTileIdUnderPath(string path)
+            {
+                return _collection.Find(x => path.StartsWith(x.Path)).Select(x => x.TiteId);
+            }
+
             public bool RemoveTiteId(string path)
             {
                 return _collection.Delete(path);
@@ -127,14 +133,23 @@ namespace TsubameViewer.Presentation.Services.UWP
 
         public async Task<bool> RemoveSecondaryTile(string path)
         {
-            var tileId = _secondaryTileIdRepository.GetTileId(path);
-            if (Tiles.TryGetValue(tileId, out var tile))
+            var tileIds = _secondaryTileIdRepository.GetAllTileIdUnderPath(path);
+            foreach (var tileId in tileIds)
             {
-                if (await tile.RequestDeleteAsync())
+                try
                 {
-                    Tiles.Remove(tileId);
-                    Debug.WriteLine("セカンダリタイルを削除：" + path);
-                    return true;
+                    if (Tiles.TryGetValue(tileId, out var tile))
+                    {
+                        if (await tile.RequestDeleteAsync())
+                        {
+                            Tiles.Remove(tileId);
+                            Debug.WriteLine("セカンダリタイルを削除：" + path);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
                 }
             }
 

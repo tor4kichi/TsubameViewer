@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using System;
@@ -155,12 +156,37 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             internal TokenToPathEntry GetTokenFromPath(string path)
             {
-                return _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
+                return _collection.Find(x => path.StartsWith(x.Path)).FirstOrDefault();
+            }
+
+            internal TokenToPathEntry FindTokenToPathFromRoot(string path)
+            {
+                TokenToPathEntry token = null;
+                while (Path.GetDirectoryName(path) is not null and var dir && string.IsNullOrEmpty(dir))
+                {
+                    token = _collection.Find(x => dir == x.Path).FirstOrDefault();
+                    if (token is not null)
+                    {
+                        break;
+                    }
+                }
+
+                return token;
+            }
+
+            internal IEnumerable<TokenToPathEntry> FindTokenToPathAll(string path)
+            {
+                return _collection.Find(x => path.StartsWith(x.Path));
             }
 
             public bool IsExistPath(string path)
             {
                 return _collection.Exists(x => x.Path == path);
+            }
+
+            public bool IsAvairableAccessPath(string path)
+            {
+                return _collection.Exists(x => path.StartsWith(x.Path));
             }
 
             internal void Clear()
@@ -170,6 +196,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         }
 
         private readonly TokenToPathRepository _tokenToPathRepository;
+        private readonly IgnoreStorageItemRepository _ignoreStorageItemRepository;
         private readonly IMessenger _messenger;
 
         public SourceStorageItemsRepository(
@@ -178,6 +205,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             )
         {
             _tokenToPathRepository = new TokenToPathRepository(liteDatabase);
+            _ignoreStorageItemRepository = new IgnoreStorageItemRepository(liteDatabase);
 
             StorageApplicationPermissions.MostRecentlyUsedList.ItemRemoved += MostRecentlyUsedList_ItemRemoved;
             _messenger = messenger;
@@ -317,7 +345,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         Dictionary<string, IStorageItem> _cached = new Dictionary<string, IStorageItem>();
 
-        public async Task<IStorageItem> GetItemAsync(string token)
+        private async Task<IStorageItem> GetItemAsync(string token)
         {
             if (_cached.TryGetValue(token, out var item)) { return item; }
 
@@ -374,7 +402,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         }
 
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
-        {
+        {            
             var tokenEntry = _tokenToPathRepository.GetTokenFromPath(path);
 
             // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
@@ -385,6 +413,21 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             }
 
             var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
+
+            // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
+
+            // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
+            // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
+            if (IsIgnoredPathExact(tokenStorageItem.Path))
+            {
+                tokenEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
+                if (tokenEntry == null)
+                {
+                    throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
+                }
+
+                tokenStorageItem = await GetItemAsync(tokenEntry.Token);
+            }
 
             if (tokenStorageItem?.Path == path)
             {
@@ -419,7 +462,55 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             }
         }
 
+        #region Ignore Process
 
+        public void AddIgnoreToken(string path)
+        {
+            _ignoreStorageItemRepository.CreateItem(new () { Path = path });
+        }
+
+        public bool IsIgnoredPath(string path)
+        {
+            var avairableTokens = GetAvairableTokensFromPath(path);
+            return avairableTokens.Any(x => path.StartsWith(x.Path)) is false;
+        }
+
+        public bool IsIgnoredPathExact(string path)
+        {
+            return _ignoreStorageItemRepository.IsIgnoredPathExact(path);
+        }
+
+        private IEnumerable<TokenToPathEntry> GetAvairableTokensFromPath(string path)
+        {
+            return _tokenToPathRepository.FindTokenToPathAll(path).Where(x => _ignoreStorageItemRepository.IsIgnoredPathExact(x.Path) is false);
+        }
+
+        public bool HasIgnorePath()
+        {
+            return _ignoreStorageItemRepository.Any();
+        }
+
+        public bool TryPeek(out string path)
+        {
+            if (_ignoreStorageItemRepository.TryPeek(out var entry))
+            {
+                path = entry.Path;
+                return true;
+            }
+            else
+            {
+                path = null;
+                return false;
+            }
+        }
+
+        public void DeleteIgnorePath(string path)
+        {
+            _ignoreStorageItemRepository.DeleteItem(path);
+
+        }
+
+        #endregion
 
         public void RemoveFolder(string token)
         {
@@ -454,6 +545,9 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             {
                 ct.ThrowIfCancellationRequested();
                 var storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
+
+                if (IsIgnoredPathExact(storageItem.Path)) { continue; }
+
                 yield return (storageItem, item.Token, item.Metadata);
             }
 #else
@@ -482,6 +576,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
                 if (storageItem is not null)
                 {
+                    if (IsIgnoredPathExact(storageItem.Path)) { continue; }
+
                     yield return (storageItem, item.Token, item.Metadata);
                 }
             }

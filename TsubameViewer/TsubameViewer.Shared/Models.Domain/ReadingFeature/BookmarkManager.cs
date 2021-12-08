@@ -71,6 +71,12 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
             _bookmarkRepository.Remove(path);
         }
 
+
+        public void RemoveAllBookmarkUnderPath(string path)
+        {
+            _bookmarkRepository.RemoveAllUnderPath(path);
+        }
+
         public void FolderChanged(string oldPath, string newPath)
         {
             _bookmarkRepository.FolderChanged(oldPath, newPath);
@@ -134,6 +140,11 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
             public void Remove(string path)
             {
                 _collection.DeleteMany(x => x.Path == path);
+            }
+
+            public void RemoveAllUnderPath(string path)
+            {
+                _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
 
             public void FolderChanged(string oldPath, string newPath)

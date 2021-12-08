@@ -42,6 +42,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _recentlyAccessRepository.Delete(path);
         }
 
+        public void DeleteAllUnderPath(string path)
+        {
+            _recentlyAccessRepository.DeleteAllUnderPath(path);
+        }
+
         public sealed class RecentlyAccessRepository : LiteDBServiceBase<RecentlyAccessEntry>
         {
             public RecentlyAccessRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -80,6 +85,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public void Delete(string path)
             {
                 _collection.DeleteMany(x => x.Path == path);
+            }
+
+            public void DeleteAllUnderPath(string path)
+            {
+                _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
         }
 

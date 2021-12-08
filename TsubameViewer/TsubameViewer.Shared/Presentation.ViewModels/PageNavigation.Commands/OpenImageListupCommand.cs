@@ -29,22 +29,29 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Archive)
+                try
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
-                }
-                else if (item.Type == StorageItemTypes.Folder)
-                {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
-                }
-                else if (item.Type == StorageItemTypes.EBook)
-                {
+                    if (item.Type == StorageItemTypes.Archive)
+                    {
+                        var parameters = StorageItemViewModel.CreatePageParameter(item);
+                        var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
+                    }
+                    else if (item.Type == StorageItemTypes.Folder)
+                    {
+                        var parameters = StorageItemViewModel.CreatePageParameter(item);
+                        var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
+                    }
+                    else if (item.Type == StorageItemTypes.EBook)
+                    {
 
+                    }
+                    else if (item.Type == StorageItemTypes.None)
+                    {
+                    }
                 }
-                else if (item.Type == StorageItemTypes.None)
+                catch
                 {
+                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage), null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(SourceStorageItemsPage)));
                 }
             }
         }

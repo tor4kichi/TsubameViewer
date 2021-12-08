@@ -136,7 +136,7 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
             
-            //container.RegisterSingleton<SourceStorageItemsPageViewModel>();
+            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
             //container.RegisterSingleton<ImageListupPageViewModel>();
             //container.RegisterSingleton<FolderListupPageViewModel>();
             container.RegisterSingleton<ImageViewerPageViewModel>();

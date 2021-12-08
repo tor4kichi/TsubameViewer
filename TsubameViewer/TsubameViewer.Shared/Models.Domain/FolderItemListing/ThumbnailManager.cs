@@ -138,6 +138,21 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 var file = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
                 await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
             }
+
+            
+        }
+
+        public async Task DeleteAllThumbnailUnderPathAsync(string path)
+        {
+            _thumbnailImageInfoRepository.DeleteAllUnderPath(path);
+
+            var tempFolder = await GetTempFolderAsync();
+            var itemId = GetStorageItemId(path);
+            var query = tempFolder.CreateFileQueryWithOptions(new QueryOptions() { ApplicationSearchFilter = $"System.FileName:\"{itemId}*\"" });
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+            {
+                await query.ToAsyncEnumerable(CancellationToken.None).ForEachAsync(x => _ = x.DeleteAsync(StorageDeleteOption.PermanentDelete)).ConfigureAwait(false);
+            }
         }
 
         public async Task FolderChangedAsync(string oldPath, string newPath)
@@ -150,7 +165,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 var tempFolder = await GetTempFolderAsync();
                 var oldFilesQuery = tempFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
                 {
-                    ApplicationSearchFilter = $"System.FileName:{oldPathId}*"
+                    ApplicationSearchFilter = $"System.FileName:\"{oldPathId}*\""
                 });
 
                 int currentIndex = 0;
@@ -670,6 +685,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public int DeleteAll()
             {
                 return _collection.DeleteAll();
+            }
+
+            public int DeleteAllUnderPath(string path)
+            {
+                return _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
         }
 

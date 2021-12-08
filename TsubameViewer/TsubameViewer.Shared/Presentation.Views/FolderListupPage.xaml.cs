@@ -215,7 +215,7 @@ namespace TsubameViewer.Presentation.Views
             if (container is GridViewItem gvi)
             {
                 var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
-                if (image.IsLoaded)
+                if (image.Source != null)
                 {
                     ConnectedAnimationService.GetForCurrentView()
                         .PrepareToAnimate("ImageJumpInAnimation", image);

@@ -59,6 +59,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderContainerTypeRepository.DeleteItem(path);
         }
 
+        public void DeleteAllUnderPath(string path)
+        {
+            _folderContainerTypeRepository.DeleteAllUnderPath(path);
+        }
+
         internal void SetContainerType(StorageFolder folder, FolderContainerType folderContainerType)
         {
             _folderContainerTypeRepository.SetContainerType(folder.Path, folderContainerType);
@@ -81,6 +86,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     ? _collection.FindById(path).ContainerType
                     : default(FolderContainerType?)
                     ;
+            }
+
+            internal void DeleteAllUnderPath(string path)
+            {
+                _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
         }
 
