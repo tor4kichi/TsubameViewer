@@ -67,7 +67,7 @@ namespace TsubameViewer
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);            
         }
 
-        FastAsyncLock _InitializeLock = new FastAsyncLock();
+        Models.Infrastructure.AsyncLock _InitializeLock = new ();
 
         private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
@@ -136,7 +136,7 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
             
-            //container.RegisterSingleton<SourceStorageItemsPageViewModel>();
+            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
             //container.RegisterSingleton<ImageListupPageViewModel>();
             //container.RegisterSingleton<FolderListupPageViewModel>();
             container.RegisterSingleton<ImageViewerPageViewModel>();

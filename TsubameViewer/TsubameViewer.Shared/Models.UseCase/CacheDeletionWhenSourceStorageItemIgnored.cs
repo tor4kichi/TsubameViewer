@@ -30,7 +30,6 @@ namespace TsubameViewer.Models.UseCase
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _storageItemsRepository;
-        private readonly IgnoreStorageItemRepository _ignoreStorageItemRepository;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
@@ -42,7 +41,6 @@ namespace TsubameViewer.Models.UseCase
         public CacheDeletionWhenSourceStorageItemIgnored(
             IMessenger messenger,
             SourceStorageItemsRepository storageItemsRepository,
-            IgnoreStorageItemRepository ignoreStorageItemRepository,
             RecentlyAccessManager recentlyAccessManager,
             BookmarkManager bookmarkManager,
             FolderContainerTypeManager folderContainerTypeManager,
@@ -54,7 +52,6 @@ namespace TsubameViewer.Models.UseCase
         {
             _messenger = messenger;
             _storageItemsRepository = storageItemsRepository;
-            _ignoreStorageItemRepository = ignoreStorageItemRepository;
             _recentlyAccessManager = recentlyAccessManager;
             _bookmarkManager = bookmarkManager;
             _folderContainerTypeManager = folderContainerTypeManager;
@@ -116,7 +113,7 @@ namespace TsubameViewer.Models.UseCase
         void IRecipient<SourceStorageItemIgnoringRequestMessage>.Receive(SourceStorageItemIgnoringRequestMessage message)
         {
             Debug.WriteLine($"recive SourceStorageItemIgnoringRequestMessage.");
-            _ignoreStorageItemRepository.CreateItem(new IgnoreStorageItemEntry() { Path = message.Value });
+            _storageItemsRepository.AddIgnoreToken(message.Value);
             Debug.WriteLine($"add ignored StorageItem to Db : {message.Value}");
             TickNext();
         }
@@ -135,7 +132,7 @@ namespace TsubameViewer.Models.UseCase
                     return; 
                 }
 
-                if (_ignoreStorageItemRepository.Any() is false) 
+                if (_storageItemsRepository.HasIgnorePath() is false) 
                 {
                     Debug.WriteLine($"Skip cache delete process. (No items)");
                     return; 
@@ -147,13 +144,13 @@ namespace TsubameViewer.Models.UseCase
 
             try
             {
-                while (_ignoreStorageItemRepository.TryPeek(out IgnoreStorageItemEntry entry))
+                while (_storageItemsRepository.TryPeek(out string path))
                 {
-                    Debug.WriteLine($"Start cache deletion: {entry.Path}");
-                    await DeleteCacheWithDescendantsAsync(entry.Path);
-                    Debug.WriteLine($"Done cache deletion: {entry.Path}");
-                    _ignoreStorageItemRepository.Delete(entry);
-                    Debug.WriteLine($"Remove ignored StorageItem from Db : {entry.Path}");
+                    Debug.WriteLine($"Start cache deletion: {path}");
+                    await DeleteCacheWithDescendantsAsync(path);
+                    Debug.WriteLine($"Done cache deletion: {path}");
+                    _storageItemsRepository.DeleteIgnorePath(path);
+                    Debug.WriteLine($"Remove ignored StorageItem from Db : {path}");
                 }
             }
             finally
@@ -170,24 +167,51 @@ namespace TsubameViewer.Models.UseCase
         async Task DeleteCacheWithDescendantsAsync(string path)
         {
             var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
-            if (item is StorageFolder folder)
+
+            // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
+            if (_storageItemsRepository.IsIgnoredPath(item.Path))
             {
-                await foreach(var deletePath in GetAllDeletionPathsAsync(folder))
+                if (item is StorageFolder folder)
                 {
-                    Debug.WriteLine($"Delete cache: {deletePath}");
-                    await DeleteCacheAsync(deletePath);
+                    await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
+                    {
+                        Debug.WriteLine($"Delete cache: {deletePath}");
+                        await DeleteCacheAllUnderPathAsync(deletePath);
+                    }
+
+                    await DeleteCachePathAsync(folder.Path);
+                }
+                else
+                {
+                    Debug.WriteLine($"Delete cache: {path}");
+                    await DeleteCachePathAsync(path);
                 }
             }
             else
             {
-                Debug.WriteLine($"Delete cache: {path}");
-                await DeleteCacheAsync(path);
+                Debug.WriteLine($"Skiped delete cache: {path}");
             }
 
             _storageItemsRepository.RemoveFolder(token);
         }
 
-        async Task DeleteCacheAsync(string path)
+        async Task DeleteCacheAllUnderPathAsync(string path)
+        {
+            var tasks = new[] {
+                _thumbnailManager.DeleteAllThumbnailUnderPathAsync(path),
+                _secondaryTileManager.RemoveSecondaryTile(path)
+            };
+
+            _recentlyAccessManager.DeleteAllUnderPath(path);
+            _bookmarkManager.RemoveAllBookmarkUnderPath(path);
+            _folderContainerTypeManager.DeleteAllUnderPath(path);
+            _folderLastIntractItemManager.RemoveAllUnderPath(path);
+            _displaySettingsByPathRepository.DeleteUnderPath(path);
+
+            await Task.WhenAll(tasks);
+        }
+
+        async Task DeleteCachePathAsync(string path)
         {
             var tasks = new[] {
                 _thumbnailManager.DeleteThumbnailFromPathAsync(path),
@@ -198,7 +222,7 @@ namespace TsubameViewer.Models.UseCase
             _bookmarkManager.RemoveBookmark(path);
             _folderContainerTypeManager.Delete(path);
             _folderLastIntractItemManager.Remove(path);
-            _displaySettingsByPathRepository.DeleteUnderPath(path);
+            _displaySettingsByPathRepository.Delete(path);
 
             await Task.WhenAll(tasks);
         }
@@ -206,28 +230,31 @@ namespace TsubameViewer.Models.UseCase
 
         async IAsyncEnumerable<string> GetAllDeletionPathsAsync(StorageFolder folder)
         {
+            // 子孫フォルダ内のコンテンツを消さないように対象とするフォルダを列挙する
             var descendantPaths = await _storageItemsRepository.GetDescendantItemPathsAsync(folder.Path).ToListAsync();
 
             bool IsSkipPath(string path)
             {
-                return descendantPaths.Any(x => path.StartsWith(x));
+                return folder.Path == path || descendantPaths.Any(x => path.StartsWith(x));
+            }
+            
+
+            var query = folder.CreateFolderQueryWithOptions(new Windows.Storage.Search.QueryOptions() { FolderDepth = Windows.Storage.Search.FolderDepth.Deep });
+            await foreach (var folderItem in query.ToAsyncEnumerable())
+            {
+                if (IsSkipPath(folderItem.Path) is false)
+                {
+                    yield return folderItem.Path;
+                }
             }
 
-            var query = folder.CreateItemQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = Windows.Storage.Search.FolderDepth.Deep });
-            var totalCount = await query.GetItemCountAsync();
-            uint processedCount = 0;
-            List<string> paths = new List<string>();
-            while (processedCount < totalCount)
+            // 対象フォルダ上（子孫フォルダ含まず）のファイルを列挙
+            var fileQuery = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
+            await foreach (var folderItem in fileQuery.ToAsyncEnumerable())
             {
-                var items = await query.GetItemsAsync(processedCount, 100);
-                processedCount += (uint)items.Count;
-
-                foreach (var folderItem in items)
+                if (IsSkipPath(folderItem.Path) is false)
                 {
-                    if (IsSkipPath(folderItem.Path) is false)
-                    {
-                        yield return folderItem.Path;
-                    }
+                    yield return folderItem.Path;
                 }
             }
         }

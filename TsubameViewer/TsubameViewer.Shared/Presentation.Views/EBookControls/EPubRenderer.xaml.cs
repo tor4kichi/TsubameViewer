@@ -458,8 +458,8 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         public event EventHandler ContentRefreshStarting;
         public event EventHandler ContentRefreshComplete;
-        
-        FastAsyncLock _domUpdateLock = new FastAsyncLock();
+
+        Models.Infrastructure.AsyncLock _domUpdateLock = new ();
 
         bool isFirstContent = true;
         int _innerCurrentPage;

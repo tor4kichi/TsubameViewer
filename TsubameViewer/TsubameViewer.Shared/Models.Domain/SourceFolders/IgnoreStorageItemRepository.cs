@@ -17,13 +17,17 @@ namespace TsubameViewer.Models.Domain.SourceFolders
     {
         public IgnoreStorageItemRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-            liteDatabase.DropCollection(nameof(IgnoreStorageItemEntry));
             _collection.EnsureIndex(x => x.Path);
         }
 
         public bool IsIgnoredPath(string path)
         {
-            return _collection.Exists(x => x.Path == path);
+            return _collection.Exists(x => path.StartsWith(x.Path));
+        }
+
+        public bool IsIgnoredPathExact(string path)
+        {
+            return _collection.Exists(x => path == x.Path);
         }
 
         public bool TryPeek(out IgnoreStorageItemEntry outEntry)

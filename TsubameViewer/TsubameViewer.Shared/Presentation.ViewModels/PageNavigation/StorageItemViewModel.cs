@@ -162,10 +162,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
         private bool _isAppearingRequestButLoadingCancelled;
+        private readonly static Models.Infrastructure.AsyncLock _asyncLock = new (5);
 
         bool _isInitialized = false;
         public async void Initialize()
         {
+            Debug.WriteLine($"Init {Name}");
             if (_isInitialized) { return; }
             if (_disposed) { return; }
 
@@ -174,8 +176,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
             var ct = _cts.Token;
+
             try
             {
+                using var lockReleaser = await _asyncLock.LockAsync(ct);
+
                 if (Item == null) { return; }
 
                 if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
@@ -191,6 +196,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 ct.ThrowIfCancellationRequested();
 
                 _isAppearingRequestButLoadingCancelled = false;
+
                 using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
@@ -210,7 +216,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 _isInitialized = false;
                 _isAppearingRequestButLoadingCancelled = true;
-                return;
             }
         }
 

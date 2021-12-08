@@ -72,11 +72,13 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
         #region 初期フォーカス設定
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+            ConnectedAnimationService.GetForCurrentView()
+                        .GetAnimation("ImageJumpInAnimation")?.Cancel();
+
             base.OnNavigatedTo(e);
 
             var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
@@ -213,8 +215,11 @@ namespace TsubameViewer.Presentation.Views
             if (container is GridViewItem gvi)
             {
                 var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
-                ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                if (image.Source != null)
+                {
+                    ConnectedAnimationService.GetForCurrentView()
+                        .PrepareToAnimate("ImageJumpInAnimation", image);
+                }
             }
 
             (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);

@@ -109,7 +109,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactivePropertySlim<int> ImageLastIntractItem { get; }
 
-        static FastAsyncLock _NavigationLock = new FastAsyncLock();
+        private static readonly Models.Infrastructure.AsyncLock _NavigationLock = new ();
 
         private string _currentPath;
         private IStorageItem _currentItem;
@@ -226,6 +226,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _navigationDisposables?.Dispose();
 
+            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
+
             base.OnNavigatedFrom(parameters);
         }
 
@@ -235,7 +237,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
 
-            ImageFileItems.AsParallel().ForEach(x => x.Dispose());
+            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
             ImageFileItems.Clear();
 
             CurrentFolderItem?.Dispose();
@@ -343,6 +345,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         await ResetContent(unescapedPath, ct);
                     }
+                    else
+                    {
+                        ImageFileItems?.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
+                    }
                 }
 
                 if (mode != NavigationMode.New)
@@ -415,7 +421,7 @@ namespace TsubameViewer.Presentation.ViewModels
         #region Refresh Item
 
         IImageCollectionContext _imageCollectionContext;
-        static FastAsyncLock _RefreshLock = new FastAsyncLock();
+        private static readonly Models.Infrastructure.AsyncLock _RefreshLock = new ();
         private async Task RefreshFolderItems(CancellationToken ct)
         {
             using var lockObject = await _RefreshLock.LockAsync(ct);

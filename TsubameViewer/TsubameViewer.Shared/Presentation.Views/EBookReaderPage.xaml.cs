@@ -431,7 +431,7 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        FastAsyncLock _movePageLock = new FastAsyncLock();
+        Models.Infrastructure.AsyncLock _movePageLock = new ();
 
         // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty InnerGoNextImageCommandProperty =

@@ -260,7 +260,7 @@ namespace TsubameViewer.Presentation.Views
                 animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
                 */
                 // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく
-                await Task.Delay(175);
+                await Task.Delay(100);
 
                 animation.TryStart(ImagesContainer);
             }

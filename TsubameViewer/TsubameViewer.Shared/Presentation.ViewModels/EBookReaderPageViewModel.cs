@@ -517,7 +517,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         TaskCompletionSource<int> _InnerPageTotalCountChangedTcs;
 
-        FastAsyncLock _PageUpdateLock = new FastAsyncLock();
+        Models.Infrastructure.AsyncLock _PageUpdateLock = new ();
 
         CompositeDisposable _readingSessionDisposer;
 

@@ -148,7 +148,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
-        FastAsyncLock _suggestUpdateLock = new FastAsyncLock();
+        Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
         async void ExecuteUpdateAutoSuggestCommand(string parameter)
         {
             using (await _suggestUpdateLock.LockAsync(default))

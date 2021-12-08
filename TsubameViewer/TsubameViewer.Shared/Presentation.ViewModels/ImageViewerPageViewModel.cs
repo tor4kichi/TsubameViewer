@@ -764,7 +764,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IImageCollectionContext _imageCollectionContext;
         CancellationTokenSource _imageLoadingCts;
-        FastAsyncLock _imageLoadingLock = new FastAsyncLock();
+        Models.Infrastructure.AsyncLock _imageLoadingLock = new ();
 
         private async Task RefreshItems(CancellationToken ct)
         {
@@ -857,10 +857,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
-            foreach (var oldImage in Images ?? Enumerable.Empty<IImageSource>())
-            {
-                oldImage.TryDispose();
-            }
+            Images?.AsParallel().WithDegreeOfParallelism(4).ForEach((IImageSource x) => x.TryDispose());
 
             var images = await imageCollectionContext.GetAllImageFilesAsync(ct);            
             Images = ToSortedImages(images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
@@ -1120,7 +1117,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public bool IsCanceled { get; set; }
 
-        static FastAsyncLock _lock = new FastAsyncLock();
+        static Models.Infrastructure.AsyncLock _prefetchProcessLock = new ();
 
         public void Cancel()
         {
@@ -1132,7 +1129,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public async Task<BitmapImage> StartPrefetchAsync()
         {
             var ct = _PrefetchCts.Token;
-            using (await _lock.LockAsync(ct))
+            using (await _prefetchProcessLock.LockAsync(ct))
             {             
                 if (Image == null)
                 {
