@@ -12,6 +12,7 @@ namespace TsubameViewer.Models.Domain
         {
             _Theme = Read(ApplicationTheme.Default, nameof(Theme));
             _Locale = Read(default(string), nameof(Locale));
+            _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         }
 
         private ApplicationTheme _Theme;
@@ -38,6 +39,14 @@ namespace TsubameViewer.Models.Domain
         {
             get { return _Locale; }
             set { SetProperty(ref _Locale, value); }
+        }
+
+
+        private bool _ForceXboxAppearanceModeEnabled;
+        public bool ForceXboxAppearanceModeEnabled
+        {
+            get => _ForceXboxAppearanceModeEnabled;
+            set => SetProperty(ref _ForceXboxAppearanceModeEnabled, value);
         }
     }
 
