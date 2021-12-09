@@ -816,7 +816,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 var ratio = (float)item.width / decoder.PixelWidth;
                                 encoder.BitmapTransform.ScaledWidth = (uint)item.width;
                                 encoder.BitmapTransform.ScaledHeight = (uint)(decoder.PixelHeight * ratio);
-                                encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                // 一部で失敗するケースがあったのでコメントアウト
+                                //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
                             }
                             else
                             {
@@ -825,7 +826,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 var ratio = (float)item.height / decoder.PixelHeight;
                                 encoder.BitmapTransform.ScaledWidth = (uint)(decoder.PixelWidth * ratio);
                                 encoder.BitmapTransform.ScaledHeight = (uint)item.height;
-                                encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                // 一部で失敗するケースがあったのでコメントアウト
+                                //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
                             }
                             await encoder.FlushAsync();
                             memStream.Seek(0);
