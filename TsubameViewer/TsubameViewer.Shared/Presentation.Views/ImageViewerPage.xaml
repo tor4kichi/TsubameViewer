@@ -216,7 +216,7 @@
       </uiNavigation:UINavigationTriggerBehavior>
 
 
-      <uiNavigation:UINavigationTriggerBehavior Kind="Menu">
+      <uiNavigation:UINavigationTriggerBehavior Kind="View">
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
@@ -394,7 +394,7 @@
        
       </Grid>
 
-      <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource SystemChromeAltHighColor}" IsHitTestVisible="True">
+      <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource ApplicationContentBackgroundBrush}" IsHitTestVisible="True">
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
           <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Height="48" Width="60"
                   XYFocusRight="{x:Bind ImageNavigationFlyoutButton}"
@@ -433,15 +433,17 @@
       </uwpControls:DockPanel>
     </Grid>
 
+    <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top">
+
+    </Grid>
+    
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
       
-      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
-
-      </Grid>
+      
       <uwpControls:DockPanel>
         <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
           <SymbolIcon Symbol="Back">
@@ -600,6 +602,7 @@
         </VisualState>
       </VisualStateGroup>
       
+      <!--見開き補正 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
@@ -611,6 +614,7 @@
         </VisualState>
       </VisualStateGroup>
 
+      <!-- ページの表示順序を反転 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>

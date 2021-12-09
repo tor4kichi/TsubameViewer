@@ -267,6 +267,21 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatingTo(parameters);
         }        
 
+        public StorageItemViewModel GetLastIntractItem()
+        {
+            var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
+            if (lastIntaractItem == null) { return null; }
+
+            foreach (var item in FolderItems)
+            {
+                if (item.Name == lastIntaractItem)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
 
         async Task ResetContent(string path, CancellationToken ct)
         {
@@ -365,25 +380,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (mode != NavigationMode.New)
                 {
-                    var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
-                    if (lastIntaractItem != null)
+                    StorageItemViewModel lastIntractItemVM = GetLastIntractItem();
+                    if (lastIntractItemVM != null)
                     {
-                        StorageItemViewModel lastIntractItemVM = null;
-                        foreach (var item in FolderItems)
-                        {
-                            if (item.Name == lastIntaractItem)
-                            {
-                                lastIntractItemVM = item;
-                                break;
-                            }
-                        }
-
-                        lastIntractItemVM?.ThumbnailChanged();
-                        lastIntractItemVM?.Initialize();
-                        if (FolderLastIntractItem.Value == lastIntractItemVM)
-                        {
-                            FolderLastIntractItem.ForceNotify();
-                        }
+                        lastIntractItemVM.ThumbnailChanged();
+                        lastIntractItemVM.Initialize();
 
                         FolderLastIntractItem.Value = lastIntractItemVM;
                     }
@@ -624,8 +625,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
-            FolderLastIntractItem.Value = FileItemsView.FirstOrDefault() as StorageItemViewModel;
-            FolderLastIntractItem.Value = null;
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
                 _currentPath,
                 fileSort,

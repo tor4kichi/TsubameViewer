@@ -173,6 +173,7 @@
         ContextFlyout="{StaticResource StorageItemMenuFlyout}"
         uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
         XYFocusUp="{x:Bind FileSortButton}"
+        SelectedItem="{x:Bind _vm.FolderLastIntractItem.Value, Mode=TwoWay}"
         >
 
         <GridView.ItemContainerTransitions>
@@ -189,18 +190,7 @@
 
     </uwpControls:DockPanel>
        
-
-    <i:Interaction.Behaviors>
-
-      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
-        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
-      </core:DataTriggerBehavior>
-      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="Equal">
-        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="DeselectItem" />
-      </core:DataTriggerBehavior>
-
-    </i:Interaction.Behaviors>
-
+    
     <VisualStateManager.VisualStateGroups>
       
       <!-- フォルダまたはアーカイブ内フォルダかによる表示切替 -->

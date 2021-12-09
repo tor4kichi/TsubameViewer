@@ -670,6 +670,11 @@ namespace TsubameViewer.Presentation.Views
         }
 
         #endregion
+
+        private void MyNavigtionView_PaneOpening(Microsoft.UI.Xaml.Controls.NavigationView sender, object args)
+        {
+            sender.IsPaneOpen = false;
+        }
     }
 
 
