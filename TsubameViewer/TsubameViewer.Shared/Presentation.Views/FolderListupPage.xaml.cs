@@ -113,15 +113,6 @@ namespace TsubameViewer.Presentation.Views
         #endregion
 
 
-        // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
-        // 原因は Microsoft.Xaml.UI にありそうだけど特定はしてない。
-        // （2.4.2から2.5.0 preに変更したところで問題が起きるようになった）
-        private void FoldersAdaptiveGridView_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
-        {
-            var flyout = Resources["FolderAndArchiveMenuFlyout"] as FlyoutBase;
-            flyout.ShowAt(args.OriginalSource as FrameworkElement);
-        }
-
         public void DeselectItem()
         {
             FoldersAdaptiveGridView.DeselectAll();

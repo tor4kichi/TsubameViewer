@@ -201,26 +201,15 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
-        // 原因は Microsoft.Xaml.UI にありそうだけど特定はしてない。
-        // （2.4.2から2.5.0 preに変更したところで問題が起きるようになった）
-        private void FoldersAdaptiveGridView_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
+        RelayCommand<UIElement> _OpenItemCommand;
+        public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
-            var flyout = Resources["FolderAndArchiveMenuFlyout"] as FlyoutBase;
-            flyout.ShowAt(args.OriginalSource as FrameworkElement);
-        }
-
-
-
-        RelayCommand<TappedRoutedEventArgs> _OpenItemCommand;
-        public RelayCommand<TappedRoutedEventArgs> OpenItemWithConnectedAnimationCommand => _OpenItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(itemVM =>
-        {
-            var container = itemVM.OriginalSource as FrameworkElement;
-            var image = container.FindDescendantOrSelf<Image>();
-            ConnectedAnimationService.GetForCurrentView()
-                .PrepareToAnimate("ImageJumpInAnimation", image);
-
-            (_vm.OpenFolderItemCommand as ICommand).Execute(container.DataContext);
+            var image = item.FindDescendantOrSelf<Image>();
+            if (image.Source != null)
+            {
+                ConnectedAnimationService.GetForCurrentView()
+                    .PrepareToAnimate("ImageJumpInAnimation", image);
+            }
         });
     }
 

@@ -16,6 +16,7 @@
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
   Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -92,12 +93,18 @@
                         UpdateTextOnSelect="False"
                         AutoMaximizeSuggestionArea="True"
                         IsSuggestionListOpen="True"   
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                             >
           <i:Interaction.Behaviors>
 
             <core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{x:Bind _viewModel.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
             </core:EventTriggerBehavior>
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
           <AutoSuggestBox.ItemTemplate>

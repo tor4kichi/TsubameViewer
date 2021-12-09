@@ -281,7 +281,9 @@
           </StackPanel>
 
 
-          <Button Margin="8 0 0 0">
+          <Button Margin="8 0 0 0" x:Name="OptionalActionsButton"
+                  XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                  >
             <Button.Content>
               <SymbolIcon Symbol="More" />
             </Button.Content>
@@ -309,8 +311,7 @@
                   ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
-                  XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
-                  
+                  XYFocusLeft="{x:Bind OptionalActionsButton}"
                     >
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
@@ -337,13 +338,13 @@
 
 
       <ScrollViewer Padding="48 0 48 0" 
+                    XYFocusUp="{x:Bind FileSortButton}"
                     >
         <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"                              
                                   >
             <winUI:ItemsRepeater.Layout>
@@ -355,9 +356,9 @@
                 <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
-                <uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
                   <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
-                </uiNavigation:BypassToCurrentFocusElementAction>
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -366,7 +367,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
@@ -375,12 +375,18 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -389,7 +395,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
@@ -399,12 +404,18 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -413,7 +424,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Large}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
@@ -423,12 +433,18 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <uiNavigation:BypassToCurrentFocusElementAction>
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
