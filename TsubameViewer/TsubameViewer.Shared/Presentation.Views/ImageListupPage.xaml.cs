@@ -26,6 +26,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Media.Animation;
 using System.Windows.Input;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -88,28 +89,35 @@ namespace TsubameViewer.Presentation.Views
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            var currentFocus = FocusManager.GetFocusedElement();
-            if (currentFocus is FrameworkElement fe 
-                && fe.DataContext is StorageItemViewModel itemVM)
+            try
             {
-                _PathToLastIntractMap[_vm.DisplayCurrentPath] = 
-                    new LastIntractInfo()
-                    { 
-                        ItemPath = itemVM.Path, 
-                        ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                    };
+                var currentFocus = FocusManager.GetFocusedElement();
+                if (currentFocus is FrameworkElement fe
+                    && fe.DataContext is StorageItemViewModel itemVM)
+                {
+                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
+                        new LastIntractInfo()
+                        {
+                            ItemPath = itemVM.Path,
+                            ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                        };
 
-                _vm.SetLastIntractItem(itemVM);
+                    _vm.SetLastIntractItem(itemVM);
+                }
+                else
+                {
+                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
+                        new LastIntractInfo()
+                        {
+                            ItemPath = null,
+                            ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                        };
+
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _PathToLastIntractMap[_vm.DisplayCurrentPath] =
-                    new LastIntractInfo()
-                    {
-                        ItemPath = null,
-                        ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                    };
-
+                Debug.WriteLine(ex.ToString());
             }
 
             base.OnNavigatingFrom(e);
@@ -309,7 +317,7 @@ namespace TsubameViewer.Presentation.Views
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
             var image = item.FindDescendantOrSelf<Image>();
-            if (image.Source != null)
+            if (image?.Source != null)
             {
                 ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate("ImageJumpInAnimation", image);

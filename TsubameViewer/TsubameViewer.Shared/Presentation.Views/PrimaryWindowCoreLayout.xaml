@@ -56,6 +56,10 @@
         </ts:MenuItemTemplateSelector.MenuItem>
       </ts:MenuItemTemplateSelector>
 
+
+      <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
+      <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
+
     </ResourceDictionary>
   </Page.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop"
@@ -73,13 +77,15 @@
       </muxc:NavigationView.PaneHeader>
       
       <i:Interaction.Behaviors>
+        <!--
         <core:EventTriggerBehavior EventName="ItemInvoked">
           <core:InvokeCommandAction Command="{x:Bind _viewModel.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
         </core:EventTriggerBehavior>
+        -->
       </i:Interaction.Behaviors>
       <muxc:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <muxc:NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" />
+          <muxc:NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" DataContext="{x:Bind}" />
         </DataTemplate>
       </muxc:NavigationView.MenuItemTemplate>
 

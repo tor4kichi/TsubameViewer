@@ -35,7 +35,7 @@
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
-      <x:Boolean x:Key="DebugTVMode">True</x:Boolean>
+      <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
 
 
       <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" />

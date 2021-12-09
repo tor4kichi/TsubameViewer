@@ -126,27 +126,27 @@ namespace TsubameViewer.Presentation.Views
 
         private Type[] MenuPaneHiddenPageTypes = new Type[] 
         {
-            typeof(Views.ImageViewerPage),
-            typeof(Views.EBookReaderPage),
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
             typeof(SettingsPage),
         };
 
         private Type[] CanGoBackPageTypes = new Type[] 
         {
-            typeof(Views.FolderListupPage),
-            typeof(Views.ImageListupPage),
-            typeof(Views.ImageViewerPage),
-            typeof(Views.EBookReaderPage),
-            typeof(Views.SearchResultPage),
+            typeof(FolderListupPage),
+            typeof(ImageListupPage),
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
             typeof(SettingsPage),
         };
 
         private Type[] ForgetOwnNavigationPageTypes = new Type[]
         {
-            typeof(Views.ImageViewerPage),
-            typeof(Views.EBookReaderPage),
-            typeof(Views.SearchResultPage),
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
+            typeof(SearchResultPage),
         };
+
 
 
         private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
@@ -247,7 +247,23 @@ namespace TsubameViewer.Presentation.Views
                 _ = StoreNaviagtionParameterDelayed();
             }
 
+            MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
+            // 選択中として表示するメニュー項目
+            if (e.SourcePageType == typeof(SearchResultPage) 
+                ||  frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
+            {
+                MyNavigtionView.SelectedItem = null;
+            }
+
             _isFirstNavigation = false;
+        }
+
+        private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
+        {
+            if (args.SelectedItem != null)
+            {
+                _viewModel.OpenMenuItemCommand.Execute(args.SelectedItem);
+            }
         }
 
         IPlatformNavigationService _navigationService;
