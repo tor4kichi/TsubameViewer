@@ -339,6 +339,7 @@
 
       <ScrollViewer Padding="48 0 48 0" 
                     XYFocusUp="{x:Bind FileSortButton}"
+                    x:Name="ItemsScrollViewer"
                     >
         <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->

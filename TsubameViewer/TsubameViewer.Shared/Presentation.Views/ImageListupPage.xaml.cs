@@ -25,6 +25,7 @@ using System.Numerics;
 using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Media.Animation;
 using System.Windows.Input;
+using System.Threading.Tasks;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -85,44 +86,71 @@ namespace TsubameViewer.Presentation.Views
 
         #region 初期フォーカス設定
 
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            var currentFocus = FocusManager.GetFocusedElement();
+            if (currentFocus is FrameworkElement fe 
+                && fe.DataContext is StorageItemViewModel itemVM)
+            {
+                _PathToLastIntractMap[_vm.DisplayCurrentPath] = 
+                    new LastIntractInfo()
+                    { 
+                        ItemPath = itemVM.Path, 
+                        ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                    };
+
+                _vm.SetLastIntractItem(itemVM);
+            }
+            else
+            {
+                _PathToLastIntractMap[_vm.DisplayCurrentPath] =
+                    new LastIntractInfo()
+                    {
+                        ItemPath = null,
+                        ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                    };
+
+            }
+
+            base.OnNavigatingFrom(e);
+        }
+
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-            if (settings.IsForceEnableXYNavigation
-                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                )
+            if (e.NavigationMode == NavigationMode.New)
             {
-                if (FileItemsRepeater_Small.ItemsSource != null && FileItemsRepeater_Small.Visibility == Visibility.Visible)
+                var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
+                if (settings.IsForceEnableXYNavigation
+                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                    )
                 {
-                    var item = FileItemsRepeater_Small.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
-                else if (FileItemsRepeater_Midium.ItemsSource != null && FileItemsRepeater_Midium.Visibility == Visibility.Visible)
-                {
-                    var item = FileItemsRepeater_Midium.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
-                else if (FileItemsRepeater_Large.ItemsSource != null && FileItemsRepeater_Large.Visibility == Visibility.Visible)
-                {
-                    var item = FileItemsRepeater_Large.FindDescendant<Control>();
-                    item?.Focus(FocusState.Keyboard);
-                }
-                else
-                {
-                    ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                    if (GetCurrentDisplayItemsRepeater() is not null and var currentItemsRepeater 
+                        && currentItemsRepeater.ItemsSource != null
+                        && currentItemsRepeater.FindDescendant<Control>() is not null and var firstItem
+                        )
+                    {
+                        firstItem.Focus(FocusState.Keyboard);
+                    }
+                    else
+                    {
+                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
 
-                    this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
 
-                    this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                    this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                        this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    }
                 }
             }
-
+            else
+            {
+                BringIntoViewLastIntractItem();
+            }
         }
 
         private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
@@ -132,6 +160,82 @@ namespace TsubameViewer.Presentation.Views
             this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
 
             (args.Element as Control).Focus(FocusState.Keyboard);
+        }
+
+
+        private ItemsRepeater GetCurrentDisplayItemsRepeater()
+        {
+            if (FileItemsRepeater_Small.Visibility == Visibility.Visible) { return FileItemsRepeater_Small; }
+            else if (FileItemsRepeater_Midium.Visibility == Visibility.Visible) { return FileItemsRepeater_Midium; }
+            else if (FileItemsRepeater_Large.Visibility == Visibility.Visible) { return FileItemsRepeater_Large; }
+            else { return null; }
+        }
+
+        Dictionary<string, LastIntractInfo> _PathToLastIntractMap = new();
+        public async void BringIntoViewLastIntractItem()
+        {
+            while (_vm == null || _vm.NowProcessing)
+            {
+                await Task.Delay(10);
+            }
+
+            async void SetFocusToItem(StorageItemViewModel itemVM, bool withScroll = false)
+            {
+                var lastIntractItemIndex = _vm.FileItemsView.IndexOf(itemVM);
+                if (lastIntractItemIndex > 0)
+                {
+                    UIElement lastIntractItem = null;
+                    var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
+                    foreach (int count in Enumerable.Range(0, 10))                    
+                    {
+                        lastIntractItem = currentItemsRepeater.TryGetElement(lastIntractItemIndex);
+                        if (lastIntractItem is not null)
+                        {
+                            break;
+                        }
+                        await Task.Delay(100);
+                    }
+
+                    if (lastIntractItem is Control control) 
+                    {
+                        if (withScroll)
+                        {
+                            var transform = lastIntractItem.TransformToVisual(ItemsScrollViewer);
+                            var pt = transform.TransformPoint(new Point(0, 0));
+                            ItemsScrollViewer.ChangeView(null, pt.Y, null);
+
+                            await Task.Delay(100);
+                        }
+
+                        control.Focus(FocusState.Keyboard);
+                    }
+                }
+            }
+
+            if (_PathToLastIntractMap.Remove(_vm.DisplayCurrentPath, out LastIntractInfo info) is false)
+            {
+                if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
+                {
+                    SetFocusToItem(lastIntractItemVM, withScroll: true);                    
+                }
+
+                return;
+            }
+
+            ItemsScrollViewer.ChangeView(0, ItemsScrollViewer.ScrollableHeight * info.ScrollPositionRatio, 0);
+
+            await Task.Delay(100);
+            if (info.ItemPath is not null and String itemPath)
+            {
+                var lastIntractItemVM = _vm.ImageFileItems.FirstOrDefault(x => x.Path == itemPath);
+                SetFocusToItem(lastIntractItemVM);
+            }
+        }
+
+        struct LastIntractInfo
+        {
+            public string ItemPath;
+            public double ScrollPositionRatio;
         }
 
         #endregion

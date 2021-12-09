@@ -222,6 +222,27 @@ namespace TsubameViewer.Presentation.ViewModels
                    
         }
 
+        public StorageItemViewModel GetLastIntractItem()
+        {
+            var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
+            if (lastIntaractItem == null) { return null; }
+
+            foreach (var item in ImageFileItems)
+            {
+                if (item.Name == lastIntaractItem)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        public void SetLastIntractItem(StorageItemViewModel itemVM)
+        {
+            _folderLastIntractItemManager.SetLastIntractItemName(DisplayCurrentPath, itemVM.Path);
+        }
+
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
             _navigationDisposables?.Dispose();

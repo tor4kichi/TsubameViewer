@@ -139,10 +139,12 @@ namespace TsubameViewer.Presentation.Views
 
         public async void BringIntoViewLastIntractItem()
         {
-            var pageVM = _vm;
-            if (pageVM == null) { return; }
-
-            var lastIntaractItem = pageVM.GetLastIntractItem();
+            while (_vm == null || _vm.NowProcessing)
+            {
+                await Task.Delay(10);
+            }
+                
+            var lastIntaractItem = _vm.GetLastIntractItem();
             if (lastIntaractItem != null)
             {
                 if (lastIntaractItem.Type is not Models.Domain.StorageItemTypes.Image)
@@ -162,7 +164,7 @@ namespace TsubameViewer.Presentation.Views
                     if (item is Control control)
                     {
                         var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                        if (_PathToLastScrollPosition.TryGetValue(pageVM.DisplayCurrentPath, out double ratio))
+                        if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio))
                         {
                             sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
                         }
