@@ -132,7 +132,7 @@
              />
     </NavigationView>
 
-    <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0">
+    <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
       <Grid.Background>
         <SolidColorBrush Color="{ThemeResource SystemAltLowColor}" Opacity="0.5" />
       </Grid.Background>
@@ -197,6 +197,7 @@
             </Storyboard>
           </VisualState.Storyboard>
           <VisualState.Setters>
+            <Setter Target="BusyWall.Visibility" Value="Collapsed" />
             <Setter Target="BusyWall.IsHitTestVisible" Value="False" />
           </VisualState.Setters>
         </VisualState>
@@ -212,6 +213,7 @@
             </Storyboard>
           </VisualState.Storyboard>
           <VisualState.Setters>
+            <Setter Target="BusyWall.Visibility" Value="Visible" />
             <Setter Target="BusyWall.IsHitTestVisible" Value="True" />
             <Setter Target="BusyWall_ProgressRing.IsActive" Value="True" />
           </VisualState.Setters>
