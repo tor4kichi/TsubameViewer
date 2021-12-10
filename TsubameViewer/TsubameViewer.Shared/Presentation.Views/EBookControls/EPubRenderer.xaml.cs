@@ -389,19 +389,24 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             _compositeDisposable = new CompositeDisposable();
             var dispatcher = Dispatcher;
+            
+            isFirstContent = true;
 
             Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
                 h => Window.Current.SizeChanged += h,
                 h => Window.Current.SizeChanged -= h
                 )
-                .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
+                .Where(x => !isFirstContent)
                 .Throttle(TimeSpan.FromMilliseconds(100))
+                .Where(x => !isFirstContent)
                 .Subscribe(async args =>
                 {
                     await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
                     {
                         await Task.Delay(50);
                         if (IsLoaded is false) { return; }
+
+                        ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
 
                         using (await _domUpdateLock.LockAsync(default))
                         {
@@ -427,7 +432,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 this.ObserveDependencyProperty(OverrideWritingModeProperty),
             }
             .Merge()
-            .Throttle(TimeSpan.FromMilliseconds(10))
+            .Throttle(TimeSpan.FromMilliseconds(50))
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
             .AddTo(_compositeDisposable);
         }
@@ -437,7 +442,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             WebView.NavigationStarting -= WebView_NavigationStarting;
             WebView.NavigationCompleted -= WebView_NavigationCompleted;
             WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
-
 
             _compositeDisposable.Dispose();
         }
@@ -462,7 +466,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         private async void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
         {
             using var _ = await _domUpdateLock.LockAsync(default);
-            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);            
+            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);
         }
 
         public event EventHandler ContentRefreshStarting;
@@ -486,7 +490,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             using var _ = await _domUpdateLock.LockAsync(default);
 
-            if (isContentReady is false) { return; }
             if (!CanGoNext()) { throw new Exception(); }
 
             _innerCurrentPage++;
@@ -505,7 +508,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             using var _ = await _domUpdateLock.LockAsync(default);
 
-            if (isContentReady is false) { return; }
             if (!CanGoPreview()) { throw new Exception(); }
 
             _innerCurrentPage--;
@@ -549,14 +551,11 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private bool _isGoNextOrPreview;
 
-        bool isContentReady = false;
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
-            if (PageHtml == null) { return; }
+            if (string.IsNullOrEmpty(PageHtml)) { return; }
 
             using var _ = await _domUpdateLock.LockAsync(default);
-
-            isContentReady = false;
 
 
             var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
@@ -723,8 +722,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             TotalInnerPageCount = _innerPageCount;
             CurrentInnerPage = _innerCurrentPage;
-
-            isContentReady = true; 
         }
 
 

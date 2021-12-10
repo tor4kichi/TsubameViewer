@@ -16,7 +16,7 @@
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   mc:Ignorable="d"
-  
+  NavigationCacheMode="Enabled"
   >
   <Page.Transitions>
     <TransitionCollection>
@@ -271,6 +271,7 @@
                                 ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
                                 RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                 OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
+                                
              >
       
     </eBookControls:EPubRenderer>
@@ -671,6 +672,8 @@
                 <Visibility>Visible</Visibility>
               </wst:EqualsStateTrigger.EqualTo>
             </wst:EqualsStateTrigger>
+            <!-- x:Bindだと反映されないことがあるのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding ElementName=PageRoot, Path=NowEnablePageMove, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
@@ -691,6 +694,24 @@
       
       <!-- 左右のページ送りを逆にする -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <!-- x:Bindだと反映されないことがあるのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding ElementName=PageRoot, Path=NowEnablePageMove, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
+
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=OneWay}" />

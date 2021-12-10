@@ -422,21 +422,40 @@ namespace TsubameViewer.Presentation.Views
                     (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = WebView.TotalInnerPageCount;
                 })
                 .AddTo(_RendererObserveDisposer);
+
+            NowEnablePageMove = false;
         }
 
         private void WebView_Unloaded(object sender, RoutedEventArgs e)
         {
-            _RendererObserveDisposer.Dispose();
+            _RendererObserveDisposer.Dispose();            
         }
+
+
+
+
+        public bool NowEnablePageMove
+        {
+            get { return (bool)GetValue(NowEnablePageMoveProperty); }
+            set { SetValue(NowEnablePageMoveProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for NowRefreshingWebView.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty NowEnablePageMoveProperty =
+            DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(true));
+
 
 
         private void WebView_ContentRefreshStarting(object sender, EventArgs e)
         {
+            NowEnablePageMove = false;
             WebView.Opacity = 0.0;
         }
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
         {
+            NowEnablePageMove = true;
+
             (DataContext as EBookReaderPageViewModel).CompletePageLoading();
 
             AnimationBuilder.Create()
