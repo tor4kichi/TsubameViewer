@@ -127,6 +127,10 @@ namespace TsubameViewer.Presentation.Views
                 Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
             }
 
+            AnimationBuilder.Create()
+                .Translation(Axis.X, -320, duration: TimeSpan.FromMilliseconds(1))
+                .Start(TocContentPanel);
+
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
 
             var appView = ApplicationView.GetForCurrentView();

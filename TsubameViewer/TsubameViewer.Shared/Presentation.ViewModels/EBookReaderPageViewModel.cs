@@ -197,6 +197,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             lock (_lock)
             {
+                PageHtml = String.Empty;
+
                 _leavePageCancellationTokenSource?.Cancel();
                 _leavePageCancellationTokenSource?.Dispose();
                 _leavePageCancellationTokenSource = null;

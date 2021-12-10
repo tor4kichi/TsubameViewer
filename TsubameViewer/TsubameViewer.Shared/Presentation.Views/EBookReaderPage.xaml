@@ -514,7 +514,7 @@
       <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
             >
-
+        
         <animation:Implicit.ShowAnimations>
           <animation:TranslationAnimation To="0, 0" Duration="0:0:0.25" />
         </animation:Implicit.ShowAnimations>
@@ -530,6 +530,9 @@
                   SingleSelectionFollowsFocus="False"
                   Padding="0 48 0 0"
                   >
+          <ListView.ItemContainerTransitions>
+            <TransitionCollection />
+          </ListView.ItemContainerTransitions>
           <ListView.Header>
             <StackPanel>
 

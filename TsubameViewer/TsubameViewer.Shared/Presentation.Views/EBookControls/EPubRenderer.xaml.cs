@@ -370,22 +370,24 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             this.InitializeComponent();
 
-            WebView.NavigationStarting += WebView_NavigationStarting;
-            WebView.NavigationCompleted += WebView_NavigationCompleted;
-            
-            WebView.DOMContentLoaded += WebView_DOMContentLoaded;
-
             Loaded += EPubRenderer_Loaded;
             Unloaded += EPubRenderer_Unloaded;            
         }
 
 
 
-        IDisposable StyleChangedObserver;
+        CompositeDisposable _compositeDisposable;
 
         private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
         {
-            CompositeDisposable disposables = new CompositeDisposable();
+            WebView.NavigationStarting -= WebView_NavigationStarting;
+            WebView.NavigationCompleted -= WebView_NavigationCompleted;
+            WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+            WebView.NavigationStarting += WebView_NavigationStarting;
+            WebView.NavigationCompleted += WebView_NavigationCompleted;
+            WebView.DOMContentLoaded += WebView_DOMContentLoaded;
+
+            _compositeDisposable = new CompositeDisposable();
             var dispatcher = Dispatcher;
 
             Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
@@ -398,6 +400,9 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 {
                     await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
                     {
+                        await Task.Delay(50);
+                        if (IsLoaded is false) { return; }
+
                         using (await _domUpdateLock.LockAsync(default))
                         {
                             // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
@@ -408,9 +413,8 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                         }
                     });
                 })
-                .AddTo(disposables);
+                .AddTo(_compositeDisposable);
 
-            StyleChangedObserver = disposables;
             new[]
             {
                 this.ObserveDependencyProperty(FontSizeProperty),
@@ -425,12 +429,17 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(10))
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
-            .AddTo(disposables);
+            .AddTo(_compositeDisposable);
         }
 
         private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
         {
-            StyleChangedObserver.Dispose();
+            WebView.NavigationStarting -= WebView_NavigationStarting;
+            WebView.NavigationCompleted -= WebView_NavigationCompleted;
+            WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+
+
+            _compositeDisposable.Dispose();
         }
 
 
@@ -477,6 +486,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             using var _ = await _domUpdateLock.LockAsync(default);
 
+            if (isContentReady is false) { return; }
             if (!CanGoNext()) { throw new Exception(); }
 
             _innerCurrentPage++;
@@ -495,6 +505,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             using var _ = await _domUpdateLock.LockAsync(default);
 
+            if (isContentReady is false) { return; }
             if (!CanGoPreview()) { throw new Exception(); }
 
             _innerCurrentPage--;
@@ -538,13 +549,15 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private bool _isGoNextOrPreview;
 
+        bool isContentReady = false;
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
             if (PageHtml == null) { return; }
 
             using var _ = await _domUpdateLock.LockAsync(default);
 
-            
+            isContentReady = false;
+
 
             var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
             var oldCurrentPageIndex = _innerCurrentPage;
@@ -710,6 +723,8 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             TotalInnerPageCount = _innerPageCount;
             CurrentInnerPage = _innerCurrentPage;
+
+            isContentReady = true; 
         }
 
 
