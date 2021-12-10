@@ -99,7 +99,7 @@ namespace TsubameViewer.Presentation.Views
                         new LastIntractInfo()
                         {
                             ItemPath = itemVM.Path,
-                            ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
                         };
 
                     _vm.SetLastIntractItem(itemVM);
@@ -110,7 +110,7 @@ namespace TsubameViewer.Presentation.Views
                         new LastIntractInfo()
                         {
                             ItemPath = null,
-                            ScrollPositionRatio = ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
+                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
                         };
 
                 }
@@ -230,7 +230,10 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            ItemsScrollViewer.ChangeView(0, ItemsScrollViewer.ScrollableHeight * info.ScrollPositionRatio, 0);
+            if (info.ScrollPositionRatio is not null)
+            {
+                ItemsScrollViewer.ChangeView(0, ItemsScrollViewer.ScrollableHeight * info.ScrollPositionRatio.Value, 0);
+            }
 
             await Task.Delay(100);
             if (info.ItemPath is not null and String itemPath)
@@ -243,7 +246,7 @@ namespace TsubameViewer.Presentation.Views
         struct LastIntractInfo
         {
             public string ItemPath;
-            public double ScrollPositionRatio;
+            public double? ScrollPositionRatio;
         }
 
         #endregion
@@ -311,7 +314,16 @@ namespace TsubameViewer.Presentation.Views
             
         }
 
-
+        RelayCommand<TappedRoutedEventArgs> _PrepareConnectedAnimationWithTappedItemCommand;
+        public RelayCommand<TappedRoutedEventArgs> PrepareConnectedAnimationWithTappedItemCommand => _PrepareConnectedAnimationWithTappedItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(item =>
+        {
+            var image = (item.OriginalSource as UIElement).FindDescendantOrSelf<Image>();
+            if (image?.Source != null)
+            {
+                ConnectedAnimationService.GetForCurrentView()
+                    .PrepareToAnimate("ImageJumpInAnimation", image);
+            }
+        });
 
         RelayCommand<UIElement> _OpenItemCommand;
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>

@@ -376,9 +376,7 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
-                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
                 <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
@@ -405,9 +403,7 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
-                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
                 <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
@@ -434,9 +430,7 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
-                </uiNavigation:BypassToCurrentFocusElementAction>
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
                 <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
