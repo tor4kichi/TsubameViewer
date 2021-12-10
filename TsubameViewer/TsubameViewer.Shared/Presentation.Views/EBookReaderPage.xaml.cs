@@ -33,6 +33,7 @@ using Windows.Web.Http;
 using Xamarin.Essentials;
 using Prism.Ioc;
 using AsyncLock = Uno.Threading.AsyncLock;
+using Windows.UI.Xaml.Media.Animation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -75,6 +76,8 @@ namespace TsubameViewer.Presentation.Views
             DataContextChanged += OnDataContextChanged;
         }
 
+
+
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
         {
             var oldViewModel = _vm;
@@ -85,11 +88,67 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = null;
+            appView.TitleBar.ButtonHoverBackgroundColor = null;
+            appView.TitleBar.ButtonInactiveBackgroundColor = null;
+            appView.TitleBar.ButtonPressedBackgroundColor = null;
+
+            appView.ExitFullScreenMode();
+
+            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+
+            base.OnNavigatingFrom(e);
+        }
+
+
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            // https://docs.microsoft.com/ja-jp/windows/uwp/design/shell/title-bar
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = true;
+
+            if ((bool)App.Current.Resources["DebugTVMode"])
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_TVorTouch);
+            }
+            else
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            }
+
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
+
+            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
+
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
+            if (animation != null)
+            {
+                animation.Cancel();                
+            }
+
+            base.OnNavigatedTo(e);
+        }
+
+
+
         private EBookReaderPageViewModel _vm { get; set; }
-
-
-        EBookReaderPageViewModel _pageViewModel;
-        EBookReaderPageViewModel PageViewModel => _pageViewModel ??= DataContext as EBookReaderPageViewModel;
 
         private void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
         {
@@ -99,7 +158,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 try
                 {
-                    var stream = PageViewModel.ResolveWebResourceRequest(reqesutUri);
+                    var stream = _vm.ResolveWebResourceRequest(reqesutUri);
                     if (stream != null)
                     {
                         e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
@@ -128,7 +187,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
         {
-            var pageVM = PageViewModel;
+            var pageVM = _vm;
             this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
             this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
 
@@ -148,7 +207,7 @@ namespace TsubameViewer.Presentation.Views
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
             AnimationBuilder.Create()
-                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight + 24, duration: TimeSpan.FromMilliseconds(175), delay: TimeSpan.FromMilliseconds(1000))
+                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight + 24, duration: TimeSpan.FromMilliseconds(175), delay: TimeSpan.FromMilliseconds(1000))
                 .Start(AnimationUICommandBar);
 
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
@@ -162,12 +221,14 @@ namespace TsubameViewer.Presentation.Views
 
         private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
         {
-            if (TocContainer.Visibility == Visibility.Collapsed)
+            if (TocContainer.Visibility == Visibility.Visible)
             {
-                ToggleOpenCloseBottomUI();
+                CloseTocPaneCommand.Execute();
+            }      
+            else
+            {
+                (_vm.BackNavigationCommand as ICommand).Execute(null);
             }
-
-            CloseTocPaneCommand.Execute();
         }
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
@@ -268,7 +329,7 @@ namespace TsubameViewer.Presentation.Views
                 .Start(AnimationUIContainer);
 
             AnimationBuilder.Create()
-                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
+                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
                 .Start(AnimationUICommandBar);
         }
 
@@ -281,7 +342,7 @@ namespace TsubameViewer.Presentation.Views
                 .Start(AnimationUIContainer);
 
             await AnimationBuilder.Create()
-                .Offset(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
+                .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
                 .StartAsync(AnimationUICommandBar);
         }
 
@@ -325,49 +386,6 @@ namespace TsubameViewer.Presentation.Views
 
 
         #endregion
-
-
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            // https://docs.microsoft.com/ja-jp/windows/uwp/design/shell/title-bar
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = true;
-
-            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
-
-            var appView = ApplicationView.GetForCurrentView();
-            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
-
-            base.OnNavigatedTo(e);
-        }
-
-        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
-        {
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = false;
-            Window.Current.SetTitleBar(null);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
-
-            var appView = ApplicationView.GetForCurrentView();
-            appView.TitleBar.ButtonBackgroundColor = null;
-            appView.TitleBar.ButtonHoverBackgroundColor = null;
-            appView.TitleBar.ButtonInactiveBackgroundColor = null;
-            appView.TitleBar.ButtonPressedBackgroundColor = null;
-
-            appView.ExitFullScreenMode();
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
-
-            base.OnNavigatingFrom(e);
-        }
-
 
 
 

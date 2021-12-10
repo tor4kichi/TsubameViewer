@@ -171,7 +171,7 @@ namespace TsubameViewer.Presentation.Views
                     if (item is Control control)
                     {
                         var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                        if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && ratio != double.NaN)
+                        if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
                         {
                             sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
                         }
