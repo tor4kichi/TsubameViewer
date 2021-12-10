@@ -167,6 +167,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
+        private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -179,6 +180,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
+            ThumbnailManager thumbnailManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
@@ -194,6 +196,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BackNavigationCommand = backNavigationCommand;
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
+            _thumbnailManager = thumbnailManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
@@ -222,18 +225,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
                 .AddTo(_disposables);
             IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
-                .AddTo(_disposables);
-
-
-            _SizeChangedSubject
-                .Where(x => x >= 0 && Images != null)
-                .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
-                .Subscribe(index => 
-                {
-                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
-                    _ = ResetImageIndex(index);
-                })
-                .AddTo(_disposables);
+                .AddTo(_disposables);            
         }
 
 
@@ -294,6 +286,8 @@ namespace TsubameViewer.Presentation.ViewModels
             // 一旦ボタン類を押せないように変更通知
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
+
+            await Task.Delay(100);
 
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
@@ -438,6 +432,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
                 .Subscribe(async _ =>
                 {
+                    Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
                     CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
                     await ResetImageIndex(CurrentImageIndex);
                 })
@@ -464,6 +459,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Pairwise()
                 .Where(x => x.NewItem != x.OldItem)
                 .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
+                .AddTo(_navigationDisposables);
+
+            _SizeChangedSubject
+                .Where(x => x >= 0 && Images != null)
+                .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
+                .Skip(1)
+                .Subscribe(index =>
+                {
+                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
+                    _ = ResetImageIndex(index);
+                })
                 .AddTo(_navigationDisposables);
 
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
@@ -624,7 +630,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             // 二枚目以降が横長だった場合は表示しない
                             if (generateImageIndex != -1)
                             {
-                                _CurrentImages[1 - i] = _emptyImage;
+                                _CurrentImages[i] = _emptyImage;
+                                //_CurrentImages[1 - i] = _emptyImage;
                                 // TODO: 横長画像をスキップした場合に、生成したbitmapImageを後で使い回せるようにしたい
                                 break;
                             }
@@ -800,6 +807,10 @@ namespace TsubameViewer.Presentation.ViewModels
                             imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
                         }
                     }
+
+                    _CurrentImages = new BitmapImage[1];
+                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _thumbnailManager) };
+                    await MoveImageIndex(IndexMoveDirection.Refresh, 0);
                 }
                 else if (file.IsSupportedMangaFile())
                 {

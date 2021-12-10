@@ -20,6 +20,8 @@
   xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
+  x:Name="PageElement"
+  uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
   >
 
   <!--
@@ -250,12 +252,12 @@
         <TranslateTransform />
       </Grid.RenderTransform>
       <ItemsControl ItemsSource="{x:Bind _vm.CurrentImages, Mode=OneWay}"
-                    HorizontalAlignment="Center"
-                    x:Name="ImageItemsControl"
+                    HorizontalAlignment="Stretch"
+                    x:Name="ImageItemsControl"                    
                     >
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=PageElement, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" HorizontalAlignment="Center" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
 
@@ -264,6 +266,8 @@
             <StackPanel x:Name="ImageContainerPanel" 
                         Orientation="Horizontal" 
                         FlowDirection="RightToLeft"
+                        HorizontalAlignment="Center"
+                        MaxWidth="{Binding ElementName=PageElement, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"
                 >
             </StackPanel>
 
@@ -394,6 +398,8 @@
        
       </Grid>
 
+      <Grid x:Name="DraggableTitleBarArea_Xbox" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top" />
+
       <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource ApplicationContentBackgroundBrush}" IsHitTestVisible="True">
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
           <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Height="48" Width="60"
@@ -432,18 +438,15 @@
 
       </uwpControls:DockPanel>
     </Grid>
-
-    <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top">
-
-    </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
-      
-      
+
+      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top" />
+
       <uwpControls:DockPanel>
         <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
           <SymbolIcon Symbol="Back">
@@ -473,6 +476,7 @@
         </uwpControls:DockPanel>
       </uwpControls:DockPanel>
     </Grid>
+
 
 
     <VisualStateManager.VisualStateGroups>
