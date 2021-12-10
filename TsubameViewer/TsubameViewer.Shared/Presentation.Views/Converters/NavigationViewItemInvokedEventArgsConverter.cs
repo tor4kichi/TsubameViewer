@@ -11,7 +11,7 @@ namespace TsubameViewer.Presentation.Views.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            if (value is NavigationViewItemInvokedEventArgs args)
+            if (value is Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args)
             {
                 return args.InvokedItemContainer?.DataContext ?? args.InvokedItem;
             }

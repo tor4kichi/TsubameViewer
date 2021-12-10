@@ -10,6 +10,7 @@ using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
 using Uno;
 using Uno.Disposables;
@@ -67,9 +68,12 @@ namespace TsubameViewer.Presentation.Views
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
             AnimationBuilder.Create()
-                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight)
+                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight)
                 .Start(AnimationUICommandBar);
-            
+            AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(1))
+                .Start(AnimationUIContainer);
+
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
@@ -81,7 +85,14 @@ namespace TsubameViewer.Presentation.Views
 
         private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
         {
-            ToggleOpenCloseBottomUI();
+            if (IsOpenBottomMenu)
+            {
+                ToggleOpenCloseBottomUI();
+            }
+            else
+            {
+                (_vm.BackNavigationCommand as ICommand).Execute(null);
+            }
         }
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
@@ -179,7 +190,7 @@ namespace TsubameViewer.Presentation.Views
                 .Opacity(0, duration: TimeSpan.FromMilliseconds(175))
                 .Start(AnimationUIContainer);
             AnimationBuilder.Create()
-                .Offset(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
+                .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
                 .Start(AnimationUICommandBar);
         }
 
@@ -189,7 +200,7 @@ namespace TsubameViewer.Presentation.Views
                 .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
                 .Start(AnimationUIContainer);
             await AnimationBuilder.Create()
-                .Offset(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
+                .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
                 .StartAsync(AnimationUICommandBar);
         }
 

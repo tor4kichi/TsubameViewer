@@ -16,6 +16,7 @@
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   mc:Ignorable="d"
   Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -55,31 +56,40 @@
         </ts:MenuItemTemplateSelector.MenuItem>
       </ts:MenuItemTemplateSelector>
 
+
+      <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
+      <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
+
     </ResourceDictionary>
   </Page.Resources>
-  <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop">
-    <NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
+  <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        >
+    <muxc:NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
                     IsBackButtonVisible="Collapsed"
                     IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
                     XYFocusDownNavigationStrategy="Projection"
+                    PaneOpening="MyNavigtionView_PaneOpening"
                       >
-      <NavigationView.PaneHeader>
+      <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
-      </NavigationView.PaneHeader>
+      </muxc:NavigationView.PaneHeader>
       
       <i:Interaction.Behaviors>
+        <!--
         <core:EventTriggerBehavior EventName="ItemInvoked">
           <core:InvokeCommandAction Command="{x:Bind _viewModel.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
         </core:EventTriggerBehavior>
+        -->
       </i:Interaction.Behaviors>
-      <NavigationView.MenuItemTemplate>
+      <muxc:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" />
+          <muxc:NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" DataContext="{x:Bind}" />
         </DataTemplate>
-      </NavigationView.MenuItemTemplate>
+      </muxc:NavigationView.MenuItemTemplate>
 
-      <NavigationView.AutoSuggestBox>
+      <muxc:NavigationView.AutoSuggestBox>
         <AutoSuggestBox PlaceholderText="{Binding Source=SearchPlaceholder, Converter={StaticResource LocalizeConverter}}" 
                         QueryIcon="Find"
                         VerticalAlignment="Center"
@@ -92,12 +102,18 @@
                         UpdateTextOnSelect="False"
                         AutoMaximizeSuggestionArea="True"
                         IsSuggestionListOpen="True"   
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                             >
           <i:Interaction.Behaviors>
 
             <core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{x:Bind _viewModel.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
             </core:EventTriggerBehavior>
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
           <AutoSuggestBox.ItemTemplate>
@@ -106,9 +122,9 @@
             </DataTemplate>
           </AutoSuggestBox.ItemTemplate>
         </AutoSuggestBox>
-      </NavigationView.AutoSuggestBox>
-      
-      <NavigationView.PaneFooter>
+      </muxc:NavigationView.AutoSuggestBox>
+
+      <muxc:NavigationView.PaneFooter>
         <CommandBar x:Name="MenuRightCommandBar"
                     DefaultLabelPosition="Right"
                     Background="Transparent"
@@ -125,14 +141,14 @@
 
           </CommandBar.SecondaryCommands>
         </CommandBar>
-      </NavigationView.PaneFooter>
+      </muxc:NavigationView.PaneFooter>
 
       <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="5"
              XYFocusDownNavigationStrategy="RectilinearDistance"
              />
-    </NavigationView>
+    </muxc:NavigationView>
 
-    <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0">
+    <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
       <Grid.Background>
         <SolidColorBrush Color="{ThemeResource SystemAltLowColor}" Opacity="0.5" />
       </Grid.Background>
@@ -197,6 +213,7 @@
             </Storyboard>
           </VisualState.Storyboard>
           <VisualState.Setters>
+            <Setter Target="BusyWall.Visibility" Value="Collapsed" />
             <Setter Target="BusyWall.IsHitTestVisible" Value="False" />
           </VisualState.Setters>
         </VisualState>
@@ -212,6 +229,7 @@
             </Storyboard>
           </VisualState.Storyboard>
           <VisualState.Setters>
+            <Setter Target="BusyWall.Visibility" Value="Visible" />
             <Setter Target="BusyWall.IsHitTestVisible" Value="True" />
             <Setter Target="BusyWall_ProgressRing.IsActive" Value="True" />
           </VisualState.Setters>

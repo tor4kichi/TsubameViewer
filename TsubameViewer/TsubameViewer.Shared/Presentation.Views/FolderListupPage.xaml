@@ -40,6 +40,7 @@
             <Button x:Name="ReturnSourceFolderPageButton"
                   Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
                   Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
+                    XYFocusRight="{x:Bind ChangetoImageListupButton}"
                   >
             </Button>
           </StackPanel>
@@ -50,6 +51,7 @@
             <Button Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
                     Command="{x:Bind _vm.OpenImageListupCommand}"
                     CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
+                    x:Name="ChangetoImageListupButton"
                     >
             </Button>
           </Border>
@@ -166,11 +168,12 @@
         IsItemClickEnabled="True"
         ItemClickCommand="{x:Bind OpenItemCommand}"
         IsSynchronizedWithCurrentItem="False"
-        SelectionMode="None"
-        XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
+        SelectionMode="None"        
         IsTabStop="False"
         ContextFlyout="{StaticResource StorageItemMenuFlyout}"
         uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
+        XYFocusUp="{x:Bind FileSortButton}"
+        SelectedItem="{x:Bind _vm.FolderLastIntractItem.Value, Mode=TwoWay}"
         >
 
         <GridView.ItemContainerTransitions>
@@ -187,18 +190,7 @@
 
     </uwpControls:DockPanel>
        
-
-    <i:Interaction.Behaviors>
-
-      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
-        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="BringIntoViewLastIntractItem" />
-      </core:DataTriggerBehavior>
-      <core:DataTriggerBehavior Binding="{x:Bind _vm.FolderLastIntractItem.Value, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="Equal">
-        <core:CallMethodAction TargetObject="{x:Bind}" MethodName="DeselectItem" />
-      </core:DataTriggerBehavior>
-
-    </i:Interaction.Behaviors>
-
+    
     <VisualStateManager.VisualStateGroups>
       
       <!-- フォルダまたはアーカイブ内フォルダかによる表示切替 -->

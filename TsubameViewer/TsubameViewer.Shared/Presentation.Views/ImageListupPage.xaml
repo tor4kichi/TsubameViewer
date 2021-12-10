@@ -48,9 +48,9 @@
                UserControlによるカーソル移動サポートを有効化している -->
 
     <Style x:Key="ImageItemGridStyle" TargetType="Grid">
-      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="CornerRadius" Value="4" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseLowBrush}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource SystemChromeDisabledHighColor}" />
       <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
     </Style>
     
@@ -77,39 +77,39 @@
 
     <DataTemplate x:Key="FileItemTemplate_Small">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
-        <Grid Style="{StaticResource ImageItemGridStyle}">
+        <Grid Style="{StaticResource ImageItemGridStyle}" >
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{Binding Source={StaticResource SmallImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Mouse" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
-          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
         </Grid>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <Grid Style="{StaticResource ImageItemGridStyle}">
+        <Grid Style="{StaticResource ImageItemGridStyle}" CornerRadius="6">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{Binding Source={StaticResource MidiumImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Mouse" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
-          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
         </Grid>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
       <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <Grid Style="{StaticResource ImageItemGridStyle}">
+        <Grid Style="{StaticResource ImageItemGridStyle}" CornerRadius="8">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{Binding Source={StaticResource LargeImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
-          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" />
+          <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
         </Grid>
       </UserControl>
     </DataTemplate>
@@ -281,7 +281,9 @@
           </StackPanel>
 
 
-          <Button Margin="8 0 0 0">
+          <Button Margin="8 0 0 0" x:Name="OptionalActionsButton"
+                  XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                  >
             <Button.Content>
               <SymbolIcon Symbol="More" />
             </Button.Content>
@@ -309,8 +311,7 @@
                   ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
-                  XYFocusLeft="{x:Bind ReturnSourceFolderPageButton}"
-                  
+                  XYFocusLeft="{x:Bind OptionalActionsButton}"
                     >
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
@@ -337,13 +338,14 @@
 
 
       <ScrollViewer Padding="48 0 48 0" 
+                    XYFocusUp="{x:Bind FileSortButton}"
+                    x:Name="ItemsScrollViewer"
                     >
         <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"                              
                                   >
             <winUI:ItemsRepeater.Layout>
@@ -355,9 +357,9 @@
                 <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
-                <uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
                   <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
-                </uiNavigation:BypassToCurrentFocusElementAction>
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -366,7 +368,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                   >
             <winUI:ItemsRepeater.Layout>
@@ -375,12 +376,16 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -389,7 +394,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
@@ -399,12 +403,16 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 
@@ -413,7 +421,6 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Large}"
-                                 XYFocusUpNavigationStrategy="NavigationDirectionDistance"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                   >
@@ -423,12 +430,16 @@
 
             <i:Interaction.Behaviors>
               <core:EventTriggerBehavior EventName="Tapped">
-                <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithTappedItemCommand}" />
+                <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" InputConverter="{StaticResource RoutedEventOriginalSourceConverter}" />
               </core:EventTriggerBehavior>
               <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
                 <uiNavigation:BypassToCurrentFocusElementAction>
-                  <core:InvokeCommandAction Command="{x:Bind OpenItemWithConnectedAnimationCommand}" />
+                  <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
                 </uiNavigation:BypassToCurrentFocusElementAction>
+                <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                  <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
+                </uiNavigation:BypassToCurrentFocusElementDataContextAction>
               </uiNavigation:UINavigationTriggerBehavior>
             </i:Interaction.Behaviors>
 

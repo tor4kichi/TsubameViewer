@@ -58,7 +58,7 @@ namespace TsubameViewer.Presentation.Views
             _vm = args.NewValue as FolderListupPageViewModel;
             if (_vm != null && oldViewModel != _vm)
             {
-                this.Bindings.Update();
+                this.Bindings.Update();                
             }
         }
 
@@ -72,6 +72,23 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            try
+            {
+                var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                var ratio = sv.VerticalOffset / sv.ScrollableHeight;
+                _PathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
+
+                Debug.WriteLine(ratio);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
+
+            base.OnNavigatingFrom(e);
+        }
         #region 初期フォーカス設定
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -82,25 +99,31 @@ namespace TsubameViewer.Presentation.Views
             base.OnNavigatedTo(e);
 
             var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-            if (settings.IsForceEnableXYNavigation
-                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                )
+            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
             {
-                if (FoldersAdaptiveGridView.Items.Any())
+                if (settings.IsForceEnableXYNavigation
+                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                    )
                 {
-                    var firstItem = FoldersAdaptiveGridView.Items.First();
-                    var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                    itemContainer.Focus(FocusState.Keyboard);
-                }
-                else
-                {
-                    ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                    if (FoldersAdaptiveGridView.Items.Any())
+                    {
+                        var firstItem = FoldersAdaptiveGridView.Items.First();
+                        var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+                        itemContainer.Focus(FocusState.Keyboard);
+                    }
+                    else
+                    {
+                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
 
-                    this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-                    this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
+                        this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
+                        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
+                    }
                 }
             }
-            
+            else
+            {
+                BringIntoViewLastIntractItem();
+            }
         }
 
         private void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -112,15 +135,9 @@ namespace TsubameViewer.Presentation.Views
 
         #endregion
 
-
-        // {StaticResource FolderAndArchiveMenuFlyout} で指定すると表示されない不具合がある
-        // 原因は Microsoft.Xaml.UI にありそうだけど特定はしてない。
-        // （2.4.2から2.5.0 preに変更したところで問題が起きるようになった）
-        private void FoldersAdaptiveGridView_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
-        {
-            var flyout = Resources["FolderAndArchiveMenuFlyout"] as FlyoutBase;
-            flyout.ShowAt(args.OriginalSource as FrameworkElement);
-        }
+        // 前回スクロール位置への復帰に対応する
+        // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
+        Dictionary<string, double> _PathToLastScrollPosition = new();
 
         public void DeselectItem()
         {
@@ -129,34 +146,37 @@ namespace TsubameViewer.Presentation.Views
 
         public async void BringIntoViewLastIntractItem()
         {
-            var pageVM = (DataContext as FolderListupPageViewModel);
-            var lastIntaractItem = pageVM.FolderLastIntractItem.Value;
+            while (_vm == null || _vm.NowProcessing)
+            {
+                await Task.Delay(10);
+            }
+                
+            var lastIntaractItem = _vm.GetLastIntractItem();
             if (lastIntaractItem != null)
             {
                 if (lastIntaractItem.Type is not Models.Domain.StorageItemTypes.Image)
                 {
                     FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
 
-                    // 並び替えを伴う場合にスクロール位置がズレる問題を回避するためDelayを入れてる
-                    await Task.Delay(100);
+                    // 並び替えを伴う場合にスクロール位置がズレる問題を回避するためDelayを入れてる                    
+                    DependencyObject item;
+                    do
                     {
-                        DependencyObject item;
-                        do
-                        {
-                            item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
+                        item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
-                            await Task.Delay(10);
-                        }
-                        while (item == null);
+                        await Task.Delay(10);
+                    }
+                    while (item == null);
 
-                        if (item is Control control)
+                    if (item is Control control)
+                    {
+                        var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                        if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio))
                         {
-                            var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                            var transform = control.TransformToVisual(sv);
-                            var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
-                            //sv.ChangeView(null, positionInScrollViewer.Y + 64, null, true);
-                            control.Focus(FocusState.Keyboard);
+                            sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
                         }
+
+                        control.Focus(FocusState.Keyboard);
                     }
                 }                
             }

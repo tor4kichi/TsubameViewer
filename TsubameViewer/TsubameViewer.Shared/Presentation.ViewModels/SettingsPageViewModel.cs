@@ -49,6 +49,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public RelayCommand AppInfoCopyToClipboard { get; }
 
+        public bool IsForceXboxAppearanceModeEnabled
+        {
+            get => _applicationSettings.ForceXboxAppearanceModeEnabled;
+            set
+            {
+                _applicationSettings.ForceXboxAppearanceModeEnabled = value;
+                App.Current.Resources["DebugTVMode"] = value;
+            }
+        }
+
         public string ReportUserEnvString { get; } 
         public SettingsPageViewModel(
             IEventAggregator eventAggregator,
@@ -70,7 +80,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
-
+            
             AppInfoCopyToClipboard = new RelayCommand(async () =>
             {
                 await Clipboard.SetTextAsync(ReportUserEnvString);

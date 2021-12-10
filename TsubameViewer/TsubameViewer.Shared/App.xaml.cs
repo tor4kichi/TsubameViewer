@@ -160,9 +160,10 @@ namespace TsubameViewer
 #if DEBUG
             if (System.Diagnostics.Debugger.IsAttached)
             {
-                // this.DebugSettings.EnableFrameRateCounter = true;
+                this.DebugSettings.EnableFrameRateCounter = true;
             }
 #endif
+            Resources["DebugTVMode"] = Container.Resolve<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
 
             if (args.Arguments is IActivatedEventArgs activated)
             {

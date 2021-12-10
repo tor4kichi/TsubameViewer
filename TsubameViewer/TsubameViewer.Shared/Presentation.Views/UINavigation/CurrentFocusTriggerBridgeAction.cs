@@ -13,8 +13,41 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 	// 入れ子になったInvokeCommandAction等で子アイテムのDataContextを渡せるようにする
 
 	[ContentProperty(Name = nameof(Actions))]
-    public sealed class BypassToCurrentFocusElementAction : DependencyObject, IAction
+    public sealed class BypassToCurrentFocusElementDataContextAction : DependencyObject, IAction
     {
+		public ActionCollection Actions
+		{
+			get
+			{
+				if (GetValue(ActionsProperty) == null)
+				{
+					this.Actions = new ActionCollection();
+				}
+				return (ActionCollection)GetValue(ActionsProperty);
+			}
+			set { SetValue(ActionsProperty, value); }
+		}
+
+		public static readonly DependencyProperty ActionsProperty =
+			DependencyProperty.Register(
+				nameof(Actions),
+				typeof(ActionCollection),
+				typeof(BypassToCurrentFocusElementDataContextAction),
+				new PropertyMetadata(null));
+
+		public object Execute(object sender, object parameter)
+        {
+            var currentFocusElement = FocusManager.GetFocusedElement();
+
+			Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext);
+
+            return true;
+        }
+    }
+
+	[ContentProperty(Name = nameof(Actions))]
+	public sealed class BypassToCurrentFocusElementAction : DependencyObject, IAction
+	{
 		public ActionCollection Actions
 		{
 			get
@@ -36,12 +69,12 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 				new PropertyMetadata(null));
 
 		public object Execute(object sender, object parameter)
-        {
-            var currentFocusElement = FocusManager.GetFocusedElement();
+		{
+			var currentFocusElement = FocusManager.GetFocusedElement();
 
-			Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext);
+			Interaction.ExecuteActions(sender, Actions, currentFocusElement);
 
-            return true;
-        }
-    }
+			return true;
+		}
+	}
 }

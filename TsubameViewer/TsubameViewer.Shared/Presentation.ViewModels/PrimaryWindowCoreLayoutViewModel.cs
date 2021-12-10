@@ -115,7 +115,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (item is MenuItemViewModel menuItem)
                 {
                     NavigationService.NavigateAsync(menuItem.PageType);
-                }
+                }                
             });
 
         public IEventAggregator EventAggregator { get; }

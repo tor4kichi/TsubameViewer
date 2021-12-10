@@ -179,8 +179,8 @@
     <Setter Property="Padding" Value="0 0 0 0" />
     <Setter Property="Margin" Value="6 6" />
     <Setter Property="CornerRadius" Value="{StaticResource FolderItemCornerRadius}" />
-    <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseMediumLowBrush}" />
-    <Setter Property="BorderThickness" Value="0.25" />
+    <Setter Property="BorderBrush" Value="{ThemeResource SystemControlForegroundBaseLowBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <Style x:Key="AddNewFolderStyle" TargetType="GridViewItem" BasedOn="{StaticResource FolderStyle}">

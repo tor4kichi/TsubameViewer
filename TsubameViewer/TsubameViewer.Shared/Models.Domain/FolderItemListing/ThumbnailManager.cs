@@ -213,20 +213,18 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private async Task<StorageFile> GetThumbnailFromIdAsync(string itemId, CancellationToken ct)
         {
             var tempFolder = await GetTempFolderAsync();
-            using (await _fileReadWriteLock.LockAsync(ct))
             if (await tempFolder.FileExistsAsync(itemId))
             {
-                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId).AsTask(ct);
-                using (var stream = await cachedThumbnailFile.OpenReadAsync().AsTask(ct))
+                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);
+                using (var stream = await cachedThumbnailFile.OpenReadAsync())
                 {
-                    if (stream.Size != 0)
-                    {
-                        return cachedThumbnailFile;
-                    }
+                    return stream.Size == 0 ? null : cachedThumbnailFile;
                 }
             }
-
-            return null;
+            else
+            {
+                return null;
+            }
         }
 
         public async Task<StorageFile> GetFolderThumbnailAsync(StorageFolder folder, CancellationToken ct)
@@ -325,7 +323,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
             if (archiveEntry.IsDirectory) { return null; }
 
-            using (await _fileReadWriteLock.LockAsync(ct))
             using (var memoryStream = new MemoryStream())
             {
                 var tempFolder = await GetTempFolderAsync();
@@ -417,10 +414,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     if (!result || stream.Length == 0) { return null; }
 
                     ct.ThrowIfCancellationRequested();
-                    using (await _fileReadWriteLock.LockAsync(ct))
-                    {
-                        await TranscodeThumbnailImageToFileAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
-                    }
+                    await TranscodeThumbnailImageToFileAsync(file.Path, stream.AsRandomAccessStream(), outputFile, setupEncoder, ct);
 
                     return outputFile;
                 }
@@ -478,7 +472,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private static async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
-            using (var fileStream = await file.OpenReadAsync().AsTask(ct))
+            using (var fileStream = await file.OpenReadAsync())
             {
                 await RandomAccessStream.CopyAsync(fileStream, outputStream.AsOutputStream()).AsTask(ct);
                 return true;
@@ -701,7 +695,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
 
 
-        #region Secondary Tile
+#region Secondary Tile
 
 
 
@@ -822,7 +816,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 var ratio = (float)item.width / decoder.PixelWidth;
                                 encoder.BitmapTransform.ScaledWidth = (uint)item.width;
                                 encoder.BitmapTransform.ScaledHeight = (uint)(decoder.PixelHeight * ratio);
-                                encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                // 一部で失敗するケースがあったのでコメントアウト
+                                //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
                             }
                             else
                             {
@@ -831,7 +826,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                                 var ratio = (float)item.height / decoder.PixelHeight;
                                 encoder.BitmapTransform.ScaledWidth = (uint)(decoder.PixelWidth * ratio);
                                 encoder.BitmapTransform.ScaledHeight = (uint)item.height;
-                                encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
+                                // 一部で失敗するケースがあったのでコメントアウト
+                                //encoder.BitmapTransform.Bounds = new BitmapBounds() { X = 0, Y = 0, Width = (uint)item.width, Height = (uint)item.height };
                             }
                             await encoder.FlushAsync();
                             memStream.Seek(0);
@@ -857,6 +853,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        #endregion
+#endregion
     }
 }
