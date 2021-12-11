@@ -343,6 +343,30 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+        public async Task<IRandomAccessStream> GetArchiveEntryThumbnailImageStreamAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
+        {
+            if (archiveEntry.IsDirectory) { return null; }
+
+            var path = GetArchiveEntryPath(sourceFile, archiveEntry);
+
+            var outputStream = new InMemoryRandomAccessStream();
+            using (var memoryStream = new MemoryStream())
+            {
+                // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
+                lock (_lockForReadArchiveEntry)
+                using (var entryStream = archiveEntry.OpenEntryStream())
+                {
+                    entryStream.CopyTo(memoryStream);
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+
+                    ct.ThrowIfCancellationRequested();
+                }
+
+                await TranscodeThumbnailImageToStreamAsync(path, memoryStream.AsRandomAccessStream(), outputStream, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+            }
+            return outputStream;
+        }
+
         public async Task<StorageFile> GetPdfPageThumbnailImageAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
         {
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
@@ -352,7 +376,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return cachedFile;
             }
 
-            using (var memoryStream = new InMemoryRandomAccessStream())
+            using (var memoryStream = new InMemoryRandomAccessStream())            
             using (await _fileReadWriteLock.LockAsync(ct))
             {
                 var tempFolder = await GetTempFolderAsync();
@@ -433,12 +457,20 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
         };
 
-        private Task TranscodeThumbnailImageToFileAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        private async Task TranscodeThumbnailImageToFileAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            return TranscodeToFileAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputFile, setupEncoder, ct);
+            using (var outputStream = await outputFile.OpenReadAsync())
+            {
+                await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            }
         }
 
-        private async Task TranscodeToFileAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        private async Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        }
+
+        private async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
                 
@@ -456,18 +488,15 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
 
-            using (var fileStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite).AsTask(ct))
-            {
-                var encoder = await BitmapEncoder.CreateAsync(encoderId, fileStream, propertySet);
+            var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
 
-                setupEncoder(decoder, encoder);
+            setupEncoder(decoder, encoder);
 
-                Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
-                encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
+            Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+            encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
 
-                await encoder.FlushAsync().AsTask(ct);
-                await fileStream.FlushAsync().AsTask(ct);
-            }
+            await encoder.FlushAsync().AsTask(ct);
+            await outputStream.FlushAsync().AsTask(ct);
         }
 
         private static async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)

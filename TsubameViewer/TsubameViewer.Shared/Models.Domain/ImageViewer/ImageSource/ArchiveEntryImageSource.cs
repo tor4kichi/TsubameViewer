@@ -78,9 +78,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageAsync(StorageItem, _entry, ct);
-            var stream = await thumbnailFile.OpenStreamForReadAsync();
-            return stream.AsRandomAccessStream();
+            return await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, _entry, ct);
+
+            // TODO: アーカイブエントリーのサムネ出力の有無を設定で切替
+            // var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
+            //var stream = await thumbnailFile.OpenStreamForReadAsync();
+            //return stream.AsRandomAccessStream();
         }
 
 
