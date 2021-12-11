@@ -462,13 +462,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_navigationDisposables);
 
             _SizeChangedSubject
-                .Where(x => x >= 0 && Images != null)
+                .Where(x => Images != null)
+                .Select(x => (X: CanvasWidth.Value, Y:CanvasHeight.Value))
+                .Pairwise()
+                .Where(x => x.NewItem != x.OldItem)
+                .Select(x => x.NewItem)
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
-                .Skip(1)
-                .Subscribe(index =>
+                .Subscribe(size =>
                 {
-                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
-                    _ = ResetImageIndex(index);
+                    CalcViewResponsibleImageAmount(size.X, size.Y);
+                    _ = ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
 
