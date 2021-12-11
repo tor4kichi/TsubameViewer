@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Uno;
 using Uno.Disposables;
 using Uno.Threading;
@@ -265,7 +266,7 @@ namespace TsubameViewer.Presentation.Views
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
 
-            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
                 // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく

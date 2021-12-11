@@ -221,7 +221,7 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               BeginTime="0:0:0.75"
+                               BeginTime="{x:Bind _BusyWallDisplayDelayTime}"
                                To="1.0"
                                Storyboard.TargetName="BusyWall"
                                Storyboard.TargetProperty="Opacity"

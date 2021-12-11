@@ -321,7 +321,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {
                 ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
             }
         });
 
@@ -332,7 +332,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {
                 ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
             }
         });
     }

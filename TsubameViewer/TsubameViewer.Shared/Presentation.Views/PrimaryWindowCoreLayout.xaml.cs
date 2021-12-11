@@ -21,6 +21,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Text.Core;
 using Windows.UI.Xaml;
@@ -31,7 +32,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
-
+using Microsoft.Toolkit.Uwp;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -44,6 +45,10 @@ namespace TsubameViewer.Presentation.Views
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         private readonly IMessenger _messenger;
 
+        private readonly DispatcherQueue _dispatcherQueue;
+        private readonly DispatcherQueueTimer _AnimationCancelTimer;
+        private readonly TimeSpan _BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
+
         public PrimaryWindowCoreLayout(
             PrimaryWindowCoreLayoutViewModel viewModel, 
             IMessenger messenger
@@ -53,6 +58,7 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _viewModel = viewModel;
             _messenger = messenger;
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // Navigation Handling
             ContentFrame.Navigated += Frame_Navigated;
@@ -73,8 +79,20 @@ namespace TsubameViewer.Presentation.Views
 
             AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
 
+            _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
+            _AnimationCancelTimer.IsRepeating = false;
+            _AnimationCancelTimer.Interval = _BusyWallDisplayDelayTime;
+            _AnimationCancelTimer.Tick += (_, _) => 
+            {
+                var animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+                if (animation != null)
+                {
+                    animation.Cancel();
+                }
+            };
             _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) => 
             {
+                _AnimationCancelTimer.Start();
                 VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
             });
 

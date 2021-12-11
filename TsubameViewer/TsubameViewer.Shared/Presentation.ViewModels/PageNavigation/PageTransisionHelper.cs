@@ -8,6 +8,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     public static class PageTransisionHelper
     {
+        public const string ImageJumpConnectedAnimationName = "ImageJumpInAnimation";
+
         private readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
         private readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
         private readonly static SlideNavigationTransitionInfo _searchTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
