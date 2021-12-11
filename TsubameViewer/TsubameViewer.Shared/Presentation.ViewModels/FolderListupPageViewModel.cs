@@ -374,8 +374,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         throw new InvalidOperationException();
                     }
-                    else if (_currentPath != unescapedPath)
-                    {                        
+                    else if (_currentPath != unescapedPath
+                        || (_currentArchiveFolderName != null
+                            && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
+                            && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
+                            )
+                        )
+                    {        
                         ClearContent();
                         await ResetContent(unescapedPath, ct);
                     }

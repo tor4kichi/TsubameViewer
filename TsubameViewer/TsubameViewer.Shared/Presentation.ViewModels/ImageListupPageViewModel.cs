@@ -362,7 +362,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
-                    if (unescapedPath != _currentPath)
+                    if (unescapedPath != _currentPath
+                        || (_currentArchiveFolderName != null
+                            && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
+                            && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
+                            )
+                        )
                     {
                         await ResetContent(unescapedPath, ct);
                     }
