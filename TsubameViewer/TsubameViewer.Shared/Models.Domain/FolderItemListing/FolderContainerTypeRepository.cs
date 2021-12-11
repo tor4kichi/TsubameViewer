@@ -44,8 +44,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return FolderContainerType.Other;
             }
 
-            var items = await query.GetFilesAsync(0, count).AsTask(ct);
-            var containerType = items.All(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType))
+            var containerType = await query.ToAsyncEnumerable(ct).AllAsync(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType), ct)
                 ? FolderContainerType.OnlyImages
                 : FolderContainerType.Other
                 ;

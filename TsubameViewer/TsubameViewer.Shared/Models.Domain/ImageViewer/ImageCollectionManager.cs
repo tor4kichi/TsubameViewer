@@ -194,8 +194,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public async Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
-                var items = await FolderAndArchiveFileSearchQuery.GetItemsAsync().AsTask(ct);
-                return items.Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToList();
+                return await FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
+                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToListAsync(ct);
             }
 
             public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
@@ -210,8 +210,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public async Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
             {
-                var items = await ImageFileSearchQuery.GetFilesAsync().AsTask(ct);
-                return items.Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToList();
+                return await ImageFileSearchQuery.ToAsyncEnumerable(ct)
+                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToListAsync(ct);
             }
 
             public async Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
