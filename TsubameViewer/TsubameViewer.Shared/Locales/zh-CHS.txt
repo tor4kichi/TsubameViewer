@@ -139,6 +139,8 @@ WritingMode.Vertical_LeftToRight = 垂直书写（从左到右）
 
 ResetEBookSettings = 重新设置
 
+DisplaySettings = 显示设置
+Toc = 目录
 
 #### SearchResult
 

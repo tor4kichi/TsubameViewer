@@ -210,10 +210,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationBuilder.Create()
-                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight + 24, duration: TimeSpan.FromMilliseconds(175), delay: TimeSpan.FromMilliseconds(1000))
-                .Start(AnimationUICommandBar);
-
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
@@ -241,10 +237,9 @@ namespace TsubameViewer.Presentation.Views
 
             if (isOnceSkipTapped)
             {
-                var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
-                if (bottomUIItems.Any()) { return; }
+                //var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
+                //if (bottomUIItems.Any()) { return; }
 
-                CloseBottomUI();
                 isOnceSkipTapped = false;
                 e.Handled = true;
                 return;
@@ -265,13 +260,6 @@ namespace TsubameViewer.Presentation.Views
                     if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
                     {
                         LeftPageMoveButton.Command.Execute(null);
-                    }
-                }
-                else if (item == ToggleBottomMenuButton)
-                {
-                    if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
-                    {
-                        ToggleBottomMenuButton.Command.Execute(null);
                     }
                 }
             }
@@ -311,83 +299,11 @@ namespace TsubameViewer.Presentation.Views
                 // 左スワイプ
                 RightPageMoveButton.Command.Execute(null);
             }
-            else if (e.Cumulative.Translation.Y < -60
-                || e.Velocities.Linear.Y < -0.25
-                )
-            {
-                _ = CompleteOpenBottomUI();
-                e.Handled = true;
-            }
             else
             {
-                CloseBottomUI();
                 e.Handled = true;
             }
         }
-
-        private void CloseBottomUI()
-        {
-            IsOpenBottomMenu = false;
-            AnimationBuilder.Create()
-                .Opacity(0.0, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUIContainer);
-
-            AnimationBuilder.Create()
-                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUICommandBar);
-        }
-
-        private async Task CompleteOpenBottomUI()
-        {
-            IsOpenBottomMenu = true;
-
-            AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUIContainer);
-
-            await AnimationBuilder.Create()
-                .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
-                .StartAsync(AnimationUICommandBar);
-        }
-
-
-
-
-        public bool IsOpenBottomMenu
-        {
-            get { return (bool)GetValue(IsOpenBottomMenuProperty); }
-            set { SetValue(IsOpenBottomMenuProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for IsOpenBottomMenu.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty IsOpenBottomMenuProperty =
-            DependencyProperty.Register("IsOpenBottomMenu", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
-
-
-        // コントローラー操作用
-        public async void ToggleOpenCloseBottomUI()
-        {
-            if (!IsOpenBottomMenu)
-            {
-                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
-                await CompleteOpenBottomUI();
-            }
-            else
-            {
-                CloseBottomUI();
-            }
-        }
-
-        private DelegateCommand _toggleBottomMenuCommand;
-        public DelegateCommand ToggleBottomMenuCommand =>
-            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
-
-        void ExecuteToggleBottomMenuCommand()
-        {
-            ToggleOpenCloseBottomUI();
-        }
-
-
 
         #endregion
 
@@ -551,8 +467,6 @@ namespace TsubameViewer.Presentation.Views
 
         async void ExecuteOpenTocPaneCommand()
         {
-            CloseBottomUI();
-
             TocContainer.Visibility = Visibility.Visible;
             await Task.Delay(250);
             if (TocItemsListView.SelectedItem != null)

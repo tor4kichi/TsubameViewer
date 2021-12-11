@@ -139,6 +139,8 @@ WritingMode.Vertical_LeftToRight = 縦書き（左から右）
 
 ResetEBookSettings = 設定をリセットする
 
+DisplaySettings = 表示設定
+Toc = 目次
 
 #### SearchResult
 
