@@ -513,7 +513,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
             var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
-            var newItems = await imageCollectionContext.GetImageFilesAsync(ct);
+            var newItems = await imageCollectionContext.GetImageFilesAsync(ct).ToListAsync(ct);
             var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
                 .Where(x => oldItemPathMap.Contains(x))
                 .ToHashSet();

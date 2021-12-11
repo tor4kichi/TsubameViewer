@@ -849,7 +849,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
-                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct);
+                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
                 if (folders.Count <= 1)
                 {
                     PageFolderNames = new string[0];
@@ -873,7 +873,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             Images?.AsParallel().WithDegreeOfParallelism(4).ForEach((IImageSource x) => x.TryDispose());
 
-            var images = await imageCollectionContext.GetAllImageFilesAsync(ct);            
+            var images = await imageCollectionContext.GetAllImageFilesAsync(ct).ToListAsync(ct);            
             Images = ToSortedImages(images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
         }
 

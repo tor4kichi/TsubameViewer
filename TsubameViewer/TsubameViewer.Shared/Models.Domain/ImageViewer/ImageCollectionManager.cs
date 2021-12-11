@@ -43,14 +43,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         string Name { get; }
 
-        Task<bool> IsExistImageFileAsync(CancellationToken ct);
-        Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct);
-        Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct);
+        ValueTask<bool> IsExistImageFileAsync(CancellationToken ct);
+        ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct);
+        IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct);
 
-        Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct);
+        IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct);
 
-        Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct);
-        Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct);
+        IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct);
+        IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct);
 
         bool IsSupportedFolderContentsChanged { get; }
 
@@ -78,41 +78,41 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 _thumbnailManager = thumbnailManager;
             }
 
-            public Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
                 // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
                 // アーカイブ内のアーカイブは対応しない
-                return Task.FromResult(ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
+                return ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
                     .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
-                    .ToList()
-                    );
+                    .ToAsyncEnumerable()                    
+                    ;
             }
 
-            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
             {
-                return Task.FromResult(ArchiveImageCollection.GetLeafFolders()
+                return ArchiveImageCollection.GetLeafFolders()
                     .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
-                    .ToList());
+                    .ToAsyncEnumerable();
             }
 
-            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct)
             {
-                return Task.FromResult(ArchiveImageCollection.GetAllImages());
+                return ArchiveImageCollection.GetAllImages().ToAsyncEnumerable();
             }
 
-            public Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
             {
-                return Task.FromResult(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken));
+                return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
             }
 
-            public Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
             {
-                return Task.FromResult(ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken).Any());
+                return new (ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken).Any());
             }
 
-            public Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
             {
-                return Task.FromResult(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).Any());
+                return new (ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).Any());
             }
 
             public bool IsSupportedFolderContentsChanged => false;
@@ -142,34 +142,34 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
             public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
 
-            public Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
-                return Task.FromResult(new List<IImageSource>());
+                return AsyncEnumerable.Empty<IImageSource>();
             }
 
-            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
             {
-                return Task.FromResult(new List<IImageSource>());
+                return AsyncEnumerable.Empty<IImageSource>();
             }
 
-            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct)
             {
-                return Task.FromResult(_pdfImageCollection.GetAllImages());
+                return _pdfImageCollection.GetAllImages().ToAsyncEnumerable();
             }
 
-            public Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
             {
-                return Task.FromResult(_pdfImageCollection.GetAllImages());
+                return _pdfImageCollection.GetAllImages().ToAsyncEnumerable();
             }
 
-            public Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
             {
-                return Task.FromResult(false);
+                return new (false);
             }
 
-            public Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
             {
-                return Task.FromResult(_pdfImageCollection.GetAllImages().Any());
+                return new (_pdfImageCollection.GetAllImages().Any());
             }
         }
 
@@ -192,35 +192,35 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public StorageFolder Folder { get; }
 
-            public async Task<List<IImageSource>> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
-                return await FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
-                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToListAsync(ct);
+                return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
+                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource);
             }
 
-            public Task<List<IImageSource>> GetLeafFoldersAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
             {
-                return Task.FromResult(new List<IImageSource>());
+                return AsyncEnumerable.Empty<IImageSource>();
             }
 
-            public Task<List<IImageSource>> GetAllImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct)
             {
                 return GetImageFilesAsync(ct);
             }
 
-            public async Task<List<IImageSource>> GetImageFilesAsync(CancellationToken ct)
+            public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
             {
-                return await ImageFileSearchQuery.ToAsyncEnumerable(ct)
-                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource).ToListAsync(ct);
+                return ImageFileSearchQuery.ToAsyncEnumerable(ct)
+                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource);
             }
 
-            public async Task<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+            public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
             {
                 var count = await FolderAndArchiveFileSearchQuery.GetItemCountAsync().AsTask(ct);
                 return count > 0;
             }
 
-            public async Task<bool> IsExistImageFileAsync(CancellationToken ct)
+            public async ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
             {
                 var count = await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
                 return count > 0;
@@ -485,7 +485,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public interface IImageCollection
     {
         string Name { get; }
-        List<IImageSource> GetAllImages();
+        IEnumerable<IImageSource> GetAllImages();
     }
 
     public interface IImageCollectionWithDirectory : IImageCollection
@@ -520,12 +520,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public StorageFile File { get; }
 
-        public List<IImageSource> GetAllImages()
+        public IEnumerable<IImageSource> GetAllImages()
         {
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
-              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _thumbnailManager))
-              .ToList();
+              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _thumbnailManager));
         }
     }
 
@@ -788,7 +787,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             ((IDisposable)_disposables).Dispose();
         }
 
-        public List<IImageSource> GetAllImages()
+        public IEnumerable<IImageSource> GetAllImages()
         {
             if (_directories.Count == 0)
             {

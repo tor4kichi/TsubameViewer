@@ -63,7 +63,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                         }
                         else
                         {
-                            var leaves = await collectionContext.GetLeafFoldersAsync(ct);                      
+                            var leaves = await collectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);                      
                             if (leaves.Count == 0)
                             {
                                 var parameters = StorageItemViewModel.CreatePageParameter(item);

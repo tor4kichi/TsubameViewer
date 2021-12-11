@@ -2,6 +2,7 @@
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,6 +58,30 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 {
                     messenger.Send<BusyWallStartRequestMessage>();
                     return await action(ct);
+                }
+                finally
+                {
+                    messenger.Send<BusyWallExitRequestMessage>();
+                    messenger.Unregister<BusyWallCanceledMessage>(dummy);
+                }
+            }
+        }
+
+        public static async IAsyncEnumerable<T> WorkWithBusyWallAsync<T>(this IMessenger messenger, Func<CancellationToken, IAsyncEnumerable<T>> action, [EnumeratorCancellation] CancellationToken actionCt)
+        {
+            object dummy = new object();
+            using (var manualCts = new CancellationTokenSource())
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(manualCts.Token, actionCt))
+            {
+                var ct = linkedCts.Token;
+                messenger.Register<BusyWallCanceledMessage>(dummy, (r, m) => { manualCts.Cancel(); });
+                try
+                {
+                    messenger.Send<BusyWallStartRequestMessage>();
+                    await foreach (var item in action(ct).WithCancellation(ct))
+                    {
+                        yield return item;
+                    }
                 }
                 finally
                 {
