@@ -168,6 +168,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -181,6 +182,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
             ThumbnailManager thumbnailManager,
+            FolderListingSettings folderListingSettings,
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
@@ -197,6 +199,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _thumbnailManager = thumbnailManager;
+            _folderListingSettings = folderListingSettings;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
@@ -812,7 +815,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     _CurrentImages = new BitmapImage[1];
-                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _thumbnailManager) };
+                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager) };
                     await MoveImageIndex(IndexMoveDirection.Refresh, 0);
                 }
                 else if (file.IsSupportedMangaFile())

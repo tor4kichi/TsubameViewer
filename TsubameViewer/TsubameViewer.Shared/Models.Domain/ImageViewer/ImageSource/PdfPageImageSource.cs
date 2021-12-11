@@ -19,14 +19,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
         private readonly PdfPage _pdfPage;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, ThumbnailManager thumbnailManager)
+        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
             DateCreated = storageItem.DateCreated.DateTime;
             StorageItem = storageItem;
+            _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
         }
 
@@ -40,9 +42,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageAsync(StorageItem, _pdfPage, ct);
-            var stream = await thumbnailFile.OpenStreamForReadAsync();
-            return stream.AsRandomAccessStream();
+            if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
+            {
+                var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
+                var stream = await thumbnailFile.OpenStreamForReadAsync();
+                return stream.AsRandomAccessStream();
+            }
+            else
+            {
+                return await _thumbnailManager.GetPdfPageThumbnailImageStreamAsync(StorageItem, _pdfPage, ct);
+            }
         }
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)

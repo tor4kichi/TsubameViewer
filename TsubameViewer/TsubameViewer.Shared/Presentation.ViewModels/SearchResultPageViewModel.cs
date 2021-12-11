@@ -103,7 +103,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct))
                     {
-                        SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
+                        SearchResultItems.Add(ConvertStorageItemViewModel(entry));
                     }
                 }
                 catch (OperationCanceledException) 
@@ -119,10 +119,10 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
-        private async Task<StorageItemViewModel> ConvertStorageItemViewModel(IStorageItem storageItem)
+        private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
-            var storageItemImageSource = new StorageItemImageSource(storageItem, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+            var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
+            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)

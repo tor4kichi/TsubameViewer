@@ -27,13 +27,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         private readonly IArchiveEntry _entry;
         private readonly ArchiveDirectoryToken _archiveDirectoryToken;
         private readonly ArchiveImageCollection _archiveImageCollection;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, ThumbnailManager thumbnailManager)
+        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _entry = entry;
             _archiveDirectoryToken = archiveDirectoryToken;
             _archiveImageCollection = archiveImageCollection;
+            _folderListingSettings = folderListingSettings;
             StorageItem = _archiveImageCollection.File;
             _thumbnailManager = thumbnailManager;
             DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
@@ -78,12 +80,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            return await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, _entry, ct);
-
-            // TODO: アーカイブエントリーのサムネ出力の有無を設定で切替
-            // var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
-            //var stream = await thumbnailFile.OpenStreamForReadAsync();
-            //return stream.AsRandomAccessStream();
+            if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
+            {
+                var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
+                var stream = await thumbnailFile.OpenStreamForReadAsync();
+                return stream.AsRandomAccessStream();
+            }
+            else
+            {
+                return await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, _entry, ct);
+            }
         }
 
 

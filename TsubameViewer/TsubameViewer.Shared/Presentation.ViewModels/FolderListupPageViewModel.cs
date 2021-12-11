@@ -147,11 +147,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
 
-
-        static bool _LastIsImageFileThumbnailEnabled;
-        static bool _LastIsArchiveFileThumbnailEnabled;
-        static bool _LastIsFolderThumbnailEnabled;
-
         private string _currentArchiveFolderName;
 
         private string _DisplayCurrentArchiveFolderName;
@@ -255,10 +250,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
             FolderItems.Clear();
-
-            _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
-            _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
-            _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
 
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
@@ -475,7 +466,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -496,7 +487,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -505,11 +496,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                         }
                     }
                 }
@@ -572,7 +563,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager));
                     ct.ThrowIfCancellationRequested();
                 }
                 Debug.WriteLine($"after added : {FolderItems.Count}");

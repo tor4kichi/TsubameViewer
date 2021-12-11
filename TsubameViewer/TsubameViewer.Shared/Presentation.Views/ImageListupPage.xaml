@@ -469,9 +469,6 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-
-            <StateTrigger IsActive="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}" />
-
             <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <models:FileDisplayMode>Line</models:FileDisplayMode>
@@ -522,23 +519,9 @@
 
 
       
-      <!-- ファイルアイテムの表示方法切替
-      　　１．画像ファイルのサムネイル表示を無効にしてる場合は強制で表示切替UIを非表示
-      　　２．ファイルアイテムが無い時は非表示　
-      -->
+      <!-- ファイルアイテムの表示方法切替 -->
       <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.IsRestrictImageFileThumbnail, Mode=OneWay}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <x:Boolean>True</x:Boolean>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
+                <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
             <!-- Note: ファイルの表示方法切替の時に 0になると一瞬表示が消えてしまう -->

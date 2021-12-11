@@ -16,9 +16,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public FolderListingSettings()
         {
             _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
-            _IsImageFileThumbnailEnabled = Read(true, nameof(IsImageFileThumbnailEnabled));
-            _IsArchiveFileThumbnailEnabled = Read(true, nameof(IsArchiveFileThumbnailEnabled));
-            _IsFolderThumbnailEnabled = Read(true, nameof(IsFolderThumbnailEnabled));
+            _IsImageFileGenerateThumbnailEnabled = Read(true, nameof(IsImageFileGenerateThumbnailEnabled));
+            _IsFolderGenerateThumbnailEnabled = Read(true, nameof(IsFolderGenerateThumbnailEnabled));
+            _IsArchiveFileGenerateThumbnailEnabled = Read(true, nameof(IsArchiveFileGenerateThumbnailEnabled));
+            _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
 
             _IsForceEnableXYNavigation = Read(false, nameof(IsForceEnableXYNavigation));
             
@@ -35,25 +36,32 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             set { SetProperty(ref _FileDisplayMode, value); }
         }
 
-        private bool _IsImageFileThumbnailEnabled;
-        public bool IsImageFileThumbnailEnabled
+        private bool _IsImageFileGenerateThumbnailEnabled;
+        public bool IsImageFileGenerateThumbnailEnabled
         {
-            get { return _IsImageFileThumbnailEnabled; }
-            set { SetProperty(ref _IsImageFileThumbnailEnabled, value); }
+            get { return _IsImageFileGenerateThumbnailEnabled; }
+            set { SetProperty(ref _IsImageFileGenerateThumbnailEnabled, value); }
         }
 
-        private bool _IsArchiveFileThumbnailEnabled;
-        public bool IsArchiveFileThumbnailEnabled
+        private bool _IsFolderGenerateThumbnailEnabled;
+        public bool IsFolderGenerateThumbnailEnabled
         {
-            get { return _IsArchiveFileThumbnailEnabled; }
-            set { SetProperty(ref _IsArchiveFileThumbnailEnabled, value); }
+            get { return _IsFolderGenerateThumbnailEnabled; }
+            set { SetProperty(ref _IsFolderGenerateThumbnailEnabled, value); }
         }
 
-        private bool _IsFolderThumbnailEnabled;
-        public bool IsFolderThumbnailEnabled
+        private bool _IsArchiveFileGenerateThumbnailEnabled;
+        public bool IsArchiveFileGenerateThumbnailEnabled
         {
-            get { return _IsFolderThumbnailEnabled; }
-            set { SetProperty(ref _IsFolderThumbnailEnabled, value); }
+            get { return _IsArchiveFileGenerateThumbnailEnabled; }
+            set { SetProperty(ref _IsArchiveFileGenerateThumbnailEnabled, value); }
+        }
+
+        private bool _IsArchiveEntryGenerateThumbnailEnabled;
+        public bool IsArchiveEntryGenerateThumbnailEnabled
+        {
+            get { return _IsArchiveEntryGenerateThumbnailEnabled; }
+            set { SetProperty(ref _IsArchiveEntryGenerateThumbnailEnabled, value); }
         }
 
         private bool _IsForceEnableXYNavigation;

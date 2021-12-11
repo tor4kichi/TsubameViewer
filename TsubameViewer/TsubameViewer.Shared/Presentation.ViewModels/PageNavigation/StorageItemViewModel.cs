@@ -56,7 +56,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
 
         public IImageSource Item { get; }
@@ -95,10 +94,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _ReadParcentage, value); }
         }
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager) 
+        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager) 
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
 
 #if WINDOWS_UWP
@@ -115,8 +113,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
-             : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
+             : this(sourceStorageItemsRepository, bookmarkManager)
         {
             Item = item;
             DateCreated = Item.DateCreated;
@@ -182,10 +180,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 using var lockReleaser = await _asyncLock.LockAsync(ct);
 
                 if (Item == null) { return; }
-
-                if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
-                if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
-                if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
 
                 if (ct.IsCancellationRequested)
                 {

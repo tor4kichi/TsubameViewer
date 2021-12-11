@@ -66,15 +66,18 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             public ArchiveImageCollection ArchiveImageCollection { get; }
             public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
+
+            private readonly FolderListingSettings _folderListingSettings;
             private readonly ThumbnailManager _thumbnailManager;
 
             public string Name => ArchiveImageCollection.Name;
 
 
-            public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, ThumbnailManager thumbnailManager)
+            public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
             {
                 ArchiveImageCollection = archiveImageCollection;
                 ArchiveDirectoryToken = archiveDirectoryToken;
+                _folderListingSettings = folderListingSettings;
                 _thumbnailManager = thumbnailManager;
             }
 
@@ -83,7 +86,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
                 // アーカイブ内のアーカイブは対応しない
                 return ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
-                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
+                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings, _thumbnailManager))
                     .ToAsyncEnumerable()                    
                     ;
             }
@@ -91,7 +94,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
             {
                 return ArchiveImageCollection.GetLeafFolders()
-                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _thumbnailManager))
+                    .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings, _thumbnailManager))
                     .ToAsyncEnumerable();
             }
 
@@ -175,6 +178,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public sealed class FolderImageCollectionContext : IImageCollectionContext
         {
+            private readonly FolderListingSettings _folderListingSettings;
             private readonly ThumbnailManager _thumbnailManager;
             private StorageItemQueryResult _folderAndArchiveFileSearchQuery;
             private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(ImageCollectionManager.FoldersAndArchiveFileSearchQueryOptions);
@@ -184,9 +188,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public string Name => Folder.Name;
 
-            public FolderImageCollectionContext(StorageFolder storageFolder, ThumbnailManager thumbnailManager)
+            public FolderImageCollectionContext(StorageFolder storageFolder, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
             {
                 Folder = storageFolder;
+                _folderListingSettings = folderListingSettings;
                 _thumbnailManager = thumbnailManager;
             }
 
@@ -195,7 +200,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
             {
                 return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
-                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource);
+                    .Select(x => new StorageItemImageSource(x, _folderListingSettings, _thumbnailManager) as IImageSource);
             }
 
             public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
@@ -211,7 +216,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
             {
                 return ImageFileSearchQuery.ToAsyncEnumerable(ct)
-                    .Select(x => new StorageItemImageSource(x, _thumbnailManager) as IImageSource);
+                    .Select(x => new StorageItemImageSource(x, _folderListingSettings, _thumbnailManager) as IImageSource);
             }
 
             public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -242,12 +247,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
 
         public ImageCollectionManager(
-            ThumbnailManager thumbnailManager
+            ThumbnailManager thumbnailManager, 
+            FolderListingSettings folderListingSettings
             )
         {
             _thumbnailManager = thumbnailManager;
+            _folderListingSettings = folderListingSettings;
         }
 
         public bool IsSupportGetArchiveImageCollectionContext(IStorageItem storageItem, CancellationToken ct)
@@ -291,7 +299,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
                 }
-                return new ArchiveImageCollectionContext(aic, directoryToken, _thumbnailManager);
+                return new ArchiveImageCollectionContext(aic, directoryToken, _folderListingSettings, _thumbnailManager);
             }
             else if (imageCollection is PdfImageCollection pdfImageCollection)
             {
@@ -305,7 +313,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public Task<FolderImageCollectionContext> GetFolderImageCollectionContextAsync(StorageFolder folder, CancellationToken ct)
         {
-            return Task.FromResult(new FolderImageCollectionContext(folder, _thumbnailManager));
+            return Task.FromResult(new FolderImageCollectionContext(folder, _folderListingSettings, _thumbnailManager));
         }
 
 
@@ -318,7 +326,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             await foreach (var item in FolderHelper.ToAsyncEnumerable(queryResult, ct))
             {
-                yield return new StorageItemImageSource(item, _thumbnailManager);
+                yield return new StorageItemImageSource(item, _folderListingSettings, _thumbnailManager);
             }
         }
 #else
@@ -349,7 +357,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             await foreach (var item in FolderHelper.ToAsyncEnumerable(queryResult, ct))
             {
-                yield return new StorageItemImageSource(item as StorageFile, _thumbnailManager);
+                yield return new StorageItemImageSource(item as StorageFile, _folderListingSettings, _thumbnailManager);
             }
         }
 #else
@@ -395,7 +403,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     ct.ThrowIfCancellationRequested();
                 }
-                return new ArchiveImageCollection(file, zipArchive, disposables, _thumbnailManager);
+                return new ArchiveImageCollection(file, zipArchive, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -407,7 +415,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<PdfImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
-            return new PdfImageCollection(file, pdfDocument, _thumbnailManager);
+            return new PdfImageCollection(file, pdfDocument, _folderListingSettings, _thumbnailManager);
         }
 
 
@@ -425,7 +433,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     ct.ThrowIfCancellationRequested();
                 }
-                return new ArchiveImageCollection(file, rarArchive, disposables, _thumbnailManager);
+                return new ArchiveImageCollection(file, rarArchive, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -449,7 +457,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     ct.ThrowIfCancellationRequested();
                 }
-                return new ArchiveImageCollection(file, szArchive, disposables, _thumbnailManager);
+                return new ArchiveImageCollection(file, szArchive, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -472,7 +480,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 {
                     ct.ThrowIfCancellationRequested();
                 }
-                return new ArchiveImageCollection(file, tarArchive, disposables, _thumbnailManager);
+                return new ArchiveImageCollection(file, tarArchive, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -508,11 +516,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class PdfImageCollection : IImageCollection
     {
         private readonly PdfDocument _pdfDocument;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, ThumbnailManager thumbnailManager)
+        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _pdfDocument = pdfDocument;
+            _folderListingSettings = folderListingSettings;
             File = file;
             _thumbnailManager = thumbnailManager;
         }
@@ -524,7 +534,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
-              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _thumbnailManager));
+              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _thumbnailManager));
         }
     }
 
@@ -686,15 +696,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public IArchive Archive { get; }
 
         private readonly CompositeDisposable _disposables;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
         private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new ();
-        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, ThumbnailManager thumbnailManager)
+        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             File = file;
             Archive = archive;
             _disposables = disposables;
+            _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
@@ -774,7 +786,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 : Archive.Entries.Where(x => DirectoryPathHelper.IsSameDirectoryPath(x, token.Entry))
                 )
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _thumbnailManager))
+                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _folderListingSettings, _thumbnailManager))
                 .ToList();
 
             _entriesCacheByDirectory.Add(token, imageSourceItems);

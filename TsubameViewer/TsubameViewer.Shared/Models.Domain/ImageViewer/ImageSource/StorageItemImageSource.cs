@@ -16,6 +16,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
     public sealed class StorageItemImageSource : IImageSource
     {
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
         public IStorageItem StorageItem { get; }
@@ -34,9 +35,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         /// </summary>
         /// <param name="storageItem"></param>
         /// <param name="thumbnailManager"></param>
-        public StorageItemImageSource(IStorageItem storageItem, ThumbnailManager thumbnailManager)
+        public StorageItemImageSource(IStorageItem storageItem, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             StorageItem = storageItem;
+            _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
             ItemTypes = SupportedFileTypesHelper.StorageItemToStorageItemTypes(StorageItem);
         }
@@ -60,17 +62,31 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
-                    if (thumbnailFile == null) { return null; }
-                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                    if (_folderListingSettings.IsImageFileGenerateThumbnailEnabled)
+                    {
+                        var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
+                        if (thumbnailFile == null) { return null; }
+                        return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                    }
+                    else
+                    {
+                        return await _thumbnailManager.GetFileThumbnailImageStreamAsync(file, ct);
+                    }
                 }
                 else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     || SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType)
                     )
                 {
-                    var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(file, ct);
-                    if (thumbnailFile == null) { return null; }
-                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                    if (_folderListingSettings.IsArchiveFileGenerateThumbnailEnabled)
+                    {
+                        var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
+                        if (thumbnailFile == null) { return null; }
+                        return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                    }
+                    else
+                    {
+                        return await _thumbnailManager.GetFileThumbnailImageStreamAsync(file, ct);
+                    }
                 }
                 else
                 {
@@ -79,9 +95,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             }
             else if (StorageItem is StorageFolder folder)
             {
-                var thumbnailFile = await _thumbnailManager.GetFolderThumbnailAsync(folder, ct);
-                if (thumbnailFile == null) { return null; }
-                return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                if (_folderListingSettings.IsFolderGenerateThumbnailEnabled)
+                {
+                    var thumbnailFile = await _thumbnailManager.GetFolderThumbnailImageFileAsync(folder, ct);
+                    if (thumbnailFile == null) { return null; }
+                    return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                }
+                else
+                {
+                    return await _thumbnailManager.GetFolderThumbnailImageStreamAsync(folder, ct);
+                }
             }
             else
             {
