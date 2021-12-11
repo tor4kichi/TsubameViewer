@@ -370,34 +370,44 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         {
             this.InitializeComponent();
 
-            WebView.NavigationStarting += WebView_NavigationStarting;
-            WebView.NavigationCompleted += WebView_NavigationCompleted;
-            
-            WebView.DOMContentLoaded += WebView_DOMContentLoaded;
-
             Loaded += EPubRenderer_Loaded;
             Unloaded += EPubRenderer_Unloaded;            
         }
 
 
 
-        IDisposable StyleChangedObserver;
+        CompositeDisposable _compositeDisposable;
 
         private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
         {
-            CompositeDisposable disposables = new CompositeDisposable();
+            WebView.NavigationStarting -= WebView_NavigationStarting;
+            WebView.NavigationCompleted -= WebView_NavigationCompleted;
+            WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+            WebView.NavigationStarting += WebView_NavigationStarting;
+            WebView.NavigationCompleted += WebView_NavigationCompleted;
+            WebView.DOMContentLoaded += WebView_DOMContentLoaded;
+
+            _compositeDisposable = new CompositeDisposable();
             var dispatcher = Dispatcher;
+            
+            isFirstContent = true;
 
             Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
                 h => Window.Current.SizeChanged += h,
                 h => Window.Current.SizeChanged -= h
                 )
-                .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
+                .Where(x => !isFirstContent)
                 .Throttle(TimeSpan.FromMilliseconds(100))
+                .Where(x => !isFirstContent)
                 .Subscribe(async args =>
                 {
                     await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
                     {
+                        await Task.Delay(50);
+                        if (IsLoaded is false) { return; }
+
+                        ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
+
                         using (await _domUpdateLock.LockAsync(default))
                         {
                             // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
@@ -408,9 +418,8 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                         }
                     });
                 })
-                .AddTo(disposables);
+                .AddTo(_compositeDisposable);
 
-            StyleChangedObserver = disposables;
             new[]
             {
                 this.ObserveDependencyProperty(FontSizeProperty),
@@ -423,14 +432,18 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 this.ObserveDependencyProperty(OverrideWritingModeProperty),
             }
             .Merge()
-            .Throttle(TimeSpan.FromMilliseconds(10))
+            .Throttle(TimeSpan.FromMilliseconds(50))
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
-            .AddTo(disposables);
+            .AddTo(_compositeDisposable);
         }
 
         private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
         {
-            StyleChangedObserver.Dispose();
+            WebView.NavigationStarting -= WebView_NavigationStarting;
+            WebView.NavigationCompleted -= WebView_NavigationCompleted;
+            WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
+
+            _compositeDisposable.Dispose();
         }
 
 
@@ -453,7 +466,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
         private async void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
         {
             using var _ = await _domUpdateLock.LockAsync(default);
-            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);            
+            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);
         }
 
         public event EventHandler ContentRefreshStarting;
@@ -540,11 +553,10 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
         private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
         {
-            if (PageHtml == null) { return; }
+            if (string.IsNullOrEmpty(PageHtml)) { return; }
 
             using var _ = await _domUpdateLock.LockAsync(default);
 
-            
 
             var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
             var oldCurrentPageIndex = _innerCurrentPage;

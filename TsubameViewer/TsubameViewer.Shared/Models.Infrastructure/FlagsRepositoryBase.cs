@@ -17,7 +17,7 @@ namespace TsubameViewer.Models.Infrastructure
     {
         public string Serialize<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value);
 
-        public T Deserialize<T>(string value) => System.Text.Json.JsonSerializer.Deserialize<T>(value as string);
+        public T Deserialize<T>(string value) => string.IsNullOrEmpty(value) || value == "null" ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
     }
 
     public class FlagsRepositoryBase : BindableBase

@@ -195,21 +195,26 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
-            _leavePageCancellationTokenSource?.Cancel();
-            _leavePageCancellationTokenSource?.Dispose();
-            _leavePageCancellationTokenSource = null;
+            lock (_lock)
+            {
+                PageHtml = String.Empty;
 
-            _navigationDisposables.Dispose();
-            _navigationDisposables = null;
-            _currentBook = null;
-            _currentPage = null;
-            _currentBookReadingOrder = null;
-            CoverImage = null;
+                _leavePageCancellationTokenSource?.Cancel();
+                _leavePageCancellationTokenSource?.Dispose();
+                _leavePageCancellationTokenSource = null;
 
-            _readingSessionDisposer.Dispose();
-            _readingSessionDisposer = null;
+                _navigationDisposables.Dispose();
+                _navigationDisposables = null;
+                _currentBook = null;
+                _currentPage = null;
+                _currentBookReadingOrder = null;
+                CoverImage = null;
 
-            _applicationView.Title = string.Empty;
+                _readingSessionDisposer.Dispose();
+                _readingSessionDisposer = null;
+
+                _applicationView.Title = string.Empty;
+            }
 
             base.OnNavigatedFrom(parameters);
         }
@@ -230,6 +235,9 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var mode = parameters.GetNavigationMode();
+
+            // タイトルバー表示拡張の更新を待つ
+            await Task.Delay(100);
 
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Forward
@@ -500,6 +508,9 @@ namespace TsubameViewer.Presentation.ViewModels
             //    ライブラリ側としてはかなり例外的な内部処理だと思うがAsync系メソッドさえ回避すれば問題ない
             lock (_lock)
             {
+                // ページが表示されていない状態の場合はnullを返す
+                if (_navigationDisposables == null) { throw new InvalidOperationException(); }
+
                 var key = requestUri.OriginalString.Remove(0, DummyReosurceRequestDomain.Length);
                 foreach (var image in _currentBook.Content.Images)
                 {

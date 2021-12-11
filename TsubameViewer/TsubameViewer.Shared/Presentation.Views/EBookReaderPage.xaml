@@ -9,14 +9,17 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:uwpUI="using:Microsoft.Toolkit.Uwp.UI" 
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" 
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:wst="using:WindowsStateTriggers" 
-  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   mc:Ignorable="d"
-  
+  NavigationCacheMode="Enabled"
   >
   <Page.Transitions>
     <TransitionCollection>
@@ -32,7 +35,7 @@
       </TextBlock>
     </DataTemplate>
     
-    <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True">
+    <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True" Placement="BottomEdgeAlignedLeft" ScrollViewer.IsVerticalScrollChainingEnabled="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
 
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
@@ -237,7 +240,7 @@
         <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
-      <uiNavigation:UINavigationTriggerBehavior Kind="Menu">
+      <uiNavigation:UINavigationTriggerBehavior Kind="View">
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{Binding ElementName=PageRoot, Path=OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
@@ -261,7 +264,7 @@
                                IsHitTestVisible="False"
                                IsAccessKeyScope="False"
                                AllowFocusOnInteraction="False"
-                               Margin="32 48 24 48"
+                               Margin="48 27 48 72"
                                PageBackgroundColor="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay}"
                                 FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay, Converter={StaticResource NullableColorConverter}}"
                                 FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
@@ -271,6 +274,7 @@
                                 ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
                                 RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                 OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
+                                
              >
       
     </eBookControls:EPubRenderer>
@@ -279,13 +283,27 @@
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
           Background="Transparent"
-          Margin="0 48 0 32" 
+          Margin="0 0 0 0" 
           >
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
         <ColumnDefinition Width="4*" />
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
+
+      <Grid x:Name="PageTitleLayout" VerticalAlignment="Bottom" Margin="0 0 0 24" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center"  >
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
+                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}"
+                     >
+            <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" />
+          </TextBlock>
+          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
+           <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+      
       <Button x:Name="LeftPageMoveButton"
         Command="{x:Bind InnerGoNextImageCommand}"
               Grid.Column="0"
@@ -328,16 +346,18 @@
 
       </Button>
 
-      <Button x:Name="ToggleBottomMenuButton"
-              Command="{x:Bind ToggleBottomMenuCommand}" 
+      <Button x:Name="ToggleTocMenuButton_Touch"
+              Command="{x:Bind OpenTocPaneCommand}" 
               Grid.Column="1"
               Grid.ColumnSpan="1"
               Opacity="0" 
               HorizontalContentAlignment="Stretch"
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
-              VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden" />
+              VerticalAlignment="Bottom"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              Height="64"
+              />
 
       <Button x:Name="RightPageMoveButton"
         Command="{Binding ElementName=PageRoot, Path=InnerGoPrevImageCommand}"
@@ -390,55 +410,17 @@
 
     <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
     <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
-      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0"          
-          >
+      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0" />
 
-      </Grid>
-
-      <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource SystemChromeAltHighColor}" IsHitTestVisible="True">
+      <Grid x:Name="DraggableTitleBarArea_TVorTouch" IsHitTestVisible="True" Background="Transparent" />
 
 
-        <TextBlock uwpControls:DockPanel.Dock="Top" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="3" VerticalAlignment="Center" FontSize="16" Margin="16 16 16 48"
-                   Opacity="0.8"
+      <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="3" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="13" Margin="32 24 32 27"
+                   Opacity="0.5"
                    >
-              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-        </TextBlock>
-
-        
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
-          <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Height="48" Width="60"
-                  XYFocusRight="{x:Bind ImageNavigationFlyoutButton}"
-                  >
-            <SymbolIcon Symbol="Back">
-              <SymbolIcon.RenderTransform>
-                <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-              </SymbolIcon.RenderTransform>
-            </SymbolIcon>
-          </Button>
-        </StackPanel>
-
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="16">
-          
-          <Button x:Name="BottomUISettingsFlyoutButton" Flyout="{StaticResource SettingsFlyout}" Height="48" Width="60"
-                  XYFocusLeft="{x:Bind ImageNavigationFlyoutButton}"
-                  >
-            <SymbolIcon Symbol="Setting" />
-          </Button>
-
-        </StackPanel>
-
-        <Button x:Name="ImageNavigationFlyoutButton" Command="{x:Bind OpenTocPaneCommand}" Height="48" Background="Transparent" 
-                  XYFocusLeft="{x:Bind BottomUIBackNavigationButton}"
-                  XYFocusRight="{x:Bind BottomUISettingsFlyoutButton}"
-                  >
-          <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="16" Margin="8 0 0 0" TextDecorations="Underline">
-                    <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
-          </TextBlock>
-
-        </Button>
-
-
-      </uwpControls:DockPanel>
+            <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+      </TextBlock>
+            
     </Grid>
 
 
@@ -468,22 +450,30 @@
         </StackPanel>
 
         <uwpControls:DockPanel Padding="8 0" >
+          
           <Button Command="{x:Bind OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
-            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" TextDecorations="Underline" >
-              <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
+              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
             </TextBlock>
           </Button>
-
-          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
-              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-          </TextBlock>
         </uwpControls:DockPanel>
       </uwpControls:DockPanel>
     </Grid>
 
     <!-- Toc -->
     <Grid x:Name="TocContainer" Visibility="Collapsed">
-      <Grid x:Name="TocBackgroundPanel" Background="{ThemeResource SystemAltMediumLowColor}"  IsHitTestVisible="True">
+
+      <Grid x:Name="TocBackgroundPanel" Background="{ThemeResource SystemAltMediumLowColor}"  IsHitTestVisible="True"
+            Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            >
+
+        <animation:Implicit.ShowAnimations>
+          <animation:OpacityAnimation To="1" Duration="0:0:0.25" />
+        </animation:Implicit.ShowAnimations>
+        <animation:Implicit.HideAnimations>
+          <animation:OpacityAnimation To="0" Duration="0:0:0.25" />
+        </animation:Implicit.HideAnimations>
+        
         <i:Interaction.Behaviors>
           <core:EventTriggerBehavior EventName="Tapped">
             <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
@@ -494,24 +484,56 @@
 
         </i:Interaction.Behaviors>
       </Grid>
-      <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" >
-
+      <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
+            Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            >
+        
+        <animation:Implicit.ShowAnimations>
+          <animation:TranslationAnimation To="0, 0" Duration="0:0:0.25" />
+        </animation:Implicit.ShowAnimations>
+        <animation:Implicit.HideAnimations>
+          <animation:TranslationAnimation To="-320, 0" Duration="0:0:0.25" />
+        </animation:Implicit.HideAnimations>
+        
         <ListView x:Name="TocItemsListView"
                   ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
                   SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
-                  Background="{ThemeResource SystemChromeLowColor}"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
                   SelectionMode="Single"
                   SingleSelectionFollowsFocus="False"
-                  Padding="0 48 0 0"
+                  Padding="0 32 4 27"
                   >
+          <ListView.ItemContainerTransitions>
+            <TransitionCollection />
+          </ListView.ItemContainerTransitions>
           <ListView.Header>
-            <ContentControl Tapped="CoverImage_Tapped">
-              <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}" Height="160" Margin="8" VerticalAlignment="Top" Stretch="UniformToFill" />
-            </ContentControl>
+            <StackPanel>
+
+              <Button x:Name="TocContainerUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Width="60" Visibility="Collapsed" Margin="0 8">
+                <SymbolIcon Symbol="Back">
+                  <SymbolIcon.RenderTransform>
+                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Button>
+
+              <Button x:Name="TocContainerSettingsButton" Flyout="{StaticResource SettingsFlyout}" Visibility="Collapsed" Margin="0 0 0 8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <SymbolIcon Symbol="Setting" />
+                  <TextBlock Text="{i18nExt:Localize Key=DisplaySettings}" />
+                </StackPanel> 
+              </Button>
+              
+              <ContentControl Tapped="CoverImage_Tapped" IsTabStop="False">
+                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}" MaxHeight="160" Margin="0 8" VerticalAlignment="Top" Stretch="UniformToFill" />
+              </ContentControl>
+
+              <TextBlock Text="{i18nExt:Localize Key=Toc}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0" />
+            </StackPanel>
           </ListView.Header>
           <ListView.ItemTemplate>
             <DataTemplate >
-              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="0 4" />
             </DataTemplate>
           </ListView.ItemTemplate>
 
@@ -534,6 +556,8 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
@@ -595,11 +619,18 @@
 
         <VisualState>
           <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
             <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="WebView.Margin" Value="32 72 24 48" />
+            <Setter Target="WebView.Margin" Value="32 56 24 56" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
@@ -607,6 +638,22 @@
       
       <!-- スクロールのページ送りを逆にする -->
       <VisualStateGroup>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+            <!-- x:Bindだと反映されないことがあるのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding ElementName=PageRoot, Path=NowEnablePageMove, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=OneWay}" />
@@ -621,6 +668,24 @@
       
       <!-- 左右のページ送りを逆にする -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <!-- x:Bindだと反映されないことがあるのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding ElementName=PageRoot, Path=NowEnablePageMove, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
+
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=OneWay}" />
@@ -643,7 +708,6 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
             <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <Visibility>Visible</Visibility>
@@ -666,8 +730,10 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
-            <Setter Target="AnimationUICommandBar.Padding" Value="80 32 80 64" />
             <Setter Target="TocItemsListView.Padding" Value="48 27 8 27" />
+            <Setter Target="PageTitleLayout.Margin" Value="0 0 0 18" />
+            <Setter Target="TocContainerUIBackNavigationButton.Visibility" Value="Visible" />
+            <Setter Target="TocContainerSettingsButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 

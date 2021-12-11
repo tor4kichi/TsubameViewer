@@ -606,9 +606,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 }
             }
 
-            QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
+            QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) 
             {
-                ApplicationSearchFilter = $"System.FileName:\"*{keyword}*\"" 
+                ApplicationSearchFilter = $"System.FileName:\"*{keyword}*\"",
+                FolderDepth = FolderDepth.Deep,
             };
 
             await foreach (var (item, token, metadata) in GetParsistantItems(ct))

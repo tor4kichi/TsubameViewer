@@ -139,6 +139,8 @@ WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
 
 ResetEBookSettings = Reset settings
 
+DisplaySettings = Display settings
+Toc = table of contents
 
 #### SearchResult
 

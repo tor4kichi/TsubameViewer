@@ -247,7 +247,14 @@ namespace TsubameViewer.Presentation.Views
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
 
-            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            if ((bool)App.Current.Resources["DebugTVMode"] is true)
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_Xbox);
+            }
+            else
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            }
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
 
             var appView = ApplicationView.GetForCurrentView();
@@ -261,19 +268,18 @@ namespace TsubameViewer.Presentation.Views
             ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
             if (animation != null)
             {
+                // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく
+                //await Task.Delay(100);
+
                 // Note: コメントアウトしたやり方でも画面全体に対する拡大アニメーションとして表示されるのでシンプルなやり方を採用
-                /*
                 await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)
                     .Where(x => ImageItemsControl.Items.Any() && ImageItemsControl.Items[0] != null)
                     .Take(1)
                     .ToAsyncAction();
 
                 animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
-                */
-                // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく
-                await Task.Delay(100);
-
-                animation.TryStart(ImagesContainer);
+                
+                //animation.TryStart(ImagesContainer);
             }
 
             base.OnNavigatedTo(e);

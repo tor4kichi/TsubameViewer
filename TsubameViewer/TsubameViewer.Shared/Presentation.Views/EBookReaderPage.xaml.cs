@@ -33,6 +33,7 @@ using Windows.Web.Http;
 using Xamarin.Essentials;
 using Prism.Ioc;
 using AsyncLock = Uno.Threading.AsyncLock;
+using Windows.UI.Xaml.Media.Animation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -75,6 +76,8 @@ namespace TsubameViewer.Presentation.Views
             DataContextChanged += OnDataContextChanged;
         }
 
+
+
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
         {
             var oldViewModel = _vm;
@@ -85,11 +88,71 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = null;
+            appView.TitleBar.ButtonHoverBackgroundColor = null;
+            appView.TitleBar.ButtonInactiveBackgroundColor = null;
+            appView.TitleBar.ButtonPressedBackgroundColor = null;
+
+            appView.ExitFullScreenMode();
+
+            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+
+            base.OnNavigatingFrom(e);
+        }
+
+
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            // https://docs.microsoft.com/ja-jp/windows/uwp/design/shell/title-bar
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = true;
+
+            if ((bool)App.Current.Resources["DebugTVMode"])
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_TVorTouch);
+            }
+            else
+            {
+                Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+            }
+
+            AnimationBuilder.Create()
+                .Translation(Axis.X, -320, duration: TimeSpan.FromMilliseconds(1))
+                .Start(TocContentPanel);
+
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
+            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
+
+            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
+
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
+            if (animation != null)
+            {
+                animation.Cancel();                
+            }
+
+            base.OnNavigatedTo(e);
+        }
+
+
+
         private EBookReaderPageViewModel _vm { get; set; }
-
-
-        EBookReaderPageViewModel _pageViewModel;
-        EBookReaderPageViewModel PageViewModel => _pageViewModel ??= DataContext as EBookReaderPageViewModel;
 
         private void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
         {
@@ -99,7 +162,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 try
                 {
-                    var stream = PageViewModel.ResolveWebResourceRequest(reqesutUri);
+                    var stream = _vm.ResolveWebResourceRequest(reqesutUri);
                     if (stream != null)
                     {
                         e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
@@ -128,7 +191,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
         {
-            var pageVM = PageViewModel;
+            var pageVM = _vm;
             this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
             this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
 
@@ -147,10 +210,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
-            AnimationBuilder.Create()
-                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight + 24, duration: TimeSpan.FromMilliseconds(175), delay: TimeSpan.FromMilliseconds(1000))
-                .Start(AnimationUICommandBar);
-
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
@@ -162,12 +221,14 @@ namespace TsubameViewer.Presentation.Views
 
         private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
         {
-            if (TocContainer.Visibility == Visibility.Collapsed)
+            if (TocContainer.Visibility == Visibility.Visible)
             {
-                ToggleOpenCloseBottomUI();
+                CloseTocPaneCommand.Execute();
+            }      
+            else
+            {
+                (_vm.BackNavigationCommand as ICommand).Execute(null);
             }
-
-            CloseTocPaneCommand.Execute();
         }
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
@@ -176,10 +237,9 @@ namespace TsubameViewer.Presentation.Views
 
             if (isOnceSkipTapped)
             {
-                var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
-                if (bottomUIItems.Any()) { return; }
+                //var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
+                //if (bottomUIItems.Any()) { return; }
 
-                CloseBottomUI();
                 isOnceSkipTapped = false;
                 e.Handled = true;
                 return;
@@ -200,13 +260,6 @@ namespace TsubameViewer.Presentation.Views
                     if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
                     {
                         LeftPageMoveButton.Command.Execute(null);
-                    }
-                }
-                else if (item == ToggleBottomMenuButton)
-                {
-                    if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
-                    {
-                        ToggleBottomMenuButton.Command.Execute(null);
                     }
                 }
             }
@@ -246,128 +299,13 @@ namespace TsubameViewer.Presentation.Views
                 // 左スワイプ
                 RightPageMoveButton.Command.Execute(null);
             }
-            else if (e.Cumulative.Translation.Y < -60
-                || e.Velocities.Linear.Y < -0.25
-                )
-            {
-                _ = CompleteOpenBottomUI();
-                e.Handled = true;
-            }
             else
             {
-                CloseBottomUI();
                 e.Handled = true;
             }
         }
-
-        private void CloseBottomUI()
-        {
-            IsOpenBottomMenu = false;
-            AnimationBuilder.Create()
-                .Opacity(0.0, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUIContainer);
-
-            AnimationBuilder.Create()
-                .Offset(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUICommandBar);
-        }
-
-        private async Task CompleteOpenBottomUI()
-        {
-            IsOpenBottomMenu = true;
-
-            AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUIContainer);
-
-            await AnimationBuilder.Create()
-                .Offset(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
-                .StartAsync(AnimationUICommandBar);
-        }
-
-
-
-
-        public bool IsOpenBottomMenu
-        {
-            get { return (bool)GetValue(IsOpenBottomMenuProperty); }
-            set { SetValue(IsOpenBottomMenuProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for IsOpenBottomMenu.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty IsOpenBottomMenuProperty =
-            DependencyProperty.Register("IsOpenBottomMenu", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
-
-
-        // コントローラー操作用
-        public async void ToggleOpenCloseBottomUI()
-        {
-            if (!IsOpenBottomMenu)
-            {
-                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
-                await CompleteOpenBottomUI();
-            }
-            else
-            {
-                CloseBottomUI();
-            }
-        }
-
-        private DelegateCommand _toggleBottomMenuCommand;
-        public DelegateCommand ToggleBottomMenuCommand =>
-            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
-
-        void ExecuteToggleBottomMenuCommand()
-        {
-            ToggleOpenCloseBottomUI();
-        }
-
-
 
         #endregion
-
-
-
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            // https://docs.microsoft.com/ja-jp/windows/uwp/design/shell/title-bar
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = true;
-
-            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
-
-            var appView = ApplicationView.GetForCurrentView();
-            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
-
-            base.OnNavigatedTo(e);
-        }
-
-        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
-        {
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = false;
-            Window.Current.SetTitleBar(null);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
-
-            var appView = ApplicationView.GetForCurrentView();
-            appView.TitleBar.ButtonBackgroundColor = null;
-            appView.TitleBar.ButtonHoverBackgroundColor = null;
-            appView.TitleBar.ButtonInactiveBackgroundColor = null;
-            appView.TitleBar.ButtonPressedBackgroundColor = null;
-
-            appView.ExitFullScreenMode();
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
-
-            base.OnNavigatingFrom(e);
-        }
-
 
 
 
@@ -400,21 +338,40 @@ namespace TsubameViewer.Presentation.Views
                     (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = WebView.TotalInnerPageCount;
                 })
                 .AddTo(_RendererObserveDisposer);
+
+            NowEnablePageMove = false;
         }
 
         private void WebView_Unloaded(object sender, RoutedEventArgs e)
         {
-            _RendererObserveDisposer.Dispose();
+            _RendererObserveDisposer.Dispose();            
         }
+
+
+
+
+        public bool NowEnablePageMove
+        {
+            get { return (bool)GetValue(NowEnablePageMoveProperty); }
+            set { SetValue(NowEnablePageMoveProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for NowRefreshingWebView.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty NowEnablePageMoveProperty =
+            DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(true));
+
 
 
         private void WebView_ContentRefreshStarting(object sender, EventArgs e)
         {
+            NowEnablePageMove = false;
             WebView.Opacity = 0.0;
         }
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
         {
+            NowEnablePageMove = true;
+
             (DataContext as EBookReaderPageViewModel).CompletePageLoading();
 
             AnimationBuilder.Create()
@@ -510,8 +467,6 @@ namespace TsubameViewer.Presentation.Views
 
         async void ExecuteOpenTocPaneCommand()
         {
-            CloseBottomUI();
-
             TocContainer.Visibility = Visibility.Visible;
             await Task.Delay(250);
             if (TocItemsListView.SelectedItem != null)

@@ -62,7 +62,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             var memoryStream = new InMemoryRandomAccessStream();
             using (var entryStream = _entry.OpenEntryStream())
             {
-                entryStream.CopyTo(memoryStream.AsStream());
+                // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
+                // entryStream.CopyTo(memoryStream.AsStream());
+                await RandomAccessStream.CopyAsync(entryStream.AsInputStream(), memoryStream);
                 memoryStream.Seek(0);
 
                 ct.ThrowIfCancellationRequested();
