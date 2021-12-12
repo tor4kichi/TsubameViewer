@@ -776,7 +776,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public uint ImageWidth { get; set; }
 
             [BsonField]
-            public uint ImageHeight { get; set; }            
+            public uint ImageHeight { get; set; }           
+            
+            [BsonField]
+            public float RatioWH { get; set; }
         }
 
         public class ThumbnailImageInfoRepository : LiteDBServiceBase<ThumbnailImageInfo>
@@ -790,14 +793,26 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public ThumbnailSize? GetSize(string path)
             {
                 var thumbInfo = _collection.FindById(path);
-                return thumbInfo != null 
-                    ? new ThumbnailSize()
+
+                if (thumbInfo is not null)
+                {
+                    if (thumbInfo.RatioWH == 0)
+                    {
+                        thumbInfo.RatioWH = thumbInfo.ImageWidth / (float)thumbInfo.ImageHeight;
+                        _collection.Update(thumbInfo);
+                    }
+
+                    return new ThumbnailSize()
                     {
                         Width = thumbInfo.ImageWidth,
                         Height = thumbInfo.ImageHeight,
-                    }
-                    : default(ThumbnailSize?)
-                    ;
+                        RatioWH = thumbInfo.RatioWH,
+                    };
+                }
+                else
+                {
+                    return default;
+                }
             }
 
 
@@ -816,6 +831,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             public uint Width { get; set; }
             public uint Height { get; set; }
+            public float RatioWH { get; set; }
         }
 
         #endregion

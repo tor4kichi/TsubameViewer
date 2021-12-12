@@ -337,10 +337,13 @@ namespace TsubameViewer
 
             Resources["SmallImageWidth"] = ListingImageConstants.SmallFileThumbnailImageWidth;
             Resources["SmallImageHeight"] = ListingImageConstants.SmallFileThumbnailImageHeight;
+            Resources["SmallImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.SmallFileThumbnailImageHeight, ListingImageConstants.SmallFileThumbnailImageHeight));
             Resources["MidiumImageWidth"] = ListingImageConstants.MidiumFileThumbnailImageWidth;
             Resources["MidiumImageHeight"] = ListingImageConstants.MidiumFileThumbnailImageHeight;
+            Resources["MidiumImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.MidiumFileThumbnailImageHeight, ListingImageConstants.MidiumFileThumbnailImageHeight));
             Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
             Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
+            Resources["LargeImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.LargeFileThumbnailImageHeight, ListingImageConstants.LargeFileThumbnailImageHeight));
 
             UpdateFolderItemSizingResourceValues();
 

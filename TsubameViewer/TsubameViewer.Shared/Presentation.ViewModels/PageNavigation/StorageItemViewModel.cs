@@ -71,11 +71,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public BitmapImage Image
         {
             get { return _image; }
-            private set { SetProperty(ref _image, value); }
+            set { SetProperty(ref _image, value); }
         }
 
-        private double? _ImageAspectRatioWH;
-        public double? ImageAspectRatioWH
+        private float? _ImageAspectRatioWH;
+        public float? ImageAspectRatioWH
         {
             get { return _ImageAspectRatioWH; }
             set { SetProperty(ref _ImageAspectRatioWH, value); }
@@ -126,7 +126,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 Path = storageItemImageSource.Path;
             }
 
-            _ImageAspectRatioWH = Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
+            _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
 
             UpdateLastReadPosition();
         }
@@ -202,7 +202,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     Image = bitmapImage;
                 }
 
-                ImageAspectRatioWH ??= Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
+                ImageAspectRatioWH ??= Item.GetThumbnailSize()?.RatioWH;
 
                 _isInitialized = true;
             }

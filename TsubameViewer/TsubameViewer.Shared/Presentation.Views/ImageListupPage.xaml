@@ -47,70 +47,80 @@
     <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
                UserControlによるカーソル移動サポートを有効化している -->
 
-    <Style x:Key="ImageItemGridStyle" TargetType="Grid">
+    <Style x:Key="ImageItemBorderStyle" TargetType="Border">
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="BorderBrush" Value="{ThemeResource SystemChromeDisabledHighColor}" />
       <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
     </Style>
+
+
+    <Style x:Key="ImageItemUserControlStyle" TargetType="UserControl">
+      <Setter Property="IsTabStop" Value="True" />
+      <Setter Property="UseSystemFocusVisuals" Value="True" />
+      <Setter Property="ContextFlyout" Value="{StaticResource StorageItemMenuFlyout}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SystemAccentColor}" />
+      <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+    </Style>
     
     <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="40" Width="240" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True"
-                   >
+      <UserControl Style="{StaticResource ImageItemUserControlStyle}" Tag="{Binding Name}" Height="40" Width="240">
         <ToolTipService.ToolTip>
           <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
         </ToolTipService.ToolTip>
-        
-        <Grid Style="{StaticResource ImageItemGridStyle}"
-          Padding="12 6"
-          >
-          <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
-            <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
-            <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
 
-          </StackPanel>
+        <Border Style="{StaticResource ImageItemBorderStyle}" Padding="12 6" >
+          <Grid >
+            <StackPanel  VerticalAlignment="Center" HorizontalAlignment="Right" Margin="32 0 0 0" >
+              <TextBlock Text="{Binding Name}" Width="1000" TextAlignment="End" HorizontalAlignment="Right" />
+              <TextBlock Text="{Binding Path}" TextAlignment="End" Visibility="Collapsed" />
 
-          <SymbolIcon Symbol="OpenFile" HorizontalAlignment="Left" VerticalAlignment="Center" />
-        </Grid>
+            </StackPanel>
+
+            <SymbolIcon Symbol="OpenFile" HorizontalAlignment="Left" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Small">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True" >
-        <Grid Style="{StaticResource ImageItemGridStyle}" >
+      <UserControl Style="{StaticResource ImageItemUserControlStyle}" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}">
+        <Border Style="{StaticResource ImageItemBorderStyle}" >
           <ToolTipService.ToolTip>
-            <ToolTip PlacementRect="{Binding Source={StaticResource SmallImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Mouse" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+            <ToolTip PlacementRect="{StaticResource SmallImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
           <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
-        </Grid>
+        </Border>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Midium">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <Grid Style="{StaticResource ImageItemGridStyle}" CornerRadius="6">
+      <UserControl Style="{StaticResource ImageItemUserControlStyle}" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}">
+        <Border Style="{StaticResource ImageItemBorderStyle}" CornerRadius="6">
           <ToolTipService.ToolTip>
-            <ToolTip PlacementRect="{Binding Source={StaticResource MidiumImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Mouse" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+            <ToolTip PlacementRect="{StaticResource MidiumImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
           <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
-        </Grid>
+        </Border>
       </UserControl>
     </DataTemplate>
 
     <DataTemplate x:Key="FileItemTemplate_Large">
-      <UserControl IsTabStop="True" UseSystemFocusVisuals="True" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}}" FocusVisualPrimaryBrush="{ThemeResource SystemAccentColor}" FocusVisualPrimaryThickness="3" ContextFlyout="{StaticResource StorageItemMenuFlyout}" Background="Transparent" IsHitTestVisible="True">
-        <Grid Style="{StaticResource ImageItemGridStyle}" CornerRadius="8">
+      <UserControl Style="{StaticResource ImageItemUserControlStyle}" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}">
+        <Border Style="{StaticResource ImageItemBorderStyle}" CornerRadius="8">
           <ToolTipService.ToolTip>
-            <ToolTip PlacementRect="{Binding Source={StaticResource LargeImageHeight}, Converter={StaticResource PointToRectConverter}}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+            <ToolTip PlacementRect="{StaticResource LargeImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
             </ToolTip>
           </ToolTipService.ToolTip>
           <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited" Stretch="UniformToFill" />
-        </Grid>
+        </Border>
       </UserControl>
     </DataTemplate>
 
@@ -346,7 +356,8 @@
           <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
-                               Visibility="Collapsed"                              
+                               Visibility="Collapsed"           
+                               DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
               <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
@@ -369,6 +380,7 @@
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
                                Visibility="Collapsed"
+                               DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
               <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
@@ -396,6 +408,7 @@
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                               DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
               <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
@@ -423,6 +436,7 @@
                                   ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                               DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
               <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
