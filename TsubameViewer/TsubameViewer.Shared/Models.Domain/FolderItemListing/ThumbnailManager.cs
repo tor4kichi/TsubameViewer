@@ -117,13 +117,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 var tempFolder = await GetTempFolderAsync();
                 var files = await tempFolder.GetFilesAsync();
-                using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-                {
-                    foreach (var file in files)
-                    {
-                        await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
-                    }
-                }
+                await DeleteFilesWithParallel(files, Math.Max(1, Environment.ProcessorCount / 2));
             });
         }
 
@@ -149,9 +143,25 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var tempFolder = await GetTempFolderAsync();
             var itemId = GetStorageItemId(path);
             var query = tempFolder.CreateFileQueryWithOptions(new QueryOptions() { ApplicationSearchFilter = $"System.FileName:\"{itemId}*\"" });
+
+            await DeleteFilesWithParallel(query.ToAsyncEnumerable(), Math.Max(1, Environment.ProcessorCount / 2));
+        }
+
+        
+
+        private static async Task DeleteFilesWithParallel(IEnumerable<StorageFile> files, int maxDegreeOfParallelism)
+        {
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             {
-                await query.ToAsyncEnumerable(CancellationToken.None).ForEachAsync(x => _ = x.DeleteAsync(StorageDeleteOption.PermanentDelete)).ConfigureAwait(false);
+                await files.ToAwaitableParallelTaskAsync((file) => file.DeleteAsync(StorageDeleteOption.PermanentDelete).AsTask(), maxDegreeOfParallelism);
+            }
+        }
+
+        private static async Task DeleteFilesWithParallel(IAsyncEnumerable<StorageFile> files, int maxDegreeOfParallelism)
+        {
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+            {
+                await files.ToAwaitableParallelTaskAsync((file) => file.DeleteAsync(StorageDeleteOption.PermanentDelete).AsTask(), maxDegreeOfParallelism);
             }
         }
 

@@ -54,6 +54,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\EBookReaderSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AsyncLock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\EnumerableTaskHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
