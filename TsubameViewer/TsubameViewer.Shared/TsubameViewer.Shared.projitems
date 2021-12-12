@@ -26,6 +26,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderItemsCacheRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\DirectoryPathHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ReadingFeature\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
@@ -41,6 +44,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
@@ -227,6 +231,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\SharpCompress\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
   </ItemGroup>
   <ItemGroup>
