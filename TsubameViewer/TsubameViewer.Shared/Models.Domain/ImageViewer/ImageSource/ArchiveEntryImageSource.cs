@@ -107,7 +107,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
-            return _thumbnailManager.GetThubmnailOriginalSize(_thumbnailManager.GetArchiveEntryPath(StorageItem, _entry));
+            return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
         }
     }
 }
