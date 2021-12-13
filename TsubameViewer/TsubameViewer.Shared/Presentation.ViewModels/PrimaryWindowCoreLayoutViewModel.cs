@@ -83,6 +83,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             UpdateAutoSuggestCommand
                 .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
+                .Where(_ => OnceSkipSuggestUpdate is false)
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
@@ -144,16 +145,49 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
+        bool OnceSkipSuggestUpdate = false;
         Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
+        CancellationTokenSource _cts;
         async void ExecuteUpdateAutoSuggestCommand(string parameter)
-        {
+        {            
+            CancellationTokenSource cts;
+            CancellationToken ct = default;
             using (await _suggestUpdateLock.LockAsync(default))
             {
+                _cts?.Cancel();
+                _cts = null;
+
                 _AutoSuggestItemsGroup.Items.Clear();
+
+                if (OnceSkipSuggestUpdate) 
+                {
+                    OnceSkipSuggestUpdate = false;
+                    return; 
+                }
                 if (string.IsNullOrWhiteSpace(parameter)) { return; }
 
-                var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), CancellationToken.None).Take(3).ToListAsync());
-                _AutoSuggestItemsGroup.Items.AddRange(result);
+                _cts = cts = new CancellationTokenSource();
+                ct = cts.Token;
+            }
+
+            object recipentObject = new object();
+            
+            try
+            {
+                var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    _AutoSuggestItemsGroup.Items.AddRange(result);
+                    _cts = null;
+                }
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                cts.Dispose();
             }
         }
 
@@ -163,6 +197,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async void ExecuteSuggestChosenCommand(IStorageItem entry)
         {
+            using (await _suggestUpdateLock.LockAsync(default))
+            {
+                OnceSkipSuggestUpdate = true;
+                _cts?.Cancel();
+                _cts = null;
+            }
+
             var path = entry.Path;
 
             var parameters = new NavigationParameters();
@@ -199,19 +240,34 @@ namespace TsubameViewer.Presentation.ViewModels
                     await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
             }
+
+            using (await _suggestUpdateLock.LockAsync(default))
+            { 
+                OnceSkipSuggestUpdate = false;
+            }
         }
 
 
         private DelegateCommand<object> _SearchQuerySubmitCommand;
         public DelegateCommand<object> SearchQuerySubmitCommand =>
             _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new DelegateCommand<object>(ExecuteSearchQuerySubmitCommand));
-
-        void ExecuteSearchQuerySubmitCommand(object parameter)
+        
+        async void ExecuteSearchQuerySubmitCommand(object parameter)
         {
             if (parameter is string q)
             {
-                // 検索ページを開く
-                _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    OnceSkipSuggestUpdate = true;
+                    _cts?.Cancel();
+                    _cts = null;
+                }
+                    // 検索ページを開く
+                    await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    OnceSkipSuggestUpdate = false;                
+                }
             }
             else if (parameter is IStorageItem entry)
             {

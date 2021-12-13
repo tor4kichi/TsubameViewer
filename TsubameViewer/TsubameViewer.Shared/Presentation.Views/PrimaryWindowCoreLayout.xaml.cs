@@ -260,7 +260,11 @@ namespace TsubameViewer.Presentation.Views
                         )
                     {
                         frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
-                        BackParametersStack.RemoveAt(frame.BackStackDepth - 1);
+
+                        if (BackParametersStack.Any())
+                        {
+                            BackParametersStack.RemoveAt(frame.BackStackDepth - 1);
+                        }
 
                         rememberBackStack = false;
                     }
