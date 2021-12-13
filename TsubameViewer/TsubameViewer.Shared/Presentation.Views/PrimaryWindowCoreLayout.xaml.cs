@@ -250,25 +250,7 @@ namespace TsubameViewer.Presentation.Views
                 // 順序重要
                 var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
 
-                // Listup系ページのみ、同一パスのページをひとつずつまでしか持たせないようにする
-                // 同一パスをImageListupPageとFolderListupPageで交互に行き来した場合に
-                // FolderListupPageが２回目に現れたタイミングで１回目のImageListupPageとFOlderListupPageのバックスタック要素を削除する
-                {
-                    if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
-                        && frame.BackStack.Count >= 3
-                        && e.SourcePageType == typeof(FolderListupPage)
-                        )
-                        if (frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage)))
-                            if (e.Parameter is INavigationParameters currentNavigationParameters)
-                                if (currentNavigationParameters.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter))
-                                    if (frame.BackStack.TakeLast(2).All(x => (x.Parameter as INavigationParameters).TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter))
-                                        foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
-                                        {
-                                            frame.BackStack.Remove(remove);
-                                            BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
-                                        }                        
-                }
-
+               
                 // ナビゲーションスタック上に一つしか存在してはいけないページの場合
                 {
                     bool rememberBackStack = true;
@@ -310,6 +292,25 @@ namespace TsubameViewer.Presentation.Views
                         BackParametersStack.Add(prevParameters);
                     }
                 }
+
+                // Listup系ページのみ、同一パスのページをひとつずつまでしか持たせないようにする
+                // 同一パスをImageListupPageとFolderListupPageで交互に行き来した場合に
+                // FolderListupPageが２回目に現れたタイミングで１回目のImageListupPageとFOlderListupPageのバックスタック要素を削除する
+                {
+                    if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
+                        && frame.BackStack.Count >= 3
+                        && e.SourcePageType == typeof(FolderListupPage)
+                        )
+                        if (frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage)))
+                            if (currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter))
+                                if (BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter))
+                                    foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
+                                    {
+                                        frame.BackStack.Remove(remove);
+                                        BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
+                                    }
+                }
+
 
                 _ = StoreNaviagtionParameterDelayed();
             }
