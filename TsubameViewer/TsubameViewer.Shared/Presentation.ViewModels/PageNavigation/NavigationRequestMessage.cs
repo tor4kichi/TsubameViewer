@@ -30,6 +30,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public string PageName { get; }
         public INavigationParameters Parameters { get; }
+
+        public bool IsForgetNavigaiton { get; init; } = false;
     }
 
     public static class NavigationRequestMessageExtensions
@@ -39,19 +41,19 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             return await messenger.Send(message);
         }
 
-        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName)
+        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, bool isForgetNavigation = false)
         {
-            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName));
+            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName) { IsForgetNavigaiton = isForgetNavigation });
         }
 
-        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, INavigationParameters parameters)
+        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, INavigationParameters parameters, bool isForgetNavigation = false)
         {
-            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName, parameters));
+            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName, parameters) { IsForgetNavigaiton = isForgetNavigation });
         }
 
-        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, params (string key, object parameter)[] parameters)
+        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, bool isForgetNavigation = false, params (string key, object parameter)[] parameters)
         {
-            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName, parameters));
+            return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName, parameters) { IsForgetNavigaiton = isForgetNavigation });
         }
     }
 }

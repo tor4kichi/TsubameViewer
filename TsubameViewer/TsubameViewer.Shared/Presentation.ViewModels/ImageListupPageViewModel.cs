@@ -153,7 +153,7 @@ namespace TsubameViewer.Presentation.ViewModels
         static bool _LastIsImageFileGenerateThumbnailEnabled;
 
 
-        public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
+        public string FoldersManagementPageName => PageNavigationConstants.HomePageName;
 
         IDisposable _ImageCollectionDisposer;
 

@@ -184,7 +184,6 @@ namespace TsubameViewer
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
                             var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
                             IMessenger messenger = Container.Resolve<IMessenger>();
-                            await messenger.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
                             var result = await NavigateAsync(navigationInfo, messenger);
                             if (result.Success)
                             {
@@ -204,7 +203,6 @@ namespace TsubameViewer
                     if (navigationInfo != null)
                     {
                         var messenger = Container.Resolve<IMessenger>();
-                        await messenger.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
                         var result = await NavigateAsync(navigationInfo, messenger);
                         if (result.Success)
                         {
@@ -473,11 +471,11 @@ namespace TsubameViewer
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters);
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters);
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, isForgetNavigation: true);
                 }
             }
             else if  (item is StorageFile file)
@@ -487,11 +485,11 @@ namespace TsubameViewer
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters);
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters);
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, isForgetNavigation: true);
                 }
             }
 
@@ -537,8 +535,6 @@ namespace TsubameViewer
             }
 
             // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
-            // TODO: FileActivationで開いた画像ビューワーページのバックナビゲーション先をSourceStorageItemsPageにする？
-            // TODO: ファイルアクティべーション時、フォルダを渡された際、フォルダ内が画像のみなら画像ビューワーで開きたい
             if (path != null)
             {
                 return new PageNavigationInfo()

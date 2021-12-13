@@ -211,7 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
             if (parameter is string q)
             {
                 // 検索ページを開く
-                _messenger.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
+                _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
             }
             else if (parameter is IStorageItem entry)
             {

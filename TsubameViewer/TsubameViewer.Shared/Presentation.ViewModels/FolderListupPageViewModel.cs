@@ -145,7 +145,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IDisposable _ImageCollectionDisposer;
 
-        public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
+        public string FoldersManagementPageName => PageNavigationConstants.HomePageName;
 
         private string _currentArchiveFolderName;
 

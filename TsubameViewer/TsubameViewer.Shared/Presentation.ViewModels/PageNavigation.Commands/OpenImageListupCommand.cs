@@ -30,27 +30,20 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                try
+                if (item.Type == StorageItemTypes.Archive)
                 {
-                    if (item.Type == StorageItemTypes.Archive)
-                    {
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
-                    }
-                    else if (item.Type == StorageItemTypes.Folder)
-                    {
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
-                    }
-                    else if (item.Type == StorageItemTypes.EBook)
-                    {
-
-                    }
-                    else if (item.Type == StorageItemTypes.None)
-                    {
-                    }
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
                 }
-                catch
+                else if (item.Type == StorageItemTypes.Folder)
                 {
-                    await _messenger.NavigateAsync(nameof(SourceStorageItemsPage));
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
+                }
+                else if (item.Type == StorageItemTypes.EBook)
+                {
+
+                }
+                else if (item.Type == StorageItemTypes.None)
+                {
                 }
             }
         }

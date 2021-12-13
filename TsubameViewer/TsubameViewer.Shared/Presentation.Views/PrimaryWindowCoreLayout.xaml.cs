@@ -34,6 +34,8 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using Microsoft.Toolkit.Uwp;
 using Reactive.Bindings;
+using TsubameViewer.Models.Infrastructure;
+using System.Collections.Immutable;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -74,16 +76,25 @@ namespace TsubameViewer.Presentation.Views
 
         #region Navigation
 
+        AsyncLock _navigationLock = new ();
+        bool isForgetRequest = false;
         private void InitializeNavigation()
         {
             _navigationService = NavigationService.Create(this.ContentFrame, Window.Current.CoreWindow, new Gestures[] { Gestures.Refresh });
 
             async Task<INavigationResult> NavigationAsyncInternal(NavigationRequestMessage m)
             {
+                using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
                 var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
 
                 try
                 {
+                    if (m.IsForgetNavigaiton)
+                    {
+                        isForgetRequest = true;
+                    }
+
                     SetCurrentNavigationParameters(m.Parameters);
 
                     var result = await (m.Parameters != null
@@ -138,29 +149,31 @@ namespace TsubameViewer.Presentation.Views
         IDisposable _refreshNavigationEventSubscriber;
         IDisposable _themeChangeRequestEventSubscriber;
 
-        private readonly HashSet<Type> MenuPaneHiddenPageTypes = new Type[]
+
+
+        public readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
         {
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SettingsPage),
-        }.ToHashSet();
+        }.ToImmutableHashSet();
 
-        private readonly HashSet<Type> CanGoBackPageTypes = new Type[]
+        public readonly static ImmutableHashSet<Type> CanGoBackPageTypes = new Type[]
         {
             typeof(FolderListupPage),
             typeof(ImageListupPage),
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
+            typeof(SearchResultPage),
             typeof(SettingsPage),
-        }.ToHashSet();
+        }.ToImmutableHashSet();
 
-        private readonly HashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
+        public readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
         {
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
-        }.ToHashSet();
-
+        }.ToImmutableHashSet();
 
 
         private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
@@ -196,6 +209,13 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
 
+            // 選択中として表示するメニュー項目
+            if (e.SourcePageType == typeof(SearchResultPage)
+                || frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
+            {
+                MyNavigtionView.SelectedItem = null;
+            }
+
 
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
@@ -219,6 +239,8 @@ namespace TsubameViewer.Presentation.Views
                     ContentFrame.ForwardStack.Clear();
                     ForwardParametersStack.Clear();
                 }
+
+                
 
                 _ = StoreNaviagtionParameterDelayed();
             }
@@ -292,13 +314,6 @@ namespace TsubameViewer.Presentation.Views
                 _ = StoreNaviagtionParameterDelayed();
             }
 
-            // 選択中として表示するメニュー項目
-            if (e.SourcePageType == typeof(SearchResultPage)
-                || frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
-            {
-                MyNavigtionView.SelectedItem = null;
-            }
-
             _isFirstNavigation = false;
         }
 
@@ -341,7 +356,7 @@ namespace TsubameViewer.Presentation.Views
                 if (currentEntry == null)
                 {
                     Debug.WriteLine("[NavvigationRestore] skip restore page.");
-                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                     return;
                 }
 
@@ -355,13 +370,13 @@ namespace TsubameViewer.Presentation.Views
                 {
                     await Task.Delay(50);
                     Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
-                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                     return;
                 }
 
                 Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
 
-                if (currentEntry.PageName == nameof(Views.SourceStorageItemsPage))
+                if (currentEntry.PageName == PageNavigationConstants.HomePageName)
                 {
                     return;
                 }
@@ -376,7 +391,7 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.ForwardStack.Clear();
 
                 await StoreNaviagtionParameterDelayed();
-                await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage));
+                await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                 return;
             }
 
@@ -507,8 +522,29 @@ namespace TsubameViewer.Presentation.Views
 
         async Task HandleBackRequestAsync()
         {
+            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
             if (_navigationService.CanGoBack())
             {
+                if (isForgetRequest)
+                {
+                    _currentNavigationParameters = null;
+                    foreach (var entry in ContentFrame.BackStack.ToArray())
+                    {
+                        ContentFrame.BackStack.Remove(entry);
+                    }
+                    BackParametersStack.Clear();
+                    foreach (var entry in ContentFrame.ForwardStack.ToArray())
+                    {
+                        ContentFrame.ForwardStack.Remove(entry);
+                    }
+                    ForwardParametersStack.Clear();
+
+                    ContentFrame.BackStack.Add(new PageStackEntry(PageNavigationConstants.HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(PageNavigationConstants.HomePageName)));
+                    BackParametersStack.Add(new NavigationParameters());
+
+                    isForgetRequest = false;
+                }
                 var lastNavigationParameters = BackParametersStack.LastOrDefault();
                 
                 if (lastNavigationParameters != null)
@@ -536,7 +572,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 else
                 {
-                    await _messenger.NavigateAsync(nameof(SourceStorageItemsPage));
+                    await _messenger.NavigateAsync(PageNavigationConstants.HomePageName);
                 }
             }
         }
@@ -554,6 +590,8 @@ namespace TsubameViewer.Presentation.Views
 
         async Task HandleForwardRequest()
         {
+            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
             if (_navigationService.CanGoForward())
             {
                 var forwardNavigationParameters = ForwardParametersStack.Last();
