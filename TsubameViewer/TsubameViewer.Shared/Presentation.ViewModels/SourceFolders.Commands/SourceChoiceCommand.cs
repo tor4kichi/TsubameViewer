@@ -1,4 +1,5 @@
 ﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Prism.Commands;
 using Prism.Navigation;
 using System;
@@ -12,16 +13,15 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 {
     public sealed class SourceChoiceCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService => _lazyNavigationService.Value;
-        private readonly Lazy<INavigationService> _lazyNavigationService;
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
         public SourceChoiceCommand(
-            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> lazyNavigationService,
+            IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository
             )
         {
-            _lazyNavigationService = lazyNavigationService;
+            _messenger = messenger;
             _SourceStorageItemsRepository = sourceStorageItemsRepository;
         }
 
@@ -47,8 +47,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (OpenAfterChoice && token != null)
             {
-                var parameters = new NavigationParameters((PageNavigationConstants.Path, seletedFolder.Path));
-                await _navigationService.NavigateAsync(nameof(FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                await _messenger.NavigateAsync(nameof(FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, seletedFolder.Path)));
             }
         }
     }

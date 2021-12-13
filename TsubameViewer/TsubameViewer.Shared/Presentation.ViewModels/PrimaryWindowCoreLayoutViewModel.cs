@@ -40,8 +40,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class PrimaryWindowCoreLayoutViewModel : BindableBase
     {
-        public INavigationService NavigationService => _navigationServiceLazy.Value;
-        private readonly Lazy<INavigationService> _navigationServiceLazy;
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
@@ -51,7 +49,6 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public PrimaryWindowCoreLayoutViewModel(
-            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
             IEventAggregator eventAggregator,
             IScheduler scheduler,
             IMessenger messenger,
@@ -69,7 +66,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage) },
                 //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
-            _navigationServiceLazy = navigationServiceLazy;
             EventAggregator = eventAggregator;
             _scheduler = scheduler;
             _messenger = messenger;
@@ -114,7 +110,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (item is MenuItemViewModel menuItem)
                 {
-                    NavigationService.NavigateAsync(menuItem.PageType);
+                    _messenger.NavigateAsync(menuItem.PageType);
                 }                
             });
 
@@ -180,12 +176,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, ct), CancellationToken.None);
                 if (containerType == FolderContainerType.OnlyImages)
                 {
-                    await NavigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                     return;
                 }
                 else
                 {
-                    await NavigationService.NavigateAsync(nameof(FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                    await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     return;
                 }
             }
@@ -196,11 +192,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    await NavigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    await NavigationService.NavigateAsync(nameof(EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
             }
         }
@@ -215,7 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
             if (parameter is string q)
             {
                 // 検索ページを開く
-                NavigationService.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
+                _messenger.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
             }
             else if (parameter is IStorageItem entry)
             {

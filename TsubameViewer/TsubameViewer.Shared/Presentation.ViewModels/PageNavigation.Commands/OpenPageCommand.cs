@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -10,12 +11,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenPageCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService => _lazyNavigationService.Value;
-        private readonly Lazy<INavigationService> _lazyNavigationService;
+        private readonly IMessenger _messenger;
 
-        public OpenPageCommand([Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> lazyNavigationService)
+        public OpenPageCommand(IMessenger messenger)
         {
-            _lazyNavigationService = lazyNavigationService;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -27,7 +27,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is string pageName)
             {
-                _navigationService.NavigateAsync(pageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(pageName));
+                _messenger.NavigateAsync(pageName);
             }
         }
     }

@@ -259,13 +259,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         }
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }        
-
         public StorageItemViewModel GetLastIntractItem()
         {
             var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
@@ -347,10 +340,6 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 var mode = parameters.GetNavigationMode();
-                if (mode == NavigationMode.Refresh)
-                {
-                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();
-                }
 
                 _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)

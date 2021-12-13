@@ -219,13 +219,6 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }
-
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _AppCSS ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));

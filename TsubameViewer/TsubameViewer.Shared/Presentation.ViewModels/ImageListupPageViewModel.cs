@@ -258,13 +258,6 @@ namespace TsubameViewer.Presentation.ViewModels
             CurrentFolderItem = null;
         }
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            Views.PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }
-
         async Task ResetContent(string path, CancellationToken ct)
         {
             using var lockReleaser = await _NavigationLock.LockAsync(ct);
@@ -341,10 +334,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 await Task.Delay(50);
 
                 var mode = parameters.GetNavigationMode();
-                if (mode == NavigationMode.Refresh)
-                {
-                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();                    
-                }
 
                 _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)

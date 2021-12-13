@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenFolderListupCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService;
+        private readonly IMessenger _messenger;
 
         public OpenFolderListupCommand(
-            INavigationService navigationService
+            IMessenger messenger
             )
         {
-            _navigationService = navigationService;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -32,7 +33,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }
             }
         }

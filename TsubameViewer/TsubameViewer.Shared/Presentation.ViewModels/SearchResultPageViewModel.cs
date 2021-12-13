@@ -81,17 +81,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         CancellationTokenSource _navigationCts;
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            SearchResultItems.Clear();
-
-            base.OnNavigatingTo(parameters);
-        }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            SearchResultItems.Clear();
             _navigationCts = new CancellationTokenSource();
             var ct = _navigationCts.Token;
             

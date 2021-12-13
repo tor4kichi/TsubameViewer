@@ -268,13 +268,6 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            Views.PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }
-
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _navigationDisposables = new CompositeDisposable();

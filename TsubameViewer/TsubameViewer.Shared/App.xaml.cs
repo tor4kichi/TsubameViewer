@@ -183,9 +183,9 @@ namespace TsubameViewer
                         {
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
                             var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
-                            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                            await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
-                            var result = await NavigateAsync(navigationInfo);
+                            IMessenger messenger = Container.Resolve<IMessenger>();
+                            await messenger.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
+                            var result = await NavigateAsync(navigationInfo, messenger);
                             if (result.Success)
                             {
                                 isRestored = true;
@@ -203,9 +203,9 @@ namespace TsubameViewer
 
                     if (navigationInfo != null)
                     {
-                        var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                        await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
-                        var result = await NavigateAsync(navigationInfo);
+                        var messenger = Container.Resolve<IMessenger>();
+                        await messenger.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
+                        var result = await NavigateAsync(navigationInfo, messenger);
                         if (result.Success)
                         {
                             isRestored = true;
@@ -347,14 +347,7 @@ namespace TsubameViewer
 
             UpdateFolderItemSizingResourceValues();
 
-
-            var shell = Container.Resolve<PrimaryWindowCoreLayout>();
-            var ns = shell.GetNavigationService();
-            var unityContainer = Container.GetContainer();
-            unityContainer.RegisterInstance<INavigationService>("PrimaryWindowNavigationService", ns);
-            unityContainer.RegisterInstance<INavigationService>(ns);
-
-            Window.Current.Content = shell;
+            Window.Current.Content = Container.Resolve<PrimaryWindowCoreLayout>();
             Window.Current.Activate();
 
             // セカンダリタイル管理の初期化
@@ -454,9 +447,9 @@ namespace TsubameViewer
             public string PageName { get; set; }
         }
 
-        async Task<INavigationResult> NavigateAsync(PageNavigationInfo info)
+        async Task<INavigationResult> NavigateAsync(PageNavigationInfo info, IMessenger messenger = null)
         {
-            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+            messenger ??= Container.Resolve<IMessenger>();
             var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
 
             NavigationParameters parameters = new NavigationParameters();
@@ -480,11 +473,11 @@ namespace TsubameViewer
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters);
                 }
                 else
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters);
                 }
             }
             else if  (item is StorageFile file)
@@ -494,11 +487,11 @@ namespace TsubameViewer
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters);
                 }
             }
 
