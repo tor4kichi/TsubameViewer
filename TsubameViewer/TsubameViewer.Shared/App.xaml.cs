@@ -210,11 +210,9 @@ namespace TsubameViewer
                 }
             }
 
-            var shell = Window.Current.Content as PrimaryWindowCoreLayout;
-            shell.Activated();
-
             if (isRestored is false)
             {
+                var shell = Window.Current.Content as PrimaryWindowCoreLayout;
                 await shell.RestoreNavigationStack();
             }
 

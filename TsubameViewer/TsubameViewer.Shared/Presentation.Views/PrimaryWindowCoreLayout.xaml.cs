@@ -62,6 +62,7 @@ namespace TsubameViewer.Presentation.Views
             DataContext = _viewModel = viewModel;
             _messenger = messenger;
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _navigationService = NavigationService.Create(this.ContentFrame, Window.Current.CoreWindow);
 
             InitializeNavigation();
             InitializeThemeChangeRequest();
@@ -70,20 +71,52 @@ namespace TsubameViewer.Presentation.Views
             _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
             InitializeBusyWorkUI();
-
-            MyNavigtionView.Opacity = 0.0;
         }
 
 
 
         #region Navigation
 
-        AsyncLock _navigationLock = new ();
-        bool isForgetRequest = false;
+        private readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
+        {
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
+            typeof(SettingsPage),
+        }.ToImmutableHashSet();
+
+        private readonly static ImmutableHashSet<Type> CanGoBackPageTypes = new Type[]
+        {
+            typeof(FolderListupPage),
+            typeof(ImageListupPage),
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
+            typeof(SearchResultPage),
+            typeof(SettingsPage),
+        }.ToImmutableHashSet();
+
+        private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
+        {
+            typeof(ImageViewerPage),
+            typeof(EBookReaderPage),
+            typeof(SearchResultPage),
+        }.ToImmutableHashSet();
+
+
+        private readonly IPlatformNavigationService _navigationService;
+
+        private IDisposable _refreshNavigationEventSubscriber;
+        private IDisposable _themeChangeRequestEventSubscriber;
+
+        private readonly AsyncLock _navigationLock = new ();
+        private bool _isForgetNavigationRequested = false;
+        private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
+        private List<INavigationParameters> ForwardParametersStack = new List<INavigationParameters>();
+
+        private bool _isFirstNavigation = true;
+        private bool _nowChangingMenuItem = false;
+
         private void InitializeNavigation()
         {
-            _navigationService = NavigationService.Create(this.ContentFrame, Window.Current.CoreWindow, new Gestures[] { Gestures.Refresh });
-
             async Task<INavigationResult> NavigationAsyncInternal(NavigationRequestMessage m)
             {
                 using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
@@ -94,22 +127,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     if (m.IsForgetNavigaiton)
                     {
-                        isForgetRequest = true;
-
-                        _currentNavigationParameters = null;
-                        foreach (var entry in ContentFrame.BackStack.ToArray())
-                        {
-                            ContentFrame.BackStack.Remove(entry);
-                        }
-                        BackParametersStack.Clear();
-                        foreach (var entry in ContentFrame.ForwardStack.ToArray())
-                        {
-                            ContentFrame.ForwardStack.Remove(entry);
-                        }
-
-                        ForwardParametersStack.Clear();
-                        MyNavigtionView.Opacity = 0.0;
-                        _ = _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);                        
+                        _isForgetNavigationRequested = true;
                     }
 
                     SetCurrentNavigationParameters(m.Parameters);
@@ -129,11 +147,8 @@ namespace TsubameViewer.Presentation.Views
                 {
                     SetCurrentNavigationParameters(prevNavParam);
                     SetCurrentNavigationParameters(currentNavParam);
+                    _isForgetNavigationRequested = false;
                     throw;
-                }
-                finally
-                {
-                    MyNavigtionView.Opacity = 1.0;
                 }
             }
 
@@ -166,42 +181,6 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        IDisposable _backNavigationEventSubscriber;
-        IDisposable _refreshNavigationEventSubscriber;
-        IDisposable _themeChangeRequestEventSubscriber;
-
-
-
-        public readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
-        {
-            typeof(ImageViewerPage),
-            typeof(EBookReaderPage),
-            typeof(SettingsPage),
-        }.ToImmutableHashSet();
-
-        public readonly static ImmutableHashSet<Type> CanGoBackPageTypes = new Type[]
-        {
-            typeof(FolderListupPage),
-            typeof(ImageListupPage),
-            typeof(ImageViewerPage),
-            typeof(EBookReaderPage),
-            typeof(SearchResultPage),
-            typeof(SettingsPage),
-        }.ToImmutableHashSet();
-
-        public readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
-        {
-            typeof(ImageViewerPage),
-            typeof(EBookReaderPage),
-            typeof(SearchResultPage),
-        }.ToImmutableHashSet();
-
-
-        private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
-        private List<INavigationParameters> ForwardParametersStack = new List<INavigationParameters>();
-
-        bool _isFirstNavigation = true;
-        bool nowChangingMenuItem = false;
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
@@ -220,13 +199,13 @@ namespace TsubameViewer.Presentation.Views
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
                 {
-                    nowChangingMenuItem = true;
+                    _nowChangingMenuItem = true;
                     try
                     {
                         MyNavigtionView.SelectedItem = selectedMeuItemVM;
                     }
                     catch { }
-                    nowChangingMenuItem = false;
+                    _nowChangingMenuItem = false;
                 }
             }
 
@@ -250,7 +229,27 @@ namespace TsubameViewer.Presentation.Views
 
 
             // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
-            if (!isCanGoBackPage)
+            if (_isForgetNavigationRequested)
+            {
+                _isForgetNavigationRequested = false;
+
+                foreach (var entry in ContentFrame.BackStack.ToArray())
+                {
+                    ContentFrame.BackStack.Remove(entry);
+                }
+                BackParametersStack.Clear();
+                foreach (var entry in ContentFrame.ForwardStack.ToArray())
+                {
+                    ContentFrame.ForwardStack.Remove(entry);
+                }
+                ForwardParametersStack.Clear();
+
+                ContentFrame.BackStack.Add(new PageStackEntry(PageNavigationConstants.HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(PageNavigationConstants.HomePageName)));
+                BackParametersStack.Add(new NavigationParameters());
+
+                _ = StoreNaviagtionParameterDelayed();
+            }
+            else if (!isCanGoBackPage)
             {
                 ContentFrame.BackStack.Clear();
                 BackParametersStack.Clear();
@@ -344,15 +343,10 @@ namespace TsubameViewer.Presentation.Views
             _isFirstNavigation = false;
         }
 
-        internal void Activated()
-        {
-            MyNavigtionView.Opacity = 1.0;
-        }
-
 
         private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
         {
-            if (nowChangingMenuItem) { return; }
+            if (_nowChangingMenuItem) { return; }
 
             if (args.SelectedItem != null)
             {
@@ -360,7 +354,6 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        IPlatformNavigationService _navigationService;
 
         private DelegateCommand _BackCommand;
         public DelegateCommand BackCommand =>
@@ -527,8 +520,7 @@ namespace TsubameViewer.Presentation.Views
         // NavigationManager.BackRequestedによる戻るを一時的に防止する
         // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
         public static bool IsPreventSystemBackNavigation { get; set; }
-        public CoreTextEditContext _context { get; private set; }
-
+        //public CoreTextEditContext _context { get; private set; }        
 
         static PageEntry MakePageEnetry(Type pageType, INavigationParameters parameters)
         {
@@ -559,9 +551,9 @@ namespace TsubameViewer.Presentation.Views
 
             if (_navigationService.CanGoBack())
             {
-                if (isForgetRequest)
+                if (_isForgetNavigationRequested)
                 {
-                    isForgetRequest = false;
+                    _isForgetNavigationRequested = false;
                 }
                 var lastNavigationParameters = BackParametersStack.LastOrDefault();
                 
