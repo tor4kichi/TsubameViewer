@@ -440,7 +440,7 @@
     </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
