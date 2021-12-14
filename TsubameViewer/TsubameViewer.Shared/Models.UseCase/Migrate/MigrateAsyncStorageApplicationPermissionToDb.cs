@@ -25,32 +25,7 @@ namespace TsubameViewer.Models.UseCase.Migrate
 
         PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 2, Build = 5 };
 
-        public bool IsRequireMigrate
-        {
-            get
-            {
-                if (SystemInformation.Instance.IsAppUpdated is false) { return false; }
-
-                var prevVersion = SystemInformation.Instance.PreviousVersionInstalled;
-                if (_targetVersion.Major > prevVersion.Major)
-                {
-                    return true;
-                }
-                if (_targetVersion.Major == prevVersion.Major 
-                    && _targetVersion.Minor > prevVersion.Minor)
-                {
-                    return true;
-                }
-                if (_targetVersion.Major == prevVersion.Major
-                    && _targetVersion.Minor== prevVersion.Minor
-                    && _targetVersion.Build >= prevVersion.Build)
-                {
-                    return true;
-                }
-
-                return false;
-            }
-        }
+        public bool IsRequireMigrate => SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion);
 
         public Task MigrateAsync()
         {

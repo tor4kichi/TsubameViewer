@@ -168,6 +168,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
@@ -181,6 +182,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
             ThumbnailManager thumbnailManager,
+            FolderListingSettings folderListingSettings,
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
@@ -197,6 +199,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _thumbnailManager = thumbnailManager;
+            _folderListingSettings = folderListingSettings;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
@@ -206,9 +209,18 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (Images == null || !Images.Any()) { return; }
 
                     var imageSource = Images[CurrentImageIndex];
-                    var names = imageSource.Path.Split(SeparateChars);
-                    PageName = names[names.Length - 1];
-                    PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
+                    
+                    if (this.ItemType == StorageItemTypes.Archive)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        PageName = names[names.Length - 1];
+                        PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                    }
+                    else
+                    {
+                        PageName = imageSource.Name;
+                    }
+
                     _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
                     _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Name);
                 })
@@ -263,13 +275,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ParentFolderOrArchiveName = String.Empty;
 
             base.OnNavigatedFrom(parameters);
-        }
-
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            Views.PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
@@ -573,7 +578,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             _scheduler.Schedule(async () => 
                             {
-                                using (await _imageLoadingLock.LockAsync(ct))
+                                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                                 {
                                     ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
                                 }
@@ -733,14 +738,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
         {
-            var bitmapImage = await GetImageIfPrefetched(imageSource);
+            var bitmapImage = await GetImageIfPrefetched(imageSource, ct);
 
             if (bitmapImage == null)
             {
                 using (var stream = await imageSource.GetImageStreamAsync(ct))
                 {
                     bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(stream);
+                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                 }
             }
                 
@@ -812,7 +817,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     _CurrentImages = new BitmapImage[1];
-                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _thumbnailManager) };
+                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager) };
                     await MoveImageIndex(IndexMoveDirection.Refresh, 0);
                 }
                 else if (file.IsSupportedMangaFile())
@@ -849,7 +854,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
-                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct);
+                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
                 if (folders.Count <= 1)
                 {
                     PageFolderNames = new string[0];
@@ -873,7 +878,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             Images?.AsParallel().WithDegreeOfParallelism(4).ForEach((IImageSource x) => x.TryDispose());
 
-            var images = await imageCollectionContext.GetAllImageFilesAsync(ct);            
+            var images = await imageCollectionContext.GetAllImageFilesAsync(ct).ToListAsync(ct);            
             Images = ToSortedImages(images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
         }
 
@@ -906,15 +911,15 @@ namespace TsubameViewer.Presentation.ViewModels
             ClearPrefetch(slot);
             if (imageSource == null) { return; }
             _PrefetchImageDatum[slot] = new PrefetchImageInfo(imageSource);
-            _ = _PrefetchImageDatum[slot].StartPrefetchAsync();
+            _ = _PrefetchImageDatum[slot].StartPrefetchAsync(CancellationToken.None);
         }
 
-        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource)
+        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource, CancellationToken ct)
         {
             var prefetch = _PrefetchImageDatum.FirstOrDefault(x => x?.ImageSource == imageSource);
             if (prefetch == null || prefetch.IsCanceled) { return null; }
 
-            return await prefetch.StartPrefetchAsync();
+            return await prefetch.StartPrefetchAsync(ct);
         }
 
         void ClearPrefetch(int slot)
@@ -1140,25 +1145,28 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public async Task<BitmapImage> StartPrefetchAsync()
+        public async Task<BitmapImage> StartPrefetchAsync(CancellationToken ct)
         {
-            var ct = _PrefetchCts.Token;
-            using (await _prefetchProcessLock.LockAsync(ct))
-            {             
-                if (Image == null)
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_PrefetchCts.Token, ct))
+            {
+                var linkedCt = linkedCts.Token;
+                using (await _prefetchProcessLock.LockAsync(linkedCt))
                 {
-                    using (var stream = await ImageSource.GetImageStreamAsync(ct))
+                    if (Image == null)
                     {
-                        Image = new BitmapImage();
-                        Image.SetSource(stream);
+                        using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
+                        {
+                            Image = new BitmapImage();
+                            await Image.SetSourceAsync(stream).AsTask(linkedCt);
+                        }
                     }
+
+                    IsCompleted = true;
+
+                    Debug.WriteLine("prefetch done: " + ImageSource.Name);
+
+                    return Image;
                 }
-                
-                IsCompleted = true;
-
-                Debug.WriteLine("prefetch done: " + ImageSource.Name);
-
-                return Image;
             }
         }
 

@@ -440,7 +440,7 @@
     </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
@@ -456,24 +456,31 @@
           </SymbolIcon>
         </Button>
 
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
+        <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0"
+                uwpControls:DockPanel.Dock="Right" Margin="0 6 184 6"
+                />
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="8">
           <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
             <SymbolIcon Symbol="Setting" />
           </Button>
-          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
         </StackPanel>
 
-        <uwpControls:DockPanel Padding="8 0">
-          <Button Flyout="{StaticResource PageFlyout}" Background="Transparent" uwpControls:DockPanel.Dock="Right">
-            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Margin="8 0 0 0" TextDecorations="Underline">
-              <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+        <Button Flyout="{StaticResource PageFlyout}"  uwpControls:DockPanel.Dock="Right" VerticalAlignment="Stretch" Margin="0 0 0 1" Padding="8 0">
+          <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" 
+                         Visibility="{x:Bind _vm.PageFolderName, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}"
+                         >
+                <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> -
             </TextBlock>
-
-          </Button>
-          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
+            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" >
+                <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+            </TextBlock>
+          </StackPanel>
+        </Button>
+        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" Margin="8 0" IsHitTestVisible="False">
               <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-          </TextBlock>
-        </uwpControls:DockPanel>
+        </TextBlock>
       </uwpControls:DockPanel>
     </Grid>
 

@@ -590,20 +590,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)
         {
-            static async IAsyncEnumerable<IStorageItem> SearchInFolder(StorageFolder folder, QueryOptions queryOptions, [EnumeratorCancellation] CancellationToken ct)
+            static IAsyncEnumerable<IStorageItem> SearchInFolder(StorageFolder folder, QueryOptions queryOptions, CancellationToken ct)
             {
                 var query = folder.CreateItemQueryWithOptions(queryOptions);
-                int count = (int)await query.GetItemCountAsync().AsTask(ct);
-                int current = 0;
-                while (current < count)
-                {
-                    var items = await query.GetItemsAsync((uint)current, 100).AsTask(ct);
-                    foreach (var item in items)
-                    {
-                        yield return item;
-                    }
-                    current += items.Count;
-                }
+                return query.ToAsyncEnumerable(ct);
             }
 
             QueryOptions queryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) 
@@ -612,7 +602,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 FolderDepth = FolderDepth.Deep,
             };
 
-            await foreach (var (item, token, metadata) in GetParsistantItems(ct))
+            await foreach (var (item, token, metadata) in GetParsistantItems(ct).WithCancellation(ct))
             {
                 if (item.Name.Contains(keyword))
                 {
@@ -621,14 +611,14 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
                 if (item is StorageFolder folder)
                 {                    
-                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct).WithCancellation(ct))
                     {
                         yield return folderItem;
                     }
                 }
             }
 
-            await foreach (var (item, token, metadata) in GetTemporaryItems(ct))
+            await foreach (var (item, token, metadata) in GetTemporaryItems(ct).WithCancellation(ct))
             {
                 if (item.Name.Contains(keyword))
                 {
@@ -637,7 +627,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
                 if (item is StorageFolder folder)
                 {
-                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct))
+                    await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct).WithCancellation(ct))
                     {
                         yield return folderItem;
                     }

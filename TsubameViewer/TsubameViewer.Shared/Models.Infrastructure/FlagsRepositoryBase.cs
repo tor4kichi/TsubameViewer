@@ -12,17 +12,25 @@ using Windows.Storage;
 
 namespace TsubameViewer.Models.Infrastructure
 {
-
+    /*
     public class JsonObjectSerializer : Microsoft.Toolkit.Helpers.IObjectSerializer
     {
         public string Serialize<T>(T value) => System.Text.Json.JsonSerializer.Serialize(value);
 
         public T Deserialize<T>(string value) => string.IsNullOrEmpty(value) || value == "null" ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
     }
+    */
 
-    public class FlagsRepositoryBase : BindableBase
+    public class BinaryJsonObjectSerializer : IBytesObjectSerializer
     {
-        private readonly static ApplicationDataStorageHelper _LocalStorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
+        public byte[] Serialize<T>(T value) => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
+
+        public T Deserialize<T>(byte[] value) => value == null || value.Length == 0 ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
+    }
+
+    public abstract class FlagsRepositoryBase : BindableBase
+    {
+        private readonly static BytesApplicationDataStorageHelper _LocalStorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());
         private static readonly Models.Infrastructure.AsyncLock _fileUpdateLock = new ();
         public FlagsRepositoryBase()
         {            
@@ -87,5 +95,5 @@ namespace TsubameViewer.Models.Infrastructure
             }
         }
 
-    }
+    }    
 }

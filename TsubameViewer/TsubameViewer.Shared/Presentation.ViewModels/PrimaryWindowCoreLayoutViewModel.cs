@@ -40,8 +40,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class PrimaryWindowCoreLayoutViewModel : BindableBase
     {
-        public INavigationService NavigationService => _navigationServiceLazy.Value;
-        private readonly Lazy<INavigationService> _navigationServiceLazy;
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
@@ -51,7 +49,6 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public PrimaryWindowCoreLayoutViewModel(
-            [Dependency("PrimaryWindowNavigationService")] Lazy<INavigationService> navigationServiceLazy,
             IEventAggregator eventAggregator,
             IScheduler scheduler,
             IMessenger messenger,
@@ -69,7 +66,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage) },
                 //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
             };
-            _navigationServiceLazy = navigationServiceLazy;
             EventAggregator = eventAggregator;
             _scheduler = scheduler;
             _messenger = messenger;
@@ -87,6 +83,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             UpdateAutoSuggestCommand
                 .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
+                .Where(_ => OnceSkipSuggestUpdate is false)
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
@@ -114,7 +111,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (item is MenuItemViewModel menuItem)
                 {
-                    NavigationService.NavigateAsync(menuItem.PageType);
+                    _messenger.NavigateAsync(menuItem.PageType);
                 }                
             });
 
@@ -148,16 +145,49 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
+        bool OnceSkipSuggestUpdate = false;
         Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
+        CancellationTokenSource _cts;
         async void ExecuteUpdateAutoSuggestCommand(string parameter)
-        {
+        {            
+            CancellationTokenSource cts;
+            CancellationToken ct = default;
             using (await _suggestUpdateLock.LockAsync(default))
             {
+                _cts?.Cancel();
+                _cts = null;
+
                 _AutoSuggestItemsGroup.Items.Clear();
+
+                if (OnceSkipSuggestUpdate) 
+                {
+                    OnceSkipSuggestUpdate = false;
+                    return; 
+                }
                 if (string.IsNullOrWhiteSpace(parameter)) { return; }
 
-                var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), CancellationToken.None).Take(3).ToListAsync());
-                _AutoSuggestItemsGroup.Items.AddRange(result);
+                _cts = cts = new CancellationTokenSource();
+                ct = cts.Token;
+            }
+
+            object recipentObject = new object();
+            
+            try
+            {
+                var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
+
+                ct.ThrowIfCancellationRequested();
+
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    _AutoSuggestItemsGroup.Items.AddRange(result);
+                    _cts = null;
+                }
+            }
+            catch (OperationCanceledException) { }
+            finally
+            {
+                cts.Dispose();
             }
         }
 
@@ -167,6 +197,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async void ExecuteSuggestChosenCommand(IStorageItem entry)
         {
+            using (await _suggestUpdateLock.LockAsync(default))
+            {
+                OnceSkipSuggestUpdate = true;
+                _cts?.Cancel();
+                _cts = null;
+            }
+
             var path = entry.Path;
 
             var parameters = new NavigationParameters();
@@ -180,12 +217,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, ct), CancellationToken.None);
                 if (containerType == FolderContainerType.OnlyImages)
                 {
-                    await NavigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                     return;
                 }
                 else
                 {
-                    await NavigationService.NavigateAsync(nameof(FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                    await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     return;
                 }
             }
@@ -196,12 +233,17 @@ namespace TsubameViewer.Presentation.ViewModels
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    await NavigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    await NavigationService.NavigateAsync(nameof(EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
+            }
+
+            using (await _suggestUpdateLock.LockAsync(default))
+            { 
+                OnceSkipSuggestUpdate = false;
             }
         }
 
@@ -209,13 +251,23 @@ namespace TsubameViewer.Presentation.ViewModels
         private DelegateCommand<object> _SearchQuerySubmitCommand;
         public DelegateCommand<object> SearchQuerySubmitCommand =>
             _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new DelegateCommand<object>(ExecuteSearchQuerySubmitCommand));
-
-        void ExecuteSearchQuerySubmitCommand(object parameter)
+        
+        async void ExecuteSearchQuerySubmitCommand(object parameter)
         {
             if (parameter is string q)
             {
-                // 検索ページを開く
-                NavigationService.NavigateAsync(nameof(Views.SearchResultPage), ("q", q));
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    OnceSkipSuggestUpdate = true;
+                    _cts?.Cancel();
+                    _cts = null;
+                }
+                    // 検索ページを開く
+                    await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
+                using (await _suggestUpdateLock.LockAsync(default))
+                {
+                    OnceSkipSuggestUpdate = false;                
+                }
             }
             else if (parameter is IStorageItem entry)
             {

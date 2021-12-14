@@ -56,7 +56,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
 
         public IImageSource Item { get; }
@@ -72,11 +71,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public BitmapImage Image
         {
             get { return _image; }
-            private set { SetProperty(ref _image, value); }
+            set { SetProperty(ref _image, value); }
         }
 
-        private double? _ImageAspectRatioWH;
-        public double? ImageAspectRatioWH
+        private float? _ImageAspectRatioWH;
+        public float? ImageAspectRatioWH
         {
             get { return _ImageAspectRatioWH; }
             set { SetProperty(ref _ImageAspectRatioWH, value); }
@@ -95,10 +94,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _ReadParcentage, value); }
         }
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager) 
+        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager) 
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
 
 #if WINDOWS_UWP
@@ -115,8 +113,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemViewModel() { }
 
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, FolderListingSettings folderListingSettings, BookmarkManager bookmarkManager)
-             : this(sourceStorageItemsRepository, folderListingSettings, bookmarkManager)
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
+             : this(sourceStorageItemsRepository, bookmarkManager)
         {
             Item = item;
             DateCreated = Item.DateCreated;
@@ -128,7 +126,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 Path = storageItemImageSource.Path;
             }
 
-            _ImageAspectRatioWH = Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
+            _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
 
             UpdateLastReadPosition();
         }
@@ -183,10 +181,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                 if (Item == null) { return; }
 
-                if (Type == StorageItemTypes.Image && !_folderListingSettings.IsImageFileThumbnailEnabled) { return; }
-                if (Type == StorageItemTypes.Archive && !_folderListingSettings.IsArchiveFileThumbnailEnabled) { return; }
-                if (Type == StorageItemTypes.Folder && !_folderListingSettings.IsFolderThumbnailEnabled) { return; }
-
                 if (ct.IsCancellationRequested)
                 {
                     _isAppearingRequestButLoadingCancelled = true;
@@ -208,7 +202,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                     Image = bitmapImage;
                 }
 
-                ImageAspectRatioWH ??= Item.GetThumbnailSize() is not null and ThumbnailSize size ? size.Width / (double)size.Height : null;
+                ImageAspectRatioWH ??= Item.GetThumbnailSize()?.RatioWH;
 
                 _isInitialized = true;
             }

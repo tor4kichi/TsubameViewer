@@ -36,6 +36,8 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using System.Collections;
 using System.Reactive.Concurrency;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System.Windows.Input;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -68,6 +70,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         private readonly IScheduler _scheduler;
+        private readonly IMessenger _messenger;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -75,6 +78,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+        private readonly BackNavigationCommand _backNavigationCommand;
 
         public SecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
@@ -141,12 +145,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IDisposable _ImageCollectionDisposer;
 
-        public string FoldersManagementPageName => nameof(Views.SourceStorageItemsPage);
-
-
-        static bool _LastIsImageFileThumbnailEnabled;
-        static bool _LastIsArchiveFileThumbnailEnabled;
-        static bool _LastIsFolderThumbnailEnabled;
+        public string FoldersManagementPageName => PageNavigationConstants.HomePageName;
 
         private string _currentArchiveFolderName;
 
@@ -163,6 +162,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public FolderListupPageViewModel(
             IScheduler scheduler,
+            IMessenger messenger,
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -171,6 +171,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
+            BackNavigationCommand backNavigationCommand,
             OpenPageCommand openPageCommand,
             OpenListupCommand openListupCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -186,6 +187,7 @@ namespace TsubameViewer.Presentation.ViewModels
             )
         {
             _scheduler = scheduler;
+            _messenger = messenger;
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -194,6 +196,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
+            _backNavigationCommand = backNavigationCommand;
             OpenPageCommand = openPageCommand;
             OpenListupCommand = openListupCommand;
             OpenFolderItemCommand = openFolderItemCommand;
@@ -248,10 +251,6 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
             FolderItems.Clear();
 
-            _LastIsImageFileThumbnailEnabled = _folderListingSettings.IsImageFileThumbnailEnabled;
-            _LastIsArchiveFileThumbnailEnabled = _folderListingSettings.IsArchiveFileThumbnailEnabled;
-            _LastIsFolderThumbnailEnabled = _folderListingSettings.IsFolderThumbnailEnabled;
-
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
 
@@ -259,13 +258,6 @@ namespace TsubameViewer.Presentation.ViewModels
             CurrentFolderItem = null;
 
         }
-
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }        
 
         public StorageItemViewModel GetLastIntractItem()
         {
@@ -337,6 +329,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            // ナビゲーション全体をカバーしてロックしていないと_leavePageCancellationTokenSourceが先にキャンセルされているケースがある
+            using var lockReleaser = await _NavigationLock.LockAsync(default);
+
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var ct = _leavePageCancellationTokenSource.Token;
@@ -345,17 +340,12 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 var mode = parameters.GetNavigationMode();
-                if (mode == NavigationMode.Refresh)
-                {
-                    parameters = PrimaryWindowCoreLayout.GetCurrentNavigationParameter();
-                }
 
                 _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)
                     : null
                     ;
 
-                using var lockReleaser = await _NavigationLock.LockAsync(default);
 
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
@@ -364,8 +354,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         throw new InvalidOperationException();
                     }
-                    else if (_currentPath != unescapedPath)
-                    {                        
+                    else if (_currentPath != unescapedPath
+                        || (_currentArchiveFolderName != null
+                            && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
+                            && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
+                            )
+                        )
+                    {        
                         ClearContent();
                         await ResetContent(unescapedPath, ct);
                     }
@@ -460,7 +455,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -481,7 +476,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -490,11 +485,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _thumbnailManager), _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                         }
                     }
                 }
@@ -523,22 +518,30 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageCollectionContext = imageCollectionContext;
             _ImageCollectionDisposer = imageCollectionContext as IDisposable;
 
-            await ReloadItemsAsync(_imageCollectionContext, ct);
+            try
+            {
+                await ReloadItemsAsync(_imageCollectionContext, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                ClearContent();
+                (_backNavigationCommand as ICommand).Execute(null);
+            }
         }
         
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
             var oldItemPathMap = FolderItems.Select(x => x.Path).ToHashSet();
-            var newItems = await imageCollectionContext.GetFolderOrArchiveFilesAsync(ct);
+            var newItems = await _messenger.WorkWithBusyWallAsync((ct) => imageCollectionContext.GetFolderOrArchiveFilesAsync(ct), ct).ToListAsync(ct);
             var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
                 .Where(x => oldItemPathMap.Contains(x))
                 .ToHashSet();
-            
+
             using (FileItemsView.DeferRefresh())
             {
                 // 削除アイテム
                 Debug.WriteLine($"items count : {FolderItems.Count}");
-                FolderItems.Remove(itemVM => 
+                FolderItems.Remove(itemVM =>
                 {
                     var delete = deletedItems.Contains(itemVM.Path);
                     if (delete) { itemVM.Dispose(); }
@@ -549,7 +552,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager));
+                    ct.ThrowIfCancellationRequested();
                 }
                 Debug.WriteLine($"after added : {FolderItems.Count}");
             }

@@ -36,9 +36,10 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove
 ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
 
 ThumbnailImageSettings = Thumbnail display settings
-IsDisplayImageFileThubnail = Display thumbnails of image files
-IsDisplayArchiveFileThubnail = Display thumbnails of compressed files
-IsDisplayFolderThubnail = Show folder thumbnails
+IsGenerateImageFileThumbnail = Generate thumbnails of image files
+IsGenerateFolderThumbnail = Generate thumbnails for folders
+IsGenerateArchiveFileThumbnail = Generate thumbnails of compressed files
+IsGenerateArchiveEntryThumbnail = Generate thumbnails of items in compressed files
 DeleteThumbnailCache = Delete all thumbnail image cache
 ThumbnailCacheSize = Image cached storage capacity
 ProcessingThumbnailCache = Processing delete operation

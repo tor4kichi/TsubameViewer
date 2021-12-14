@@ -170,6 +170,7 @@ namespace TsubameViewer
                 SystemInformation.Instance.TrackAppUse(activated);
             }
 
+            PageNavigationInfo pageNavigationInfo = null;
             if (args.Arguments is LaunchActivatedEventArgs launchActivatedEvent)
             {
                 if (launchActivatedEvent.PrelaunchActivated == false)
@@ -179,17 +180,11 @@ namespace TsubameViewer
 
                     if (!string.IsNullOrEmpty(launchActivatedEvent.Arguments))
                     {
+
                         try
                         {
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
-                            var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
-                            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                            await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
-                            var result = await NavigateAsync(navigationInfo);
-                            if (result.Success)
-                            {
-                                isRestored = true;
-                            }
+                            pageNavigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
                         }
                         catch { }
                     }
@@ -199,26 +194,25 @@ namespace TsubameViewer
             {
                 try
                 {
-                    var navigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
-
-                    if (navigationInfo != null)
-                    {
-                        var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
-                        await navigationService.NavigateAsync(nameof(Presentation.Views.SourceStorageItemsPage));
-                        var result = await NavigateAsync(navigationInfo);
-                        if (result.Success)
-                        {
-                            isRestored = true;
-                        }
-                    }
+                    pageNavigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
                 }
                 catch { }
             }
 
-            if (!isRestored)
+            if (pageNavigationInfo != null)
             {
-                isRestored = true;
-                var shell = Window.Current.Content as  PrimaryWindowCoreLayout;
+                IMessenger messenger = Container.Resolve<IMessenger>();
+                var result = await NavigateAsync(pageNavigationInfo, messenger);
+                if (result.Success)
+                {
+                    isRestored = true;
+                    
+                }
+            }
+
+            if (isRestored is false)
+            {
+                var shell = Window.Current.Content as PrimaryWindowCoreLayout;
                 await shell.RestoreNavigationStack();
             }
 
@@ -232,44 +226,48 @@ namespace TsubameViewer
 #if DEBUG
             Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
 #endif
-            Type[] migraterTypes = new[]
-            {
-                typeof(DropSearchIndexDb),
-                typeof(DropPathReferenceCountDb),
-                typeof(MigrateAsyncStorageApplicationPermissionToDb),
 
-                // IsFirstRunを条件としているが設定をクリアする挙動のため次回起動時が必ずIsFirstRunに引っかかってしまうので一旦動作を停止する
-                //typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
-            };
-
-            await Task.Run(async () =>
+            if (SystemInformation.Instance.IsAppUpdated)
             {
-                foreach (var migratorType in migraterTypes)
+                // Note: IsFirstRunを条件とした場合、設定をクリアされた結果として次回起動時が必ずIsFirstRunに引っかかってしまうことに注意
+
+                Type[] migraterTypes = new[]
                 {
-                    var migratorInstance = Container.Resolve(migratorType);
-                    if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                    typeof(DropSearchIndexDb),
+                    typeof(DropPathReferenceCountDb),
+                    typeof(MigrateAsyncStorageApplicationPermissionToDb),
+
+                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+                };
+
+                await Task.Run(async () =>
+                {
+                    foreach (var migratorType in migraterTypes)
                     {
-                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
+                        var migratorInstance = Container.Resolve(migratorType);
+                        if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                        {
+                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                        migrater.Migrate();
+                            migrater.Migrate();
 
-                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                        }
+                        else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                        {
+                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
+
+                            await asyncMigrater.MigrateAsync();
+
+                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"Skip migrate: {migratorType.Name}");
+                        }
                     }
-                    else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
-                    {
-                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
-
-                        await asyncMigrater.MigrateAsync();
-
-                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Skip migrate: {migratorType.Name}");
-                    }
-                }
-            });
-
+                });
+            }
 
             Type[] restoreTypes = new[]
             {
@@ -337,21 +335,17 @@ namespace TsubameViewer
 
             Resources["SmallImageWidth"] = ListingImageConstants.SmallFileThumbnailImageWidth;
             Resources["SmallImageHeight"] = ListingImageConstants.SmallFileThumbnailImageHeight;
+            Resources["SmallImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.SmallFileThumbnailImageHeight, ListingImageConstants.SmallFileThumbnailImageHeight));
             Resources["MidiumImageWidth"] = ListingImageConstants.MidiumFileThumbnailImageWidth;
             Resources["MidiumImageHeight"] = ListingImageConstants.MidiumFileThumbnailImageHeight;
+            Resources["MidiumImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.MidiumFileThumbnailImageHeight, ListingImageConstants.MidiumFileThumbnailImageHeight));
             Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
             Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
+            Resources["LargeImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.LargeFileThumbnailImageHeight, ListingImageConstants.LargeFileThumbnailImageHeight));
 
             UpdateFolderItemSizingResourceValues();
 
-
-            var shell = Container.Resolve<PrimaryWindowCoreLayout>();
-            var ns = shell.GetNavigationService();
-            var unityContainer = Container.GetContainer();
-            unityContainer.RegisterInstance<INavigationService>("PrimaryWindowNavigationService", ns);
-            unityContainer.RegisterInstance<INavigationService>(ns);
-
-            Window.Current.Content = shell;
+            Window.Current.Content = Container.Resolve<PrimaryWindowCoreLayout>();
             Window.Current.Activate();
 
             // セカンダリタイル管理の初期化
@@ -451,9 +445,9 @@ namespace TsubameViewer
             public string PageName { get; set; }
         }
 
-        async Task<INavigationResult> NavigateAsync(PageNavigationInfo info)
+        async Task<INavigationResult> NavigateAsync(PageNavigationInfo info, IMessenger messenger = null)
         {
-            var navigationService = Container.Resolve<INavigationService>("PrimaryWindowNavigationService");
+            messenger ??= Container.Resolve<IMessenger>();
             var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
 
             NavigationParameters parameters = new NavigationParameters();
@@ -477,11 +471,11 @@ namespace TsubameViewer
                 var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, isForgetNavigation: true);
                 }
             }
             else if  (item is StorageFile file)
@@ -491,11 +485,11 @@ namespace TsubameViewer
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    return await navigationService.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
+                    return await messenger.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, isForgetNavigation: true);
                 }
             }
 
@@ -541,8 +535,6 @@ namespace TsubameViewer
             }
 
             // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
-            // TODO: FileActivationで開いた画像ビューワーページのバックナビゲーション先をSourceStorageItemsPageにする？
-            // TODO: ファイルアクティべーション時、フォルダを渡された際、フォルダ内が画像のみなら画像ビューワーで開きたい
             if (path != null)
             {
                 return new PageNavigationInfo()

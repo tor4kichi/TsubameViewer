@@ -21,6 +21,7 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Text.Core;
 using Windows.UI.Xaml;
@@ -31,7 +32,10 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
-
+using Microsoft.Toolkit.Uwp;
+using Reactive.Bindings;
+using TsubameViewer.Models.Infrastructure;
+using System.Collections.Immutable;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -44,6 +48,10 @@ namespace TsubameViewer.Presentation.Views
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         private readonly IMessenger _messenger;
 
+        private readonly DispatcherQueue _dispatcherQueue;
+        private readonly DispatcherQueueTimer _AnimationCancelTimer;
+        private readonly TimeSpan _BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
+
         public PrimaryWindowCoreLayout(
             PrimaryWindowCoreLayoutViewModel viewModel, 
             IMessenger messenger
@@ -53,114 +61,134 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _viewModel = viewModel;
             _messenger = messenger;
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _navigationService = NavigationService.Create(this.ContentFrame, Window.Current.CoreWindow);
 
-            // Navigation Handling
-            ContentFrame.Navigated += Frame_Navigated;
-            SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
-            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
-            Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
+            InitializeNavigation();
+            InitializeThemeChangeRequest();
+            InitializeSearchBox();
 
-            _backNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<BackNavigationRequestEvent>()
-                .Subscribe(() => HandleBackRequest(), keepSubscriberReferenceAlive: true);
-
-            _refreshNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<RefreshNavigationRequestEvent>()
-                .Subscribe(() => RefreshCommand.Execute(), keepSubscriberReferenceAlive: true);
-
-            _themeChangeRequestEventSubscriber = _viewModel.EventAggregator.GetEvent<ThemeChangeRequestEvent>()
-                .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
-
-            SetTheme(_viewModel.ApplicationSettings.Theme);
-
-            AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
-
-            _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) => 
-            {
-                VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
-            });
-
-            _messenger.Register<BusyWallExitRequestMessage>(this, (r, m) =>
-            {
-                VisualStateManager.GoToState(this, VS_HideBusyWall.Name, true);
-            });
-
-
+            _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
+            InitializeBusyWorkUI();
         }
 
-        private bool NowShowingBusyWork => BusyWall.IsHitTestVisible;
 
-        private RelayCommand CancelBusyWorkCommand { get; }
-        
 
-        private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
-        {
-            var textBox = AutoSuggestBox.FindDescendant<TextBox>();
-            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-            textBox.TextChanged += TextBox_TextChanged;
-        }
+        #region Navigation
 
-        bool _isInputIncomplete;
-        private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
-        {
-            _isInputIncomplete = true;
-        }
-
-        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_isInputIncomplete == false)
-            {
-                (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-            }
-        }
-
-        private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
-        {
-            _isInputIncomplete = false;
-            (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-        }
-
-        IDisposable _backNavigationEventSubscriber;
-        IDisposable _refreshNavigationEventSubscriber;
-        IDisposable _themeChangeRequestEventSubscriber;
-
-        private Type[] MenuPaneHiddenPageTypes = new Type[] 
+        private readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
         {
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SettingsPage),
-        };
+        }.ToImmutableHashSet();
 
-        private Type[] CanGoBackPageTypes = new Type[] 
+        private readonly static ImmutableHashSet<Type> CanGoBackPageTypes = new Type[]
         {
             typeof(FolderListupPage),
             typeof(ImageListupPage),
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
+            typeof(SearchResultPage),
             typeof(SettingsPage),
-        };
+        }.ToImmutableHashSet();
 
-        private Type[] ForgetOwnNavigationPageTypes = new Type[]
+        private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
         {
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
-        };
+        }.ToImmutableHashSet();
 
 
+        private readonly IPlatformNavigationService _navigationService;
 
+        private IDisposable _refreshNavigationEventSubscriber;
+        private IDisposable _themeChangeRequestEventSubscriber;
+
+        private readonly AsyncLock _navigationLock = new ();
+        private bool _isForgetNavigationRequested = false;
         private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
         private List<INavigationParameters> ForwardParametersStack = new List<INavigationParameters>();
 
-        bool _isFirstNavigation = true;
+        private bool _isFirstNavigation = true;
+        private bool _nowChangingMenuItem = false;
+
+        private void InitializeNavigation()
+        {
+            async Task<INavigationResult> NavigationAsyncInternal(NavigationRequestMessage m)
+            {
+                using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
+                var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
+
+                try
+                {
+                    if (m.IsForgetNavigaiton)
+                    {
+                        _isForgetNavigationRequested = true;
+                    }
+
+                    SetCurrentNavigationParameters(m.Parameters);
+
+                    var result = await (m.Parameters != null
+                       ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
+                       : _navigationService.NavigateAsync(m.PageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
+                       );                    
+                    if (result.Success is false)
+                    {
+                        throw result.Exception ?? new Exception();
+                    }
+
+                    return result;
+                }
+                catch
+                {
+                    SetCurrentNavigationParameters(prevNavParam);
+                    SetCurrentNavigationParameters(currentNavParam);
+                    _isForgetNavigationRequested = false;
+                    throw;
+                }
+            }
+
+            _messenger.Register<NavigationRequestMessage>(this, (r, m) => 
+            {
+                m.Reply(NavigationAsyncInternal(m));
+            });
+
+            ContentFrame.Navigated += Frame_Navigated;
+            SystemNavigationManager.GetForCurrentView().BackRequested += App_BackRequested;
+
+            // Navigation Handling
+            Window.Current.CoreWindow.KeyDown += CoreWindow_KeyDown;
+            Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
+
+            _messenger.Register<BackNavigationRequestMessage>(this, (r, m) => 
+            {
+                if (CanHandleBackRequest())
+                {
+                    _ = HandleBackRequestAsync();
+                }
+            });
+
+            _refreshNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<RefreshNavigationRequestEvent>()
+                .Subscribe(() => RefreshCommand.Execute(), keepSubscriberReferenceAlive: true);
+
+            // ItemInvoke が動作しないことのワークアラウンドとして選択変更を使用
+            MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
+        }
+
+
+
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
             var frame = (Frame)sender;
-            BackCommand.RaiseCanExecuteChanged();
 
-            MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Any(x => x == e.SourcePageType);
+            // アプリメニュー表示の切替
+            MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
             if (MyNavigtionView.IsPaneVisible)
             {
                 var sourcePageTypeName = e.SourcePageType.Name;
@@ -171,8 +199,21 @@ namespace TsubameViewer.Presentation.Views
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
                 {
-                    MyNavigtionView.SelectedItem = selectedMeuItemVM;
+                    _nowChangingMenuItem = true;
+                    try
+                    {
+                        MyNavigtionView.SelectedItem = selectedMeuItemVM;
+                    }
+                    catch { }
+                    _nowChangingMenuItem = false;
                 }
+            }
+
+            // 選択中として表示するメニュー項目
+            if (e.SourcePageType == typeof(SearchResultPage)
+                || frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
+            {
+                MyNavigtionView.SelectedItem = null;
             }
 
 
@@ -183,9 +224,32 @@ namespace TsubameViewer.Presentation.Views
                 ? AppViewBackButtonVisibility.Visible
                 : AppViewBackButtonVisibility.Collapsed
                 ;
+            
+            //BackCommand.RaiseCanExecuteChanged();
+
 
             // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
-            if (!isCanGoBackPage)
+            if (_isForgetNavigationRequested)
+            {
+                _isForgetNavigationRequested = false;
+
+                foreach (var entry in ContentFrame.BackStack.ToArray())
+                {
+                    ContentFrame.BackStack.Remove(entry);
+                }
+                BackParametersStack.Clear();
+                foreach (var entry in ContentFrame.ForwardStack.ToArray())
+                {
+                    ContentFrame.ForwardStack.Remove(entry);
+                }
+                ForwardParametersStack.Clear();
+
+                ContentFrame.BackStack.Add(new PageStackEntry(PageNavigationConstants.HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(PageNavigationConstants.HomePageName)));
+                BackParametersStack.Add(new NavigationParameters());
+
+                _ = StoreNaviagtionParameterDelayed();
+            }
+            else if (!isCanGoBackPage)
             {
                 ContentFrame.BackStack.Clear();
                 BackParametersStack.Clear();
@@ -196,81 +260,100 @@ namespace TsubameViewer.Presentation.Views
                     ForwardParametersStack.Clear();
                 }
 
+                
+
                 _ = StoreNaviagtionParameterDelayed();
             }
             else if (!_isFirstNavigation)
             {
                 // ここのFrame_Navigatedが呼ばれた後にViewModel側のNavigatingToが呼ばれる
                 // 順序重要
-                _Prev = PrimaryWindowCoreLayout.CurrentNavigationParameters;
+                var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
 
-
-                // ビューワー系ページはバックスタックに積まれないようにする
-                // ビューワー系ページを開いてる状態でアプリ外部からビューワー系ページを開く操作があり得る
-                bool rememberBackStack = true;
-                if (frame.BackStack.LastOrDefault() is not null and var lastNavigatedPageEntry)
+               
+                // ナビゲーションスタック上に一つしか存在してはいけないページの場合
                 {
-                    if (ForgetOwnNavigationPageTypes.Any(type => type == e.SourcePageType))
+                    bool rememberBackStack = true;
+                    if (UniqueOnNavigtionStackPageTypes.Contains(e.SourcePageType)
+                        && frame.BackStack.LastOrDefault() is not null and var lastNavigatedPageEntry
+                        && e.SourcePageType == lastNavigatedPageEntry.SourcePageType
+                        )
                     {
-                        if (ForgetOwnNavigationPageTypes.Any(type => type == lastNavigatedPageEntry.SourcePageType)
-                            && e.SourcePageType == lastNavigatedPageEntry.SourcePageType
-                            )
+                        frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
+
+                        if (BackParametersStack.Any())
                         {
-                            frame.BackStack.RemoveAt(frame.BackStackDepth - 1);
-                            rememberBackStack = false;
+                            BackParametersStack.RemoveAt(frame.BackStackDepth - 1);
                         }
+
+                        rememberBackStack = false;
+                    }
+
+
+                    if (e.NavigationMode is not Windows.UI.Xaml.Navigation.NavigationMode.New)
+                    {
+                        rememberBackStack = false;
+                    }
+
+                    if (rememberBackStack)
+                    {
+                        if (e.NavigationMode is Windows.UI.Xaml.Navigation.NavigationMode.New)
+                        {
+                            ForwardParametersStack.Clear();
+                        }
+
+                        var prevParameters = new NavigationParameters();
+                        if (prevNavParam != null)
+                        {
+                            foreach (var pair in prevNavParam)
+                            {
+                                if (pair.Key == PageNavigationConstants.Restored) { continue; }
+
+                                prevParameters.Add(pair.Key, pair.Value);
+                            }
+                        }
+
+                        BackParametersStack.Add(prevParameters);
                     }
                 }
 
-                if (e.NavigationMode != Windows.UI.Xaml.Navigation.NavigationMode.New)
+                // Listup系ページのみ、同一パスのページをひとつずつまでしか持たせないようにする
+                // 同一パスをImageListupPageとFolderListupPageで交互に行き来した場合に
+                // FolderListupPageが２回目に現れたタイミングで１回目のImageListupPageとFOlderListupPageのバックスタック要素を削除する
                 {
-                    rememberBackStack = false;
-                }
-
-                if (rememberBackStack)
-                { 
-                    ForwardParametersStack.Clear();
-                    var prevParameters = new NavigationParameters();
-                    if (_Prev != null)
+                    if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
+                        && frame.BackStack.Count >= 3
+                        && e.SourcePageType == typeof(FolderListupPage)
+                        && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                        && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter)
+                        && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                        )
                     {
-                        foreach (var pair in _Prev)
+                        foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
                         {
-                            if (pair.Key == PageNavigationConstants.Restored) { continue; }
-
-                            prevParameters.Add(pair.Key, pair.Value);
+                            frame.BackStack.Remove(remove);
+                            BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
                         }
                     }
-
-                    BackParametersStack.Add(prevParameters);
-                }
+                }                
 
                 _ = StoreNaviagtionParameterDelayed();
-            }
-
-            MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
-            // 選択中として表示するメニュー項目
-            if (e.SourcePageType == typeof(SearchResultPage) 
-                ||  frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
-            {
-                MyNavigtionView.SelectedItem = null;
             }
 
             _isFirstNavigation = false;
         }
 
+
         private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
         {
+            if (_nowChangingMenuItem) { return; }
+
             if (args.SelectedItem != null)
             {
                 _viewModel.OpenMenuItemCommand.Execute(args.SelectedItem);
             }
         }
 
-        IPlatformNavigationService _navigationService;
-        public IPlatformNavigationService GetNavigationService()
-        {
-            return _navigationService ??= NavigationService.Create(this.ContentFrame, Gestures.Refresh);
-        }
 
         private DelegateCommand _BackCommand;
         public DelegateCommand BackCommand =>
@@ -286,6 +369,7 @@ namespace TsubameViewer.Presentation.Views
                 );
 
 
+        #endregion
 
         #region Back/Forward Navigation
 
@@ -298,7 +382,7 @@ namespace TsubameViewer.Presentation.Views
                 if (currentEntry == null)
                 {
                     Debug.WriteLine("[NavvigationRestore] skip restore page.");
-                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(SourceStorageItemsPage)));
+                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                     return;
                 }
 
@@ -312,13 +396,13 @@ namespace TsubameViewer.Presentation.Views
                 {
                     await Task.Delay(50);
                     Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
-                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(SourceStorageItemsPage)));
+                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                     return;
                 }
 
                 Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
 
-                if (currentEntry.PageName == nameof(Views.SourceStorageItemsPage))
+                if (currentEntry.PageName == PageNavigationConstants.HomePageName)
                 {
                     return;
                 }
@@ -333,7 +417,7 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.ForwardStack.Clear();
 
                 await StoreNaviagtionParameterDelayed();
-                await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(SourceStorageItemsPage)));
+                await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
                 return;
             }
 
@@ -364,51 +448,13 @@ namespace TsubameViewer.Presentation.Views
             */
         }
 
-
-
-        
-
-        static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
-        {
-            var np = new NavigationParameters();
-            if (parameters == null) { return np; }
-            foreach (var item in parameters)
-            {
-                np.Add(item.Key, item.Value);
-            }
-
-            return np;
-        }
-        
-        public static void SetCurrentNavigationParameters(INavigationParameters parameters)
-        {
-            if (parameters.GetNavigationMode() == Prism.Navigation.NavigationMode.Refresh) { return; }
-
-            CurrentNavigationParameters = parameters;
-        }
-
-        public static INavigationParameters CurrentNavigationParameters { get; private set; }
-
-        public static NavigationParameters GetCurrentNavigationParameter()
-        {
-            return CurrentNavigationParameters?.Clone() ?? new NavigationParameters();
-        }
-
-
-        // NavigationManager.BackRequestedによる戻るを一時的に防止する
-        // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
-        public static bool IsPreventSystemBackNavigation { get; set; }
-        public CoreTextEditContext _context { get; private set; }
-
-        private INavigationParameters _Prev;
-
         async Task StoreNaviagtionParameterDelayed()
         {
             await Task.Delay(50);
 
             // ナビゲーション状態の保存
             Debug.WriteLine("[NavvigationRestore] Save CurrentPage: " + ContentFrame.CurrentSourcePageType.Name);
-            _viewModel.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, CurrentNavigationParameters));
+            _viewModel.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, _currentNavigationParameters));
             {
                 PageEntry[] backNavigationPageEntries = new PageEntry[BackParametersStack.Count];
                 for (var backStackIndex = 0; backStackIndex < BackParametersStack.Count; backStackIndex++)
@@ -416,7 +462,7 @@ namespace TsubameViewer.Presentation.Views
                     var parameters = BackParametersStack[backStackIndex];
                     var stackEntry = ContentFrame.BackStack[backStackIndex];
                     backNavigationPageEntries[backStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
-                    Debug.WriteLine("[NavvigationRestore] Save BackStackPage: " + backNavigationPageEntries[backStackIndex].PageName);
+                    Debug.WriteLine($"[NavvigationRestore] Save BackStackPage: {backNavigationPageEntries[backStackIndex].PageName} {string.Join(',', backNavigationPageEntries[backStackIndex].Parameters.Select(x => $"{x.Key}={x.Value}"))}");
                 }
                 await _viewModel.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
@@ -435,13 +481,53 @@ namespace TsubameViewer.Presentation.Views
             */
         }
 
+
+        static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
+        {
+            var np = new NavigationParameters();
+            if (parameters == null) { return np; }
+            foreach (var item in parameters)
+            {
+                np.Add(item.Key, item.Value);
+            }
+
+            return np;
+        }
+        
+        private void SetCurrentNavigationParameters(INavigationParameters parameters)
+        {
+            if (parameters?.GetNavigationMode() == Prism.Navigation.NavigationMode.Refresh) { return; }
+
+            _prevNavigationParameters = _currentNavigationParameters;
+            _currentNavigationParameters = parameters;
+        }
+
+        private (INavigationParameters Current, INavigationParameters Prev) GetNavigationParametersSet()
+        {
+            return (_currentNavigationParameters, _prevNavigationParameters);
+        }
+
+
+        INavigationParameters _prevNavigationParameters;
+        INavigationParameters _currentNavigationParameters;
+
+        public NavigationParameters GetCurrentNavigationParameter()
+        {
+            return _currentNavigationParameters?.Clone() ?? new NavigationParameters();
+        }
+
+
+        // NavigationManager.BackRequestedによる戻るを一時的に防止する
+        // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
+        public static bool IsPreventSystemBackNavigation { get; set; }
+        //public CoreTextEditContext _context { get; private set; }        
+
         static PageEntry MakePageEnetry(Type pageType, INavigationParameters parameters)
         {
             return new PageEntry(pageType.Name, parameters);
         }
 
-
-        bool HandleBackRequest()
+        bool CanHandleBackRequest()
         {
             if (NowShowingBusyWork)
             {
@@ -456,69 +542,91 @@ namespace TsubameViewer.Presentation.Views
                 return false;
             }
 
-            if (_navigationService.CanGoBack())
-            {
-                var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                if (parameters.TryGetValue(PageNavigationConstants.Path, out string currentPath)
-                    && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName) is false
-                    )
-                {
-                    while (BackParametersStack.SkipLast(1).LastOrDefault() is not null and var lastNavigationParameters
-                        && lastNavigationParameters.TryGetValue(PageNavigationConstants.Path, out string lastPath)
-                        && currentPath == lastPath
-                        )
-                    {
-                        ContentFrame.BackStack.RemoveAt(ContentFrame.BackStackDepth - 1);
-                        BackParametersStack.Remove(lastNavigationParameters);
-                    }
-                }
-                {
-                    var lastNavigationParameters = BackParametersStack.LastOrDefault();
-                    if (lastNavigationParameters != null)
-                    {
-                        BackParametersStack.Remove(lastNavigationParameters);
-                        ForwardParametersStack.Add(parameters);
-                        _ = lastNavigationParameters == null
-                            ? _navigationService.GoBackAsync()
-                            : _navigationService.GoBackAsync(lastNavigationParameters)
-                            ;
-                    }
-                    else
-                    {
-                        _navigationService.NavigateAsync(nameof(Views.SourceStorageItemsPage));
-                    }
-                }
-                return true;
-            }
-            else
-            {
-                _navigationService.NavigateAsync(nameof(Views.SourceStorageItemsPage));
-            }
-
-            return false;
+            return _navigationService.CanGoBack();
         }
 
-
-        bool HandleForwardRequest()
+        async Task HandleBackRequestAsync()
         {
+            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
+            if (_navigationService.CanGoBack())
+            {
+                if (_isForgetNavigationRequested)
+                {
+                    _isForgetNavigationRequested = false;
+                }
+                var lastNavigationParameters = BackParametersStack.LastOrDefault();
+                
+                if (lastNavigationParameters != null)
+                {
+                    var lastNavigationParametersSet = GetNavigationParametersSet();
+                    var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+
+                    _currentNavigationParameters = lastNavigationParameters;
+                    _prevNavigationParameters = BackParametersStack.TakeLast(2).Skip(1).FirstOrDefault();
+
+                    BackParametersStack.Remove(lastNavigationParameters);
+                    ForwardParametersStack.Add(parameters);
+                    var result = await (lastNavigationParameters == null
+                        ? _navigationService.GoBackAsync()
+                        : _navigationService.GoBackAsync(lastNavigationParameters)
+                        );
+
+                    if (result.Success is false)
+                    {
+                        _currentNavigationParameters = lastNavigationParametersSet.Current;
+                        _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                    }
+
+                    return;
+                }
+                else
+                {
+                    await _messenger.NavigateAsync(PageNavigationConstants.HomePageName);
+                }
+            }
+        }
+
+        bool CanHandleForwardRequest()
+        {
+            if (NowShowingBusyWork)
+            {
+                CancelBusyWorkCommand.Execute(null);
+                return false;
+            }
+
+            return _navigationService.CanGoForward();
+        }
+
+        async Task HandleForwardRequest()
+        {
+            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
             if (_navigationService.CanGoForward())
             {
                 var forwardNavigationParameters = ForwardParametersStack.Last();
+                var lastNavigationParametersSet = GetNavigationParametersSet();
+                var parameters = GetCurrentNavigationParameter(); // GoForwardAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+
                 {
-                    var last = ForwardParametersStack.Last();
-                    var parameters = GetCurrentNavigationParameter(); // GoForwardAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-                    ForwardParametersStack.Remove(last);
+                    ForwardParametersStack.Remove(forwardNavigationParameters);
                     BackParametersStack.Add(parameters);
                 }
-                _ = forwardNavigationParameters == null
+
+                _currentNavigationParameters = forwardNavigationParameters;
+                _prevNavigationParameters = lastNavigationParametersSet.Current;
+
+                var result = await (forwardNavigationParameters == null
                    ? _navigationService.GoForwardAsync()
                    : _navigationService.GoForwardAsync(forwardNavigationParameters)
-                   ;
+                   );
 
-                return true;
+                if (result.Success is false)
+                {
+                    _currentNavigationParameters = lastNavigationParametersSet.Current;
+                    _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                }
             }
-
-            return false;
         }
 
 
@@ -528,20 +636,24 @@ namespace TsubameViewer.Presentation.Views
                 && args.CurrentPoint.Properties.IsXButton1Pressed
                 )
             {
-                if (HandleBackRequest())
+                if (CanHandleBackRequest())
                 {
                     args.Handled = true;
                     Debug.WriteLine("back navigated with Pointer Back pressed");
+
+                    _ = HandleBackRequestAsync();
                 }
             }
             else if (args.KeyModifiers == Windows.System.VirtualKeyModifiers.None
                 && args.CurrentPoint.Properties.IsXButton2Pressed
                 )
             {
-                if (HandleForwardRequest())
+                if (CanHandleForwardRequest())
                 {
                     args.Handled = true;
                     Debug.WriteLine("forward navigated with Pointer Forward pressed");
+
+                    _ = HandleForwardRequest();
                 }
             }
         }
@@ -550,18 +662,22 @@ namespace TsubameViewer.Presentation.Views
         {
             if (args.VirtualKey == Windows.System.VirtualKey.GoBack)
             {
-                if (HandleBackRequest())
+                if (CanHandleBackRequest())
                 {
                     args.Handled = true;
                     Debug.WriteLine("back navigated with VirtualKey.Back pressed");
+
+                    _ = HandleBackRequestAsync();
                 }
             }
             else if (args.VirtualKey == Windows.System.VirtualKey.GoForward)
             {
-                if (HandleForwardRequest())
+                if (CanHandleForwardRequest())
                 {
                     args.Handled = true;
                     Debug.WriteLine("forward navigated with VirtualKey.Back pressed");
+
+                    _ = HandleForwardRequest();
                 }
             }
         }
@@ -570,9 +686,11 @@ namespace TsubameViewer.Presentation.Views
         {
             if (IsPreventSystemBackNavigation) { return; }
 
-            if (HandleBackRequest())
+            if (CanHandleBackRequest())
             {
                 Debug.WriteLine("back navigated with SystemNavigationManager.BackRequested");
+                
+                _ = HandleBackRequestAsync();
             }
 
             // Note: 強制的にハンドルしないとXboxOneやタブレットでアプリを閉じる動作に繋がってしまう
@@ -583,11 +701,93 @@ namespace TsubameViewer.Presentation.Views
 
 
 
+        #endregion
+
+        #region Search Box
+
+        private void InitializeSearchBox()
+        {
+            AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
+        }
+
+
+        private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+        {
+            var textBox = AutoSuggestBox.FindDescendant<TextBox>();
+            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+            textBox.TextChanged += TextBox_TextChanged;
+        }
+
+        bool _isInputIncomplete;
+        private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+        {
+            _isInputIncomplete = true;
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isInputIncomplete == false)
+            {
+                (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+            }
+        }
+
+        private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+        {
+            _isInputIncomplete = false;
+            (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+        }
 
         #endregion
 
+        #region Busy Work
+
+        private void InitializeBusyWorkUI()
+        {
+            _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) =>
+            {
+                _AnimationCancelTimer.Start();
+                VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            });
+
+            _messenger.Register<BusyWallExitRequestMessage>(this, (r, m) =>
+            {
+                VisualStateManager.GoToState(this, VS_HideBusyWall.Name, true);
+            });
+
+            // 
+            _AnimationCancelTimer.IsRepeating = false;
+            _AnimationCancelTimer.Interval = _BusyWallDisplayDelayTime;
+            _AnimationCancelTimer.Tick += (_, _) =>
+            {
+                var animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+                if (animation != null)
+                {
+                    animation.Cancel();
+                }
+            };
+        }
+
+
+
+        private bool NowShowingBusyWork => BusyWall.IsHitTestVisible;
+
+        private RelayCommand CancelBusyWorkCommand { get; }
+
+
+
+        #endregion
 
         #region Theme
+
+        private void InitializeThemeChangeRequest()
+        {
+            _themeChangeRequestEventSubscriber = _viewModel.EventAggregator.GetEvent<ThemeChangeRequestEvent>()
+                .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
+
+            SetTheme(_viewModel.ApplicationSettings.Theme);
+        }
 
         public void SetTheme(Models.Domain.ApplicationTheme applicationTheme)
         {
@@ -662,7 +862,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     if (openStorageItem is StorageFolder)
                     {
-                        await _viewModel.NavigationService.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                        await _messenger.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                     }
                     else if (openStorageItem is StorageFile fileItem)
                     {
@@ -670,11 +870,11 @@ namespace TsubameViewer.Presentation.Views
                             || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
                             )
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                            await _messenger.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                         }
                         else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                         {
-                            await _viewModel.NavigationService.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)), PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
+                            await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
                         }
                     }
                 }
@@ -686,11 +886,6 @@ namespace TsubameViewer.Presentation.Views
         }
 
         #endregion
-
-        private void MyNavigtionView_PaneOpening(Microsoft.UI.Xaml.Controls.NavigationView sender, object args)
-        {
-            sender.IsPaneOpen = false;
-        }
     }
 
 

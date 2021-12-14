@@ -20,19 +20,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenFolderItemSecondaryCommand : DelegateCommandBase
     {
-        private readonly INavigationService _navigationService;
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly SourceChoiceCommand _sourceChoiceCommand;
 
         public OpenFolderItemSecondaryCommand(
-            INavigationService navigationService,
             IMessenger messenger,
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand
             )
         {
-            _navigationService = navigationService;
             _messenger = messenger;
             _folderContainerTypeManager = folderContainerTypeManager;
             _sourceChoiceCommand = sourceChoiceCommand;
@@ -50,7 +47,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
@@ -58,18 +55,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(FolderListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(FolderListupPage)));
+                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
                         var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
+                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
                 }
                 else if (item.Type == StorageItemTypes.EBook)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
+                    var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.None)
                 {

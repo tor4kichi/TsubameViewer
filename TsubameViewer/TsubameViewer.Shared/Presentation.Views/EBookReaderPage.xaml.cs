@@ -34,6 +34,7 @@ using Xamarin.Essentials;
 using Prism.Ioc;
 using AsyncLock = Uno.Threading.AsyncLock;
 using Windows.UI.Xaml.Media.Animation;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -141,7 +142,7 @@ namespace TsubameViewer.Presentation.Views
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
 
-            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation("ImageJumpInAnimation");
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
                 animation.Cancel();                

@@ -101,11 +101,12 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "ThumbnailImageSettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayFolderThubnail".Translate(), _folderListingSettings, x => x.IsFolderThumbnailEnabled),
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayArchiveFileThubnail".Translate(), _folderListingSettings, x => x.IsArchiveFileThumbnailEnabled),
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsDisplayImageFileThubnail".Translate(), _folderListingSettings, x => x.IsImageFileThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, x => x.IsImageFileGenerateThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, x => x.IsFolderGenerateThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
+                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                         new UpdatableTextSettingItemViewModel("ThumbnailCacheSize".Translate(), _ThumbnailImagesCacheSizeText),
-                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => _ = DeleteThumnnailsAsync()),
+                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => DeleteThumnnailsAsync()),
                     }
                 },
                 new SettingsGroupViewModel
@@ -380,26 +381,33 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class ButtonSettingItemViewModel : SettingItemViewModelBase, IDisposable
     {
-        private readonly Action _buttonAction;
-
-        public ButtonSettingItemViewModel(string label, Action buttonAction)
+        public ButtonSettingItemViewModel(string label, Func<Task> buttonAction)
         {
             Label = label;
-            _buttonAction = buttonAction;
-            ActionCommand = new ReactiveCommand();
-            ActionCommand.Subscribe(_ => _buttonAction());
+            ActionCommand = new AsyncReactiveCommand();
+            ActionCommand.Subscribe(buttonAction);
+        }
+
+        public ButtonSettingItemViewModel(string label, Func<Task> buttonAction, IObservable<bool> canExecuteObservable)
+        {
+            Label = label;
+            ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
+            ActionCommand.Subscribe(buttonAction);
         }
 
         public ButtonSettingItemViewModel(string label, Action buttonAction, IObservable<bool> canExecuteObservable)
         {
             Label = label;
-            _buttonAction = buttonAction;
-            ActionCommand = canExecuteObservable.ToReactiveCommand();
-            ActionCommand.Subscribe(_ => _buttonAction());
+            ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
+            ActionCommand.Subscribe(_ => 
+            {
+                buttonAction();
+                return Task.CompletedTask;
+            });
         }
 
         public string Label { get; }
-        public ReactiveCommand ActionCommand { get; }
+        public AsyncReactiveCommand ActionCommand { get; }
 
         public void Dispose()
         {

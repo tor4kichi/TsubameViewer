@@ -167,7 +167,7 @@ namespace TsubameViewer.Presentation.Views
             this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
             this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
 
-            (args.Element as Control).Focus(FocusState.Keyboard);
+            (args.Element as Control)?.Focus(FocusState.Keyboard);
         }
 
 
@@ -257,7 +257,7 @@ namespace TsubameViewer.Presentation.Views
                 && fe.DataContext is StorageItemViewModel itemVM
                 )
             {
-                itemVM.Initialize();
+                itemVM.Initialize();                
             }
         }
 
@@ -321,7 +321,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {
                 ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
             }
         });
 
@@ -332,7 +332,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {
                 ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate("ImageJumpInAnimation", image);
+                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
             }
         });
     }
@@ -344,8 +344,13 @@ namespace TsubameViewer.Presentation.Views
         {
             if (value is double ratioWH)
             {
-                double itemHeight = (int)parameter;
-                return itemHeight * ratioWH;
+                int itemHeight = (int)parameter;
+                return (double)(itemHeight * (float)ratioWH);
+            }
+            else if (value is float ratioWHf)
+            {
+                int itemHeight = (int)parameter;
+                return (double)(itemHeight * ratioWHf);
             }
             else 
             {

@@ -1,6 +1,5 @@
-﻿using Prism.Commands;
-using Prism.Events;
-using Prism.Navigation;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,11 +9,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class BackNavigationCommand : DelegateCommandBase
     {
-        private readonly IEventAggregator _eventAggregator;
+        private readonly IMessenger _messenger;
 
-        public BackNavigationCommand(IEventAggregator eventAggregator)
+        public BackNavigationCommand(IMessenger messenger)
         {
-            _eventAggregator = eventAggregator;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -24,7 +23,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override void Execute(object parameter)
         {
-            _eventAggregator.GetEvent<BackNavigationRequestEvent>().Publish();
+            _messenger.Send<BackNavigationRequestMessage>();
         }
     }
 }

@@ -81,17 +81,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         CancellationTokenSource _navigationCts;
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            SearchResultItems.Clear();
-
-            base.OnNavigatingTo(parameters);
-        }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            SearchResultItems.Clear();
             _navigationCts = new CancellationTokenSource();
             var ct = _navigationCts.Token;
             
@@ -103,7 +96,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct))
                     {
-                        SearchResultItems.Add(await ConvertStorageItemViewModel(entry));
+                        SearchResultItems.Add(ConvertStorageItemViewModel(entry));
                     }
                 }
                 catch (OperationCanceledException) 
@@ -119,10 +112,10 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
-        private async Task<StorageItemViewModel> ConvertStorageItemViewModel(IStorageItem storageItem)
+        private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
-            var storageItemImageSource = new StorageItemImageSource(storageItem, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager);
+            var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
+            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)

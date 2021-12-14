@@ -94,7 +94,7 @@ namespace TsubameViewer.Presentation.Views
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             ConnectedAnimationService.GetForCurrentView()
-                        .GetAnimation("ImageJumpInAnimation")?.Cancel();
+                        .GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName)?.Cancel();
 
             base.OnNavigatedTo(e);
 
@@ -238,7 +238,7 @@ namespace TsubameViewer.Presentation.Views
                 if (image.Source != null)
                 {
                     ConnectedAnimationService.GetForCurrentView()
-                        .PrepareToAnimate("ImageJumpInAnimation", image);
+                        .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 }
             }
 

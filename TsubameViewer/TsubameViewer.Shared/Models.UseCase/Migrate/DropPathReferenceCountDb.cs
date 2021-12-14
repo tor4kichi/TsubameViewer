@@ -16,8 +16,7 @@ namespace TsubameViewer.Models.UseCase.Migrate
         {
             _liteDatabase = liteDatabase;
         }
-        public bool IsRequireMigrate => (SystemInformation.Instance.IsFirstRun || SystemInformation.Instance.IsAppUpdated)
-            && _liteDatabase.CollectionExists(RemovedSearchIndexCollectionName);
+        public bool IsRequireMigrate => _liteDatabase.CollectionExists(RemovedSearchIndexCollectionName);
 
         public void Migrate()
         {

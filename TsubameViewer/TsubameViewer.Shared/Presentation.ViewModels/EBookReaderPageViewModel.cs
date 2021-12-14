@@ -219,13 +219,6 @@ namespace TsubameViewer.Presentation.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        public override void OnNavigatingTo(INavigationParameters parameters)
-        {
-            PrimaryWindowCoreLayout.SetCurrentNavigationParameters(parameters);
-
-            base.OnNavigatingTo(parameters);
-        }
-
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _AppCSS ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
@@ -559,7 +552,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SelectedTocItem = TocItems.FirstOrDefault();
 
-            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageAsync(_currentFolderItem, ct);
+            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(_currentFolderItem, ct);
             if (thumbnailFile != null)
             {
                 CoverImage = new BitmapImage(new Uri(thumbnailFile.Path));

@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenImageListupCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService;
+        private readonly IMessenger _messenger;
 
         public OpenImageListupCommand(
-            INavigationService navigationService
+            IMessenger messenger
             )
         {
-            _navigationService = navigationService;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -29,29 +30,20 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                try
+                if (item.Type == StorageItemTypes.Archive)
                 {
-                    if (item.Type == StorageItemTypes.Archive)
-                    {
-                        var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
-                    }
-                    else if (item.Type == StorageItemTypes.Folder)
-                    {
-                        var parameters = StorageItemViewModel.CreatePageParameter(item);
-                        var result = await _navigationService.NavigateAsync(nameof(ImageListupPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageListupPage)));
-                    }
-                    else if (item.Type == StorageItemTypes.EBook)
-                    {
-
-                    }
-                    else if (item.Type == StorageItemTypes.None)
-                    {
-                    }
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
                 }
-                catch
+                else if (item.Type == StorageItemTypes.Folder)
                 {
-                    await _navigationService.NavigateAsync(nameof(SourceStorageItemsPage), null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(SourceStorageItemsPage)));
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
+                }
+                else if (item.Type == StorageItemTypes.EBook)
+                {
+
+                }
+                else if (item.Type == StorageItemTypes.None)
+                {
                 }
             }
         }

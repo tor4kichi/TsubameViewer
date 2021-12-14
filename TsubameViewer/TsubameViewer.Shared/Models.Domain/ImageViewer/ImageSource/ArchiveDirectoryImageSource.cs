@@ -17,13 +17,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     {
         private readonly ArchiveImageCollection _imageCollection;
         private readonly ArchiveDirectoryToken _directoryToken;
+        private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, ThumbnailManager thumbnailManager)
+        public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             Guard.IsNotNull(directoryToken.Key, nameof(directoryToken.Key));
             _imageCollection = archiveImageCollection;
             _directoryToken = directoryToken;
+            _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
             Name = _directoryToken.Key is not null ? new string(_directoryToken.Key.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
         }
@@ -52,19 +54,33 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
         {
-            var file = await _thumbnailManager.GetArchiveEntryThumbnailImageAsync(StorageItem, ArchiveEntry, ct);
-            if (file is null)
+            if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
+                var file = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, ArchiveEntry, ct);
+                if (file is null)
+                {
+                    var imageSource = GetNearestImageFromDirectory(_directoryToken);
+                    if (imageSource == null) { return null; }
+
+                    return await imageSource.GetThumbnailImageStreamAsync(ct);
+                }
+
+                if (file == null) { return null; }
+
+                var fileStream = await file.OpenStreamForReadAsync();
+                return fileStream.AsRandomAccessStream();
+            }
+            else
+            {
+                var stream =  await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, ArchiveEntry, ct);
+                if (stream != null) { return stream; }
+
                 var imageSource = GetNearestImageFromDirectory(_directoryToken);
                 if (imageSource == null) { return null; }
 
                 return await imageSource.GetThumbnailImageStreamAsync(ct);
+
             }
-
-            if (file == null) { return null; }
-
-            var fileStream = await file.OpenStreamForReadAsync();
-            return fileStream.AsRandomAccessStream();
         }
 
         private IImageSource GetNearestImageFromDirectory(ArchiveDirectoryToken firstToken)
@@ -112,7 +128,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
-            return _thumbnailManager.GetThubmnailOriginalSize(_thumbnailManager.GetArchiveEntryPath(StorageItem, ArchiveEntry));
+            return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, ArchiveEntry);
         }
     }
 }

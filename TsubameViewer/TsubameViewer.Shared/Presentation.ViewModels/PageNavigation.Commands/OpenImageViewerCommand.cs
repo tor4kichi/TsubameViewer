@@ -1,4 +1,5 @@
-﻿using Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using Prism.Navigation;
 using System;
 using System.Collections.Generic;
@@ -11,13 +12,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenImageViewerCommand : DelegateCommandBase
     {
-        private INavigationService _navigationService;
+        private readonly IMessenger _messenger;
 
         public OpenImageViewerCommand(
-            INavigationService navigationService
+            IMessenger messenger
             )
         {
-            _navigationService = navigationService;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -32,17 +33,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.Folder)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(ImageViewerPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(ImageViewerPage)));
+                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.EBook)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _navigationService.NavigateAsync(nameof(EBookReaderPage), parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(nameof(EBookReaderPage)));
+                    var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.None)
                 {

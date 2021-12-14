@@ -26,6 +26,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FolderItemsCacheRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\DirectoryPathHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollection.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ReadingFeature\BookmarkManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderItemListing\FileDisplayMode.cs" />
@@ -41,6 +44,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
@@ -50,6 +54,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\EBookReaderSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AsyncLock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\BinaryObjectSerializer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\EnumerableTaskHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
@@ -59,6 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\CacheDeletionWhenSourceStorageItemIgnored.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\PackageVersionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
@@ -76,6 +83,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BackNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BusyWallRequestEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\NavigationRequestMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageNavigationConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageTransisionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestEvent.cs" />
@@ -227,6 +235,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\SharpCompress\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
   </ItemGroup>
   <ItemGroup>
