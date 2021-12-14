@@ -569,7 +569,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             _scheduler.Schedule(async () => 
                             {
-                                using (await _imageLoadingLock.LockAsync(ct))
+                                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                                 {
                                     ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
                                 }
@@ -729,14 +729,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
         {
-            var bitmapImage = await GetImageIfPrefetched(imageSource);
+            var bitmapImage = await GetImageIfPrefetched(imageSource, ct);
 
             if (bitmapImage == null)
             {
                 using (var stream = await imageSource.GetImageStreamAsync(ct))
                 {
                     bitmapImage = new BitmapImage();
-                    bitmapImage.SetSource(stream);
+                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                 }
             }
                 
@@ -902,15 +902,15 @@ namespace TsubameViewer.Presentation.ViewModels
             ClearPrefetch(slot);
             if (imageSource == null) { return; }
             _PrefetchImageDatum[slot] = new PrefetchImageInfo(imageSource);
-            _ = _PrefetchImageDatum[slot].StartPrefetchAsync();
+            _ = _PrefetchImageDatum[slot].StartPrefetchAsync(CancellationToken.None);
         }
 
-        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource)
+        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource, CancellationToken ct)
         {
             var prefetch = _PrefetchImageDatum.FirstOrDefault(x => x?.ImageSource == imageSource);
             if (prefetch == null || prefetch.IsCanceled) { return null; }
 
-            return await prefetch.StartPrefetchAsync();
+            return await prefetch.StartPrefetchAsync(ct);
         }
 
         void ClearPrefetch(int slot)
@@ -1136,25 +1136,28 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public async Task<BitmapImage> StartPrefetchAsync()
+        public async Task<BitmapImage> StartPrefetchAsync(CancellationToken ct)
         {
-            var ct = _PrefetchCts.Token;
-            using (await _prefetchProcessLock.LockAsync(ct))
-            {             
-                if (Image == null)
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_PrefetchCts.Token, ct))
+            {
+                var linkedCt = linkedCts.Token;
+                using (await _prefetchProcessLock.LockAsync(linkedCt))
                 {
-                    using (var stream = await ImageSource.GetImageStreamAsync(ct))
+                    if (Image == null)
                     {
-                        Image = new BitmapImage();
-                        Image.SetSource(stream);
+                        using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
+                        {
+                            Image = new BitmapImage();
+                            await Image.SetSourceAsync(stream).AsTask(linkedCt);
+                        }
                     }
+
+                    IsCompleted = true;
+
+                    Debug.WriteLine("prefetch done: " + ImageSource.Name);
+
+                    return Image;
                 }
-                
-                IsCompleted = true;
-
-                Debug.WriteLine("prefetch done: " + ImageSource.Name);
-
-                return Image;
             }
         }
 
