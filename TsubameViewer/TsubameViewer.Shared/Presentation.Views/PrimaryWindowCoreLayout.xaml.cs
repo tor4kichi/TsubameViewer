@@ -70,6 +70,8 @@ namespace TsubameViewer.Presentation.Views
             _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
             InitializeBusyWorkUI();
+
+            MyNavigtionView.Opacity = 0.0;
         }
 
 
@@ -93,6 +95,21 @@ namespace TsubameViewer.Presentation.Views
                     if (m.IsForgetNavigaiton)
                     {
                         isForgetRequest = true;
+
+                        _currentNavigationParameters = null;
+                        foreach (var entry in ContentFrame.BackStack.ToArray())
+                        {
+                            ContentFrame.BackStack.Remove(entry);
+                        }
+                        BackParametersStack.Clear();
+                        foreach (var entry in ContentFrame.ForwardStack.ToArray())
+                        {
+                            ContentFrame.ForwardStack.Remove(entry);
+                        }
+
+                        ForwardParametersStack.Clear();
+                        MyNavigtionView.Opacity = 0.0;
+                        _ = _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);                        
                     }
 
                     SetCurrentNavigationParameters(m.Parameters);
@@ -100,7 +117,7 @@ namespace TsubameViewer.Presentation.Views
                     var result = await (m.Parameters != null
                        ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
                        : _navigationService.NavigateAsync(m.PageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
-                       );
+                       );                    
                     if (result.Success is false)
                     {
                         throw result.Exception ?? new Exception();
@@ -113,6 +130,10 @@ namespace TsubameViewer.Presentation.Views
                     SetCurrentNavigationParameters(prevNavParam);
                     SetCurrentNavigationParameters(currentNavParam);
                     throw;
+                }
+                finally
+                {
+                    MyNavigtionView.Opacity = 1.0;
                 }
             }
 
@@ -304,23 +325,30 @@ namespace TsubameViewer.Presentation.Views
                     if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
                         && frame.BackStack.Count >= 3
                         && e.SourcePageType == typeof(FolderListupPage)
+                        && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                        && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter)
+                        && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                         )
-                        if (frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage)))
-                            if (currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter))
-                                if (BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter))
-                                    foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
-                                    {
-                                        frame.BackStack.Remove(remove);
-                                        BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
-                                    }
-                }
-
+                    {
+                        foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
+                        {
+                            frame.BackStack.Remove(remove);
+                            BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
+                        }
+                    }
+                }                
 
                 _ = StoreNaviagtionParameterDelayed();
             }
 
             _isFirstNavigation = false;
         }
+
+        internal void Activated()
+        {
+            MyNavigtionView.Opacity = 1.0;
+        }
+
 
         private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
         {
@@ -533,21 +561,6 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (isForgetRequest)
                 {
-                    _currentNavigationParameters = null;
-                    foreach (var entry in ContentFrame.BackStack.ToArray())
-                    {
-                        ContentFrame.BackStack.Remove(entry);
-                    }
-                    BackParametersStack.Clear();
-                    foreach (var entry in ContentFrame.ForwardStack.ToArray())
-                    {
-                        ContentFrame.ForwardStack.Remove(entry);
-                    }
-                    ForwardParametersStack.Clear();
-
-                    ContentFrame.BackStack.Add(new PageStackEntry(PageNavigationConstants.HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(PageNavigationConstants.HomePageName)));
-                    BackParametersStack.Add(new NavigationParameters());
-
                     isForgetRequest = false;
                 }
                 var lastNavigationParameters = BackParametersStack.LastOrDefault();

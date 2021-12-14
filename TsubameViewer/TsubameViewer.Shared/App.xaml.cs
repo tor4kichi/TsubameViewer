@@ -170,6 +170,7 @@ namespace TsubameViewer
                 SystemInformation.Instance.TrackAppUse(activated);
             }
 
+            PageNavigationInfo pageNavigationInfo = null;
             if (args.Arguments is LaunchActivatedEventArgs launchActivatedEvent)
             {
                 if (launchActivatedEvent.PrelaunchActivated == false)
@@ -179,16 +180,11 @@ namespace TsubameViewer
 
                     if (!string.IsNullOrEmpty(launchActivatedEvent.Arguments))
                     {
+
                         try
                         {
                             var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
-                            var navigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
-                            IMessenger messenger = Container.Resolve<IMessenger>();
-                            var result = await NavigateAsync(navigationInfo, messenger);
-                            if (result.Success)
-                            {
-                                isRestored = true;
-                            }
+                            pageNavigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
                         }
                         catch { }
                     }
@@ -198,25 +194,27 @@ namespace TsubameViewer
             {
                 try
                 {
-                    var navigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
-
-                    if (navigationInfo != null)
-                    {
-                        var messenger = Container.Resolve<IMessenger>();
-                        var result = await NavigateAsync(navigationInfo, messenger);
-                        if (result.Success)
-                        {
-                            isRestored = true;
-                        }
-                    }
+                    pageNavigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
                 }
                 catch { }
             }
 
-            if (!isRestored)
+            if (pageNavigationInfo != null)
             {
-                isRestored = true;
-                var shell = Window.Current.Content as  PrimaryWindowCoreLayout;
+                IMessenger messenger = Container.Resolve<IMessenger>();
+                var result = await NavigateAsync(pageNavigationInfo, messenger);
+                if (result.Success)
+                {
+                    isRestored = true;
+                    
+                }
+            }
+
+            var shell = Window.Current.Content as PrimaryWindowCoreLayout;
+            shell.Activated();
+
+            if (isRestored is false)
+            {
                 await shell.RestoreNavigationStack();
             }
 
