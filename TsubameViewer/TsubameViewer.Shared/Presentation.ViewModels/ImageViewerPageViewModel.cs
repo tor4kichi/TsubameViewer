@@ -209,9 +209,18 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (Images == null || !Images.Any()) { return; }
 
                     var imageSource = Images[CurrentImageIndex];
-                    var names = imageSource.Path.Split(SeparateChars);
-                    PageName = names[names.Length - 1];
-                    PageFolderName = names.Length >= 2 ? names[names.Length - 2] : string.Empty;
+                    
+                    if (this.ItemType == StorageItemTypes.Archive)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        PageName = names[names.Length - 1];
+                        PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                    }
+                    else
+                    {
+                        PageName = imageSource.Name;
+                    }
+
                     _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, _CurrentImageIndex));
                     _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Name);
                 })
