@@ -54,6 +54,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\EBookReaderSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AsyncLock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\BinaryObjectSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\EnumerableTaskHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\CacheDeletionWhenSourceStorageItemIgnored.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\PackageVersionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />

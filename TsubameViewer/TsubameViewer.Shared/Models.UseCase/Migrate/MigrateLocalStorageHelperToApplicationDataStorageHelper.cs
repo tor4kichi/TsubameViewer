@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using static TsubameViewer.Models.Domain.RestoreNavigation.RestoreNavigationManager;
 
 namespace TsubameViewer.Models.UseCase.Migrate
 {
@@ -13,17 +15,21 @@ namespace TsubameViewer.Models.UseCase.Migrate
         bool IsRequireMigrate { get; }
         void Migrate();
     }
-    internal sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IMigrater
+    internal sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
     {
-        // SystemInformation.Instance.TrackAppUse を仕掛け始めたのが v1.2.5.0 なので
-        // ApplicationDataStorageHelperへの移行判定は IsFirstRun で行っている
-        bool IMigrater.IsRequireMigrate =>
-            SystemInformation.Instance.IsFirstRun
+        private readonly PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 3, Build = 4 };
+
+        bool IAsyncMigrater.IsRequireMigrate =>
+            SystemInformation.Instance.IsAppUpdated
+            && SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion)    
             ;
-        void IMigrater.Migrate()
+        async Task IAsyncMigrater.MigrateAsync()
         {
-            var strorageHelper = ApplicationDataStorageHelper.GetCurrent(objectSerializer: new JsonObjectSerializer());
-            strorageHelper.Clear();            
+            var strorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());
+            strorageHelper.Clear();
+
+            await strorageHelper.TryDeleteItemAsync(NavigationStackRepository.BackNavigationEntriesName);
+            await strorageHelper.TryDeleteItemAsync(NavigationStackRepository.ForwardNavigationEntriesName);
         }
     }
 }

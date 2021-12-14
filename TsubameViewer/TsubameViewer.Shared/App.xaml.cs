@@ -226,44 +226,48 @@ namespace TsubameViewer
 #if DEBUG
             Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
 #endif
-            Type[] migraterTypes = new[]
-            {
-                typeof(DropSearchIndexDb),
-                typeof(DropPathReferenceCountDb),
-                typeof(MigrateAsyncStorageApplicationPermissionToDb),
 
-                // IsFirstRunを条件としているが設定をクリアする挙動のため次回起動時が必ずIsFirstRunに引っかかってしまうので一旦動作を停止する
-                //typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
-            };
-
-            await Task.Run(async () =>
+            if (SystemInformation.Instance.IsAppUpdated)
             {
-                foreach (var migratorType in migraterTypes)
+                // Note: IsFirstRunを条件とした場合、設定をクリアされた結果として次回起動時が必ずIsFirstRunに引っかかってしまうことに注意
+
+                Type[] migraterTypes = new[]
                 {
-                    var migratorInstance = Container.Resolve(migratorType);
-                    if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                    typeof(DropSearchIndexDb),
+                    typeof(DropPathReferenceCountDb),
+                    typeof(MigrateAsyncStorageApplicationPermissionToDb),
+
+                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+                };
+
+                await Task.Run(async () =>
+                {
+                    foreach (var migratorType in migraterTypes)
                     {
-                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
+                        var migratorInstance = Container.Resolve(migratorType);
+                        if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                        {
+                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                        migrater.Migrate();
+                            migrater.Migrate();
 
-                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                        }
+                        else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                        {
+                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
+
+                            await asyncMigrater.MigrateAsync();
+
+                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"Skip migrate: {migratorType.Name}");
+                        }
                     }
-                    else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
-                    {
-                        Debug.WriteLine($"Start migrate: {migratorType.Name}");
-
-                        await asyncMigrater.MigrateAsync();
-
-                        Debug.WriteLine($"Done migrate: {migratorType.Name}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Skip migrate: {migratorType.Name}");
-                    }
-                }
-            });
-
+                });
+            }
 
             Type[] restoreTypes = new[]
             {
