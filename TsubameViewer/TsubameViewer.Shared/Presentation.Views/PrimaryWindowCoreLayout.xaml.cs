@@ -136,9 +136,9 @@ namespace TsubameViewer.Presentation.Views
                        ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
                        : _navigationService.NavigateAsync(m.PageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
                        );                    
-                    if (result.Success is false)
+                    if (result is null || result.Success is false)
                     {
-                        throw result.Exception ?? new Exception();
+                        throw result?.Exception ?? new Exception("failed navigation with unknown error. also check Xaml.");
                     }
 
                     return result;

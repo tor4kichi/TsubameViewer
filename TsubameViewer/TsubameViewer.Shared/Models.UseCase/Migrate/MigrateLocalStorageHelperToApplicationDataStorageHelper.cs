@@ -17,7 +17,7 @@ namespace TsubameViewer.Models.UseCase.Migrate
     }
     internal sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
     {
-        private readonly PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 3, Build = 4 };
+        private readonly PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 3, Build = 5 };
 
         bool IAsyncMigrater.IsRequireMigrate =>
             SystemInformation.Instance.IsAppUpdated

@@ -28,6 +28,9 @@ namespace TsubameViewer.Models.Infrastructure
         public T Deserialize<T>(byte[] value) => value == null || value.Length == 0 ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
     }
 
+    /// <remarks>
+    /// 注意：BinaryJsonObjectSerializer は Nullale[T] をシリアライズできない
+    /// </remarks>
     public abstract class FlagsRepositoryBase : BindableBase
     {
         private readonly static BytesApplicationDataStorageHelper _LocalStorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());

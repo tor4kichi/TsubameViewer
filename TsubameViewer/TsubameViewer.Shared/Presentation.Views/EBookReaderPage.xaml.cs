@@ -515,7 +515,7 @@ namespace TsubameViewer.Presentation.Views
         {
             var pageVM = DataContext as EBookReaderPageViewModel;
             var color = pageVM.EBookReaderSettings.ForegroundColor;
-            if (color == null)
+            if (color.A == 0)
             {
                 pageVM.EBookReaderSettings.ForegroundColor = new Color() { A = 0xff } ;
             }
