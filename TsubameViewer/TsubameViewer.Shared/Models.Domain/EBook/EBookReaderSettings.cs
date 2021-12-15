@@ -25,7 +25,7 @@ namespace TsubameViewer.Models.Domain.EBook
             _FontFamily = Read(default(string), nameof(FontFamily));
             _RubyFontFamily = Read(default(string), nameof(RubyFontFamily));
             _BackgroundColor = Read<Color>(Colors.Transparent, nameof(BackgroundColor));
-            _ForegroundColor = Read<Color?>(Colors.Transparent, nameof(ForegroundColor));
+            _ForegroundColor = Read<Color>(Colors.Transparent, nameof(ForegroundColor));
             _OverrideWritingMode = Read(WritingMode.Inherit, nameof(OverrideWritingMode));
         }
 
@@ -94,8 +94,8 @@ namespace TsubameViewer.Models.Domain.EBook
             set { SetProperty(ref _BackgroundColor, value); }
         }
 
-        private Color? _ForegroundColor;
-        public Color? ForegroundColor
+        private Color _ForegroundColor;
+        public Color ForegroundColor
         {
             get { return _ForegroundColor; }
             set { SetProperty(ref _ForegroundColor, value); }

@@ -1,6 +1,20 @@
-## TsubameViewer （ツバメビューア）
+## ツバメビューア（TsubameViewer）
 
-Windows10/XboxOne向けの漫画・小説ビューアです。
+WindowsファミリーのOSで動作する漫画・小説ビューアです。
+
+## ダウンロード
+
+### [ツバメビューア - Microsoft Store](https://www.microsoft.com/store/apps/9NDXXQRG4PL8)
+
+## 対応プラットフォーム
+
+* Windows10 (バージョン1809 以降必須）
+* Windows11
+* Xbox Series X/S
+* Xbox One 
+* Microsoft HoloLens
+
+## アプリ概要
 
 * フォルダを巡ってリーダーで読むまでの流れをこのアプリ一つで完結
 * 圧縮ファイル内の画像をストレージに展開せずそのまま表示
@@ -9,22 +23,17 @@ Windows10/XboxOne向けの漫画・小説ビューアです。
   * 縦書き・横書きの両方に対応
   * フォント、文字サイズ、背景色など自由に変更可能
 * スタート画面へのピン留めに対応
-* アプリに漫画や小説のコンテンツは含まれていない
-  * コンテンツ自体は各々で準備が必要
+* アプリに漫画や小説のコンテンツは含まれていません
+  * コンテンツ自体は各々で準備してください
 
-### 対応しているファイル形式
+## 対応しているファイル形式
 
 * 画像
-  * .jpg/.png/.bmp/.gif/.tiff/.svg
+  * .jpg/.png/.bmp/.gif/.tiff/.svg/.webp
 * アーカイブ
   * .zip/.cbz/.rar/.cbr/.7z/.cb7/.tar/.pdf
 * 電子書籍
   * .epub
-
-## ダウンロード
-
-* [Windows10/XboxOne - マイクロソフトストア](https://www.microsoft.com/store/apps/9NDXXQRG4PL8)
-  * インストールには Windows10 1809 (build 17763) 以降への更新が必要です
 
 ## 使い方
 
@@ -59,3 +68,9 @@ Windows10/XboxOne向けの漫画・小説ビューアです。
 * ドラッグ＆ドロップによるファイルやフォルダを開く動作に対応
 * スタート画面へのピン留めに対応
 * アプリ内の検索
+
+
+### その他
+
+* 作った人のツイッター（ツバメビューアの更新情報が欲しい人向け） → [@tor4kichi](https://twitter.com/tor4kichi)
+* ツバメビューアに関する質問などはマシュマロで送ってね → [https://marshmallow-qa.com/tor4kichi](https://marshmallow-qa.com/tor4kichi)

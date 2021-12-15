@@ -153,7 +153,7 @@
             </Grid>
             <Button.Flyout>
               <Flyout Placement="Left" Opening="ForegroundColorPickerFlyout_Opening">
-                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay, Converter={StaticResource NullableColorConverter}}"
+                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"
                              >
 
                 </ColorPicker>
@@ -266,7 +266,7 @@
                                AllowFocusOnInteraction="False"
                                Margin="48 27 48 72"
                                PageBackgroundColor="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay}"
-                                FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay, Converter={StaticResource NullableColorConverter}}"
+                                FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
                                 FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
                                 LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"
                                 LineHeightInNoUnit="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=OneWay}"
