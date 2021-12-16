@@ -97,10 +97,16 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
     {
         public PageEntry() { }
 
+        public PageEntry(string pageName)
+        {
+            PageName = pageName;
+            Parameters = new List<KeyValuePair<string, string>>();
+        }
+
         public PageEntry(string pageName, IEnumerable<KeyValuePair<string, object>> parameters)
         {
             PageName = pageName;
-            Parameters = parameters?.ToDictionary(x => x.Key, (x) => x.Value.ToString()).ToList();
+            Parameters = parameters?.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())).ToList();
         }
 
         public string PageName { get; set; }
