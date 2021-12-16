@@ -39,7 +39,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
 
-        private static ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
+        private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
@@ -598,7 +598,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             await outputStream.FlushAsync().AsTask(ct);
         }
 
-        private static async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var fileStream = await file.OpenReadAsync())
             {
@@ -606,7 +606,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return true;
             }
         }
-        private static async Task<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var zipArchive = new ZipArchive(archiveStream))
@@ -619,7 +619,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
                 }
 
-                entry ??= zipArchive.Entries.OrderBy(x => x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
+                entry ??= zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
 
                 if (entry == null) { return false; }
 
@@ -634,7 +634,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var rarArchive = RarArchive.Open(archiveStream))
@@ -645,7 +645,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= rarArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -659,7 +659,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var archive = SevenZipArchive.Open(archiveStream))
@@ -670,7 +670,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -684,7 +684,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var archive = TarArchive.Open(archiveStream))
@@ -695,7 +695,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -709,7 +709,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
             if (pdfDocument.PageCount == 0) { return false; }
@@ -729,19 +729,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (cover != null)
             {
                 await outputStream.WriteAsync(cover, 0, cover.Length);
+                return true;
             }
             else if (epubBook.Content.Images.Any())
             {
                 var firstImage = epubBook.Content.Images.First().Value;
                 var bytes = await firstImage.ReadContentAsync();
                 await outputStream.WriteAsync(bytes, 0, bytes.Length);
+                return true;
             }
             else
             {
                 return false;
             }
-
-            return true;
         }
 
         #region Thumbnail Size
