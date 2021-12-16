@@ -201,6 +201,7 @@
 
       <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8"
                   Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  Spacing="8"
                   >
         <uwpControls:DockPanel>
 
@@ -237,61 +238,60 @@
 
         </uwpControls:DockPanel>
 
-        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 8">
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 0 0 0">
 
-          <Border uwpControls:DockPanel.Dock="Bottom" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+          <Border uwpControls:DockPanel.Dock="Bottom" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}"
+                  >
             <TextBlock Opacity="0.7">
               <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
             </TextBlock>
           </Border>
-          
-          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" Spacing="4">
-            <TextBlock VerticalAlignment="Center" >
-              <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
-            </TextBlock>
-            <DropDownButton x:Name="FileSortButton" 
+
+          <DropDownButton x:Name="FileSortButton" 
+                            uwpControls:DockPanel.Dock="Left" 
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
+                            ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                             >
-              <DropDownButton.Flyout>
-                <MenuFlyout>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
+            <DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
                                   CommandParameter="{x:Null}"
                                   />
 
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeDecending</models:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>UpdateTimeAscending</models:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>TitleAscending</models:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <models:FileSortType>TitleDecending</models:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                </MenuFlyout>
-              </DropDownButton.Flyout>
-            </DropDownButton>
-
-          </StackPanel>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>TitleAscending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>TitleDecending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
 
 
-          <Button Margin="8 0 0 0" x:Name="OptionalActionsButton"
+
+          <Button x:Name="OptionalActionsButton"
+                  Margin="8 0 0 0" 
                   XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
                   >
             <Button.Content>
@@ -327,16 +327,19 @@
               <TransitionCollection />
             </ListView.ItemContainerTransitions>
             <ListView.ItemContainerStyle>
-              <Style TargetType="ListViewItem">
+              <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
                 <Setter Property="MinWidth" Value="40" />
                 <Setter Property="Width" Value="40" />
+                <Setter Property="MinHeight" Value="32" />
                 <Setter Property="Padding" Value="0 0 0 0" />
+                <Setter Property="Margin" Value="0" />
                 <Setter Property="HorizontalContentAlignment" Value="Center" />
+                
               </Style>
             </ListView.ItemContainerStyle>
             <ListView.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" />
+                <ItemsStackPanel Orientation="Horizontal" />
               </ItemsPanelTemplate>
             </ListView.ItemsPanel>
           </ListView>

@@ -59,46 +59,43 @@
           <Border />
         </uwpControls:DockPanel>
 
-        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 8">
-          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" Spacing="4">
-            <TextBlock VerticalAlignment="Center" >
-                <Run Text="{i18nExt:Localize Key=FileSortTitle}" />:
-            </TextBlock>
-            <DropDownButton x:Name="FileSortButton" 
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 0 0 8">
+          <DropDownButton x:Name="FileSortButton" 
+                            uwpControls:DockPanel.Dock="Left"
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
+                            ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                             >
-              <DropDownButton.Flyout>
-                <MenuFlyout>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                    <MenuFlyoutItem.CommandParameter>
-                      <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
-                    </MenuFlyoutItem.CommandParameter>
-                  </MenuFlyoutItem>
-                </MenuFlyout>
-              </DropDownButton.Flyout>
-            </DropDownButton>
-          </StackPanel>
+            <DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
 
           <Button Margin="8 0 0 0">
             <Button.Content>
