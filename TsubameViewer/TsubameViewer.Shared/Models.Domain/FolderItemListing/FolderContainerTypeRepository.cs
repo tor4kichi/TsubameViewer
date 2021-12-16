@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
 using Windows.Storage;
+using Windows.Storage.Search;
 
 namespace TsubameViewer.Models.Domain.FolderItemListing
 {
@@ -27,29 +28,34 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async ValueTask<FolderContainerType> GetFolderContainerTypeWithCacheAsync(StorageFolder folder, CancellationToken ct)
         {
-            var containerType = _folderContainerTypeRepository.GetContainerType(folder.Path);
-            
-            if (containerType != null) { return containerType.Value; }
-
-            return await GetLatestFolderContainerTypeAndUpdateCacheAsync(folder, ct);
+            return _folderContainerTypeRepository.GetContainerType(folder.Path)
+                ?? await GetLatestFolderContainerTypeAndUpdateCacheAsync(folder, ct);
         }
 
         public async Task<FolderContainerType> GetLatestFolderContainerTypeAndUpdateCacheAsync(StorageFolder folder, CancellationToken ct)
         {
-            var query = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = Windows.Storage.Search.FolderDepth.Shallow });
-            var count = await query.GetItemCountAsync().AsTask(ct);
-            if (count == 0)
+            FolderContainerType folderContainerType = FolderContainerType.Other;
+            if (await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, 
+                Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions))
+                { FolderDepth = FolderDepth.Shallow }).GetItemCountAsync().AsTask(ct) > 0
+               )
             {
-                _folderContainerTypeRepository.SetContainerType(folder.Path, FolderContainerType.Other);
-                return FolderContainerType.Other;
+                folderContainerType = FolderContainerType.Other;
+            }
+            else if (await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery,
+                SupportedFileTypesHelper.SupportedImageFileExtensions)
+                { FolderDepth = FolderDepth.Shallow }).GetItemCountAsync().AsTask(ct) > 0)
+            {
+                folderContainerType = FolderContainerType.OnlyImages;
+            }
+            else
+            {
+                // folder no items.
+                folderContainerType = FolderContainerType.Other;
             }
 
-            var containerType = await query.ToAsyncEnumerable(ct).AllAsync(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.FileType), ct)
-                ? FolderContainerType.OnlyImages
-                : FolderContainerType.Other
-                ;
-            _folderContainerTypeRepository.SetContainerType(folder.Path, containerType);
-            return containerType;
+            _folderContainerTypeRepository.SetContainerType(folder.Path, folderContainerType);
+            return folderContainerType;
         }
 
 
