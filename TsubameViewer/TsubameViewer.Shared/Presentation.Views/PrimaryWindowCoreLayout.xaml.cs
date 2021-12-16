@@ -563,7 +563,7 @@ namespace TsubameViewer.Presentation.Views
                     var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
 
                     _currentNavigationParameters = lastNavigationParameters;
-                    _prevNavigationParameters = BackParametersStack.TakeLast(2).Skip(1).FirstOrDefault();
+                    _prevNavigationParameters = BackParametersStack.Count >= 2 ? BackParametersStack.TakeLast(2).FirstOrDefault() : null;
 
                     BackParametersStack.Remove(lastNavigationParameters);
                     ForwardParametersStack.Add(parameters);

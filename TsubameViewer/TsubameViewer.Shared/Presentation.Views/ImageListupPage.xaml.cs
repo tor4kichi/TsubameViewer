@@ -104,7 +104,7 @@ namespace TsubameViewer.Presentation.Views
 
                     _vm.SetLastIntractItem(itemVM);
                 }
-                else
+                else if (_vm.DisplayCurrentPath is not null)
                 {
                     _PathToLastIntractMap[_vm.DisplayCurrentPath] =
                         new LastIntractInfo()
