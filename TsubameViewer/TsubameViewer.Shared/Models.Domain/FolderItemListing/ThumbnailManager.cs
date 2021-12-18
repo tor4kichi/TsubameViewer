@@ -45,10 +45,13 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public string GetStorageItemId(string path)
         {
-            return _FilePathToHashCodeStringMap.TryGetValue(path, out var code)
-                ? code
-                : _FilePathToHashCodeStringMap[path] = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
-                ;
+            if (!_FilePathToHashCodeStringMap.TryGetValue(path, out var code))
+            {
+                code = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray());
+                _ = _FilePathToHashCodeStringMap.TryAdd(path, code);
+            }
+
+            return code;
         }
 
         private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
