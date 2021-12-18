@@ -119,37 +119,33 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         protected override void OnAttached()
         {
-            base.OnAttached();
+            _LastCursorPosition = GetPointerPosition();
 
-            AssociatedObject.Loaded += AssociatedObject_Loaded;
-            AssociatedObject.Unloaded += AssociatedObject_Unloaded;
-        }
-
-
-        private void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
-        {
-            MouseDevice.GetForCurrentView().MouseMoved += CursorSetter_MouseMoved;
+            _AutoHideTimer.Interval = AutoHideDelay;
+            _IsCursorInsideAssociatedObject = IsCursorInWindow();
+            _prevIsVisible = true;
+            ResetAutoHideTimer();
 
             AssociatedObject.PointerEntered += AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited += AssociatedObject_PointerExited;
+            MouseDevice.GetForCurrentView().MouseMoved += CursorSetter_MouseMoved;
 
-            _AutoHideTimer.Interval = AutoHideDelay;
-
-            _IsCursorInsideAssociatedObject = IsCursorInWindow();
-
-            ResetAutoHideTimer();
+            base.OnAttached();
         }
 
-
-        private void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
+        protected override void OnDetaching()
         {
-            _AutoHideTimer.Stop();
-
+            AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
+            AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
             MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
+
+            _AutoHideTimer.Stop();
             Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
+
+            _LastCursorPosition = GetPointerPosition();
+
+            base.OnDetaching();
         }
-
-
 
         private void ResetAutoHideTimer()
         {
@@ -171,21 +167,35 @@ namespace TsubameViewer.Presentation.Views.Behaviors
         {
             if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
 
-            if ((_prevIsVisible ^ isVisible) && isVisible)
+            // 表示状態変化のトリガーを検出して処理する
+            if (_prevIsVisible != isVisible)
             {
-                Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
-                var windowBound = Window.Current.CoreWindow.Bounds;
-                Window.Current.CoreWindow.PointerPosition = new Point(windowBound.Left + _LastCursorPosition.X, windowBound.Top + _LastCursorPosition.Y);
-            }
-            else if ((_prevIsVisible ^ isVisible) && !isVisible)
-            {
-                Window.Current.CoreWindow.PointerCursor = null;
-                _LastCursorPosition = GetPointerPosition();
+                if (isVisible)
+                {
+                    Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
+                    RestoreCursorPosition();
+                }
+                else 
+                {
+                    Window.Current.CoreWindow.PointerCursor = null;
+                    RecordCursorPosition();
+                }
             }
 
             _prevIsVisible = isVisible;
         }
 
+
+        private void RecordCursorPosition()
+        {
+            _LastCursorPosition = GetPointerPosition();
+        }
+
+        private void RestoreCursorPosition()
+        {
+            var windowBound = Window.Current.CoreWindow.Bounds;
+            Window.Current.CoreWindow.PointerPosition = new Point(windowBound.Left + _LastCursorPosition.X, windowBound.Top + _LastCursorPosition.Y);
+        }
 
         private void AutoHideTimer_Tick(object sender, object e)
         {
@@ -197,9 +207,11 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         private void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
         {
+            RecordCursorPosition();
+
             // マウスホイールを動かした時等には移動していなくても呼ばれるがその場合は無視する
             if (args.MouseDelta.X == 0 && args.MouseDelta.Y == 0) { return; }
-
+            
             CursorVisibilityChanged(true);
             ResetAutoHideTimer();
         }
