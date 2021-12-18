@@ -74,17 +74,20 @@ namespace TsubameViewer.Presentation.Views
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            try
+            if (_vm.DisplayCurrentPath != null) 
             {
-                var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                _PathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
+                try
+                {
+                    var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                    var ratio = sv.VerticalOffset / sv.ScrollableHeight;
+                    _PathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
 
-                Debug.WriteLine(ratio);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
+                    Debug.WriteLine(ratio);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.ToString());
+                }
             }
 
             base.OnNavigatingFrom(e);
