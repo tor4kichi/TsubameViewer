@@ -108,13 +108,18 @@ namespace TsubameViewer.Presentation.Views.Behaviors
         #endregion
 
 
+        private static bool GetIsWindowActive()
+        {
+            return Window.Current.CoreWindow.ActivationMode == CoreWindowActivationMode.ActivatedInForeground;
+        }
+
 
         public PointerCursolAutoHideBehavior()
         {
             _AutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
             _AutoHideTimer.Tick += AutoHideTimer_Tick;
             _AutoHideTimer.IsRepeating = false;
-            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;
+            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;            
         }
 
         protected override void OnAttached()
@@ -126,23 +131,49 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             _prevIsVisible = true;
             ResetAutoHideTimer();
 
+            AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
+            AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
             AssociatedObject.PointerEntered += AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited += AssociatedObject_PointerExited;
+
+            Window.Current.Activated -= Current_Activated;
+            Window.Current.Activated += Current_Activated;
+
+            MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
             MouseDevice.GetForCurrentView().MouseMoved += CursorSetter_MouseMoved;
 
+            AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
+            AssociatedObject.Unloaded += AssociatedObject_Unloaded;
+
             base.OnAttached();
+        }
+
+        private void Current_Activated(object sender, WindowActivatedEventArgs e)
+        {
+            if (e.WindowActivationState != CoreWindowActivationState.Deactivated)
+            {
+                ResetAutoHideTimer();
+            }
+        }
+
+        bool IsUnlaoded = false;
+        private void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
+        {
+            IsUnlaoded = true;
+
+            Window.Current.Activated -= Current_Activated;
+            MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
+
+            _AutoHideTimer.Stop();
+            Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
         }
 
         protected override void OnDetaching()
         {
             AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
-            MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
 
-            _AutoHideTimer.Stop();
-            Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
-
-            _LastCursorPosition = GetPointerPosition();
+            AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
 
             base.OnDetaching();
         }
@@ -155,14 +186,12 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             {
                 _AutoHideTimer.Start();
             }
-            else
-            {
-                CursorVisibilityChanged(true);
-            }
+            
+            CursorVisibilityChanged(true);
         }
 
         bool _prevIsVisible = true;
-
+        
         private void CursorVisibilityChanged(bool isVisible)
         {
             if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
@@ -174,11 +203,15 @@ namespace TsubameViewer.Presentation.Views.Behaviors
                 {
                     Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
                     RestoreCursorPosition();
+
+                    Debug.WriteLine($"Show Mouse Cursor.");
                 }
                 else 
                 {
                     Window.Current.CoreWindow.PointerCursor = null;
                     RecordCursorPosition();
+
+                    Debug.WriteLine($"Hide Mouse Cursor.");
                 }
             }
 
@@ -199,14 +232,21 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         private void AutoHideTimer_Tick(object sender, object e)
         {
+            if (IsUnlaoded) { return; }
+            if (GetIsWindowActive() is false) { return; }
+
             if (IsAutoHideEnabled && _IsCursorInsideAssociatedObject)
             {
                 CursorVisibilityChanged(false);
             }
+
+            Debug.WriteLine("AutoHideTimer Stop!");
         }
 
         private void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
         {
+            if (IsUnlaoded) { return; }
+
             RecordCursorPosition();
 
             // マウスホイールを動かした時等には移動していなくても呼ばれるがその場合は無視する
@@ -219,15 +259,23 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         private void AssociatedObject_PointerEntered(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
+            if (IsUnlaoded) { return; }
+
             _IsCursorInsideAssociatedObject = true;
+
+            Debug.WriteLine("PointerEntered");
         }
 
         private void AssociatedObject_PointerExited(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
+            if (IsUnlaoded) { return; }
+
             _IsCursorInsideAssociatedObject = false;
 
             CursorVisibilityChanged(true);
             ResetAutoHideTimer();
+
+            Debug.WriteLine("PointerExited");
         }
 
         #region this code copy from VLC WinRT
