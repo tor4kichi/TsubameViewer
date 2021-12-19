@@ -17,11 +17,10 @@
   xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
-  xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing"
+  xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing" 
+  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
-  x:Name="PageElement"
-  uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
   >
 
   <!--
@@ -145,7 +144,7 @@
         <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
 
-        <Button x:Name="DoubleViewCorrectButton" Content="{i18nExt:Localize Key=DoubleViewCorrectPaging}" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
+        <Button x:Name="SpreadDisplayCorrectButton" Content="{i18nExt:Localize Key=SpreadDisplayCorrectPaging}" Command="{Binding SpreadDisplayCorrectCommand}" Visibility="Collapsed"
                 Margin="0 16 0 0"
                 />
 
@@ -224,12 +223,12 @@
 
       <!-- Image sizing -->
       <core:EventTriggerBehavior EventName="Loaded">
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
       </core:EventTriggerBehavior>
       <core:EventTriggerBehavior EventName="SizeChanged">
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=RootGrid, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
         <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
       </core:EventTriggerBehavior>
 
@@ -245,36 +244,57 @@
       </Button.KeyboardAccelerators>
     </Button>
 
-    <Grid x:Name="ImagesContainer"
-            uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+    <Grid x:Name="ContentContainer"
             >
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
-      <ItemsControl ItemsSource="{x:Bind _vm.CurrentImages, Mode=OneWay}"
-                    HorizontalAlignment="Stretch"
-                    x:Name="ImageItemsControl"                    
-                    >
-        <ItemsControl.ItemTemplate>
-          <DataTemplate>
-            <Image Source="{Binding}" Stretch="Uniform" MaxWidth="{Binding ElementName=PageElement, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" HorizontalAlignment="Center" />
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
 
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel x:Name="ImageContainerPanel" 
-                        Orientation="Horizontal" 
-                        FlowDirection="RightToLeft"
-                        HorizontalAlignment="Center"
-                        MaxWidth="{Binding ElementName=PageElement, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"
-                >
-            </StackPanel>
+      <Grid uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
+            x:Name="ImagesContainer"
+            >
 
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-      </ItemsControl>
+        <Grid.Resources>
+          <Style TargetType="muxc:ItemsRepeater">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="RenderTransform">
+              <Setter.Value>
+                <TranslateTransform X="10000" />
+              </Setter.Value>
+            </Setter>
+            <Setter Property="ItemTemplate">
+              <Setter.Value>
+                <DataTemplate x:DataType="BitmapImage">
+                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"
+                   />
+                </DataTemplate>
+              </Setter.Value>
+            </Setter>
+            <Setter Property="Layout">
+              <Setter.Value>
+                <muxc:FlowLayout Orientation="Horizontal"
+                           LineAlignment="Center"
+                           />
+              </Setter.Value>
+            </Setter>
+          </Style>
+        </Grid.Resources>
 
+        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_0, Mode=OneWay}"
+                    x:Name="ImageItemsControl_0"   
+                            DataContext="{x:Null}"
+                    />
+
+        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_1, Mode=OneWay}"
+                    x:Name="ImageItemsControl_1"  
+                            DataContext="{x:Null}"
+                    />
+        <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_2, Mode=OneWay}"
+                    x:Name="ImageItemsControl_2"  
+                            DataContext="{x:Null}"
+                    />
+      </Grid>
+      
       <Grid >
         <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
       </Grid>
@@ -520,6 +540,34 @@
         </VisualState>
 
       </VisualStateGroup>
+
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageItemsControl_0.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="1" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="2" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
@@ -572,7 +620,7 @@
                                />
               <DoubleAnimation Duration="0:0:0.175"
                                To="32"
-                               Storyboard.TargetName="ImagesContainer"
+                               Storyboard.TargetName="ContentContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
             </Storyboard>
@@ -591,7 +639,7 @@
                                />
               <DoubleAnimation Duration="0:0:0.175"
                                To="0"
-                               Storyboard.TargetName="ImagesContainer"
+                               Storyboard.TargetName="ContentContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
             </Storyboard>
@@ -606,9 +654,9 @@
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImagesContainer.Margin" Value="0 32 0 0" />
+            <Setter Target="ContentContainer.Margin" Value="0 32 0 0" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
-            <Setter Target="ImagesContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+            <Setter Target="ContentContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -620,22 +668,26 @@
             <StateTrigger IsActive="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
+            <Setter Target="SpreadDisplayCorrectButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
 
       <!-- ページの表示順序を反転 -->
+      <!-- ItemsRepeaterにはFlowDirectionが指定できないので、ViewModel側で処理している
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsLeftBindingView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageContainerPanel.FlowDirection" Value="LeftToRight" />
+            <Setter Target="ImageContainerPanel_0.FlowDirection" Value="LeftToRight" />
+            <Setter Target="ImageContainerPanel_1.FlowDirection" Value="LeftToRight" />
+            <Setter Target="ImageContainerPanel_2.FlowDirection" Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      -->
 
       <!-- スクロールのページ送りを逆にする -->
       <VisualStateGroup>

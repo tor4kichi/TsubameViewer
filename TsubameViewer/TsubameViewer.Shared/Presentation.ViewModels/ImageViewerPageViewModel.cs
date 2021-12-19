@@ -46,6 +46,7 @@ using System.Windows.Input;
 using TsubameViewer.Presentation.Services.UWP;
 using Uno.Disposables;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
+using System.Numerics;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -63,13 +64,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             get { return _Images; }
             private set { SetProperty(ref _Images, value); }
-        }
-
-        private BitmapImage[] _CurrentImages = new BitmapImage[0];
-        public BitmapImage[] CurrentImages
-        {
-            get { return _CurrentImages; }
-            set { SetProperty(ref _CurrentImages, value); }
         }
 
         private int _CurrentImageIndex;
@@ -202,6 +196,12 @@ namespace TsubameViewer.Presentation.ViewModels
             _folderListingSettings = folderListingSettings;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
+
+            ClearDisplayImages();
+            _DisplayImages_0 = _displayImagesSingle[0];
+            _DisplayImages_1 = _displayImagesSingle[1];
+            _DisplayImages_2 = _displayImagesSingle[2];
+
             DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
                 .Select(x => x + 1)
                 .Do(_ => 
@@ -253,15 +253,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
-            ClearPrefetch();
+            ClearCachedImages();
+            ClearDisplayImages();
 
             if (Images?.Any() ?? false)
             {
                 Images.ForEach((IImageSource x) => x.TryDispose());
                 Images = null;
             }
-
-            CurrentImages = null;
 
             _leavePageCancellationTokenSource.Cancel();
             _leavePageCancellationTokenSource.Dispose();
@@ -438,7 +437,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(async _ =>
                 {
                     Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
-                    CalcViewResponsibleImageAmount(CanvasWidth.Value, CanvasHeight.Value);
                     await ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
@@ -475,7 +473,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
                 .Subscribe(size =>
                 {
-                    CalcViewResponsibleImageAmount(size.X, size.Y);
                     _ = ResetImageIndex(CurrentImageIndex);
                 })
                 .AddTo(_navigationDisposables);
@@ -516,59 +513,190 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
+        private BitmapImage[] _DisplayImages_0;
+        public BitmapImage[] DisplayImages_0
+        {
+            get { return _DisplayImages_0; }
+            set { SetProperty(ref _DisplayImages_0, value); }
+        }
+
+        private BitmapImage[] _DisplayImages_1;
+        public BitmapImage[] DisplayImages_1
+        {
+            get { return _DisplayImages_1; }
+            set { SetProperty(ref _DisplayImages_1, value); }
+        }
+
+        private BitmapImage[] _DisplayImages_2;
+        public BitmapImage[] DisplayImages_2
+        {
+            get { return _DisplayImages_2; }
+            set { SetProperty(ref _DisplayImages_2, value); }
+        }
+
+
         BitmapImage _emptyImage = new BitmapImage();
 
         int _nowRequestedImageIndex = 0;
+        
+        int WrapIndexWithImagesLength(int requestIndex)
+        {
+            if (requestIndex < 0)
+            {
+                return Images.Length - 1;
+            }
+            else if (requestIndex >= Images.Length)
+            {
+                return 0;
+            }
+            else
+            {
+                return requestIndex;
+            }
+        }
+
+        static int GetMoveDirection(IndexMoveDirection direction)
+        {
+            return direction switch
+            {
+                IndexMoveDirection.Refresh => 0,
+                IndexMoveDirection.Forward => 1,
+                IndexMoveDirection.Backward => -1,
+                _ => throw new NotSupportedException()
+            };
+        }
+        static (int position, bool IsJumpHeadTail) GetMovedImageIndex(IndexMoveDirection direction, int currentIndex, int totalImagesCount)
+        {
+            // 読み込むべきインデックスを先に洗い出す
+            int directionMoveIndex = GetMoveDirection(direction);
+            int rawRequestFirstIndex = (currentIndex) + directionMoveIndex;
+
+            int requestIndex;
+            bool isHeadTailJump = false;
+            // 表示位置のWrap処理
+            if (rawRequestFirstIndex < 0)
+            {
+                requestIndex = totalImagesCount - 1;
+                isHeadTailJump = true;
+            }
+            else if (rawRequestFirstIndex >= totalImagesCount)
+            {
+                requestIndex = 0;
+                isHeadTailJump = true;
+            }            
+            else
+            {
+                requestIndex = rawRequestFirstIndex;
+            }
+
+            return (requestIndex, isHeadTailJump);
+        }
+
+        async Task<int> SetDisplayImagesAsync(IndexMoveDirection direction, PrefetchIndexType indexType, int requestIndex, bool requestDoubleView, CancellationToken ct)
+        {
+            if (requestDoubleView)
+            {
+                var indexies = direction == IndexMoveDirection.Backward
+                    ? new[] { 0, -1 }
+                    : new[] { 0, 1 }
+                    ;
+
+                // 表示用のインデックスを生成
+                // 後ろ方向にページ移動していた場合は1 -> 0のように逆順の並びにすることで
+                // 見開きページかつ横長ページを表示しようとしたときに後ろ方向の一個前だけを選択して表示できるようにしている
+                var candidateImages = indexies.Select(x => _Images.ElementAtOrDefault(requestIndex + x)).Where(x => x is not null).ToList();
+                if (candidateImages.Any() is false)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                var sizeCheckResult = await CheckImagesCanSpreadDisplayInCurrentCanvasSizeAsync(candidateImages, ct);
+                if (sizeCheckResult.CanSpreadDisplay)
+                {
+                    if (direction == IndexMoveDirection.Backward)
+                    {
+                        SetDisplayImages(indexType,
+                            sizeCheckResult.Slot2Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct),
+                            sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
+                            );
+                    }
+                    else
+                    {
+                        SetDisplayImages(indexType,
+                            sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct),
+                            sizeCheckResult.Slot2Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct)
+                            );
+                    }
+
+                    return 2;
+                }
+                else
+                {
+                    SetDisplayImages(indexType,
+                        sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
+                        );
+
+                    return 1;
+                }
+            }
+            else
+            {
+                var image = _Images.ElementAtOrDefault(requestIndex);
+                if (image == null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                SetDisplayImages(indexType,
+                    image, await GetBitmapImageWithCacheAsync(image, ct)
+                    );
+
+                return 1;
+            }
+        }
+
+
         async Task MoveImageIndex(IndexMoveDirection direction, int? request = null)
         {
             if (Images == null || Images.Length == 0) { return; }
 
-            if (direction != IndexMoveDirection.Forward)
-            {
-                ClearPrefetch();
-            }
-
-            // requestIndex round
-            // roundした場合は読み込み数の切り捨て必要
-
-            // 最後と最初の画像は読み込みキャンセルさせない
-
-            if (_nowRequestedImageIndex >= Images.Length - _CurrentImages.Length || _nowRequestedImageIndex <= _CurrentImages.Length)
-            {
-                _imageLoadingCts ??= new CancellationTokenSource();
-            }
-            else
-            {
-                _imageLoadingCts?.Cancel();
-                _imageLoadingCts?.Dispose();
-                _imageLoadingCts = new CancellationTokenSource();
-            }
+            _imageLoadingCts?.Cancel();
+            _imageLoadingCts?.Dispose();
+            _imageLoadingCts = new CancellationTokenSource();
 
             var ct = _imageLoadingCts.Token;
-            
+            int requestImageCount = ImageViewerSettings.IsEnableSpreadDisplay ? 2 : 1;
+            int lastRequestImageCount = GetCurrentDisplayImageCount();
             using (await _imageLoadingLock.LockAsync(ct))
             {
                 try
                 {
-                    // 読み込むべきインデックスを先に洗い出す
-                    var rawRequestIndex = direction switch
-                    {
-                        IndexMoveDirection.Refresh => request ?? CurrentImageIndex,
-                        IndexMoveDirection.Forward => CurrentImageIndex + (_prevForceSingleView ? 1 : _CurrentImages.Length),
-                        IndexMoveDirection.Backward => CurrentImageIndex - _CurrentImages.Length,
-                        _ => throw new NotSupportedException(),
-                    };
+                    // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
+                    // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
 
-                    // 表示位置のWrap処理
-                    var requestIndex = rawRequestIndex switch
+                    var currentIndex = request ?? CurrentImageIndex;
+                    var (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, currentIndex, Images.Length); 
+                    if (lastRequestImageCount == 2)
                     {
-                        int i when i < 0 => Images.Length - _CurrentImages.Length,
-                        int i when i >= Images.Length => 0,
-                        _ => rawRequestIndex
-                    };
+                        if (direction == IndexMoveDirection.Forward && !isJumpHeadTail)
+                        {
+                            (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, requestIndex, Images.Length);
+                        }
+                        else if (direction == IndexMoveDirection.Backward && requestIndex == 0)
+                        {
+                            if (currentIndex == 1)
+                            {
+                                requestImageCount = 1;
+                            }
+                            else
+                            {
+                                requestIndex = 1;
+                            }
+                        }
+                    }
 
                     // 最後尾から先頭にジャンプした場合に音を鳴らす
-                    if (requestIndex != rawRequestIndex)
+                    if (isJumpHeadTail)
                     {
                         ElementSoundPlayer.State = ElementSoundPlayerState.On;
                         ElementSoundPlayer.Volume = 1.0;
@@ -586,100 +714,28 @@ namespace TsubameViewer.Presentation.ViewModels
                         });
                     }
 
-
                     _nowRequestedImageIndex = requestIndex;
 
-                    // 表示用のインデックスを生成
-                    // 後ろ方向にページ移動していた場合は1 -> 0のように逆順の並びにすることで
-                    // 見開きページかつ横長ページを表示しようとしたときに後ろ方向の一個前だけを選択して表示できるようにしている
-                    var indexies = Enumerable.Range(0, _CurrentImages.Length);
-                    if (direction == IndexMoveDirection.Backward)
-                    {
-                        indexies = indexies.Reverse();
-                    }
+                    var displayImageCount = await SetDisplayImagesAsync(direction, PrefetchIndexType.Current, requestIndex, requestImageCount == 2, ct);
 
-                    // Imagesが扱えるindexの範囲に限定
-                    indexies = indexies.Where(x => x + requestIndex < Images.Length && x + requestIndex >= 0);
+                    NowDoubleImageView = displayImageCount == 2;
 
-                    if (indexies.Count() == 0) 
-                    {
-                        return; 
-                    }
-
-                    var canvasWidth = (int)CanvasWidth.Value;
-                    var canvasHeight = (int)CanvasHeight.Value;
-
-
-                    int generateImageIndex = -1;
-                    bool isForceSingleImageView = false;   
-                    
-                    // 最後のページを一枚だけで表示する必要がある時、表示しない側の画像を空にする
-                    if (_CurrentImages.Length >= 2 && indexies.Count() == 1)
-                    {
-                        _CurrentImages[1 - indexies.First()] = _emptyImage;
-                    }
-
-                    foreach (var i in indexies)
-                    {
-                        if (isForceSingleImageView)
-                        {
-                            _CurrentImages[i] = _emptyImage;
-                            continue;
-                        }
-
-                        if (ct.IsCancellationRequested) { return; }
-
-                        var imageSource = Images[requestIndex + i];
-                        var bitmapImage = await MakeBitmapImageAsync(imageSource, canvasWidth, canvasHeight, ct);
-                        if (bitmapImage.PixelHeight < bitmapImage.PixelWidth)
-                        {
-                            isForceSingleImageView = true;
-
-                            // 二枚目以降が横長だった場合は表示しない
-                            if (generateImageIndex != -1)
-                            {
-                                _CurrentImages[i] = _emptyImage;
-                                //_CurrentImages[1 - i] = _emptyImage;
-                                // TODO: 横長画像をスキップした場合に、生成したbitmapImageを後で使い回せるようにしたい
-                                break;
-                            }
-                        }
-
-                        if (ct.IsCancellationRequested) { return; }
-
-                        generateImageIndex = requestIndex + i;
-
-                        _CurrentImages[i] = bitmapImage;
-#if DEBUG
-                        Debug.WriteLine($"w={_CurrentImages[i].PixelWidth:F2}, h={_CurrentImages[i].PixelHeight:F2}");
-#endif
-                    }
-
-                    if (generateImageIndex == -1) { throw new Exception(); }
-
-                    if (ct.IsCancellationRequested) { return; }
-
-                    // SliderとCurrentImageIndexの更新が競合することに対処するためのスキップ用の仕掛け
                     _nowCurrenImageIndexChanging = true;
-                    if (isForceSingleImageView)
+                    if (NowDoubleImageView && direction == IndexMoveDirection.Backward)
                     {
-                        CurrentImageIndex = generateImageIndex;
-                        _prevForceSingleView = true;
+                        CurrentImageIndex = requestIndex - 1;
                     }
                     else
                     {
                         CurrentImageIndex = requestIndex;
-                        _prevForceSingleView = false;
                     }
-                    _nowCurrenImageIndexChanging = false;
 
-
-                    NowDoubleImageView = CurrentImages.Count(x => x != null) >= 2;
-                    RaisePropertyChanged(nameof(CurrentImages));
+                    _nowCurrenImageIndexChanging = false;                    
 
                     NowImageLoadingLongRunning = false;
 
                     // 先行読み込みを仕込む
+                    /*
                     if (direction == IndexMoveDirection.Forward)
                     {
                         if (NowDoubleImageView)
@@ -705,14 +761,15 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
                     }
+                    */
                 }
                 catch (OperationCanceledException)
                 {
                     CurrentImageIndex = direction switch
                     {
                         IndexMoveDirection.Refresh => CurrentImageIndex,
-                        IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + _CurrentImages.Length, Images.Length - 1),
-                        IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - _CurrentImages.Length, 0),
+                        IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + requestImageCount, Images.Length - 1),
+                        IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - requestImageCount, 0),
                         _ => throw new NotSupportedException(),
                     };
                     NowImageLoadingLongRunning = true;
@@ -725,57 +782,324 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         bool _nowCurrenImageIndexChanging;
-        bool _prevForceSingleView;
 
         async Task ResetImageIndex(int requestIndex)
         {
-            _prevForceSingleView = false;
             await MoveImageIndex(IndexMoveDirection.Refresh, requestIndex);
         }
 
-        
-
-
-        async Task<BitmapImage> MakeBitmapImageAsync(IImageSource imageSource, int canvasWidth, int canvasHeight, CancellationToken ct)
-        {
-            var bitmapImage = await GetImageIfPrefetched(imageSource, ct);
-
-            if (bitmapImage == null)
-            {
-                using (var stream = await imageSource.GetImageStreamAsync(ct))
-                {
-                    bitmapImage = new BitmapImage();
-                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
-                }
-            }
-                
-
-            // 画面より小さい画像を表示するときはアンチエイリアスと省メモリのため画面サイズにまで縮小
-            if (bitmapImage.PixelHeight > bitmapImage.PixelWidth)
-            {
-                if (bitmapImage.PixelHeight > canvasHeight)
-                {
-                    bitmapImage.DecodePixelHeight = canvasHeight;
-                }
-            }
-            else
-            {
-                if (bitmapImage.PixelWidth > canvasWidth)
-                {
-                    bitmapImage.DecodePixelWidth = canvasWidth;
-                }
-            }
-
-            return bitmapImage;
-        }
-
-
+       
         public enum IndexMoveDirection
         {
             Refresh,
             Forward,
             Backward,
         }
+
+        struct ImageSpreadDisplayCulcResult
+        {
+            public bool CanSpreadDisplay = false;
+            public IImageSource Slot1Image;
+            public IImageSource Slot2Image;
+        }
+
+        private async ValueTask<ImageSpreadDisplayCulcResult> CheckImagesCanSpreadDisplayInCurrentCanvasSizeAsync(IEnumerable<IImageSource> candidateImages, CancellationToken ct)
+        {
+            if (ImageViewerSettings.IsEnableSpreadDisplay)
+            {
+                if (candidateImages.Count() == 1)
+                {
+                    return new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = false, Slot1Image = candidateImages.First() };
+                }
+                else
+                {
+                    var canvasSize = new Vector2((float)CanvasWidth.Value, (float)CanvasHeight.Value);
+
+                    var firstImage = candidateImages.ElementAt(0);
+                    ThumbnailManager.ThumbnailSize? firstImageSize = firstImage.GetThumbnailSize();
+                    var secondImage = candidateImages.ElementAt(1);
+                    ThumbnailManager.ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
+
+                    bool canSpreadDisplay = false;
+                    if (firstImageSize is not null and ThumbnailManager.ThumbnailSize fistImageSizeReal 
+                        && secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal)
+                    {
+                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, in fistImageSizeReal, in secondImageSizeReal);
+                    }
+                    else if (firstImageSize is not null and ThumbnailManager.ThumbnailSize firstImageSizeReal2)
+                    {
+                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, in firstImageSizeReal2, await GetThumbnailSizeAsync(secondImage, ct));
+                    }
+                    else if (secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal2)
+                    {
+                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), in secondImageSizeReal2);
+                    }
+                    else
+                    {
+                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), await GetThumbnailSizeAsync(secondImage, ct));
+                    }
+
+                    return canSpreadDisplay
+                        ? new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = canSpreadDisplay, Slot1Image = firstImage, Slot2Image = secondImage }
+                        : new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = canSpreadDisplay, Slot1Image = firstImage }
+                        ;
+                }
+            }
+            else
+            {
+                return new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = false, Slot1Image = candidateImages.First() };
+            }
+        }
+
+        private static bool CanInsideSameHeightAsLarger(in Vector2 canvasSize, in ThumbnailManager.ThumbnailSize firstImageSize, in ThumbnailManager.ThumbnailSize secondImageSize)
+        {
+            float firstImageScaledWidth = (canvasSize.Y / firstImageSize.Height) * firstImageSize.Width;
+            float secondImageScaledWidth = (canvasSize.Y / secondImageSize.Height) * secondImageSize.Width;
+            return canvasSize.X > (firstImageScaledWidth + secondImageScaledWidth);
+        }
+
+
+        private async Task<ThumbnailManager.ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
+        {
+            var bitmap = await GetBitmapImageWithCacheAsync(source, ct);
+            return new ThumbnailManager.ThumbnailSize() 
+            {
+                Width = (uint)bitmap.PixelWidth,
+                Height = (uint)bitmap.PixelHeight,
+                RatioWH = bitmap.PixelWidth / (float)bitmap.PixelHeight,
+            };
+        }
+     
+        private async Task<BitmapImage> GetBitmapImageWithCacheAsync(IImageSource source, CancellationToken ct)
+        {
+            var pair = _CachedImages.FirstOrDefault(x => x.ImageSource == source);
+            if (pair != null)
+            {
+                return await pair.StartPrefetchAsync(ct);
+            }
+
+            pair = new PrefetchImageInfo(source);
+            _CachedImages.Insert(0, pair);
+            if (_CachedImages.Count >= 6)
+            {
+                var last = _CachedImages.Last();
+                last.Dispose();
+                _CachedImages.Remove(last);
+            }
+
+            return await pair.StartPrefetchAsync(ct);
+        }
+
+
+        private readonly List<PrefetchImageInfo> _CachedImages = new ();
+
+        private void ClearCachedImages()
+        {
+            _CachedImages.ForEach(x => x.Cancel());
+            _CachedImages.Clear();
+        }
+
+        private int _currentDisplayImageIndex;
+
+        enum PrefetchIndexType
+        {
+            Prev,
+            Current,
+            Next,
+        }
+
+        public int CurrentDisplayImageIndex => _currentDisplayImageIndex;
+        public int PrevDisplayImageIndex => _currentDisplayImageIndex - 1 < 0 ? 2 : _currentDisplayImageIndex - 1;
+        public int NextDisplayImageIndex => _currentDisplayImageIndex + 1 > 2 ? 0 : _currentDisplayImageIndex + 1;
+
+
+        private void SetCurrentDisplayImageIndex(int index)
+        {
+            _currentDisplayImageIndex = index;
+            RaisePropertyChanged(nameof(CurrentDisplayImageIndex));
+            RaisePropertyChanged(nameof(PrevDisplayImageIndex));
+            RaisePropertyChanged(nameof(NextDisplayImageIndex));
+        }
+
+        private int GetDisplayImageIndex(PrefetchIndexType type)
+        {
+            return type switch
+            {
+                PrefetchIndexType.Current => CurrentDisplayImageIndex,
+                PrefetchIndexType.Prev => PrevDisplayImageIndex,
+                PrefetchIndexType.Next => NextDisplayImageIndex,
+                _ => throw new NotSupportedException(),
+            };
+        }
+
+        BitmapImage[][] _displayImagesSingle = new BitmapImage[][] 
+        {
+            new BitmapImage[1],
+            new BitmapImage[1],
+            new BitmapImage[1],
+        };
+        BitmapImage[][] _displayImagesDouble = new BitmapImage[][] 
+        {
+            new BitmapImage[2],
+            new BitmapImage[2],
+            new BitmapImage[2],
+        };
+
+        IImageSource[][] _sourceImagesSingle = new IImageSource[][]
+        {
+            new IImageSource[1],
+            new IImageSource[1],
+            new IImageSource[1],
+        };
+        IImageSource[][] _sourceImagesDouble = new IImageSource[][]
+        {
+            new IImageSource[2],
+            new IImageSource[2],
+            new IImageSource[2],
+        };
+
+
+
+
+        private bool TryDisplayImagesSwapForward(IImageSource firstSource)
+        {
+            var forwardCachedImageSource = _sourceImagesSingle[NextDisplayImageIndex][0];
+            if (forwardCachedImageSource == firstSource)
+            {
+                SetCurrentDisplayImageIndex(NextDisplayImageIndex);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool TryDisplayImagesSwapForward(IImageSource firstSource, IImageSource secondSource)
+        {
+            var firstForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][0];
+            var secondForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][1];
+            if (firstForwardCachedImageSource == firstSource
+                && secondForwardCachedImageSource == secondSource
+                )
+            {
+                SetCurrentDisplayImageIndex(NextDisplayImageIndex);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
+        private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
+        {
+            switch (GetDisplayImageIndex(type))
+            {
+                case 0:
+                    _DisplayImages_0 = _displayImagesSingle[0];
+                    _DisplayImages_0[0] = firstImage;
+                    _sourceImagesSingle[0][0] = firstSource;
+                    RaisePropertyChanged(nameof(DisplayImages_0));
+                    break;
+                case 1:
+                    _DisplayImages_1 = _displayImagesSingle[1];
+                    _DisplayImages_1[0] = firstImage;
+                    _sourceImagesSingle[1][0] = firstSource;
+                    RaisePropertyChanged(nameof(DisplayImages_1));
+                    break;
+                case 2:
+                    _DisplayImages_2 = _displayImagesSingle[2];
+                    _DisplayImages_2[0] = firstImage;
+                    _sourceImagesSingle[2][0] = firstSource;
+                    RaisePropertyChanged(nameof(DisplayImages_2));
+                    break;
+            }
+
+            isAlreadySetDisplayImages = true;
+        }
+
+        private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
+        {
+            if (ImageViewerSettings.IsLeftBindingView is false)
+            {
+                (firstImage, secondImage) = (secondImage, firstImage);
+                (firstSource, secondSource) = (secondSource, firstSource);
+            }
+
+            switch (GetDisplayImageIndex(type))
+            {
+                case 0:
+                    _DisplayImages_0 = _displayImagesDouble[0];
+                    _DisplayImages_0[0] = firstImage;
+                    _DisplayImages_0[1] = secondImage;
+                    _sourceImagesDouble[0][0] = firstSource;
+                    _sourceImagesDouble[0][1] = secondSource;
+                    RaisePropertyChanged(nameof(DisplayImages_0));
+                    break;
+                case 1:
+                    _DisplayImages_1 = _displayImagesDouble[1];
+                    _DisplayImages_1[0] = firstImage;
+                    _DisplayImages_1[1] = secondImage;
+                    _sourceImagesDouble[1][0] = firstSource;
+                    _sourceImagesDouble[1][1] = secondSource;
+                    RaisePropertyChanged(nameof(DisplayImages_1));
+                    break;
+                case 2:
+                    _DisplayImages_2 = _displayImagesDouble[2];
+                    _DisplayImages_2[0] = firstImage;
+                    _DisplayImages_2[1] = secondImage;
+                    _sourceImagesDouble[1][0] = firstSource;
+                    _sourceImagesDouble[1][1] = secondSource;
+                    RaisePropertyChanged(nameof(DisplayImages_2));
+                    break;
+            }
+
+            isAlreadySetDisplayImages = true;
+        }
+
+        private void ClearDisplayImages()
+        {
+            isAlreadySetDisplayImages = false;
+
+            _displayImagesSingle[0][0] = _emptyImage;
+            _displayImagesSingle[1][0] = _emptyImage;
+            _displayImagesSingle[2][0] = _emptyImage;
+
+            _displayImagesDouble[0][0] = _emptyImage;
+            _displayImagesDouble[0][1] = _emptyImage;
+            _displayImagesDouble[1][0] = _emptyImage;
+            _displayImagesDouble[1][1] = _emptyImage;
+            _displayImagesDouble[2][0] = _emptyImage;
+            _displayImagesDouble[2][1] = _emptyImage;
+
+            _sourceImagesSingle[0][0] = null;
+            _sourceImagesSingle[1][0] = null;
+            _sourceImagesSingle[2][0] = null;
+
+            _sourceImagesDouble[0][0] = null;
+            _sourceImagesDouble[0][1] = null;
+            _sourceImagesDouble[1][0] = null;
+            _sourceImagesDouble[1][1] = null;
+            _sourceImagesDouble[2][0] = null;
+            _sourceImagesDouble[2][1] = null;
+        }
+
+        bool isAlreadySetDisplayImages = false;
+        private int GetCurrentDisplayImageCount()
+        {
+            if (isAlreadySetDisplayImages is false) { return 0; }
+
+            return GetDisplayImageIndex(PrefetchIndexType.Current) switch
+            {
+                0 => _DisplayImages_0.Length,
+                1 => _DisplayImages_1.Length,
+                2 => _DisplayImages_2.Length,
+                _ => throw new NotImplementedException(),
+            };
+        }
+
 
         IImageCollectionContext _imageCollectionContext;
         CancellationTokenSource _imageLoadingCts;
@@ -816,7 +1140,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
 
-                    _CurrentImages = new BitmapImage[1];
                     _Images = new IImageSource[1] { new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager) };
                     await MoveImageIndex(IndexMoveDirection.Refresh, 0);
                 }
@@ -901,42 +1224,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 _ => throw new NotSupportedException(sort.ToString()),
             };
         }
-#region Prefetch Images
-
-
-        PrefetchImageInfo[] _PrefetchImageDatum = new PrefetchImageInfo[2];
-        
-        void SetPrefetch(int slot, IImageSource imageSource)
-        {
-            ClearPrefetch(slot);
-            if (imageSource == null) { return; }
-            _PrefetchImageDatum[slot] = new PrefetchImageInfo(imageSource);
-            _ = _PrefetchImageDatum[slot].StartPrefetchAsync(CancellationToken.None);
-        }
-
-        async Task<BitmapImage> GetImageIfPrefetched(IImageSource imageSource, CancellationToken ct)
-        {
-            var prefetch = _PrefetchImageDatum.FirstOrDefault(x => x?.ImageSource == imageSource);
-            if (prefetch == null || prefetch.IsCanceled) { return null; }
-
-            return await prefetch.StartPrefetchAsync(ct);
-        }
-
-        void ClearPrefetch(int slot)
-        {
-            _PrefetchImageDatum[slot]?.Cancel();
-            _PrefetchImageDatum[slot]?.Dispose();
-            _PrefetchImageDatum[slot] = null;
-        }
-
-        void ClearPrefetch()
-        {
-            ClearPrefetch(0);
-            ClearPrefetch(1);
-        }
-
-        
-#endregion
 
 
 #region Commands
@@ -1010,11 +1297,11 @@ namespace TsubameViewer.Presentation.ViewModels
             await ResetImageIndex((int)parameter.Value);
         }
 
-        private DelegateCommand _DoubleViewCorrectCommand;
-        public DelegateCommand DoubleViewCorrectCommand =>
-            _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new DelegateCommand(ExecuteDoubleViewCorrectCommand));
+        private DelegateCommand _SpreadDisplayCorrectCommand;
+        public DelegateCommand SpreadDisplayCorrectCommand =>
+            _SpreadDisplayCorrectCommand ?? (_SpreadDisplayCorrectCommand = new DelegateCommand(ExecuteSpreadDisplayCorrectCommand));
 
-        void ExecuteDoubleViewCorrectCommand()
+        void ExecuteSpreadDisplayCorrectCommand()
         {
             _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
         }
@@ -1070,51 +1357,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowDoubleImageView, value); }
         }
 
-
-        private int _ViewResponsibleImageAmount;
-        public int ViewResponsibleImageAmount
-        {
-            get { return _ViewResponsibleImageAmount; }
-            set { SetProperty(ref _ViewResponsibleImageAmount, value); }
-        }
-
-        void CalcViewResponsibleImageAmount(double canvasWidth, double canvasHeight)
-        {
-            var images = _CurrentImages?.ToArray();
-            if (ImageViewerSettings.IsEnableSpreadDisplay)
-            {
-                var aspectRatio = canvasWidth / canvasHeight;
-
-                if (aspectRatio > 1.35)
-                {
-                    ViewResponsibleImageAmount = 2;
-                    if (CurrentImages?.Length != 2)
-                    {
-                        CurrentImages = new BitmapImage[2] { images?.ElementAtOrDefault(0), null };
-                    }
-                }
-                else
-                {
-                    ViewResponsibleImageAmount = 1;
-                    if (CurrentImages?.Length != 1)
-                    {
-                        CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
-                    }
-                }
-            }
-            else
-            {
-                ViewResponsibleImageAmount = 1;
-                if (CurrentImages?.Length != 1)
-                {
-                    CurrentImages = new BitmapImage[1] { images?.ElementAtOrDefault(0) };
-                }
-            }
-
-            
-        }
-
-#endregion
+        #endregion
 
 
     }
@@ -1154,11 +1397,12 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (Image == null)
                     {
+                        var image = new BitmapImage();
                         using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
                         {
-                            Image = new BitmapImage();
-                            await Image.SetSourceAsync(stream).AsTask(linkedCt);
+                            await image.SetSourceAsync(stream).AsTask(linkedCt);
                         }
+                        Image = image;
                     }
 
                     IsCompleted = true;

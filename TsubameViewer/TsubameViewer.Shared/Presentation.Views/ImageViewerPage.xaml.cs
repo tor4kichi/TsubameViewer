@@ -269,18 +269,16 @@ namespace TsubameViewer.Presentation.Views
             ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
-                // タメがある方が気持ちいい。ただ長すぎても良くないのでわずかに引っかかる程度にしておく
-                //await Task.Delay(100);
+                await Task.Delay(100);
+                animation.TryStart(ImagesContainer);
 
                 // Note: コメントアウトしたやり方でも画面全体に対する拡大アニメーションとして表示されるのでシンプルなやり方を採用
-                await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)
-                    .Where(x => ImageItemsControl.Items.Any() && ImageItemsControl.Items[0] != null)
-                    .Take(1)
-                    .ToAsyncAction();
+                //await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)
+                //    .Where(x => ImageItemsControl.Items.Any() && ImageItemsControl.Items[0] != null)
+                //    .Take(1)
+                //    .ToAsyncAction();
 
-                animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
-                
-                //animation.TryStart(ImagesContainer);
+                //animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
             }
 
             base.OnNavigatedTo(e);
