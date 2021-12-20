@@ -44,6 +44,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
         // DispatcherTimerはUIスレッドフレンドリーなタイマー
         private readonly DispatcherQueueTimer _AutoHideTimer;
 
+        private readonly bool IsDebugOutputEnabled = false;
 
         // このビヘイビアを保持しているElement内にカーソルがあるかのフラグ
         // PointerEntered/PointerExitedで変更される
@@ -204,14 +205,14 @@ namespace TsubameViewer.Presentation.Views.Behaviors
                     Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
                     RestoreCursorPosition();
 
-                    Debug.WriteLine($"Show Mouse Cursor.");
+                    Debug.WriteLineIf(IsDebugOutputEnabled, $"Show Mouse Cursor.");
                 }
                 else 
                 {
                     Window.Current.CoreWindow.PointerCursor = null;
                     RecordCursorPosition();
 
-                    Debug.WriteLine($"Hide Mouse Cursor.");
+                    Debug.WriteLineIf(IsDebugOutputEnabled, $"Hide Mouse Cursor.");
                 }
             }
 
@@ -240,7 +241,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
                 CursorVisibilityChanged(false);
             }
 
-            Debug.WriteLine("AutoHideTimer Stop!");
+            Debug.WriteLineIf(IsDebugOutputEnabled, "AutoHideTimer Stop!");
         }
 
         private void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
@@ -263,7 +264,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
             _IsCursorInsideAssociatedObject = true;
 
-            Debug.WriteLine("PointerEntered");
+            Debug.WriteLineIf(IsDebugOutputEnabled, "PointerEntered");
         }
 
         private void AssociatedObject_PointerExited(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -275,7 +276,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             CursorVisibilityChanged(true);
             ResetAutoHideTimer();
 
-            Debug.WriteLine("PointerExited");
+            Debug.WriteLineIf(IsDebugOutputEnabled, "PointerExited");
         }
 
         #region this code copy from VLC WinRT

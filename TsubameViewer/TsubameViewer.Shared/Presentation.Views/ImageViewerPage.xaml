@@ -265,7 +265,8 @@
             <Setter Property="ItemTemplate">
               <Setter.Value>
                 <DataTemplate x:DataType="BitmapImage">
-                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"
+                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"                         
+                         SizeChanged="Image_SizeChanged"
                    />
                 </DataTemplate>
               </Setter.Value>
@@ -556,7 +557,7 @@
             <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="1" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+            <Setter Target="ImageItemsControl_1.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>

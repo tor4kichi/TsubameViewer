@@ -304,5 +304,11 @@ namespace TsubameViewer.Presentation.Views
 
             base.OnNavigatingFrom(e);
         }
+
+        private void Image_SizeChanged(object sender, SizeChangedEventArgs args)
+        {
+            var image = sender as Image;
+            _vm.SetCompleteImageLoading(image.Source);
+        }
     }
 }
