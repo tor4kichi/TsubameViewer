@@ -304,8 +304,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
+                    if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
+
                     if (_currentPath != unescapedPath)
                     {
+                        
                         _currentPath = unescapedPath;
 
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
