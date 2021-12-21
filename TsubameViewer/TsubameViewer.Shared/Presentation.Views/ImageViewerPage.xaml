@@ -583,15 +583,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentImages, Mode=OneWay}" EqualTo="{x:Null}" />
-            <wst:EqualsStateTrigger Value="{Binding CurrentImages.Length, Mode=OneWay}" EqualTo="0" />
+            <StateTrigger IsActive="{x:Bind _vm.IsAlreadySetDisplayImages, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />

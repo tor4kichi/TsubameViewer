@@ -256,6 +256,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             ClearCachedImages();
             ClearDisplayImages();
+            IsAlreadySetDisplayImages = false;
 
             if (Images?.Any() ?? false)
             {
@@ -427,6 +428,8 @@ namespace TsubameViewer.Presentation.ViewModels
             await ResetImageIndex(CurrentImageIndex);
 
             SetCurrentDisplayImageIndex(CurrentDisplayImageIndex);
+
+            IsAlreadySetDisplayImages = true;
 
             // 表示画像が揃ったら改めてボタンを有効化
             GoNextImageCommand.RaiseCanExecuteChanged();
@@ -1114,8 +1117,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     RaisePropertyChanged(nameof(DisplayImages_2));
                     break;
             }
-
-            isAlreadySetDisplayImages = true;
         }
 
         private void SetPrefetchDisplayImageSingleWhenNowDoubleView(PrefetchIndexType type)
@@ -1170,15 +1171,11 @@ namespace TsubameViewer.Presentation.ViewModels
                     _sourceImagesDouble[2][1] = secondSource;
                     RaisePropertyChanged(nameof(DisplayImages_2));
                     break;
-            }
-
-            isAlreadySetDisplayImages = true;
+            }            
         }
 
         private void ClearDisplayImages()
         {
-            isAlreadySetDisplayImages = false;
-
             _currentDisplayImageIndex = 0;
 
             _displayImagesSingle[0][0] = _emptyImage;
@@ -1238,10 +1235,17 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        bool isAlreadySetDisplayImages = false;
+
+        private bool _IsAlreadySetDisplayImages = false;
+        public bool IsAlreadySetDisplayImages
+        {
+            get => _IsAlreadySetDisplayImages;
+            private set => SetProperty(ref _IsAlreadySetDisplayImages, value);
+        }
+
         private int GetCurrentDisplayImageCount()
         {
-            if (isAlreadySetDisplayImages is false) { return 0; }
+            if (IsAlreadySetDisplayImages is false) { return 0; }
 
             return GetDisplayImageIndex(PrefetchIndexType.Current) switch
             {
@@ -1291,9 +1295,6 @@ namespace TsubameViewer.Presentation.ViewModels
                             imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
                         }
                     }
-
-                    _Images = new IImageSource[1] { new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager) };
-                    await MoveImageIndex(IndexMoveDirection.Refresh, 0);
                 }
                 else if (file.IsSupportedMangaFile())
                 {

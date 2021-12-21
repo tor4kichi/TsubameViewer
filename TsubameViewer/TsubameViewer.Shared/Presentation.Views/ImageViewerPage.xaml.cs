@@ -1,11 +1,14 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
+using Microsoft.UI.Xaml.Controls;
 using Prism.Commands;
+using Prism.Ioc;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -29,6 +32,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
@@ -269,20 +273,78 @@ namespace TsubameViewer.Presentation.Views
             ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
-                await Task.Delay(100);
-                animation.TryStart(ImageLoadingBarrier);
+                // Note: CancelletionTokenSourceにタイムアウトを指定した形で実装すると
+                // Win32Exceptionでアプリがクラッシュする
+                // とにかく待って処理する男気実装でいくしかない
 
-                // Note: コメントアウトしたやり方でも画面全体に対する拡大アニメーションとして表示されるのでシンプルなやり方を採用
-                //await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)
-                //    .Where(x => ImageItemsControl.Items.Any() && ImageItemsControl.Items[0] != null)
-                //    .Take(1)
-                //    .ToAsyncAction();
+                await this.ObserveDependencyProperty(DataContextProperty)
+                    .Where(x => _vm is not null)
+                    .Take(1)
+                    .ToAsyncOperation()
+                    .AsTask();
 
-                //animation.TryStart(ImageItemsControl.Items.ElementAt(0) as UIElement ?? ImagesContainer);
+                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
+                    .Take(1)
+                    .ToAsyncOperation()
+                    .AsTask();
+
+                if (_vm.DisplayImages_0.Length == 1)
+                {
+                    ImageItemsControl_0.Opacity = 0.001;
+                    var image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                       h => ImageItemsControl_0.ElementPrepared += h,
+                       h => ImageItemsControl_0.ElementPrepared -= h
+                       )
+                       .Select(x => x.EventArgs.Element)
+                       .Take(1)
+                       .ToAsyncOperation()
+                       .AsTask();
+
+                    int count = 0;
+                    while (image.ActualSize is { X: 0, Y: 0 })
+                    {
+                        await Task.Delay(1);
+                        count++;
+                        if (count == 750)
+                        {
+                            animation.Cancel();
+                            return;
+                        }
+                    }
+
+                    animation.TryStart(ImageItemsControl_0, new[] { image });
+                    ImageItemsControl_0.Opacity = 1.0;
+                }
+                else
+                {
+                    ImageItemsControl_0.Opacity = 0.001;
+                    var images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                       h => ImageItemsControl_0.ElementPrepared += h,
+                       h => ImageItemsControl_0.ElementPrepared -= h
+                       )
+                       .Select(x => x.EventArgs.Element)
+                       .Take(2)
+                       .Buffer(2)
+                       .ToAsyncOperation();
+                       
+                    int count = 0;
+                    while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
+                    {
+                        await Task.Delay(1);
+                        count++;
+                        if (count == 750)
+                        {
+                            animation.Cancel();
+                            return;
+                        }
+                    }
+
+                    animation.TryStart(ImageItemsControl_0, images);
+                    ImageItemsControl_0.Opacity = 1.0;
+                }
             }
 
             base.OnNavigatedTo(e);
-
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)

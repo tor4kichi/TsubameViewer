@@ -50,7 +50,7 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly DispatcherQueueTimer _AnimationCancelTimer;
-        private readonly TimeSpan _BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
+        private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
 
         public PrimaryWindowCoreLayout(
             PrimaryWindowCoreLayoutViewModel viewModel, 
