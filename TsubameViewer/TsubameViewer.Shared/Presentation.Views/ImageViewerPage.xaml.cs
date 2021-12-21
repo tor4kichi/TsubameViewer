@@ -270,7 +270,7 @@ namespace TsubameViewer.Presentation.Views
             if (animation != null)
             {
                 await Task.Delay(100);
-                animation.TryStart(ImagesContainer);
+                animation.TryStart(ImageLoadingBarrier);
 
                 // Note: コメントアウトしたやり方でも画面全体に対する拡大アニメーションとして表示されるのでシンプルなやり方を採用
                 //await ImageItemsControl.ObserveDependencyProperty(ItemsControl.ItemsSourceProperty)

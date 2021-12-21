@@ -221,17 +221,6 @@
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
-      <!-- Image sizing -->
-      <core:EventTriggerBehavior EventName="Loaded">
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-      </core:EventTriggerBehavior>
-      <core:EventTriggerBehavior EventName="SizeChanged">
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-        <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
-        <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
-      </core:EventTriggerBehavior>
-
 
     </i:Interaction.Behaviors>
 
@@ -254,14 +243,21 @@
             x:Name="ImagesContainer"
             >
 
+        <i:Interaction.Behaviors>
+          <!-- Image sizing -->
+          <core:EventTriggerBehavior EventName="Loaded">
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+          </core:EventTriggerBehavior>
+          <core:EventTriggerBehavior EventName="SizeChanged">
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+            <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
+          </core:EventTriggerBehavior>
+        </i:Interaction.Behaviors>
         <Grid.Resources>
           <Style TargetType="muxc:ItemsRepeater">
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="RenderTransform">
-              <Setter.Value>
-                <TranslateTransform X="10000" />
-              </Setter.Value>
-            </Setter>
             <Setter Property="ItemTemplate">
               <Setter.Value>
                 <DataTemplate x:DataType="BitmapImage">
@@ -284,18 +280,30 @@
         <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_0, Mode=OneWay}"
                     x:Name="ImageItemsControl_0"   
                             DataContext="{x:Null}"
-                    />
+                    >
+          <muxc:ItemsRepeater.RenderTransform>
+            <TranslateTransform X="-10000" />
+          </muxc:ItemsRepeater.RenderTransform>
+        </muxc:ItemsRepeater>
 
         <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_1, Mode=OneWay}"
                     x:Name="ImageItemsControl_1"  
                             DataContext="{x:Null}"
-                    />
+                    >
+          <muxc:ItemsRepeater.RenderTransform>
+            <TranslateTransform X="-10000" />
+          </muxc:ItemsRepeater.RenderTransform>
+        </muxc:ItemsRepeater>
         <muxc:ItemsRepeater ItemsSource="{x:Bind _vm.DisplayImages_2, Mode=OneWay}"
                     x:Name="ImageItemsControl_2"  
                             DataContext="{x:Null}"
-                    />
+                    >
+          <muxc:ItemsRepeater.RenderTransform>
+            <TranslateTransform X="-10000" />
+          </muxc:ItemsRepeater.RenderTransform>
+        </muxc:ItemsRepeater>
       </Grid>
-      
+
       <Grid >
         <Rectangle x:Name="ImageLoadingBarrier" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Fill="Black" Opacity="0.0"  />
       </Grid>
