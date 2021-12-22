@@ -48,8 +48,8 @@
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_Button, Mode=TwoWay}"
                     Header="{Binding Source=IsReverseImageFliping_Button, Converter={StaticResource LocalizeConverter}}"
                     />
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnableSpreadDisplay, Mode=TwoWay}"
-                    Header="{Binding Source=IsEnableSpreadDisplay, Converter={StaticResource LocalizeConverter}}"
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnableDoubleView, Mode=TwoWay}"
+                    Header="{Binding Source=IsEnableDoubleView, Converter={StaticResource LocalizeConverter}}"
                     />
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsLeftBindingView, Mode=TwoWay}"
                     Header="{Binding Source=IsLeftBindingView, Converter={StaticResource LocalizeConverter}}"
@@ -148,7 +148,7 @@
         <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
 
-        <Button x:Name="SpreadDisplayCorrectButton" Content="{i18nExt:Localize Key=SpreadDisplayCorrectPaging}" Command="{Binding SpreadDisplayCorrectCommand}" Visibility="Collapsed"
+        <Button x:Name="DoubleViewCorrectButton" Content="{i18nExt:Localize Key=DoubleViewCorrectPaging}" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
                 Margin="0 16 0 0"
                 />
 
@@ -672,7 +672,7 @@
             <StateTrigger IsActive="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SpreadDisplayCorrectButton.Visibility" Value="Visible" />
+            <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

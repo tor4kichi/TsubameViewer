@@ -107,7 +107,7 @@ CurrentFolder_InArchive = 夹
 Page = 页
 
 IsEnablePrefetch = 预加载图片
-IsEnableSpreadDisplay = 点差显示
+IsEnableDoubleView = 点差显示
 IsLeftBindingView = 左绑定显示
 
 SwitchFullScreen = 全屏切换

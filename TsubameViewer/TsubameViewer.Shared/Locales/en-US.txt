@@ -107,7 +107,7 @@ CurrentFolder_InArchive = Folder
 Page = Page
 
 IsEnablePrefetch = Preloading images
-IsEnableSpreadDisplay = Spread display
+IsEnableDoubleView = Spread display
 IsLeftBindingView = Left binding display
 
 SwitchFullScreen = Full screen switching

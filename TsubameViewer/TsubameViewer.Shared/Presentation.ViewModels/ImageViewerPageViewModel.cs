@@ -438,7 +438,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             new [] 
             {
-                ImageViewerSettings.ObserveProperty(x => x.IsEnableSpreadDisplay, isPushCurrentValueAtFirst: false).ToUnit(),
+                ImageViewerSettings.ObserveProperty(x => x.IsEnableDoubleView, isPushCurrentValueAtFirst: false).ToUnit(),
                 ImageViewerSettings.ObserveProperty(x => x.IsLeftBindingView, isPushCurrentValueAtFirst: false).ToUnit(),
             }
                 .Merge()
@@ -635,7 +635,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 catch (OperationCanceledException)
                 {
-                    int requestImageCount = ImageViewerSettings.IsEnableSpreadDisplay ? 2 : 1;
+                    int requestImageCount = ImageViewerSettings.IsEnableDoubleView ? 2 : 1;
                     CurrentImageIndex = direction switch
                     {
                         IndexMoveDirection.Refresh => CurrentImageIndex,
@@ -711,8 +711,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     throw new InvalidOperationException();
                 }
 
-                var sizeCheckResult = await CheckImagesCanSpreadDisplayInCurrentCanvasSizeAsync(candidateImages, ct);
-                if (sizeCheckResult.CanSpreadDisplay)
+                var sizeCheckResult = await CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(candidateImages, ct);
+                if (sizeCheckResult.CanDoubleView)
                 {
                     if (direction == IndexMoveDirection.Backward)
                     {
@@ -813,7 +813,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
         {
-            int requestImageCount = ImageViewerSettings.IsEnableSpreadDisplay ? 2 : 1;
+            int requestImageCount = ImageViewerSettings.IsEnableDoubleView ? 2 : 1;
             int lastRequestImageCount = GetCurrentDisplayImageCount();
 
             var (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, currentIndex, Images.Length);
@@ -850,20 +850,20 @@ namespace TsubameViewer.Presentation.ViewModels
             Backward,
         }
 
-        struct ImageSpreadDisplayCulcResult
+        struct ImageDoubleViewCulcResult
         {
-            public bool CanSpreadDisplay = false;
+            public bool CanDoubleView = false;
             public IImageSource Slot1Image;
             public IImageSource Slot2Image;
         }
 
-        private async ValueTask<ImageSpreadDisplayCulcResult> CheckImagesCanSpreadDisplayInCurrentCanvasSizeAsync(IEnumerable<IImageSource> candidateImages, CancellationToken ct)
+        private async ValueTask<ImageDoubleViewCulcResult> CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(IEnumerable<IImageSource> candidateImages, CancellationToken ct)
         {
-            if (ImageViewerSettings.IsEnableSpreadDisplay)
+            if (ImageViewerSettings.IsEnableDoubleView)
             {
                 if (candidateImages.Count() == 1)
                 {
-                    return new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = false, Slot1Image = candidateImages.First() };
+                    return new ImageDoubleViewCulcResult() { CanDoubleView = false, Slot1Image = candidateImages.First() };
                 }
                 else
                 {
@@ -875,34 +875,34 @@ namespace TsubameViewer.Presentation.ViewModels
                     var secondImage = candidateImages.ElementAt(1);
                     ThumbnailManager.ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
 
-                    bool canSpreadDisplay = false;
+                    bool canDoubleView = false;
                     if (firstImageSize is not null and ThumbnailManager.ThumbnailSize fistImageSizeReal 
                         && secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal)
                     {
-                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, in fistImageSizeReal, in secondImageSizeReal);
+                        canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, in fistImageSizeReal, in secondImageSizeReal);
                     }
                     else if (firstImageSize is not null and ThumbnailManager.ThumbnailSize firstImageSizeReal2)
                     {
-                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, in firstImageSizeReal2, await GetThumbnailSizeAsync(secondImage, ct));
+                        canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, in firstImageSizeReal2, await GetThumbnailSizeAsync(secondImage, ct));
                     }
                     else if (secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal2)
                     {
-                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), in secondImageSizeReal2);
+                        canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), in secondImageSizeReal2);
                     }
                     else
                     {
-                        canSpreadDisplay = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), await GetThumbnailSizeAsync(secondImage, ct));
+                        canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), await GetThumbnailSizeAsync(secondImage, ct));
                     }
 
-                    return canSpreadDisplay
-                        ? new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = canSpreadDisplay, Slot1Image = firstImage, Slot2Image = secondImage }
-                        : new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = canSpreadDisplay, Slot1Image = firstImage }
+                    return canDoubleView
+                        ? new ImageDoubleViewCulcResult() { CanDoubleView = canDoubleView, Slot1Image = firstImage, Slot2Image = secondImage }
+                        : new ImageDoubleViewCulcResult() { CanDoubleView = canDoubleView, Slot1Image = firstImage }
                         ;
                 }
             }
             else
             {
-                return new ImageSpreadDisplayCulcResult() { CanSpreadDisplay = false, Slot1Image = candidateImages.First() };
+                return new ImageDoubleViewCulcResult() { CanDoubleView = false, Slot1Image = candidateImages.First() };
             }
         }
 
@@ -1514,11 +1514,11 @@ namespace TsubameViewer.Presentation.ViewModels
             await ResetImageIndex((int)parameter.Value);
         }
 
-        private DelegateCommand _SpreadDisplayCorrectCommand;
-        public DelegateCommand SpreadDisplayCorrectCommand =>
-            _SpreadDisplayCorrectCommand ?? (_SpreadDisplayCorrectCommand = new DelegateCommand(ExecuteSpreadDisplayCorrectCommand));
+        private DelegateCommand _DoubleViewCorrectCommand;
+        public DelegateCommand DoubleViewCorrectCommand =>
+            _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new DelegateCommand(ExecuteDoubleViewCorrectCommand));
 
-        void ExecuteSpreadDisplayCorrectCommand()
+        void ExecuteDoubleViewCorrectCommand()
         {
             _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
         }
