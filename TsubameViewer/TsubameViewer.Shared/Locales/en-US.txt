@@ -106,7 +106,8 @@ FolderItemMenuNoActionSuggested = No action available
 CurrentFolder_InArchive = Folder
 Page = Page
 
-IsEnableSpreadDisplay = Spread display
+IsEnablePrefetch = Preloading images
+IsEnableDoubleView = Spread display
 IsLeftBindingView = Left binding display
 
 SwitchFullScreen = Full screen switching

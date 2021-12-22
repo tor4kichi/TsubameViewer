@@ -106,7 +106,8 @@ FolderItemMenuNoActionSuggested = 選択可能なアクションはありませ�
 CurrentFolder_InArchive = フォルダ
 Page = ページ
 
-IsEnableSpreadDisplay = 見開き表示
+IsEnablePrefetch = 画像の先行読み込み
+IsEnableDoubleView = 見開き表示
 IsLeftBindingView = 左綴じ表示
 
 SwitchFullScreen = 全画面切替

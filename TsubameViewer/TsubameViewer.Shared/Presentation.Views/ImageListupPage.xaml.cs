@@ -104,7 +104,7 @@ namespace TsubameViewer.Presentation.Views
 
                     _vm.SetLastIntractItem(itemVM);
                 }
-                else
+                else if (_vm.DisplayCurrentPath is not null)
                 {
                     _PathToLastIntractMap[_vm.DisplayCurrentPath] =
                         new LastIntractInfo()
@@ -218,6 +218,11 @@ namespace TsubameViewer.Presentation.Views
                         control.Focus(FocusState.Keyboard);
                     }
                 }
+            }
+
+            if (_vm.DisplayCurrentPath == null)
+            { 
+                return;
             }
 
             if (_PathToLastIntractMap.Remove(_vm.DisplayCurrentPath, out LastIntractInfo info) is false)

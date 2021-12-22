@@ -42,23 +42,9 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
         // 自動非表示のためのタイマー
         // DispatcherTimerはUIスレッドフレンドリーなタイマー
-        DispatcherQueueTimer _AutoHideTimer;
-        DispatcherQueueTimer AutoHideTimer
-        {
-            get
-            {
-                if (_AutoHideTimer == null)
-                {
-                    _AutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
-                    _AutoHideTimer.Tick += AutoHideTimer_Tick;
-                    _AutoHideTimer.Interval = AutoHideDelay;
-                    _AutoHideTimer.IsRepeating = false;
-                }
+        private readonly DispatcherQueueTimer _AutoHideTimer;
 
-                return _AutoHideTimer;
-            }
-        }
-
+        private readonly bool IsDebugOutputEnabled = false;
 
         // このビヘイビアを保持しているElement内にカーソルがあるかのフラグ
         // PointerEntered/PointerExitedで変更される
@@ -117,132 +103,180 @@ namespace TsubameViewer.Presentation.Views.Behaviors
         public static void OnAutoHideDelayPropertyChanged(object sender, DependencyPropertyChangedEventArgs args)
         {
             PointerCursolAutoHideBehavior source = (PointerCursolAutoHideBehavior)sender;
-            source.AutoHideTimer.Interval = source.AutoHideDelay;
+            source._AutoHideTimer.Interval = source.AutoHideDelay;
         }
 
         #endregion
 
 
+        private static bool GetIsWindowActive()
+        {
+            return Window.Current.CoreWindow.ActivationMode == CoreWindowActivationMode.ActivatedInForeground;
+        }
+
+
+        public PointerCursolAutoHideBehavior()
+        {
+            _AutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+            _AutoHideTimer.Tick += AutoHideTimer_Tick;
+            _AutoHideTimer.IsRepeating = false;
+            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;            
+        }
 
         protected override void OnAttached()
         {
-            base.OnAttached();
+            _LastCursorPosition = GetPointerPosition();
 
-            _DefaultCursor = Window.Current.CoreWindow.PointerCursor;
+            _AutoHideTimer.Interval = AutoHideDelay;
+            _IsCursorInsideAssociatedObject = IsCursorInWindow();
+            _prevIsVisible = true;
+            ResetAutoHideTimer();
 
-            AssociatedObject.Loaded += AssociatedObject_Loaded;
-            AssociatedObject.Unloaded += AssociatedObject_Unloaded;
-        }
-
-
-        private void AssociatedObject_Loaded(object sender, RoutedEventArgs e)
-        {
-            isUnloaded = false;
-
-            MouseDevice.GetForCurrentView().MouseMoved += CursorSetter_MouseMoved;
-
-            Window.Current.SizeChanged += Current_SizeChanged;
+            AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
+            AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
             AssociatedObject.PointerEntered += AssociatedObject_PointerEntered;
             AssociatedObject.PointerExited += AssociatedObject_PointerExited;
 
-            _IsCursorInsideAssociatedObject = IsCursorInWindow();
+            Window.Current.Activated -= Current_Activated;
+            Window.Current.Activated += Current_Activated;
 
-            ResetAutoHideTimer();
+            MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
+            MouseDevice.GetForCurrentView().MouseMoved += CursorSetter_MouseMoved;
+
+            AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
+            AssociatedObject.Unloaded += AssociatedObject_Unloaded;
+
+            base.OnAttached();
         }
 
-        private void Current_SizeChanged(object sender, WindowSizeChangedEventArgs e)
+        private void Current_Activated(object sender, WindowActivatedEventArgs e)
         {
-            Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
-
-            ResetAutoHideTimer();
+            if (e.WindowActivationState != CoreWindowActivationState.Deactivated)
+            {
+                ResetAutoHideTimer();
+            }
         }
 
-        bool isUnloaded = false;
+        bool IsUnlaoded = false;
         private void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
         {
-            isUnloaded = true;
-            AutoHideTimer.Stop();
+            IsUnlaoded = true;
 
-            Window.Current.SizeChanged -= Current_SizeChanged;
+            Window.Current.Activated -= Current_Activated;
             MouseDevice.GetForCurrentView().MouseMoved -= CursorSetter_MouseMoved;
+
+            _AutoHideTimer.Stop();
             Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
         }
 
+        protected override void OnDetaching()
+        {
+            AssociatedObject.PointerEntered -= AssociatedObject_PointerEntered;
+            AssociatedObject.PointerExited -= AssociatedObject_PointerExited;
 
+            AssociatedObject.Unloaded -= AssociatedObject_Unloaded;
+
+            base.OnDetaching();
+        }
 
         private void ResetAutoHideTimer()
         {
-            if (isUnloaded) { return; }
+            _AutoHideTimer.Stop();
 
             if (IsAutoHideEnabled)
             {
-                AutoHideTimer.Start();
+                _AutoHideTimer.Start();
             }
+            
+            CursorVisibilityChanged(true);
         }
 
         bool _prevIsVisible = true;
-
+        
         private void CursorVisibilityChanged(bool isVisible)
         {
-            if (isUnloaded) { return; }
+            if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
 
-            if (_DefaultCursor == null) { throw new Exception($"Default cursor is can not be null."); }
+            // 表示状態変化のトリガーを検出して処理する
+            if (_prevIsVisible != isVisible)
+            {
+                if (isVisible)
+                {
+                    Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
+                    RestoreCursorPosition();
 
-            if ((_prevIsVisible ^ isVisible) && isVisible)
-            {
-                Window.Current.CoreWindow.PointerCursor = _DefaultCursor;
-                var windowBound = Window.Current.CoreWindow.Bounds;
-                Window.Current.CoreWindow.PointerPosition = new Point(windowBound.Left + _LastCursorPosition.X, windowBound.Top + _LastCursorPosition.Y);
-                ResetAutoHideTimer();
-            }
-            else if ((_prevIsVisible ^ isVisible) && !isVisible)
-            {
-                Window.Current.CoreWindow.PointerCursor = null;
-                _LastCursorPosition = GetPointerPosition();
-                AutoHideTimer.Stop();
+                    Debug.WriteLineIf(IsDebugOutputEnabled, $"Show Mouse Cursor.");
+                }
+                else 
+                {
+                    Window.Current.CoreWindow.PointerCursor = null;
+                    RecordCursorPosition();
+
+                    Debug.WriteLineIf(IsDebugOutputEnabled, $"Hide Mouse Cursor.");
+                }
             }
 
             _prevIsVisible = isVisible;
         }
 
 
+        private void RecordCursorPosition()
+        {
+            _LastCursorPosition = GetPointerPosition();
+        }
+
+        private void RestoreCursorPosition()
+        {
+            var windowBound = Window.Current.CoreWindow.Bounds;
+            Window.Current.CoreWindow.PointerPosition = new Point(windowBound.Left + _LastCursorPosition.X, windowBound.Top + _LastCursorPosition.Y);
+        }
+
         private void AutoHideTimer_Tick(object sender, object e)
         {
-            if (isUnloaded) { return; }
+            if (IsUnlaoded) { return; }
+            if (GetIsWindowActive() is false) { return; }
 
             if (IsAutoHideEnabled && _IsCursorInsideAssociatedObject)
             {
                 CursorVisibilityChanged(false);
             }
+
+            Debug.WriteLineIf(IsDebugOutputEnabled, "AutoHideTimer Stop!");
         }
 
         private void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
         {
-            if (isUnloaded) { return; }
+            if (IsUnlaoded) { return; }
 
-            // マウスホイールを動かした時など移動していなくても呼ばれるがその場合は無視する
+            RecordCursorPosition();
+
+            // マウスホイールを動かした時等には移動していなくても呼ばれるがその場合は無視する
             if (args.MouseDelta.X == 0 && args.MouseDelta.Y == 0) { return; }
-
-            ResetAutoHideTimer();
-
+            
             CursorVisibilityChanged(true);
+            ResetAutoHideTimer();
         }
 
 
         private void AssociatedObject_PointerEntered(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if (isUnloaded) { return; }
+            if (IsUnlaoded) { return; }
 
             _IsCursorInsideAssociatedObject = true;
+
+            Debug.WriteLineIf(IsDebugOutputEnabled, "PointerEntered");
         }
 
         private void AssociatedObject_PointerExited(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            if (isUnloaded) { return; }
+            if (IsUnlaoded) { return; }
 
             _IsCursorInsideAssociatedObject = false;
 
             CursorVisibilityChanged(true);
+            ResetAutoHideTimer();
+
+            Debug.WriteLineIf(IsDebugOutputEnabled, "PointerExited");
         }
 
         #region this code copy from VLC WinRT

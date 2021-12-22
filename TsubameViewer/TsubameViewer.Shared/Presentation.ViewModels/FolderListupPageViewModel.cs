@@ -216,7 +216,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
                 .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(false)
                 .AddTo(_disposables);
 
             SelectedChildFileSortType = new ReactivePropertySlim<FileSortType?>(null)
@@ -261,6 +261,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public StorageItemViewModel GetLastIntractItem()
         {
+            if (_currentItem == null) { return null; }
+
             var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
             if (lastIntaractItem == null) { return null; }
 

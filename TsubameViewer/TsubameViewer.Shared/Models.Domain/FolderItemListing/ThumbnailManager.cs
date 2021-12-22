@@ -39,16 +39,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
 
-        private static ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
+        private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
         public string GetStorageItemId(string path)
         {
-            return _FilePathToHashCodeStringMap.TryGetValue(path, out var code)
-                ? code
-                : _FilePathToHashCodeStringMap[path] = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray())
-                ;
+            if (!_FilePathToHashCodeStringMap.TryGetValue(path, out var code))
+            {
+                code = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray());
+                _ = _FilePathToHashCodeStringMap.TryAdd(path, code);
+            }
+
+            return code;
         }
 
         private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
@@ -580,7 +583,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             {
                 Path = path,
                 ImageWidth = decoder.PixelWidth,
-                ImageHeight = decoder.PixelHeight
+                ImageHeight = decoder.PixelHeight,
+                RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
             });
 
             var pixelData = await decoder.GetPixelDataAsync();
@@ -598,7 +602,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             await outputStream.FlushAsync().AsTask(ct);
         }
 
-        private static async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var fileStream = await file.OpenReadAsync())
             {
@@ -606,7 +610,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return true;
             }
         }
-        private static async Task<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var zipArchive = new ZipArchive(archiveStream))
@@ -619,7 +623,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
                 }
 
-                entry ??= zipArchive.Entries.OrderBy(x => x.Name).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
+                entry ??= zipArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Name));
 
                 if (entry == null) { return false; }
 
@@ -634,7 +638,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var rarArchive = RarArchive.Open(archiveStream))
@@ -645,7 +649,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= rarArchive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -659,7 +663,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var archive = SevenZipArchive.Open(archiveStream))
@@ -670,7 +674,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -684,7 +688,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
             using (var archive = TarArchive.Open(archiveStream))
@@ -695,7 +699,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
                 }
 
-                entry ??= archive.Entries.OrderBy(x => x.Key).FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+                entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
                 if (entry == null) { return false; }
 
@@ -709,7 +713,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        private static async Task<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+        private async Task<bool> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
             if (pdfDocument.PageCount == 0) { return false; }
@@ -729,43 +733,61 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (cover != null)
             {
                 await outputStream.WriteAsync(cover, 0, cover.Length);
+                return true;
             }
             else if (epubBook.Content.Images.Any())
             {
                 var firstImage = epubBook.Content.Images.First().Value;
                 var bytes = await firstImage.ReadContentAsync();
                 await outputStream.WriteAsync(bytes, 0, bytes.Length);
+                return true;
             }
             else
             {
                 return false;
             }
-
-            return true;
         }
 
         #region Thumbnail Size
 
         public ThumbnailSize? GetThumbnailOriginalSize(IStorageItem file)
         {
-            return _thumbnailImageInfoRepository.GetSize(file.Path);
+            return _thumbnailImageInfoRepository.TryGetSize(file.Path);
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(string path)
         {
-            return _thumbnailImageInfoRepository.GetSize(path);
+            return _thumbnailImageInfoRepository.TryGetSize(path);
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, IArchiveEntry archiveEntry)
         {
-            return _thumbnailImageInfoRepository.GetSize(GetArchiveEntryPath(file, archiveEntry));
+            return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, archiveEntry));
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, PdfPage pdfPage)
         {
-            return _thumbnailImageInfoRepository.GetSize(GetArchiveEntryPath(file, pdfPage));
+            return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, pdfPage));
         }
 
+
+        public ThumbnailSize SetThumbnailSize(string path, BitmapImage image)
+        {
+            var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+            {
+                Path = path,
+                ImageHeight = (uint)image.PixelHeight,
+                ImageWidth = (uint)image.PixelWidth,
+                RatioWH = image.PixelWidth / (float)image.PixelHeight
+            });
+
+            return new ThumbnailSize()
+            {
+                Height = item.ImageHeight,
+                Width = item.ImageWidth,
+                RatioWH = item.RatioWH,
+            };
+        }
 
         public class ThumbnailImageInfo
         {
@@ -790,7 +812,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
 
 
-            public ThumbnailSize? GetSize(string path)
+            public ThumbnailSize? TryGetSize(string path)
             {
                 var thumbInfo = _collection.FindById(path);
 
@@ -813,6 +835,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 {
                     return default;
                 }
+            }
+
+            public ThumbnailSize GetSize(string path)
+            {
+                return TryGetSize(path) ?? throw new InvalidOperationException();
             }
 
 

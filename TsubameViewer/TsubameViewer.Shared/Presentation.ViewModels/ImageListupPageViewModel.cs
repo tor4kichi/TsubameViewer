@@ -204,7 +204,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
                 .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(false)
                 .AddTo(_disposables);
 
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
@@ -300,13 +300,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 DisplaySortTypeInheritancePath = parentSort.Path;
                 SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                IsSortWithTitleDigitCompletion.Value = true;
+                IsSortWithTitleDigitCompletion.Value = false;
             }
             else
             {
                 DisplaySortTypeInheritancePath = null;
                 SelectedFileSortType.Value = DefaultFileSortType;
-                IsSortWithTitleDigitCompletion.Value = true;
+                IsSortWithTitleDigitCompletion.Value = false;
             }
 
             
@@ -360,12 +360,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (mode != NavigationMode.New)
                 {
-                    var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
-                    if (lastIntaractItem != null)
+                    if (_currentItem != null)
                     {
-                        var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
-                        ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
-                    }
+                        var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
+                        if (lastIntaractItem != null)
+                        {
+                            var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
+                            ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
+                        }
+                        else
+                        {
+                            ImageLastIntractItem.Value = 0;
+                        }
+                    }                    
                     else
                     {
                         ImageLastIntractItem.Value = 0;

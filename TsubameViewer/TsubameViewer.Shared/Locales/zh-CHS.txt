@@ -106,7 +106,8 @@ FolderItemMenuNoActionSuggested = 没有可用的动作
 CurrentFolder_InArchive = 夹
 Page = 页
 
-IsEnableSpreadDisplay = 点差显示
+IsEnablePrefetch = 预加载图片
+IsEnableDoubleView = 点差显示
 IsLeftBindingView = 左绑定显示
 
 SwitchFullScreen = 全屏切换

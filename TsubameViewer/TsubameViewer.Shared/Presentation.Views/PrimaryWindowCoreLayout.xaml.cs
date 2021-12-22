@@ -50,7 +50,7 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly DispatcherQueueTimer _AnimationCancelTimer;
-        private readonly TimeSpan _BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
+        private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
 
         public PrimaryWindowCoreLayout(
             PrimaryWindowCoreLayoutViewModel viewModel, 
@@ -376,76 +376,88 @@ namespace TsubameViewer.Presentation.Views
         public async Task RestoreNavigationStack()
         {
             var navigationManager = _viewModel.RestoreNavigationManager;
+
             try
-            {
+            {                
                 var currentEntry = navigationManager.GetCurrentNavigationEntry();
                 if (currentEntry == null)
                 {
-                    Debug.WriteLine("[NavvigationRestore] skip restore page.");
-                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
+                    Debug.WriteLine("[NavigationRestore] skip restore page.");
+                    await ResetNavigationAsync();
                     return;
                 }
 
-                var parameters = MakeNavigationParameter(currentEntry.Parameters);
-                if (!parameters.ContainsKey(PageNavigationConstants.Restored))
+                var backStack = await navigationManager.GetBackNavigationEntriesAsync();
+                if (CanGoBackPageTypes.Any(x => x.Name == currentEntry.PageName)
+                    && (backStack == null || backStack.Length == 0))
                 {
-                    parameters.Add(PageNavigationConstants.Restored, string.Empty);
+                    // 戻るナビゲーションが必要なページでバックナビゲーションパラメータが存在しなかった場合はホーム画面に戻れるようにしておく
+                    backStack = new PageEntry[] { new PageEntry(PageNavigationConstants.HomePageName) };
                 }
-                var result = await _navigationService.NavigateAsync(currentEntry.PageName, parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(currentEntry.PageName));
+
+                var currentNavParameters = MakeNavigationParameter(currentEntry.Parameters);
+                if (!currentNavParameters.ContainsKey(PageNavigationConstants.Restored))
+                {
+                    currentNavParameters.Add(PageNavigationConstants.Restored, string.Empty);
+                }
+                var result = await _navigationService.NavigateAsync(currentEntry.PageName, currentNavParameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(currentEntry.PageName));
                 if (!result.Success)
                 {
                     await Task.Delay(50);
-                    Debug.WriteLine("[NavvigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
-                    await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
+                    Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
+                    await ResetNavigationAsync();
                     return;
                 }
 
-                Debug.WriteLine("[NavvigationRestore] Restored CurrentPage: " + currentEntry.PageName);
+                Debug.WriteLine($"[NavigationRestore] Restored CurrentPage: {currentEntry.PageName} {string.Join(',', currentEntry.Parameters.Select(x => $"{x.Key}={x.Value}"))}");
 
                 if (currentEntry.PageName == PageNavigationConstants.HomePageName)
                 {
                     return;
                 }
-            }
-            catch
-            {
-                Debug.WriteLine("[NavvigationRestore] failed restore current page. ");
 
-                BackParametersStack.Clear();
-                ForwardParametersStack.Clear();
-                ContentFrame.BackStack.Clear();
-                ContentFrame.ForwardStack.Clear();
-
-                await StoreNaviagtionParameterDelayed();
-                await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
-                return;
-            }
-
-
-            {
-                var backStack = await navigationManager.GetBackNavigationEntriesAsync();
                 foreach (var backNavItem in backStack)
                 {
                     var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{backNavItem.PageName}");
                     var parameters = MakeNavigationParameter(backNavItem.Parameters);
                     ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(backNavItem.PageName)));
                     BackParametersStack.Add(parameters);
-                    Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + backNavItem.PageName);
+                    
+                    Debug.WriteLine($"[NavigationRestore] Restored BackStackPage: {backNavItem.PageName} {string.Join(',', backNavItem.Parameters.Select(x => $"{x.Key}={x.Value}"))}");
                 }
+
+                //var forwardStack = await navigationManager.GetForwardNavigationEntriesAsync();
+                //{
+                //    if (forwardStack != null)
+                //    {
+                //        foreach (var forwardNavItem in forwardStack)
+                //        {
+                //            var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{forwardNavItem.PageName}");
+                //            var parameters = MakeNavigationParameter(forwardNavItem.Parameters);
+                //            ContentFrame.ForwardStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
+                //            ForwardParametersStack.Add(parameters);
+                //            Debug.WriteLine("[NavigationRestore] Restored BackStackPage: " + forwardNavItem.PageName);
+                //        }
+                //    }
+                //}
             }
-            /*
+            catch
             {
-                var forwardStack = await navigationManager.GetForwardNavigationEntriesAsync();
-                foreach (var forwardNavItem in forwardStack)
-                {
-                    var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{forwardNavItem.PageName}");
-                    var parameters = MakeNavigationParameter(forwardNavItem.Parameters);
-                    ContentFrame.ForwardStack.Add(new PageStackEntry(pageType, parameters, new SuppressNavigationTransitionInfo()));
-                    ForwardParametersStack.Add(parameters);
-                    Debug.WriteLine("[NavvigationRestore] Restored BackStackPage: " + forwardNavItem.PageName);
-                }
+                Debug.WriteLine("[NavigationRestore] failed restore current page. ");
+
+                await ResetNavigationAsync();
             }
-            */
+        }
+
+        private async Task ResetNavigationAsync()
+        {
+            BackParametersStack.Clear();
+            ForwardParametersStack.Clear();
+            ContentFrame.BackStack.Clear();
+            ContentFrame.ForwardStack.Clear();
+
+            await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
+            await StoreNaviagtionParameterDelayed();
         }
 
         async Task StoreNaviagtionParameterDelayed()
@@ -453,7 +465,17 @@ namespace TsubameViewer.Presentation.Views
             await Task.Delay(50);
 
             // ナビゲーション状態の保存
-            Debug.WriteLine("[NavvigationRestore] Save CurrentPage: " + ContentFrame.CurrentSourcePageType.Name);
+#if DEBUG
+            if (_currentNavigationParameters is not null)
+            {
+                Debug.WriteLine($"[NavigationRestore] Save CurrentPage: {ContentFrame.CurrentSourcePageType.Name} {string.Join(',', _currentNavigationParameters.Select(x => $"{x.Key}={x.Value}"))}");
+            }
+            else
+            {
+                Debug.WriteLine($"[NavigationRestore] Save CurrentPage: {ContentFrame.CurrentSourcePageType.Name}");
+            }
+#endif
+
             _viewModel.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, _currentNavigationParameters));
             {
                 PageEntry[] backNavigationPageEntries = new PageEntry[BackParametersStack.Count];
@@ -462,7 +484,7 @@ namespace TsubameViewer.Presentation.Views
                     var parameters = BackParametersStack[backStackIndex];
                     var stackEntry = ContentFrame.BackStack[backStackIndex];
                     backNavigationPageEntries[backStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
-                    Debug.WriteLine($"[NavvigationRestore] Save BackStackPage: {backNavigationPageEntries[backStackIndex].PageName} {string.Join(',', backNavigationPageEntries[backStackIndex].Parameters.Select(x => $"{x.Key}={x.Value}"))}");
+                    Debug.WriteLine($"[NavigationRestore] Save BackStackPage: {backNavigationPageEntries[backStackIndex].PageName} {string.Join(',', backNavigationPageEntries[backStackIndex].Parameters.Select(x => $"{x.Key}={x.Value}"))}");
                 }
                 await _viewModel.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
@@ -474,7 +496,7 @@ namespace TsubameViewer.Presentation.Views
                     var parameters = ForwardParametersStack[forwardStackIndex];
                     var stackEntry = ContentFrame.ForwardStack[forwardStackIndex];
                     forwardNavigationPageEntries[forwardStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
-                    Debug.WriteLine("[NavvigationRestore] Save ForwardStackPage: " + forwardNavigationPageEntries[forwardStackIndex].PageName);
+                    Debug.WriteLine("[NavigationRestore] Save ForwardStackPage: " + forwardNavigationPageEntries[forwardStackIndex].PageName);
                 }
                 await _viewModel.RestoreNavigationManager.SetForwardNavigationEntriesAsync(forwardNavigationPageEntries);
             }
@@ -563,7 +585,7 @@ namespace TsubameViewer.Presentation.Views
                     var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
 
                     _currentNavigationParameters = lastNavigationParameters;
-                    _prevNavigationParameters = BackParametersStack.TakeLast(2).Skip(1).FirstOrDefault();
+                    _prevNavigationParameters = BackParametersStack.Count >= 2 ? BackParametersStack.TakeLast(2).FirstOrDefault() : null;
 
                     BackParametersStack.Remove(lastNavigationParameters);
                     ForwardParametersStack.Add(parameters);
@@ -582,7 +604,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 else
                 {
-                    await _messenger.NavigateAsync(PageNavigationConstants.HomePageName);
+                    await ResetNavigationAsync();
                 }
             }
         }
@@ -821,8 +843,8 @@ namespace TsubameViewer.Presentation.Views
                 {
                     var items = await e.DataView.GetStorageItemsAsync();
                     var isAllAcceptableItem = items.All(item => item is StorageFolder 
-                    || (item is StorageFile file && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
-                    );
+                        || (item is StorageFile file && string.IsNullOrEmpty(file.Path) is false && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
+                        );
                     if (isAllAcceptableItem)
                     {
                         e.AcceptedOperation = DataPackageOperation.Link;
