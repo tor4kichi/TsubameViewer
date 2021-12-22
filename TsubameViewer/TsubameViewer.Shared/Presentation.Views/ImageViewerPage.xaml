@@ -265,9 +265,7 @@
             <Setter Property="ItemTemplate">
               <Setter.Value>
                 <DataTemplate x:DataType="BitmapImage">
-                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}"                         
-                         SizeChanged="Image_SizeChanged"
-                   />
+                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
                 </DataTemplate>
               </Setter.Value>
             </Setter>
@@ -529,8 +527,9 @@
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.064"
-                               To="0.5"
+              <DoubleAnimation Duration="0:0:0.125"
+                               To="0.25"
+                               BeginTime="0:0:0.750"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity"
                                />
@@ -543,7 +542,7 @@
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.064"
+              <DoubleAnimation Duration="0:0:0.125"
                                To="0.0"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity"
