@@ -326,12 +326,12 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             DisplaySortTypeInheritancePath = parentSort.Path;
                             SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                            IsSortWithTitleDigitCompletion.Value = true;
+                            IsSortWithTitleDigitCompletion.Value = false;
                         }
                         else
                         {
                             SelectedFileSortType.Value = DefaultFileSortType;
-                            IsSortWithTitleDigitCompletion.Value = true;
+                            IsSortWithTitleDigitCompletion.Value = false;
                         }
                     }
                 }

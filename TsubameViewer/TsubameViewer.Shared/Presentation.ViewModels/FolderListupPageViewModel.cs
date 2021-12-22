@@ -216,7 +216,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
                 .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(false)
                 .AddTo(_disposables);
 
             SelectedChildFileSortType = new ReactivePropertySlim<FileSortType?>(null)

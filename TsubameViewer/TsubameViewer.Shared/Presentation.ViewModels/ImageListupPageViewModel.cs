@@ -204,7 +204,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
                 .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
+            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(false)
                 .AddTo(_disposables);
 
             FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
@@ -300,13 +300,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 DisplaySortTypeInheritancePath = parentSort.Path;
                 SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                IsSortWithTitleDigitCompletion.Value = true;
+                IsSortWithTitleDigitCompletion.Value = false;
             }
             else
             {
                 DisplaySortTypeInheritancePath = null;
                 SelectedFileSortType.Value = DefaultFileSortType;
-                IsSortWithTitleDigitCompletion.Value = true;
+                IsSortWithTitleDigitCompletion.Value = false;
             }
 
             
