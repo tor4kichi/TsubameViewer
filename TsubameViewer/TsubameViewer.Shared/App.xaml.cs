@@ -516,7 +516,11 @@ namespace TsubameViewer
             {
                 if (item is StorageFile file)
                 {
-                    if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
+                    if (string.IsNullOrEmpty(file.Path))
+                    {
+                        continue;
+                    }
+                    else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
                     {
                     }
                     else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))

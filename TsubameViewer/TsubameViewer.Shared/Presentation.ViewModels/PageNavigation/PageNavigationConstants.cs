@@ -17,5 +17,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public readonly static Type HomePageType = typeof(SourceStorageItemsPage);
         public static string HomePageName => HomePageType.Name;
 
+        public readonly static TimeSpan BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
     }
 }

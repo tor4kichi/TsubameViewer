@@ -583,7 +583,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             {
                 Path = path,
                 ImageWidth = decoder.PixelWidth,
-                ImageHeight = decoder.PixelHeight
+                ImageHeight = decoder.PixelHeight,
+                RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
             });
 
             var pixelData = await decoder.GetPixelDataAsync();
@@ -751,24 +752,42 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public ThumbnailSize? GetThumbnailOriginalSize(IStorageItem file)
         {
-            return _thumbnailImageInfoRepository.GetSize(file.Path);
+            return _thumbnailImageInfoRepository.TryGetSize(file.Path);
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(string path)
         {
-            return _thumbnailImageInfoRepository.GetSize(path);
+            return _thumbnailImageInfoRepository.TryGetSize(path);
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, IArchiveEntry archiveEntry)
         {
-            return _thumbnailImageInfoRepository.GetSize(GetArchiveEntryPath(file, archiveEntry));
+            return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, archiveEntry));
         }
 
         public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, PdfPage pdfPage)
         {
-            return _thumbnailImageInfoRepository.GetSize(GetArchiveEntryPath(file, pdfPage));
+            return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, pdfPage));
         }
 
+
+        public ThumbnailSize SetThumbnailSize(string path, BitmapImage image)
+        {
+            var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+            {
+                Path = path,
+                ImageHeight = (uint)image.PixelHeight,
+                ImageWidth = (uint)image.PixelWidth,
+                RatioWH = image.PixelWidth / (float)image.PixelHeight
+            });
+
+            return new ThumbnailSize()
+            {
+                Height = item.ImageHeight,
+                Width = item.ImageWidth,
+                RatioWH = item.RatioWH,
+            };
+        }
 
         public class ThumbnailImageInfo
         {
@@ -793,7 +812,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
 
 
-            public ThumbnailSize? GetSize(string path)
+            public ThumbnailSize? TryGetSize(string path)
             {
                 var thumbInfo = _collection.FindById(path);
 
@@ -816,6 +835,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 {
                     return default;
                 }
+            }
+
+            public ThumbnailSize GetSize(string path)
+            {
+                return TryGetSize(path) ?? throw new InvalidOperationException();
             }
 
 

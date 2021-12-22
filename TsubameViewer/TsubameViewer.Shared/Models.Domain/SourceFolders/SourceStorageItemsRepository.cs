@@ -287,7 +287,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 #else
             throw new NotImplementedException();
 #endif
-            _tokenToPathRepository.Add(TokenListType.MostRecentlyUsedList, token, storageItem.Path);
+            if (string.IsNullOrEmpty(storageItem.Path) is false)
+            {
+                _tokenToPathRepository.Add(TokenListType.MostRecentlyUsedList, token, storageItem.Path);
+            }
 
             _messenger.Send(new SourceStorageItemAddedMessage(new () 
             {

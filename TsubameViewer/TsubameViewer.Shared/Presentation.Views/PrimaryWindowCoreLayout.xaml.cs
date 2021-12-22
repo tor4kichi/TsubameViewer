@@ -50,7 +50,7 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly DispatcherQueueTimer _AnimationCancelTimer;
-        private readonly TimeSpan _BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
+        private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
 
         public PrimaryWindowCoreLayout(
             PrimaryWindowCoreLayoutViewModel viewModel, 
@@ -843,8 +843,8 @@ namespace TsubameViewer.Presentation.Views
                 {
                     var items = await e.DataView.GetStorageItemsAsync();
                     var isAllAcceptableItem = items.All(item => item is StorageFolder 
-                    || (item is StorageFile file && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
-                    );
+                        || (item is StorageFile file && string.IsNullOrEmpty(file.Path) is false && SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
+                        );
                     if (isAllAcceptableItem)
                     {
                         e.AcceptedOperation = DataPackageOperation.Link;

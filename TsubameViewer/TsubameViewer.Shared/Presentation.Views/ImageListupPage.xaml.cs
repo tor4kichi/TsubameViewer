@@ -220,6 +220,11 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
 
+            if (_vm.DisplayCurrentPath == null)
+            { 
+                return;
+            }
+
             if (_PathToLastIntractMap.Remove(_vm.DisplayCurrentPath, out LastIntractInfo info) is false)
             {
                 if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)

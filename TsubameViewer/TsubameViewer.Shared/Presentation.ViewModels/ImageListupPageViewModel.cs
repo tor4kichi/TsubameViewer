@@ -360,12 +360,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (mode != NavigationMode.New)
                 {
-                    var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
-                    if (lastIntaractItem != null)
+                    if (_currentItem != null)
                     {
-                        var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
-                        ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
-                    }
+                        var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
+                        if (lastIntaractItem != null)
+                        {
+                            var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
+                            ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
+                        }
+                        else
+                        {
+                            ImageLastIntractItem.Value = 0;
+                        }
+                    }                    
                     else
                     {
                         ImageLastIntractItem.Value = 0;
