@@ -37,7 +37,11 @@
 
     <Flyout x:Key="SettingsFlyout">
       <StackPanel Spacing="16">
-        
+
+        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnablePrefetch, Mode=TwoWay}"
+                    Header="{Binding Source=IsEnablePrefetch, Converter={StaticResource LocalizeConverter}}"
+                    />
+
         <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=TwoWay}"
                     Header="{Binding Source=IsReverseImageFliping_MouseWheel, Converter={StaticResource LocalizeConverter}}"
                     />

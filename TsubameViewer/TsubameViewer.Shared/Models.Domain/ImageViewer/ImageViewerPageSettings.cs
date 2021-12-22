@@ -13,6 +13,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _IsReverseImageFliping_Button = Read(false, nameof(IsReverseImageFliping_Button));
             _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
             _IsEnableSpreadDisplay = Read(true, nameof(IsEnableSpreadDisplay));
+            _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -43,6 +44,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             get { return _IsEnableSpreadDisplay; }
             set { SetProperty(ref _IsEnableSpreadDisplay, value); }
+        }
+
+
+        private bool _IsEnablePrefetch;
+        public bool IsEnablePrefetch
+        {
+            get { return _IsEnablePrefetch; }
+            set { SetProperty(ref _IsEnablePrefetch, value); }
         }
     }
 }

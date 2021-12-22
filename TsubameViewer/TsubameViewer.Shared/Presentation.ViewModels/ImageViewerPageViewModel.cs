@@ -489,6 +489,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .AddTo(_navigationDisposables);
 
+            ImageViewerSettings.ObserveProperty(x => x.IsEnablePrefetch, isPushCurrentValueAtFirst: false)
+                .Subscribe(async isEnabledPrefetch => 
+                {
+                    if (isEnabledPrefetch)
+                    {
+                        await PrefetchDisplayImagesAsync(IndexMoveDirection.Refresh, CurrentImageIndex, _imageLoadingCts.Token);
+                    }
+                })
+                .AddTo(_navigationDisposables);
+
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
             {
                 // アプリ内部操作も含めて変更を検知する
@@ -1086,6 +1096,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task PrefetchDisplayImagesAsync(IndexMoveDirection direction, int requestIndex, CancellationToken ct)
         {
+            if (ImageViewerSettings.IsEnablePrefetch is false) { return; }
+
             if (direction is IndexMoveDirection.Refresh or IndexMoveDirection.Forward)
             {
                 var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);

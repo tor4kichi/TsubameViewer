@@ -106,6 +106,7 @@ FolderItemMenuNoActionSuggested = 選択可能なアクションはありませ�
 CurrentFolder_InArchive = フォルダ
 Page = ページ
 
+IsEnablePrefetch = 画像の先行読み込み
 IsEnableSpreadDisplay = 見開き表示
 IsLeftBindingView = 左綴じ表示
 
