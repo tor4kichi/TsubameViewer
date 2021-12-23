@@ -277,17 +277,18 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+        private readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
+                .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50));
 
-
-
+        private readonly AnimationBuilder _zoomDownAnimation = AnimationBuilder.Create()
+                .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(50));
 
         private void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
 
-            AnimationBuilder.Create()
+            _zoomUpAnimation
                 .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50))
                 .Start(item);
 
             if (item.DataContext is StorageItemViewModel itemVM)
@@ -304,9 +305,8 @@ namespace TsubameViewer.Presentation.Views
         {
             var item = sender as FrameworkElement;
 
-            AnimationBuilder.Create()
+            _zoomDownAnimation
                 .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(50))
                 .Start(item);
 
             if (item.DataContext is StorageItemViewModel itemVM)

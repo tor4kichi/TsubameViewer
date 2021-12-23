@@ -189,23 +189,32 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        private readonly AnimationBuilder _HideUIContainerAb = AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(175));
+        private readonly AnimationBuilder _HideUICommandBarAb = AnimationBuilder.Create();
+                
+
         private void CloseBottomUI()
         {
-            AnimationBuilder.Create()
-                .Opacity(0, duration: TimeSpan.FromMilliseconds(175))
+            _HideUIContainerAb
                 .Start(AnimationUIContainer);
-            AnimationBuilder.Create()
+            
+            _HideUICommandBarAb
                 .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
                 .Start(AnimationUICommandBar);
         }
 
+        private readonly AnimationBuilder _ShowUIContainer = AnimationBuilder.Create()
+                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175));
+
+        private readonly AnimationBuilder _ShowUICommandBarAb = AnimationBuilder.Create()
+            .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175));
+
         private async Task CompleteOpenBottomUI()
         {
-            AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175))
+            _ShowUIContainer
                 .Start(AnimationUIContainer);
-            await AnimationBuilder.Create()
-                .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175))
+            await _ShowUICommandBarAb
                 .StartAsync(AnimationUICommandBar);
         }
 
