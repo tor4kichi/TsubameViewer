@@ -19,6 +19,7 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
@@ -48,6 +49,8 @@ namespace TsubameViewer.Presentation.ViewModels
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
         public RelayCommand AppInfoCopyToClipboard { get; }
+
+        CancellationTokenSource _navigationCts;
 
         public bool IsForceXboxAppearanceModeEnabled
         {
@@ -155,6 +158,10 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             Dispose();
 
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = null;
+
             base.OnNavigatedFrom(parameters);
         }
 
@@ -178,39 +185,53 @@ namespace TsubameViewer.Presentation.ViewModels
             _IsThumbnailDeleteButtonActive.Value = false;
             await _thumbnailManager.DeleteAllThumnnailsAsync();
 
-            var folder = await ThumbnailManager.GetTempFolderAsync();
-            var files = await folder.GetFilesAsync();
-            ulong size = 0;
-            foreach (var file in files)
-            {
-                var prop = await file.GetBasicPropertiesAsync();
-                size += prop.Size;
-            }
-
-            _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
+            _ = RefreshThumbnailFilesSizeAsync(_navigationCts?.Token ?? CancellationToken.None);
         }
 
         ReactiveProperty<bool> _IsThumbnailDeleteButtonActive;
         ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
-
+        
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();            
+            _navigationCts = new CancellationTokenSource();
+            var ct = _navigationCts.Token;
+
             _IsThumbnailDeleteButtonActive.Value = true;
 
-            var folder = await ThumbnailManager.GetTempFolderAsync();
-            var files = await folder.GetFilesAsync();
-            ulong size = 0;
-            foreach (var file in files)
-            {
-                var prop = await file.GetBasicPropertiesAsync();
-                size += prop.Size;
-            }
-            _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
-
+            _ = RefreshThumbnailFilesSizeAsync(ct);
             // base.OnNavigatedToAsync(parameters);
         }
 
+        private async Task RefreshThumbnailFilesSizeAsync(CancellationToken ct)
+        {
+            try
+            {
+                var size = await Task.Run(async () =>
+                {
+                    var folder = await ThumbnailManager.GetTempFolderAsync();
+
+                    var query = folder.CreateFileQuery();
+                    ulong size = 0;
+                    await foreach (var file in query.ToAsyncEnumerable(ct))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var prop = await file.GetBasicPropertiesAsync().AsTask(ct);
+                        size += prop.Size;
+                    }
+
+                    return size;
+                }, ct);
+
+                _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
+            }
+            catch (OperationCanceledException ex)
+            {
+
+            }
+        }
         private static string ToUserFiendlyFileSizeText(ulong size)
         {
             var conv = new ToKMGTPEZYConverter();
