@@ -61,15 +61,13 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-            WebView.ContentRefreshStarting += WebView_ContentRefreshStarting;
-            WebView.ContentRefreshComplete += WebView_ContentRefreshComplete;
+            EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
+            EPubRenderer.ContentRefreshComplete += WebView_ContentRefreshComplete;
 
-            WebView.Opacity = 0.0;
+            EPubRenderer.Loaded += WebView_Loaded;
+            EPubRenderer.Unloaded += WebView_Unloaded;
 
-            WebView.Loaded += WebView_Loaded;
-            WebView.Unloaded += WebView_Unloaded;
-
-            WebView.WebResourceRequested += WebView_WebResourceRequested;
+            EPubRenderer.WebResourceRequested += WebView_WebResourceRequested;
 
             this.Loaded += PageNavigationCommandInitialize_Loaded;
             this.Unloaded += PageNavigationCommandDispose_Unloaded;
@@ -93,6 +91,8 @@ namespace TsubameViewer.Presentation.Views
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            EPubRenderer.Visibility = Visibility.Collapsed;
+
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
             Window.Current.SetTitleBar(null);
@@ -147,6 +147,8 @@ namespace TsubameViewer.Presentation.Views
             {
                 animation.Cancel();                
             }
+
+            EPubRenderer.Visibility = Visibility.Visible;
 
             base.OnNavigatedTo(e);
         }
@@ -326,17 +328,17 @@ namespace TsubameViewer.Presentation.Views
         {
             _RendererObserveDisposer = new CompositeDisposable();
 
-            WebView.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
+            EPubRenderer.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
                 .Subscribe(_ =>
                 {
-                    (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = WebView.CurrentInnerPage;
+                    (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = EPubRenderer.CurrentInnerPage;
                 })
                 .AddTo(_RendererObserveDisposer);
 
-            WebView.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
+            EPubRenderer.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
                 .Subscribe(_ =>
                 {
-                    (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = WebView.TotalInnerPageCount;
+                    (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = EPubRenderer.TotalInnerPageCount;
                 })
                 .AddTo(_RendererObserveDisposer);
 
@@ -357,7 +359,7 @@ namespace TsubameViewer.Presentation.Views
             set { SetValue(NowEnablePageMoveProperty, value); }
         }
 
-        // Using a DependencyProperty as the backing store for NowRefreshingWebView.  This enables animation, styling, binding, etc...
+        // Using a DependencyProperty as the backing store for NowRefreshingEPubRenderer.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty NowEnablePageMoveProperty =
             DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(true));
 
@@ -366,7 +368,6 @@ namespace TsubameViewer.Presentation.Views
         private void WebView_ContentRefreshStarting(object sender, EventArgs e)
         {
             NowEnablePageMove = false;
-            WebView.Opacity = 0.0;
         }
 
         private void WebView_ContentRefreshComplete(object sender, EventArgs e)
@@ -377,9 +378,7 @@ namespace TsubameViewer.Presentation.Views
 
             AnimationBuilder.Create()
                 .Opacity(1.0, duration: TimeSpan.FromMilliseconds(100))
-                .Start(WebView);
-                
-            //WebView.Fade(1.0f, 100).Start();
+                .Start(EPubRenderer);               
         }
 
         public ICommand InnerGoNextImageCommand
@@ -400,9 +399,9 @@ namespace TsubameViewer.Presentation.Views
         {
             using (await _movePageLock.LockAsync(default))
             {
-                if (WebView.CanGoNext())
+                if (EPubRenderer.CanGoNext())
                 {
-                    WebView.GoNext();
+                    EPubRenderer.GoNext();
                 }
                 else
                 {
@@ -411,9 +410,9 @@ namespace TsubameViewer.Presentation.Views
                     {
                         await AnimationBuilder.Create()
                             .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
-                            .StartAsync(WebView);
+                            .StartAsync(EPubRenderer);
 
-                        WebView.PrepareGoNext();
+                        EPubRenderer.PrepareGoNext();
                         await pageVM.GoNextImageAsync();
                     }
                 }
@@ -440,9 +439,9 @@ namespace TsubameViewer.Presentation.Views
         {
             using (await _movePageLock.LockAsync(default))
             {
-                if (WebView.CanGoPreview())
+                if (EPubRenderer.CanGoPreview())
                 {
-                    WebView.GoPreview();
+                    EPubRenderer.GoPreview();
                 }
                 else
                 {
@@ -451,9 +450,9 @@ namespace TsubameViewer.Presentation.Views
                     {
                         await AnimationBuilder.Create()
                             .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
-                            .StartAsync(WebView);
+                            .StartAsync(EPubRenderer);
 
-                        WebView.PrepareGoPreview();
+                        EPubRenderer.PrepareGoPreview();
                         await pageVM.GoPrevImageAsync();
                     }
                 }
@@ -497,7 +496,7 @@ namespace TsubameViewer.Presentation.Views
 
         public void RefreshPage()
         {
-            WebView.Refresh();
+            EPubRenderer.Refresh();
         }
 
         private void BackgroundColorPickerFlyout_Opening(object sender, object e)

@@ -257,7 +257,7 @@
     </Button>
     
     <!-- 電子書籍ビューワー -->
-    <eBookControls:EPubRenderer x:Name="WebView"
+    <eBookControls:EPubRenderer x:Name="EPubRenderer"
                                 PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
                                 FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
                                IsTapEnabled="False"
@@ -539,7 +539,7 @@
 
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="Tapped">
-              <core:CallMethodAction TargetObject="{x:Bind WebView}" MethodName="PrepareTocSelectionChange" />
+              <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}" MethodName="PrepareTocSelectionChange" />
               <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
             </core:EventTriggerBehavior>
           </i:Interaction.Behaviors>
@@ -630,7 +630,7 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="WebView.Margin" Value="32 56 24 56" />
+            <Setter Target="EPubRenderer.Margin" Value="32 56 24 56" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
