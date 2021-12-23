@@ -9,7 +9,7 @@
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  >
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" xmlns:local="using:TsubameViewer.Presentation.Views.FolderListup">
 
   <Style TargetType="ProgressBar" x:Key="ReadParcentageProgressBarStyle" >
     <Setter Property="Minimum" Value="0.0" />
@@ -35,19 +35,77 @@
     <Setter Property="VerticalAlignment" Value="Top" />
     <Setter Property="HorizontalAlignment" Value="Center" />
   </Style>
+
+
+  <local:StorageItemIconTemplateSelector x:Key="StorageItemIconTemplateSelector">
+    <local:StorageItemIconTemplateSelector.FolderIcon>
+      <DataTemplate>
+        <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
+                    Opacity="0.35"
+                    />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.FolderIcon>
+    <local:StorageItemIconTemplateSelector.ArchiveIcon>
+      <DataTemplate>
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.ArchiveIcon>
+    <local:StorageItemIconTemplateSelector.ArchiveFolderIcon>
+      <DataTemplate>
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF012;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.ArchiveFolderIcon>
+    <local:StorageItemIconTemplateSelector.EBookIcon>
+      <DataTemplate>
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.4">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.EBookIcon>
+  </local:StorageItemIconTemplateSelector>
+
   
-  <DataTemplate x:Key="FolderTemplate" x:DataType="vm:StorageItemViewModel">
+  
+  <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:StorageItemViewModel">
     <Grid Background="Transparent" IsHitTestVisible="True">
+      <i:Interaction.Behaviors>
+        <core:EventTriggerBehavior EventName="PointerEntered">
+          <core:CallMethodAction TargetObject="{Binding ElementName=TitleBackgroundExitedAnimation}" MethodName="Stop" />
+          <core:CallMethodAction TargetObject="{Binding ElementName=TitleBackgroundEnteredAnimation}" MethodName="Start" />
+        </core:EventTriggerBehavior>
+        <core:EventTriggerBehavior EventName="PointerExited">
+          <core:CallMethodAction TargetObject="{Binding ElementName=TitleBackgroundEnteredAnimation}" MethodName="Stop" />
+          <core:CallMethodAction TargetObject="{Binding ElementName=TitleBackgroundExitedAnimation}" MethodName="Start" />
+        </core:EventTriggerBehavior>
+      </i:Interaction.Behaviors>
+      
       <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
              />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0">
+          <animation:Explicit.Animations>
+            <animation:AnimationSet x:Name="TitleBackgroundEnteredAnimation" >
+              <animation:OpacityAnimation To="0.85" />
+            </animation:AnimationSet>
+            <animation:AnimationSet x:Name="TitleBackgroundExitedAnimation" >
+              <animation:OpacityAnimation To="1.0" />
+            </animation:AnimationSet>
+          </animation:Explicit.Animations>
+        </Border>
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
-                    Opacity="0.35"
-                    />
+        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right" />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
     </Grid>
@@ -72,97 +130,14 @@
       <Border  />
     </uwpControls:DockPanel>
   </DataTemplate>
-  
-  <DataTemplate x:Key="ArchiveFileTemplate" x:DataType="vm:StorageItemViewModel">
-    <Grid Background="Transparent" IsHitTestVisible="True">
-      <Image Source="{x:Bind Image, Mode=OneWay}"
-             x:Name="ImageControl"
-             Style="{StaticResource FolderItemImageStyle}"
-             />
-      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
-        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
-      </Grid>
-    </Grid>
-  </DataTemplate>
-
-  <DataTemplate x:Key="EBookFileTemplate" x:DataType="vm:StorageItemViewModel">
-    <Grid Background="Transparent" IsHitTestVisible="True">
-      <Image Source="{x:Bind Image, Mode=OneWay}"
-             x:Name="ImageControl"
-             Style="{StaticResource FolderItemImageStyle}"
-             />
-      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0" />
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.4">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
-        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
-      </Grid>
-    </Grid>
-  </DataTemplate>
-
-  <DataTemplate x:Key="ArchiveFolderTemplate" x:DataType="vm:StorageItemViewModel">
-    <Grid Background="Transparent" IsHitTestVisible="True">
-      <Image Source="{x:Bind Image, Mode=OneWay}"
-             x:Name="ImageControl"
-             Style="{StaticResource FolderItemImageStyle}"
-             />
-      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
-        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF012;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
-        <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
-      </Grid>
-    </Grid>
-  </DataTemplate>
-
-
-  <DataTemplate x:Key="ImageFileTemplate" x:DataType="vm:StorageItemViewModel">
-    <Grid>
-      <ToolTipService.ToolTip>
-        <TextBlock Text="{x:Bind Name}" />
-      </ToolTipService.ToolTip>
-
-      <Image Source="{x:Bind Image, Mode=OneWay}"
-                 Stretch="UniformToFill"
-                 VerticalAlignment="Stretch"
-             HorizontalAlignment="Center"
-             Height="{StaticResource FolderGridViewItemHeight}"
-                     />
-      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.90" />
-        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" Style="{StaticResource FolderItemTextBlockStyle}" />
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70B;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 12 0" UseLayoutRounding="True" Opacity="0.6">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
-      </Grid>
-    </Grid>
-  </DataTemplate>
-
 
   <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
-                                    Folder="{StaticResource FolderTemplate}"
-                                    AddNewFolder="{StaticResource AddNewFolderTemplate}"
-                                   Archive="{StaticResource ArchiveFileTemplate}"
-                                 ArchiveFolder="{StaticResource ArchiveFolderTemplate}"
-                                   Image="{StaticResource ImageFileTemplate}"
-                                   EBook="{StaticResource EBookFileTemplate}"
+                                 Folder="{StaticResource StorageItemCardTemplate}"
+                                 AddNewFolder="{StaticResource AddNewFolderTemplate}"
+                                 Archive="{StaticResource StorageItemCardTemplate}"
+                                 ArchiveFolder="{StaticResource StorageItemCardTemplate}"
+                                 Image="{StaticResource StorageItemCardTemplate}"
+                                 EBook="{StaticResource StorageItemCardTemplate}"
                                      >
   </ts:FolderItemTemplateSelector>
 
