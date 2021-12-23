@@ -90,9 +90,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        public Task<FolderImageCollectionContext> GetFolderImageCollectionContextAsync(StorageFolder folder, CancellationToken ct)
+        public FolderImageCollectionContext GetFolderImageCollectionContext(StorageFolder folder, CancellationToken ct)
         {
-            return Task.FromResult(new FolderImageCollectionContext(folder, _folderListingSettings, _thumbnailManager));
+            return new FolderImageCollectionContext(folder, _folderListingSettings, _thumbnailManager);
         }
 
 

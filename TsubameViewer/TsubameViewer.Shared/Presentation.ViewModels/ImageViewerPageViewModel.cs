@@ -274,8 +274,6 @@ namespace TsubameViewer.Presentation.ViewModels
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
-            await Task.Delay(100);
-
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
@@ -692,7 +690,7 @@ namespace TsubameViewer.Presentation.ViewModels
             return (requestIndex, isHeadTailJump);
         }
 
-        async Task<int> SetDisplayImagesAsync(PrefetchIndexType indexType, IndexMoveDirection direction, int requestIndex, bool requestDoubleView, CancellationToken ct)
+        async ValueTask<int> SetDisplayImagesAsync(PrefetchIndexType indexType, IndexMoveDirection direction, int requestIndex, bool requestDoubleView, CancellationToken ct)
         {
             bool canNotSwapping = indexType != PrefetchIndexType.Current;
             if (requestDoubleView)
@@ -811,7 +809,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        async Task<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
+        async ValueTask<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
         {
             int requestImageCount = ImageViewerSettings.IsEnableDoubleView ? 2 : 1;
             int lastRequestImageCount = GetCurrentDisplayImageCount();
@@ -914,24 +912,24 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        private async Task<ThumbnailManager.ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
+        private async ValueTask<ThumbnailManager.ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
         {
             return _thumbnailManager.GetThumbnailOriginalSize(source.Path)
                 ?? _thumbnailManager.SetThumbnailSize(source.Path, await GetBitmapImageWithCacheAsync(source, ct));
         }
      
-        private async Task<BitmapImage> GetBitmapImageWithCacheAsync(IImageSource source, CancellationToken ct)
+        private async ValueTask<BitmapImage> GetBitmapImageWithCacheAsync(IImageSource source, CancellationToken ct)
         {
-            var pair = _CachedImages.FirstOrDefault(x => x.ImageSource == source);
-            if (pair != null)
+            var image = _CachedImages.FirstOrDefault(x => x.ImageSource == source);
+            if (image != null)
             {
-                _CachedImages.Remove(pair);
-                _CachedImages.Insert(0, pair);
+                _CachedImages.Remove(image);
+                _CachedImages.Insert(0, image);
             }
             else
             {
-                pair = new PrefetchImageInfo(source);
-                _CachedImages.Insert(0, pair);
+                image = new PrefetchImageInfo(source);
+                _CachedImages.Insert(0, image);
 
                 if (_CachedImages.Count > 6)
                 {
@@ -947,9 +945,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
-            var image = await pair.StartPrefetchAsync(ct);
-
-            return image;
+            return await image.GetBitmapImageAsync(ct);
         }
 
 
@@ -1265,7 +1261,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        async Task PrefetchDisplayImagesAsync(IndexMoveDirection direction, int requestIndex, CancellationToken ct)
+        async ValueTask PrefetchDisplayImagesAsync(IndexMoveDirection direction, int requestIndex, CancellationToken ct)
         {
             if (ImageViewerSettings.IsEnablePrefetch is false) { return; }
 
@@ -1334,7 +1330,7 @@ namespace TsubameViewer.Presentation.ViewModels
             if (_currentFolderItem is StorageFolder folder)
             {
                 Debug.WriteLine(folder.Path);
-                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+                imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
 
                 _recentlyAccessManager.AddWatched(_currentPath);
             }
@@ -1346,7 +1342,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     try
                     {
                         var parentFolder = await file.GetParentAsync();
-                        imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                        imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
                         _recentlyAccessManager.AddWatched(parentFolder.Path);
                     }
                     catch (UnauthorizedAccessException)
@@ -1356,7 +1352,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                         if (parentItem is StorageFolder parentFolder)
                         {
-                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                            imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
                         }
                     }
                 }
@@ -1605,8 +1601,10 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        public async Task<BitmapImage> StartPrefetchAsync(CancellationToken ct)
+        public async ValueTask<BitmapImage> GetBitmapImageAsync(CancellationToken ct)
         {
+            if (Image != null) { return Image; }
+
             using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_PrefetchCts.Token, ct))
             {
                 var linkedCt = linkedCts.Token;
