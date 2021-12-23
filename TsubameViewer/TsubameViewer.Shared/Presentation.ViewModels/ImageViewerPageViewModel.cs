@@ -425,7 +425,7 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
             // 画像更新
-            this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: false)
+            this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true)
                 .Subscribe(imageIndex =>
                 {
                     if (Images == null || !Images.Any()) { return; }
