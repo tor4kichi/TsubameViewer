@@ -9,7 +9,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 {
     public class IgnoreStorageItemEntry
     {
-        [BsonId(true)]
+        [BsonId]
         public string Path { get; set; }
     }
 

@@ -409,7 +409,7 @@ namespace TsubameViewer.Presentation.Views
                     return;
                 }
 
-                Debug.WriteLine($"[NavigationRestore] Restored CurrentPage: {currentEntry.PageName} {string.Join(',', currentEntry.Parameters.Select(x => $"{x.Key}={x.Value}"))}");
+                Debug.WriteLine($"[NavigationRestore] Restored CurrentPage: {currentEntry.PageName} {string.Join(',', currentEntry.Parameters?.Select(x => $"{x.Key}={x.Value}") ?? Enumerable.Empty<string>())}");
 
                 if (currentEntry.PageName == PageNavigationConstants.HomePageName)
                 {

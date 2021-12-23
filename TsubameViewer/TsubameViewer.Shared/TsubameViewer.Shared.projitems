@@ -60,12 +60,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropPathReferenceCountDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropSearchIndexDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\CacheDeletionWhenSourceStorageItemIgnored.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\PackageVersionHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />

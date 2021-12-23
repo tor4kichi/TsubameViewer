@@ -20,6 +20,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
+using TsubameViewer.Models.UseCase.Maintenance;
 using TsubameViewer.Models.UseCase.Migrate;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
@@ -134,7 +135,7 @@ namespace TsubameViewer
 
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
-            container.RegisterSingleton<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
+            container.RegisterSingleton<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>();
             
             container.RegisterSingleton<SourceStorageItemsPageViewModel>();
             //container.RegisterSingleton<ImageListupPageViewModel>();
@@ -235,6 +236,7 @@ namespace TsubameViewer
                 {
                     typeof(DropSearchIndexDb),
                     typeof(DropPathReferenceCountDb),
+                    typeof(DropIgnoreStorageItemDbWhenIdNotString),
                     typeof(MigrateAsyncStorageApplicationPermissionToDb),
 
                     typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
@@ -269,33 +271,55 @@ namespace TsubameViewer
                 });
             }
 
-            Type[] restoreTypes = new[]
+            Type[] launchTimeMaintenanceTypes = new[]
             {
+                // v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、
+                // StorageItem.Path == string.Empty となるためアプリの挙動が壊れてしまっていた問題に対処する
+                typeof(RemoveSourceStorageItemWhenPathIsEmpty),
+
+                // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
+                // ローカルDBや画像サムネイルの破棄などを行う
+                // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
+                // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
                 typeof(CacheDeletionWhenSourceStorageItemIgnored),
             };
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
-                foreach (var restoreType in restoreTypes)
+                foreach (var maintenanceType in launchTimeMaintenanceTypes)
                 {
-                    var restorableInstance = Container.Resolve(restoreType);
-                    if (restorableInstance is IRestorable restorable)
+                    var instance = Container.Resolve(maintenanceType);
+                    if (instance is ILaunchTimeMaintenance restorable)
                     {
-                        Debug.WriteLine($"Start restore: {restoreType.Name}");
+                        Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
                         try
                         {
-                            restorable.Restore();
-                            Debug.WriteLine($"Done restore: {restoreType.Name}");
+                            restorable.Maintenance();
+                            Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
                         }
                         catch 
                         {
-                            Debug.WriteLine($"Failed restore: {restoreType.Name}");
+                            Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
+                        }
+                    }
+                    else if (instance is ILaunchTimeMaintenanceAsync restorableAsync)
+                    {
+                        Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
+
+                        try
+                        {
+                            await restorableAsync.MaintenanceAsync();
+                            Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+                        }
+                        catch
+                        {
+                            Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
                         }
                     }
                     else
                     {
-                        Debug.WriteLine($"Skip restore: {restoreType.Name}");
+                        Debug.WriteLine($"Skip maintenance: {maintenanceType.Name}");
                     }
                 }
             });
@@ -350,13 +374,7 @@ namespace TsubameViewer
 
             // セカンダリタイル管理の初期化
             _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
-            
-            // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
-            // ローカルDBや画像サムネイルの破棄などを行う
-            // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
-            // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
-            Container.Resolve<Models.UseCase.CacheDeletionWhenSourceStorageItemIgnored>();
-            
+                        
             base.OnInitialized();
         }
 
