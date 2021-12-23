@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -350,6 +351,95 @@ namespace TsubameViewer.Presentation.Views
 
                     animation.TryStart(ImageItemsControl_0, images);
                     ImageItemsControl_0.Opacity = 1.0;
+                }
+            }
+            else
+            {
+                AnimationBuilder.Create()
+                    .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
+                    .Start(ImageItemsControl_0);
+
+                await this.ObserveDependencyProperty(DataContextProperty)
+                    .Where(x => _vm is not null)
+                    .Take(1)
+                    .ToAsyncOperation()
+                    .AsTask();
+
+                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
+                    .Take(1)
+                    .ToAsyncOperation()
+                    .AsTask();
+
+                if (_vm.DisplayImages_0.Length == 1)
+                {
+                    var image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                       h => ImageItemsControl_0.ElementPrepared += h,
+                       h => ImageItemsControl_0.ElementPrepared -= h
+                       )
+                       .Select(x => x.EventArgs.Element)
+                       .Take(1)
+                       .ToAsyncOperation()
+                       .AsTask();
+
+                    int count = 0;
+                    while (image.ActualSize is { X: 0, Y: 0 })
+                    {
+                        await Task.Delay(1);
+                        count++;
+                        if (count == 750)
+                        {
+                            animation.Cancel();
+                            return;
+                        }
+                    }
+
+                    AnimationBuilder.Create()
+                        .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                        .Scale()
+                            .TimedKeyFrames(ke => 
+                            {
+                                ke.KeyFrame(TimeSpan.FromMilliseconds(0), new (0.9f));
+                                ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
+                            })
+                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
+                        .Start(ImageItemsControl_0);
+                }
+                else
+                {
+                    AnimationBuilder.Create()
+                        .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
+                        .Start(ImageItemsControl_0);
+                    var images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                       h => ImageItemsControl_0.ElementPrepared += h,
+                       h => ImageItemsControl_0.ElementPrepared -= h
+                       )
+                       .Select(x => x.EventArgs.Element)
+                       .Take(2)
+                       .Buffer(2)
+                       .ToAsyncOperation();
+
+                    int count = 0;
+                    while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
+                    {
+                        await Task.Delay(1);
+                        count++;
+                        if (count == 750)
+                        {
+                            animation.Cancel();
+                            return;
+                        }
+                    }
+
+                    AnimationBuilder.Create()
+                        .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                        .Scale()
+                            .TimedKeyFrames(ke =>
+                            {
+                                ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.9f));
+                                ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
+                            })
+                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
+                        .Start(ImageItemsControl_0);
                 }
             }
 

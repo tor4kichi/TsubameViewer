@@ -331,18 +331,20 @@ namespace TsubameViewer.Presentation.Views
             EPubRenderer.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
                 .Subscribe(_ =>
                 {
-                    (DataContext as EBookReaderPageViewModel).InnerCurrentImageIndex = EPubRenderer.CurrentInnerPage;
+                    _vm.InnerCurrentImageIndex = EPubRenderer.CurrentInnerPage;
                 })
                 .AddTo(_RendererObserveDisposer);
 
             EPubRenderer.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
                 .Subscribe(_ =>
                 {
-                    (DataContext as EBookReaderPageViewModel).InnerImageTotalCount = EPubRenderer.TotalInnerPageCount;
+                    _vm.InnerImageTotalCount = EPubRenderer.TotalInnerPageCount;
                 })
                 .AddTo(_RendererObserveDisposer);
 
             NowEnablePageMove = false;
+
+
         }
 
         private void WebView_Unloaded(object sender, RoutedEventArgs e)
@@ -363,10 +365,14 @@ namespace TsubameViewer.Presentation.Views
         public static readonly DependencyProperty NowEnablePageMoveProperty =
             DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(true));
 
+        private readonly AnimationBuilder _ShowAnimationAb = AnimationBuilder.Create()
+            .Opacity(1.0, duration: TimeSpan.FromMilliseconds(75));
 
+        private readonly AnimationBuilder _HideAnimationAb = AnimationBuilder.Create()
+            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(75));
 
         private void WebView_ContentRefreshStarting(object sender, EventArgs e)
-        {
+        {            
             NowEnablePageMove = false;
         }
 
@@ -374,11 +380,12 @@ namespace TsubameViewer.Presentation.Views
         {
             NowEnablePageMove = true;
 
-            (DataContext as EBookReaderPageViewModel).CompletePageLoading();
-
-            AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(100))
-                .Start(EPubRenderer);               
+            if (string.IsNullOrEmpty(_vm.PageHtml) is false)
+            {
+                _vm.CompletePageLoading();
+                _ShowAnimationAb
+                    .Start(EPubRenderer);
+            }
         }
 
         public ICommand InnerGoNextImageCommand
@@ -405,15 +412,13 @@ namespace TsubameViewer.Presentation.Views
                 }
                 else
                 {
-                    var pageVM = DataContext as EBookReaderPageViewModel;
-                    if (pageVM.CanGoNext())
+                    if (_vm.CanGoNext())
                     {
-                        await AnimationBuilder.Create()
-                            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
+                        await _HideAnimationAb
                             .StartAsync(EPubRenderer);
 
                         EPubRenderer.PrepareGoNext();
-                        await pageVM.GoNextImageAsync();
+                        await _vm.GoNextImageAsync();
                     }
                 }
             }
@@ -445,15 +450,13 @@ namespace TsubameViewer.Presentation.Views
                 }
                 else
                 {
-                    var pageVM = DataContext as EBookReaderPageViewModel;
-                    if (pageVM.CanGoPrev())
+                    if (_vm.CanGoPrev())
                     {
-                        await AnimationBuilder.Create()
-                            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(50))
+                        await _HideAnimationAb
                             .StartAsync(EPubRenderer);
 
                         EPubRenderer.PrepareGoPreview();
-                        await pageVM.GoPrevImageAsync();
+                        await _vm.GoPrevImageAsync();
                     }
                 }
             }
@@ -491,7 +494,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void CoverImage_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            (DataContext as EBookReaderPageViewModel).CurrentImageIndex = 0;
+            _vm.CurrentImageIndex = 0;
         }
 
         public void RefreshPage()
@@ -501,22 +504,20 @@ namespace TsubameViewer.Presentation.Views
 
         private void BackgroundColorPickerFlyout_Opening(object sender, object e)
         {
-            var pageVM = DataContext as EBookReaderPageViewModel;
-            var color = pageVM.EBookReaderSettings.BackgroundColor;
+            var color = _vm.EBookReaderSettings.BackgroundColor;
             if (color.A == 0)
             {
                 color.A = 0xff;
-                pageVM.EBookReaderSettings.BackgroundColor = color;
+                _vm.EBookReaderSettings.BackgroundColor = color;
             }
         }
 
         private void ForegroundColorPickerFlyout_Opening(object sender, object e)
         {
-            var pageVM = DataContext as EBookReaderPageViewModel;
-            var color = pageVM.EBookReaderSettings.ForegroundColor;
+            var color = _vm.EBookReaderSettings.ForegroundColor;
             if (color.A == 0)
             {
-                pageVM.EBookReaderSettings.ForegroundColor = new Color() { A = 0xff } ;
+                _vm.EBookReaderSettings.ForegroundColor = new Color() { A = 0xff } ;
             }
         }
     }
