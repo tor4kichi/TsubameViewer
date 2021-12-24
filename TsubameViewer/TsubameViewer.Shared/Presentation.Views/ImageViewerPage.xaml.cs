@@ -257,8 +257,27 @@ namespace TsubameViewer.Presentation.Views
             ToggleOpenCloseBottomUI();
         }
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+
+
+
+        public bool IsReadyToImageDisplay
         {
+            get { return (bool)GetValue(IsReadyToImageDisplayProperty); }
+            set { SetValue(IsReadyToImageDisplayProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsReadyToImageDisplay.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsReadyToImageDisplayProperty =
+            DependencyProperty.Register("IsReadyToImageDisplay", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
+
+
+
+
+
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            IsReadyToImageDisplay = false;
+
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
 
@@ -280,174 +299,183 @@ namespace TsubameViewer.Presentation.Views
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
 
-            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
-            if (animation != null)
-            {
-                // Note: CancelletionTokenSourceにタイムアウトを指定した形で実装すると
-                // Win32Exceptionでアプリがクラッシュする
-                // とにかく待って処理する男気実装でいくしかない
-
-                await this.ObserveDependencyProperty(DataContextProperty)
-                    .Where(x => _vm is not null)
-                    .Take(1)
-                    .ToAsyncOperation()
-                    .AsTask();
-
-                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
-                    .Take(1)
-                    .ToAsyncOperation()
-                    .AsTask();
-
-                if (_vm.DisplayImages_0.Length == 1)
-                {
-                    ImageItemsControl_0.Opacity = 0.001;
-                    var image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                       h => ImageItemsControl_0.ElementPrepared += h,
-                       h => ImageItemsControl_0.ElementPrepared -= h
-                       )
-                       .Select(x => x.EventArgs.Element)
-                       .Take(1)
-                       .ToAsyncOperation()
-                       .AsTask();
-
-                    int count = 0;
-                    while (image.ActualSize is { X: 0, Y: 0 })
-                    {
-                        await Task.Delay(1);
-                        count++;
-                        if (count == 750)
-                        {
-                            animation.Cancel();
-                            return;
-                        }
-                    }
-
-                    animation.TryStart(ImageItemsControl_0, new[] { image });
-                    ImageItemsControl_0.Opacity = 1.0;
-                }
-                else
-                {
-                    ImageItemsControl_0.Opacity = 0.001;
-                    var images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                       h => ImageItemsControl_0.ElementPrepared += h,
-                       h => ImageItemsControl_0.ElementPrepared -= h
-                       )
-                       .Select(x => x.EventArgs.Element)
-                       .Take(2)
-                       .Buffer(2)
-                       .ToAsyncOperation();
-                       
-                    int count = 0;
-                    while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
-                    {
-                        await Task.Delay(1);
-                        count++;
-                        if (count == 750)
-                        {
-                            animation.Cancel();
-                            return;
-                        }
-                    }
-
-                    animation.TryStart(ImageItemsControl_0, images);
-                    ImageItemsControl_0.Opacity = 1.0;
-                }
-            }
-            else
-            {
-                AnimationBuilder.Create()
-                    .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-                    .Start(ImageItemsControl_0);
-
-                await this.ObserveDependencyProperty(DataContextProperty)
-                    .Where(x => _vm is not null)
-                    .Take(1)
-                    .ToAsyncOperation()
-                    .AsTask();
-
-                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
-                    .Take(1)
-                    .ToAsyncOperation()
-                    .AsTask();
-
-                if (_vm.DisplayImages_0.Length == 1)
-                {
-                    var image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                       h => ImageItemsControl_0.ElementPrepared += h,
-                       h => ImageItemsControl_0.ElementPrepared -= h
-                       )
-                       .Select(x => x.EventArgs.Element)
-                       .Take(1)
-                       .ToAsyncOperation()
-                       .AsTask();
-
-                    int count = 0;
-                    while (image.ActualSize is { X: 0, Y: 0 })
-                    {
-                        await Task.Delay(1);
-                        count++;
-                        if (count == 750)
-                        {
-                            animation.Cancel();
-                            return;
-                        }
-                    }
-
-                    AnimationBuilder.Create()
-                        .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                        .Scale()
-                            .TimedKeyFrames(ke => 
-                            {
-                                ke.KeyFrame(TimeSpan.FromMilliseconds(0), new (0.9f));
-                                ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
-                            })
-                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                        .Start(ImageItemsControl_0);
-                }
-                else
-                {
-                    AnimationBuilder.Create()
-                        .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-                        .Start(ImageItemsControl_0);
-                    var images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                       h => ImageItemsControl_0.ElementPrepared += h,
-                       h => ImageItemsControl_0.ElementPrepared -= h
-                       )
-                       .Select(x => x.EventArgs.Element)
-                       .Take(2)
-                       .Buffer(2)
-                       .ToAsyncOperation();
-
-                    int count = 0;
-                    while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
-                    {
-                        await Task.Delay(1);
-                        count++;
-                        if (count == 750)
-                        {
-                            animation.Cancel();
-                            return;
-                        }
-                    }
-
-                    AnimationBuilder.Create()
-                        .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                        .Scale()
-                            .TimedKeyFrames(ke =>
-                            {
-                                ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.9f));
-                                ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
-                            })
-                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                        .Start(ImageItemsControl_0);
-                }
-            }
+            _navigaitonCts = new CancellationTokenSource();
+             _ = StartNavigatedAnimationAsync(_navigaitonCts.Token);
 
             base.OnNavigatedTo(e);
         }
 
+        CancellationTokenSource _navigaitonCts;
+        private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
+        {
+            AnimationBuilder.Create()
+                .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
+                .Start(ImageItemsControl_0);
+
+            bool isConnectedAnimationDone = false;
+            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+            ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);            
+            if (animation != null)
+            {
+                isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                if (isConnectedAnimationDone)
+                {
+                    // ConnectedAnimation中に依存プロパティを変更してしまうと
+                    // VisualState.StateTriggers が更新されないので待機する
+                    await Task.Delay(connectedAnimationService.DefaultDuration + TimeSpan.FromMilliseconds(100));
+                }
+            } 
+
+            try
+            {
+                if (isConnectedAnimationDone is false)
+                {
+                    await WaitImageLoadingAsync(navigationCt);
+
+                    await AnimationBuilder.Create()
+                       .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                       .Scale()
+                           .TimedKeyFrames(ke =>
+                           {
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.9f));
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
+                           })
+                       .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
+                       .StartAsync(ImageItemsControl_0, navigationCt);
+                }
+            }
+            catch (OperationCanceledException) { }
+
+            IsReadyToImageDisplay = true;
+        }
+
+        private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
+        {
+            bool isConnectedAnimationDone = false;
+            CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(750));
+            try
+            {
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, navigationCt);
+
+                var ct = linkedCts.Token;
+
+
+                if (await WaitImageLoadingAsync(ct) is not null and var images && images.Count() == 1)
+                {
+                    // ConnectedAnimation.Start後にタイムアウトでフォールバックのアニメーションが起動する可能性に配慮が必要
+
+                    isConnectedAnimationDone = true;
+                    animation.TryStart(images.ElementAt(0));
+                    AnimationBuilder.Create()
+                        .Opacity(1.0, duration: TimeSpan.FromMilliseconds(1))
+                        .Start(ImageItemsControl_0);
+                }
+                else
+                {
+                    animation.Cancel();
+                }
+
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken != navigationCt && isConnectedAnimationDone is false)
+            {
+                animation.Cancel();
+                throw;
+            }
+            catch (OperationCanceledException oce) when (oce.CancellationToken == navigationCt)
+            {
+                animation.Cancel();
+                throw;
+            }
+            finally
+            {
+                timeoutCts.Dispose();
+            }
+
+            return isConnectedAnimationDone;
+        }
+
+        
+
+        private async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
+        {
+            if (_vm == null)
+            {
+                await this.ObserveDependencyProperty(DataContextProperty)
+                       .Where(x => _vm is not null)
+                       .Take(1)
+                       .ToAsyncOperation()
+                       .AsTask(ct);
+
+                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
+                    .Take(1)
+                    .ToAsyncOperation()
+                    .AsTask(ct);
+            }
+
+            if (_vm.DisplayImages_0.Length == 1)
+            {
+                UIElement image = null;
+                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage)
+                {
+                    image = readyImage;
+                }
+                else
+                {
+                    image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                      h => ImageItemsControl_0.ElementPrepared += h,
+                      h => ImageItemsControl_0.ElementPrepared -= h
+                      )
+                      .Select(x => x.EventArgs.Element)
+                      .Take(1)
+                      .ToAsyncOperation()
+                      .AsTask(ct);
+
+                }
+
+                while (image.ActualSize is { X: 0, Y: 0 })
+                {
+                    await Task.Delay(1, ct);
+                }
+
+                return new[] { image };
+            }
+            else
+            {
+                IList<UIElement> images = null;
+                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage1
+                    && ImageItemsControl_0.TryGetElement(1) is not null and var readyImage2
+                    )
+                {
+                    images = new[] { readyImage1, readyImage2 };
+                }
+                else
+                {
+                    images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
+                           h => ImageItemsControl_0.ElementPrepared += h,
+                           h => ImageItemsControl_0.ElementPrepared -= h
+                           )
+                           .Select(x => x.EventArgs.Element)
+                           .Take(2)
+                           .Buffer(2)
+                           .ToAsyncOperation()
+                           .AsTask(ct);
+                }
+
+                while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
+                {
+                    await Task.Delay(1, ct);
+                }
+
+                return images;
+            }
+        }
+
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            _navigaitonCts.Cancel();
+            _navigaitonCts.Dispose();
+            _navigaitonCts = null;
+
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
             Window.Current.SetTitleBar(null);

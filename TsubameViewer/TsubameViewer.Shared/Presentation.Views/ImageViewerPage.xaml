@@ -586,7 +586,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-            <StateTrigger IsActive="{x:Bind _vm.IsAlreadySetDisplayImages, Converter={StaticResource BoolNegationConverter}}" />
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
@@ -693,8 +693,17 @@
       </VisualStateGroup>
       -->
 
-      <!-- スクロールのページ送りを逆にする -->
+      <!-- マウススクロールのページ送り -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=OneWay}" />
@@ -706,8 +715,24 @@
         </VisualState>
       </VisualStateGroup>
 
-      <!-- 左右のページ送りを逆にする -->
+      <!-- 画面上のページ送り -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
+
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_Button, Mode=OneWay}" />
@@ -726,6 +751,21 @@
         </VisualState>
       </VisualStateGroup>
 
+      <!-- コントローラー操作時のページ送り -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
       <!-- アーカイブファイル内のフォルダ名表示の切り替え -->
       <VisualStateGroup>
         <VisualState>
@@ -735,19 +775,6 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PageFolderNamesSelector.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <!-- 左右移動を抑止する -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
-            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

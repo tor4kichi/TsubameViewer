@@ -240,8 +240,8 @@ namespace TsubameViewer.Presentation.Views
                 var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
                 if (image.Source != null)
                 {
-                    ConnectedAnimationService.GetForCurrentView()
-                        .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                    //ConnectedAnimationService.GetForCurrentView()
+                    //    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 }
             }
 
