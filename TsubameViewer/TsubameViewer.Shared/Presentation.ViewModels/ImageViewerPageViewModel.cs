@@ -583,6 +583,10 @@ namespace TsubameViewer.Presentation.ViewModels
             await MoveImageIndex(IndexMoveDirection.Refresh, requestIndex);
         }
 
+
+
+
+
         async Task MoveImageIndex(IndexMoveDirection direction, int? request = null)
         {
             if (Images == null || Images.Length == 0) { return; }
@@ -649,6 +653,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
         }
+
+
+
+
+
 
         bool _nowCurrenImageIndexChanging;
 
