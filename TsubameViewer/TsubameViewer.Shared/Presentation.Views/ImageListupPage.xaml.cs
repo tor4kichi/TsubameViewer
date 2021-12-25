@@ -325,8 +325,9 @@ namespace TsubameViewer.Presentation.Views
             var image = (item.OriginalSource as UIElement).FindDescendantOrSelf<Image>();
             if (image?.Source != null)
             {
-                ConnectedAnimationService.GetForCurrentView()
+                var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                anim.Configuration = new BasicConnectedAnimationConfiguration();
             }
         });
 
@@ -335,9 +336,10 @@ namespace TsubameViewer.Presentation.Views
         {
             var image = item.FindDescendantOrSelf<Image>();
             if (image?.Source != null)
-            {
-                ConnectedAnimationService.GetForCurrentView()
+            {                
+                var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                anim.Configuration = new BasicConnectedAnimationConfiguration();                
             }
         });
     }

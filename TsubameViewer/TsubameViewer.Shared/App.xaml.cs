@@ -65,7 +65,9 @@ namespace TsubameViewer
 
             RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
             
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);            
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+            ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
         }
 
         Models.Infrastructure.AsyncLock _InitializeLock = new ();
