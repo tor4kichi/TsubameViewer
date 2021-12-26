@@ -1035,6 +1035,57 @@ namespace TsubameViewer.Presentation.ViewModels
             new IImageSource[2],
         };
 
+        public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
+        {
+            var ct = _imageLoadingCts.Token;
+            using (await _imageLoadingLock.LockAsync(ct))
+            {
+                // 現在表示中の画像がデコード済みだった場合だけ、デコードしていない画像として読み込む
+
+                var images = GetDisplayImages(PrefetchIndexType.Current);
+                if (images.Any(x => x == null) || images.All(x => x.DecodePixelHeight == 0 && x.DecodePixelWidth == 0))
+                {                    
+                    return;
+                }
+
+                var indexType = GetDisplayImageIndex(PrefetchIndexType.Current);
+                if (NowDoubleImageView)
+                {
+                    BitmapImage image1 = images[0];
+                    BitmapImage image2 = images[1];
+
+                    var imageSource1 = _sourceImagesDouble[indexType][0];
+                    var imageSource2 = _sourceImagesDouble[indexType][1];
+
+                    if (image1.DecodePixelHeight != 0)
+                    {                        
+                        using var loader1 = new PrefetchImageInfo(imageSource1);
+                        image1 = await loader1.GetBitmapImageAsync(ct);
+                        Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
+                    }
+                    if (image2.DecodePixelHeight != 0)
+                    {
+                        using var loader2 = new PrefetchImageInfo(imageSource2);
+                        image2 = await loader2.GetBitmapImageAsync(ct);
+                        Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
+                    }
+                    
+                    SetDisplayImages_Internal(PrefetchIndexType.Current,
+                        imageSource1, image1,
+                        imageSource2, image2
+                        );
+                }
+                else
+                {
+                    var imageSource1 = _sourceImagesSingle[indexType][0];
+                    using var loader1 = new PrefetchImageInfo(imageSource1);
+                    SetDisplayImages_Internal(PrefetchIndexType.Current,
+                        imageSource1, await loader1.GetBitmapImageAsync(ct)
+                        );
+                }
+            }
+        }
+
         
         private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
         {
@@ -1065,6 +1116,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SetDecodePixelSize(firstImage, (float)CanvasWidth.Value, (float)CanvasHeight.Value);
 
+            SetDisplayImages_Internal(type, firstSource, firstImage);
+        }
+
+        private void SetDisplayImages_Internal(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
+        {
             switch (GetDisplayImageIndex(type))
             {
                 case 0:
@@ -1097,16 +1153,22 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             // (firstImage.PixelWidth + secondImage.PixelWidth < CanvasWidth.Value) は常にtrue
-            if (firstImage.PixelHeight > CanvasHeight.Value)
-            {
-                firstImage.DecodePixelHeight = (int)CanvasHeight.Value;
-            }
+            SetDecodePixelHeightWhenLargerThenCanvasHeight(firstImage);
+            SetDecodePixelHeightWhenLargerThenCanvasHeight(secondImage);
 
-            if (secondImage.PixelHeight > CanvasHeight.Value)
-            {
-                secondImage.DecodePixelHeight = (int)CanvasHeight.Value;
-            }
+            SetDisplayImages_Internal(type, firstSource, firstImage, secondSource, secondImage);            
+        }
 
+        private void SetDecodePixelHeightWhenLargerThenCanvasHeight(BitmapImage image)
+        {
+            if (image.PixelHeight > CanvasHeight.Value)
+            {
+                image.DecodePixelHeight = (int)CanvasHeight.Value;
+            }
+        }
+
+        private void SetDisplayImages_Internal(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
+        {
             switch (GetDisplayImageIndex(type))
             {
                 case 0:
@@ -1134,6 +1196,17 @@ namespace TsubameViewer.Presentation.ViewModels
                     RaisePropertyChanged(nameof(DisplayImages_2));
                     break;
             }
+        }
+
+        private BitmapImage[] GetDisplayImages(PrefetchIndexType type)
+        {
+            return GetDisplayImageIndex(type) switch
+            {
+                0 => _DisplayImages_0,
+                1 => _DisplayImages_1,
+                2 => _DisplayImages_2,
+                _ => throw new NotSupportedException(),
+            };
         }
 
         private void ClearDisplayImages()
