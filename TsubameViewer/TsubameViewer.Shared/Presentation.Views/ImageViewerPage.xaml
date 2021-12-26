@@ -229,6 +229,24 @@
         <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomDownWithControllerCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLTTriggerBehavior" Kind="PageDown" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomUpWithControllerCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickRightTriggerBehavior" Kind="ScrollRight" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveRightCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickLeftTriggerBehavior" Kind="ScrollLeft" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveLeftCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickUpTriggerBehavior" Kind="ScrollUp" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveUpCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickDownTriggerBehavior" Kind="ScrollDown" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveDownCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />

@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.UINavigation;
 using Uno.Disposables;
 using Uno.Extensions;
 using Uno.Extensions.Specialized;
@@ -607,7 +608,7 @@ namespace TsubameViewer.Presentation.Views
                         IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
                         IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
                     }
-                })
+                }),
             });
 
             ZoomCenter = ImagesContainer.ActualSize * 0.5f;
@@ -639,8 +640,7 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            var factor = (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
-            
+            var factor = GetZoomCenterMoveingFactorForMouseTouch();
             if (e.PointerDeviceType is PointerDeviceType.Touch)
             {
                 if (e.Delta.Scale is not 1.0f)
@@ -742,9 +742,9 @@ namespace TsubameViewer.Presentation.Views
                 ZoomCenter = nextCenter;
             });
 
-        RelayCommand<PointerRoutedEventArgs> _ZoomResetCommand;
-        public RelayCommand<PointerRoutedEventArgs> ZoomResetCommand => _ZoomResetCommand
-            ??= new RelayCommand<PointerRoutedEventArgs>(args =>
+        RelayCommand _ZoomResetCommand;
+        public RelayCommand ZoomResetCommand => _ZoomResetCommand
+            ??= new RelayCommand(() =>
             {
                 ZoomCenter = ImagesContainer.ActualSize * 0.5f;
                 ZoomFactor = 1.0;
@@ -758,6 +758,115 @@ namespace TsubameViewer.Presentation.Views
             return new Vector2(x, y);
         }
 
+        RelayCommand _ZoomUpWithControllerCommand;
+        public RelayCommand ZoomUpWithControllerCommand => _ZoomUpWithControllerCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                var lastZoom = (float)ZoomFactor;
+                var nextZoom = ZoomFactorList[CurrentZoomFactorIndex + 1 < ZoomFactorList.Length ? ++CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+                if (lastZoom < 1.0f && nextZoom >= 1.0f)
+                {
+                    nextZoom = 1.0f;
+                }
+                else if (nextZoom == lastZoom)
+                {
+                    return;
+                }
+
+                ZoomFactor = nextZoom;
+                IsZoomingEnabled = nextZoom != 1.0f;
+            });
+
+        RelayCommand _ZoomDownWithControllerCommand;
+        public RelayCommand ZoomDownWithControllerCommand => _ZoomDownWithControllerCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                var lastZoom = (float)ZoomFactor;
+                var lastCenter = ZoomCenter;
+                var nextCenter = Vector2.Zero;
+                var nextZoom = ZoomFactorList[CurrentZoomFactorIndex - 1 >= 0 ? --CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+                if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
+                {
+                    nextZoom = 1.0f;
+                    nextCenter = lastCenter;
+                }
+                else if (nextZoom == lastZoom)
+                {
+                    return;
+                }
+                else if (nextZoom > 1.0f)
+                {
+                    // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+                    var imageCenterPos = targetUI.ActualSize * 0.5f;
+                    nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
+                }
+                else
+                {
+                    nextCenter = targetUI.ActualSize * 0.5f;
+                }
+
+                ZoomFactor = nextZoom;
+                IsZoomingEnabled = nextZoom != 1.0f;
+                ZoomCenter = nextCenter;
+            });
+
+        const float ControlerZoomCenterMoveAmount = 100.0f;
+
+        float GetZoomCenterMoveingFactorForMouseTouch()
+        {
+            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
+        }
+
+        float GetZoomCenterMoveingFactorForController()
+        {
+            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.1f;
+        }
+
+        RelayCommand _ZoomCenterMoveRightCommand;
+        public RelayCommand ZoomCenterMoveRightCommand => _ZoomCenterMoveRightCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                if (ZoomFactor > 1.0f)
+                {
+                    ZoomCenter += new Vector2(ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+                }
+            });
+
+        RelayCommand _ZoomCenterMoveLeftCommand;
+        public RelayCommand ZoomCenterMoveLeftCommand => _ZoomCenterMoveLeftCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                if (ZoomFactor > 1.0f)
+                {
+                    ZoomCenter += new Vector2(-ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+                }
+            });
+
+        RelayCommand _ZoomCenterMoveUpCommand;
+        public RelayCommand ZoomCenterMoveUpCommand => _ZoomCenterMoveUpCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                if (ZoomFactor > 1.0f)
+                {
+                    ZoomCenter += new Vector2(0, -ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+                }
+            });
+
+        RelayCommand _ZoomCenterMoveDownCommand;
+        public RelayCommand ZoomCenterMoveDownCommand => _ZoomCenterMoveDownCommand
+            ??= new RelayCommand(() =>
+            {
+                var targetUI = ImagesContainer;
+                if (ZoomFactor > 1.0f)
+                {
+                    ZoomCenter += new Vector2(0, ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+                }
+            });
 
         public bool IsZoomingEnabled
         {
