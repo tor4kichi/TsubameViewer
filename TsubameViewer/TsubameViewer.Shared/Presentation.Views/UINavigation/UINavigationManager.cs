@@ -67,7 +67,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
             UINavigationController.UINavigationControllerAdded += UINavigationController_UINavigationControllerAdded;
             UINavigationController.UINavigationControllerRemoved += UINavigationController_UINavigationControllerRemoved;
-
+            
             IsEnabled = InitialEnabling;
         }
 
