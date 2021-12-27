@@ -209,13 +209,17 @@ namespace TsubameViewer.Presentation.Views
             ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
-                isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
-                if (isConnectedAnimationDone)
+                try
                 {
-                    // ConnectedAnimation中に依存プロパティを変更してしまうと
-                    // VisualState.StateTriggers が更新されないので待機する
-                    await Task.Delay(connectedAnimationService.DefaultDuration);
+                    isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
+                    if (isConnectedAnimationDone)
+                    {
+                        // ConnectedAnimation中に依存プロパティを変更してしまうと
+                        // VisualState.StateTriggers が更新されないので待機する
+                        await Task.Delay(connectedAnimationService.DefaultDuration);
+                    }
                 }
+                catch (OperationCanceledException) { }
             }
 
             try
