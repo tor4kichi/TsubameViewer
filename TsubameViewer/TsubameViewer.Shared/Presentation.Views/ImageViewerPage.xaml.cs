@@ -27,6 +27,7 @@ using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
@@ -52,6 +53,7 @@ namespace TsubameViewer.Presentation.Views
     {
         private ImageViewerPageViewModel _vm { get; set; }
 
+        private readonly DispatcherQueue _dispatcherQueue;
         public ImageViewerPage()
         {
             this.InitializeComponent();
@@ -59,6 +61,7 @@ namespace TsubameViewer.Presentation.Views
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             DataContextChanged += OnDataContextChanged;
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         }
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -112,6 +115,7 @@ namespace TsubameViewer.Presentation.Views
         // Using a DependencyProperty as the backing store for IsReadyToImageDisplay.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty IsReadyToImageDisplayProperty =
             DependencyProperty.Register("IsReadyToImageDisplay", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
+
 
 
 
@@ -210,7 +214,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     // ConnectedAnimation中に依存プロパティを変更してしまうと
                     // VisualState.StateTriggers が更新されないので待機する
-                    await Task.Delay(connectedAnimationService.DefaultDuration + TimeSpan.FromMilliseconds(500));
+                    await Task.Delay(connectedAnimationService.DefaultDuration);
                 }
             }
 
@@ -234,7 +238,8 @@ namespace TsubameViewer.Presentation.Views
             }
             catch (OperationCanceledException) { }
 
-            IsReadyToImageDisplay = true;
+            _dispatcherQueue.TryEnqueue(() => IsReadyToImageDisplay = true);
+            
         }
 
         private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
