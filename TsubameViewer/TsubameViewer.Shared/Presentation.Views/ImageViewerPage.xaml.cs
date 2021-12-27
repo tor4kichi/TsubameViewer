@@ -50,12 +50,14 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageViewerPage : Page
     {
+        private ImageViewerPageViewModel _vm { get; set; }
+
         public ImageViewerPage()
         {
             this.InitializeComponent();
 
-            Loaded += ResetAnimationUIContainer_Loaded1;
-            Unloaded += TapAndController_Unloaded;
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
             DataContextChanged += OnDataContextChanged;
         }
 
@@ -69,9 +71,7 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        private ImageViewerPageViewModel _vm { get; set; }
-
-        private void TapAndController_Unloaded(object sender, RoutedEventArgs e)
+        private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
 
@@ -83,7 +83,7 @@ namespace TsubameViewer.Presentation.Views
 
         }
 
-        private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
+        private void OnLoaded(object sender, RoutedEventArgs e)
         {
             //ElementCompositionPreview.GetElementVisual(AnimationUICommandBar).TransformMatrix = Matrix4x4.CreateTranslation(0, (float)AnimationUICommandBar.ActualHeight, 0);
             AnimationBuilder.Create()
@@ -130,6 +130,34 @@ namespace TsubameViewer.Presentation.Views
         }
 
         CompositeDisposable _navigationDisposables;
+        CancellationTokenSource _navigaitonCts;
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            _navigationDisposables.Dispose();
+
+            _navigaitonCts.Cancel();
+            _navigaitonCts.Dispose();
+            _navigaitonCts = null;
+
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
+            Window.Current.SetTitleBar(null);
+            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
+
+            var appView = ApplicationView.GetForCurrentView();
+            appView.TitleBar.ButtonBackgroundColor = null;
+            appView.TitleBar.ButtonHoverBackgroundColor = null;
+            appView.TitleBar.ButtonInactiveBackgroundColor = null;
+            appView.TitleBar.ButtonPressedBackgroundColor = null;
+
+            appView.ExitFullScreenMode();
+
+            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+
+            base.OnNavigatingFrom(e);
+        }
+
+
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             IsReadyToImageDisplay = false;
@@ -166,7 +194,6 @@ namespace TsubameViewer.Presentation.Views
             base.OnNavigatedTo(e);
         }
 
-        CancellationTokenSource _navigaitonCts;
         private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
         {
             AnimationBuilder.Create()
@@ -183,7 +210,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     // ConnectedAnimation中に依存プロパティを変更してしまうと
                     // VisualState.StateTriggers が更新されないので待機する
-                    await Task.Delay(connectedAnimationService.DefaultDuration + TimeSpan.FromMilliseconds(100));
+                    await Task.Delay(connectedAnimationService.DefaultDuration + TimeSpan.FromMilliseconds(500));
                 }
             }
 
@@ -254,8 +281,6 @@ namespace TsubameViewer.Presentation.Views
 
             return isConnectedAnimationDone;
         }
-
-
 
         private async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
         {
@@ -331,32 +356,6 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
-        {
-            _navigationDisposables.Dispose();
-
-            _navigaitonCts.Cancel();
-            _navigaitonCts.Dispose();
-            _navigaitonCts = null;
-
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = false;
-            Window.Current.SetTitleBar(null);
-            Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Visible;
-
-            var appView = ApplicationView.GetForCurrentView();
-            appView.TitleBar.ButtonBackgroundColor = null;
-            appView.TitleBar.ButtonHoverBackgroundColor = null;
-            appView.TitleBar.ButtonInactiveBackgroundColor = null;
-            appView.TitleBar.ButtonPressedBackgroundColor = null;
-
-            appView.ExitFullScreenMode();
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
-
-            base.OnNavigatingFrom(e);
-        }
-
         #endregion Navigation
 
 
@@ -406,73 +405,6 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        
-
-        private readonly AnimationBuilder _HideUIContainerAb = AnimationBuilder.Create()
-                .Opacity(0, duration: TimeSpan.FromMilliseconds(175));
-        private readonly AnimationBuilder _HideUICommandBarAb = AnimationBuilder.Create();
-
-
-        private void CloseBottomUI()
-        {
-            _HideUIContainerAb
-                .Start(AnimationUIContainer);
-
-            _HideUICommandBarAb
-                .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUICommandBar);
-        }
-
-        private readonly AnimationBuilder _ShowUIContainer = AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175));
-
-        private readonly AnimationBuilder _ShowUICommandBarAb = AnimationBuilder.Create()
-            .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175));
-
-
-
-
-        public bool IsOpenBottomMenu
-        {
-            get { return (bool)GetValue(IsOpenBottomMenuProperty); }
-            set { SetValue(IsOpenBottomMenuProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for IsOpenBottomMenu.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty IsOpenBottomMenuProperty =
-            DependencyProperty.Register("IsOpenBottomMenu", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
-
-
-        // コントローラー操作用
-        public async void ToggleOpenCloseBottomUI()
-        {
-            IsOpenBottomMenu = !IsOpenBottomMenu;
-            if (IsOpenBottomMenu)
-            {
-                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
-                _ShowUIContainer
-                    .Start(AnimationUIContainer);
-                await _ShowUICommandBarAb
-                    .StartAsync(AnimationUICommandBar);
-            }
-            else
-            {
-                CloseBottomUI();
-            }
-        }
-
-        private DelegateCommand _toggleBottomMenuCommand;
-        public DelegateCommand ToggleBottomMenuCommand =>
-            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
-
-        void ExecuteToggleBottomMenuCommand()
-        {
-            ToggleOpenCloseBottomUI();
-        }
-
-
-        #endregion
-
 
         bool isOnceSkipTapped = false;
         private void SwipeProcessScreen_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
@@ -494,12 +426,12 @@ namespace TsubameViewer.Presentation.Views
 
         private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
-            if (IsZoomingEnabled) 
+            if (IsZoomingEnabled)
             {
                 IsZoomingEnabled = ZoomFactor != 1.0f;
 
                 _nowZoomCenterMovingWithPointer = false;
-                return; 
+                return;
             }
 
             _nowZoomCenterMovingWithPointer = false;
@@ -534,22 +466,101 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+
+        private readonly AnimationBuilder _HideUIContainerAb = AnimationBuilder.Create()
+                .Opacity(0, duration: TimeSpan.FromMilliseconds(175));
+        private readonly AnimationBuilder _HideUICommandBarAb = AnimationBuilder.Create();
+
+
+        private readonly AnimationBuilder _ShowUIContainer = AnimationBuilder.Create()
+                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175));
+
+        private readonly AnimationBuilder _ShowUICommandBarAb = AnimationBuilder.Create()
+            .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175));
+
+
+        private void CloseBottomUI()
+        {
+            _HideUIContainerAb
+                .Start(AnimationUIContainer);
+
+            _HideUICommandBarAb
+                .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
+                .Start(AnimationUICommandBar);
+        }
+
+
+
+        // コントローラー操作用
+        public async void ToggleOpenCloseBottomUI()
+        {
+            IsOpenBottomMenu = !IsOpenBottomMenu;
+            if (IsOpenBottomMenu)
+            {
+                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
+                _ShowUIContainer
+                    .Start(AnimationUIContainer);
+                await _ShowUICommandBarAb
+                    .StartAsync(AnimationUICommandBar);
+            }
+            else
+            {
+                CloseBottomUI();
+            }
+        }
+
+        private DelegateCommand _toggleBottomMenuCommand;
+        public DelegateCommand ToggleBottomMenuCommand =>
+            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
+
+        void ExecuteToggleBottomMenuCommand()
+        {
+            ToggleOpenCloseBottomUI();
+        }
+
+        public bool IsOpenBottomMenu
+        {
+            get { return (bool)GetValue(IsOpenBottomMenuProperty); }
+            set { SetValue(IsOpenBottomMenuProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsOpenBottomMenu.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsOpenBottomMenuProperty =
+            DependencyProperty.Register("IsOpenBottomMenu", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
+
+
+
+        #endregion
+
+
         #region ZoomInOut
 
 
-        const float MaxZoomFactor = 8.0f;
-        const float MinZoomFactor = 0.5f;        
+        private const float MaxZoomFactor = 8.0f;
+        private const float MinZoomFactor = 0.5f;        
 
         private static readonly float[] ZoomFactorList = Enumerable.Concat(
             new[] { 0.5f, .75f }, 
             new[] { 1.0f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
             ).ToArray();
+
         private int CurrentZoomFactorIndex;
-
         private static readonly TimeSpan DefaultZoomingDuration = TimeSpan.FromMilliseconds(150);
-
         private readonly AnimationBuilder ZoomCenterAb = AnimationBuilder.Create();
-        
+
+        private const float ControlerZoomCenterMoveAmount = 100.0f;
+
+        float GetZoomCenterMoveingFactorForMouseTouch()
+        {
+            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
+        }
+
+        float GetZoomCenterMoveingFactorForController()
+        {
+            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.1f;
+        }
+
+
         private IDisposable InitializeZoomReaction()
         {
             CurrentZoomFactorIndex = ZoomFactorList.IndexOf(1.0f);
@@ -643,6 +654,7 @@ namespace TsubameViewer.Presentation.Views
             var factor = GetZoomCenterMoveingFactorForMouseTouch();
             if (e.PointerDeviceType is PointerDeviceType.Touch)
             {
+                // ズーム操作と移動操作は排他的に行う
                 if (e.Delta.Scale is not 1.0f)
                 {
                     _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
@@ -665,6 +677,7 @@ namespace TsubameViewer.Presentation.Views
                         ZoomCenter = ZoomCenter + e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
                     }
 
+                    // 移動操作はアニメーションせず、直接変更する
                     var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
                     visual.CenterPoint = new Vector3(ZoomCenter, 0);
                 }
@@ -812,17 +825,6 @@ namespace TsubameViewer.Presentation.Views
                 ZoomCenter = nextCenter;
             });
 
-        const float ControlerZoomCenterMoveAmount = 100.0f;
-
-        float GetZoomCenterMoveingFactorForMouseTouch()
-        {
-            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
-        }
-
-        float GetZoomCenterMoveingFactorForController()
-        {
-            return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.1f;
-        }
 
         RelayCommand _ZoomCenterMoveRightCommand;
         public RelayCommand ZoomCenterMoveRightCommand => _ZoomCenterMoveRightCommand
