@@ -229,9 +229,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var mode = parameters.GetNavigationMode();
 
-            // タイトルバー表示拡張の更新を待つ
-            await Task.Delay(100);
-
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Forward
                 || mode == NavigationMode.Back)

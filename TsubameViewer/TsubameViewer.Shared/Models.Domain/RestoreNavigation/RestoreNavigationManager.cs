@@ -71,24 +71,24 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
                 Save(entry, CurrentNavigationEntryName);
             }
 
-            public async Task<PageEntry[]> GetBackNavigationEntriesAsync()
+            public Task<PageEntry[]> GetBackNavigationEntriesAsync()
             {
-                return await ReadFileAsync<PageEntry[]>(null, BackNavigationEntriesName);
+                return ReadFileAsync<PageEntry[]>(null, BackNavigationEntriesName);
             }
 
-            public async Task SetBackNavigationEntriesAsync(PageEntry[] entries)
+            public Task SetBackNavigationEntriesAsync(PageEntry[] entries)
             {
-                await SaveFileAsync(entries, BackNavigationEntriesName);
+                return SaveFileAsync(entries, BackNavigationEntriesName);
             }
 
-            public async Task<PageEntry[]> GetForwardNavigationEntriesAsync()
+            public Task<PageEntry[]> GetForwardNavigationEntriesAsync()
             {
-                return await ReadFileAsync<PageEntry[]>(null, ForwardNavigationEntriesName);
+                return ReadFileAsync<PageEntry[]>(null, ForwardNavigationEntriesName);
             }
 
-            public async Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
+            public Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
             {
-                await SaveFileAsync(entries, ForwardNavigationEntriesName);
+                return SaveFileAsync(entries, ForwardNavigationEntriesName);
             }
         }
     }

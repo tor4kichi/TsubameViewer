@@ -61,13 +61,13 @@ namespace TsubameViewer.Presentation.Views
         {
             base.OnNavigatedTo(e);
 
-            await Task.Delay(500);
-
             var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
             if (settings.IsForceEnableXYNavigation
                 || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
                 )
             {
+                await Task.Delay(500);
+
                 if (FoldersAdaptiveGridView.Items.Any())
                 {
                     var firstItem = FoldersAdaptiveGridView.Items.First();

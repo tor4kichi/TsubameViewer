@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -22,6 +23,35 @@ namespace TsubameViewer.Presentation.Views.FolderListup
         public FolderListupItemTemplate()
         {
             this.InitializeComponent();
+        }
+    }
+
+    public sealed class StorageItemIconTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate FolderIcon { get; set; }
+        public DataTemplate ArchiveIcon { get; set; }
+        public DataTemplate ArchiveFolderIcon { get; set; }
+        public DataTemplate EBookIcon { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+        {
+            if (item == null) { return base.SelectTemplateCore(item, container); }
+
+            return (item as StorageItemViewModel).Type switch
+            {
+                Models.Domain.StorageItemTypes.Folder => FolderIcon,
+                Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
+                Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                Models.Domain.StorageItemTypes.EBook => EBookIcon,
+                var type => throw new NotSupportedException(type.ToString()),
+            };
+
+            //return base.SelectTemplateCore(item, container);
+        }
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            return this.SelectTemplateCore(item, null);
         }
     }
 }

@@ -15,18 +15,14 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Diagnostics;
 using Windows.Storage;
 using System.Linq;
+using System.IO;
 
-namespace TsubameViewer.Models.UseCase
-{
-    public interface IRestorable
-    {
-        void Restore();
-    }
-
+namespace TsubameViewer.Models.UseCase.Maintenance
+{   
     public sealed class CacheDeletionWhenSourceStorageItemIgnored :
+        ILaunchTimeMaintenance,
         IRecipient<SourceStorageItemIgnoringRequestMessage>,
-        IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>,
-        IRestorable
+        IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _storageItemsRepository;
@@ -104,7 +100,7 @@ namespace TsubameViewer.Models.UseCase
         }
 
 
-        void IRestorable.Restore()
+        void ILaunchTimeMaintenance.Maintenance()
         {
             Debug.WriteLine($"Restored CacheDeletionWhenSourceStorageItemIgnored.");
             TickNext();
@@ -147,8 +143,15 @@ namespace TsubameViewer.Models.UseCase
                 while (_storageItemsRepository.TryPeek(out string path))
                 {
                     Debug.WriteLine($"Start cache deletion: {path}");
-                    await DeleteCacheWithDescendantsAsync(path);
-                    Debug.WriteLine($"Done cache deletion: {path}");
+                    if (Path.IsPathRooted(path))
+                    {
+                        await DeleteCacheWithDescendantsAsync(path);
+                        Debug.WriteLine($"Done cache deletion: {path}");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"path is not rooted, skip removing process: {path}");
+                    }
                     _storageItemsRepository.DeleteIgnorePath(path);
                     Debug.WriteLine($"Remove ignored StorageItem from Db : {path}");
                 }

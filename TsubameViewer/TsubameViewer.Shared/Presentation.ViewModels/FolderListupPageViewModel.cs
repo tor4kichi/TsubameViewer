@@ -456,7 +456,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (_currentItem is StorageFolder folder)
                 {
                     Debug.WriteLine(folder.Path);
-                    imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(folder, ct);
+                    imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
                     CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager);
                 }
                 else if (_currentItem is StorageFile file)
@@ -467,14 +467,14 @@ namespace TsubameViewer.Presentation.ViewModels
                         try
                         {
                             var parentFolder = await file.GetParentAsync();
-                            imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                            imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
                         }
                         catch (UnauthorizedAccessException)
                         {
                             var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                             if (parentItem is StorageFolder parentFolder)
                             {
-                                imageCollectionContext = await _imageCollectionManager.GetFolderImageCollectionContextAsync(parentFolder, ct);
+                                imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
                             }
                         }
 

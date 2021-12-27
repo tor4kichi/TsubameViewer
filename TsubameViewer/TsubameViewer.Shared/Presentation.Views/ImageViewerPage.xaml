@@ -18,7 +18,7 @@
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
   xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing" 
-  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels"
+  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -204,6 +204,15 @@
         <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
       </myBehaviour:MouseCenterClickTrigger>
 
+      <myBehaviour:MouseWheelTrigger x:Name="ZommingMouseWheelTrigger" IsEnabled="False">
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction Command="{x:Bind ZoomUpCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction Command="{x:Bind ZoomDownCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
+
       <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
 
       <!-- GamePad Input-->
@@ -220,6 +229,24 @@
         <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomDownWithControllerCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLTTriggerBehavior" Kind="PageDown" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomUpWithControllerCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickRightTriggerBehavior" Kind="ScrollRight" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveRightCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickLeftTriggerBehavior" Kind="ScrollLeft" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveLeftCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickUpTriggerBehavior" Kind="ScrollUp" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveUpCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightStickDownTriggerBehavior" Kind="ScrollDown" IsRequireFocus="True" IsEnabled="True">
+        <core:InvokeCommandAction Command="{x:Bind ZoomCenterMoveDownCommand, Mode=OneTime}" />
+      </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind ToggleBottomMenuCommand}" />
@@ -245,6 +272,8 @@
 
       <Grid uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
             x:Name="ImagesContainer"
+            Background="Transparent"
+            IsTapEnabled="True"
             >
 
         <i:Interaction.Behaviors>
@@ -265,7 +294,7 @@
             <Setter Property="ItemTemplate">
               <Setter.Value>
                 <DataTemplate x:DataType="BitmapImage">
-                  <Image Source="{x:Bind}" Stretch="Uniform" MaxWidth="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+                  <Image Source="{x:Bind}" Stretch="Uniform" />
                 </DataTemplate>
               </Setter.Value>
             </Setter>
@@ -417,6 +446,9 @@
     </Grid>
 
 
+    <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" Visibility="Collapsed">
+      
+    </Grid>
     
 
     
@@ -471,9 +503,9 @@
     </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="1.0" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed" >
       <Grid.RenderTransform>
-        <TranslateTransform />
+        <TranslateTransform Y="-1" />
       </Grid.RenderTransform>
 
       <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top" />
@@ -529,7 +561,6 @@
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.125"
                                To="0.25"
-                               BeginTime="0:0:0.750"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity"
                                />
@@ -586,7 +617,8 @@
         <VisualState>
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-            <StateTrigger IsActive="{x:Bind _vm.IsAlreadySetDisplayImages, Converter={StaticResource BoolNegationConverter}}" />
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
@@ -618,7 +650,7 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               To="0"
+                               To="-1"
                                Storyboard.TargetName="Toolbar_Desktop"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
@@ -642,7 +674,7 @@
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="0"
+                               To="-1"
                                Storyboard.TargetName="ContentContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
                                />
@@ -659,7 +691,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentContainer.Margin" Value="0 32 0 0" />
-            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="-1" />
             <Setter Target="ContentContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>
@@ -693,8 +725,29 @@
       </VisualStateGroup>
       -->
 
-      <!-- スクロールのページ送りを逆にする -->
+      <!-- マウススクロールのページ送り -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+
+            <Setter Target="ZommingMouseWheelTrigger.IsEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=OneWay}" />
@@ -706,8 +759,27 @@
         </VisualState>
       </VisualStateGroup>
 
-      <!-- 左右のページ送りを逆にする -->
+      <!-- 画面上のページ送り -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
+            <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
+
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="ReverseGamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_Button, Mode=OneWay}" />
@@ -726,6 +798,7 @@
         </VisualState>
       </VisualStateGroup>
 
+
       <!-- アーカイブファイル内のフォルダ名表示の切り替え -->
       <VisualStateGroup>
         <VisualState>
@@ -735,19 +808,6 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PageFolderNamesSelector.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <!-- 左右移動を抑止する -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
-            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

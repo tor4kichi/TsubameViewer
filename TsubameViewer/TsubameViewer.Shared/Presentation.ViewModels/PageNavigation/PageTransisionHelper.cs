@@ -20,8 +20,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         {
             return pageName switch
             {
-                nameof(ImageViewerPage) => _viewerTransison,
-                nameof(EBookReaderPage) => _viewerTransison,
                 nameof(FolderListupPage) => _listupTransison,
                 nameof(ImageListupPage) => _listupTransison,
                 nameof(SearchResultPage) => _searchTransison,

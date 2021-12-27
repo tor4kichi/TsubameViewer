@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -265,6 +266,18 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
             using var _ = await _this._domUpdateLock.LockAsync(default);
 
+            if (_this.isFirstContent)
+            {
+                await Task.Delay(100);
+                //await Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                //    h => _this.SizeChanged += h,
+                //    h => _this.SizeChanged -= h
+                //    )
+                //    .Take(1)
+                //    .ToAsyncAction()
+                //    .AsTask();
+            }
+
             if (e.NewValue is string newPageHtml && !string.IsNullOrEmpty(newPageHtml))
             {
                 _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
@@ -397,15 +410,16 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 h => Window.Current.SizeChanged -= h
                 )
                 .Where(x => !isFirstContent)
-                .Throttle(TimeSpan.FromMilliseconds(100))
+                .Throttle(TimeSpan.FromMilliseconds(100), CurrentThreadScheduler.Instance)
                 .Where(x => !isFirstContent)
+                .Where(x => this.Visibility == Visibility.Visible)
                 .Subscribe(async args =>
                 {
                     await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
                     {
                         await Task.Delay(50);
                         if (IsLoaded is false) { return; }
-
+                        
                         ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
 
                         using (await _domUpdateLock.LockAsync(default))
@@ -433,6 +447,7 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(50))
+            .Skip(1)
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
             .AddTo(_compositeDisposable);
         }
