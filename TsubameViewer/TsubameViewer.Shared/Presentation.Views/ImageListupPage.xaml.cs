@@ -89,6 +89,10 @@ namespace TsubameViewer.Presentation.Views
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+            this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+            this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+
             try
             {
                 var currentFocus = FocusManager.GetFocusedElement();

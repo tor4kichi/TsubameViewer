@@ -141,6 +141,9 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         protected override void OnDetaching()
         {
+            this.AssociatedObject.GotFocus -= AssociatedObject_GotFocus;
+            this.AssociatedObject.LostFocus -= AssociatedObject_LostFocus;
+
             UINavigationManager.Pressed -= Instance_Pressed;
             UINavigationManager.Holding -= Instance_Holding;
             base.OnDetaching();

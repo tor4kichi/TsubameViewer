@@ -66,7 +66,7 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
 
         private void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
         {
-            if ((args.VirtualKey & Key) != 0)
+            if (args.VirtualKey == Key)
             {
                 IsActive = true;
             }
@@ -74,7 +74,7 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
 
         private void CoreWindow_KeyUp(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
         {
-            if ((args.VirtualKey & Key) != 0)
+            if (args.VirtualKey == Key)
             {
                 IsActive = false;
             }

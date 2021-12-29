@@ -106,6 +106,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\PointToRectConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">

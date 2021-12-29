@@ -23,13 +23,13 @@
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
 
-  <!--
+  
   <i:Interaction.Behaviors>
     <core:EventTriggerBehavior EventName="Unloaded">
-      <core:CallMethodAction TargetObject="{Binding}" MethodName="Dispose" />
+      
     </core:EventTriggerBehavior>
   </i:Interaction.Behaviors>
-  -->
+  
   
   <Page.Resources>
 
@@ -618,7 +618,7 @@
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
@@ -729,7 +729,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -764,7 +764,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>

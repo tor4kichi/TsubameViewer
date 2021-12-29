@@ -8,8 +8,16 @@ using WindowsStateTriggers;
 
 namespace TsubameViewer.Presentation.Views.StateTrigger
 {
-    public sealed class PointerCollisionTrigger : StateTriggerBase, ITriggerValue
+    public sealed class PointerCollisionTrigger : StateTriggerBase, ITriggerValue, IDisposable
     {
+        public void Dispose()
+        {
+            if (Target is not null and var target)
+            {
+                target.PointerMoved -= Item_PointerMoved;
+            }
+        }
+
         public UIElement Target
         {
             get { return (UIElement)GetValue(TargetProperty); }
@@ -47,6 +55,7 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
                 IsActiveChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+
 
         public Rect CollisionRect
         {
