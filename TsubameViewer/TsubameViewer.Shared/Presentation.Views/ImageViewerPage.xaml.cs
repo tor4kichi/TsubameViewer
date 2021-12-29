@@ -229,12 +229,12 @@ namespace TsubameViewer.Presentation.Views
                     await WaitImageLoadingAsync(navigationCt);
 
                     await AnimationBuilder.Create()
-                       .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                       .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
                            .TimedKeyFrames(ke =>
                            {
-                               ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.9f));
-                               ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.95f));
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                            })
                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
                        .StartAsync(ImageItemsControl_0, navigationCt);
@@ -558,7 +558,6 @@ namespace TsubameViewer.Presentation.Views
         private readonly AnimationBuilder ZoomCenterAb = AnimationBuilder.Create();
 
         private const float ControlerZoomCenterMoveAmount = 100.0f;
-
         float GetZoomCenterMoveingFactorForMouseTouch()
         {
             return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
@@ -570,14 +569,27 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+        private Vector2 _CanvasHalfSize;
+
+
         private IDisposable InitializeZoomReaction()
         {
             CurrentZoomFactorIndex = ZoomFactorList.IndexOf(1.0f);
-            ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(ImagesContainer.ActualSize * 0.5f, 0);
+            _CanvasHalfSize = ImagesContainer.ActualSize * 0.5f;
+            ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_CanvasHalfSize, 0);
 
             var scheduler = CoreDispatcherScheduler.Current;
+
             var disposables = new CompositeDisposable(new[]
             {
+                Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                    h => ImagesContainer.SizeChanged += h,
+                    h => ImagesContainer.SizeChanged -= h
+                    )
+                .Subscribe(x => 
+                {
+                    _CanvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
+                }),
                 _vm.ObserveProperty(x => x.CurrentImageIndex)
                 .Subscribe(_ =>
                 {
@@ -601,7 +613,7 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }),
                 this.ObserveDependencyProperty(IsZoomingEnabledProperty)
-                .Subscribe(isEnabledZomming => 
+                .Subscribe(isEnabledZomming =>
                 {
                     if (ZoomFactor > 1.0)
                     {
@@ -631,7 +643,7 @@ namespace TsubameViewer.Presentation.Views
                 }),
             });
 
-            ZoomCenter = ImagesContainer.ActualSize * 0.5f;
+            ZoomCenter = _CanvasHalfSize;
 
             return disposables;
         }
@@ -666,6 +678,7 @@ namespace TsubameViewer.Presentation.Views
                 // ズーム操作と移動操作は排他的に行う
                 if (e.Delta.Scale is not 1.0f)
                 {
+                    // 拡縮開始時との差分で計算する
                     _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
                     var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), MinZoomFactor, MaxZoomFactor);
                     if (nextZoom < 1.0f)
@@ -680,22 +693,20 @@ namespace TsubameViewer.Presentation.Views
                     if (ZoomFactor > 1.0)
                     {
                         ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                        var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
+                        visual.CenterPoint = new Vector3(ZoomCenter, 0);
                     }
-                    else
-                    {
-                        ZoomCenter = ZoomCenter + e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                    }
-
-                    // 移動操作はアニメーションせず、直接変更する
-                    var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
                 }
             }
             else
             {
-                ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                if (ZoomFactor > 1.0)
+                {
+                    // ズームが強くなるほど視点移動速度を下げて「滑ってる感」を小さくしたい
+                    ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                    var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
+                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                }
             }
         }
 
@@ -711,7 +722,7 @@ namespace TsubameViewer.Presentation.Views
                 if (lastZoom < 1.0f && nextZoom >= 1.0f)
                 {
                     nextZoom = 1.0f;
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
                 else if (nextZoom == lastZoom)
                 {
@@ -751,12 +762,12 @@ namespace TsubameViewer.Presentation.Views
                 else if (nextZoom > 1.0f)
                 {
                     // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                    var imageCenterPos = targetUI.ActualSize * 0.5f;
+                    var imageCenterPos = _CanvasHalfSize;
                     nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
                 }
                 else
                 {
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
 
                 ZoomFactor = nextZoom;
@@ -768,7 +779,7 @@ namespace TsubameViewer.Presentation.Views
         public RelayCommand ZoomResetCommand => _ZoomResetCommand
             ??= new RelayCommand(() =>
             {
-                ZoomCenter = ImagesContainer.ActualSize * 0.5f;
+                ZoomCenter = _CanvasHalfSize;
                 ZoomFactor = 1.0;
             });
 
@@ -821,12 +832,12 @@ namespace TsubameViewer.Presentation.Views
                 else if (nextZoom > 1.0f)
                 {
                     // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                    var imageCenterPos = targetUI.ActualSize * 0.5f;
+                    var imageCenterPos = _CanvasHalfSize;
                     nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
                 }
                 else
                 {
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
 
                 ZoomFactor = nextZoom;
