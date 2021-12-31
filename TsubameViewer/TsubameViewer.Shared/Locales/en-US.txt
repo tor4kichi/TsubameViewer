@@ -108,7 +108,7 @@ Page = Page
 
 IsEnablePrefetch = Preloading images
 IsEnableDoubleView = Spread display
-IsLeftBindingView = Left binding display
+IsRightBindingView = Right-open display
 
 SwitchFullScreen = Full screen switching
 DoubleViewCorrectPaging = Correct the page shift of the spread

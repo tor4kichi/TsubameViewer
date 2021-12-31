@@ -78,33 +78,25 @@ namespace TsubameViewer.Presentation.Views
         {
             SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
 
-            SwipeProcessScreen.Tapped -= SwipeProcessScreen_Tapped;
-            SwipeProcessScreen.ManipulationStarting -= SwipeProcessScreen_ManipulationStarting;
-            SwipeProcessScreen.ManipulationStarted -= SwipeProcessScreen_ManipulationStarted; ;
-            SwipeProcessScreen.ManipulationCompleted -= SwipeProcessScreen_ManipulationCompleted;
-            SwipeProcessScreen.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-
+            IntaractionWall.Tapped -= SwipeProcessScreen_Tapped;
+            IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
+            IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
+            IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            //ElementCompositionPreview.GetElementVisual(AnimationUICommandBar).TransformMatrix = Matrix4x4.CreateTranslation(0, (float)AnimationUICommandBar.ActualHeight, 0);
-            AnimationBuilder.Create()
-                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(1))
-                .Start(AnimationUICommandBar);
-            ElementCompositionPreview.GetElementVisual(AnimationUIContainer)
-                .Opacity = 0.0f;
+            CloseBottomUI();
 
-            SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
-            SwipeProcessScreen.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateY | ManipulationModes.TranslateX;
-            SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
-            SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted; ;
-            SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
-            SwipeProcessScreen.ManipulationDelta += ImagesContainer_ManipulationDelta;
+            IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
+            IntaractionWall.Tapped += SwipeProcessScreen_Tapped;
+            IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
+
+            IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
+            IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
 
             SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
         }
-
 
         public bool IsReadyToImageDisplay
         {
@@ -170,14 +162,8 @@ namespace TsubameViewer.Presentation.Views
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
 
-            if ((bool)App.Current.Resources["DebugTVMode"] is true)
-            {
-                Window.Current.SetTitleBar(DraggableTitleBarArea_Xbox);
-            }
-            else
-            {
-                Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
-            }
+            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
 
             var appView = ApplicationView.GetForCurrentView();
@@ -372,145 +358,78 @@ namespace TsubameViewer.Presentation.Views
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (IsZoomingEnabled || _nowZoomCenterMovingWithPointer) { return; }
-
-            var pt = e.GetPosition(RootGrid);
-
-            if (isOnceSkipTapped)
+            if (!_nowZoomCenterMovingWithPointer)
             {
-                var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
-                if (bottomUIItems.Any()) { return; }
+                var pt = e.GetPosition(RootGrid);                
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
 
-                CloseBottomUI();
-                isOnceSkipTapped = false;
-                e.Handled = true;
-                return;
-            }
-
-            var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-            foreach (var item in uiItems)
-            {
-                if (item == RightPageMoveButton)
+                if (!IsOpenBottomMenu && !IsZoomingEnabled)
                 {
-                    if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
+                    var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
+                    foreach (var item in uiItems)
                     {
-                        RightPageMoveButton.Command.Execute(null);
+                        if (item == RightPageMoveButton)
+                        {
+                            if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
+                            {
+                                RightPageMoveButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
+                        else if (item == LeftPageMoveButton)
+                        {
+                            if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
+                            {
+                                LeftPageMoveButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
+                        else if (item == ToggleBottomMenuButton)
+                        {
+                            if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
+                            {
+                                ToggleBottomMenuButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
                     }
                 }
-                else if (item == LeftPageMoveButton)
+                else
                 {
-                    if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                    {
-                        LeftPageMoveButton.Command.Execute(null);
-                    }
-                }
-                else if (item == ToggleBottomMenuButton)
-                {
-                    if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
-                    {
-                        ToggleBottomMenuButton.Command.Execute(null);
-                    }
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
                 }
             }
         }
 
 
-        bool isOnceSkipTapped = false;
-        private void SwipeProcessScreen_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
+        private void ShowBottomUI()
         {
-            if (AnimationUIContainer.Opacity == 1.0)
-            {
-                e.Handled = true;
-                isOnceSkipTapped = true;
-                return;
-            }
+            IsOpenBottomMenu = true;
+            ButtonsContainer.Visibility = Visibility.Visible;
+            ImageSelectorContainer.Visibility = Visibility.Visible;
+            ZoomInButton.Focus(FocusState.Keyboard);
         }
-
-        private void SwipeProcessScreen_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-        {
-            _startZoomFactor = (float)ZoomFactor;
-            _nowZoomCenterMovingWithPointer = true;
-        }
-
-
-        private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            if (IsZoomingEnabled)
-            {
-                IsZoomingEnabled = ZoomFactor != 1.0f;
-
-                _nowZoomCenterMovingWithPointer = false;
-                return;
-            }
-
-            _nowZoomCenterMovingWithPointer = false;
-
-
-            if (e.Cumulative.Translation.X > 60
-                || e.Velocities.Linear.X > 0.75
-                )
-            {
-                // 右スワイプ
-                LeftPageMoveButton.Command.Execute(null);
-            }
-            else if (e.Cumulative.Translation.X < -60
-                || e.Velocities.Linear.X < -0.75
-                )
-            {
-                // 左スワイプ
-                RightPageMoveButton.Command.Execute(null);
-            }
-            else if (e.Cumulative.Translation.Y < -60
-                || e.Velocities.Linear.Y < -0.25
-                )
-            {
-                ToggleOpenCloseBottomUI();
-                e.Handled = true;
-            }
-            else
-            {
-                CloseBottomUI();
-                e.Handled = true;
-            }
-        }
-
-
-
-        private readonly AnimationBuilder _HideUIContainerAb = AnimationBuilder.Create()
-                .Opacity(0, duration: TimeSpan.FromMilliseconds(175));
-        private readonly AnimationBuilder _HideUICommandBarAb = AnimationBuilder.Create();
-
-
-        private readonly AnimationBuilder _ShowUIContainer = AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175));
-
-        private readonly AnimationBuilder _ShowUICommandBarAb = AnimationBuilder.Create()
-            .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175));
-
 
         private void CloseBottomUI()
         {
-            _HideUIContainerAb
-                .Start(AnimationUIContainer);
-
-            _HideUICommandBarAb
-                .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUICommandBar);
+            IsOpenBottomMenu = false;
+            ButtonsContainer.Visibility = Visibility.Collapsed;
+            ImageSelectorContainer.Visibility = Visibility.Collapsed;
         }
 
 
 
         // コントローラー操作用
-        public async void ToggleOpenCloseBottomUI()
+        public void ToggleOpenCloseBottomUI()
         {
-            IsOpenBottomMenu = !IsOpenBottomMenu;
-            if (IsOpenBottomMenu)
+            if (IsOpenBottomMenu == false)
             {
-                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
-                _ShowUIContainer
-                    .Start(AnimationUIContainer);
-                await _ShowUICommandBarAb
-                    .StartAsync(AnimationUICommandBar);
+                ShowBottomUI();
             }
             else
             {
@@ -571,10 +490,14 @@ namespace TsubameViewer.Presentation.Views
 
         private Vector2 _CanvasHalfSize;
 
+        private int GetDefaultZoomFactorListIndex()
+        {
+            return ZoomFactorList.IndexOf(1.0f);
+        }
 
         private IDisposable InitializeZoomReaction()
         {
-            CurrentZoomFactorIndex = ZoomFactorList.IndexOf(1.0f);
+            CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
             _CanvasHalfSize = ImagesContainer.ActualSize * 0.5f;
             ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_CanvasHalfSize, 0);
 
@@ -619,27 +542,6 @@ namespace TsubameViewer.Presentation.Views
                     {
                         _ = _vm.DisableImageDecodeWhenImageSmallerCanvasSize();
                     }
-
-                    // タッチ操作
-                    IntaractionWall.Visibility = ZoomFactor > 1.0 ? Visibility.Visible : Visibility.Collapsed;
-                    if (IntaractionWall.Visibility == Visibility.Visible)
-                    {
-                        IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-                        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-                        IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
-
-                        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
-                        IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-                    }
-                    else
-                    {
-                        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-
-                        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
-                    }
                 }),
             });
 
@@ -650,15 +552,54 @@ namespace TsubameViewer.Presentation.Views
 
         private void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
+            bool isMoveCenter = _nowZoomCenterMovingWithPointer;
             _nowZoomCenterMovingWithPointer = false;
+
+            if (IsZoomingEnabled)
+            {
+                IsZoomingEnabled = ZoomFactor != 1.0f;
+
+                if (isMoveCenter is false)
+                {
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
+                }
+            }
+            else
+            {
+                if (e.Cumulative.Translation.X > 60
+                    || e.Velocities.Linear.X > 0.75
+                    )
+                {
+                    // 右スワイプ
+                    LeftPageMoveButton.Command.Execute(null);
+                }
+                else if (e.Cumulative.Translation.X < -60
+                    || e.Velocities.Linear.X < -0.75
+                    )
+                {
+                    // 左スワイプ
+                    RightPageMoveButton.Command.Execute(null);
+                }
+                else if (e.Cumulative.Translation.Y < -60
+                    || e.Velocities.Linear.Y < -0.25
+                    )
+                {
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
+                }
+                else
+                {
+                    CloseBottomUI();
+                    e.Handled = true;
+                }
+            }
         }
 
         bool _nowZoomCenterMovingWithPointer;
 
         private void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
-            ZoomCenter = e.Position.ToVector2();
-
             _startZoomFactor = (float)ZoomFactor;
             _nowZoomCenterMovingWithPointer = true;
         }
@@ -667,11 +608,6 @@ namespace TsubameViewer.Presentation.Views
         float _sumScale;
         private void ImagesContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            if (IsOpenBottomMenu)
-            {
-                return;
-            }
-
             var factor = GetZoomCenterMoveingFactorForMouseTouch();
             if (e.PointerDeviceType is PointerDeviceType.Touch)
             {
@@ -779,6 +715,7 @@ namespace TsubameViewer.Presentation.Views
         public RelayCommand ZoomResetCommand => _ZoomResetCommand
             ??= new RelayCommand(() =>
             {
+                CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
                 ZoomCenter = _CanvasHalfSize;
                 ZoomFactor = 1.0;
             });
@@ -880,6 +817,7 @@ namespace TsubameViewer.Presentation.Views
             });
 
         RelayCommand _ZoomCenterMoveDownCommand;
+
         public RelayCommand ZoomCenterMoveDownCommand => _ZoomCenterMoveDownCommand
             ??= new RelayCommand(() =>
             {

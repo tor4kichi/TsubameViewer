@@ -108,7 +108,7 @@ Page = ページ
 
 IsEnablePrefetch = 画像の先行読み込み
 IsEnableDoubleView = 見開き表示
-IsLeftBindingView = 左綴じ表示
+IsRightBindingView = 右開き表示
 
 SwitchFullScreen = 全画面切替
 DoubleViewCorrectPaging = 見開きのページズレを補正する

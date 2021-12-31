@@ -156,6 +156,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerSettings ImageViewerSettings { get; }
 
+        public ReactivePropertySlim<bool> IsRightBindingEnabled { get; }
+        public ReactiveCommand ToggleRightBindingCommand { get; }
+
+        public ReactivePropertySlim<bool> IsDoubleViewEnabled { get; }
+        public ReactiveCommand ToggleDoubleViewCommand { get; }
+
+        public ReactivePropertySlim<double> DefaultZoom { get; }
+
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -218,7 +226,56 @@ namespace TsubameViewer.Presentation.ViewModels
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
                 .AddTo(_disposables);
             IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
-                .AddTo(_disposables);            
+                .AddTo(_disposables);
+
+            IsRightBindingEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
+
+            ToggleRightBindingCommand = new ReactiveCommand().AddTo(_disposables);
+            ToggleRightBindingCommand.Subscribe(() => 
+            {
+                static bool SwapIfDoubleView(BitmapImage[] images)
+                {
+                    if (images.Any() && images.Length == 2)
+                    {
+                        (images[0], images[1]) = (images[1], images[0]);
+
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                IsRightBindingEnabled.Value = !IsRightBindingEnabled.Value;                
+                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value);
+
+                if (SwapIfDoubleView(DisplayImages_0))
+                {
+                    RaisePropertyChanged(nameof(DisplayImages_0));
+                }
+                if (SwapIfDoubleView(DisplayImages_1))
+                {
+                    RaisePropertyChanged(nameof(DisplayImages_1));
+                }
+                if (SwapIfDoubleView(DisplayImages_2))
+                {
+                    RaisePropertyChanged(nameof(DisplayImages_2));
+                }
+            }).AddTo(_disposables);
+            IsDoubleViewEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged)
+                .AddTo(_disposables);
+            ToggleDoubleViewCommand = new ReactiveCommand()
+                .AddTo(_disposables);
+            ToggleDoubleViewCommand.Subscribe(async () => 
+            {
+                IsDoubleViewEnabled.Value = !IsDoubleViewEnabled.Value;
+                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value);
+                Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
+                await ResetImageIndex(CurrentImageIndex);
+            })
+                .AddTo(_disposables);
+            DefaultZoom = new ReactivePropertySlim<double>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
         }
 
 
@@ -331,6 +388,11 @@ namespace TsubameViewer.Presentation.ViewModels
                             SelectedFileSortType.Value = DefaultFileSortType;
                             IsSortWithTitleDigitCompletion.Value = false;
                         }
+
+
+                        (IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value) 
+                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
+                        
                     }
                 }
             }
@@ -433,20 +495,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
                     _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Name);
                 }).AddTo(_navigationDisposables);
-
-            new [] 
-            {
-                ImageViewerSettings.ObserveProperty(x => x.IsEnableDoubleView, isPushCurrentValueAtFirst: false).ToUnit(),
-                ImageViewerSettings.ObserveProperty(x => x.IsLeftBindingView, isPushCurrentValueAtFirst: false).ToUnit(),
-            }
-                .Merge()
-                .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
-                .Subscribe(async _ =>
-                {
-                    Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
-                    await ResetImageIndex(CurrentImageIndex);
-                })
-                .AddTo(_navigationDisposables);
 
             Observable.CombineLatest(
                 IsSortWithTitleDigitCompletion,
@@ -637,7 +685,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 catch (OperationCanceledException)
                 {
-                    int requestImageCount = ImageViewerSettings.IsEnableDoubleView ? 2 : 1;
+                    int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
                     CurrentImageIndex = direction switch
                     {
                         IndexMoveDirection.Refresh => CurrentImageIndex,
@@ -820,7 +868,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async ValueTask<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
         {
-            int requestImageCount = ImageViewerSettings.IsEnableDoubleView ? 2 : 1;
+            int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
             int lastRequestImageCount = GetCurrentDisplayImageCount();
 
             var (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, currentIndex, Images.Length);
@@ -866,7 +914,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private async ValueTask<ImageDoubleViewCulcResult> CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(IEnumerable<IImageSource> candidateImages, CancellationToken ct)
         {
-            if (ImageViewerSettings.IsEnableDoubleView)
+            if (IsDoubleViewEnabled.Value)
             {
                 if (candidateImages.Count() == 1)
                 {
@@ -1038,52 +1086,56 @@ namespace TsubameViewer.Presentation.ViewModels
         public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
         {
             var ct = _imageLoadingCts.Token;
-            using (await _imageLoadingLock.LockAsync(ct))
+            try
             {
-                // 現在表示中の画像がデコード済みだった場合だけ、デコードしていない画像として読み込む
-
-                var images = GetDisplayImages(PrefetchIndexType.Current);
-                if (images.Any(x => x == null) || images.All(x => x.DecodePixelHeight == 0 && x.DecodePixelWidth == 0))
-                {                    
-                    return;
-                }
-
-                var indexType = GetDisplayImageIndex(PrefetchIndexType.Current);
-                if (NowDoubleImageView)
+                using (await _imageLoadingLock.LockAsync(ct))
                 {
-                    BitmapImage image1 = images[0];
-                    BitmapImage image2 = images[1];
+                    // 現在表示中の画像がデコード済みだった場合だけ、デコードしていない画像として読み込む
 
-                    var imageSource1 = _sourceImagesDouble[indexType][0];
-                    var imageSource2 = _sourceImagesDouble[indexType][1];
-
-                    if (image1.DecodePixelHeight != 0)
-                    {                        
-                        using var loader1 = new PrefetchImageInfo(imageSource1);
-                        image1 = await loader1.GetBitmapImageAsync(ct);
-                        Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
-                    }
-                    if (image2.DecodePixelHeight != 0)
+                    var images = GetDisplayImages(PrefetchIndexType.Current);
+                    if (images.Any(x => x == null) || images.All(x => x.DecodePixelHeight == 0 && x.DecodePixelWidth == 0))
                     {
-                        using var loader2 = new PrefetchImageInfo(imageSource2);
-                        image2 = await loader2.GetBitmapImageAsync(ct);
-                        Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
+                        return;
                     }
-                    
-                    SetDisplayImages_Internal(PrefetchIndexType.Current,
-                        imageSource1, image1,
-                        imageSource2, image2
-                        );
-                }
-                else
-                {
-                    var imageSource1 = _sourceImagesSingle[indexType][0];
-                    using var loader1 = new PrefetchImageInfo(imageSource1);
-                    SetDisplayImages_Internal(PrefetchIndexType.Current,
-                        imageSource1, await loader1.GetBitmapImageAsync(ct)
-                        );
+
+                    var indexType = GetDisplayImageIndex(PrefetchIndexType.Current);
+                    if (NowDoubleImageView)
+                    {
+                        BitmapImage image1 = images[0];
+                        BitmapImage image2 = images[1];
+
+                        var imageSource1 = _sourceImagesDouble[indexType][0];
+                        var imageSource2 = _sourceImagesDouble[indexType][1];
+
+                        if (image1.DecodePixelHeight != 0)
+                        {
+                            using var loader1 = new PrefetchImageInfo(imageSource1);
+                            image1 = await loader1.GetBitmapImageAsync(ct);
+                            Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
+                        }
+                        if (image2.DecodePixelHeight != 0)
+                        {
+                            using var loader2 = new PrefetchImageInfo(imageSource2);
+                            image2 = await loader2.GetBitmapImageAsync(ct);
+                            Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
+                        }
+
+                        SetDisplayImages_Internal(PrefetchIndexType.Current,
+                            imageSource1, image1,
+                            imageSource2, image2
+                            );
+                    }
+                    else
+                    {
+                        var imageSource1 = _sourceImagesSingle[indexType][0];
+                        using var loader1 = new PrefetchImageInfo(imageSource1);
+                        SetDisplayImages_Internal(PrefetchIndexType.Current,
+                            imageSource1, await loader1.GetBitmapImageAsync(ct)
+                            );
+                    }
                 }
             }
+            catch (OperationCanceledException) { }
         }
 
         
@@ -1146,7 +1198,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
         {
-            if (ImageViewerSettings.IsLeftBindingView is false)
+            if (IsRightBindingEnabled.Value is false)
             {
                 (firstImage, secondImage) = (secondImage, firstImage);
                 (firstSource, secondSource) = (secondSource, firstSource);
@@ -1284,7 +1336,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][1];
-            if (ImageViewerSettings.IsLeftBindingView is false)
+            if (IsRightBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
@@ -1323,7 +1375,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][1];
-            if (ImageViewerSettings.IsLeftBindingView is false)
+            if (IsRightBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
@@ -1574,6 +1626,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ExecuteChangePageFolderCommand(string pageName)
         {
+            if (string.IsNullOrEmpty(pageName)) { return; }
+
             var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(pageName));
             if (pageFirstItem == null) { return; }
 
