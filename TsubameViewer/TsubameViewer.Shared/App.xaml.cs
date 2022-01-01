@@ -222,14 +222,9 @@ namespace TsubameViewer
             await base.OnStartAsync(args);
         }
 
-        public override async void OnInitialized()
+
+        private async ValueTask UpdateMigrationAsync()
         {
-            using var releaser = await _InitializeLock.LockAsync(default);
-
-#if DEBUG
-            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
-#endif
-
             if (SystemInformation.Instance.IsAppUpdated)
             {
                 // Note: IsFirstRunを条件とした場合、設定をクリアされた結果として次回起動時が必ずIsFirstRunに引っかかってしまうことに注意
@@ -273,6 +268,12 @@ namespace TsubameViewer
                 });
             }
 
+
+        }
+
+        public async Task MaintenanceAsync()
+        {
+
             Type[] launchTimeMaintenanceTypes = new[]
             {
                 // v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、
@@ -300,7 +301,7 @@ namespace TsubameViewer
                             restorable.Maintenance();
                             Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
                         }
-                        catch 
+                        catch
                         {
                             Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
                         }
@@ -325,6 +326,19 @@ namespace TsubameViewer
                     }
                 }
             });
+        }
+
+        public override async void OnInitialized()
+        {
+            using var releaser = await _InitializeLock.LockAsync(default);
+
+#if DEBUG
+            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+#endif
+
+            await UpdateMigrationAsync();
+
+            await MaintenanceAsync();
 
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 

@@ -456,7 +456,7 @@ namespace TsubameViewer.Presentation.ViewModels
             
             if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName))
             {
-                if (parameters.TryGetValue<string>(PageNavigationConstants.ArchiveFolderName, out string folderName))
+                if (parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string folderName))
                 {
                     var unescapedFolderName = Uri.UnescapeDataString(folderName);
                     var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
