@@ -421,7 +421,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
             // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
-            if (IsIgnoredPathExact(tokenStorageItem.Path))
+            if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
             {
                 tokenEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
                 if (tokenEntry == null)
