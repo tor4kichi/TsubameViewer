@@ -156,8 +156,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ImageViewerSettings ImageViewerSettings { get; }
 
-        public ReactivePropertySlim<bool> IsRightBindingEnabled { get; }
-        public ReactiveCommand ToggleRightBindingCommand { get; }
+        public ReactivePropertySlim<bool> IsLeftBindingEnabled { get; }
+        public ReactiveCommand ToggleLeftBindingCommand { get; }
 
         public ReactivePropertySlim<bool> IsDoubleViewEnabled { get; }
         public ReactiveCommand ToggleDoubleViewCommand { get; }
@@ -228,10 +228,10 @@ namespace TsubameViewer.Presentation.ViewModels
             IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
                 .AddTo(_disposables);
 
-            IsRightBindingEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
+            IsLeftBindingEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
 
-            ToggleRightBindingCommand = new ReactiveCommand().AddTo(_disposables);
-            ToggleRightBindingCommand.Subscribe(() => 
+            ToggleLeftBindingCommand = new ReactiveCommand().AddTo(_disposables);
+            ToggleLeftBindingCommand.Subscribe(() => 
             {
                 static bool SwapIfDoubleView(BitmapImage[] images)
                 {
@@ -247,8 +247,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
 
-                IsRightBindingEnabled.Value = !IsRightBindingEnabled.Value;                
-                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value);
+                IsLeftBindingEnabled.Value = !IsLeftBindingEnabled.Value;                
+                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
 
                 if (SwapIfDoubleView(DisplayImages_0))
                 {
@@ -270,7 +270,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ToggleDoubleViewCommand.Subscribe(async () => 
             {
                 IsDoubleViewEnabled.Value = !IsDoubleViewEnabled.Value;
-                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value);
+                ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
                 Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
                 await ResetImageIndex(CurrentImageIndex);
             })
@@ -390,7 +390,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
 
-                        (IsDoubleViewEnabled.Value, IsRightBindingEnabled.Value, DefaultZoom.Value) 
+                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value) 
                             = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
                         
                     }
@@ -1198,7 +1198,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
         {
-            if (IsRightBindingEnabled.Value is false)
+            if (IsLeftBindingEnabled.Value is false)
             {
                 (firstImage, secondImage) = (secondImage, firstImage);
                 (firstSource, secondSource) = (secondSource, firstSource);
@@ -1336,7 +1336,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][1];
-            if (IsRightBindingEnabled.Value is false)
+            if (IsLeftBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
@@ -1375,7 +1375,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][1];
-            if (IsRightBindingEnabled.Value is false)
+            if (IsLeftBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }

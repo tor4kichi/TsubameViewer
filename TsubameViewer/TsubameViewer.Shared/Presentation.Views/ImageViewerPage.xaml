@@ -156,9 +156,9 @@
       </XamlUICommand.KeyboardAccelerators>
     </XamlUICommand>
 
-    <XamlUICommand x:Key="RightBindingToggleUICommand" Command="{x:Bind _vm.ToggleRightBindingCommand}"
-                   Label="{i18nExt:Localize Key=IsRightBindingView}"
-                   Description="{i18nExt:Localize Key=IsRightBindingView}"
+    <XamlUICommand x:Key="LeftBindingToggleUICommand" Command="{x:Bind _vm.ToggleLeftBindingCommand}"
+                   Label="{i18nExt:Localize Key=IsLeftBindingView}"
+                   Description="{i18nExt:Localize Key=IsLeftBindingView}"
                    >
       <XamlUICommand.IconSource>
         <SymbolIconSource Symbol="Forward" />
@@ -536,8 +536,8 @@
         </ToggleButton.Content>
       </ToggleButton>
 
-      <ToggleButton x:Name="RightBindingToggleButton" IsChecked="{x:Bind _vm.IsRightBindingEnabled.Value, Mode=OneWay}" 
-                    Command="{StaticResource RightBindingToggleUICommand}">
+      <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" 
+                    Command="{StaticResource LeftBindingToggleUICommand}">
         <ToggleButton.Content>
           <SymbolIcon Symbol="Forward" />
         </ToggleButton.Content>
@@ -948,7 +948,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsRightBindingEnabled.Value, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />

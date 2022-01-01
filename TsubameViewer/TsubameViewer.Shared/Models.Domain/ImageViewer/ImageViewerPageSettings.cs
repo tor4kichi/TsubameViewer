@@ -14,7 +14,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _settingsPerPathRepository = new SettingsPerPathRepository(liteDatabase);
 
             _IsReverseImageFliping_MouseWheel = Read(false, nameof(IsReverseImageFliping_MouseWheel));
-            _IsRightBindingView = Read(false, nameof(IsRightBindingView));
+            _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
             _IsEnableDoubleView = Read(true, nameof(IsEnableDoubleView));
             _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
         }
@@ -27,11 +27,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
         // 見開き表示時に左綴じとしてページを並べる
-        private bool _IsRightBindingView;
-        public bool IsRightBindingView
+        private bool _IsLeftBindingView;
+        public bool IsLeftBindingView
         {
-            get => _IsRightBindingView;
-            set => SetProperty(ref _IsRightBindingView, value);
+            get => _IsLeftBindingView;
+            set => SetProperty(ref _IsLeftBindingView, value);
         }
 
         // 見開き表示
@@ -51,30 +51,30 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         }
 
 
-        public (bool IsDoubleView, bool IsRightBinding, double DefaultZoom) GetViewerSettingsPerPath(string path)
+        public (bool IsDoubleView, bool IsLeftBinding, double DefaultZoom) GetViewerSettingsPerPath(string path)
         {
             var entry = _settingsPerPathRepository.FindByPath(path);
             if (entry != null)
             {
                 return (entry.IsEnableDoubleView ?? this.IsEnableDoubleView, 
-                    entry.IsRightBindingView ?? IsRightBindingView, 
+                    entry.IsLeftBindingView ?? IsLeftBindingView, 
                     entry.DefaultZoom ?? 1.0
                     );
             }
             else
             {
-                return (this.IsEnableDoubleView, this.IsRightBindingView, 1.0);
+                return (this.IsEnableDoubleView, this.IsLeftBindingView, 1.0);
             }
         }
 
-        public void SetViewerSettingsPerPath(string path, bool? isDoubleView, bool? isRightBinding, double? defaultZoom)
+        public void SetViewerSettingsPerPath(string path, bool? isDoubleView, bool? isLeftBinding, double? defaultZoom)
         {
             _settingsPerPathRepository.UpdateItem(new SettingsPerPathEntry() 
             {
                 Path = path,
                 DefaultZoom = defaultZoom,
                 IsEnableDoubleView = isDoubleView,
-                IsRightBindingView = isRightBinding,
+                IsLeftBindingView = isLeftBinding,
             });
         }
 
@@ -89,7 +89,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public string Path { get; init; }
 
             public bool? IsEnableDoubleView { get; init; }
-            public bool? IsRightBindingView { get; init; }
+            public bool? IsLeftBindingView { get; init; }
             public double? DefaultZoom { get; init; }
         }
 
