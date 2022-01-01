@@ -406,6 +406,10 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        private string ToPercentage(double val)
+        {
+            return (val * 100).ToString("F0");
+        }
 
         private void ShowBottomUI()
         {

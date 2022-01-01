@@ -18,7 +18,11 @@
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
   xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing" 
-  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
+  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" 
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:behaviours="using:Microsoft.Toolkit.Uwp.UI.Behaviors"
+  xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -448,7 +452,7 @@
     </Grid>
 
     <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
-
+    
     <!-- ボタン類 -->
     <StackPanel x:Name="ButtonsContainer" 
                 Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"  
@@ -631,6 +635,52 @@
 
     </Border>
 
+    <Grid x:Name="ZoomingControlUI" Visibility="Collapsed"
+          Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"
+          Windows10version1903:Translation="0, 0, 16"
+          VerticalAlignment="Top"
+          HorizontalAlignment="Center"
+          Margin="16 48 16 0"
+          Padding="16 8"
+          CornerRadius="8"
+          IsHitTestVisible="False"
+          >
+      <Windows10version1903:Grid.Shadow>
+        <ThemeShadow />
+      </Windows10version1903:Grid.Shadow>
+
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1.0" Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0" Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <animation:Explicit.Animations>
+        <animation:AnimationSet x:Name="ShowWithinButtonsContainer">
+          <animation:TranslationAnimation To="0, 56" EasingType="Cubic" Duration="0:0:0.175" />
+        </animation:AnimationSet>
+        <animation:AnimationSet x:Name="ShowWithoutButtonsContainer">
+          <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+        </animation:AnimationSet>
+      </animation:Explicit.Animations>
+
+
+      <i:Interaction.Behaviors>
+        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Visible" >
+          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithinButtonsContainer}" />
+        </core:DataTriggerBehavior>
+        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Collapsed" >
+          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithoutButtonsContainer}" />
+        </core:DataTriggerBehavior>
+      </i:Interaction.Behaviors>
+
+
+      <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" >
+        x<Run Text="{x:Bind ZoomFactor, Mode=OneWay}" />
+      </TextBlock>
+    </Grid>
+    
     <!-- 補助コントロールUI（デスクトップ） -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="1.0" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" >
       <Grid.RenderTransform>
@@ -737,6 +787,7 @@
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
             <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
@@ -811,6 +862,19 @@
             <Setter Target="ContentContainer.Margin" Value="0 32 0 0" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="-1" />
             <Setter Target="ContentContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      
+      <!-- 拡大縮小 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ZoomingControlUI.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -923,7 +987,7 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ButtonsContainer.Margin" Value="80 48 80 64" />
+            <Setter Target="ButtonsContainer.Margin" Value="0 48 0 64" />
             <Setter Target="ImageSelectorContainer.Margin" Value="0 32" />
           </VisualState.Setters>
         </VisualState>
