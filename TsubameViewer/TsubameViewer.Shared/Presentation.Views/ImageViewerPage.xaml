@@ -998,6 +998,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
+            <Setter Target="Toolbar_Desktop.Background" Value="Transparent" />
           </VisualState.Setters>
         </VisualState>
 
