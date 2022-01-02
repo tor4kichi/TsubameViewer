@@ -677,7 +677,7 @@
 
 
       <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" >
-        x<Run Text="{x:Bind ZoomFactor, Mode=OneWay}" />
+        x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
       </TextBlock>
     </Grid>
     

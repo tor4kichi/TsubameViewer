@@ -855,7 +855,10 @@ namespace TsubameViewer.Presentation.Views
             DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(DefaultZoomingDuration));
 
 
-
+        private string ToDisplayString(double zoomFactor)
+        {
+            return zoomFactor.ToString("F1");
+        }
 
         public double ZoomFactor
         {
