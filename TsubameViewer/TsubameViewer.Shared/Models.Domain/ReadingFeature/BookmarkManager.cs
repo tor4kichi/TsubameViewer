@@ -12,6 +12,12 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
     {
         public float Value { get; set; }
 
+        // Note: デフォルトコンストラクタを定義していないとx86 リリースモード時にエラーが
+        public NormalizedPagePosition()
+        {
+            Value = 0f;
+        }
+
         public NormalizedPagePosition(float normalized)
         {
             Value = Math.Clamp(normalized, 0.0f, 1.0f);
@@ -105,7 +111,16 @@ namespace TsubameViewer.Models.Domain.ReadingFeature
             public float GetBookmarkLastReadPositionInNormalized(string path)
             {
                 var bookmark = _collection.FindOne(x => x.Path == path);
-                return bookmark?.Position.Value ?? 0.0f;
+                // Note: bookmark?.Position.Value ?? 0f; と書くと
+                //       x86 のリリースモードで System.InvalidCastException が発生する
+                if (bookmark == null)
+                {
+                    return 0f;
+                }
+                else
+                {
+                    return bookmark.Position.Value;
+                }
             }
 
             public bool IsBookmarked(string path)

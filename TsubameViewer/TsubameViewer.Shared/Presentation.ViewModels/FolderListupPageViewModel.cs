@@ -237,7 +237,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
 
-                if (_currentPath != null && parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                if (_currentPath != null && 
+                    parameters.ContainsKey(PageNavigationConstants.Path) &&  parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
@@ -343,13 +344,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var mode = parameters.GetNavigationMode();
 
-                _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
+                _currentArchiveFolderName = parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)
                     : null
                     ;
 
 
-                if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                if (parameters.TryGetValueSafe(PageNavigationConstants.Path, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (_sourceStorageItemsRepository.IsIgnoredPath(unescapedPath))

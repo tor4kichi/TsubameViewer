@@ -331,7 +331,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var mode = parameters.GetNavigationMode();
 
-                _currentArchiveFolderName = parameters.TryGetValue(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
+                _currentArchiveFolderName = parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
                     ? Uri.UnescapeDataString(archiveFolderName)
                     : null
                     ;

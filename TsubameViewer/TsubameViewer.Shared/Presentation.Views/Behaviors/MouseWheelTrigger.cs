@@ -146,11 +146,12 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
 		private void Unregister()
 		{
-			var fe = this.AssociatedObject as FrameworkElement;
-			if (fe == null) { return; }
-			fe.Unloaded -= this.Fe_Unloaded;
-
 			Window.Current.CoreWindow.PointerWheelChanged -= CoreWindow_PointerWheelChanged;
+
+			if (this.AssociatedObject is FrameworkElement fe)
+            {
+				fe.Unloaded -= this.Fe_Unloaded;
+			}
 		}
 
 
@@ -158,6 +159,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
 		private void Fe_Unloaded(object sender, RoutedEventArgs e)
 		{
+			(sender as FrameworkElement).Unloaded -= this.Fe_Unloaded;
 			this.Unregister();
 		}
 	}

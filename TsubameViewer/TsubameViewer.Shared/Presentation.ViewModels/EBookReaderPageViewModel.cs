@@ -412,7 +412,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                     if (hrefAttr != null)
                                     {
                                         var hrefValue = hrefAttr.Value.Split("/").Last();
-                                        if (_currentBook.Content.Css.TryGetValue(hrefValue, out var cssContent))
+                                        if (_currentBook.Content.Css.FirstOrDefault(x => x.Key.EndsWith(hrefValue)).Value is not null and var cssContent)
                                         {
                                             var parent = node.ParentNode;
                                             parent.RemoveChild(node);
@@ -539,13 +539,19 @@ namespace TsubameViewer.Presentation.ViewModels
             _currentBook = epubBook;
             _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
 
-            TocItems = _currentBook.Schema.Package.EpubVersion switch
+            if (_currentBook.Schema.Epub2Ncx != null)
             {
-                VersOne.Epub.Schema.EpubVersion.EPUB_2 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
-                VersOne.Epub.Schema.EpubVersion.EPUB_3_0 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
-                VersOne.Epub.Schema.EpubVersion.EPUB_3_1 => _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList(),
-                _ => throw new NotSupportedException()
-            };
+                TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
+            }
+            else if (_currentBook.Schema.Epub3NavDocument != null)
+            {
+                var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.StructuralSemanticsProperty.TOC);
+                TocItems = toc.Ol.Lis.Select(x => new TocItemViewModel() { Id = x.Anchor.Href, Label = x.Anchor.Text }).ToList();
+            }
+            else
+            {
+
+            }
 
             SelectedTocItem = TocItems.FirstOrDefault();
 

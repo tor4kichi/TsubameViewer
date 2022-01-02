@@ -108,7 +108,7 @@ Page = 页
 
 IsEnablePrefetch = 预加载图片
 IsEnableDoubleView = 点差显示
-IsLeftBindingView = 左绑定显示
+IsLeftBindingView = 左开显示
 
 SwitchFullScreen = 全屏切换
 DoubleViewCorrectPaging = 纠正传播的页面偏移

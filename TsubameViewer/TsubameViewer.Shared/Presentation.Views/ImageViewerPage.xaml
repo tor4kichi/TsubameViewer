@@ -18,87 +18,38 @@
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
   xmlns:models="using:TsubameViewer.Models.Domain.FolderItemListing" 
-  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" 
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:behaviours="using:Microsoft.Toolkit.Uwp.UI.Behaviors"
+  xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
+  xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
 
-  <!--
+  
   <i:Interaction.Behaviors>
     <core:EventTriggerBehavior EventName="Unloaded">
-      <core:CallMethodAction TargetObject="{Binding}" MethodName="Dispose" />
+      
     </core:EventTriggerBehavior>
   </i:Interaction.Behaviors>
-  -->
+  
   
   <Page.Resources>
 
     <myConv:SliderValueChangedEventArgsConverter x:Key="SliderValueChangedEventArgsConverter" />
 
-    <Flyout x:Key="SettingsFlyout">
-      <StackPanel Spacing="16">
-
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnablePrefetch, Mode=TwoWay}"
-                    Header="{Binding Source=IsEnablePrefetch, Converter={StaticResource LocalizeConverter}}"
-                    />
-
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=TwoWay}"
-                    Header="{Binding Source=IsReverseImageFliping_MouseWheel, Converter={StaticResource LocalizeConverter}}"
-                    />
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsReverseImageFliping_Button, Mode=TwoWay}"
-                    Header="{Binding Source=IsReverseImageFliping_Button, Converter={StaticResource LocalizeConverter}}"
-                    />
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsEnableDoubleView, Mode=TwoWay}"
-                    Header="{Binding Source=IsEnableDoubleView, Converter={StaticResource LocalizeConverter}}"
-                    />
-        <ToggleSwitch IsOn="{Binding ImageViewerSettings.IsLeftBindingView, Mode=TwoWay}"
-                    Header="{Binding Source=IsLeftBindingView, Converter={StaticResource LocalizeConverter}}"
-                    />
-
-      </StackPanel>
-    </Flyout>
+    <MenuFlyout x:Key="OtherSettingsFlyout" Placement="BottomEdgeAlignedRight">
+      <MenuFlyoutItem Text="No Item" IsEnabled="False" />
+    </MenuFlyout>
 
     <Flyout x:Key="PageFlyout">
 
       <StackPanel Spacing="16">
 
-        <ComboBox x:Name="PageFolderNamesSelector"
-                  ItemsSource="{Binding PageFolderNames}"
-                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                  SelectionChangedTrigger="Committed"
-                  Header="{Binding Source=CurrentFolder_InArchive, Converter={StaticResource LocalizeConverter}}"
-                  MinWidth="240"
-                  Visibility="Collapsed"
-                  Margin="0 0 0 16"
-                  >
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
-              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-        </ComboBox>
-
         
-        <Slider x:Name="PageSelector"
-                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                Width="240"
-                Minimum="0"
-                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                TickFrequency="1"
-                StepFrequency="1"
-                Header="{Binding Source=Page, Converter={StaticResource LocalizeConverter}}"
-                Margin="4 0"
-                Padding="0"
-                >
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="ValueChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-        </Slider>
+        
+        
 
         <TextBlock Text="{i18nExt:Localize Key=FileSortTitle}" />
         <DropDownButton x:Name="FileSortButton" 
@@ -147,28 +98,98 @@
 
         <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
-
-        <Button x:Name="DoubleViewCorrectButton" Content="{i18nExt:Localize Key=DoubleViewCorrectPaging}" Command="{Binding DoubleViewCorrectCommand}" Visibility="Collapsed"
-                Margin="0 16 0 0"
-                />
-
-
       </StackPanel>
     </Flyout>
 
+    
 
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
-      <MenuFlyoutItem Text="{Binding Source=SwitchFullScreen, Converter={StaticResource LocalizeConverter}}" Command="{Binding ToggleFullScreenCommand}"
+      <MenuFlyoutItem Command="{StaticResource FullScreenToggleUICommand}"
                       x:Name="SwitchFullScreeMenuItem"
                       Visibility="Collapsed"
                       >
-        <MenuFlyoutItem.KeyboardAccelerators>
-          <KeyboardAccelerator Key="F11" IsEnabled="False" />
-        </MenuFlyoutItem.KeyboardAccelerators>
       </MenuFlyoutItem>
     </MenuFlyout>
 
+    <XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
+                   Label="{i18nExt:Localize Key=ZoomReset}"   
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Zoom" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
 
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+    
+    <XamlUICommand x:Key="ZoomInUICommand" Command="{x:Bind ZoomUpWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomIn}"   
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomIn" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="ZoomOutUICommand" Command="{x:Bind ZoomDownWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomOut}"                   
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomOut" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+
+    <XamlUICommand x:Key="FullScreenToggleUICommand" Command="{x:Bind _vm.ToggleFullScreenCommand}"
+                   Label="{i18nExt:Localize Key=SwitchFullScreen}"     
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="FullScreen" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F11" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="LeftBindingToggleUICommand" Command="{x:Bind _vm.ToggleLeftBindingCommand}"
+                   Label="{i18nExt:Localize Key=IsLeftBindingView}"
+                   Description="{i18nExt:Localize Key=IsLeftBindingView}"
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Forward" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+    
+    <XamlUICommand x:Key="DoubleViewToggleUICommand" Command="{x:Bind _vm.ToggleDoubleViewCommand}"
+                   Label="{i18nExt:Localize Key=IsEnableDoubleView}"
+                   Description="{i18nExt:Localize Key=IsEnableDoubleView}"
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="TwoPage" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+
+    <XamlUICommand x:Key="DoubleViewCorrectUICommand" Command="{x:Bind _vm.DoubleViewCorrectCommand}"
+                   Label="{i18nExt:Localize Key=DoubleViewCorrectPaging}"
+                   Description="{i18nExt:Localize Key=DoubleViewCorrectPaging}"
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Page2" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+    
   </Page.Resources>
 
   <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
@@ -179,8 +200,6 @@
         ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
         >
     
-    
-
     <i:Interaction.Behaviors>
       
       <!-- Mouse Input-->
@@ -255,17 +274,7 @@
 
     </i:Interaction.Behaviors>
 
-    <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
-         そのため、非表示のButtonのKeyboardAcceleratorsを利用する
-    -->
-    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
-      <Button.KeyboardAccelerators>
-        <KeyboardAccelerator Key="F11" />
-      </Button.KeyboardAccelerators>
-    </Button>
-
-    <Grid x:Name="ContentContainer"
-            >
+    <Grid x:Name="ContentContainer">
       <Grid.RenderTransform>
         <TranslateTransform />
       </Grid.RenderTransform>
@@ -342,7 +351,7 @@
 
 
     <!-- コントロールUI（共通）-->
-    <Grid x:Name="UIContainer" Margin="0 48 0 32">
+    <Grid x:Name="UIContainer" >
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="3*" />
         <ColumnDefinition Width="4*" />
@@ -391,7 +400,6 @@
 
       </Button>
 
-
       <Button x:Name="ToggleBottomMenuButton"
               Command="{x:Bind ToggleBottomMenuCommand}" 
               Grid.Column="1"
@@ -402,8 +410,6 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden" />
-
-
 
       <Button x:Name="RightPageMoveButton"
         Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}"
@@ -445,72 +451,245 @@
       </Button>
     </Grid>
 
+    <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
+    
+    <!-- ボタン類 -->
+    <StackPanel x:Name="ButtonsContainer" 
+                Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"  
+                Grid.ColumnSpan="3"
+                VerticalAlignment="Top" 
+                HorizontalAlignment="Center"
+                IsHitTestVisible="True"
+                CornerRadius="8"
+                Orientation="Horizontal"
+                Padding="4 4"
+                Margin="0 48 0 0"
+                Spacing="4"             
+                Windows10version1903:Translation="0, 0, 16"
+                >
+      <Windows10version1903:StackPanel.Shadow>
+        <ThemeShadow  />
+      </Windows10version1903:StackPanel.Shadow>
 
-    <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" Visibility="Collapsed">
+      <animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, -64" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <StackPanel.Resources>
+        <Style TargetType="Button">
+          <Setter Property="Height" Value="40" />
+          <Setter Property="Width" Value="40" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="CornerRadius" Value="4" />
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style TargetType="ToggleButton">
+          <Setter Property="Height" Value="40" />
+          <Setter Property="Width" Value="40" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="CornerRadius" Value="4" />
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style TargetType="SymbolIcon">
+          <Setter Property="RenderTransformOrigin" Value="0.5, 0.5" />
+          <Setter Property="RenderTransform">
+            <Setter.Value>
+              <ScaleTransform ScaleX="0.8" ScaleY="0.8" />
+            </Setter.Value>
+          </Setter>
+        </Style>
+      </StackPanel.Resources>
+
+      <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}">
+        <SymbolIcon Symbol="Clear" />
+      </Button>
+
+      <Border Width="12" />
+
+      <Button x:Name="ZoomResetButton" Command="{StaticResource ZoomResetUICommand}">
+        <SymbolIcon Symbol="Zoom" />
+      </Button>
+
+      <Button x:Name="ZoomInButton" Command="{StaticResource ZoomInUICommand}">
+        <SymbolIcon Symbol="ZoomIn" />
+      </Button>
+
+      <Button x:Name="ZoomOutButton" Command="{StaticResource ZoomOutUICommand}">
+        <SymbolIcon Symbol="ZoomOut" />
+      </Button>
+
+      <Button x:Name="DoubleViewCorrectButton" 
+              Command="{StaticResource DoubleViewCorrectUICommand}"
+              IsEnabled="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}">
+        <Button.Content>
+          <SymbolIcon Symbol="Page2" />
+        </Button.Content>
+      </Button>
+
+      <ToggleButton x:Name="DoubleViewToggleButton" IsChecked="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}" 
+                    Command="{StaticResource DoubleViewToggleUICommand}">
+        <ToggleButton.Content>
+          <SymbolIcon Symbol="TwoPage" />
+        </ToggleButton.Content>
+      </ToggleButton>
+
+      <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" 
+                    Command="{StaticResource LeftBindingToggleUICommand}">
+        <ToggleButton.Content>
+          <SymbolIcon Symbol="Forward" />
+        </ToggleButton.Content>
+      </ToggleButton>
+      <Button x:Name="ImagesSortButton" Flyout="{StaticResource PageFlyout}" >
+        <Button.Content>
+          <SymbolIcon Symbol="Sort" />
+        </Button.Content>
+      </Button>
+
       
-    </Grid>
-    
-
-    
-
-    
-    <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
-    <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
-      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0"          
-          >
-       
-      </Grid>
-
-      <Grid x:Name="DraggableTitleBarArea_Xbox" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top" />
-
-      <uwpControls:DockPanel x:Name="AnimationUICommandBar" VerticalAlignment="Bottom" Padding="32" Background="{ThemeResource ApplicationContentBackgroundBrush}" IsHitTestVisible="True">
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left" >
-          <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Height="48" Width="60"
-                  XYFocusRight="{x:Bind ImageNavigationFlyoutButton}"
+      <Button x:Name="OthersSettingsButton" Flyout="{StaticResource OtherSettingsFlyout}"
+              XYFocusLeft="{x:Bind ImagesSortButton}"
+              Visibility="Collapsed"
                   >
-            <SymbolIcon Symbol="Back">
-              <SymbolIcon.RenderTransform>
-                <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-              </SymbolIcon.RenderTransform>
-            </SymbolIcon>
-          </Button>
-        </StackPanel>
+        <SymbolIcon Symbol="More" />
+      </Button>
 
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="16">
-          <Button x:Name="ImageNavigationFlyoutButton" Flyout="{StaticResource PageFlyout}" Height="48" Background="Transparent" 
-                  XYFocusLeft="{x:Bind BottomUIBackNavigationButton}"
-                  XYFocusRight="{x:Bind BottomUISettingsFlyoutButton}"
+    </StackPanel>
+
+
+
+    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}" 
+              Grid.ColumnSpan="3"
+              VerticalAlignment="Bottom"
+              HorizontalAlignment="Center"
+              MinWidth="500"
+              CornerRadius="8"
+              Margin="0 0 0 16"
+            Windows10version1903:Translation="0, 0, 16"
+              >
+
+      <Windows10version1903:Border.Shadow>
+        <ThemeShadow  />
+      </Windows10version1903:Border.Shadow>
+      
+      <animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, 120" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <uwpControls:DockPanel Margin="24 8 24 4">
+
+        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
+             XYFocus*を使って強制的に移動先を指定している 
+        -->
+        <ComboBox x:Name="PageFolderNamesSelector" uwpControls:DockPanel.Dock="Top"
+                  ItemsSource="{Binding PageFolderNames}"
+                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                  SelectionChangedTrigger="Committed"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0 4"
                   >
-            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="16" Margin="8 0 0 0" TextDecorations="Underline">
-                    <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
-            </TextBlock>
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="SelectionChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
 
-          </Button>
-          <Button x:Name="BottomUISettingsFlyoutButton" Flyout="{StaticResource SettingsFlyout}" Height="48" Width="60"
-                  XYFocusLeft="{x:Bind ImageNavigationFlyoutButton}"
-                  >
-            <SymbolIcon Symbol="Setting" />
-          </Button>
-
-        </StackPanel>
+        </ComboBox>
 
 
-        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="16" Margin="16 0" >
-              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+        <Slider x:Name="PageSelector" uwpControls:DockPanel.Dock="Bottom"
+                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Minimum="0"
+                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                TickFrequency="1"
+                StepFrequency="1"
+                Padding="0"     
+                Margin="0 0"       
+                XYFocusDown="{x:Bind PageFolderNamesSelector}"
+                >
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="ValueChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+        </Slider>
+
+        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" uwpControls:DockPanel.Dock="Right">
+           <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+        </TextBlock>
+
+        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" >
+           <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" />
         </TextBlock>
 
       </uwpControls:DockPanel>
+
+    </Border>
+
+    <Grid x:Name="ZoomingControlUI" Visibility="Collapsed"
+          Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"
+          Windows10version1903:Translation="0, 0, 16"
+          VerticalAlignment="Top"
+          HorizontalAlignment="Center"
+          Margin="16 48 16 0"
+          Padding="16 8"
+          CornerRadius="8"
+          IsHitTestVisible="False"
+          >
+      <Windows10version1903:Grid.Shadow>
+        <ThemeShadow />
+      </Windows10version1903:Grid.Shadow>
+
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1.0" Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0" Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <animation:Explicit.Animations>
+        <animation:AnimationSet x:Name="ShowWithinButtonsContainer">
+          <animation:TranslationAnimation To="0, 56" EasingType="Cubic" Duration="0:0:0.175" />
+        </animation:AnimationSet>
+        <animation:AnimationSet x:Name="ShowWithoutButtonsContainer">
+          <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+        </animation:AnimationSet>
+      </animation:Explicit.Animations>
+
+
+      <i:Interaction.Behaviors>
+        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Visible" >
+          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithinButtonsContainer}" />
+        </core:DataTriggerBehavior>
+        <core:DataTriggerBehavior Binding="{x:Bind ButtonsContainer.Visibility, Mode=OneWay}" Value="Collapsed" >
+          <behaviours:StartAnimationAction Animation="{Binding ElementName=ShowWithoutButtonsContainer}" />
+        </core:DataTriggerBehavior>
+      </i:Interaction.Behaviors>
+
+
+      <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" >
+        x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
+      </TextBlock>
     </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="1.0" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed" >
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="1.0" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" >
       <Grid.RenderTransform>
         <TranslateTransform Y="-1" />
       </Grid.RenderTransform>
 
       <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent"  Height="32" VerticalAlignment="Top" />
 
-      <uwpControls:DockPanel>
+      <uwpControls:DockPanel x:Name="TopBarContainer" Visibility="Collapsed">
         <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
           <SymbolIcon Symbol="Back">
             <SymbolIcon.RenderTransform>
@@ -519,31 +698,20 @@
           </SymbolIcon>
         </Button>
 
-        <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0"
+        <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="0 0 0 0"
                 uwpControls:DockPanel.Dock="Right" Margin="0 6 184 6"
                 />
 
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="8">
-          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
-            <SymbolIcon Symbol="Setting" />
-          </Button>
+          <Button Height="40" MaxWidth="120" Background="Transparent" Command="{StaticResource FullScreenToggleUICommand}" />
         </StackPanel>
 
-        <Button Flyout="{StaticResource PageFlyout}"  uwpControls:DockPanel.Dock="Right" VerticalAlignment="Stretch" Margin="0 0 0 1" Padding="8 0">
-          <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
-            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" 
-                         Visibility="{x:Bind _vm.PageFolderName, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}"
-                         >
-                <Run Text="{x:Bind _vm.PageFolderName, Mode=OneWay}" /> -
-            </TextBlock>
-            <TextBlock uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" >
-                <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" /> - <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
-            </TextBlock>
-          </StackPanel>
-        </Button>
-        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" Margin="8 0" IsHitTestVisible="False">
+        <StackPanel Orientation="Horizontal" Spacing="4">
+
+          <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" Margin="8 0" IsHitTestVisible="False">
               <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-        </TextBlock>
+          </TextBlock>
+        </StackPanel>
       </uwpControls:DockPanel>
     </Grid>
 
@@ -618,7 +786,8 @@
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
@@ -697,6 +866,19 @@
         </VisualState>
       </VisualStateGroup>
       
+      
+      <!-- 拡大縮小 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ZoomingControlUI.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!--見開き補正 -->
       <VisualStateGroup>
         <VisualState>
@@ -709,27 +891,11 @@
         </VisualState>
       </VisualStateGroup>
 
-      <!-- ページの表示順序を反転 -->
-      <!-- ItemsRepeaterにはFlowDirectionが指定できないので、ViewModel側で処理している
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsLeftBindingView, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ImageContainerPanel_0.FlowDirection" Value="LeftToRight" />
-            <Setter Target="ImageContainerPanel_1.FlowDirection" Value="LeftToRight" />
-            <Setter Target="ImageContainerPanel_2.FlowDirection" Value="LeftToRight" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-      -->
-
       <!-- マウススクロールのページ送り -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -764,7 +930,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
@@ -782,7 +948,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_Button, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
@@ -804,10 +970,10 @@
         <VisualState>
           <VisualState.StateTriggers>
             <!-- x:BindでバインディングしようとするとXaml internal Compile error: C9999 -->
-            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="1" Comparison="GreaterThan" />
+            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="0" Comparison="Equal" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PageFolderNamesSelector.Visibility" Value="Visible" />
+            <Setter Target="PageFolderNamesSelector.Visibility" Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -821,8 +987,8 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
-            <Setter Target="AnimationUICommandBar.Padding" Value="80 32 80 64" />
+            <Setter Target="ButtonsContainer.Margin" Value="0 48 0 64" />
+            <Setter Target="ImageSelectorContainer.Margin" Value="0 32" />
           </VisualState.Setters>
         </VisualState>
         
@@ -831,8 +997,8 @@
             <wst:UserInteractionModeTrigger InteractionMode="Touch" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
+            <Setter Target="Toolbar_Desktop.Background" Value="Transparent" />
           </VisualState.Setters>
         </VisualState>
 
@@ -841,7 +1007,7 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
+            <Setter Target="TopBarContainer.Visibility" Value="Visible" />
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
             
           </VisualState.Setters>

@@ -78,33 +78,25 @@ namespace TsubameViewer.Presentation.Views
         {
             SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
 
-            SwipeProcessScreen.Tapped -= SwipeProcessScreen_Tapped;
-            SwipeProcessScreen.ManipulationStarting -= SwipeProcessScreen_ManipulationStarting;
-            SwipeProcessScreen.ManipulationStarted -= SwipeProcessScreen_ManipulationStarted; ;
-            SwipeProcessScreen.ManipulationCompleted -= SwipeProcessScreen_ManipulationCompleted;
-            SwipeProcessScreen.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-
+            IntaractionWall.Tapped -= SwipeProcessScreen_Tapped;
+            IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
+            IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
+            IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            //ElementCompositionPreview.GetElementVisual(AnimationUICommandBar).TransformMatrix = Matrix4x4.CreateTranslation(0, (float)AnimationUICommandBar.ActualHeight, 0);
-            AnimationBuilder.Create()
-                .Translation(Axis.Y, (float)AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(1))
-                .Start(AnimationUICommandBar);
-            ElementCompositionPreview.GetElementVisual(AnimationUIContainer)
-                .Opacity = 0.0f;
+            CloseBottomUI();
 
-            SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
-            SwipeProcessScreen.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateY | ManipulationModes.TranslateX;
-            SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
-            SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted; ;
-            SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
-            SwipeProcessScreen.ManipulationDelta += ImagesContainer_ManipulationDelta;
+            IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
+            IntaractionWall.Tapped += SwipeProcessScreen_Tapped;
+            IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
+
+            IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
+            IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
 
             SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
         }
-
 
         public bool IsReadyToImageDisplay
         {
@@ -170,14 +162,8 @@ namespace TsubameViewer.Presentation.Views
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = true;
 
-            if ((bool)App.Current.Resources["DebugTVMode"] is true)
-            {
-                Window.Current.SetTitleBar(DraggableTitleBarArea_Xbox);
-            }
-            else
-            {
-                Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
-            }
+            Window.Current.SetTitleBar(DraggableTitleBarArea_Desktop);
+
             Windows.UI.Core.SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = Windows.UI.Core.AppViewBackButtonVisibility.Collapsed;
 
             var appView = ApplicationView.GetForCurrentView();
@@ -229,12 +215,12 @@ namespace TsubameViewer.Presentation.Views
                     await WaitImageLoadingAsync(navigationCt);
 
                     await AnimationBuilder.Create()
-                       .CenterPoint(new Vector2((float)ImageItemsControl_0.ActualWidth * 0.5f, (float)ImageItemsControl_0.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                       .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
                            .TimedKeyFrames(ke =>
                            {
-                               ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.9f));
-                               ke.KeyFrame(TimeSpan.FromMilliseconds(250), new(1.0f));
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(0), new(0.95f));
+                               ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                            })
                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
                        .StartAsync(ImageItemsControl_0, navigationCt);
@@ -372,145 +358,82 @@ namespace TsubameViewer.Presentation.Views
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (IsZoomingEnabled || _nowZoomCenterMovingWithPointer) { return; }
-
-            var pt = e.GetPosition(RootGrid);
-
-            if (isOnceSkipTapped)
+            if (!_nowZoomCenterMovingWithPointer)
             {
-                var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
-                if (bottomUIItems.Any()) { return; }
+                var pt = e.GetPosition(RootGrid);                
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
 
-                CloseBottomUI();
-                isOnceSkipTapped = false;
-                e.Handled = true;
-                return;
-            }
-
-            var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-            foreach (var item in uiItems)
-            {
-                if (item == RightPageMoveButton)
+                if (!IsOpenBottomMenu && !IsZoomingEnabled)
                 {
-                    if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
+                    var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
+                    foreach (var item in uiItems)
                     {
-                        RightPageMoveButton.Command.Execute(null);
+                        if (item == RightPageMoveButton)
+                        {
+                            if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
+                            {
+                                RightPageMoveButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
+                        else if (item == LeftPageMoveButton)
+                        {
+                            if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
+                            {
+                                LeftPageMoveButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
+                        else if (item == ToggleBottomMenuButton)
+                        {
+                            if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
+                            {
+                                ToggleBottomMenuButton.Command.Execute(null);
+                                e.Handled = true;
+                                break;
+                            }
+                        }
                     }
                 }
-                else if (item == LeftPageMoveButton)
+                else
                 {
-                    if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                    {
-                        LeftPageMoveButton.Command.Execute(null);
-                    }
-                }
-                else if (item == ToggleBottomMenuButton)
-                {
-                    if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
-                    {
-                        ToggleBottomMenuButton.Command.Execute(null);
-                    }
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
                 }
             }
         }
 
-
-        bool isOnceSkipTapped = false;
-        private void SwipeProcessScreen_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
+        private string ToPercentage(double val)
         {
-            if (AnimationUIContainer.Opacity == 1.0)
-            {
-                e.Handled = true;
-                isOnceSkipTapped = true;
-                return;
-            }
+            return (val * 100).ToString("F0");
         }
 
-        private void SwipeProcessScreen_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+        private void ShowBottomUI()
         {
-            _startZoomFactor = (float)ZoomFactor;
-            _nowZoomCenterMovingWithPointer = true;
+            IsOpenBottomMenu = true;
+            ButtonsContainer.Visibility = Visibility.Visible;
+            ImageSelectorContainer.Visibility = Visibility.Visible;
+            ZoomInButton.Focus(FocusState.Keyboard);
         }
-
-
-        private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            if (IsZoomingEnabled)
-            {
-                IsZoomingEnabled = ZoomFactor != 1.0f;
-
-                _nowZoomCenterMovingWithPointer = false;
-                return;
-            }
-
-            _nowZoomCenterMovingWithPointer = false;
-
-
-            if (e.Cumulative.Translation.X > 60
-                || e.Velocities.Linear.X > 0.75
-                )
-            {
-                // 右スワイプ
-                LeftPageMoveButton.Command.Execute(null);
-            }
-            else if (e.Cumulative.Translation.X < -60
-                || e.Velocities.Linear.X < -0.75
-                )
-            {
-                // 左スワイプ
-                RightPageMoveButton.Command.Execute(null);
-            }
-            else if (e.Cumulative.Translation.Y < -60
-                || e.Velocities.Linear.Y < -0.25
-                )
-            {
-                ToggleOpenCloseBottomUI();
-                e.Handled = true;
-            }
-            else
-            {
-                CloseBottomUI();
-                e.Handled = true;
-            }
-        }
-
-
-
-        private readonly AnimationBuilder _HideUIContainerAb = AnimationBuilder.Create()
-                .Opacity(0, duration: TimeSpan.FromMilliseconds(175));
-        private readonly AnimationBuilder _HideUICommandBarAb = AnimationBuilder.Create();
-
-
-        private readonly AnimationBuilder _ShowUIContainer = AnimationBuilder.Create()
-                .Opacity(1.0, duration: TimeSpan.FromMilliseconds(175));
-
-        private readonly AnimationBuilder _ShowUICommandBarAb = AnimationBuilder.Create()
-            .Translation(Axis.Y, 0, duration: TimeSpan.FromMilliseconds(175));
-
 
         private void CloseBottomUI()
         {
-            _HideUIContainerAb
-                .Start(AnimationUIContainer);
-
-            _HideUICommandBarAb
-                .Translation(Axis.Y, AnimationUICommandBar.ActualHeight, duration: TimeSpan.FromMilliseconds(175))
-                .Start(AnimationUICommandBar);
+            IsOpenBottomMenu = false;
+            ButtonsContainer.Visibility = Visibility.Collapsed;
+            ImageSelectorContainer.Visibility = Visibility.Collapsed;
         }
 
 
 
         // コントローラー操作用
-        public async void ToggleOpenCloseBottomUI()
+        public void ToggleOpenCloseBottomUI()
         {
-            IsOpenBottomMenu = !IsOpenBottomMenu;
-            if (IsOpenBottomMenu)
+            if (IsOpenBottomMenu == false)
             {
-                ImageNavigationFlyoutButton.Focus(FocusState.Keyboard);
-                _ShowUIContainer
-                    .Start(AnimationUIContainer);
-                await _ShowUICommandBarAb
-                    .StartAsync(AnimationUICommandBar);
+                ShowBottomUI();
             }
             else
             {
@@ -558,7 +481,6 @@ namespace TsubameViewer.Presentation.Views
         private readonly AnimationBuilder ZoomCenterAb = AnimationBuilder.Create();
 
         private const float ControlerZoomCenterMoveAmount = 100.0f;
-
         float GetZoomCenterMoveingFactorForMouseTouch()
         {
             return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
@@ -570,14 +492,31 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+        private Vector2 _CanvasHalfSize;
+
+        private int GetDefaultZoomFactorListIndex()
+        {
+            return ZoomFactorList.IndexOf(1.0f);
+        }
+
         private IDisposable InitializeZoomReaction()
         {
-            CurrentZoomFactorIndex = ZoomFactorList.IndexOf(1.0f);
-            ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(ImagesContainer.ActualSize * 0.5f, 0);
+            CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+            _CanvasHalfSize = ImagesContainer.ActualSize * 0.5f;
+            ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_CanvasHalfSize, 0);
 
             var scheduler = CoreDispatcherScheduler.Current;
+
             var disposables = new CompositeDisposable(new[]
             {
+                Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                    h => ImagesContainer.SizeChanged += h,
+                    h => ImagesContainer.SizeChanged -= h
+                    )
+                .Subscribe(x => 
+                {
+                    _CanvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
+                }),
                 _vm.ObserveProperty(x => x.CurrentImageIndex)
                 .Subscribe(_ =>
                 {
@@ -601,52 +540,70 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }),
                 this.ObserveDependencyProperty(IsZoomingEnabledProperty)
-                .Subscribe(isEnabledZomming => 
+                .Subscribe(isEnabledZomming =>
                 {
                     if (ZoomFactor > 1.0)
                     {
                         _ = _vm.DisableImageDecodeWhenImageSmallerCanvasSize();
                     }
-
-                    // タッチ操作
-                    IntaractionWall.Visibility = ZoomFactor > 1.0 ? Visibility.Visible : Visibility.Collapsed;
-                    if (IntaractionWall.Visibility == Visibility.Visible)
-                    {
-                        IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-                        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-                        IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
-
-                        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
-                        IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-                    }
-                    else
-                    {
-                        IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
-
-                        IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
-                        IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
-                    }
                 }),
             });
 
-            ZoomCenter = ImagesContainer.ActualSize * 0.5f;
+            ZoomCenter = _CanvasHalfSize;
 
             return disposables;
         }
 
         private void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
+            bool isMoveCenter = _nowZoomCenterMovingWithPointer;
             _nowZoomCenterMovingWithPointer = false;
+
+            if (IsZoomingEnabled)
+            {
+                IsZoomingEnabled = ZoomFactor != 1.0f;
+
+                if (isMoveCenter is false)
+                {
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
+                }
+            }
+            else
+            {
+                if (e.Cumulative.Translation.X > 60
+                    || e.Velocities.Linear.X > 0.75
+                    )
+                {
+                    // 右スワイプ
+                    LeftPageMoveButton.Command.Execute(null);
+                }
+                else if (e.Cumulative.Translation.X < -60
+                    || e.Velocities.Linear.X < -0.75
+                    )
+                {
+                    // 左スワイプ
+                    RightPageMoveButton.Command.Execute(null);
+                }
+                else if (e.Cumulative.Translation.Y < -60
+                    || e.Velocities.Linear.Y < -0.25
+                    )
+                {
+                    ToggleOpenCloseBottomUI();
+                    e.Handled = true;
+                }
+                else
+                {
+                    CloseBottomUI();
+                    e.Handled = true;
+                }
+            }
         }
 
         bool _nowZoomCenterMovingWithPointer;
 
         private void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
-            ZoomCenter = e.Position.ToVector2();
-
             _startZoomFactor = (float)ZoomFactor;
             _nowZoomCenterMovingWithPointer = true;
         }
@@ -655,17 +612,13 @@ namespace TsubameViewer.Presentation.Views
         float _sumScale;
         private void ImagesContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            if (IsOpenBottomMenu)
-            {
-                return;
-            }
-
             var factor = GetZoomCenterMoveingFactorForMouseTouch();
             if (e.PointerDeviceType is PointerDeviceType.Touch)
             {
                 // ズーム操作と移動操作は排他的に行う
                 if (e.Delta.Scale is not 1.0f)
                 {
+                    // 拡縮開始時との差分で計算する
                     _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
                     var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), MinZoomFactor, MaxZoomFactor);
                     if (nextZoom < 1.0f)
@@ -680,22 +633,20 @@ namespace TsubameViewer.Presentation.Views
                     if (ZoomFactor > 1.0)
                     {
                         ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                        var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
+                        visual.CenterPoint = new Vector3(ZoomCenter, 0);
                     }
-                    else
-                    {
-                        ZoomCenter = ZoomCenter + e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                    }
-
-                    // 移動操作はアニメーションせず、直接変更する
-                    var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
                 }
             }
             else
             {
-                ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
-                var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
-                visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                if (ZoomFactor > 1.0)
+                {
+                    // ズームが強くなるほど視点移動速度を下げて「滑ってる感」を小さくしたい
+                    ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                    var visual = ElementCompositionPreview.GetElementVisual(ImagesContainer);
+                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                }
             }
         }
 
@@ -711,7 +662,7 @@ namespace TsubameViewer.Presentation.Views
                 if (lastZoom < 1.0f && nextZoom >= 1.0f)
                 {
                     nextZoom = 1.0f;
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
                 else if (nextZoom == lastZoom)
                 {
@@ -751,12 +702,12 @@ namespace TsubameViewer.Presentation.Views
                 else if (nextZoom > 1.0f)
                 {
                     // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                    var imageCenterPos = targetUI.ActualSize * 0.5f;
+                    var imageCenterPos = _CanvasHalfSize;
                     nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
                 }
                 else
                 {
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
 
                 ZoomFactor = nextZoom;
@@ -768,7 +719,8 @@ namespace TsubameViewer.Presentation.Views
         public RelayCommand ZoomResetCommand => _ZoomResetCommand
             ??= new RelayCommand(() =>
             {
-                ZoomCenter = ImagesContainer.ActualSize * 0.5f;
+                CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+                ZoomCenter = _CanvasHalfSize;
                 ZoomFactor = 1.0;
             });
 
@@ -821,12 +773,12 @@ namespace TsubameViewer.Presentation.Views
                 else if (nextZoom > 1.0f)
                 {
                     // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                    var imageCenterPos = targetUI.ActualSize * 0.5f;
+                    var imageCenterPos = _CanvasHalfSize;
                     nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
                 }
                 else
                 {
-                    nextCenter = targetUI.ActualSize * 0.5f;
+                    nextCenter = _CanvasHalfSize;
                 }
 
                 ZoomFactor = nextZoom;
@@ -869,6 +821,7 @@ namespace TsubameViewer.Presentation.Views
             });
 
         RelayCommand _ZoomCenterMoveDownCommand;
+
         public RelayCommand ZoomCenterMoveDownCommand => _ZoomCenterMoveDownCommand
             ??= new RelayCommand(() =>
             {
@@ -902,7 +855,10 @@ namespace TsubameViewer.Presentation.Views
             DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(DefaultZoomingDuration));
 
 
-
+        private string ToDisplayString(double zoomFactor)
+        {
+            return zoomFactor.ToString("F1");
+        }
 
         public double ZoomFactor
         {

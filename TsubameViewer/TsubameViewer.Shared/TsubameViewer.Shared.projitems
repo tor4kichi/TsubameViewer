@@ -73,6 +73,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\NavigationParametersExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
@@ -106,6 +107,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\PointToRectConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
