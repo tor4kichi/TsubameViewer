@@ -202,7 +202,7 @@ namespace TsubameViewer.Presentation.Views
                     {
                         // ConnectedAnimation中に依存プロパティを変更してしまうと
                         // VisualState.StateTriggers が更新されないので待機する
-                        await Task.Delay(connectedAnimationService.DefaultDuration);
+                        await Task.Delay(connectedAnimationService.DefaultDuration + TimeSpan.FromMilliseconds(150));
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -228,8 +228,7 @@ namespace TsubameViewer.Presentation.Views
             }
             catch (OperationCanceledException) { }
 
-            _dispatcherQueue.TryEnqueue(() => IsReadyToImageDisplay = true);
-            
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.High, () => IsReadyToImageDisplay = true);            
         }
 
         private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
