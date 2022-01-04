@@ -46,7 +46,7 @@ ProcessingThumbnailCache = 削除操作を処理中
 
 
 
-ImageViewerSettings = 画像ビューワーの設定
+ImageViewerSettings = 画像ビューアの設定
 IsReverseImageFliping_MouseWheel = スクロールのページ送りを逆にする
 IsReverseImageFliping_Button = 左右のページ送りを逆にする
 
