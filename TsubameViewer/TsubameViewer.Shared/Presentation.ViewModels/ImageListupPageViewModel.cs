@@ -217,8 +217,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public StorageItemViewModel GetLastIntractItem()
         {
+
             var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(_currentItem.Path);
             if (lastIntaractItem == null) { return null; }
+
+            Debug.WriteLine($"last intaraction item restore, folderPath: {_currentItem.Path}, itemPath: {lastIntaractItem}");
 
             foreach (var item in ImageFileItems)
             {
@@ -233,7 +236,14 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public void SetLastIntractItem(StorageItemViewModel itemVM)
         {
+            Debug.WriteLine($"last intaraction item saved, folderPath: {DisplayCurrentPath}, itemPath: {itemVM.Path}");
+
             _folderLastIntractItemManager.SetLastIntractItemName(DisplayCurrentPath, itemVM.Path);
+        }
+
+        public void ClearLastIntractItem()
+        {
+            _folderLastIntractItemManager.Remove(DisplayCurrentPath);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -244,6 +254,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             base.OnNavigatedFrom(parameters);
         }
+
+        
 
 
         void ClearCurrentContent()

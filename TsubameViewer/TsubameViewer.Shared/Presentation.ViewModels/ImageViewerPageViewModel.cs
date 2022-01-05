@@ -495,7 +495,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var imageSource = Images[imageIndex];
                     UpdateDisplayName(imageSource);
                     _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
-                    _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Name);
+                    _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
                 }).AddTo(_navigationDisposables);
 
             Observable.CombineLatest(

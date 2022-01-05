@@ -62,7 +62,7 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="IsHitTestVisible" Value="True" />
       <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SystemAccentColor}" />
-      <Setter Property="FocusVisualPrimaryThickness" Value="2" />
+      <Setter Property="FocusVisualPrimaryThickness" Value="3" />
     </Style>
     
     <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">

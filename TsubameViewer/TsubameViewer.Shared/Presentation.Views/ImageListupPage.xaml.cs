@@ -27,6 +27,7 @@ using Windows.UI.Xaml.Media.Animation;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Threading;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -87,83 +88,120 @@ namespace TsubameViewer.Presentation.Views
 
         #region 初期フォーカス設定
 
+        CancellationTokenSource _navigationCts;
+      
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = null;
 
-            try
+            if (e.SourcePageType != typeof(ImageViewerPage))
             {
-                var currentFocus = FocusManager.GetFocusedElement();
-                if (currentFocus is FrameworkElement fe
-                    && fe.DataContext is StorageItemViewModel itemVM)
+                if (_vm.DisplayCurrentPath is not null)
                 {
-                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
-                        new LastIntractInfo()
-                        {
-                            ItemPath = itemVM.Path,
-                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                        };
-
-                    _vm.SetLastIntractItem(itemVM);
+                    _vm.ClearLastIntractItem();
                 }
-                else if (_vm.DisplayCurrentPath is not null)
-                {
-                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
-                        new LastIntractInfo()
-                        {
-                            ItemPath = null,
-                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                        };
-
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
             }
 
             base.OnNavigatingFrom(e);
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            if (e.NavigationMode == NavigationMode.New)
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = new CancellationTokenSource();
+            var ct = _navigationCts.Token;
+            ItemsScrollViewer.Opacity = 0.01;
+            try
             {
-                var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-                if (settings.IsForceEnableXYNavigation
-                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                    )
+                if (e.NavigationMode == NavigationMode.New)
                 {
-                    if (GetCurrentDisplayItemsRepeater() is not null and var currentItemsRepeater 
-                        && currentItemsRepeater.ItemsSource != null
-                        && currentItemsRepeater.FindDescendant<Control>() is not null and var firstItem
-                        )
-                    {
-                        firstItem.Focus(FocusState.Keyboard);
-                    }
-                    else
-                    {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                    await ResetScrollPosition(ct);
 
-                        this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-
-                        this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    if (IsRequireSetFocus())
+                    {
+                        var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
+                        if (firstItem != null)
+                        {
+                            (firstItem as Control)?.Focus(FocusState.Keyboard);
+                        }
+                        else
+                        {
+                            ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        }
                     }
                 }
+                else
+                {
+                    await BringIntoViewLastIntractItem(ct);
+                }
             }
-            else
+            catch (OperationCanceledException) { }
+            finally
             {
-                BringIntoViewLastIntractItem();
+                ItemsScrollViewer.Opacity = 1.0;
             }
         }
+
+
+        private bool IsRequireSetFocus()
+        {
+            _FolderListingSettings ??= new Models.Domain.FolderItemListing.FolderListingSettings();
+            return _FolderListingSettings.IsForceEnableXYNavigation
+                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV;
+        }
+
+
+        private void SaveScrollStatus(UIElement target)
+        {
+            if (target is FrameworkElement fe
+                        && fe.DataContext is StorageItemViewModel itemVM)
+            {
+                _vm.SetLastIntractItem(itemVM);
+            }
+        }
+
+        private async Task<UIElement> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
+        {
+            while (_vm == null || _vm.NowProcessing)
+            {
+                await Task.Delay(1, ct);
+            }
+
+            UIElement lastIntractItem = null;
+            var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
+            foreach (int count in Enumerable.Range(0, 1000))
+            {
+                lastIntractItem = currentItemsRepeater.TryGetElement(index);
+                if (lastIntractItem is not null)
+                {
+                    await Task.Delay(50, ct);
+
+                    break;
+                }
+
+                await Task.Delay(1, ct);
+            }
+            return lastIntractItem;
+        }
+
+
+        private async Task ResetScrollPosition(CancellationToken ct)
+        {
+            var lastIntractItem = await WaitTargetIndexItemLoadingAsync(0, ct);
+            ItemsScrollViewer.ChangeView(null, 0.0, null, disableAnimation: true);
+
+            if (IsRequireSetFocus() && lastIntractItem is Control control)
+            {
+                control.Focus(FocusState.Keyboard);
+            }
+        }
+
 
         private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
@@ -183,45 +221,11 @@ namespace TsubameViewer.Presentation.Views
             else { return null; }
         }
 
-        Dictionary<string, LastIntractInfo> _PathToLastIntractMap = new();
-        public async void BringIntoViewLastIntractItem()
+        public async Task BringIntoViewLastIntractItem(CancellationToken ct)
         {
             while (_vm == null || _vm.NowProcessing)
             {
-                await Task.Delay(10);
-            }
-
-            async void SetFocusToItem(StorageItemViewModel itemVM, bool withScroll = false)
-            {
-                var lastIntractItemIndex = _vm.FileItemsView.IndexOf(itemVM);
-                if (lastIntractItemIndex > 0)
-                {
-                    UIElement lastIntractItem = null;
-                    var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
-                    foreach (int count in Enumerable.Range(0, 10))                    
-                    {
-                        lastIntractItem = currentItemsRepeater.TryGetElement(lastIntractItemIndex);
-                        if (lastIntractItem is not null)
-                        {
-                            break;
-                        }
-                        await Task.Delay(100);
-                    }
-
-                    if (lastIntractItem is Control control) 
-                    {
-                        if (withScroll)
-                        {
-                            var transform = lastIntractItem.TransformToVisual(ItemsScrollViewer);
-                            var pt = transform.TransformPoint(new Point(0, 0));
-                            ItemsScrollViewer.ChangeView(null, pt.Y, null);
-
-                            await Task.Delay(100);
-                        }
-
-                        control.Focus(FocusState.Keyboard);
-                    }
-                }
+                await Task.Delay(1, ct);
             }
 
             if (_vm.DisplayCurrentPath == null)
@@ -229,26 +233,26 @@ namespace TsubameViewer.Presentation.Views
                 return;
             }
 
-            if (_PathToLastIntractMap.Remove(_vm.DisplayCurrentPath, out LastIntractInfo info) is false)
+            if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
             {
-                if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
+                var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
+                if (lastIntractItemIndex > 0)
                 {
-                    SetFocusToItem(lastIntractItemVM, withScroll: true);                    
+                    UIElement lastIntractItem = await WaitTargetIndexItemLoadingAsync(lastIntractItemIndex, ct);
+                    if (lastIntractItem is Control control)
+                    {
+                        var transform = lastIntractItem.TransformToVisual(ItemsScrollViewer);
+                        var pt = transform.TransformPoint(new Point(0, 0));
+                        ItemsScrollViewer.ChangeView(null, pt.Y, null, disableAnimation: true);
+                        
+                        if (IsRequireSetFocus())
+                        {
+                            await Task.Delay(100, ct);
+
+                            control.Focus(FocusState.Keyboard);
+                        }
+                    }
                 }
-
-                return;
-            }
-
-            if (info.ScrollPositionRatio is not null)
-            {
-                ItemsScrollViewer.ChangeView(0, ItemsScrollViewer.ScrollableHeight * info.ScrollPositionRatio.Value, 0);
-            }
-
-            await Task.Delay(100);
-            if (info.ItemPath is not null and String itemPath)
-            {
-                var lastIntractItemVM = _vm.ImageFileItems.FirstOrDefault(x => x.Path == itemPath);
-                SetFocusToItem(lastIntractItemVM);
             }
         }
 
@@ -333,9 +337,13 @@ namespace TsubameViewer.Presentation.Views
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();
             }
+
+            SaveScrollStatus(item.OriginalSource as UIElement);
         });
 
         RelayCommand<UIElement> _OpenItemCommand;
+        private Models.Domain.FolderItemListing.FolderListingSettings _FolderListingSettings;
+
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
             var image = item.FindDescendantOrSelf<Image>();
@@ -345,6 +353,8 @@ namespace TsubameViewer.Presentation.Views
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();                
             }
+
+            SaveScrollStatus(item);
         });
     }
 
