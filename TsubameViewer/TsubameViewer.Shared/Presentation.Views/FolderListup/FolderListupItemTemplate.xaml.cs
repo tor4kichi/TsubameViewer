@@ -43,6 +43,7 @@ namespace TsubameViewer.Presentation.Views.FolderListup
                 Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
                 Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
                 Models.Domain.StorageItemTypes.EBook => EBookIcon,
+
                 var type => throw new NotSupportedException(type.ToString()),
             };
 

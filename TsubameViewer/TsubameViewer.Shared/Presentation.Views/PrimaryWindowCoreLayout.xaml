@@ -70,6 +70,7 @@
                     IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
                     XYFocusDownNavigationStrategy="Projection"
+                         SelectionFollowsFocus="Disabled"
                       >
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />

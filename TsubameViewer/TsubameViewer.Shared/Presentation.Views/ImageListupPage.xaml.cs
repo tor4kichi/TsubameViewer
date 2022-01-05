@@ -169,14 +169,12 @@ namespace TsubameViewer.Presentation.Views
 
         private async Task<UIElement> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
         {
-            while (_vm == null || _vm.NowProcessing)
-            {
-                await Task.Delay(1, ct);
-            }
+            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
 
             UIElement lastIntractItem = null;
             var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
-            foreach (int count in Enumerable.Range(0, 1000))
+
+            foreach (int count in Enumerable.Range(0, 10))
             {
                 lastIntractItem = currentItemsRepeater.TryGetElement(index);
                 if (lastIntractItem is not null)
@@ -186,7 +184,7 @@ namespace TsubameViewer.Presentation.Views
                     break;
                 }
 
-                await Task.Delay(1, ct);
+                await Task.Delay(100, ct);
             }
             return lastIntractItem;
         }
@@ -224,10 +222,7 @@ namespace TsubameViewer.Presentation.Views
 
         public async Task BringIntoViewLastIntractItem(CancellationToken ct)
         {
-            while (_vm == null || _vm.NowProcessing)
-            {
-                await Task.Delay(1, ct);
-            }
+            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
 
             if (_vm.DisplayCurrentPath == null)
             { 
@@ -255,12 +250,6 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }
             }
-        }
-
-        struct LastIntractInfo
-        {
-            public string ItemPath;
-            public double? ScrollPositionRatio;
         }
 
         #endregion

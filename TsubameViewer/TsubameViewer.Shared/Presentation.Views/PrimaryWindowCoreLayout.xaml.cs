@@ -179,8 +179,6 @@ namespace TsubameViewer.Presentation.Views
             MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
         }
 
-
-
         private void Frame_Navigated(object sender, NavigationEventArgs e)
         {
             if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
