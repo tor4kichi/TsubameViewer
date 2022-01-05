@@ -32,6 +32,7 @@ namespace TsubameViewer.Presentation.Views.FolderListup
         public DataTemplate ArchiveIcon { get; set; }
         public DataTemplate ArchiveFolderIcon { get; set; }
         public DataTemplate EBookIcon { get; set; }
+        public DataTemplate ImageIcon { get; set; }
 
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
@@ -43,7 +44,7 @@ namespace TsubameViewer.Presentation.Views.FolderListup
                 Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
                 Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
                 Models.Domain.StorageItemTypes.EBook => EBookIcon,
-
+                Models.Domain.StorageItemTypes.Image => ImageIcon,
                 var type => throw new NotSupportedException(type.ToString()),
             };
 

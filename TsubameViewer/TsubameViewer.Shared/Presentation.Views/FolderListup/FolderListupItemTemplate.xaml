@@ -38,6 +38,13 @@
 
 
   <local:StorageItemIconTemplateSelector x:Key="StorageItemIconTemplateSelector">
+    <local:StorageItemIconTemplateSelector.ImageIcon>
+      <DataTemplate>
+        <SymbolIcon Symbol="Pictures" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
+                    Opacity="0.35"
+                    />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.ImageIcon>
     <local:StorageItemIconTemplateSelector.FolderIcon>
       <DataTemplate>
         <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
