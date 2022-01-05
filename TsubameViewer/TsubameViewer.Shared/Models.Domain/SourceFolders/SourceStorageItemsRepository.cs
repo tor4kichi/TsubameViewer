@@ -156,7 +156,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             internal TokenToPathEntry GetTokenFromPath(string path)
             {
-                return _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
+                return _collection.Find(x => x.Path == path).FirstOrDefault()
+                    ?? _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
             }
 
             internal TokenToPathEntry FindTokenToPathFromRoot(string path)
