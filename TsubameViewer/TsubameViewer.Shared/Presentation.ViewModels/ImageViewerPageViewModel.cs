@@ -467,8 +467,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
 
+            _nowCurrenImageIndexChanging = true;
             RaisePropertyChanged(nameof(CurrentImageIndex));
-            
+            _nowCurrenImageIndexChanging = false;
+
             if (Images != null && Images.Any())
             {
                 UpdateDisplayName(Images[CurrentImageIndex]);
@@ -638,7 +640,7 @@ namespace TsubameViewer.Presentation.ViewModels
         async Task MoveImageIndex(IndexMoveDirection direction, int? request = null)
         {
             if (Images == null || Images.Length == 0) { return; }
-
+            
             _imageLoadingCts?.Cancel();
             _imageLoadingCts?.Dispose();
             _imageLoadingCts = new CancellationTokenSource();

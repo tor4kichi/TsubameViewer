@@ -229,7 +229,7 @@ namespace TsubameViewer.Presentation.Views
             catch (OperationCanceledException) { }
 
             // 大きい画像をロードしている場合にIsReadyToImageDisplayの変更がVisualStateに反映されない問題に対処するため遅延を挟む
-            await Task.Delay(150, navigationCt);
+            await Task.Delay(10, navigationCt);
 
             _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.High, () => IsReadyToImageDisplay = true);            
         }
