@@ -94,6 +94,15 @@ namespace TsubameViewer.Presentation.Views
         }
         #region 初期フォーカス設定
 
+        private bool IsRequireSetFocus()
+        {
+            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+                || UINavigation.UINavigationManager.NowControllerConnected
+                ;
+        }
+
+
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             ConnectedAnimationService.GetForCurrentView()
@@ -104,9 +113,7 @@ namespace TsubameViewer.Presentation.Views
             var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
             if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
             {
-                if (settings.IsForceEnableXYNavigation
-                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                    )
+                if (IsRequireSetFocus())
                 {
                     if (FoldersAdaptiveGridView.Items.Any())
                     {

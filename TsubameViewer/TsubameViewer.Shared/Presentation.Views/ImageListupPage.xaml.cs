@@ -151,9 +151,10 @@ namespace TsubameViewer.Presentation.Views
 
         private bool IsRequireSetFocus()
         {
-            _FolderListingSettings ??= new Models.Domain.FolderItemListing.FolderListingSettings();
-            return _FolderListingSettings.IsForceEnableXYNavigation
-                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV;
+            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+                || UINavigation.UINavigationManager.NowControllerConnected
+                ;
         }
 
 

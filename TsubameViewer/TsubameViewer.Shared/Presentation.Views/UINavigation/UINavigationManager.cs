@@ -47,6 +47,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         bool _IsDisposed;
 
+        public static bool NowControllerConnected => UINavigationController.UINavigationControllers.Count > 0;
 
         public static bool InitialEnabling = true;
 
@@ -71,6 +72,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
             IsEnabled = InitialEnabling;
         }
 
+        
         private bool _IsEnabled;
         public bool IsEnabled
         {

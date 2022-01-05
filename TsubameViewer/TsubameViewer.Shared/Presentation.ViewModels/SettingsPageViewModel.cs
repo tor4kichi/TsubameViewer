@@ -127,10 +127,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsForceEnableXYNavigation".Translate(), _folderListingSettings, x => x.IsForceEnableXYNavigation)
-                        { 
-                            IsVisible = Xamarin.Essentials.DeviceInfo.Idiom != Xamarin.Essentials.DeviceIdiom.TV
-                        },
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
                         
