@@ -184,7 +184,7 @@ namespace TsubameViewer.Presentation.Views
                     break;
                 }
 
-                await Task.Delay(100, ct);
+                await Task.Delay(50, ct);
             }
             return lastIntractItem;
         }
@@ -232,19 +232,20 @@ namespace TsubameViewer.Presentation.Views
             if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
             {
                 var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
-                if (lastIntractItemIndex > 0)
+                if (lastIntractItemIndex >= 0)
                 {
                     UIElement lastIntractItem = await WaitTargetIndexItemLoadingAsync(lastIntractItemIndex, ct);
                     if (lastIntractItem is Control control)
                     {
-                        var transform = lastIntractItem.TransformToVisual(ItemsScrollViewer);
-                        var pt = transform.TransformPoint(new Point(0, 0));
-                        ItemsScrollViewer.ChangeView(null, pt.Y, null, disableAnimation: true);
-                        
+                        if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset 
+                            || ItemsScrollViewer.VerticalOffset + ItemsScrollViewer.ViewportHeight < lastIntractItem.ActualOffset.Y)
+                        {
+                            var targetOffset = lastIntractItem.ActualOffset.Y - (float)ItemsScrollViewer.ViewportHeight * 0.5f;
+                            ItemsScrollViewer.ChangeView(null, targetOffset, null, disableAnimation: true);
+                        }
+
                         if (IsRequireSetFocus())
                         {
-                            await Task.Delay(100, ct);
-
                             control.Focus(FocusState.Keyboard);
                         }
                     }
@@ -320,6 +321,8 @@ namespace TsubameViewer.Presentation.Views
         RelayCommand<TappedRoutedEventArgs> _PrepareConnectedAnimationWithTappedItemCommand;
         public RelayCommand<TappedRoutedEventArgs> PrepareConnectedAnimationWithTappedItemCommand => _PrepareConnectedAnimationWithTappedItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(item =>
         {
+            SaveScrollStatus(item.OriginalSource as UIElement);
+
             var image = (item.OriginalSource as UIElement).FindDescendantOrSelf<Image>();
             if (image?.Source != null)
             {
@@ -327,8 +330,6 @@ namespace TsubameViewer.Presentation.Views
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();
             }
-
-            SaveScrollStatus(item.OriginalSource as UIElement);
         });
 
         RelayCommand<UIElement> _OpenItemCommand;
@@ -336,15 +337,15 @@ namespace TsubameViewer.Presentation.Views
 
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
+            SaveScrollStatus(item);
+
             var image = item.FindDescendantOrSelf<Image>();
             if (image?.Source != null)
             {                
                 var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();                
-            }
-
-            SaveScrollStatus(item);
+            }            
         });
     }
 

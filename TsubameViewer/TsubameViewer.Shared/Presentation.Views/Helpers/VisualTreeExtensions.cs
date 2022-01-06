@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -41,7 +42,7 @@ namespace TsubameViewer.Presentation.Views.Helpers
         {
             while (whenComplete(element) is false)
             {
-                await Task.Delay(1, ct);
+                await Task.Delay(10, ct);
             }
         }
     }
