@@ -95,6 +95,7 @@ namespace TsubameViewer.Presentation.Services.UWP
 
         public static SecondaryTileArguments DeserializeSecondaryTileArguments(string arguments)
         {
+
             return JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
         }
 

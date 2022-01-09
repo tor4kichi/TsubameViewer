@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.Extensions.Logging;
+using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism;
@@ -486,16 +487,16 @@ namespace TsubameViewer
 
             NavigationParameters parameters = new NavigationParameters();
 
-            if (string.IsNullOrEmpty(info.Path))
-            {
-                throw new NullReferenceException("PageNavigationInfo.Path is can not be null.");
-            }
 
-            parameters.Add(PageNavigationConstants.Path, info.Path);
+            Guard.IsNotNullOrEmpty(info.Path, nameof(info.Path));
 
             if (!string.IsNullOrEmpty(info.PageName))
             {
-                parameters.Add(PageNavigationConstants.PageName, info.PageName);
+                parameters.Add(PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(info.Path, info.PageName)));
+            }
+            else
+            {
+                parameters.Add(PageNavigationConstants.Path, Uri.EscapeDataString(info.Path));
             }
 
             var item = await sourceFolderRepository.GetStorageItemFromPath(info.Path);

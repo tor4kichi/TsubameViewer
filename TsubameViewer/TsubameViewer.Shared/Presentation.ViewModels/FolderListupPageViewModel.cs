@@ -344,15 +344,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var mode = parameters.GetNavigationMode();
 
-                _currentArchiveFolderName = parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string archiveFolderName)
-                    ? Uri.UnescapeDataString(archiveFolderName)
-                    : null
-                    ;
-
+                _currentArchiveFolderName = null;
 
                 if (parameters.TryGetValueSafe(PageNavigationConstants.Path, out string path))
                 {
-                    var unescapedPath = Uri.UnescapeDataString(path);
+                    (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+
+                    var unescapedPath = itemPath;
                     if (_sourceStorageItemsRepository.IsIgnoredPath(unescapedPath))
                     {
                         throw new InvalidOperationException();

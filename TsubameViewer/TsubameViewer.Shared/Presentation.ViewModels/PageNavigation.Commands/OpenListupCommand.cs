@@ -69,7 +69,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                             else if (leaves.Count == 1)
                             {
                                 var leaf = leaves[0] as ArchiveDirectoryImageSource;
-                                var parameters = StorageItemViewModel.CreateArchiveFolderPageParameter(Uri.EscapeDataString(item.Path), Uri.EscapeDataString(leaf.Path));
+                                var parameters = new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, leaf.Path))));
                                 var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                             }
                             else
@@ -78,7 +78,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                                 var distinct = leaves.Select(x => new string(x.Path.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
                                 if (distinct.Count == 1)
                                 {
-                                    var parameters = StorageItemViewModel.CreateArchiveFolderPageParameter(Uri.EscapeDataString(item.Path), Uri.EscapeDataString(distinct[0]));
+                                    var parameters = new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, distinct[0]))));
                                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                                 }
                                 else

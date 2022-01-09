@@ -229,13 +229,17 @@ namespace TsubameViewer.Presentation.ViewModels
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var mode = parameters.GetNavigationMode();
 
+            string parsedPageName = null;
+
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Forward
                 || mode == NavigationMode.Back)
             {
                 if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
                 {
-                    var unescapedPath = Uri.UnescapeDataString(path);
+                    (var itemPath, parsedPageName, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+
+                    var unescapedPath = itemPath;
                     if (_currentPath != unescapedPath)
                     {
                         _currentPath = unescapedPath;
@@ -267,7 +271,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 表示する画像を決める
             if (mode == NavigationMode.Forward
                 || parameters.ContainsKey(PageNavigationConstants.Restored)
-                || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
                 )
             {
                 var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
@@ -285,20 +289,16 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName)
-                )
+            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
-                if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
+                var unescapedPageName = parsedPageName;
+                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                if (firstSelectItem != null)
                 {
-                    var unescapedPageName = Uri.UnescapeDataString(pageName);
-                    var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
-                    if (firstSelectItem != null)
-                    {
-                        CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
-                    }
-
-                    SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
+                    CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
                 }
+
+                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
             }
 
             // 最初のページを表示

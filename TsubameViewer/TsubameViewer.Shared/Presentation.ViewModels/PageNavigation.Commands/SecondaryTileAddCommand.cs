@@ -34,10 +34,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     {
                         tileArguments.Path = Uri.UnescapeDataString(path);
                     }
-                    if (param.TryGetValue(PageNavigationConstants.PageName, out string pageName))
-                    {
-                        tileArguments.PageName = pageName;
-                    }
 
                     var result = await _secondaryTileManager.AddSecondaryTile(
                         tileArguments, 

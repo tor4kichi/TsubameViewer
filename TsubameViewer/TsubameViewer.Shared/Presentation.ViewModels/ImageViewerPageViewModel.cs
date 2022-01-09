@@ -331,6 +331,9 @@ namespace TsubameViewer.Presentation.ViewModels
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
+            string parsedPageName = null;
+            string parsedArchiveFolderName = null;
+
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
@@ -342,10 +345,12 @@ namespace TsubameViewer.Presentation.ViewModels
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
 
-                    if (_currentPath != unescapedPath)
+                    (var itemPath, parsedPageName, parsedArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
+
+                    if (_currentPath != itemPath)
                     {
                         
-                        _currentPath = unescapedPath;
+                        _currentPath = itemPath;
 
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
                         foreach (var _ in Enumerable.Repeat(0, 10))
@@ -419,7 +424,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 表示する画像を決める
             if (mode == NavigationMode.Forward 
                 || parameters.ContainsKey(PageNavigationConstants.Restored) 
-                || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
                 )
             {
                 var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
@@ -435,18 +440,14 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName))
+            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
-                if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
+                var unescapedPageName = parsedPageName;
+                var firstSelectItem = Images.FirstOrDefault(x => x.Name == unescapedPageName);
+                if (firstSelectItem != null)
                 {
-                    var unescapedPageName = Uri.UnescapeDataString(pageName);
-                    var firstSelectItem = Images.FirstOrDefault(x => x.Name == unescapedPageName);
-                    if (firstSelectItem != null)
-                    {
-                        _CurrentImageIndex = Images.IndexOf(firstSelectItem);
-                    }
+                    _CurrentImageIndex = Images.IndexOf(firstSelectItem);
                 }
-
                 // TODO: FileSortTypeを受け取って表示順の入れ替えに対応するべきか否か
                 //if (parameters.TryGetValue("sort", out string sortMethod))
                 {
@@ -454,16 +455,13 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             }
             
-            if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName))
+            if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedArchiveFolderName))
             {
-                if (parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string folderName))
+                var unescapedFolderName = parsedArchiveFolderName;
+                var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
+                if (pageFirstItem != null)
                 {
-                    var unescapedFolderName = Uri.UnescapeDataString(folderName);
-                    var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
-                    if (pageFirstItem != null)
-                    {
-                        _CurrentImageIndex = Images.IndexOf(pageFirstItem);
-                    }
+                    _CurrentImageIndex = Images.IndexOf(pageFirstItem);
                 }
             }
 

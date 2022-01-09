@@ -30,26 +30,20 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
         {
-            var escapedPath = Uri.EscapeDataString(vm.Item.StorageItem.Path);
             if (vm.Type == StorageItemTypes.Image)
             {
-                return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
+                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(vm.Item.StorageItem.Path, vm.Name))));
             }
             else if (vm.Type == StorageItemTypes.ArchiveFolder)
             {
                 var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
-                
-                return CreateArchiveFolderPageParameter(escapedPath, Uri.EscapeDataString(archiveFolderImageSource.Path));
+
+                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(vm.Item.StorageItem.Path, archiveFolderImageSource.Path))));
             }
             else
             {
-                return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
+                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(vm.Item.StorageItem.Path)));
             }
-        }
-
-        public static NavigationParameters CreateArchiveFolderPageParameter(string filePath, string archiveFolderPath)
-        {
-            return new NavigationParameters((PageNavigationConstants.Path, filePath), (PageNavigationConstants.ArchiveFolderName, archiveFolderPath));
         }
 
         #endregion
