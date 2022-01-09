@@ -44,9 +44,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
-                var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
             }
             else
             {

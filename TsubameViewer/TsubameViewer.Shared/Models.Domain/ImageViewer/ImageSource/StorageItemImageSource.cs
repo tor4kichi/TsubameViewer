@@ -71,9 +71,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                     {
                         if (_folderListingSettings.IsImageFileGenerateThumbnailEnabled)
                         {
-                            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
-                            if (thumbnailFile == null) { return null; }
-                            return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                            return await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
                         }
                         else
                         {
@@ -86,9 +84,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                     {
                         if (_folderListingSettings.IsArchiveFileGenerateThumbnailEnabled)
                         {
-                            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
-                            if (thumbnailFile == null) { return null; }
-                            return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                            return await _thumbnailManager.GetFileThumbnailImageFileAsync(file, ct);
                         }
                         else
                         {
@@ -104,9 +100,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 {
                     if (_folderListingSettings.IsFolderGenerateThumbnailEnabled)
                     {
-                        var thumbnailFile = await _thumbnailManager.GetFolderThumbnailImageFileAsync(folder, ct);
-                        if (thumbnailFile == null) { return null; }
-                        return await thumbnailFile.OpenReadAsync().AsTask(ct);
+                        return await _thumbnailManager.GetFolderThumbnailImageFileAsync(folder, ct);
                     }
                     else
                     {

@@ -61,6 +61,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropPathReferenceCountDb.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropSearchIndexDb.cs" />

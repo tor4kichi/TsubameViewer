@@ -82,9 +82,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
-                var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
             }
             else
             {

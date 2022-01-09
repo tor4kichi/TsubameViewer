@@ -44,7 +44,7 @@
       ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
       IsSynchronizedWithCurrentItem="False"
       SelectionMode="None"
-      ContextFlyout="{StaticResource NoListUpActionStorageItemMenuFlyout}"
+      ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
       >
       
       <GridView.Header>

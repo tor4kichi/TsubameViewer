@@ -81,12 +81,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var dir = Enumerable.Concat(directoryItem, notDirectoryItem).Distinct(ArchiveDirectoryEqualityComparer.Default);
 
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
-            _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
-            if (_rootDirectoryToken == null ||
-                (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
-                )
+            if (dir.Any() is false)
             {
-                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+                _directories = new[] { _rootDirectoryToken }.ToImmutableList();
+            }
+            else
+            {
+                _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
+                if (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
+                {
+                    _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+                }
             }
         }
 

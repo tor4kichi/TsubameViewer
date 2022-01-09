@@ -118,11 +118,11 @@ namespace TsubameViewer
 
         protected override void RegisterRequiredTypes(IContainerRegistry container)
         {
-            string connectionString = $"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;";
-            var db = new LiteDatabase(connectionString);
-            container.RegisterInstance<ILiteDatabase>(db);
-
             var unityContainer = container.GetContainer();
+            container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
+
+            unityContainer.RegisterInstance<ILiteDatabase>("TemporaryDb", new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"));
+
             unityContainer.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             
             base.RegisterRequiredTypes(container);
@@ -237,34 +237,48 @@ namespace TsubameViewer
                     typeof(DropIgnoreStorageItemDbWhenIdNotString),
                     typeof(MigrateAsyncStorageApplicationPermissionToDb),
 
-                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper),
+                    typeof(DeleteThumbnailImagesOnTemporaryFolder),
                 };
 
+                List<Exception> exceptions = new List<Exception>();
                 await Task.Run(async () =>
                 {
                     foreach (var migratorType in migraterTypes)
                     {
-                        var migratorInstance = Container.Resolve(migratorType);
-                        if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                        try
                         {
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
+                            var migratorInstance = Container.Resolve(migratorType);
+                            if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                            {
+                                Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                            migrater.Migrate();
+                                migrater.Migrate();
 
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                                Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            }
+                            else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                            {
+                                Debug.WriteLine($"Start migrate: {migratorType.Name}");
+
+                                await asyncMigrater.MigrateAsync();
+
+                                Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine($"Skip migrate: {migratorType.Name}");
+                            }
                         }
-                        else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                        catch (Exception ex)
                         {
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
-
-                            await asyncMigrater.MigrateAsync();
-
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            exceptions.Add(ex);
                         }
-                        else
-                        {
-                            Debug.WriteLine($"Skip migrate: {migratorType.Name}");
-                        }
+                    }
+
+                    if (exceptions.Any())
+                    {
+                        throw new AggregateException(exceptions);
                     }
                 });
             }

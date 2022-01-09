@@ -27,7 +27,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 {
     public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
-        public bool IsListupActionEnabled { get; set; } = true;
+        public bool IsRootPage { get; set; } = false;
 
         public StorageItemMenuFlyout()
         {
@@ -69,7 +69,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = (itemVM.IsSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+                SetThumbnailImageMenuItem.Visibility = (IsRootPage is true && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -133,7 +133,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
             }
 
-            if (IsListupActionEnabled is false)
+            if (IsRootPage is true)
             {
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             }

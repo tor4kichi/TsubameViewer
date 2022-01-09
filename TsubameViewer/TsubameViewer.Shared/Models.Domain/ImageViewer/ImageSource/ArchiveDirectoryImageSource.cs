@@ -22,7 +22,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
-            Guard.IsNotNull(directoryToken.Key, nameof(directoryToken.Key));
             _imageCollection = archiveImageCollection;
             _directoryToken = directoryToken;
             _folderListingSettings = folderListingSettings;
@@ -64,11 +63,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
                     return await imageSource.GetThumbnailImageStreamAsync(ct);
                 }
-
-                if (file == null) { return null; }
-
-                var fileStream = await file.OpenStreamForReadAsync();
-                return fileStream.AsRandomAccessStream();
+                else
+                {
+                    return file;
+                }
             }
             else
             {
