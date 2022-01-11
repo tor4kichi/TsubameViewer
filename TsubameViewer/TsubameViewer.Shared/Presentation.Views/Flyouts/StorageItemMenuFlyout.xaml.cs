@@ -20,6 +20,9 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.Views.Helpers;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using Windows.Storage;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Models.UseCase;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -36,14 +39,19 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             var container = App.Current.Container;
             OpenListupItem.Command = container.Resolve<OpenListupCommand>();
             SetThumbnailImageMenuItem.Command = container.Resolve<ChangeStorageItemThumbnailImageCommand>();
+            AddFavariteImageMenuItem.Command = container.Resolve<FavoriteAddCommand>();
+            RemoveFavariteImageMenuItem.Command = container.Resolve<FavoriteRemoveCommand>();
+            EditAlbamImageMenuItem.Command = container.Resolve<AlbamEditCommand>();
             AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
             OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
             _secondaryTileManager = container.Resolve<SecondaryTileManager>();
+            _favoriteAlbam = container.Resolve<FavoriteAlbam>();
         }
 
-        private SecondaryTileManager _secondaryTileManager;
+        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly FavoriteAlbam _favoriteAlbam;
 
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
@@ -69,7 +77,24 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = (IsRootPage is true && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+                SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+
+                if (itemVM.Type == Models.Domain.StorageItemTypes.Image)
+                {
+                    var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                    AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                    AddFavariteImageMenuItem.CommandParameter = itemVM;
+                    RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                    RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+                    EditAlbamImageMenuItem.Visibility = Visibility.Visible;
+                    EditAlbamImageMenuItem.CommandParameter = itemVM;
+                }
+                else
+                {
+                    AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                    RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                    EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
+                }
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -105,6 +130,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -125,6 +153,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 OpenListupItem.Visibility = Visibility.Collapsed;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;

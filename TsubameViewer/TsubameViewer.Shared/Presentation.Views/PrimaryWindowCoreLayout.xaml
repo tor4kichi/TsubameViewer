@@ -85,7 +85,7 @@
       </i:Interaction.Behaviors>
       <muxc:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <muxc:NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" DataContext="{x:Bind}" />
+          <muxc:NavigationViewItem Content="{x:Bind Title}" DataContext="{x:Bind}" />
         </DataTemplate>
       </muxc:NavigationView.MenuItemTemplate>
 

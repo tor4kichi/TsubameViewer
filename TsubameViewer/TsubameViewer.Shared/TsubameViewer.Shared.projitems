@@ -45,6 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Albam\AlbamRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
@@ -60,6 +61,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\FavoriteAlbam.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
@@ -72,6 +75,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamOpenCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\AlbamListupPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\AlbamPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamItemImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\NavigationParametersExtensions.cs" />
@@ -93,6 +103,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageTransisionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\ThemeChangeRequestEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteAddCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Sorting\TitleDigitCompletionComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
@@ -100,7 +113,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\CollectionPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\FolderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SettingsPageViewModel.cs" />
@@ -108,6 +120,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\AlbamListupPage.xaml.cs">
+      <DependentUpon>AlbamListupPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\PointToRectConverter.cs" />
@@ -136,6 +151,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\ImageListupPage.xaml.cs">
       <DependentUpon>ImageListupPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\AlbamPage.xaml.cs">
+      <DependentUpon>AlbamPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
@@ -149,9 +167,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml.cs">
-      <DependentUpon>CollectionPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\ItemClickEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
@@ -183,7 +198,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\CollectionPage.xaml">
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\AlbamListupPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -216,6 +231,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\PrimaryWindowCoreLayout.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\AlbamPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

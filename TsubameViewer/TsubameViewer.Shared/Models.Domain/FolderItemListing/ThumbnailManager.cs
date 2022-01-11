@@ -370,6 +370,18 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return file;
         }
 
+        public async Task<IRandomAccessStream> GetThumbnailImageFromPathAsync(string path, CancellationToken ct)
+        {
+            var itemId = ToId(path);
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
+            {
+                return cachedFile;
+            }
+            else
+            {
+                return null;
+            }
+        }
 
         public async Task<IRandomAccessStream> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
         {

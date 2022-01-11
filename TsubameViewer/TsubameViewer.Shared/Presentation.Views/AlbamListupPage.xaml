@@ -1,5 +1,5 @@
 ﻿<Page
-    x:Class="TsubameViewer.Presentation.Views.CollectionPage"
+    x:Class="TsubameViewer.Presentation.Views.AlbamListupPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Presentation.Views"
@@ -9,6 +9,6 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Grid>
-    <TextBlock Text="TODO: コレクションページ" />
+
   </Grid>
 </Page>

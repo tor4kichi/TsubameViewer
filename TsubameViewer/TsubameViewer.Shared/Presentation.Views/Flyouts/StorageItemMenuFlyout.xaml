@@ -11,6 +11,9 @@
 
   <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
+  <MenuFlyoutItem x:Name="AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavariteImage}" />
+  <MenuFlyoutItem x:Name="RemoveFavariteImageMenuItem" Text="{i18nExt:Localize Key=RemoveFavariteImage}" />
+  <MenuFlyoutItem x:Name="EditAlbamImageMenuItem" Text="{i18nExt:Localize Key=EditAlbamImage}" />
   
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
   <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />

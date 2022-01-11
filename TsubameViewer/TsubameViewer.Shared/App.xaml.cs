@@ -152,9 +152,9 @@ namespace TsubameViewer
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<EBookReaderPage>();
-            container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
             container.RegisterForNavigation<SearchResultPage>();
+            container.RegisterForNavigation<AlbamPage>();
         }
 
         bool isRestored = false;
@@ -300,6 +300,10 @@ namespace TsubameViewer
                 // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
                 // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
                 typeof(CacheDeletionWhenSourceStorageItemIgnored),
+
+                // 1.5.1以降に追加したお気に入り用のDB項目の存在を確実化
+                typeof(EnsureFavoriteAlbam),
+
             };
 
             await Task.Run(async () =>
