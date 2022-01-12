@@ -16,6 +16,7 @@ using System.Diagnostics;
 using Windows.Storage;
 using System.Linq;
 using System.IO;
+using TsubameViewer.Models.Domain.ImageViewer;
 
 namespace TsubameViewer.Models.UseCase.Maintenance
 {   
@@ -33,7 +34,8 @@ namespace TsubameViewer.Models.UseCase.Maintenance
         private readonly SecondaryTileManager _secondaryTileManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-        
+        private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
+
         public CacheDeletionWhenSourceStorageItemIgnored(
             IMessenger messenger,
             SourceStorageItemsRepository storageItemsRepository,
@@ -43,7 +45,8 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             ThumbnailManager thumbnailManager,
             SecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
-            DisplaySettingsByPathRepository displaySettingsByPathRepository
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
+            ArchiveFileInnerStructureCache archiveFileInnerStructureCache
             )
         {
             _messenger = messenger;
@@ -55,7 +58,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _secondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
-
+            _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
             _messenger.RegisterAll(this);
         }
 
@@ -81,6 +84,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
                 _recentlyAccessManager.Delete(oldPath);
                 _folderContainerTypeManager.Delete(oldPath);
                 _folderLastIntractItemManager.Remove(oldPath);
+                _archiveFileInnerStructureCache.DeleteUnderPath(oldPath);
 
                 await Task.WhenAll(tasks);
 
@@ -210,6 +214,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _folderContainerTypeManager.DeleteAllUnderPath(path);
             _folderLastIntractItemManager.RemoveAllUnderPath(path);
             _displaySettingsByPathRepository.DeleteUnderPath(path);
+            _archiveFileInnerStructureCache.DeleteUnderPath(path);
 
             await Task.WhenAll(tasks);
         }
@@ -226,6 +231,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _folderContainerTypeManager.Delete(path);
             _folderLastIntractItemManager.Remove(path);
             _displaySettingsByPathRepository.Delete(path);
+            _archiveFileInnerStructureCache.Delete(path);
 
             await Task.WhenAll(tasks);
         }

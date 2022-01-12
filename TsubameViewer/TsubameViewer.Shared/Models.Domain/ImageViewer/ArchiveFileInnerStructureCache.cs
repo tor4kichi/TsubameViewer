@@ -2,6 +2,7 @@
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -11,16 +12,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 {
     public sealed class ArchiveFileInnerStructureCache
     {
-        sealed class ArchiveFileInnerSturcture
+        public sealed class ArchiveFileInnerSturcture
         {
             [BsonId]
             public string Path { get; set; }
 
-            public List<string> Folders { get; set; }
+            public string[] Items { get; set; }
 
-            public List<string> Files { get; set; }
+            /// <summary>
+            /// ファイルのインデックス。</br>
+            /// </summary>
+            public int[] FileIndexies { get; set; }
+
+            public int[] FolderIndexies { get; set; }
         }
 
+        public sealed record ArchiveFileInnerSturctureItem(string Key, bool IsDirectory);
 
         private sealed class ArchiveFileInnerStructureCacheRepository : LiteDBServiceBase<ArchiveFileInnerSturcture>
         {
@@ -31,6 +38,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public ArchiveFileInnerSturcture FindById(string path)
             {
                 return _collection.FindById(path);
+            }
+
+            public int DeleteUnderPath(string path)
+            {
+                return _collection.DeleteMany(x => x.Path.StartsWith(path));
             }
         }
 
@@ -53,6 +65,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 return _collection.FindById(path)?.Size;
             }
+
+            public int DeleteUnderPath(string path)
+            {
+                return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            }
         }
 
         private readonly ArchiveFileInnerStructureCacheRepository _archiveFileInnerStructureCacheRepository;
@@ -64,19 +81,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _archiveFileLastSizeCacheRepository = new ArchiveFileLastSizeCacheRepository(liteDatabase);
         }
 
-        public (List<string> Folders, Dictionary<string, int> KeyToIndexMap) AddOrUpdateStructure(string path, IArchive archive, CancellationToken ct)
+        public ArchiveFileInnerSturcture AddOrUpdateStructure(string path, IArchive archive, CancellationToken ct)
         {
-            List<IArchiveEntry> notDirectoryItem = new List<IArchiveEntry>();
-            List<IArchiveEntry> directoryItem = new List<IArchiveEntry>();
-            foreach (var entry in archive.Entries)
+            string[] items = new string[archive.Entries.Count()];
+            List<int> fileIndexies = new();
+            List<int> folderIndexies = new();
+            foreach (var (entry, index) in archive.Entries.Select((x, i) => (x, i)))
             {
+                items[index] = entry.Key;
                 if (entry.IsDirectory)
                 {
-                    directoryItem.Add(entry);
+                    folderIndexies.Add(index);
                 }
-                else if (DirectoryPathHelper.GetDirectoryDepth(entry.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(entry.Key))
+                else
                 {
-                    notDirectoryItem.Add(entry);
+                    // Note: 将来の拡張子対応の変更に備えてキャッシュデータ上では絞り込みを行わない。
+                    fileIndexies.Add(index);
                 }
 
                 ct.ThrowIfCancellationRequested();
@@ -85,14 +105,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var cacheEntry = new ArchiveFileInnerSturcture()
             {
                 Path = path,
-                Folders = directoryItem.Select(x => x.Key).ToList(),
-                Files = notDirectoryItem.Select(x => x.Key).ToList(),
+                Items = items,
+                FileIndexies = fileIndexies.ToArray(),
+                FolderIndexies = folderIndexies.ToArray()
             };
 
             _archiveFileLastSizeCacheRepository.UpdateItem(new ArchiveFileLastSizeCache() { Path = path, Size = archive.TotalSize });
             _archiveFileInnerStructureCacheRepository.UpdateItem(cacheEntry);
 
-            return (cacheEntry.Folders, cacheEntry.Files.Select((key, i) => (key, i)).ToDictionary(x => x.key, (x => x.i)));
+            Debug.WriteLine($"create Archive file folder structure. {path}");
+
+            return cacheEntry;
         }
 
         public bool IsArchiveCachedAndSameSize(string path, IArchive archive)
@@ -107,18 +130,33 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        public bool TryGetStructure(string path, out (List<string> Folders, Dictionary<string, int> KeyToIndexMap) outSet)
+        public ArchiveFileInnerSturcture GetOrCreateStructure(string path, IArchive archive, CancellationToken ct)
         {
-            if (_archiveFileInnerStructureCacheRepository.FindById(path) is not null and var cacheEntry)
+            if (IsArchiveCachedAndSameSize(path, archive))
             {
-                outSet = (cacheEntry.Folders, cacheEntry.Files.Select((key, i) => (key, i)).ToDictionary(x => x.key, (x => x.i)));
-                return true;
+                var cacheEntry = _archiveFileInnerStructureCacheRepository.FindById(path);
+                if (cacheEntry is not null)
+                {
+                    Debug.WriteLine($"get Archive file folder structure from cache. {path}");
+                    return cacheEntry;
+                }
             }
-            else
-            {
-                outSet = default;
-                return false;
-            }
+
+            return AddOrUpdateStructure(path, archive, ct);
+        }
+
+        public void Delete(string path)
+        {
+            _archiveFileInnerStructureCacheRepository.DeleteItem(path);
+            _archiveFileLastSizeCacheRepository.DeleteItem(path);
+        }
+
+        public int DeleteUnderPath(string path)
+        {
+            var count1 = _archiveFileInnerStructureCacheRepository.DeleteUnderPath(path);
+            var count2 = _archiveFileLastSizeCacheRepository.DeleteUnderPath(path);
+
+            return count1;
         }
     }
 

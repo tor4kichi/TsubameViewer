@@ -13,6 +13,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Data.Pdf;
 using Windows.Storage;
+using static TsubameViewer.Models.Domain.ImageViewer.ArchiveFileInnerStructureCache;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
@@ -48,46 +49,65 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public StorageFile File { get; }
         public IArchive Archive { get; }
 
+        private readonly ArchiveFileInnerSturcture _archiveFileInnerStructure;
         private readonly CompositeDisposable _disposables;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
         private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
-        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+
+        private readonly ImmutableDictionary<string, int> _KeyToIndex;
+        //private readonly ImmutableArray<string> _IndexToKey;
+
+        public ArchiveImageCollection(
+            StorageFile file, 
+            IArchive archive,
+            ArchiveFileInnerSturcture archiveFileInnerStructure,
+            CompositeDisposable disposables, 
+            FolderListingSettings folderListingSettings, 
+            ThumbnailManager thumbnailManager            
+            )
         {
             File = file;
             Archive = archive;
+            _archiveFileInnerStructure = archiveFileInnerStructure;
             _disposables = disposables;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
-            // ディレクトリベースでフォルダ構造を見つける
-            List<IArchiveEntry> notDirectoryItem = new List<IArchiveEntry>();
-            List<IArchiveEntry> directoryItem = new List<IArchiveEntry>();
-            foreach (var entry in Archive.Entries)
+            // アーカイブのフォルダ構造を見つける
+            var structure = _archiveFileInnerStructure;            
+            _KeyToIndex = structure.Items.Select((x, i) => (Key: x, Index: i)).ToImmutableDictionary(x => x.Key, x => x.Index);
+            //_IndexToKey = structure.Items.ToImmutableArray();
+            HashSet<string> directories = new ();
+            foreach (var index in structure.FolderIndexies)
             {
-                if (entry.IsDirectory)
+                directories.Add(structure.Items[index]);
+            }
+
+            foreach (var index in structure.FileIndexies)
+            {
+                var key = structure.Items[index];
+                if (DirectoryPathHelper.GetDirectoryDepth(key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(key))
                 {
-                    directoryItem.Add(entry);
-                }
-                else if (DirectoryPathHelper.GetDirectoryDepth(entry.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(entry.Key))
-                {
-                    notDirectoryItem.Add(entry);
+                    var dicrectoryName = Path.GetDirectoryName(key);
+                    if (directories.Contains(dicrectoryName) is false)
+                    {
+                        directories.Add(dicrectoryName);
+                    }
                 }
             }
 
-            var dir = Enumerable.Concat(directoryItem, notDirectoryItem).Distinct(ArchiveDirectoryEqualityComparer.Default);
-
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
-            if (dir.Any() is false)
+            if (directories.Any() is false)
             {
                 _directories = new[] { _rootDirectoryToken }.ToImmutableList();
             }
             else
             {
-                _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
+                _directories = directories.Select(x => new ArchiveDirectoryToken(Archive, GetEntryFromKey(x))).OrderBy(x => x.Key).ToImmutableList();
                 if (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
                 {
                     _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
@@ -95,7 +115,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
+        private IArchiveEntry GetEntryFromIndex(int index)
+        {
+            return Archive.Entries.ElementAt(index);
+        }
 
+
+        private IArchiveEntry GetEntryFromKey(string key)
+        {
+            return Archive.Entries.ElementAt(_KeyToIndex[key]);
+        }
 
         private readonly ArchiveDirectoryToken _rootDirectoryToken;
 
