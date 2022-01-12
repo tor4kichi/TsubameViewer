@@ -92,6 +92,7 @@ namespace TsubameViewer.Presentation.Views
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
             typeof(SettingsPage),
+            typeof(AlbamImageListupPage),
         }.ToImmutableHashSet();
 
         private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
@@ -99,6 +100,7 @@ namespace TsubameViewer.Presentation.Views
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
+            typeof(AlbamImageListupPage),
         }.ToImmutableHashSet();
 
 

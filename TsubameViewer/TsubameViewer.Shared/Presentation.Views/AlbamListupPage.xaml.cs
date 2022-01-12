@@ -35,10 +35,58 @@ namespace TsubameViewer.Presentation.Views
             _vm = args.NewValue as AlbamListupPageViewModel;
             if (_vm != null && oldViewModel != _vm)
             {
-                //this.Bindings.Update();
+                this.Bindings.Update();
             }
         }
 
         private AlbamListupPageViewModel _vm;
     }
+
+
+    public sealed class AlbamDataTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate CreateNew { get; set; }
+        public DataTemplate Albam { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item)
+        {
+            return this.SelectTemplateCore(item, null);
+        }
+
+        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+        {
+            if (item is CreateNewAlbamViewModel)
+            {
+                return CreateNew;
+            }
+            else if (item is ViewModels.Albam.AlbamViewModel)
+            {
+                return Albam;
+            }
+
+            return base.SelectTemplateCore(item, container);
+        }
+    }
+
+    public sealed class AlbamStyleSelector : Windows.UI.Xaml.Controls.StyleSelector
+    {
+        public Style CreateNew { get; set; }
+        public Style Albam { get; set; }
+
+        protected override Style SelectStyleCore(object item, DependencyObject container)
+        {
+            if (item is CreateNewAlbamViewModel)
+            {
+                return CreateNew;
+            }
+            else if (item is ViewModels.Albam.AlbamViewModel)
+            {
+                return Albam;
+            }
+
+            return base.SelectStyleCore(item, container);
+        }
+    }
+
+
 }

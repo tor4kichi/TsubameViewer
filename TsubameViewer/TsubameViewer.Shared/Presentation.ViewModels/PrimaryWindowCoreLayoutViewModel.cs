@@ -65,7 +65,7 @@ namespace TsubameViewer.Presentation.ViewModels
             MenuItems = new List<object>
             {
                 new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
-                new MenuItemViewModel() { PageType = nameof(Views.AlbamPage), Title = "Albam".Translate() },
+                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
             };
             EventAggregator = eventAggregator;
             _scheduler = scheduler;

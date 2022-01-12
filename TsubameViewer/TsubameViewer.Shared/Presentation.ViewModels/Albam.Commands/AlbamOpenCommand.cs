@@ -25,7 +25,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         {
             if (parameter is AlbamViewModel albamVM)
             {
-                _messenger.NavigateAsync(nameof(Views.AlbamPage), parameters: ("id", albamVM.AlbamId));
+                _messenger.NavigateAsync(nameof(Views.AlbamImageListupPage), parameters: (Albam.AlbamNavigationConstants.Key_AlbamId, albamVM.AlbamId));
             }            
         }
     }

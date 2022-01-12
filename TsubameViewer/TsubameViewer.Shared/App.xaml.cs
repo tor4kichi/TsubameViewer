@@ -154,7 +154,8 @@ namespace TsubameViewer
             container.RegisterForNavigation<EBookReaderPage>();
             container.RegisterForNavigation<SettingsPage>();
             container.RegisterForNavigation<SearchResultPage>();
-            container.RegisterForNavigation<AlbamPage>();
+            container.RegisterForNavigation<AlbamListupPage>();
+            container.RegisterForNavigation<AlbamImageListupPage>();
         }
 
         bool isRestored = false;
