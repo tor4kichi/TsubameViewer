@@ -259,11 +259,6 @@
                                   CommandParameter="{x:Null}"
                                   />
 
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
                     <models:FileSortType>UpdateTimeDecending</models:FileSortType>
@@ -301,8 +296,6 @@
             <Button.Flyout>
               <Flyout Placement="Bottom">
                 <StackPanel Spacing="8">
-                  <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
-
                   <!--
                   <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
                   -->

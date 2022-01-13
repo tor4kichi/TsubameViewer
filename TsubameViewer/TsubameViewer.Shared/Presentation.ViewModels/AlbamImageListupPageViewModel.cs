@@ -71,7 +71,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageSource = imageSource;
         }
     }
-
+    /*
     public sealed class AlbamImageCollection : IImageCollection
     {
         public string Name => throw new NotImplementedException();
@@ -81,5 +81,6 @@ namespace TsubameViewer.Presentation.ViewModels
             throw new NotImplementedException();
         }
     }
+    */
 
 }

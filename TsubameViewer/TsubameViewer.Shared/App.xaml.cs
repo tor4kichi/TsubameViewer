@@ -237,9 +237,9 @@ namespace TsubameViewer
                     typeof(DropPathReferenceCountDb),
                     typeof(DropIgnoreStorageItemDbWhenIdNotString),
                     typeof(MigrateAsyncStorageApplicationPermissionToDb),
-
                     typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper),
                     typeof(DeleteThumbnailImagesOnTemporaryFolder),
+                    typeof(DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc),
                 };
 
                 List<Exception> exceptions = new List<Exception>();

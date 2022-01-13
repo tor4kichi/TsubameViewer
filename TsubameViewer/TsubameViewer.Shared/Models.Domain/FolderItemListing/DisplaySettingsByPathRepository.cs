@@ -15,8 +15,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public string Path { get; init; }
 
         public FileSortType Sort { get; init; }
-
-        public bool IsTitleDigitInterpolation { get; init; }
     }
 
     public record FolderAndArchiveChildFileDisplaySettingEntry
@@ -25,17 +23,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public string Path { get; init; }
 
         public FileSortType? ChildItemDefaultSort { get; init; }
-    }
-
-    public record FileDisplaySettingEntry
-    {
-        [BsonId]
-        public string Path { get; init; }
-
-
-        public FileSortType Sort { get; init; }
-
-        public bool IsTitleDigitInterpolation { get; init; }
     }
 
     public sealed class DisplaySettingsByPathRepository
@@ -114,13 +101,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return _internalFolderAndArchiveRepository.FindById(path);
         }
 
-        public void SetFolderAndArchiveSettings(string path, FileSortType sortType, bool withTitleDigitInterpolation)
+        public void SetFolderAndArchiveSettings(string path, FileSortType sortType)
         {
             _internalFolderAndArchiveRepository.UpdateItem(new FolderAndArchiveDisplaySettingEntry() 
             {
                 Path =  path,
                 Sort = sortType,
-                IsTitleDigitInterpolation = withTitleDigitInterpolation
             });
         }
 

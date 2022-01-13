@@ -61,11 +61,6 @@
               <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
                               CommandParameter="{x:Null}" />
               
-              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                <MenuFlyoutItem.CommandParameter>
-                  <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
-                </MenuFlyoutItem.CommandParameter>
-              </MenuFlyoutItem>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>UpdateTimeDecending</models:FileSortType>
@@ -95,8 +90,6 @@
               <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" /> <LineBreak /> <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
           </TextBlock>
         </Border>
-
-        <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
       </StackPanel>
     </Flyout>

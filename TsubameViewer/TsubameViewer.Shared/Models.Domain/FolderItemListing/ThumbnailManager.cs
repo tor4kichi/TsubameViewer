@@ -128,8 +128,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
 
-            _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegexString)
-                .Select(x => x is not null ? new Regex(x) : null)
+            _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
+                .Select(x => string.IsNullOrWhiteSpace(x) is false ? new Regex(x) : null)
                 .ToReadOnlyReactivePropertySlim();            
         }
 

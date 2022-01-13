@@ -77,7 +77,6 @@ ChangeViewToImageListupPage = Switch to image list view
 
 
 FileSortTitle = Sorting
-FileSortType.UpdateTimeDescThenTitleAsc = Latest & Title Asc
 FileSortType.TitleAscending = Title Asc
 FileSortType.TitleDecending = Title Desc
 FileSortType.UpdateTimeAscending = Recent
@@ -86,7 +85,6 @@ FileSortType.UpdateTimeDecending = Latest
 Sort_InheritancePath = Sort inheritance source
 Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
-TitleDigitCompletion = Title digit completion
 
 
 OpenImageViewer = Open in reader

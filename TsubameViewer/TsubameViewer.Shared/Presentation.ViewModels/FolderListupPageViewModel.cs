@@ -114,9 +114,6 @@ namespace TsubameViewer.Presentation.ViewModels
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
         public ReactivePropertySlim<FileSortType?> SelectedChildFileSortType { get; }
 
-        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
-
-
 
         public ReactivePropertySlim<StorageItemViewModel> FolderLastIntractItem { get; }
 
@@ -214,9 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>()
                 .AddTo(_disposables);
 
-            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDescThenTitleAsc)
-                .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(false)
+            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending, ReactivePropertyMode.DistinctUntilChanged)
                 .AddTo(_disposables);
 
             SelectedChildFileSortType = new ReactivePropertySlim<FileSortType?>(null)
@@ -306,22 +301,19 @@ namespace TsubameViewer.Presentation.ViewModels
             if (settings != null)
             {
                 SelectedFileSortType.Value = settings.Sort;
-                IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
-                SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                SetSortAsyncUnsafe(SelectedFileSortType.Value);
             }
             else
             {
                 if (_currentItem is StorageFolder)
                 {
                     SelectedFileSortType.Value = FileSortType.TitleAscending;
-                    IsSortWithTitleDigitCompletion.Value = false;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value);
                 }
                 else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
                 {
-                    SelectedFileSortType.Value = FileSortType.UpdateTimeDescThenTitleAsc;
-                    IsSortWithTitleDigitCompletion.Value = false;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    SelectedFileSortType.Value = FileSortType.UpdateTimeDecending;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value);
                 }
             }
 
@@ -395,15 +387,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 NowProcessing = false;
             }
 
-            Observable.CombineLatest(
-                SelectedFileSortType,
-                IsSortWithTitleDigitCompletion,
-                (sortType, withInterpolation) => (sortType, withInterpolation)
-                )
-                .Pairwise()
-                .Where(x => x.NewItem != x.OldItem)
-                .Select(x => x.NewItem)
-                .Subscribe(x => _ = SetSort(x.sortType, x.withInterpolation, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None))
+            SelectedFileSortType
+                .Subscribe(x => _ = SetSort(x, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None))
                 .AddTo(_navigationDisposables);
 
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
@@ -575,14 +560,12 @@ namespace TsubameViewer.Presentation.ViewModels
 #region FileSortType
 
 
-        public static IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType, bool withTitleDigitCompletion)
+        public static IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
         {
-            IComparer TitleDigitCompletionComparer = withTitleDigitCompletion ? Sorting.TitleDigitCompletionComparer.Default : null;
             return fileSortType switch
             {
-                FileSortType.UpdateTimeDescThenTitleAsc => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending), new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
-                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, TitleDigitCompletionComparer) },
-                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, TitleDigitCompletionComparer) },
+                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending) },
+                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending) },
                 FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
                 FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
                 _ => throw new NotSupportedException(),
@@ -609,17 +592,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
             });
 
-        private async Task SetSort(FileSortType fileSort, bool withNameInterpolation, CancellationToken ct)
+        private async Task SetSort(FileSortType fileSort, CancellationToken ct)
         {
             using (await _RefreshLock.LockAsync(ct))
             {
-                SetSortAsyncUnsafe(fileSort, withNameInterpolation);
+                SetSortAsyncUnsafe(fileSort);
             }
         }
 
-        private void SetSortAsyncUnsafe(FileSortType fileSort, bool withNameInterpolation)
+        private void SetSortAsyncUnsafe(FileSortType fileSort)
         {
-            var sortDescriptions = ToSortDescription(fileSort, withNameInterpolation);
+            var sortDescriptions = ToSortDescription(fileSort);
             using (FileItemsView.DeferRefresh())
             {
                 FileItemsView.SortDescriptions.Clear();
@@ -632,8 +615,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
                 _currentPath,
-                fileSort,
-                withNameInterpolation
+                fileSort
                 );
         }
 

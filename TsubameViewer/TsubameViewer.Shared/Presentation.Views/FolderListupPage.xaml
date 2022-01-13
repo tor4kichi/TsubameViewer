@@ -68,11 +68,6 @@
                             >
             <DropDownButton.Flyout>
               <MenuFlyout>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
                     <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
@@ -105,8 +100,6 @@
             <Button.Flyout>
               <Flyout Placement="Bottom">
                 <StackPanel Spacing="8">
-                  <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
-
                   <TextBlock x:Name="ChildFolderSortButtonHeaderText" Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}" Visibility="Collapsed" />
                   <DropDownButton x:Name="ChildFolderSortButton" 
                             Content="{x:Bind _vm.SelectedChildFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
@@ -116,11 +109,6 @@
                     <DropDownButton.Flyout>
                       <MenuFlyout>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeChildFileSortCommand}" CommandParameter="{x:Null}">
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
-                          <MenuFlyoutItem.CommandParameter>
-                            <folderModels:FileSortType>UpdateTimeDescThenTitleAsc</folderModels:FileSortType>
-                          </MenuFlyoutItem.CommandParameter>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
                           <MenuFlyoutItem.CommandParameter>

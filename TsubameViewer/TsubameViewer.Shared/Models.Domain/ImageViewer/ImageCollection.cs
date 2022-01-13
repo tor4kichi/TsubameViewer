@@ -1,4 +1,5 @@
-﻿using SharpCompress.Archives;
+﻿using Microsoft.Toolkit.Diagnostics;
+using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -21,6 +22,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         string Name { get; }
         IEnumerable<IImageSource> GetAllImages();
+
+        ValueTask<int> GetImageCountAsync(CancellationToken ct);
+        ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct);
+        ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct);
     }
 
     public interface IImageCollectionDirectoryToken
@@ -31,7 +36,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry) : IImageCollectionDirectoryToken
     {
         private string _key;
-        public string Key => _key ??= (Entry?.Key is not null ? (Entry.IsDirectory ? Entry.Key : Path.GetDirectoryName(Entry.Key)) : null);
+        public string Key => _key ??= Entry?.Key;
+
+        private string _label;
+        public string Label => _label ??= (Entry?.Key is not null ? (Entry.IsDirectory ? Entry.Key : Path.GetDirectoryName(Entry.Key)) : null);
     }
 
     public interface IImageCollectionWithDirectory : IImageCollection
@@ -57,9 +65,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
 
-        private readonly ImmutableDictionary<string, int> _KeyToIndex;
-        //private readonly ImmutableArray<string> _IndexToKey;
+        private readonly IImageSource[] _imageSourcesCache;
+        private readonly ImmutableSortedDictionary<string, int> _KeyToIndex;
 
+        private readonly ImmutableArray<int> _imageEntryIndexSortWithDateTime;
+        private readonly ImmutableArray<int> _imageEntryIndexSortWithTitle;
         public ArchiveImageCollection(
             StorageFile file, 
             IArchive archive,
@@ -78,8 +88,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
 
             // アーカイブのフォルダ構造を見つける
-            var structure = _archiveFileInnerStructure;            
-            _KeyToIndex = structure.Items.Select((x, i) => (Key: x, Index: i)).ToImmutableDictionary(x => x.Key, x => x.Index);
+            var structure = _archiveFileInnerStructure;
+            _KeyToIndex = structure.Items.Select((x, i) => (Key: x, Index: i)).ToImmutableSortedDictionary(x => x.Key, x => x.Index);
             //_IndexToKey = structure.Items.ToImmutableArray();
             HashSet<string> directories = new ();
             foreach (var index in structure.FolderIndexies)
@@ -87,19 +97,33 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 directories.Add(structure.Items[index]);
             }
 
+            HashSet<int> supportedFileIndexies = new();
+            int imagesCount = 0;
             foreach (var index in structure.FileIndexies)
             {
                 var key = structure.Items[index];
-                if (DirectoryPathHelper.GetDirectoryDepth(key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(key))
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(key))
                 {
-                    var dicrectoryName = Path.GetDirectoryName(key);
-                    if (directories.Contains(dicrectoryName) is false)
+                    supportedFileIndexies.Add(index);
+
+                    if (DirectoryPathHelper.GetDirectoryDepth(key) >= 1)
                     {
-                        directories.Add(dicrectoryName);
+                        var dicrectoryName = Path.GetDirectoryName(key);
+                        if (directories.Contains(dicrectoryName) is false)
+                        {
+                            directories.Add(dicrectoryName);
+                        }
                     }
+
+                    imagesCount++;
                 }
             }
 
+            _imageEntryIndexSortWithTitle = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
+            _imageEntryIndexSortWithDateTime = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
+
+            ImagesCount = imagesCount;
+            _imageSourcesCache = new IImageSource[structure.Items.Length];
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
             if (directories.Any() is false)
             {
@@ -115,15 +139,26 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        private IArchiveEntry GetEntryFromIndex(int index)
-        {
-            return Archive.Entries.ElementAt(index);
-        }
+
 
 
         private IArchiveEntry GetEntryFromKey(string key)
         {
-            return Archive.Entries.ElementAt(_KeyToIndex[key]);
+            return Archive.Entries.ElementAt(GetIndexFromKey(key));
+        }
+
+        private int GetIndexFromKey(string key)
+        {
+            if (_KeyToIndex.TryGetValue(key, out int index))
+            {
+                return index;
+            }
+            else
+            {
+                var find = _KeyToIndex.FirstOrDefault(x => x.Key.StartsWith(key));
+                Guard.IsNotNullOrEmpty(find.Key, nameof(find.Key));
+                return find.Value;
+            }
         }
 
         private readonly ArchiveDirectoryToken _rootDirectoryToken;
@@ -173,9 +208,18 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
                 )
                 .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _folderListingSettings, _thumbnailManager))
-                .ToList();
+                .Select(x =>
+                {
+                    var index = GetIndexFromKey(x.Key);
+                    if (_imageSourcesCache[index] is not null and var image)
+                    {
+                        return image;
+                    }
 
+                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, token, this, _folderListingSettings, _thumbnailManager);
+                })
+                .ToList();
+            
             _entriesCacheByDirectory.Add(token, imageSourceItems);
             return imageSourceItems;
         }
@@ -203,6 +247,62 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 return _directories.SelectMany(x => GetImagesFromDirectory(x)).ToList();
             }
         }
+
+        private readonly int ImagesCount;
+        public ValueTask<int> GetImageCountAsync(CancellationToken ct)
+        {
+            return new(ImagesCount);
+        }
+
+        public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return new(GetImageAt(index, sort));
+        }
+
+        private IImageSource GetImageAt(int index, FileSortType sort)
+        {
+            var sortedIndex = ToSortedIndex(index, sort);
+            if (_imageSourcesCache[sortedIndex] is not null and var image)
+            {
+                return image;
+            }
+
+            var imageEntry = Archive.Entries.ElementAt(sortedIndex);
+
+            Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
+
+            var token = GetDirectoryTokenFromPath(Path.GetDirectoryName(imageEntry.Key));
+            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
+        }
+       
+        // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            foreach (var i in Enumerable.Range(0, ImagesCount))
+            {
+                var sortedIndex = ToSortedIndex(i, sort);
+                var imageEntry = Archive.Entries.ElementAt(sortedIndex);
+                if (key == imageEntry.Key || imageEntry.Key.StartsWith(key))
+                {
+                    return new (i);
+                }
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        private int ToSortedIndex(int index, FileSortType sort)
+        {
+            return sort switch
+            {
+                FileSortType.None => index,
+                FileSortType.TitleAscending => _imageEntryIndexSortWithTitle[index],
+                FileSortType.TitleDecending => _imageEntryIndexSortWithTitle[_imageEntryIndexSortWithTitle.Length - index - 1],
+                FileSortType.UpdateTimeAscending => _imageEntryIndexSortWithDateTime[index],
+                FileSortType.UpdateTimeDecending => _imageEntryIndexSortWithDateTime[_imageEntryIndexSortWithDateTime.Length - index - 1],
+                _ => throw new NotSupportedException(sort.ToString()),
+            };
+        }
     }
 
 
@@ -212,12 +312,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
+        private readonly IImageSource[] _imageSourcesCache;
         public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _pdfDocument = pdfDocument;
             _folderListingSettings = folderListingSettings;
             File = file;
             _thumbnailManager = thumbnailManager;
+
+            _imageSourcesCache = new IImageSource[_pdfDocument.PageCount];
         }
         public string Name => File.Name;
 
@@ -228,6 +331,29 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
               .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _thumbnailManager));
+        }
+
+
+        public ValueTask<int> GetImageCountAsync(CancellationToken ct)
+        {
+            return new ((int)_pdfDocument.PageCount);
+        }
+        
+        public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return new(GetImageAt(index));
+        }
+
+        private IImageSource GetImageAt(int index)
+        {
+            var page = _pdfDocument.GetPage((uint)index);
+            return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _thumbnailManager);
+        }
+
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            // TODO: PDFの逆順取得に対応
+            return new (int.Parse(key));
         }
     }
 }

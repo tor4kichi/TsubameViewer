@@ -25,6 +25,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public int[] FileIndexies { get; set; }
 
             public int[] FolderIndexies { get; set; }
+
+            public int[] FileIndexiesSortWithDateTime { get; set; }            
         }
 
         public sealed record ArchiveFileInnerSturctureItem(string Key, bool IsDirectory);
@@ -33,6 +35,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             public ArchiveFileInnerStructureCacheRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
             {
+                
             }
 
             public ArchiveFileInnerSturcture FindById(string path)
@@ -83,12 +86,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public ArchiveFileInnerSturcture AddOrUpdateStructure(string path, IArchive archive, CancellationToken ct)
         {
-            string[] items = new string[archive.Entries.Count()];
+            List<string> items = new List<string>();
             List<int> fileIndexies = new();
             List<int> folderIndexies = new();
             foreach (var (entry, index) in archive.Entries.Select((x, i) => (x, i)))
             {
-                items[index] = entry.Key;
+                items.Add(entry.Key);
                 if (entry.IsDirectory)
                 {
                     folderIndexies.Add(index);
@@ -102,12 +105,20 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 ct.ThrowIfCancellationRequested();
             }
 
+            var fileIndexiesSortWithDateTime = archive.Entries
+                .Where(x => x.IsDirectory is false)
+                .Select((x, i) => (Entry: x, Index: i, DateTime: x.ArchivedTime ?? x.CreatedTime ?? x.LastModifiedTime ?? DateTime.MinValue))
+                .OrderBy(x => x.DateTime)
+                .Select(x => x.Index)
+                .ToArray();
+               
             var cacheEntry = new ArchiveFileInnerSturcture()
             {
                 Path = path,
-                Items = items,
+                Items = items.ToArray(),
                 FileIndexies = fileIndexies.ToArray(),
-                FolderIndexies = folderIndexies.ToArray()
+                FolderIndexies = folderIndexies.ToArray(),
+                FileIndexiesSortWithDateTime = fileIndexiesSortWithDateTime,
             };
 
             _archiveFileLastSizeCacheRepository.UpdateItem(new ArchiveFileLastSizeCache() { Path = path, Size = archive.TotalSize });

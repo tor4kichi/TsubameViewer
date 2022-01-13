@@ -77,7 +77,6 @@ ChangeViewToImageListupPage = 画像一覧ビューに切替
 
 
 FileSortTitle = 並び替え
-FileSortType.UpdateTimeDescThenTitleAsc = 新しい順＆タイトル昇順
 FileSortType.TitleAscending = タイトル昇順
 FileSortType.TitleDecending = タイトル降順
 FileSortType.UpdateTimeAscending = 古い順
@@ -86,7 +85,6 @@ FileSortType.UpdateTimeDecending = 新しい順
 Sort_InheritancePath = 並び替え継承元
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダの画像並び替え
-TitleDigitCompletion = タイトルの桁数補完
 
 
 OpenImageViewer = リーダーで開く
