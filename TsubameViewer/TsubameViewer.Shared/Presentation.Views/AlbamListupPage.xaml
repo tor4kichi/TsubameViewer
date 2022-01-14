@@ -10,8 +10,8 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels"
-  xmlns:albamViewModels="using:TsubameViewer.Presentation.ViewModels.Albam"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  xmlns:navigationVM="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -40,7 +40,7 @@
       </local:AlbamDataTemplateSelector.CreateNew>
 
       <local:AlbamDataTemplateSelector.Albam>
-        <DataTemplate x:DataType="albamViewModels:AlbamViewModel">
+        <DataTemplate x:DataType="navigationVM:StorageItemViewModel">
           <Grid Background="Transparent" IsHitTestVisible="True">
             <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
               <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0">

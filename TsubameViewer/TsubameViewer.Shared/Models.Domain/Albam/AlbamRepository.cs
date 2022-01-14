@@ -117,6 +117,10 @@ namespace TsubameViewer.Models.Domain.Albam
             return _albamDatabase.ReadAllItems();
         }
 
+        public bool IsExistAlbamItem(Guid albamId)
+        {
+            return _albamItemDatabase.Exists(x => x.AlbamId == albamId);
+        }
 
         public bool IsExistAlbamItem(Guid albamId, string path)
         {
@@ -136,6 +140,10 @@ namespace TsubameViewer.Models.Domain.Albam
             return _albamItemDatabase.Delete(albamId, path);
         }
 
+        public int GetAlbamItemsCount(Guid albamId)
+        {
+            return _albamItemDatabase.Count(x => x.AlbamId == albamId);
+        }
 
         public IEnumerable<AlbamItemEntry> GetAlbamItems(Guid albamId, int skip = 0, int limit = int.MaxValue)
         {

@@ -59,7 +59,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 return CreateNew;
             }
-            else if (item is ViewModels.Albam.AlbamViewModel)
+            else if (item is ViewModels.PageNavigation.StorageItemViewModel)
             {
                 return Albam;
             }
@@ -79,7 +79,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 return CreateNew;
             }
-            else if (item is ViewModels.Albam.AlbamViewModel)
+            else if (item is ViewModels.PageNavigation.StorageItemViewModel)
             {
                 return Albam;
             }

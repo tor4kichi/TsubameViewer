@@ -5,11 +5,12 @@ using System.Text;
 using System.Web;
 using TsubameViewer.Presentation.Views;
 
-namespace TsubameViewer.Presentation.ViewModels.PageNavigation
+namespace TsubameViewer.Models.Domain
 {
     public static class PageNavigationConstants
     {
-        public const string Path = "q"; // query
+        public const string GeneralPathKey = "q"; // general content url
+        public const string AlbamPathKey = "al"; // albam url
         private const string PageName = "p"; // pageName
         private const string ArchiveFolderName = "ac"; // archiveFolder
         public const string Restored = "re"; // restored
@@ -25,7 +26,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
         public static (string Path, string PageName, string ArchiveFolderName) ParseStorageItemId(string id)
-        {
+        {            
             var storageItemIdValues = id.Split('?');
             if (storageItemIdValues.Length == 1)
             {
@@ -52,9 +53,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 throw new NotSupportedException(id);
             }                
         }
-
-        public readonly static Type HomePageType = typeof(SourceStorageItemsPage);
-        public static string HomePageName => HomePageType.Name;
 
         public readonly static TimeSpan BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
     }

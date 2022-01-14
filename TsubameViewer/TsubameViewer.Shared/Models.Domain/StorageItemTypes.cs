@@ -12,5 +12,8 @@ namespace TsubameViewer.Models.Domain
         Archive,
         ArchiveFolder,
         EBook,
+
+        Albam,
+        AlbamImage,
     }
 }

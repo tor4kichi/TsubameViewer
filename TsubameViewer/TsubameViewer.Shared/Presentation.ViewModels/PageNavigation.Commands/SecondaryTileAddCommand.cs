@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.Services.UWP;
 
@@ -30,7 +31,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 {
                     var param = StorageItemViewModel.CreatePageParameter(itemVM);
                     var tileArguments = new SecondaryTileArguments();
-                    if (param.TryGetValue(PageNavigationConstants.Path, out string path))
+                    if (param.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                     {
                         tileArguments.Path = Uri.UnescapeDataString(path);
                     }

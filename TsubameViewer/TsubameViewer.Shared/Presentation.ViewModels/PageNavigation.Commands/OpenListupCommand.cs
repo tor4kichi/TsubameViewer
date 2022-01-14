@@ -18,6 +18,7 @@ using System.IO;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.Views;
+using TsubameViewer.Models.Domain.Albam;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
@@ -69,7 +70,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                             else if (leaves.Count == 1)
                             {
                                 var leaf = leaves[0] as ArchiveDirectoryImageSource;
-                                var parameters = new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, leaf.Path))));
+                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, leaf.Path))));
                                 var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                             }
                             else
@@ -78,7 +79,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                                 var distinct = leaves.Select(x => new string(x.Path.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
                                 if (distinct.Count == 1)
                                 {
-                                    var parameters = new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, distinct[0]))));
+                                    var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(item.Path, distinct[0]))));
                                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                                 }
                                 else
@@ -114,12 +115,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     {
                         if (archiveFolderItem.IsContainsSubDirectory())
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(item);
+                            var parameters = StorageItemViewModel.CreatePageParameter(archiveFolderItem);
                             var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                         }
                         else
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(item);
+                            var parameters = StorageItemViewModel.CreatePageParameter(archiveFolderItem);
                             var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                         }
                     }
@@ -127,6 +128,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     {
                         throw new NotSupportedException();
                     }                    
+                }
+                else if (item.Item is AlbamImageSource albam)
+                {
+                    var parameters = StorageItemViewModel.CreatePageParameter(albam);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                }
+                else if (item.Item is AlbamItemImageSource albamItem)
+                {
+                    var parameters = StorageItemViewModel.CreatePageParameter(albamItem);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
                 else if (item.Type == StorageItemTypes.EBook)
                 {

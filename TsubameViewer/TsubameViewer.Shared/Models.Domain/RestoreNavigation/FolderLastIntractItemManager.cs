@@ -10,10 +10,15 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
     public sealed class FolderLastIntractItemManager 
     {
         private readonly FolderLastIntractItemRepository _folderLastIntractItemRepository;
+        private readonly AlbamLastIntractItemRepository _albamLastIntractItemRepository;
 
-        public FolderLastIntractItemManager(FolderLastIntractItemRepository folderLastIntractItemRepository)
+        public FolderLastIntractItemManager(
+            FolderLastIntractItemRepository folderLastIntractItemRepository,
+            AlbamLastIntractItemRepository albamLastIntractItemRepository
+            )
         {
             _folderLastIntractItemRepository = folderLastIntractItemRepository;
+            _albamLastIntractItemRepository = albamLastIntractItemRepository;
         }
 
         public string GetLastIntractItemName(string path)
@@ -40,6 +45,24 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
             _folderLastIntractItemRepository.DeleteAllUnderPath(path);
         }
 
+
+
+        public string GetLastIntractItemName(Guid albamId)
+        {
+            return _albamLastIntractItemRepository.GetLastIntractItemName(albamId);
+        }
+
+        public void SetLastIntractItemName(Guid albamId, string itemPath)
+        {
+            _albamLastIntractItemRepository.SetLastIntractItemPath(albamId, itemPath);
+        }
+
+        public void Remove(Guid albamId)
+        {
+            _albamLastIntractItemRepository.DeleteItem(albamId);
+        }
+
+
         public class FolderLastIntractItemRepository : LiteDBServiceBase<FolderLastIntractItem>
         {
             public FolderLastIntractItemRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -61,6 +84,23 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
                 _collection.DeleteMany(x => path.StartsWith(x.Path));
             }
         }
+
+        public class AlbamLastIntractItemRepository : LiteDBServiceBase<AlbamLastIntractItem>
+        {
+            public AlbamLastIntractItemRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
+            {
+            }
+
+            public string GetLastIntractItemName(Guid albamId)
+            {
+                return _collection.FindById(albamId)?.AlbamItemPath;
+            }
+
+            public void SetLastIntractItemPath(Guid albamId, string itemPath)
+            {
+                _collection.Upsert(new AlbamLastIntractItem() { AlbamId = albamId, AlbamItemPath = itemPath });
+            }
+        }
     }
 
     public sealed class FolderLastIntractItem
@@ -72,4 +112,13 @@ namespace TsubameViewer.Models.Domain.RestoreNavigation
         public string ItemName { get; set; }
     }
 
+
+    public sealed class AlbamLastIntractItem
+    {
+        [BsonId]
+        public Guid AlbamId { get; set; }
+
+        [BsonField]
+        public string AlbamItemPath { get; set; }
+    }
 }

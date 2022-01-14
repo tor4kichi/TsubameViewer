@@ -246,7 +246,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
             }

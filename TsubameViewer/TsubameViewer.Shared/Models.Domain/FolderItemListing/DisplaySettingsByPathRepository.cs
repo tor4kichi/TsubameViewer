@@ -25,6 +25,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public FileSortType? ChildItemDefaultSort { get; init; }
     }
 
+    public record AlbamDisplaySettingEntry
+    {
+        [BsonId]
+        public Guid AlbamId { get; init; }
+
+        public FileSortType Sort { get; init; }
+    }
+
     public sealed class DisplaySettingsByPathRepository
     {
         public sealed class InternalFolderAndArchiveDisplaySettingsByPathRepository : LiteDBServiceBase<FolderAndArchiveDisplaySettingEntry>
@@ -84,16 +92,26 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
+        public sealed class InternalAlbameDisplaySettingsRepository : LiteDBServiceBase<AlbamDisplaySettingEntry>
+        {
+            public InternalAlbameDisplaySettingsRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
+            {
+            }
+        }
+
         private readonly InternalFolderAndArchiveDisplaySettingsByPathRepository _internalFolderAndArchiveRepository;
         private readonly InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository _internalChildFileRepository;
+        private readonly InternalAlbameDisplaySettingsRepository _internalAlbameDisplaySettingsRepository;
 
         public DisplaySettingsByPathRepository(
             InternalFolderAndArchiveDisplaySettingsByPathRepository folderAndArchiveRepository,
-            InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository childFileRepository
+            InternalFolderAndArchiveChildFileDisplaySettingsByPathRepository childFileRepository,
+            InternalAlbameDisplaySettingsRepository internalAlbameDisplaySettingsRepository
             )
         {
             _internalFolderAndArchiveRepository = folderAndArchiveRepository;
             _internalChildFileRepository = childFileRepository;
+            _internalAlbameDisplaySettingsRepository = internalAlbameDisplaySettingsRepository;
         }
 
         public FolderAndArchiveDisplaySettingEntry GetFolderAndArchiveSettings(string path)
@@ -163,6 +181,24 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             _internalFolderAndArchiveRepository.FolderChanged(oldPath, newPath);
             _internalChildFileRepository.FolderChanged(oldPath, newPath);
+        }
+
+
+
+
+        public void SetAlbamSettings(Guid albamId, FileSortType fileSortType)
+        {
+            _internalAlbameDisplaySettingsRepository.UpdateItem(new AlbamDisplaySettingEntry() { AlbamId = albamId, Sort = fileSortType });
+        }
+
+        public AlbamDisplaySettingEntry GetAlbamDisplaySettings(Guid albamId)
+        {
+            return _internalAlbameDisplaySettingsRepository.FindById(albamId);
+        }
+
+        public bool ClearAlbamSettings(Guid albamId)
+        {
+            return _internalAlbameDisplaySettingsRepository.DeleteItem(albamId);
         }
     }
 }

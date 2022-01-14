@@ -3,6 +3,8 @@ using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
@@ -18,14 +20,14 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is AlbamViewModel;
+            return parameter is StorageItemViewModel;
         }
 
         protected override void Execute(object parameter)
         {
-            if (parameter is AlbamViewModel albamVM)
+            if (parameter is StorageItemViewModel itemVM && itemVM.Item is AlbamImageSource albamImageSource)
             {
-                _messenger.NavigateAsync(nameof(Views.AlbamImageListupPage), parameters: (Albam.AlbamNavigationConstants.Key_AlbamId, albamVM.AlbamId));
+                _messenger.NavigateAsync(nameof(Views.ImageListupPage), parameters: (PageNavigationConstants.AlbamPathKey, albamImageSource.AlbamId));
             }            
         }
     }

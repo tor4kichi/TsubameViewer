@@ -142,7 +142,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IDisposable _ImageCollectionDisposer;
 
-        public string FoldersManagementPageName => PageNavigationConstants.HomePageName;
+        public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
 
         private string _currentArchiveFolderName;
 
@@ -233,7 +233,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
 
                 if (_currentPath != null && 
-                    parameters.ContainsKey(PageNavigationConstants.Path) &&  parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                    parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) &&  parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
@@ -338,7 +338,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _currentArchiveFolderName = null;
 
-                if (parameters.TryGetValueSafe(PageNavigationConstants.Path, out string path))
+                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 

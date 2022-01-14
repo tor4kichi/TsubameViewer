@@ -18,6 +18,7 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
 using Uno.Disposables;
+using TsubameViewer.Models.Domain.Albam;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
@@ -32,18 +33,39 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         {
             if (vm.Type == StorageItemTypes.Image)
             {
-                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(vm.Item.StorageItem.Path, vm.Name))));
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(vm.Item.StorageItem.Path, vm.Name))));
             }
-            else if (vm.Type == StorageItemTypes.ArchiveFolder)
+            else if (vm.Item is ArchiveDirectoryImageSource archiveFolderImageSource)
             {
-                var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
-
-                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(vm.Item.StorageItem.Path, archiveFolderImageSource.Path))));
+                return CreatePageParameter(archiveFolderImageSource);
+            }
+            else if (vm.Item is AlbamImageSource albam)
+            {
+                return CreatePageParameter(albam);
+            }
+            else if (vm.Item is AlbamItemImageSource albamItem)
+            {
+                return CreatePageParameter(albamItem);
             }
             else
             {
-                return new NavigationParameters((PageNavigationConstants.Path, Uri.EscapeDataString(vm.Item.StorageItem.Path)));
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(vm.Item.StorageItem.Path)));
             }
+        }
+
+        public static NavigationParameters CreatePageParameter(ArchiveDirectoryImageSource archiveFolderImageSource)
+        {
+            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(archiveFolderImageSource.StorageItem.Path, archiveFolderImageSource.Path))));
+        }
+
+        public static NavigationParameters CreatePageParameter(AlbamImageSource albam)
+        {
+            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(albam.AlbamId.ToString())));
+        }
+
+        public static NavigationParameters CreatePageParameter(AlbamItemImageSource albamItem)
+        {
+            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(albamItem.AlbamId.ToString(), albamItem.Path))));
         }
 
         #endregion

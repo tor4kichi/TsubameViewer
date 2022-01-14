@@ -155,7 +155,6 @@ namespace TsubameViewer
             container.RegisterForNavigation<SettingsPage>();
             container.RegisterForNavigation<SearchResultPage>();
             container.RegisterForNavigation<AlbamListupPage>();
-            container.RegisterForNavigation<AlbamImageListupPage>();
         }
 
         bool isRestored = false;
@@ -511,11 +510,11 @@ namespace TsubameViewer
 
             if (!string.IsNullOrEmpty(info.PageName))
             {
-                parameters.Add(PageNavigationConstants.Path, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(info.Path, info.PageName)));
+                parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(info.Path, info.PageName)));
             }
             else
             {
-                parameters.Add(PageNavigationConstants.Path, Uri.EscapeDataString(info.Path));
+                parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(info.Path));
             }
 
             var item = await sourceFolderRepository.GetStorageItemFromPath(info.Path);

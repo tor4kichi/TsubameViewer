@@ -24,7 +24,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override void Execute(object parameter)
         {
-            _messenger.NavigateAsync(nameof(Views.AlbamImageListupPage), parameters: (Albam.AlbamNavigationConstants.Key_AlbamId, FavoriteAlbam.FavoriteAlbamId));
+            _messenger.NavigateAsync(nameof(Views.ImageListupPage), parameters: (Albam.AlbamNavigationConstants.Key_AlbamId, FavoriteAlbam.FavoriteAlbamId));
         }
     }
 }

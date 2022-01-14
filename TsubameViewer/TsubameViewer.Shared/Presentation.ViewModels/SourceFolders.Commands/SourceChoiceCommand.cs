@@ -5,6 +5,7 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Unity.Attributes;
@@ -47,7 +48,7 @@ namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 
             if (OpenAfterChoice && token != null)
             {
-                await _messenger.NavigateAsync(nameof(FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, seletedFolder.Path)));
+                await _messenger.NavigateAsync(nameof(FolderListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, seletedFolder.Path)));
             }
         }
     }

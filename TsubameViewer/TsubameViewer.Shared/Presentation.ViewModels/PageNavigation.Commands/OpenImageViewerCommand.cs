@@ -30,12 +30,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             if (parameter is StorageItemViewModel item)
             {
-                if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
-                {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
-                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
-                }
-                else if (item.Type == StorageItemTypes.Folder)
+                if (item.Type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
                 {
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
