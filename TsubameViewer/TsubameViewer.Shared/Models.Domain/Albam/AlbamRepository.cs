@@ -15,7 +15,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public string Name { get; init; }
 
-        public DateTimeOffset CreatedAt { get; init; }
+        public DateTimeOffset CreatedAt { get; init; }        
     }
 
     public sealed record AlbamItemEntry

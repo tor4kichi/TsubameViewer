@@ -469,16 +469,20 @@ namespace TsubameViewer.Presentation.ViewModels
                 )
                 )
             {
-                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
-                if (bookmarkPageName != null)
+                
+                if (string.IsNullOrEmpty(_pathForSettings) is false)
                 {
-                    try
+                    var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
+                    if (bookmarkPageName != null)
                     {
-                        _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
-                    }
-                    catch
-                    {
-                        _CurrentImageIndex = 0;
+                        try
+                        {
+                            _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                        }
+                        catch
+                        {
+                            _CurrentImageIndex = 0;
+                        }
                     }
                 }
             }

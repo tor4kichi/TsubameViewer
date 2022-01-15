@@ -5,21 +5,25 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.Services;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
     public sealed class AlbamCreateCommand : DelegateCommandBase
     {
-        private readonly AlbamRepository _albamRepository;
         private readonly IMessenger _messenger;
+        private readonly AlbamRepository _albamRepository;
+        private readonly AlbamDialogService _albamDialogService;
 
         public AlbamCreateCommand(
+            IMessenger messenger,
             AlbamRepository albamRepository,
-            IMessenger messenger
+            AlbamDialogService albamDialogService
             )
         {
-            _albamRepository = albamRepository;
             _messenger = messenger;
+            _albamRepository = albamRepository;
+            _albamDialogService = albamDialogService;
         }
 
         protected override bool CanExecute(object parameter)
@@ -29,9 +33,8 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override async void Execute(object parameter)
         {
-            var textInputDialog = new Views.Dialogs.TextInputDialog("CreateAlbam".Translate(), "CreateAlbam_Placeholder".Translate(), "Create".Translate());
-            await textInputDialog.ShowAsync();
-            if (textInputDialog.GetInputText() is not null and var title && string.IsNullOrEmpty(title) is false)
+            var title = await _albamDialogService.GetAlbamTitleAsync();
+            if (string.IsNullOrEmpty(title) is false)
             {
                 AlbamEntry createdAlbam = null;
 

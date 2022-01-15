@@ -383,7 +383,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             if (item is not null)
             {
-                _cached.Add(token, item);
+                _cached.TryAdd(token, item);
             }
 
             return item;
