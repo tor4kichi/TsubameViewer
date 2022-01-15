@@ -412,7 +412,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
-                    if (Guid.TryParse(albamIdString, out var albamId) is false)
+                    if (Guid.TryParse(albamIdString, out var albamId) is true)
                     {
                         await ResetContentWithAlbam(albamId, ct);
                     }

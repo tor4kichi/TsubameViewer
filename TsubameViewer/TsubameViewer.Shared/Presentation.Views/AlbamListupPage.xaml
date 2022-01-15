@@ -11,60 +11,13 @@
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  xmlns:navigationVM="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
+  xmlns:navigationVM="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
+  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
   <Page.Resources>
-    <local:AlbamDataTemplateSelector x:Key="AlbamDataTemplateSelector">
-      <local:AlbamDataTemplateSelector.CreateNew>
-        <DataTemplate x:DataType="viewModels:CreateNewAlbamViewModel">
-          <controls:DockPanel>
-            <ToolTipService.ToolTip>
-              <TextBlock Text="{i18nExt:Localize Key=AddNewAlbam}" />
-            </ToolTipService.ToolTip>
-
-            <controls:DockPanel controls:DockPanel.Dock="Bottom" Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
-              <SymbolIcon Symbol="NewFolder" controls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
-                <SymbolIcon.RenderTransform>
-                  <ScaleTransform ScaleX="1.30" ScaleY="1.30" CenterX="12" CenterY="12" />
-                </SymbolIcon.RenderTransform>
-              </SymbolIcon>
-              <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{i18nExt:Localize Key=AddNewAlbam}" />
-              </StackPanel>
-            </controls:DockPanel>
-            <Border  />
-          </controls:DockPanel>
-        </DataTemplate>
-      </local:AlbamDataTemplateSelector.CreateNew>
-
-      <local:AlbamDataTemplateSelector.Albam>
-        <DataTemplate x:DataType="navigationVM:StorageItemViewModel">
-          <Grid Background="Transparent" IsHitTestVisible="True">
-            <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
-              <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="1.0">
-              </Border>
-              <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
-            </Grid>
-          </Grid>
-        </DataTemplate>
-      </local:AlbamDataTemplateSelector.Albam>
-    </local:AlbamDataTemplateSelector>
-
-
-    <local:AlbamStyleSelector x:Key="AlbamStyleSelector">
-      <local:AlbamStyleSelector.CreateNew>
-        <Style TargetType="GridViewItem" BasedOn="{StaticResource AddNewFolderStyle}">
-          
-        </Style>
-      </local:AlbamStyleSelector.CreateNew>
-      <local:AlbamStyleSelector.Albam>
-        <Style TargetType="GridViewItem" BasedOn="{StaticResource FolderStyle}">
-          
-        </Style>
-      </local:AlbamStyleSelector.Albam>
-    </local:AlbamStyleSelector>
+    
   </Page.Resources>
   
   
@@ -72,8 +25,8 @@
     <controls:AdaptiveGridView 
       x:Name="ItemsAdaptiveGridView"      
       ItemsSource="{x:Bind _vm.Albams}"
-      ItemTemplateSelector="{StaticResource AlbamDataTemplateSelector}"
-      ItemContainerStyleSelector="{StaticResource AlbamStyleSelector}"
+      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+      ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
       DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
       ItemHeight="{StaticResource FolderGridViewItemHeight}"
       StretchContentForSingleRow="False"
@@ -81,13 +34,18 @@
       IsItemClickEnabled="True"
       IsSynchronizedWithCurrentItem="False"
       SelectionMode="None"
-      ItemClickCommand="{x:Bind _vm.AlbamOpenCommand}"
+      ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
+      ContextFlyout="{StaticResource StorageItemMenuFlyout}"
       >
       <GridView.ItemContainerTransitions>
         <TransitionCollection />
       </GridView.ItemContainerTransitions>
-      
-      
+
+      <i:Interaction.Behaviors>
+        <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+          <core:CallMethodAction MethodName="Initialize" />
+        </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+      </i:Interaction.Behaviors>
     </controls:AdaptiveGridView>
 
     

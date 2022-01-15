@@ -139,13 +139,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var parameters = StorageItemViewModel.CreatePageParameter(albamItem);
                     var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.EBook)
-                {
-
-                }
-                else if (item.Type == StorageItemTypes.None)
-                {
-                }
             }
         }
     }

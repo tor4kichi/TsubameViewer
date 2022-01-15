@@ -319,6 +319,7 @@
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
             </ListView.ItemContainerTransitions>
+            
             <ListView.ItemContainerStyle>
               <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
                 <Setter Property="MinWidth" Value="40" />

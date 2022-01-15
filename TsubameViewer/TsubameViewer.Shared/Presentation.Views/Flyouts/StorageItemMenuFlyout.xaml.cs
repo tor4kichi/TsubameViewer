@@ -42,6 +42,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AddFavariteImageMenuItem.Command = container.Resolve<FavoriteAddCommand>();
             RemoveFavariteImageMenuItem.Command = container.Resolve<FavoriteRemoveCommand>();
             EditAlbamImageMenuItem.Command = container.Resolve<AlbamEditCommand>();
+            AlbamDeleteMenuItem.Command = container.Resolve<AlbamDeleteCommand>();
             AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
@@ -86,7 +87,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                     AddFavariteImageMenuItem.CommandParameter = itemVM;
                     RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
                     RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-                    EditAlbamImageMenuItem.Visibility = Visibility.Visible;
+                    EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
                     EditAlbamImageMenuItem.CommandParameter = itemVM;
                 }
                 else
@@ -95,6 +96,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                     RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                     EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
                 }
+
+                AlbamMenuSeparator.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
 
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
@@ -134,6 +138,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
 
+                AlbamMenuSeparator.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
                 FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
 
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
@@ -147,6 +154,64 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
             }
+            else if (itemVM.Item is AlbamImageSource)
+            {
+                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Visibility = Visibility.Visible;
+
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamMenuSeparator.Visibility = Visibility.Visible;
+                AlbamDeleteMenuItem.Visibility = Visibility.Visible;
+                AlbamDeleteMenuItem.CommandParameter = itemVM;
+
+                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
+
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+
+                OpenWithExternalAppMenuItem.CommandParameter = itemVM;
+                OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
+            }
+            else if (itemVM.Item is AlbamItemImageSource)
+            {
+                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
+
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Visibility = Visibility.Collapsed;
+
+                SetThumbnailImageMenuItem.CommandParameter = itemVM;
+                SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamMenuSeparator.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
+
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Visibility = Visibility.Visible;
+
+                OpenWithExternalAppMenuItem.CommandParameter = itemVM;
+                OpenWithExternalAppMenuItem.Visibility = Visibility.Visible;
+            }
             else
             {
                 NoActionDescMenuItem.Visibility = Visibility.Visible;
@@ -156,6 +221,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 EditAlbamImageMenuItem.Visibility = Visibility.Collapsed;
+                AlbamMenuSeparator.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;

@@ -79,10 +79,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamOpenCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\AlbamListupPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Albam\AlbamItemImageSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
@@ -161,6 +164,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\VirualKeyPressingTrigger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\TextInputDialog.xaml.cs">
+      <DependentUpon>TextInputDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
@@ -244,6 +250,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\TextInputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Assets\EPub\app.css" />
@@ -256,6 +266,7 @@
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\" />
     <Folder Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ViewManagement.Commands\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Locales\ja-JP.txt" />

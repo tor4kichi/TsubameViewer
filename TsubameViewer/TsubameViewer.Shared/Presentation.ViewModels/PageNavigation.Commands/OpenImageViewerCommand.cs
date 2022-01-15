@@ -40,9 +40,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.None)
-                {
-                }
             }
         }
     }

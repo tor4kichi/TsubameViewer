@@ -87,7 +87,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public ArchiveFileInnerSturcture AddOrUpdateStructure(string path, IArchive archive, CancellationToken ct)
         {
             List<string> items = new List<string>();
-            List<int> fileIndexies = new();
+            List<(IArchiveEntry Entry, int Index)> fileIndexies = new();
             List<int> folderIndexies = new();
             foreach (var (entry, index) in archive.Entries.Select((x, i) => (x, i)))
             {
@@ -99,15 +99,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 else
                 {
                     // Note: 将来の拡張子対応の変更に備えてキャッシュデータ上では絞り込みを行わない。
-                    fileIndexies.Add(index);
+                    fileIndexies.Add((entry, index));
                 }
 
                 ct.ThrowIfCancellationRequested();
             }
 
-            var fileIndexiesSortWithDateTime = archive.Entries
-                .Where(x => x.IsDirectory is false)
-                .Select((x, i) => (Entry: x, Index: i, DateTime: x.ArchivedTime ?? x.CreatedTime ?? x.LastModifiedTime ?? DateTime.MinValue))
+            var fileIndexiesSortWithDateTime = fileIndexies
+                .Select((x, i) => (Entry: x.Entry, Index: x.Index, DateTime: x.Entry.ArchivedTime ?? x.Entry.CreatedTime ?? x.Entry.LastModifiedTime ?? DateTime.MinValue))
                 .OrderBy(x => x.DateTime)
                 .Select(x => x.Index)
                 .ToArray();
@@ -116,7 +115,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 Path = path,
                 Items = items.ToArray(),
-                FileIndexies = fileIndexies.ToArray(),
+                FileIndexies = fileIndexies.Select(x => x.Index).ToArray(),
                 FolderIndexies = folderIndexies.ToArray(),
                 FileIndexiesSortWithDateTime = fileIndexiesSortWithDateTime,
             };

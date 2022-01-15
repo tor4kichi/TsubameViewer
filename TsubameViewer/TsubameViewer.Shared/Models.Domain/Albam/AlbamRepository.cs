@@ -58,6 +58,11 @@ namespace TsubameViewer.Models.Domain.Albam
                 _collection.EnsureIndex(x => x.AddedAt);
             }
 
+            public int DeleteAlbam(Guid albamId)
+            {
+                return _collection.DeleteMany(x => x.AlbamId == albamId);
+            }
+
             public bool Delete(Guid albamId, string path)
             {
                 return _collection.DeleteMany(x => x.AlbamId == albamId && x.Path == path) > 0;
@@ -95,6 +100,12 @@ namespace TsubameViewer.Models.Domain.Albam
         {
             var entry = new AlbamEntry { _id = id, Name = name, CreatedAt = DateTimeOffset.Now };
             return _albamDatabase.CreateItem(entry);
+        }
+
+        public bool DeleteAlbam(Guid albamId)
+        {
+            _albamItemDatabase.DeleteAlbam(albamId);
+            return _albamDatabase.DeleteItem(albamId);
         }
 
         public bool DeleteAlbam(AlbamEntry entry)

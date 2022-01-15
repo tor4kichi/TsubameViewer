@@ -10,6 +10,7 @@ using System.Windows.Input;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Windows.Storage;
@@ -23,16 +24,19 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
         private readonly SourceChoiceCommand _sourceChoiceCommand;
+        private readonly AlbamCreateCommand _albamCreateCommand;
 
         public OpenFolderItemSecondaryCommand(
             IMessenger messenger,
             FolderContainerTypeManager folderContainerTypeManager,
-            SourceChoiceCommand sourceChoiceCommand
+            SourceChoiceCommand sourceChoiceCommand,
+            AlbamCreateCommand albamCreateCommand
             )
         {
             _messenger = messenger;
             _folderContainerTypeManager = folderContainerTypeManager;
             _sourceChoiceCommand = sourceChoiceCommand;
+            _albamCreateCommand = albamCreateCommand;
         }
 
         protected override bool CanExecute(object parameter)
@@ -68,9 +72,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var parameters = StorageItemViewModel.CreatePageParameter(item);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.None)
+                else if (item.Type == StorageItemTypes.AddFolder)
                 {
                     ((ICommand)_sourceChoiceCommand).Execute(null);
+                }
+                else if (item.Type == StorageItemTypes.AddAlbam)
+                {
+                    ((ICommand)_albamCreateCommand).Execute(null);
                 }
             }
         }

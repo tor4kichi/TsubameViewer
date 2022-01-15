@@ -7,12 +7,14 @@ namespace TsubameViewer.Models.Domain
     public enum StorageItemTypes
     {
         None,
+        AddFolder,
         Folder,
         Image,
         Archive,
         ArchiveFolder,
         EBook,
 
+        AddAlbam,
         Albam,
         AlbamImage,
     }

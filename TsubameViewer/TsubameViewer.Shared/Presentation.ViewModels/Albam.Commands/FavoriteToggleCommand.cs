@@ -1,0 +1,30 @@
+﻿using Prism.Commands;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Presentation.ViewModels.PageNavigation;
+
+namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
+{
+    public sealed class FavoriteToggleCommand : DelegateCommandBase
+    {
+        protected override bool CanExecute(object parameter)
+        {
+            return parameter is StorageItemViewModel ||
+                parameter is IImageSource;
+        }
+
+        protected override void Execute(object parameter)
+        {
+            if (parameter is StorageItemViewModel itemVM)
+            {
+
+            }
+            else if (parameter is IImageSource imageSource)
+            {
+
+            }
+        }
+    }
+}

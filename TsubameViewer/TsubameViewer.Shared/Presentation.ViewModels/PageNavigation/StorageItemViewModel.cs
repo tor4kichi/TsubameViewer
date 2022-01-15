@@ -110,28 +110,20 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _ReadParcentage, value); }
         }
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager) 
+        public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
+
+
+        public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)         
+        {
+            Name = name;
+            Type = storageItemTypes;
+        }
+
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
 
-#if WINDOWS_UWP
-            if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
-            {
-                // Load design-time books.
-                Name = "テスト";
-            }
-#endif
-        }
-
-        public bool IsSourceStorageItem => _sourceStorageItemsRepository.IsSourceStorageItem(Path);
-
-
-        public StorageItemViewModel() { }
-
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
-             : this(sourceStorageItemsRepository, bookmarkManager)
-        {
             Item = item;
             DateCreated = Item.DateCreated;
             

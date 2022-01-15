@@ -36,9 +36,28 @@ namespace TsubameViewer.Models.Domain.Albam
             return null;
         }
 
-        public Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
+        private IImageSource _sampleImageSource;
+        public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
         {
-            return null;
+            var sampleImageSource = await GetSampleImageSourceAsync(ct);
+            if (sampleImageSource is not null)
+            {
+                return await sampleImageSource.GetThumbnailImageStreamAsync(ct);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
+        {
+            if (_sampleImageSource is null && await _albamImageCollectionContext.IsExistImageFileAsync(ct))
+            {
+                _sampleImageSource = await _albamImageCollectionContext.GetImageFileAtAsync(0, FileSortType.None, ct);
+            }
+
+            return _sampleImageSource;
         }
 
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()

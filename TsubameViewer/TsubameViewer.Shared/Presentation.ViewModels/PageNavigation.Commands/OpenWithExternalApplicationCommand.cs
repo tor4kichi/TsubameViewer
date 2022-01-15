@@ -13,7 +13,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         protected override bool CanExecute(object parameter)
         {
             return parameter is StorageItemViewModel item 
-                && item.Type is not Models.Domain.StorageItemTypes.Folder and not Models.Domain.StorageItemTypes.None
+                && item.Type is not Models.Domain.StorageItemTypes.Folder and not Models.Domain.StorageItemTypes.AddFolder and Models.Domain.StorageItemTypes.AddAlbam
                 ;
         }
 

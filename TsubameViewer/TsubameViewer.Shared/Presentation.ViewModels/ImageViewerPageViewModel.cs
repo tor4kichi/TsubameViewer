@@ -48,6 +48,7 @@ using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using System.Numerics;
 using Windows.UI.Xaml.Media;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -189,7 +190,8 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
-            BackNavigationCommand backNavigationCommand
+            BackNavigationCommand backNavigationCommand,
+            FavoriteToggleCommand favoriteToggleCommand
             )
         {
             _scheduler = scheduler;
@@ -200,6 +202,7 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
+            FavoriteToggleCommand = favoriteToggleCommand;
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _thumbnailManager = thumbnailManager;
@@ -420,6 +423,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         _appView.Title = albam.Name;
                         Title = albam.Name;
 
+                        _currentFolderItem = albam;
                         DisplaySortTypeInheritancePath = null;
                         _pathForSettings = null;
 
@@ -461,7 +465,8 @@ namespace TsubameViewer.Presentation.ViewModels
             // 表示する画像を決める
             if (mode == NavigationMode.Forward 
                 || parameters.ContainsKey(PageNavigationConstants.Restored) 
-                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName) && string.IsNullOrEmpty(parsedArchiveFolderName)
+                )
                 )
             {
                 var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
@@ -529,8 +534,16 @@ namespace TsubameViewer.Presentation.ViewModels
 
                         var imageSource = await _imageCollectionContext.GetImageFileAtAsync(imageIndex, SelectedFileSortType.Value, ct);
                         UpdateDisplayName(imageSource);
-                        _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
-                        _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
+
+                        if (_currentFolderItem is IStorageItem)
+                        {
+                            _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
+                            _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
+                        }
+                        else if (_currentFolderItem is AlbamEntry albam)
+                        {
+                            _folderLastIntractItemManager.SetLastIntractItemName(albam._id, imageSource.Path);
+                        }
                     }
                 }).AddTo(_navigationDisposables);
 
@@ -1622,6 +1635,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
+        public FavoriteToggleCommand FavoriteToggleCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>
@@ -1778,7 +1792,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowDoubleImageView, value); }
         }
 
-        #endregion
+#endregion
 
 
     }

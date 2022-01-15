@@ -119,8 +119,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 }
             }
 
-            _imageEntryIndexSortWithTitle = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
-            _imageEntryIndexSortWithDateTime = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
+            _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
+            _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
 
             ImagesCount = imagesCount;
             _imageSourcesCache = new IImageSource[structure.Items.Length];
