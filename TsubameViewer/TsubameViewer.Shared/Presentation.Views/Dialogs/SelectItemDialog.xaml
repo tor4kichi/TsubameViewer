@@ -11,18 +11,17 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
   CloseButtonText="{i18nExt:Localize Key=Cancel}"
   >
-  <ContentDialog.TitleTemplate>
-    <DataTemplate>
-      <uwpControls:DockPanel>
-        <Button Content="{i18nExt:Localize Key=CreateAlbam}"
+  <ContentDialog.Title>
+    <uwpControls:DockPanel>
+      <Button x:Name="OptionButton"
                 Click="SelectItemDialog_OptionButtonClick"
                 uwpControls:DockPanel.Dock="Right"
+              Content="aa"
                 />
 
-        <TextBlock Text="{Binding ElementName=MyDialog, Path=Title}" />
-      </uwpControls:DockPanel>
-    </DataTemplate>
-  </ContentDialog.TitleTemplate>
+      <TextBlock Text="{Binding ElementName=MyDialog, Path=DialogTitle}" />
+    </uwpControls:DockPanel>
+  </ContentDialog.Title>
   <Grid>
     <ListView 
       x:Name="MyListView"

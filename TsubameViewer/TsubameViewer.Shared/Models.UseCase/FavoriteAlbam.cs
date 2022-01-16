@@ -19,6 +19,11 @@ namespace TsubameViewer.Models.UseCase
             {
                 albamRepository.CreateAlbam(FavoriteAlbamId, "FavoriteAlbam".Translate());
             }
+            else
+            {
+                var albam = albamRepository.GetAlbam(FavoriteAlbamId);
+                albamRepository.UpdateAlbam(albam with { Name = "FavoriteAlbam".Translate() });
+            }
         }
 
         public readonly static Guid FavoriteAlbamId = new Guid(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);

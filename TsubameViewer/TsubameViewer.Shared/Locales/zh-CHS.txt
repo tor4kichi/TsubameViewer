@@ -3,6 +3,8 @@
 Copy = 复制
 CopyToClipboard = 复制到剪贴板
 Cancel = 取消
+Delete = 删除
+Create = 创建
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -97,7 +99,7 @@ RemoveSecondaryTile = 取消开始
 
 SetThumbnailImage = 设置为缩略图
 
-FolderItemMenuNoActionSuggested = 没有可用的动作
+
 
 #### ImageViewerPage
 
@@ -146,3 +148,23 @@ Toc = 目录
 
 SearchResultWith = 下一个搜索结果
 SearchPlaceholder = 搜索标题
+
+
+
+#### Albam
+
+Albam = 专辑
+
+CreateAlbam = 创建相册
+CreateAlbam_Placeholder = 输入专辑名称
+CreateAlbam_DefaultName = 新唱片
+AlbamDelete = 删除相册
+AlbamDeleteConfirmDialogText = 您要删除相册“{0}”吗？ （此操作无法撤消）
+
+EditAlbamImage = 选择要添加到的相册
+ChoiceTargetAlbam = 选择专辑
+AlbamItemRemove = 从相册中删除这张图片
+
+FavoriteAlbam = 最喜欢的
+AddFavariteImage = 加入“最喜欢的
+RemoveFavariteImage = 从收藏夹中删除

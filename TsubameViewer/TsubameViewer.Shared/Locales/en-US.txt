@@ -3,6 +3,8 @@
 Copy = copy
 CopyToClipboard = Copy to clipboard
 Cancel = Cancel
+Delete = Delete
+Create = create
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -97,7 +99,7 @@ RemoveSecondaryTile = Unpin the start
 
 SetThumbnailImage = Set as thumbnail image
 
-FolderItemMenuNoActionSuggested = No action available
+
 
 #### ImageViewerPage
 
@@ -146,3 +148,23 @@ Toc = table of contents
 
 SearchResultWith = Next search result
 SearchPlaceholder = Search for title
+
+
+
+#### Albam
+
+Albam = album
+
+CreateAlbam = Create an album
+CreateAlbam_Placeholder = Enter the name of the album
+CreateAlbam_DefaultName = New album
+AlbamDelete = Delete album
+AlbamDeleteConfirmDialogText = Do you want to delete the album "{0}"? (This operation cannot be undone)
+
+EditAlbamImage = Select the album to add to
+ChoiceTargetAlbam = Select an album
+AlbamItemRemove = Remove this image from the album
+
+FavoriteAlbam = Favorite
+AddFavariteImage = Add to Favourites
+RemoveFavariteImage = Remove from favorites

@@ -41,6 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                 var albams = _albamRepository.GetAlbams();
                 var existed = albams.Where(x => _albamRepository.IsExistAlbamItem(x._id, itemVM.Path)).ToList();
+                albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
                 albamSelectDialog.ItemsSource = albams;
                 albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
                 albamSelectDialog.SetSelectedItems(existed);
@@ -50,7 +51,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                 {
                     await albamSelectDialog.ShowAsync();
 
-                    if (albamSelectDialog.IsOptionRequrested)
+                    if (albamSelectDialog.IsOptionRequested)
                     {
                         var title = await _albamDialogService.GetAlbamTitleAsync();
                         if (title != null)

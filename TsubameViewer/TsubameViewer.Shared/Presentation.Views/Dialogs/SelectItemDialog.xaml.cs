@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TsubameViewer.Presentation.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
@@ -16,7 +17,7 @@ namespace TsubameViewer.Presentation.Views.Dialogs
         public SelectItemDialog(string title, string confirmButtonText)
         {
             this.InitializeComponent();
-            Title = title;
+            DialogTitle = title;
             PrimaryButtonText = confirmButtonText;
             CloseButtonClick += SelectItemDialog_CloseButtonClick;
             PrimaryButtonClick += SelectItemDialog_PrimaryButtonClick;
@@ -26,6 +27,9 @@ namespace TsubameViewer.Presentation.Views.Dialogs
 
         private async void SelectItemDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
         {
+            OptionButton.Content = OptionButtonText ?? string.Empty;
+            OptionButton.Visibility = string.IsNullOrEmpty(OptionButtonText).FalseToVisible();
+
             // 選択状態を反映させるために待ちが必要
             await Task.Delay(5);
 
@@ -48,12 +52,12 @@ namespace TsubameViewer.Presentation.Views.Dialogs
 
         private void SelectItemDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
-            IsOptionRequrested = false;
+            IsOptionRequested = false;
         }
 
         private void SelectItemDialog_OptionButtonClick(object sender, RoutedEventArgs args)
         {
-            IsOptionRequrested = true;
+            IsOptionRequested = true;
             MyListView.SelectedItems.Clear();
             this.Hide();
         }
@@ -61,11 +65,42 @@ namespace TsubameViewer.Presentation.Views.Dialogs
                
         private void SelectItemDialog_CloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
-            IsOptionRequrested = false;
+            IsOptionRequested = false;
             MyListView.SelectedItems.Clear();
         }
 
-        public bool IsOptionRequrested { get; private set; }
+
+
+
+        public string DialogTitle
+        {
+            get { return (string)GetValue(DialogTitleProperty); }
+            set { SetValue(DialogTitleProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for DialogTitle.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty DialogTitleProperty =
+            DependencyProperty.Register("DialogTitle", typeof(string), typeof(SelectItemDialog), new PropertyMetadata(string.Empty));
+
+
+
+        public bool IsOptionRequested { get; private set; }
+
+
+
+
+        public string OptionButtonText
+        {
+            get { return (string)GetValue(OptionButtonTextProperty); }
+            set { SetValue(OptionButtonTextProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for OptionButtonText.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty OptionButtonTextProperty =
+            DependencyProperty.Register("OptionButtonText", typeof(string), typeof(SelectItemDialog), new PropertyMetadata(null));
+
+
+
 
         public IList ItemsSource
         {

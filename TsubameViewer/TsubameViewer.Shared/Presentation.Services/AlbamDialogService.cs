@@ -10,7 +10,13 @@ namespace TsubameViewer.Presentation.Services
     {
         public async Task<string> GetAlbamTitleAsync()
         {
-            var textInputDialog = new Views.Dialogs.TextInputDialog("CreateAlbam".Translate(), "CreateAlbam_Placeholder".Translate(), "Create".Translate());
+            var textInputDialog = new Views.Dialogs.TextInputDialog(
+                "CreateAlbam".Translate(), 
+                "CreateAlbam_Placeholder".Translate(), 
+                "Create".Translate(), 
+                "CreateAlbam_DefaultName".Translate()
+                );
+
             await textInputDialog.ShowAsync();
             if (textInputDialog.GetInputText() is not null and var title && string.IsNullOrEmpty(title) is false)
             {

@@ -351,19 +351,6 @@ namespace TsubameViewer
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
-#if DEBUG
-            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
-#endif
-
-            await UpdateMigrationAsync();
-
-            await MaintenanceAsync();
-
-            Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
-
-#if WINDOWS_UWP
-            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
-#endif
             // ローカリゼーション用のライブラリを初期化
             try
             {
@@ -385,10 +372,25 @@ namespace TsubameViewer
             {
                 I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
             }
-            catch 
+            catch
             {
                 I18NPortable.I18N.Current.Locale = "en-US";
             }
+
+
+#if DEBUG
+            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+#endif
+
+            await UpdateMigrationAsync();
+
+            await MaintenanceAsync();
+
+            Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
+
+#if WINDOWS_UWP
+            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
+#endif
 
             Resources["Strings"] = I18NPortable.I18N.Current;
 
