@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.UI.Popups;
 
@@ -25,7 +26,10 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         }
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel itemVM && itemVM.Type == Models.Domain.StorageItemTypes.Albam;
+            return parameter is StorageItemViewModel itemVM 
+                && itemVM.Type == Models.Domain.StorageItemTypes.Albam
+                && (itemVM.Item as AlbamImageSource)?.AlbamId != FavoriteAlbam.FavoriteAlbamId
+                ;
         }
 
         protected override async void Execute(object parameter)
@@ -54,11 +58,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     }
                 }
 
-                if (_albamRepository.DeleteAlbam(albam.AlbamId))
-                {
-                    _messenger.Send(new AlbamDeletedMessage(albam.AlbamId));
-                }
-                else
+                if (_albamRepository.DeleteAlbam(albam.AlbamId) is false)
                 {
                     throw new InvalidOperationException();
                 }

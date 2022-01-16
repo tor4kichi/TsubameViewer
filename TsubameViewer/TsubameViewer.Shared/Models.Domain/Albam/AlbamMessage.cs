@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
 
-namespace TsubameViewer.Presentation.ViewModels.Albam
+namespace TsubameViewer.Models.Domain.Albam
 {
     public sealed class AlbamCreatedMessage : ValueChangedMessage<AlbamEntry>
     {

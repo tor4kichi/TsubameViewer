@@ -1576,7 +1576,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             else if (_currentFolderItem is AlbamEntry albam)
             {
-                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager);
+                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
             }
             else
             {

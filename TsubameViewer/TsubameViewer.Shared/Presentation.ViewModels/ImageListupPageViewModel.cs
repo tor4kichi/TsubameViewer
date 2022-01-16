@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.UI;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.UI;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation;
@@ -41,6 +42,7 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class ImageListupPageViewModel : ViewModelBase
     {
+        private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly BookmarkManager _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
@@ -161,6 +163,7 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _navigationDisposables;
 
         public ImageListupPageViewModel(
+            IMessenger messenger,
             IScheduler scheduler,
             BookmarkManager bookmarkManager,
             ImageCollectionManager imageCollectionManager,
@@ -182,6 +185,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenWithExternalApplicationCommand openWithExternalApplicationCommand
             )
         {
+            _messenger = messenger;
             _scheduler = scheduler;
             _bookmarkManager = bookmarkManager;
             _imageCollectionManager = imageCollectionManager;
@@ -459,24 +463,11 @@ namespace TsubameViewer.Presentation.ViewModels
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
             {
                 // アプリ内部操作も含めて変更を検知する
-                bool requireRefresh = false;
                 _imageCollectionContext.CreateImageFileChangedObserver()
-                    .Subscribe(_ =>
+                    .Subscribe(async _ =>
                     {
-                        requireRefresh = true;
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
                         Debug.WriteLine("Images Update required. " + _currentPath);
-                    })
-                    .AddTo(_navigationDisposables);
-
-                ApplicationLifecycleObservable.WindowActivationStateChanged()
-                    .Subscribe(async visible =>
-                    {
-                        if (visible && requireRefresh && _imageCollectionContext is not null)
-                        {
-                            requireRefresh = false;
-                            await ReloadItemsAsync(_imageCollectionContext, ct);
-                            Debug.WriteLine("Images Updated. " + _currentPath);
-                        }
                     })
                     .AddTo(_navigationDisposables);
             }
@@ -543,7 +534,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             else if (currentItem is AlbamEntry albam)
             {
-                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager);
+                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
                 CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _sourceStorageItemsRepository, _bookmarkManager);
             }
             else

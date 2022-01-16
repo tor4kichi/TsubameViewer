@@ -70,7 +70,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {
-            _messenger.Unregister<Albam.AlbamCreatedMessage>(this);
+            _messenger.Unregister<AlbamCreatedMessage>(this);
+            _messenger.Unregister<AlbamDeletedMessage>(this);
 
             base.OnNavigatedFrom(parameters);
         }
@@ -81,16 +82,16 @@ namespace TsubameViewer.Presentation.ViewModels
             Albams.Add(_createNewAlbamViewModel);
             foreach (var albam in _albamRepository.GetAlbams())
             {
-                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager)), _sourceStorageItemsRepository, _bookmarkManager));
+                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _sourceStorageItemsRepository, _bookmarkManager));
             }
 
-            _messenger.Register<Albam.AlbamCreatedMessage>(this, (r, m) => 
+            _messenger.Register<AlbamCreatedMessage>(this, (r, m) => 
             {
                 var albam = m.Value;
-                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager)), _sourceStorageItemsRepository, _bookmarkManager));
+                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _sourceStorageItemsRepository, _bookmarkManager));
             });
 
-            _messenger.Register<Albam.AlbamDeletedMessage>(this, (r, m) =>
+            _messenger.Register<AlbamDeletedMessage>(this, (r, m) =>
             {
                 var albamId = m.Value;
                 var albam = Albams.FirstOrDefault(x => (x.Item as AlbamImageSource)?.AlbamId == albamId);

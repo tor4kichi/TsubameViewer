@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.Toolkit.Diagnostics;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -82,13 +83,16 @@ namespace TsubameViewer.Models.Domain.Albam
 
         private readonly AlbamDatabase _albamDatabase;
         private readonly AlbamItemDatabase _albamItemDatabase;
+        private readonly IMessenger _messenger;
 
-
-
-        public AlbamRepository(ILiteDatabase liteDatabase)
+        public AlbamRepository(
+            ILiteDatabase liteDatabase,
+            IMessenger messenger
+            )
         {
             _albamDatabase = new AlbamDatabase(liteDatabase);
             _albamItemDatabase = new AlbamItemDatabase(liteDatabase);
+            _messenger = messenger;
         }
 
         public bool IsExistAlbam(Guid albamId)
@@ -99,18 +103,26 @@ namespace TsubameViewer.Models.Domain.Albam
         public AlbamEntry CreateAlbam(Guid id, string name)
         {
             var entry = new AlbamEntry { _id = id, Name = name, CreatedAt = DateTimeOffset.Now };
-            return _albamDatabase.CreateItem(entry);
+            var createdAlbam = _albamDatabase.CreateItem(entry);
+            _messenger.Send(new AlbamCreatedMessage(createdAlbam));
+            return createdAlbam;
         }
 
         public bool DeleteAlbam(Guid albamId)
         {
             _albamItemDatabase.DeleteAlbam(albamId);
-            return _albamDatabase.DeleteItem(albamId);
+            var result = _albamDatabase.DeleteItem(albamId);
+            if (result)
+            {
+                _messenger.Send(new AlbamDeletedMessage(albamId));
+            }
+
+            return result;
         }
 
         public bool DeleteAlbam(AlbamEntry entry)
         {
-            return _albamDatabase.DeleteItem(entry._id);
+            return DeleteAlbam(entry._id);
         }
 
         public void UpdateAlbam(AlbamEntry entry)
@@ -143,12 +155,20 @@ namespace TsubameViewer.Models.Domain.Albam
 #if DEBUG
             Guard.IsTrue(_albamDatabase.Exists(x => x._id == albamId), $"Not Exist Id: {albamId}");
 #endif
-            return _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, AddedAt = DateTimeOffset.Now });
+            var createdItem = _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, AddedAt = DateTimeOffset.Now });
+            _messenger.Send(new AlbamItemAddedMessage(albamId, path));
+            return createdItem;
         }
 
         public bool DeleteAlbamItem(Guid albamId, string path)
         {
-            return _albamItemDatabase.Delete(albamId, path);
+            var result = _albamItemDatabase.Delete(albamId, path);
+            if (result)
+            {
+                _messenger.Send(new AlbamItemRemovedMessage(albamId, path));
+            }
+
+            return result;
         }
 
         public int GetAlbamItemsCount(Guid albamId)

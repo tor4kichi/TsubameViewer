@@ -75,8 +75,6 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                                     catch { }
                                 }
 
-                                _messenger.Send(new AlbamCreatedMessage(createdAlbam));
-
                                 _albamRepository.AddAlbamItem(createdAlbam._id, itemVM.Path);
                             }
                             isCompleted = true;
@@ -84,18 +82,6 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     }
                     else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams && selectedAlbams.Any())
                     {
-
-                        //foreach (var albam in albams)
-                        //{
-                        //    _albamRepository.DeleteAlbamItem(albam._id, itemVM.Path);
-                        //}
-
-                        //foreach (var selectAlbam in selectedAlbams.Cast<AlbamEntry>())
-                        //{
-                        //    _albamRepository.AddAlbamItem(selectAlbam._id, itemVM.Path);
-                        //}
-
-
                         var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
                         var oldSelectedAlbamsHash = existed.Select(x=> x._id).ToHashSet();
 

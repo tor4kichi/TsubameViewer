@@ -26,6 +26,7 @@ namespace TsubameViewer.Presentation.Views.Dialogs
 
         private async void SelectItemDialog_Opened(ContentDialog sender, ContentDialogOpenedEventArgs args)
         {
+            // 選択状態を反映させるために待ちが必要
             await Task.Delay(5);
 
             if (_selectItems != null)

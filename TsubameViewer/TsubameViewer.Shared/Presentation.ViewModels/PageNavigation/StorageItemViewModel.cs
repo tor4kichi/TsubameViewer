@@ -129,10 +129,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             
             Name = Item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
-            if (item is StorageItemImageSource storageItemImageSource)
-            {
-                Path = storageItemImageSource.Path;
-            }
+            Path = item.Path;
 
             _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
 

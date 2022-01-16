@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 using Windows.System;
@@ -31,6 +32,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                         await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(file.Path), new FolderLauncherOptions() { ItemsToSelect = { file } });
 //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
                     }
+                }
+                else if (item.Item is AlbamItemImageSource albamItemImageSource)
+                {
+                    await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(albamItemImageSource.Path), new FolderLauncherOptions() { ItemsToSelect = { albamItemImageSource.StorageItem } });
                 }
             }
         }

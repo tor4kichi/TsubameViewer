@@ -54,7 +54,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     catch { }
                 }
 
-                _messenger.Send(new AlbamCreatedMessage(createdAlbam));
+                
             }
         }
     }

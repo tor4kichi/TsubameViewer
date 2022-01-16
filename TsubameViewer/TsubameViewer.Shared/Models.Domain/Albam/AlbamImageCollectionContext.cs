@@ -1,7 +1,11 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Reactive.Bindings.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -14,6 +18,89 @@ using Windows.Storage;
 
 namespace TsubameViewer.Models.Domain.Albam
 {
+    
+    public sealed class AlbamItemRemovedObservable : IObservable<(Guid AlbamId, string Path)>
+    {
+        private readonly IMessenger _messenger;
+
+        public AlbamItemRemovedObservable(IMessenger messenger)
+        {
+            _messenger = messenger;
+        }
+
+        public IDisposable Subscribe(IObserver<(Guid AlbamId, string Path)> observer)
+        {
+            return new AlbamItemRemovedObserver(_messenger, observer);
+        }
+
+
+        public sealed class AlbamItemRemovedObserver : IDisposable
+        {
+            private readonly IMessenger _messenger;
+            private readonly IObserver<(Guid AlbamId, string Path)> _observer;
+
+            public AlbamItemRemovedObserver(IMessenger messenger, IObserver<(Guid AlbamId, string Path)> observer)
+            {
+                _messenger = messenger;
+                _observer = observer;
+
+                _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
+                {
+                    _observer.OnNext(m.Value);
+                });
+            }
+
+            public void Dispose()
+            {
+                _messenger.Unregister<AlbamItemRemovedMessage>(this);
+                _observer.OnCompleted();
+                (_observer as IDisposable)?.Dispose();
+            }
+        }
+    }
+
+
+    public sealed class AlbamItemAddedObservable : IObservable<(Guid AlbamId, string Path)>
+    {
+        private readonly IMessenger _messenger;
+
+        public AlbamItemAddedObservable(IMessenger messenger)
+        {
+            _messenger = messenger;
+        }
+
+        public IDisposable Subscribe(IObserver<(Guid AlbamId, string Path)> observer)
+        {
+            return new AlbamItemAddedObserver(_messenger, observer);
+        }
+
+
+        public sealed class AlbamItemAddedObserver : IDisposable
+        {
+            private readonly IMessenger _messenger;
+            private readonly IObserver<(Guid AlbamId, string Path)> _observer;
+
+            public AlbamItemAddedObserver(IMessenger messenger, IObserver<(Guid AlbamId, string Path)> observer)
+            {
+                _messenger = messenger;
+                _observer = observer;
+
+                _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+                {
+                    _observer.OnNext(m.Value);
+                });
+            }
+
+            public void Dispose()
+            {
+                _messenger.Unregister<AlbamItemAddedMessage>(this);
+                _observer.OnCompleted();
+                (_observer as IDisposable)?.Dispose();
+            }
+        }
+    }
+
+
     public sealed class AlbamImageCollectionContext : IImageCollectionContext
     {
         private readonly AlbamEntry _albam;
@@ -23,6 +110,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly IMessenger _messenger;
 
         public AlbamImageCollectionContext(
             AlbamEntry albam, 
@@ -31,7 +119,9 @@ namespace TsubameViewer.Models.Domain.Albam
             ImageCollectionManager imageCollectionManager,
 
             FolderListingSettings folderListingSettings,
-            ThumbnailManager thumbnailManager
+            ThumbnailManager thumbnailManager,
+
+            IMessenger messenger
             )
         {
             _albam = albam;
@@ -40,6 +130,7 @@ namespace TsubameViewer.Models.Domain.Albam
             _imageCollectionManager = imageCollectionManager;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
+            _messenger = messenger;
         }
 
 
@@ -76,7 +167,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public string Name => _albam.Name;
 
-        public bool IsSupportedFolderContentsChanged => false;
+        public bool IsSupportedFolderContentsChanged => true;
 
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -92,14 +183,15 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
         {
-            throw new NotSupportedException();
+            return Observable.Empty<Unit>();
         }
 
         public IObservable<Unit> CreateImageFileChangedObserver()
         {
-            // TODO: アルバムからのアイテム削除を通知する？
-            
-            throw new NotSupportedException();
+            return Observable.Merge(
+                new AlbamItemRemovedObservable(_messenger).ToUnit(),
+                new AlbamItemAddedObservable(_messenger).ToUnit()
+                );
         }
 
         public async IAsyncEnumerable<IImageSource> GetAllImageFilesAsync([EnumeratorCancellation] CancellationToken ct)
