@@ -420,27 +420,23 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         await ResetContentWithAlbam(albamId, ct);
                     }
-
-
                 }
                 if (mode != NavigationMode.New)
                 {
+                    string lastIntaractItem = null;
                     if (_currentItem is IStorageItem storageItem)
                     {
-                        var lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);
-                        if (lastIntaractItem != null)
-                        {
-                            var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
-                            ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
-                        }
-                        else
-                        {
-                            ImageLastIntractItem.Value = 0;
-                        }
+                        lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);                        
                     }    
                     else if (_currentItem is AlbamEntry albam)
                     {
-                        throw new NotImplementedException();
+                        lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(albam._id);
+                    }
+
+                    if (lastIntaractItem != null)
+                    {
+                        var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
+                        ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
                     }
                     else
                     {

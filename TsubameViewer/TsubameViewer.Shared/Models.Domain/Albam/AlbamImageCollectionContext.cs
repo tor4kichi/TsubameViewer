@@ -235,7 +235,7 @@ namespace TsubameViewer.Models.Domain.Albam
             int index = 0;
             foreach (var item in items)
             {
-                if (item.Path == key || item.Path.EndsWith(key))
+                if (item.Path == key)
                 {
                     return new (index);
                 }

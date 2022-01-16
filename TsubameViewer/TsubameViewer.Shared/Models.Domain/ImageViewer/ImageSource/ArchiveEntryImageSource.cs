@@ -53,7 +53,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         //public string Name => _name ??= System.IO.Path.GetFileName(_entry.Key);
         public string Name => _name ??= _entry.Key;
 
-        public string Path => _entry.Key;
+        private string _path; 
+        public string Path => _path ??= PageNavigationConstants.MakeStorageItemIdWithPage(StorageItem.Path, _entry.Key);
 
         public DateTime DateCreated { get; }
 

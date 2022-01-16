@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,13 +22,31 @@ namespace TsubameViewer.Models.Domain.Albam
         {
             _albamItem = albamItem;
             _imageSource = imageSource;
+
+            if (_imageSource.StorageItem is StorageFile file)
+            {
+                if (file.FileType == SupportedFileTypesHelper.PdfFileType)
+                {
+                    Name = $"{file.Name}#{imageSource.Name}";
+                }
+                else if (file.IsSupportedMangaFile())
+                {
+                    Name = imageSource.Name;
+                }
+                else
+                {
+                    Name = imageSource.Name;
+                }
+            }
         }
+
+
 
         public Guid AlbamId => _albamItem.AlbamId;
 
         public IStorageItem StorageItem => _imageSource.StorageItem;
 
-        public string Name => _imageSource.Name;
+        public string Name { get; }
 
         public string Path => _albamItem.Path;
 

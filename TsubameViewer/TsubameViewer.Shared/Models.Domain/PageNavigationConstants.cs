@@ -27,7 +27,7 @@ namespace TsubameViewer.Models.Domain
 
         public static (string Path, string PageName, string ArchiveFolderName) ParseStorageItemId(string id)
         {            
-            var storageItemIdValues = id.Split('?');
+            var storageItemIdValues = id.Split('?', 2);
             if (storageItemIdValues.Length == 1)
             {
                 return (storageItemIdValues[0], String.Empty, String.Empty);

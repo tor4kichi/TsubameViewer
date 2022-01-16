@@ -30,11 +30,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             StorageItem = storageItem;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
+
+            Path = PageNavigationConstants.MakeStorageItemIdWithPage(storageItem.Path, _pdfPage.Index.ToString());
         }
 
         public string Name { get; }
 
-        public string Path => Name;
+        public string Path { get; }
         public DateTime DateCreated { get; }
         public StorageFile StorageItem { get; }
 
