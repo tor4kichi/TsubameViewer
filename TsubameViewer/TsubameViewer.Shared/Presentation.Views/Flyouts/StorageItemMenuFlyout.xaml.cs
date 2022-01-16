@@ -184,8 +184,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 AlbamItemRemoveMenuItem.CommandParameter = itemVM;
                 AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
 
-                SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
 
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
