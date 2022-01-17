@@ -9,14 +9,14 @@
   mc:Ignorable="d"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
-  CloseButtonText="{i18nExt:Localize Key=Cancel}"
+  CloseButtonText="{i18nExt:Localize Key=Cancel}" 
+  xmlns:toolkitUI="using:Microsoft.Toolkit.Uwp.UI"
   >
   <ContentDialog.Title>
-    <uwpControls:DockPanel>
+    <uwpControls:DockPanel HorizontalAlignment="Stretch" Width="{x:Bind MyListView.(toolkitUI:FrameworkElementExtensions.ActualWidth), Mode=OneWay}">
       <Button x:Name="OptionButton"
                 Click="SelectItemDialog_OptionButtonClick"
                 uwpControls:DockPanel.Dock="Right"
-              Content="aa"
                 />
 
       <TextBlock Text="{Binding ElementName=MyDialog, Path=DialogTitle}" />
@@ -31,6 +31,7 @@
       DisplayMemberPath="{x:Bind DisplayMemberPath, Mode=OneWay}"
       SingleSelectionFollowsFocus="False"
       AllowFocusOnInteraction="True"
+      toolkitUI:FrameworkElementExtensions.EnableActualSizeBinding="True"
       >
       <ListView.ItemContainerTransitions>
         <TransitionCollection />
