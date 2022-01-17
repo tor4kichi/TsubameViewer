@@ -25,7 +25,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                _favoriteAlbam.AddFavoriteItem(itemVM.Path);
+                _favoriteAlbam.AddFavoriteItem(itemVM.Path, itemVM.Name);
             }
         }
     }

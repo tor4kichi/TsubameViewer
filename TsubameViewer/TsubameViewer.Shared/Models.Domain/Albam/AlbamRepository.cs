@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Infrastructure;
 
 namespace TsubameViewer.Models.Domain.Albam
@@ -28,6 +29,8 @@ namespace TsubameViewer.Models.Domain.Albam
         public Guid AlbamId { get; init; }
 
         public string Path { get; init; }
+
+        public string Name { get; init; }
 
         public DateTimeOffset AddedAt { get; init; }
     }
@@ -69,9 +72,17 @@ namespace TsubameViewer.Models.Domain.Albam
                 return _collection.DeleteMany(x => x.AlbamId == albamId && x.Path == path) > 0;
             }
 
-            public IEnumerable<AlbamItemEntry> GetAlbamItem(Guid albamId, int skip = 0, int limit = int.MaxValue)
+            public IEnumerable<AlbamItemEntry> GetAlbamItem(Guid albamId, FileSortType sort, int skip = 0, int limit = int.MaxValue)
             {
-                return _collection.Find(x => x.AlbamId == albamId, skip, limit).OrderByDescending(x => x.AddedAt);
+                return sort switch
+                {
+                    FileSortType.None => _collection.Query().Where(x => x.AlbamId == albamId).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                    FileSortType.TitleAscending => _collection.Query().Where(x => x.AlbamId == albamId).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                    FileSortType.TitleDecending => _collection.Query().Where(x => x.AlbamId == albamId).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                    FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.AlbamId == albamId).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                    FileSortType.UpdateTimeDecending => _collection.Query().Where(x => x.AlbamId == albamId).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                    _ => throw new NotSupportedException(sort.ToString()),
+                };
             }
 
             public int DeleteUnderPath(string path)
@@ -151,12 +162,12 @@ namespace TsubameViewer.Models.Domain.Albam
             return _albamItemDatabase.Exists(x => x.AlbamId == albamId && x.Path == path);
         }
 
-        public AlbamItemEntry AddAlbamItem(Guid albamId, string path)
+        public AlbamItemEntry AddAlbamItem(Guid albamId, string path, string name)
         {
 #if DEBUG
             Guard.IsTrue(_albamDatabase.Exists(x => x._id == albamId), $"Not Exist Id: {albamId}");
 #endif
-            var createdItem = _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, AddedAt = DateTimeOffset.Now });
+            var createdItem = _albamItemDatabase.CreateItem(new AlbamItemEntry() { _id = Guid.NewGuid(), AlbamId = albamId, Path = path, Name = name, AddedAt = DateTimeOffset.Now });
             _messenger.Send(new AlbamItemAddedMessage(albamId, path));
             return createdItem;
         }
@@ -177,9 +188,9 @@ namespace TsubameViewer.Models.Domain.Albam
             return _albamItemDatabase.Count(x => x.AlbamId == albamId);
         }
 
-        public IEnumerable<AlbamItemEntry> GetAlbamItems(Guid albamId, int skip = 0, int limit = int.MaxValue)
+        public IEnumerable<AlbamItemEntry> GetAlbamItems(Guid albamId, FileSortType fileSortType = FileSortType.None, int skip = 0, int limit = int.MaxValue)
         {
-            return _albamItemDatabase.GetAlbamItem(albamId, skip, limit);
+            return _albamItemDatabase.GetAlbamItem(albamId, fileSortType, skip, limit);
         }
 
         public int DeleteAlbamItemsUnderPath(string path)

@@ -34,19 +34,14 @@ namespace TsubameViewer.Models.UseCase
             return _albamRepository.IsExistAlbamItem(FavoriteAlbamId, path);
         }
 
-        public AlbamItemEntry AddFavoriteItem(string path)
+        public AlbamItemEntry AddFavoriteItem(string path, string name)
         {
-            return _albamRepository.AddAlbamItem(FavoriteAlbamId, path);
+            return _albamRepository.AddAlbamItem(FavoriteAlbamId, path, name);
         }
 
         public bool DeleteFavoriteItem(string path)
         {
             return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, path);
-        }
-
-        public IEnumerable<AlbamItemEntry> GetFavoriteItems(int skip = 0, int limit = int.MaxValue)
-        {
-            return _albamRepository.GetAlbamItems(FavoriteAlbamId, skip, limit);
         }
     }
 }

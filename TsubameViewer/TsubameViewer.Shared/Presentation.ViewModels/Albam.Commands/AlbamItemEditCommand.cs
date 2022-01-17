@@ -76,7 +76,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                                     catch { }
                                 }
 
-                                _albamRepository.AddAlbamItem(createdAlbam._id, itemVM.Path);
+                                _albamRepository.AddAlbamItem(createdAlbam._id, itemVM.Path, itemVM.Name);
                             }
                             isCompleted = true;
                         }
@@ -99,7 +99,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                         foreach (var albamId in addedAlbamIds)
                         {
-                            _albamRepository.AddAlbamItem(albamId, itemVM.Path);
+                            _albamRepository.AddAlbamItem(albamId, itemVM.Path, itemVM.Name);
                         }
 
                         isCompleted = true;

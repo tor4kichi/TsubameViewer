@@ -620,21 +620,36 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     DisplaySortTypeInheritancePath = null;
                     SelectedFileSortType.Value = sortType.Value;
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value);
+                    if (_currentItem is IStorageItem)
+                    {
+                        _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value);
+                    }
+                    else if (_currentItem is AlbamEntry albam)
+                    {
+                        _displaySettingsByPathRepository.SetAlbamSettings(albam._id, SelectedFileSortType.Value);
+                    }
                 }
                 else
                 {
-                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
-                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
-                    && parentSort.ChildItemDefaultSort != null
-                    )
+                    if (_currentItem is IStorageItem)
                     {
-                        DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
+                        if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
+                        && parentSort.ChildItemDefaultSort != null
+                        )
+                        {
+                            DisplaySortTypeInheritancePath = parentSort.Path;
+                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        }
+                        else
+                        {
+                            DisplaySortTypeInheritancePath = null;
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                        }
                     }
-                    else
+                    else if (_currentItem is AlbamEntry albam)
                     {
-                        DisplaySortTypeInheritancePath = null;
+                        _displaySettingsByPathRepository.ClearAlbamSettings(albam._id);
                         SelectedFileSortType.Value = DefaultFileSortType;
                     }
                 }
