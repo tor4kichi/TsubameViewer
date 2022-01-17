@@ -8,23 +8,43 @@ namespace TsubameViewer.Presentation.Services
 {
     public sealed class AlbamDialogService
     {
-        public async Task<string> GetAlbamTitleAsync()
+        public async Task<(bool IsSuccess, string Name)> GetNewAlbamNameAsync()
         {
             var textInputDialog = new Views.Dialogs.TextInputDialog(
-                "CreateAlbam".Translate(), 
-                "CreateAlbam_Placeholder".Translate(), 
-                "Create".Translate(), 
-                "CreateAlbam_DefaultName".Translate()
+                "CreateAlbam".Translate(),
+                "AlbamName_Placeholder".Translate(),
+                "Create".Translate(),
+                "AlbamName_Default".Translate()
                 );
 
             await textInputDialog.ShowAsync();
-            if (textInputDialog.GetInputText() is not null and var title && string.IsNullOrEmpty(title) is false)
+            if (textInputDialog.GetInputText() is not null and var albamName && string.IsNullOrEmpty(albamName) is false)
             {
-                return title;
+                return (true, albamName);
             }
             else
             {
-                return null;
+                return (false, null);
+            }
+        }
+
+        public async Task<(bool isEdited, string Rename)> EditAlbamAsync(string albamName)
+        {
+            var textInputDialog = new Views.Dialogs.TextInputDialog(
+                "AlbamEdit".Translate(),
+                "AlbamName_Placeholder".Translate(), 
+                "Apply".Translate(),
+                albamName
+                );
+
+            await textInputDialog.ShowAsync();
+            if (textInputDialog.GetInputText() is not null and var newAlbamName && string.IsNullOrWhiteSpace(newAlbamName) is false)
+            {
+                return (true, newAlbamName);
+            }
+            else
+            {
+                return (false, null);
             }
         }
     }

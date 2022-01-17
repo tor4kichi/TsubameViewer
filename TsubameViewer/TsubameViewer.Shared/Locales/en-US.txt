@@ -1,10 +1,11 @@
 #### General
 
-Copy = copy
+Copy = Copy
 CopyToClipboard = Copy to clipboard
 Cancel = Cancel
 Delete = Delete
-Create = create
+Create = Create
+Apply = Apply
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -142,7 +143,7 @@ WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
 ResetEBookSettings = Reset settings
 
 DisplaySettings = Display settings
-Toc = table of contents
+Toc = Table of contents
 
 #### SearchResult
 
@@ -153,11 +154,12 @@ SearchPlaceholder = Search for title
 
 #### Albam
 
-Albam = album
+Albam = Album
 
 CreateAlbam = Create an album
-CreateAlbam_Placeholder = Enter the name of the album
-CreateAlbam_DefaultName = New album
+AlbamName_Placeholder = Enter the name of the album
+AlbamName_Default = New album
+AlbamEdit = Edit album
 AlbamDelete = Delete album
 AlbamDeleteConfirmDialogText = Do you want to delete the album "{0}"? (This operation cannot be undone)
 

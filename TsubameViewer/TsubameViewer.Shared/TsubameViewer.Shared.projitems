@@ -82,6 +82,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />

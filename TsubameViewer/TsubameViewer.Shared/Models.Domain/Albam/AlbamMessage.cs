@@ -19,4 +19,11 @@ namespace TsubameViewer.Models.Domain.Albam
         {
         }
     }
+
+    public sealed class AlbamEditedMessage : ValueChangedMessage<AlbamEntry>
+    {
+        public AlbamEditedMessage(AlbamEntry value) : base(value)
+        {
+        }
+    }
 }

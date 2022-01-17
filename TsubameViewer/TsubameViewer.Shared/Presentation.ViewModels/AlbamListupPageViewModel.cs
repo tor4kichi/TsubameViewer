@@ -94,8 +94,25 @@ namespace TsubameViewer.Presentation.ViewModels
             _messenger.Register<AlbamDeletedMessage>(this, (r, m) =>
             {
                 var albamId = m.Value;
-                var albam = Albams.FirstOrDefault(x => (x.Item as AlbamImageSource)?.AlbamId == albamId);
-                Albams.Remove(albam);
+                var albam = Albams.Skip(1).FirstOrDefault(x => (x.Item as AlbamImageSource).AlbamId == albamId);
+                if (albam is not null)
+                {
+                    albam.Dispose();
+                    Albams.Remove(albam);
+                }
+            });
+
+            _messenger.Register<AlbamEditedMessage>(this, (r, m) =>
+            {
+                var albam = m.Value;
+                var albamVM = Albams.Skip(1).FirstOrDefault(x => (x.Item as AlbamImageSource).AlbamId == albam._id);
+                if (albamVM is not null)
+                {
+                    var index = Albams.IndexOf(albamVM);
+                    Albams.Remove(albamVM);
+                    albamVM.Dispose();
+                    Albams.Insert(index, new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _sourceStorageItemsRepository, _bookmarkManager));
+                }
             });
 
             base.OnNavigatedTo(parameters);

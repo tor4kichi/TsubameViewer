@@ -33,8 +33,8 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override async void Execute(object parameter)
         {
-            var title = await _albamDialogService.GetAlbamTitleAsync();
-            if (string.IsNullOrEmpty(title) is false)
+            var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
+            if (isSuccess && string.IsNullOrEmpty(albamName) is false)
             {
                 AlbamEntry createdAlbam = null;
 
@@ -49,7 +49,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                     try
                     {
-                        createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), title);
+                        createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), albamName);
                     }
                     catch { }
                 }

@@ -5,6 +5,7 @@ CopyToClipboard = クリップボードにコピー
 Cancel = キャンセル
 Delete = 削除
 Create = 作成
+Apply = 適用する
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -156,8 +157,9 @@ SearchPlaceholder = タイトルの検索
 Albam = アルバム
 
 CreateAlbam = アルバムを作成
-CreateAlbam_Placeholder = アルバムの名前を入力
-CreateAlbam_DefaultName = 新しいアルバム
+AlbamName_Placeholder = アルバムの名前を入力
+AlbamName_Default = 新しいアルバム
+AlbamEdit = アルバムを編集
 AlbamDelete = アルバムを削除
 AlbamDeleteConfirmDialogText = アルバム「{0}」を削除しますか？（この操作は取り消せません）
 

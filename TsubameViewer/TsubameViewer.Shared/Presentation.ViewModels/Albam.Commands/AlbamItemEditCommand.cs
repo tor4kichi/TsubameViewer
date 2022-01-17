@@ -53,10 +53,10 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                     if (albamSelectDialog.IsOptionRequested)
                     {
-                        var title = await _albamDialogService.GetAlbamTitleAsync();
-                        if (title != null)
+                        var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
+                        if (isSuccess && string.IsNullOrWhiteSpace(albamName) is false)
                         {
-                            if (string.IsNullOrEmpty(title) is false)
+                            if (string.IsNullOrEmpty(albamName) is false)
                             {
                                 AlbamEntry createdAlbam = null;
 
@@ -71,7 +71,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                                     try
                                     {
-                                        createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), title);
+                                        createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), albamName);
                                     }
                                     catch { }
                                 }

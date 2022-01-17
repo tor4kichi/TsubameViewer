@@ -12,24 +12,24 @@ namespace TsubameViewer.Models.Domain.Albam
 {
     public sealed class AlbamImageSource : IImageSource
     {
-        private readonly AlbamEntry _albamEntry;
+        public AlbamEntry AlbamEntry { get; }
         private readonly AlbamImageCollectionContext _albamImageCollectionContext;
 
         public AlbamImageSource(AlbamEntry albamEntry, AlbamImageCollectionContext albamImageCollectionContext)
         {
-            _albamEntry = albamEntry;
+            AlbamEntry = albamEntry;
             _albamImageCollectionContext = albamImageCollectionContext;
         }
 
-        public Guid AlbamId => _albamEntry._id;
+        public Guid AlbamId => AlbamEntry._id;
 
         public IStorageItem StorageItem => null;
 
-        public string Name => _albamEntry.Name;
+        public string Name => AlbamEntry.Name;
 
-        public string Path => _albamEntry.Name;
+        public string Path => AlbamEntry.Name;
 
-        public DateTime DateCreated => _albamEntry.CreatedAt.LocalDateTime;
+        public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;
 
         public Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {

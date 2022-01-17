@@ -5,6 +5,7 @@ CopyToClipboard = 复制到剪贴板
 Cancel = 取消
 Delete = 删除
 Create = 创建
+Apply = 申请
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -156,8 +157,9 @@ SearchPlaceholder = 搜索标题
 Albam = 专辑
 
 CreateAlbam = 创建相册
-CreateAlbam_Placeholder = 输入专辑名称
-CreateAlbam_DefaultName = 新唱片
+AlbamName_Placeholder = 输入专辑名称
+AlbamName_Default = 新唱片
+AlbamEdit = 编辑相册
 AlbamDelete = 删除相册
 AlbamDeleteConfirmDialogText = 您要删除相册“{0}”吗？ （此操作无法撤消）
 

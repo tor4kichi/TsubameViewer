@@ -128,6 +128,7 @@ namespace TsubameViewer.Models.Domain.Albam
         public void UpdateAlbam(AlbamEntry entry)
         {
             _albamDatabase.UpdateItem(entry);
+            _messenger.Send(new AlbamEditedMessage(entry));
         }
 
         public AlbamEntry GetAlbam(Guid albamId)
