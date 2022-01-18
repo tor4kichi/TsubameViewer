@@ -8,7 +8,6 @@ using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
-using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
 {

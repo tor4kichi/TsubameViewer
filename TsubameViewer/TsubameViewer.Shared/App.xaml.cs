@@ -1,13 +1,14 @@
-﻿using LiteDB;
+﻿using DryIoc;
+using LiteDB;
 using Microsoft.Extensions.Logging;
 using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism;
+using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Mvvm;
 using Prism.Navigation;
-using Prism.Unity;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,7 +28,6 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
-using Unity;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.ApplicationModel;
@@ -121,9 +121,10 @@ namespace TsubameViewer
             var unityContainer = container.GetContainer();
             container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
 
-            unityContainer.RegisterInstance<ILiteDatabase>("TemporaryDb", new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"));
+            unityContainer.UseInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+            unityContainer.Register<ThumbnailManager>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
 
-            unityContainer.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
+            unityContainer.UseInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             
             base.RegisterRequiredTypes(container);
         }

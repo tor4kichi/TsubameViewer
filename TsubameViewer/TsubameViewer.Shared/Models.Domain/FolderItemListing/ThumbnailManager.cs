@@ -118,7 +118,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         
         
         public ThumbnailManager(
-            [Unity.Attributes.Dependency("TemporaryDb")] ILiteDatabase temporaryDb,
+            ILiteDatabase temporaryDb,
             FolderListingSettings folderListingSettings,
             ThumbnailImageInfoRepository thumbnailImageInfoRepository
             )

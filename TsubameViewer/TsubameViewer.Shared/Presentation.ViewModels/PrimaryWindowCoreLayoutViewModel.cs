@@ -30,7 +30,6 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
-using Unity.Attributes;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
