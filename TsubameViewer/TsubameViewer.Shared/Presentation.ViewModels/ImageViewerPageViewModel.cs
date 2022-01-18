@@ -241,6 +241,7 @@ namespace TsubameViewer.Presentation.ViewModels
             FavoriteRemoveCommand = favoriteRemoveCommand;
             AlbamItemEditCommand = albamItemEditCommand;
             ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+            ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
             OpenWithExplorerCommand = openWithExplorerCommand;
             OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             _bookmarkManager = bookmarkManager;

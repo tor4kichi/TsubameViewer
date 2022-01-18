@@ -241,7 +241,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 _isInitialized = false;
                 _isAppearingRequestButLoadingCancelled = true;
-            }
+            }            
         }
 
         public void UpdateLastReadPosition()

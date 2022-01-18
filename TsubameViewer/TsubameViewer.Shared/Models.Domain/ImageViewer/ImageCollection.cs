@@ -33,7 +33,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         string Key { get; }
     }
 
-    public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry) : IImageCollectionDirectoryToken
+    public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry, bool IsRoot) : IImageCollectionDirectoryToken
     {
         private string _key;
         public string Key => _key ??= Entry?.Key;
@@ -85,7 +85,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _disposables = disposables;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
-            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null, true);
 
             // アーカイブのフォルダ構造を見つける
             var structure = _archiveFileInnerStructure;
@@ -129,12 +129,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 _directories = new[] { _rootDirectoryToken }.ToImmutableList();
             }
+            else if (directories.Count == 1)
+            {
+                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, GetEntryFromKey(directories.ElementAt(0)), true);
+                _directories = new[] { _rootDirectoryToken }.ToImmutableList();
+            }
             else
             {
-                _directories = directories.Select(x => new ArchiveDirectoryToken(Archive, GetEntryFromKey(x))).OrderBy(x => x.Key).ToImmutableList();
+                _directories = directories.Select(x => new ArchiveDirectoryToken(Archive, GetEntryFromKey(x), false)).OrderBy(x => x.Key).ToImmutableList();
                 if (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
                 {
-                    _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+                    _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null, true);
                 }
             }
         }

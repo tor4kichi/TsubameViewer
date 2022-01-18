@@ -222,6 +222,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     _LastUpdatedRecentlyAccessEnties = recentlyAccessItems;
                 }
+                else
+                {
+                    var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
+                    foreach (var item in RecentlyItems)
+                    {
+                        if (item.Name == lastIntaractItemPath)
+                        {
+                            item.ThumbnailChanged();
+                            item.Initialize();
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -246,7 +258,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+            if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
             }

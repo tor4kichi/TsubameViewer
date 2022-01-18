@@ -468,7 +468,7 @@
         <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, -64" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, -88" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <StackPanel.Resources>
@@ -940,7 +940,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.ItemType, Mode=OneWay}" EqualTo="{x:Bind domainModels:StorageItemTypes.Albam}" />
+            <wst:EqualsStateTrigger Value="{Binding ItemType}" EqualTo="{x:Bind domainModels:StorageItemTypes.Albam}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="Page1SetThubmailImageButton.Visibility" Value="Collapsed" />

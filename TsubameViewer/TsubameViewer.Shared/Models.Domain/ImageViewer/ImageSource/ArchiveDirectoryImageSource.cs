@@ -43,8 +43,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {
-            using var mylock = await ArchiveEntryImageSource.ArchiveEntryAccessLock.LockAsync(ct);
-
             var imageSource = GetNearestImageFromDirectory(_directoryToken);
             if (imageSource == null) { return null; }
 

@@ -8,6 +8,7 @@ using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using Windows.Storage.Streams;
 
 namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 {
@@ -15,6 +16,9 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+
+
+        public bool IsArchiveThumbnailSetToFile { get; set; }
 
         public ChangeStorageItemThumbnailImageCommand(
             ThumbnailManager thumbnailManager,
@@ -44,40 +48,50 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 
             if (parameter is IImageSource imageSource)
             {
-                using (var stream = await imageSource.GetThumbnailImageStreamAsync())
+                using (var imageMemoryStream = new InMemoryRandomAccessStream())
                 {
+                    // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
+                    // imageSource.GetThumbnailImageStreamAsync() は使用していない
+                    using (var stream = await imageSource.GetImageStreamAsync())
+                    {
+                        await RandomAccessStream.CopyAsync(stream, imageMemoryStream);
+                        imageMemoryStream.Seek(0);
+                    }
+
+                    bool requireTranscode = true;
+
                     if (imageSource is ArchiveEntryImageSource archiveEntry)
                     {
                         var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
-                        if (parentDirectoryArchiveEntry == null)
+                        if (IsArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
                         {
-                            await _thumbnailManager.SetThumbnailAsync(archiveEntry.StorageItem, stream, default);
+                            await _thumbnailManager.SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
                         }
                         else
                         {
-                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, stream, default);
+                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
                         }
                     }
                     else if (imageSource is PdfPageImageSource pdf)
                     {
-                        await _thumbnailManager.SetThumbnailAsync(pdf.StorageItem, stream, default);
+                        await _thumbnailManager.SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
                     }
                     else if (imageSource is StorageItemImageSource folderItem)
                     {
                         var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
                         if (folder == null) { throw new InvalidOperationException(); }
-                        await _thumbnailManager.SetThumbnailAsync(folder, stream, default);
+                        await _thumbnailManager.SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
                     }
                     else if (imageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
                     {
                         var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
-                        if (parentDirectoryArchiveEntry == null)
+                        if (IsArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
                         {
-                            await _thumbnailManager.SetThumbnailAsync(archiveDirectoryItem.StorageItem, stream, default);
+                            await _thumbnailManager.SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
                         }
                         else
                         {
-                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, stream, default);
+                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
                         }
                     }
                     else

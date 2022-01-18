@@ -95,6 +95,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public IArchiveEntry GetParentDirectoryEntry()
         {
             if (_archiveDirectoryToken.Key == null
+                || _archiveDirectoryToken.IsRoot
                 || !(_archiveDirectoryToken.Key.Contains(System.IO.Path.DirectorySeparatorChar) || _archiveDirectoryToken.Entry.Key.Contains(System.IO.Path.AltDirectorySeparatorChar))                
                 )
             {

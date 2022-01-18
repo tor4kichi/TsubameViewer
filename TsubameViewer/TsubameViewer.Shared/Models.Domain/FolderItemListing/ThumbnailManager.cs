@@ -138,6 +138,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             try
             {
+                stream.Seek(0, SeekOrigin.Begin);
                 _thumbnailDb.Upload(itemId, filename, stream);
             }
             catch (LiteException liteException) when (liteException.Message.StartsWith("Cannot insert duplicate key in unique index '_id'"))
@@ -158,44 +159,61 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     throw;
                 }
             }
+
+            stream.Seek(0, SeekOrigin.Begin);
         }
 
 
-        public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, CancellationToken ct)
+        public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, bool requireTrancode, CancellationToken ct)
         {
-            var itemId = ToId(targetItem);
-            using (await _fileReadWriteLock.LockAsync(ct))
-            using (var memoryStream = new InMemoryRandomAccessStream())
+            await Task.Run(async () =>
             {
-                await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                UploadWithRetry(itemId, targetItem.Name, memoryStream.AsStreamForRead());
-            }
+                var itemId = ToId(targetItem);
+                using (await _fileReadWriteLock.LockAsync(ct))
+                {
+                    if (requireTrancode)
+                    {
+                        using (var memoryStream = new MemoryStream()) // InMemoryRandomAccessStream では問題が起きる
+                        {
+                            await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);                            
+                            UploadWithRetry(itemId, targetItem.Name, memoryStream);
+                        }
+                    }
+                    else
+                    {
+                        UploadWithRetry(itemId, targetItem.Name, bitmapImage.AsStreamForRead());
+                    }
+                }
+            });
         }
 
 
-        public async Task<IRandomAccessStream> SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, IRandomAccessStream bitmapImage, CancellationToken ct)
+        public async Task SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, IRandomAccessStream bitmapImage, bool requireTrancode, CancellationToken ct)
         {
-            var path = GetArchiveEntryPath(targetItem, entry);
-            var itemId = ToId(path);
-            using (await _fileReadWriteLock.LockAsync(ct))
-            {
-                var memoryStream = new InMemoryRandomAccessStream();
-                try
+            await Task.Run(async () =>
+            { 
+                var path = GetArchiveEntryPath(targetItem, entry);
+                var itemId = ToId(path);
+                using (await _fileReadWriteLock.LockAsync(ct))
                 {
-                    await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    if (requireTrancode)
+                    {
+                        using (var memoryStream = new MemoryStream())
+                        {
+                            await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 
-                    memoryStream.Seek(0);
-                    UploadWithRetry(itemId, targetItem.Name, memoryStream.AsStreamForRead());
+                            memoryStream.Seek(0, SeekOrigin.Begin);
+                            UploadWithRetry(itemId, targetItem.Name, memoryStream);
 
-                    memoryStream.Seek(0);
-                    return memoryStream;
+                            memoryStream.Seek(0, SeekOrigin.Begin);
+                        }
+                    }
+                    else
+                    {
+                        UploadWithRetry(itemId, targetItem.Name, bitmapImage.AsStreamForRead());
+                    }
                 }
-                catch
-                {
-                    memoryStream.Dispose();
-                    throw;
-                }
-            }
+            });
         }
 
         public async Task DeleteAllThumnnailsAsync()
@@ -306,7 +324,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var itemId = ToId(folder);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
-                return cachedFile;
+                if (cachedFile is not null && cachedFile.Size > 0)
+                {
+                    return cachedFile;
+                }
             }
 
 #if WINDOWS_UWP
