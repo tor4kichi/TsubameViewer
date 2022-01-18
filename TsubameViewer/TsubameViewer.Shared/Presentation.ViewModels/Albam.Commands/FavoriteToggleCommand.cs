@@ -11,17 +11,22 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
     {
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel ||
-                parameter is IImageSource;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override void Execute(object parameter)
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-
+                parameter = itemVM.Item;
             }
-            else if (parameter is IImageSource imageSource)
+
+            if (parameter is IImageSource imageSource)
             {
 
             }

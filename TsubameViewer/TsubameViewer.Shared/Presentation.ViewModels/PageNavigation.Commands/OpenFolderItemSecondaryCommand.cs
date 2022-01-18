@@ -9,6 +9,7 @@ using System.Threading;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.Views;
@@ -41,42 +42,53 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel item)
+            if (parameter is StorageItemViewModel itemVM)
             {
-                if (item.Type == StorageItemTypes.Image || item.Type == StorageItemTypes.Archive)
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                if (type is StorageItemTypes.Image or StorageItemTypes.Archive)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.Folder)
+                else if (type is StorageItemTypes.Folder)
                 {
-                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetLatestFolderContainerTypeAndUpdateCacheAsync((item.Item as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetLatestFolderContainerTypeAndUpdateCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(item);
+                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(item);
+                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
                 }
-                else if (item.Type == StorageItemTypes.EBook)
+                else if (type is StorageItemTypes.EBook)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.AddFolder)
+                else if (type is StorageItemTypes.AddFolder)
                 {
                     ((ICommand)_sourceChoiceCommand).Execute(null);
                 }
-                else if (item.Type == StorageItemTypes.AddAlbam)
+                else if (type is StorageItemTypes.AddAlbam)
                 {
                     ((ICommand)_albamCreateCommand).Execute(null);
                 }

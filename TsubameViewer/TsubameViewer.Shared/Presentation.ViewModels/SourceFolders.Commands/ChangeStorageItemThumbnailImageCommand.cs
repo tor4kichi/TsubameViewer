@@ -27,16 +27,26 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel item)
+            if (parameter is StorageItemViewModel itemVM)
             {
-                using (var stream = await item.Item.GetThumbnailImageStreamAsync())
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                using (var stream = await imageSource.GetThumbnailImageStreamAsync())
                 {
-                    if (item.Item is ArchiveEntryImageSource archiveEntry)
+                    if (imageSource is ArchiveEntryImageSource archiveEntry)
                     {
                         var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
                         if (parentDirectoryArchiveEntry == null)
@@ -48,17 +58,17 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                             await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, stream, default);
                         }
                     }
-                    else if (item.Item is PdfPageImageSource pdf)
+                    else if (imageSource is PdfPageImageSource pdf)
                     {
                         await _thumbnailManager.SetThumbnailAsync(pdf.StorageItem, stream, default);
                     }
-                    else if (item.Item is StorageItemImageSource folderItem)
+                    else if (imageSource is StorageItemImageSource folderItem)
                     {
                         var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
                         if (folder == null) { throw new InvalidOperationException(); }
                         await _thumbnailManager.SetThumbnailAsync(folder, stream, default);
                     }
-                    else if (item.Item is ArchiveDirectoryImageSource archiveDirectoryItem)
+                    else if (imageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
                     {
                         var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
                         if (parentDirectoryArchiveEntry == null)

@@ -187,7 +187,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 RemoveFavariteImageMenuItem.Visibility = isFavAlbamItem.TrueToVisible();
                 RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
                 AlbamItemRemoveMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
                 AlbamItemRemoveMenuItem.CommandParameter = itemVM;
 

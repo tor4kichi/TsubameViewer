@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.Services.UWP;
 
@@ -20,16 +21,26 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                if (itemVM.Item is StorageItemImageSource storageItemImageSource)
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                if (imageSource is StorageItemImageSource storageItemImageSource)
                 {
-                    var param = StorageItemViewModel.CreatePageParameter(itemVM);
+                    var param = StorageItemViewModel.CreatePageParameter(imageSource);
                     var tileArguments = new SecondaryTileArguments();
                     if (param.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                     {
@@ -38,7 +49,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
                     var result = await _secondaryTileManager.AddSecondaryTile(
                         tileArguments, 
-                        itemVM.Name, 
+                        imageSource.Name, 
                         storageItemImageSource.StorageItem
                         );
                 }

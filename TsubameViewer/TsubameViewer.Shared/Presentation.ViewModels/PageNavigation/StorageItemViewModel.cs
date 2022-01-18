@@ -29,6 +29,32 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
     {
         #region Navigation Parameters
 
+        public static NavigationParameters CreatePageParameter(IImageSource imageSource)
+        {
+            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+            if (type == StorageItemTypes.Image)
+            {
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(imageSource.StorageItem.Path, imageSource.Name))));
+            }
+            else if (imageSource is ArchiveDirectoryImageSource archiveFolderImageSource)
+            {
+                return CreatePageParameter(archiveFolderImageSource);
+            }
+            else if (imageSource is AlbamImageSource albam)
+            {
+                return CreatePageParameter(albam);
+            }
+            else if (imageSource is AlbamItemImageSource albamItem)
+            {
+                return CreatePageParameter(albamItem);
+            }
+            else
+            {
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.StorageItem.Path)));
+            }
+        }
+
+
         public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
         {
             if (vm.Type == StorageItemTypes.Image)

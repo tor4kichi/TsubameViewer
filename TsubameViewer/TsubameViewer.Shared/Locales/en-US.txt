@@ -168,5 +168,5 @@ ChoiceTargetAlbam = Select an album
 AlbamItemRemove = Remove this image from the album
 
 FavoriteAlbam = Favorite
-AddFavariteImage = Add to Favourites
-RemoveFavariteImage = Remove from favorites
+AddFavoriteImage = Add to Favourites
+RemoveFavoriteImage = Remove from favorites

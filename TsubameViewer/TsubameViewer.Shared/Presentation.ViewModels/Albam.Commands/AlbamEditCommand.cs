@@ -24,15 +24,22 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel itemVM
-                && itemVM.Type == Models.Domain.StorageItemTypes.Albam;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is AlbamImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM
-                && itemVM.Item is AlbamImageSource albam
-                )
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is AlbamImageSource albam)
             {
                 var result = await _albamDialogService.EditAlbamAsync(albam.Name);
                 if (result.isEdited)

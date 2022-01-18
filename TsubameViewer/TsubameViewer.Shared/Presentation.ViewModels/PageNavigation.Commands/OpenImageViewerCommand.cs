@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Presentation.Views;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -23,21 +24,32 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel item)
+            if (parameter is StorageItemViewModel itemVM)
             {
-                if (item.Type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
-                else if (item.Type == StorageItemTypes.EBook)
+                else if (type == StorageItemTypes.EBook)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(item);
+                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
             }

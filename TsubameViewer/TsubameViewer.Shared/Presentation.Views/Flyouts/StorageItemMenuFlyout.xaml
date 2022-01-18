@@ -12,8 +12,8 @@
   <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
 
   <MenuFlyoutSeparator x:Name="AlbamMenuSeparator" />
-  <MenuFlyoutItem x:Name="AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavariteImage}" />
-  <MenuFlyoutItem x:Name="RemoveFavariteImageMenuItem" Text="{i18nExt:Localize Key=RemoveFavariteImage}" />
+  <MenuFlyoutItem x:Name="AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />
+  <MenuFlyoutItem x:Name="RemoveFavariteImageMenuItem" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" />
   <MenuFlyoutItem x:Name="AlbamItemEditMenuItem" Text="{i18nExt:Localize Key=EditAlbamImage}" />
   <MenuFlyoutItem x:Name="AlbamItemRemoveMenuItem" Text="{i18nExt:Localize Key=AlbamItemRemove}" />
   <MenuFlyoutItem x:Name="AlbamEditMenuItem" Text="{i18nExt:Localize Key=AlbamEdit}" />

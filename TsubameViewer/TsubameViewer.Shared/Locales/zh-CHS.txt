@@ -168,5 +168,5 @@ ChoiceTargetAlbam = 选择专辑
 AlbamItemRemove = 从相册中删除这张图片
 
 FavoriteAlbam = 最喜欢的
-AddFavariteImage = 加入“最喜欢的
-RemoveFavariteImage = 从收藏夹中删除
+AddFavoriteImage = 加入“最喜欢的
+RemoveFavoriteImage = 从收藏夹中删除

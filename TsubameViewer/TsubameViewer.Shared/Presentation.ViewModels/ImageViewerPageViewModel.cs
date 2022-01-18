@@ -49,6 +49,8 @@ using System.Numerics;
 using Windows.UI.Xaml.Media;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Models.UseCase;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -87,7 +89,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
-        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+        private readonly FileSortType DefaultFileSortType = FileSortType.None;
 
         private string _DisplaySortTypeInheritancePath;
         public string DisplaySortTypeInheritancePath
@@ -110,20 +112,48 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
+        private string _page1Name;
+        public string Page1Name
+        {
+            get { return _page1Name; }
+            private set { SetProperty(ref _page1Name, value); }
+        }
+
+        private string _page2Name;
+        public string Page2Name
+        {
+            get { return _page2Name; }
+            private set { SetProperty(ref _page2Name, value); }
+        }
+
+
+        private bool _page1Favorite;
+        public bool Page1Favorite
+        {
+            get { return _page1Favorite; }
+            private set { SetProperty(ref _page1Favorite, value); }
+        }
+
+        private bool _page2Favorite;
+        public bool Page2Favorite
+        {
+            get { return _page2Favorite; }
+            private set { SetProperty(ref _page2Favorite, value); }
+        }
+
+        private IImageSource[] _currentDisplayImageSources;
+        public IImageSource[] CurrentDisplayImageSources
+        {
+            get => _currentDisplayImageSources;
+            set => SetProperty(ref _currentDisplayImageSources, value);
+        }
+
         private string _pageFolderName;
         public string PageFolderName
         {
             get { return _pageFolderName; }
             set { SetProperty(ref _pageFolderName, value); }
         }
-
-        private string _pageName;
-        public string PageName
-        {
-            get { return _pageName; }
-            private set { SetProperty(ref _pageName, value); }
-        }
-
 
         private string[] _pageFolderNames;
         public string[] PageFolderNames
@@ -191,7 +221,12 @@ namespace TsubameViewer.Presentation.ViewModels
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand,
-            FavoriteToggleCommand favoriteToggleCommand
+            FavoriteAddCommand favoriteAddCommand,
+            FavoriteRemoveCommand favoriteRemoveCommand,
+            AlbamItemEditCommand albamItemEditCommand,
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
+            OpenWithExplorerCommand openWithExplorerCommand,
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
             )
         {
             _scheduler = scheduler;
@@ -202,7 +237,12 @@ namespace TsubameViewer.Presentation.ViewModels
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
-            FavoriteToggleCommand = favoriteToggleCommand;
+            FavoriteAddCommand = favoriteAddCommand;
+            FavoriteRemoveCommand = favoriteRemoveCommand;
+            AlbamItemEditCommand = albamItemEditCommand;
+            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+            OpenWithExplorerCommand = openWithExplorerCommand;
+            OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _thumbnailManager = thumbnailManager;
@@ -317,6 +357,9 @@ namespace TsubameViewer.Presentation.ViewModels
             _appView.Title = String.Empty;
             ParentFolderOrArchiveName = String.Empty;
 
+            _messenger.Unregister<AlbamItemAddedMessage>(this);
+            _messenger.Unregister<AlbamItemRemovedMessage>(this);
+
             base.OnNavigatedFrom(parameters);
         }
 
@@ -327,7 +370,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AddTo(_navigationDisposables);
             _imageLoadingCts = new CancellationTokenSource();
             _imageCollectionContext = null;
-            PageName = null;
+            Page1Name = null;
             Title = null;
             PageFolderName = null;
 
@@ -527,18 +570,42 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
             // 画像更新
-            this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true)
-                .Subscribe(async imageIndex =>
+            Observable.Merge(
+                this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true).ToUnit(),
+                this.ObserveProperty(x => x.NowDoubleImageView, isPushCurrentValueAtFirst: false).ToUnit()
+                )
+                .Subscribe(_ =>
                 {
                     var ct = _imageLoadingCts.Token;
                     //using (_imageLoadingLock.LockAsync(ct))
                     {
                         if (Images == null) { return; }
                         if (_imageCollectionContext is null) { return; }
+                        int imageIndex = CurrentImageIndex;
+                        var imageSources = GetSourceImages(PrefetchIndexType.Current);
+                        UpdateDisplayName(imageSources);
 
-                        var imageSource = await _imageCollectionContext.GetImageFileAtAsync(imageIndex, SelectedFileSortType.Value, ct);
-                        UpdateDisplayName(imageSource);
+                        _currentDisplayImageSources ??= new IImageSource[2];
+                        if (imageSources.Length == 1)
+                        {
+                            _currentDisplayImageSources[0] = imageSources[0];
+                            _currentDisplayImageSources[1] = null;
 
+                            Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                            Page2Favorite = false;
+                        }
+                        else if (imageSources.Length == 2)
+                        {
+                            _currentDisplayImageSources[0] = imageSources[0];
+                            _currentDisplayImageSources[1] = imageSources[1];
+
+                            Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                            Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                        }
+
+                        RaisePropertyChanged(nameof(CurrentDisplayImageSources));
+
+                        var imageSource = imageSources[0];
                         if (_currentFolderItem is IStorageItem)
                         {
                             _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
@@ -595,6 +662,41 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .AddTo(_navigationDisposables);
 
+
+            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) => 
+            {
+                var (albamId, path) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    if (_currentDisplayImageSources[0] != null)
+                    {
+                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                    }
+
+                    if (_currentDisplayImageSources[1] != null)
+                    {
+                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                    }
+                }
+            });
+
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    if (_currentDisplayImageSources[0] != null)
+                    {
+                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                    }
+
+                    if (_currentDisplayImageSources[1] != null)
+                    {
+                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                    }
+                }
+            });
+
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
             {
                 // アプリ内部操作も含めて変更を検知する
@@ -641,20 +743,38 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
         bool _nowPageFolderNameChanging = false;
-        void UpdateDisplayName(IImageSource imageSource)
+        void UpdateDisplayName(IImageSource[] imageSources)
         {
             _nowPageFolderNameChanging = true;
             try
             {
-                if (this.ItemType == StorageItemTypes.Archive)
+                if (imageSources.Length >= 1)
                 {
-                    var names = imageSource.Path.Split(SeparateChars);
-                    PageName = names[names.Length - 1];
-                    PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                    var imageSource = imageSources[0];
+                    if (imageSource is ArchiveEntryImageSource)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        Page1Name = names[names.Length - 1];
+                        PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                    }
+                    else
+                    {
+                        Page1Name = imageSource.Name;
+                    }
                 }
-                else
+
+                if (imageSources.Length >= 2)
                 {
-                    PageName = imageSource.Name;
+                    var imageSource = imageSources[1];
+                    if (imageSource is ArchiveEntryImageSource)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        Page2Name = names[names.Length - 1];
+                    }
+                    else
+                    {
+                        Page2Name = imageSource.Name;
+                    }
                 }
             }
             finally
@@ -1161,6 +1281,12 @@ namespace TsubameViewer.Presentation.ViewModels
             new IImageSource[2],
         };
 
+        IImageSource[] GetSourceImages(PrefetchIndexType type)
+        {
+            var index = GetDisplayImageIndex(type);
+            return NowDoubleImageView ? _sourceImagesDouble[index] : _sourceImagesSingle[index];
+        }
+
         public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
         {
             var ct = _imageLoadingCts.Token;
@@ -1639,6 +1765,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
+        public FavoriteAddCommand FavoriteAddCommand { get; }
+        public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
+        public AlbamItemEditCommand AlbamItemEditCommand { get; }
+        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
+        public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
+        public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
         public FavoriteToggleCommand FavoriteToggleCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;

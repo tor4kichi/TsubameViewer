@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.UI.Popups;
@@ -26,16 +27,24 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         }
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel itemVM 
-                && itemVM.Type == Models.Domain.StorageItemTypes.Albam
-                && (itemVM.Item as AlbamImageSource)?.AlbamId != FavoriteAlbam.FavoriteAlbamId
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is AlbamImageSource albam
+                && albam.AlbamId != FavoriteAlbam.FavoriteAlbamId
                 ;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM && 
-                itemVM.Item is AlbamImageSource albam)
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is AlbamImageSource albam)
             {
                 if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
                 {

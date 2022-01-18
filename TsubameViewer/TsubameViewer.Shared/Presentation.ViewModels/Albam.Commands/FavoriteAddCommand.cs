@@ -3,12 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    internal sealed class FavoriteAddCommand : DelegateCommandBase
+    public sealed class FavoriteAddCommand : DelegateCommandBase
     {
         private readonly FavoriteAlbam _favoriteAlbam;
 
@@ -18,14 +19,24 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         }
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override void Execute(object parameter)
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                _favoriteAlbam.AddFavoriteItem(itemVM.Path, itemVM.Name);
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                _favoriteAlbam.AddFavoriteItem(imageSource.Path, imageSource.Name);
             }
         }
     }

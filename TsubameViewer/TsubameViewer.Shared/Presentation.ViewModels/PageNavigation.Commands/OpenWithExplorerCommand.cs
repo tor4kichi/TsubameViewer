@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 using Windows.System;
@@ -14,14 +15,24 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
     {
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel item)
+            if (parameter is StorageItemViewModel itemVM)
             {
-                if (item.Item is StorageItemImageSource imageSource)
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is IImageSource imageSource)
+            {
+                if (imageSource is StorageItemImageSource)
                 {
                     if (imageSource.StorageItem is StorageFolder folder)
                     {
@@ -33,7 +44,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
                     }
                 }
-                else if (item.Item is AlbamItemImageSource albamItemImageSource)
+                else if (imageSource is AlbamItemImageSource albamItemImageSource)
                 {
                     await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(albamItemImageSource.Path), new FolderLauncherOptions() { ItemsToSelect = { albamItemImageSource.StorageItem } });
                 }

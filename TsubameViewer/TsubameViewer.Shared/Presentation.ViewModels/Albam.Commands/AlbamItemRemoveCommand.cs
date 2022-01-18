@@ -24,17 +24,24 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is AlbamItemImageSource;
         }
 
         protected override void Execute(object parameter)
         {
             if (parameter is StorageItemViewModel itemVM)
             {
-                if (itemVM.Item is AlbamItemImageSource albamItemImageSource)
-                {
-                    _albamRepository.DeleteAlbamItem(albamItemImageSource.AlbamId, albamItemImageSource.Path);
-                }
+                parameter = itemVM.Item;
+            }
+
+            if (parameter is AlbamItemImageSource albamItem)
+            {
+                _albamRepository.DeleteAlbamItem(albamItem.AlbamId, albamItem.Path);
             }
         }
     }

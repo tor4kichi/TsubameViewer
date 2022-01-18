@@ -168,5 +168,5 @@ ChoiceTargetAlbam = アルバムを選択
 AlbamItemRemove = この画像をアルバムから除去
 
 FavoriteAlbam = お気に入り
-AddFavariteImage = お気に入りに追加
-RemoveFavariteImage = お気に入りから除去
+AddFavoriteImage = お気に入りに追加
+RemoveFavoriteImage = お気に入りから除去
