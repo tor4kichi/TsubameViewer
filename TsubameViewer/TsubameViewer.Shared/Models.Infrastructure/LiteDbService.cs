@@ -20,6 +20,11 @@ namespace TsubameViewer.Models.Infrastructure
             _collection = liteDatabase.GetCollection<T>();
         }
 
+        public virtual T FindById(BsonValue id)
+        {
+            return _collection.FindById(id);
+        }
+
         public virtual T CreateItem(T item)
         {
             var val = _collection.Insert(item);
@@ -61,6 +66,11 @@ namespace TsubameViewer.Models.Infrastructure
         public int Count()
         {
             return _collection.Count();
+        }
+
+        public int Count(System.Linq.Expressions.Expression<Func<T, bool>> predicate)
+        {
+            return _collection.Count(predicate);
         }
     }
 }

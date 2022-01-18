@@ -138,7 +138,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     _foldersInitialized = true;
 
-                    Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _bookmarkManager) { });
+                    Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Models.Domain.StorageItemTypes.AddFolder));
                     await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                     {
                         if (_sourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path))
@@ -246,7 +246,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
             }

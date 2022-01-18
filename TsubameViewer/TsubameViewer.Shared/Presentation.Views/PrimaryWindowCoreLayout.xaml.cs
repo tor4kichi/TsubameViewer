@@ -44,7 +44,7 @@ namespace TsubameViewer.Presentation.Views
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
     public sealed partial class PrimaryWindowCoreLayout : Page
-    {
+    {        
         private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
         private readonly IMessenger _messenger;
 
@@ -76,6 +76,11 @@ namespace TsubameViewer.Presentation.Views
 
 
         #region Navigation
+
+        public readonly static Type HomePageType = typeof(SourceStorageItemsPage);
+
+        public static string HomePageName => HomePageType.Name;
+
 
         private readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
         {
@@ -242,7 +247,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 ForwardParametersStack.Clear();
 
-                ContentFrame.BackStack.Add(new PageStackEntry(PageNavigationConstants.HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(PageNavigationConstants.HomePageName)));
+                ContentFrame.BackStack.Add(new PageStackEntry(HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(HomePageName)));
                 BackParametersStack.Add(new NavigationParameters());
 
                 _ = SaveNaviagtionParameterAsync();
@@ -323,8 +328,8 @@ namespace TsubameViewer.Presentation.Views
                         && frame.BackStack.Count >= 3
                         && e.SourcePageType == typeof(FolderListupPage)
                         && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
-                        && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.Path, out string currentNavigationPathParameter)
-                        && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.Path, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                        && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.GeneralPathKey, out string currentNavigationPathParameter)
+                        && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                         )
                     {
                         foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
@@ -393,7 +398,7 @@ namespace TsubameViewer.Presentation.Views
                         && (backStack == null || backStack.Length == 0))
                     {
                         // 戻るナビゲーションが必要なページでバックナビゲーションパラメータが存在しなかった場合はホーム画面に戻れるようにしておく
-                        backStack = new PageEntry[] { new PageEntry(PageNavigationConstants.HomePageName) };
+                        backStack = new PageEntry[] { new PageEntry(HomePageName) };
                     }
 
                     var currentNavParameters = MakeNavigationParameter(currentEntry.Parameters);
@@ -412,7 +417,7 @@ namespace TsubameViewer.Presentation.Views
 
                     Debug.WriteLine($"[NavigationRestore] Restored CurrentPage: {currentEntry.PageName} {string.Join(',', currentEntry.Parameters?.Select(x => $"{x.Key}={x.Value}") ?? Enumerable.Empty<string>())}");
 
-                    if (currentEntry.PageName == PageNavigationConstants.HomePageName)
+                    if (currentEntry.PageName == HomePageName)
                     {
                         return;
                     }
@@ -458,7 +463,7 @@ namespace TsubameViewer.Presentation.Views
             ContentFrame.BackStack.Clear();
             ContentFrame.ForwardStack.Clear();
 
-            await _navigationService.NavigateAsync(PageNavigationConstants.HomePageName);
+            await _navigationService.NavigateAsync(HomePageName);
             await SaveNaviagtionParameterAsync();
         }
 
@@ -888,7 +893,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     if (openStorageItem is StorageFolder)
                     {
-                        await _messenger.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
+                        await _messenger.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                     }
                     else if (openStorageItem is StorageFile fileItem)
                     {
@@ -896,11 +901,11 @@ namespace TsubameViewer.Presentation.Views
                             || SupportedFileTypesHelper.IsSupportedImageFileExtension(fileItem.FileType)
                             )
                         {
-                            await _messenger.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
+                            await _messenger.NavigateAsync(nameof(Views.ImageViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                         }
                         else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                         {
-                            await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.Path, openStorageItem.Path)));
+                            await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                         }
                     }
                 }

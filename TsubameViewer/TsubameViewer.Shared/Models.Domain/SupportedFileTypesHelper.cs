@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
@@ -149,6 +150,16 @@ namespace TsubameViewer.Models.Domain
             };
         }
 
+        public static StorageItemTypes StorageItemToStorageItemTypes(object item)
+        {
+            return item switch
+            {
+                IStorageItem file => StorageItemToStorageItemTypes(file),
+                AlbamEntry _ => StorageItemTypes.Albam,
+                _ => StorageItemTypes.None
+            };
+        }
+
         public static StorageItemTypes StorageItemToStorageItemTypes(IImageSource item)
         {
             return item switch
@@ -157,6 +168,8 @@ namespace TsubameViewer.Models.Domain
                 PdfPageImageSource _ => StorageItemTypes.Image,
                 ArchiveEntryImageSource _ => StorageItemTypes.Image,
                 ArchiveDirectoryImageSource _ => StorageItemTypes.ArchiveFolder,
+                Albam.AlbamImageSource _ => StorageItemTypes.Albam,
+                Albam.AlbamItemImageSource _ => StorageItemTypes.AlbamImage,
                 _ => StorageItemTypes.None
             };
         }

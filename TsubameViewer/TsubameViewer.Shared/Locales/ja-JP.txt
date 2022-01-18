@@ -3,6 +3,9 @@
 Copy = コピー
 CopyToClipboard = クリップボードにコピー
 Cancel = キャンセル
+Delete = 削除
+Create = 作成
+Apply = 適用する
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -77,7 +80,6 @@ ChangeViewToImageListupPage = 画像一覧ビューに切替
 
 
 FileSortTitle = 並び替え
-FileSortType.UpdateTimeDescThenTitleAsc = 新しい順＆タイトル昇順
 FileSortType.TitleAscending = タイトル昇順
 FileSortType.TitleDecending = タイトル降順
 FileSortType.UpdateTimeAscending = 古い順
@@ -86,7 +88,6 @@ FileSortType.UpdateTimeDecending = 新しい順
 Sort_InheritancePath = 並び替え継承元
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダの画像並び替え
-TitleDigitCompletion = タイトルの桁数補完
 
 
 OpenImageViewer = リーダーで開く
@@ -99,7 +100,7 @@ RemoveSecondaryTile = スタートのピン留めを解除
 
 SetThumbnailImage = サムネイル画像に設定
 
-FolderItemMenuNoActionSuggested = 選択可能なアクションはありません
+
 
 #### ImageViewerPage
 
@@ -148,3 +149,24 @@ Toc = 目次
 
 SearchResultWith = 次の検索結果
 SearchPlaceholder = タイトルの検索
+
+
+
+#### Albam
+
+Albam = アルバム
+
+CreateAlbam = アルバムを作成
+AlbamName_Placeholder = アルバムの名前を入力
+AlbamName_Default = 新しいアルバム
+AlbamEdit = アルバムを編集
+AlbamDelete = アルバムを削除
+AlbamDeleteConfirmDialogText = アルバム「{0}」を削除しますか？（この操作は取り消せません）
+
+EditAlbamImage = 追加先のアルバムを選択
+ChoiceTargetAlbam = アルバムを選択
+AlbamItemRemove = この画像をアルバムから除去
+
+FavoriteAlbam = お気に入り
+AddFavoriteImage = お気に入りに追加
+RemoveFavoriteImage = お気に入りから除去

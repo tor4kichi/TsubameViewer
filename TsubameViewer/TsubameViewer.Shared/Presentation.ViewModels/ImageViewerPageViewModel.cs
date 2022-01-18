@@ -40,7 +40,6 @@ using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
-using TsubameViewer.Presentation.ViewModels.Sorting;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using TsubameViewer.Presentation.Services.UWP;
@@ -48,15 +47,19 @@ using Uno.Disposables;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using System.Numerics;
 using Windows.UI.Xaml.Media;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Models.UseCase;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class ImageViewerPageViewModel : ViewModelBase, IDisposable
     {
         private string _currentPath;
-        private IStorageItem _currentFolderItem;
+        private object _currentFolderItem;
 
-        private CancellationTokenSource _leavePageCancellationTokenSource;
+        private CancellationTokenSource _navigationCts;
 
         IDisposable _ImageEnumerationDisposer;
 
@@ -86,9 +89,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
-        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
-
-        public ReactivePropertySlim<bool> IsSortWithTitleDigitCompletion { get; }
+        private readonly FileSortType DefaultFileSortType = FileSortType.None;
 
         private string _DisplaySortTypeInheritancePath;
         public string DisplaySortTypeInheritancePath
@@ -111,20 +112,48 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
+        private string _page1Name;
+        public string Page1Name
+        {
+            get { return _page1Name; }
+            private set { SetProperty(ref _page1Name, value); }
+        }
+
+        private string _page2Name;
+        public string Page2Name
+        {
+            get { return _page2Name; }
+            private set { SetProperty(ref _page2Name, value); }
+        }
+
+
+        private bool _page1Favorite;
+        public bool Page1Favorite
+        {
+            get { return _page1Favorite; }
+            private set { SetProperty(ref _page1Favorite, value); }
+        }
+
+        private bool _page2Favorite;
+        public bool Page2Favorite
+        {
+            get { return _page2Favorite; }
+            private set { SetProperty(ref _page2Favorite, value); }
+        }
+
+        private IImageSource[] _currentDisplayImageSources;
+        public IImageSource[] CurrentDisplayImageSources
+        {
+            get => _currentDisplayImageSources;
+            set => SetProperty(ref _currentDisplayImageSources, value);
+        }
+
         private string _pageFolderName;
         public string PageFolderName
         {
             get { return _pageFolderName; }
             set { SetProperty(ref _pageFolderName, value); }
         }
-
-        private string _pageName;
-        public string PageName
-        {
-            get { return _pageName; }
-            private set { SetProperty(ref _pageName, value); }
-        }
-
 
         private string[] _pageFolderNames;
         public string[] PageFolderNames
@@ -167,6 +196,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly AlbamRepository _albamRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly BookmarkManager _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
@@ -180,6 +210,7 @@ namespace TsubameViewer.Presentation.ViewModels
             IScheduler scheduler,
             IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
+            AlbamRepository albamRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             BookmarkManager bookmarkManager,
@@ -189,16 +220,29 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderLastIntractItemManager folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
-            BackNavigationCommand backNavigationCommand
+            BackNavigationCommand backNavigationCommand,
+            FavoriteAddCommand favoriteAddCommand,
+            FavoriteRemoveCommand favoriteRemoveCommand,
+            AlbamItemEditCommand albamItemEditCommand,
+            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
+            OpenWithExplorerCommand openWithExplorerCommand,
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
             )
         {
             _scheduler = scheduler;
             _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
+            _albamRepository = albamRepository;
             _imageCollectionManager = imageCollectionManager;
             ImageViewerSettings = imageCollectionSettings;
             ToggleFullScreenCommand = toggleFullScreenCommand;
             BackNavigationCommand = backNavigationCommand;
+            FavoriteAddCommand = favoriteAddCommand;
+            FavoriteRemoveCommand = favoriteRemoveCommand;
+            AlbamItemEditCommand = albamItemEditCommand;
+            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+            OpenWithExplorerCommand = openWithExplorerCommand;
+            OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             _bookmarkManager = bookmarkManager;
             _recentlyAccessManager = recentlyAccessManager;
             _thumbnailManager = thumbnailManager;
@@ -224,8 +268,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _appView = ApplicationView.GetForCurrentView();
 
             SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
-                .AddTo(_disposables);
-            IsSortWithTitleDigitCompletion = new ReactivePropertySlim<bool>(true)
                 .AddTo(_disposables);
 
             IsLeftBindingEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
@@ -299,11 +341,13 @@ namespace TsubameViewer.Presentation.ViewModels
             if (Images?.Any() ?? false)
             {
                 Images.ForEach((IImageSource x) => x.TryDispose());
+                _nowCurrenImageIndexChanging = true;
                 Images = null;
+                _nowCurrenImageIndexChanging = false;
             }
 
-            _leavePageCancellationTokenSource.Cancel();
-            _leavePageCancellationTokenSource.Dispose();
+            _navigationCts.Cancel();
+            _navigationCts.Dispose();
             _navigationDisposables.Dispose();
             _ImageEnumerationDisposer?.Dispose();
             _ImageEnumerationDisposer = null;
@@ -313,17 +357,20 @@ namespace TsubameViewer.Presentation.ViewModels
             _appView.Title = String.Empty;
             ParentFolderOrArchiveName = String.Empty;
 
+            _messenger.Unregister<AlbamItemAddedMessage>(this);
+            _messenger.Unregister<AlbamItemRemovedMessage>(this);
+
             base.OnNavigatedFrom(parameters);
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _navigationDisposables = new CompositeDisposable();
-            _leavePageCancellationTokenSource = new CancellationTokenSource()
+            _navigationCts = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
             _imageLoadingCts = new CancellationTokenSource();
             _imageCollectionContext = null;
-            PageName = null;
+            Page1Name = null;
             Title = null;
             PageFolderName = null;
 
@@ -331,29 +378,35 @@ namespace TsubameViewer.Presentation.ViewModels
             GoNextImageCommand.RaiseCanExecuteChanged();
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
+            string parsedPageName = null;
+            string parsedArchiveFolderName = null;
+
             var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
                 || mode == NavigationMode.Forward
                 )
             {
-                if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
 
-                    if (_currentPath != unescapedPath)
+                    (var itemPath, parsedPageName, parsedArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
+
+                    if (_currentPath != itemPath)
                     {
-                        
-                        _currentPath = unescapedPath;
+
+                        _currentPath = itemPath;
 
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
+                        IStorageItem currentFolderItem = null;
                         foreach (var _ in Enumerable.Repeat(0, 10))
                         {
-                            _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
-                            if (_currentFolderItem != null)
+                            currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                            if (currentFolderItem != null)
                             {
-                                _currentPath = _currentFolderItem.Path;
+                                _currentPath = currentFolderItem.Path;
                                 break;
                             }
 
@@ -363,11 +416,13 @@ namespace TsubameViewer.Presentation.ViewModels
                         Images = default;
                         _CurrentImageIndex = 0;
 
-                        _appView.Title = _currentFolderItem.Name;
-                        Title = _currentFolderItem.Name;
+                        _appView.Title = currentFolderItem.Name;
+                        Title = currentFolderItem.Name;
+
+                        _currentFolderItem = currentFolderItem;
 
                         DisplaySortTypeInheritancePath = null;
-                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath) 
+                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
                             ? Path.GetDirectoryName(_currentPath)
                             : _currentPath;
 
@@ -375,24 +430,58 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (settings != null)
                         {
                             SelectedFileSortType.Value = settings.Sort;
-                            IsSortWithTitleDigitCompletion.Value = settings.IsTitleDigitInterpolation;
                         }
                         else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
                         {
                             DisplaySortTypeInheritancePath = parentSort.Path;
                             SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                            IsSortWithTitleDigitCompletion.Value = false;
                         }
                         else
                         {
                             SelectedFileSortType.Value = DefaultFileSortType;
-                            IsSortWithTitleDigitCompletion.Value = false;
                         }
 
 
-                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value) 
+                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
                             = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
-                        
+
+                    }
+                }
+                else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                {
+                    var unescapedPath = Uri.UnescapeDataString(albamPath);
+                    if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
+
+                    (var itemPath, parsedPageName, _) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
+
+                    if (_currentPath != itemPath)
+                    {
+                        _currentPath = itemPath;
+
+                        var albam = _albamRepository.GetAlbam(Guid.Parse(itemPath));
+
+                        Images = default;
+                        _CurrentImageIndex = 0;
+
+                        _appView.Title = albam.Name;
+                        Title = albam.Name;
+
+                        _currentFolderItem = albam;
+                        DisplaySortTypeInheritancePath = null;
+                        _pathForSettings = null;
+
+                        var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albam._id);
+                        if (settings != null)
+                        {
+                            SelectedFileSortType.Value = settings.Sort;
+                        }
+                        else
+                        {
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                        }
+
+                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
                     }
                 }
             }
@@ -407,7 +496,7 @@ namespace TsubameViewer.Presentation.ViewModels
 #if DEBUG
                     //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
 #endif
-                    await _messenger.WorkWithBusyWallAsync(RefreshItems, _leavePageCancellationTokenSource.Token);
+                    await _messenger.WorkWithBusyWallAsync(RefreshItems, _navigationCts.Token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -419,62 +508,56 @@ namespace TsubameViewer.Presentation.ViewModels
             // 表示する画像を決める
             if (mode == NavigationMode.Forward 
                 || parameters.ContainsKey(PageNavigationConstants.Restored) 
-                || (mode == NavigationMode.New && !parameters.ContainsKey(PageNavigationConstants.PageName))
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName) && string.IsNullOrEmpty(parsedArchiveFolderName)
+                )
                 )
             {
-                var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
-                if (bookmarkPageName != null)
+                
+                if (string.IsNullOrEmpty(_pathForSettings) is false)
                 {
-                    for (var i = 0; i < Images.Length; i++)
+                    var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
+                    if (bookmarkPageName != null)
                     {
-                        if (Images[i].Name == bookmarkPageName)
+                        try
                         {
-                            _CurrentImageIndex = i;
-                            break;
+                            _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                        }
+                        catch
+                        {
+                            _CurrentImageIndex = 0;
                         }
                     }
                 }
             }
-            else if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.PageName))
+            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
-                if (parameters.TryGetValue(PageNavigationConstants.PageName, out string pageName))
+                var unescapedPageName = parsedPageName;
+                try
                 {
-                    var unescapedPageName = Uri.UnescapeDataString(pageName);
-                    var firstSelectItem = Images.FirstOrDefault(x => x.Name == unescapedPageName);
-                    if (firstSelectItem != null)
-                    {
-                        _CurrentImageIndex = Images.IndexOf(firstSelectItem);
-                    }
+                    _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(parsedPageName, SelectedFileSortType.Value, _navigationCts.Token);
                 }
-
-                // TODO: FileSortTypeを受け取って表示順の入れ替えに対応するべきか否か
-                //if (parameters.TryGetValue("sort", out string sortMethod))
+                catch
                 {
-
+                    _CurrentImageIndex = 0;
                 }
             }
-            
-            if (mode == NavigationMode.New && parameters.ContainsKey(PageNavigationConstants.ArchiveFolderName))
+            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedArchiveFolderName))
             {
-                if (parameters.TryGetValueSafe(PageNavigationConstants.ArchiveFolderName, out string folderName))
+                var unescapedFolderName = parsedArchiveFolderName;
+                try
                 {
-                    var unescapedFolderName = Uri.UnescapeDataString(folderName);
-                    var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(unescapedFolderName));
-                    if (pageFirstItem != null)
-                    {
-                        _CurrentImageIndex = Images.IndexOf(pageFirstItem);
-                    }
+                    _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(parsedArchiveFolderName, SelectedFileSortType.Value, _navigationCts.Token);
+                }
+                catch
+                {
+                    _CurrentImageIndex = 0;
                 }
             }
+
 
             _nowCurrenImageIndexChanging = true;
             RaisePropertyChanged(nameof(CurrentImageIndex));
             _nowCurrenImageIndexChanging = false;
-
-            if (Images != null && Images.Any())
-            {
-                UpdateDisplayName(Images[CurrentImageIndex]);
-            }
 
             await ResetImageIndex(CurrentImageIndex);
 
@@ -487,38 +570,64 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.RaiseCanExecuteChanged();
 
             // 画像更新
-            this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true)
-                .Subscribe(imageIndex =>
+            Observable.Merge(
+                this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true).ToUnit(),
+                this.ObserveProperty(x => x.NowDoubleImageView, isPushCurrentValueAtFirst: false).ToUnit()
+                )
+                .Subscribe(_ =>
                 {
-                    if (Images == null || !Images.Any()) { return; }
+                    var ct = _imageLoadingCts.Token;
+                    //using (_imageLoadingLock.LockAsync(ct))
+                    {
+                        if (Images == null) { return; }
+                        if (_imageCollectionContext is null) { return; }
+                        int imageIndex = CurrentImageIndex;
+                        var imageSources = GetSourceImages(PrefetchIndexType.Current);
+                        UpdateDisplayName(imageSources);
 
-                    var imageSource = Images[imageIndex];
-                    UpdateDisplayName(imageSource);
-                    _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
-                    _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
+                        _currentDisplayImageSources ??= new IImageSource[2];
+                        if (imageSources.Length == 1)
+                        {
+                            _currentDisplayImageSources[0] = imageSources[0];
+                            _currentDisplayImageSources[1] = null;
+
+                            Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                            Page2Favorite = false;
+                        }
+                        else if (imageSources.Length == 2)
+                        {
+                            _currentDisplayImageSources[0] = imageSources[0];
+                            _currentDisplayImageSources[1] = imageSources[1];
+
+                            Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                            Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                        }
+
+                        RaisePropertyChanged(nameof(CurrentDisplayImageSources));
+
+                        var imageSource = imageSources[0];
+                        if (_currentFolderItem is IStorageItem)
+                        {
+                            _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
+                            _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
+                        }
+                        else if (_currentFolderItem is AlbamEntry albam)
+                        {
+                            _folderLastIntractItemManager.SetLastIntractItemName(albam._id, imageSource.Path);
+                        }
+                    }
                 }).AddTo(_navigationDisposables);
 
-            Observable.CombineLatest(
-                IsSortWithTitleDigitCompletion,
-                SelectedFileSortType,
-                (x, y) => (x, y)
-                )
+            SelectedFileSortType
                 .Pairwise()
-                .Where(x => x.NewItem != x.OldItem)
-                .Subscribe(async _ =>
+                .Subscribe(async pair =>
                 {
                     if (Images == null) { return; }
-
-                    var currentItemPath = Images[CurrentImageIndex].Path;
-                    Images = ToSortedImages(Images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
-                    await ResetImageIndex(Images.IndexOf(null, (x, y) => y.Path == currentItemPath));
+                    var ct = _navigationCts.Token;
+                    var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.OldItem, ct);
+                    var newIndex = await _imageCollectionContext.GetIndexFromKeyAsync(oldImage.Name, pair.NewItem, ct);
+                    await ResetImageIndex(newIndex);
                 })
-                .AddTo(_navigationDisposables);
-
-            IsSortWithTitleDigitCompletion
-                .Pairwise()
-                .Where(x => x.NewItem != x.OldItem)
-                .Subscribe(x => _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value))
                 .AddTo(_navigationDisposables);
 
             _SizeChangedSubject
@@ -553,6 +662,41 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .AddTo(_navigationDisposables);
 
+
+            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) => 
+            {
+                var (albamId, path) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    if (_currentDisplayImageSources[0] != null)
+                    {
+                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                    }
+
+                    if (_currentDisplayImageSources[1] != null)
+                    {
+                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                    }
+                }
+            });
+
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    if (_currentDisplayImageSources[0] != null)
+                    {
+                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                    }
+
+                    if (_currentDisplayImageSources[1] != null)
+                    {
+                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                    }
+                }
+            });
+
             if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
             {
                 // アプリ内部操作も含めて変更を検知する
@@ -570,16 +714,25 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         if (visible && requireRefresh && _imageCollectionContext is not null)
                         {
+                            var ct = _navigationCts?.Token ?? CancellationToken.None;
                             requireRefresh = false;
-                            var currentItemPath = Images[CurrentImageIndex].Path;
-                            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType.Value, ct)).Path;
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
 
-                            var index = Images.IndexOf(null, (x, y) => y.Path == currentItemPath);
-                            if (index < 0)
+                            try
                             {
-                                index = 0;
+                                var index = await _imageCollectionContext.GetIndexFromKeyAsync(currentItemPath, SelectedFileSortType.Value, ct);
+                                await ResetImageIndex(index >= 0 ? index : 0);
                             }
-                            await ResetImageIndex(index);
+                            catch
+                            {
+                                if (await _imageCollectionContext.GetImageFileCountAsync(ct) > 0)
+                                {
+                                    await ResetImageIndex(0);
+                                }
+                            }
+
+
                             Debug.WriteLine("Images Updated. " + _currentPath);
                         }
                     })
@@ -589,20 +742,47 @@ namespace TsubameViewer.Presentation.ViewModels
             await base.OnNavigatedToAsync(parameters);
         }
 
-
-        void UpdateDisplayName(IImageSource imageSource)
+        bool _nowPageFolderNameChanging = false;
+        void UpdateDisplayName(IImageSource[] imageSources)
         {
-            if (this.ItemType == StorageItemTypes.Archive)
+            _nowPageFolderNameChanging = true;
+            try
             {
-                var names = imageSource.Path.Split(SeparateChars);
-                PageName = names[names.Length - 1];
-                PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                if (imageSources.Length >= 1)
+                {
+                    var imageSource = imageSources[0];
+                    if (imageSource is ArchiveEntryImageSource)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        Page1Name = names[names.Length - 1];
+                        PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                    }
+                    else
+                    {
+                        Page1Name = imageSource.Name;
+                    }
+                }
+
+                if (imageSources.Length >= 2)
+                {
+                    var imageSource = imageSources[1];
+                    if (imageSource is ArchiveEntryImageSource)
+                    {
+                        var names = imageSource.Path.Split(SeparateChars);
+                        Page2Name = names[names.Length - 1];
+                    }
+                    else
+                    {
+                        Page2Name = imageSource.Name;
+                    }
+                }
             }
-            else
+            finally
             {
-                PageName = imageSource.Name;
+                _nowPageFolderNameChanging = false;
             }
         }
+
 
         private BitmapImage[] _DisplayImages_0;
         public BitmapImage[] DisplayImages_0
@@ -646,61 +826,68 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageLoadingCts = new CancellationTokenSource();
 
             var ct = _imageLoadingCts.Token;
-            using (await _imageLoadingLock.LockAsync(ct))
+            try
             {
-                try
+                using (await _imageLoadingLock.LockAsync(ct))
                 {
-                    // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
-                    // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
-
-                    var currentIndex = request ?? CurrentImageIndex;
-                    var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
-
-                    // 最後尾から先頭にジャンプした場合に音を鳴らす
-                    if (isJumpHeadTail)
+                    try
                     {
-                        ElementSoundPlayer.State = ElementSoundPlayerState.On;
-                        ElementSoundPlayer.Volume = 1.0;
-                        ElementSoundPlayer.Play(ElementSoundKind.Invoke);
+                        // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
+                        // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
 
-                        _ = Task.Delay(500).ContinueWith(prevTask =>
+                        var currentIndex = request ?? CurrentImageIndex;
+                        var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
+
+                        // 最後尾から先頭にジャンプした場合に音を鳴らす
+                        if (isJumpHeadTail)
                         {
-                            _scheduler.Schedule(async () => 
+                            ElementSoundPlayer.State = ElementSoundPlayerState.On;
+                            ElementSoundPlayer.Volume = 1.0;
+                            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
+
+                            _ = Task.Delay(500).ContinueWith(prevTask =>
                             {
-                                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
+                                _scheduler.Schedule(async () =>
                                 {
-                                    ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
-                                }
+                                    using (await _imageLoadingLock.LockAsync(CancellationToken.None))
+                                    {
+                                        ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
+                                    }
+                                });
                             });
-                        });
+                        }
+
+                        NowDoubleImageView = displayImageCount == 2;
+
+                        _nowCurrenImageIndexChanging = true;
+                        CurrentImageIndex = movedIndex;
+                        _nowCurrenImageIndexChanging = false;
+
+                        NowImageLoadingLongRunning = false;
+
+                        await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
                     }
-
-                    NowDoubleImageView = displayImageCount == 2;
-
-                    _nowCurrenImageIndexChanging = true;
-                    CurrentImageIndex = movedIndex;
-                    _nowCurrenImageIndexChanging = false;                    
-
-                    NowImageLoadingLongRunning = false;
-
-                    await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
-                }
-                catch (OperationCanceledException)
-                {
-                    int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
-                    CurrentImageIndex = direction switch
+                    catch (OperationCanceledException)
                     {
-                        IndexMoveDirection.Refresh => CurrentImageIndex,
-                        IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + requestImageCount, Images.Length - 1),
-                        IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - requestImageCount, 0),
-                        _ => throw new NotSupportedException(),
-                    };
-                    NowImageLoadingLongRunning = true;
+                        int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
+                        CurrentImageIndex = direction switch
+                        {
+                            IndexMoveDirection.Refresh => CurrentImageIndex,
+                            IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + requestImageCount, Images.Length - 1),
+                            IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - requestImageCount, 0),
+                            _ => throw new NotSupportedException(),
+                        };
+                        NowImageLoadingLongRunning = true;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine(e.ToString());
+                    }
                 }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.ToString());
-                }
+            }
+            catch (OperationCanceledException)
+            {
+
             }
         }
 
@@ -762,7 +949,16 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 表示用のインデックスを生成
                 // 後ろ方向にページ移動していた場合は1 -> 0のように逆順の並びにすることで
                 // 見開きページかつ横長ページを表示しようとしたときに後ろ方向の一個前だけを選択して表示できるようにしている
-                var candidateImages = indexies.Select(x => _Images.ElementAtOrDefault(requestIndex + x)).Where(x => x is not null).ToList();
+                List<IImageSource> candidateImages = new List<IImageSource>();
+                foreach (var index in indexies)
+                {
+                    var candidateIndex = requestIndex + index;
+                    if (0 <= candidateIndex && candidateIndex < _Images.Length)
+                    {
+                        candidateImages.Add(await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType.Value, ct));
+                    }
+                }
+                
                 if (candidateImages.Any() is false)
                 {
                     throw new InvalidOperationException();
@@ -833,7 +1029,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             else
             {
-                var image = _Images.ElementAtOrDefault(requestIndex);
+                var image = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType.Value, ct);
                 if (image == null)
                 {
                     throw new InvalidOperationException();
@@ -1084,6 +1280,12 @@ namespace TsubameViewer.Presentation.ViewModels
             new IImageSource[2],
             new IImageSource[2],
         };
+
+        IImageSource[] GetSourceImages(PrefetchIndexType type)
+        {
+            var index = GetDisplayImageIndex(type);
+            return NowDoubleImageView ? _sourceImagesDouble[index] : _sourceImagesSingle[index];
+        }
 
         public async Task DisableImageDecodeWhenImageSmallerCanvasSize()
         {
@@ -1498,6 +1700,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     _recentlyAccessManager.AddWatched(file.Path);
                 }
             }
+            else if (_currentFolderItem is AlbamEntry albam)
+            {
+                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
+            }
             else
             {
                 throw new NotSupportedException();
@@ -1510,19 +1716,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
             ParentFolderOrArchiveName = imageCollectionContext.Name;
             ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
-            _appView.Title = _currentFolderItem.Name;
-            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : _currentFolderItem.Name;
+
+            var name = _currentFolderItem switch
+            {
+                IStorageItem storageItem => storageItem.Name,
+                AlbamEntry albam => albam.Name,
+                _ => throw new NotSupportedException(),
+            };
+            _appView.Title = name;
+            Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : name;
 
             await ReloadItemsAsync(imageCollectionContext, ct);
-            
-            {
-                if (_currentFolderItem is StorageFile file && file.IsSupportedImageFile())
-                {
-                    var item = Images.FirstOrDefault(x => x.StorageItem.Path == _currentFolderItem.Path);
-                    CurrentImageIndex = Images.IndexOf(item);
-                }
-                //else { CurrentImageIndex = 0; }
-            }
 
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
@@ -1550,28 +1754,10 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             Images?.AsParallel().WithDegreeOfParallelism(4).ForEach((IImageSource x) => x.TryDispose());
 
-            var images = await imageCollectionContext.GetAllImageFilesAsync(ct).ToListAsync(ct);            
-            Images = ToSortedImages(images, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value).ToArray();
-        }
-
-
-        IOrderedEnumerable<IImageSource> ToSortedImages(IEnumerable<IImageSource> images, FileSortType sort, bool withTitleDigitCompletion)
-        {
-            return sort switch
-            {
-                FileSortType.UpdateTimeDescThenTitleAsc => withTitleDigitCompletion
-                    ? images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path, TitleDigitCompletionComparer.Default)
-                    : images.OrderBy(x => x.DateCreated).ThenBy(x => x.Path),
-                FileSortType.TitleAscending => withTitleDigitCompletion
-                    ? images.OrderBy(x => x.Path, TitleDigitCompletionComparer.Default)
-                    : images.OrderBy(x => x.Path),
-                FileSortType.TitleDecending => withTitleDigitCompletion
-                    ? images.OrderByDescending(x => x.Path, TitleDigitCompletionComparer.Default)
-                    : images.OrderByDescending(x => x.Path),
-                FileSortType.UpdateTimeAscending => images.OrderBy(x => x.DateCreated),
-                FileSortType.UpdateTimeDecending => images.OrderByDescending(x => x.DateCreated),
-                _ => throw new NotSupportedException(sort.ToString()),
-            };
+            var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+            _nowCurrenImageIndexChanging = true;
+            Images = new IImageSource[imageCount];
+            _nowCurrenImageIndexChanging = false;
         }
 
 
@@ -1579,6 +1765,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
         public BackNavigationCommand BackNavigationCommand { get; }
+        public FavoriteAddCommand FavoriteAddCommand { get; }
+        public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
+        public AlbamItemEditCommand AlbamItemEditCommand { get; }
+        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
+        public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
+        public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+        public FavoriteToggleCommand FavoriteToggleCommand { get; }
 
         private DelegateCommand _GoNextImageCommand;
         public DelegateCommand GoNextImageCommand =>
@@ -1626,26 +1819,37 @@ namespace TsubameViewer.Presentation.ViewModels
         public DelegateCommand<string> ChangePageFolderCommand =>
             _changePageFolderCommand ?? (_changePageFolderCommand = new DelegateCommand<string>(ExecuteChangePageFolderCommand));
 
-        void ExecuteChangePageFolderCommand(string pageName)
+        async void ExecuteChangePageFolderCommand(string pageName)
         {
             if (string.IsNullOrEmpty(pageName)) { return; }
+            if (_nowPageFolderNameChanging) { return; }
 
-            var pageFirstItem = Images.FirstOrDefault(x => x.Path.Contains(pageName));
-            if (pageFirstItem == null) { return; }
-
-            var pageFirstItemIndex = Images.IndexOf(pageFirstItem);
-            _ = ResetImageIndex(pageFirstItemIndex);
+            var ct = _navigationCts.Token;
+            //using (_imageLoadingLock.LockAsync(ct))
+            {
+                var folders = await _imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
+                var folder = folders
+                    .FirstOrDefault(x => x.Name == pageName);
+                if (string.IsNullOrEmpty(folder?.Path) is false)
+                {
+                    var index = await _imageCollectionContext.GetIndexFromKeyAsync(folder.Path, SelectedFileSortType.Value, ct);
+                    if (index >= 0)
+                    {
+                        await ResetImageIndex(index);
+                    }
+                }
+            }
         }
 
         private DelegateCommand<double?> _ChangePageCommand;
         public DelegateCommand<double?> ChangePageCommand =>
             _ChangePageCommand ?? (_ChangePageCommand = new DelegateCommand<double?>(ExecuteChangePageCommand));
 
-        async void ExecuteChangePageCommand(double? parameter)
+        void ExecuteChangePageCommand(double? parameter)
         {
             if (_nowCurrenImageIndexChanging) { return; }
 
-            await ResetImageIndex((int)parameter.Value);
+            _ = ResetImageIndex((int)parameter.Value);
         }
 
         private DelegateCommand _DoubleViewCorrectCommand;
@@ -1677,20 +1881,36 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     DisplaySortTypeInheritancePath = null;
                     SelectedFileSortType.Value = sortType.Value;
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value, IsSortWithTitleDigitCompletion.Value);
+                    if (_currentFolderItem is IStorageItem)
+                    {
+                        _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType.Value);
+                    }
+                    else if (_currentFolderItem is AlbamEntry albam)
+                    {
+                        _displaySettingsByPathRepository.SetAlbamSettings(albam._id, SelectedFileSortType.Value);
+                    }
                 }
                 else
                 {
-                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
-                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort 
-                    && parentSort.ChildItemDefaultSort != null
-                    )
+                    if (_currentFolderItem is IStorageItem)
                     {
-                        DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_pathForSettings);
+                        if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort
+                        && parentSort.ChildItemDefaultSort != null
+                        )
+                        {
+                            DisplaySortTypeInheritancePath = parentSort.Path;
+                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        }
+                        else
+                        {
+                            DisplaySortTypeInheritancePath = null;
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                        }
                     }
-                    else
+                    else if (_currentFolderItem is AlbamEntry albam)
                     {
+                        _displaySettingsByPathRepository.ClearAlbamSettings(albam._id);
                         DisplaySortTypeInheritancePath = null;
                         SelectedFileSortType.Value = DefaultFileSortType;
                     }
@@ -1708,7 +1928,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowDoubleImageView, value); }
         }
 
-        #endregion
+#endregion
 
 
     }

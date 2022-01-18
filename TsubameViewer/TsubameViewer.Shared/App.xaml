@@ -38,8 +38,8 @@
       <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
 
 
-      <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" />
-      <myFlyouts:StorageItemMenuFlyout x:Key="NoListUpActionStorageItemMenuFlyout" IsListupActionEnabled="False" />
+      <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" IsRootPage="False" />
+      <myFlyouts:StorageItemMenuFlyout x:Key="RootPageStorageItemMenuFlyout" IsRootPage="True" />
 
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />

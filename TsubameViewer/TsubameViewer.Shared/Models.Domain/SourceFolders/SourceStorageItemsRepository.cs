@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -355,8 +356,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             return token;
         }
 
-        Dictionary<string, IStorageItem> _cached = new Dictionary<string, IStorageItem>();
-
+        ConcurrentDictionary<string, IStorageItem> _cached = new ();
+        
         private async Task<IStorageItem> GetItemAsync(string token)
         {
             if (_cached.TryGetValue(token, out var item)) { return item; }
@@ -383,7 +384,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             if (item is not null)
             {
-                _cached.Add(token, item);
+                _cached.TryAdd(token, item);
             }
 
             return item;
@@ -415,7 +416,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {            
-            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path);
+            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
 
             // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
             // 理想的には変更部分だけを差分更新するべき

@@ -215,25 +215,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             try
             {
-                var size = await Task.Run(async () =>
-                {
-                    var folder = await ThumbnailManager.GetTempFolderAsync();
-
-                    var query = folder.CreateFileQuery();
-                    ulong size = 0;
-                    await foreach (var file in query.ToAsyncEnumerable(ct))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        var prop = await file.GetBasicPropertiesAsync().AsTask(ct);
-                        size += prop.Size;
-                    }
-
-                    return size;
-                }, ct);
+                var size = (ulong) await Task.Run(() => _thumbnailManager.ComputeUsingSize(), ct);
 
                 _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
 
             }

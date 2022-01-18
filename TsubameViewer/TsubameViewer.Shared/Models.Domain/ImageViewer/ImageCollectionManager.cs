@@ -27,14 +27,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager, 
-            FolderListingSettings folderListingSettings
+            FolderListingSettings folderListingSettings,
+            ArchiveFileInnerStructureCache archiveFileInnerStructureCache
             )
         {
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
+            _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
         }
 
         public bool IsSupportGetArchiveImageCollectionContext(IStorageItem storageItem, CancellationToken ct)
@@ -128,11 +131,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 ct.ThrowIfCancellationRequested();
                 var zipArchive = ZipArchive.Open(stream)
                     .AddTo(disposables);
-                foreach (var _ in zipArchive.Entries)
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-                return new ArchiveImageCollection(file, zipArchive, disposables, _folderListingSettings, _thumbnailManager);
+
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, zipArchive, ct);
+
+                return new ArchiveImageCollection(file, zipArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -158,11 +160,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 var rarArchive = RarArchive.Open(stream)
                     .AddTo(disposables);
-                foreach (var _ in rarArchive.Entries)
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-                return new ArchiveImageCollection(file, rarArchive, disposables, _folderListingSettings, _thumbnailManager);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, rarArchive, ct);
+                return new ArchiveImageCollection(file, rarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -182,11 +181,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 var szArchive = SevenZipArchive.Open(stream)
                     .AddTo(disposables);
-                foreach (var _ in szArchive.Entries)
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-                return new ArchiveImageCollection(file, szArchive, disposables, _folderListingSettings, _thumbnailManager);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, szArchive, ct);
+                return new ArchiveImageCollection(file, szArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {
@@ -205,11 +201,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 var tarArchive = TarArchive.Open(stream)
                     .AddTo(disposables);
-                foreach (var _ in tarArchive.Entries)
-                {
-                    ct.ThrowIfCancellationRequested();
-                }
-                return new ArchiveImageCollection(file, tarArchive, disposables, _folderListingSettings, _thumbnailManager);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, tarArchive, ct);
+                return new ArchiveImageCollection(file, tarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
             {

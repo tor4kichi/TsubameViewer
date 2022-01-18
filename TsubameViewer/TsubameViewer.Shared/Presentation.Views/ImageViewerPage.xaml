@@ -61,11 +61,6 @@
               <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
                               CommandParameter="{x:Null}" />
               
-              <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDescThenTitleAsc}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                <MenuFlyoutItem.CommandParameter>
-                  <models:FileSortType>UpdateTimeDescThenTitleAsc</models:FileSortType>
-                </MenuFlyoutItem.CommandParameter>
-              </MenuFlyoutItem>
               <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                 <MenuFlyoutItem.CommandParameter>
                   <models:FileSortType>UpdateTimeDecending</models:FileSortType>
@@ -95,8 +90,6 @@
               <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" /> <LineBreak /> <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
           </TextBlock>
         </Border>
-
-        <ToggleSwitch Header="{i18nExt:Localize Key=TitleDigitCompletion}" IsOn="{x:Bind _vm.IsSortWithTitleDigitCompletion.Value, Mode=TwoWay}" />
 
       </StackPanel>
     </Flyout>
@@ -564,7 +557,8 @@
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
-              MinWidth="500"
+            MinWidth="380"
+              MaxWidth="420"
               CornerRadius="8"
               Margin="0 0 0 16"
             Windows10version1903:Translation="0, 0, 16"
@@ -578,11 +572,58 @@
         <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 120" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 180" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
-      <uwpControls:DockPanel Margin="24 8 24 4">
+      <StackPanel Margin="8" Spacing="4">
 
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition />
+          </Grid.ColumnDefinitions>
+
+          <muxc:DropDownButton x:Name="Page1ActionButton" Grid.Column="0" HorizontalAlignment="Stretch" Margin="0 0 0 0">
+            <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
+              <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
+            </TextBlock>
+
+            <muxc:DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem x:Name="Page1AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem x:Name="Page1RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
+                <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+              </MenuFlyout>
+            </muxc:DropDownButton.Flyout>
+          </muxc:DropDownButton >
+          <muxc:DropDownButton x:Name="Page2ActionButton" Grid.Column="2" HorizontalAlignment="Stretch" Margin="0 0 0 0">
+            <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
+              <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
+            </TextBlock>
+
+            <muxc:DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem x:Name="Page2AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem x:Name="Page2RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
+                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+              </MenuFlyout>
+            </muxc:DropDownButton.Flyout>
+          </muxc:DropDownButton>
+        </Grid>
+        
+
+        
         <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
              XYFocus*を使って強制的に移動先を指定している 
         -->
@@ -623,15 +664,15 @@
           </i:Interaction.Behaviors>
         </Slider>
 
-        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" uwpControls:DockPanel.Dock="Right">
-           <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
+
+          <TextBlock.RenderTransform>
+            <TranslateTransform Y="-6" />
+          </TextBlock.RenderTransform>
+          <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
         </TextBlock>
 
-        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0" >
-           <Run Text="{x:Bind _vm.PageName, Mode=OneWay}" />
-        </TextBlock>
-
-      </uwpControls:DockPanel>
+      </StackPanel>
 
     </Border>
 
@@ -698,12 +739,28 @@
           </SymbolIcon>
         </Button>
 
+        <!--
         <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="0 0 0 0"
                 uwpControls:DockPanel.Dock="Right" Margin="0 6 184 6"
                 />
+        -->
 
+        <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="0 0 0 0"
+                uwpControls:DockPanel.Dock="Right" Margin="0 6 144 6"
+                MinWidth="40"
+                >
+          <TextBlock VerticalAlignment="Center" FontSize="12" Margin="8 0 0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
+            <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+          </TextBlock>
+
+        </Border>
+        
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="8">
-          <Button Height="40" MaxWidth="120" Background="Transparent" Command="{StaticResource FullScreenToggleUICommand}" />
+          <Button Height="40" MaxWidth="120" Background="Transparent" Command="{StaticResource FullScreenToggleUICommand}" Opacity="0.7">
+            <Button.RenderTransform>
+              <TranslateTransform Y="1" />
+            </Button.RenderTransform>
+          </Button>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="4">
@@ -865,8 +922,7 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
-      
+            
       <!-- 拡大縮小 -->
       <VisualStateGroup>
         <VisualState>
@@ -879,6 +935,22 @@
         </VisualState>
       </VisualStateGroup>
       
+      
+      <!-- アルバムかそれ以外かで画像のアクションを表示切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.ItemType, Mode=OneWay}" EqualTo="{x:Bind domainModels:StorageItemTypes.Albam}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1SetThubmailImageButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page1ThumbnailImageSeparator.Visibility" Value="Collapsed" />
+            <Setter Target="Page2SetThubmailImageButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page2ThumbnailImageSeparator.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
       <!--見開き補正 -->
       <VisualStateGroup>
         <VisualState>
@@ -887,6 +959,73 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2ActionButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page1ActionButton.(Grid.ColumnSpan)" Value="3" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- １ページ目のFav -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page1Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1RemoveFavoriteButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1AddFavoriteButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- ２ページ目のFav -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page2Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2RemoveFavoriteButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2AddFavoriteButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!--見開き表示時の各ページ用アクションボタンの表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" EqualTo="False" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1ActionButton.(Grid.Column)" Value="2" />
+            <Setter Target="Page2ActionButton.(Grid.Column)" Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

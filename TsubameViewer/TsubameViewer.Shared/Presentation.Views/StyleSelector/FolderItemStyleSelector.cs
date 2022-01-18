@@ -14,6 +14,8 @@ namespace TsubameViewer.Presentation.Views.StyleSelector
         public Style Folder { get; set; }
         public Style Image { get; set; }
         public Style Archive { get; set; }
+        public Style Albam { get; set; }
+        public Style AlbamImage { get; set; }
         public Style EBook { get; set; }
 
 
@@ -23,10 +25,13 @@ namespace TsubameViewer.Presentation.Views.StyleSelector
             {
                 return itemVM.Type switch
                 {
-                    StorageItemTypes.None => AddNewFolder,
+                    StorageItemTypes.AddFolder => AddNewFolder,
+                    StorageItemTypes.AddAlbam => AddNewFolder,
                     StorageItemTypes.Folder => Folder,
                     StorageItemTypes.Image => Image,
                     StorageItemTypes.Archive => Archive,
+                    StorageItemTypes.Albam => Albam,
+                    StorageItemTypes.AlbamImage => AlbamImage,
                     StorageItemTypes.EBook => EBook,
                     _ => throw new NotSupportedException()
                 };

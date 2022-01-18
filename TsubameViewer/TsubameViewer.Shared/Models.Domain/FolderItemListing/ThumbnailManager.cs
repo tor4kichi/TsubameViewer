@@ -35,6 +35,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 {
     public sealed class ThumbnailManager
     {
+        private readonly ILiteDatabase _temporaryDb;
+        private readonly ILiteStorage<string> _thumbnailDb;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
@@ -43,39 +45,46 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
-        public string GetStorageItemId(string path)
-        {
-            if (!_FilePathToHashCodeStringMap.TryGetValue(path, out var code))
-            {
-                code = new String(path.Select(x => Path.GetInvalidFileNameChars().Any(c => x == c) ? '_' : x).ToArray());
-                _ = _FilePathToHashCodeStringMap.TryAdd(path, code);
-            }
-
-            return code;
-        }
-
         private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
         {
-            return Path.Combine(file.Path, entry.Key);
+            return Path.Combine(file.Path, entry?.Key ?? "_");
         }
         private string GetArchiveEntryPath(StorageFile file, PdfPage pdfPage)
         {
             return Path.Combine(file.Path, pdfPage.Index.ToString());
         }
-        private string GetStorageItemId(StorageFile file, IArchiveEntry entry)
+
+
+        private string ToId(string path)
         {
-            return GetStorageItemId(GetArchiveEntryPath(file, entry));
-        }
-        private string GetStorageItemId(IStorageItem item)
-        {
-            return GetStorageItemId(item.Path);
+            return $"$/{path}".Replace('\\', '/');
         }
 
-
-
-        public static ValueTask<StorageFolder> GetTempFolderAsync()
+        private string ToId(IStorageItem storageItem)
         {
-            return new(ApplicationData.Current.TemporaryFolder);
+            return storageItem switch
+            {
+                StorageFile file => ToId(file),
+                StorageFolder folder => ToId(folder),
+                _ => throw new NotSupportedException(),
+            };
+        }
+
+        private string ToId(StorageFile file)
+        {
+            return ToId(file.Path);
+        }
+
+
+        private string ToId(StorageFolder folder)
+        {
+            return ToId(Path.Combine(folder.Path, "_"));
+        }
+
+
+        public long ComputeUsingSize()
+        {
+            return _thumbnailDb.FindAll().Sum(x => x.Length);
         }
 
         private void EncodingForFolderOrArchiveFileThumbnailBitmap(BitmapDecoder decoder, BitmapEncoder encoder)
@@ -106,152 +115,177 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
         }
 
-
+        
+        
         public ThumbnailManager(
+            [Unity.Attributes.Dependency("TemporaryDb")] ILiteDatabase temporaryDb,
             FolderListingSettings folderListingSettings,
             ThumbnailImageInfoRepository thumbnailImageInfoRepository
             )
         {
+            _temporaryDb = temporaryDb;
+            _thumbnailDb = _temporaryDb.FileStorage;
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
 
-            _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegexString)
-                .Select(x => x is not null ? new Regex(x) : null)
-                .ToReadOnlyReactivePropertySlim();
+            _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
+                .Select(x => string.IsNullOrWhiteSpace(x) is false ? new Regex(x) : null)
+                .ToReadOnlyReactivePropertySlim();            
         }
 
 
-
-
-        public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, CancellationToken ct)
+        private void UploadWithRetry(string itemId, string filename, Stream stream)
         {
-            var tempFolder = await GetTempFolderAsync();
-            var itemId = GetStorageItemId(targetItem.Path);
-            using (await _fileReadWriteLock.LockAsync(ct))
+            try
             {
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                await TranscodeThumbnailImageToFileAsync(targetItem.Path, bitmapImage, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                _thumbnailDb.Upload(itemId, filename, stream);
+            }
+            catch (LiteException liteException) when (liteException.Message.StartsWith("Cannot insert duplicate key in unique index '_id'"))
+            {
+                // see@ https://www.litedb.org/docs/filestorage/
+                // FileStorageはトランザクションに対応してないため_chunksの書き込み完了したところまでのデータが残っている可能性がある
+                // さらに_chunksには書き込まれているが_filesには書き込まれていない状況が発生しうることで
+                // _thumbnailDb.Delete(itemId) を実行しても消せないデータが残っているケースがある
+                // _filesに当該Idがない場合は_chunksの削除動作もスキップしているようなので手動で削除してから再試行する
+                var deleteCount = _temporaryDb.GetCollection("_chunks").DeleteMany($"$._id.f = '{itemId}'");
+                if (deleteCount > 0)
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    _thumbnailDb.Upload(itemId, filename, stream);
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 
 
-        public async Task<StorageFile> SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, IRandomAccessStream bitmapImage, CancellationToken ct)
+        public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, CancellationToken ct)
         {
-            var tempFolder = await GetTempFolderAsync();
+            var itemId = ToId(targetItem);
+            using (await _fileReadWriteLock.LockAsync(ct))
+            using (var memoryStream = new InMemoryRandomAccessStream())
+            {
+                await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                UploadWithRetry(itemId, targetItem.Name, memoryStream.AsStreamForRead());
+            }
+        }
+
+
+        public async Task<IRandomAccessStream> SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, IRandomAccessStream bitmapImage, CancellationToken ct)
+        {
             var path = GetArchiveEntryPath(targetItem, entry);
-            var itemId = GetStorageItemId(path);
+            var itemId = ToId(path);
             using (await _fileReadWriteLock.LockAsync(ct))
             {
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-                await TranscodeThumbnailImageToFileAsync(path, bitmapImage, thumbnailFile, entry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                var memoryStream = new InMemoryRandomAccessStream();
+                try
+                {
+                    await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 
-                return thumbnailFile;
+                    memoryStream.Seek(0);
+                    UploadWithRetry(itemId, targetItem.Name, memoryStream.AsStreamForRead());
+
+                    memoryStream.Seek(0);
+                    return memoryStream;
+                }
+                catch
+                {
+                    memoryStream.Dispose();
+                    throw;
+                }
             }
         }
 
         public async Task DeleteAllThumnnailsAsync()
         {
-            await Task.Run(async () =>
-            {
-                var deleteCount = _thumbnailImageInfoRepository.DeleteAll();
-                Debug.WriteLine("Delete Thubmnail Db : " + deleteCount);
+            _thumbnailImageInfoRepository.DeleteAll();
 
-                var tempFolder = await GetTempFolderAsync();
-                var files = await tempFolder.GetFilesAsync();
-                await DeleteFilesWithParallel(files, Math.Max(1, Environment.ProcessorCount / 2));
-            });
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+            foreach (var id in _thumbnailDb.FindAll().ToArray())
+            {
+                _thumbnailDb.Delete(id.Id);
+            }
         }
 
         public async Task DeleteThumbnailFromPathAsync(string path)
         {
             _thumbnailImageInfoRepository.DeleteItem(path);
-            var tempFolder = await GetTempFolderAsync();
-            var itemId = GetStorageItemId(path);
+            var id = ToId(path);
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-            if (await tempFolder.FileExistsAsync(itemId))
+            if (_thumbnailDb.Exists(id))
             {
-                var file = await ApplicationData.Current.TemporaryFolder.GetFileAsync(itemId);
-                await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                _thumbnailDb.Delete(id);
             }
-
-            
         }
 
         public async Task DeleteAllThumbnailUnderPathAsync(string path)
         {
             _thumbnailImageInfoRepository.DeleteAllUnderPath(path);
+            var id = ToId(path);
 
-            var tempFolder = await GetTempFolderAsync();
-            var itemId = GetStorageItemId(path);
-            var query = tempFolder.CreateFileQueryWithOptions(new QueryOptions() { ApplicationSearchFilter = $"System.FileName:\"{itemId}*\"" });
-
-            await DeleteFilesWithParallel(query.ToAsyncEnumerable(), Math.Max(1, Environment.ProcessorCount / 2));
+            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+            foreach (var item in _thumbnailDb.Find(id).ToArray())
+            {
+                _thumbnailDb.Delete(item.Id);
+            }
         }
 
         
-
-        private static async Task DeleteFilesWithParallel(IEnumerable<StorageFile> files, int maxDegreeOfParallelism)
-        {
-            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-            {
-                await files.ToAwaitableParallelTaskAsync((file) => file.DeleteAsync(StorageDeleteOption.PermanentDelete).AsTask(), maxDegreeOfParallelism);
-            }
-        }
-
-        private static async Task DeleteFilesWithParallel(IAsyncEnumerable<StorageFile> files, int maxDegreeOfParallelism)
-        {
-            using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-            {
-                await files.ToAwaitableParallelTaskAsync((file) => file.DeleteAsync(StorageDeleteOption.PermanentDelete).AsTask(), maxDegreeOfParallelism);
-            }
-        }
-
         public async Task FolderChangedAsync(string oldPath, string newPath)
         {
+            // LiteDB内の_filesのファイル名を変更するだけで対応できる？
+            // see@ https://github.com/mbdavid/LiteDB/issues/974
+
+            // それだと_idベースの検索が出来なくてインデックスを二重で張るような面倒がありそう
+            // 新規IDにハードコピーして古いIDの項目を消す
+
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             {
-                var oldPathId = GetStorageItemId(oldPath);
-                var newPathId = GetStorageItemId(newPath);
+                var oldPathId = ToId(oldPath);
 
-                var tempFolder = await GetTempFolderAsync();
-                var oldFilesQuery = tempFolder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions())
+                foreach (var oldPathItem in _thumbnailDb.Find(oldPathId).ToArray())
                 {
-                    ApplicationSearchFilter = $"System.FileName:\"{oldPathId}*\""
-                });
-
-                int currentIndex = 0;
-                while (await oldFilesQuery.GetItemsAsync((uint)currentIndex, 100) is not null and var items && items.Any())
-                {
-                    currentIndex += items.Count;
-                    foreach (var item in items)
+                    using (var memoryStream = new MemoryStream())
                     {
-                        var oldName = item.Name;
-                        await item.RenameAsync(item.Name.Replace(oldPathId, newPathId), NameCollisionOption.ReplaceExisting);
-                        Debug.WriteLine($"rename {oldName} ===> {item.Name}");
+                        oldPathItem.CopyTo(memoryStream);
+                        _thumbnailDb.Delete(oldPathItem.Id);
+
+                        var newPathId = oldPathItem.Id.Replace(oldPath, newPath);
+                        UploadWithRetry(newPathId, oldPathItem.Filename, memoryStream);
                     }
                 }
+
             }
         }
 
-        private async Task<StorageFile> GetThumbnailFromIdAsync(string itemId, CancellationToken ct)
+        private ValueTask<IRandomAccessStream> GetThumbnailFromIdAsync(string itemId, CancellationToken ct)
         {
-            var tempFolder = await GetTempFolderAsync();
-            if (await tempFolder.FileExistsAsync(itemId))
+            if (_thumbnailDb.Exists(itemId))
             {
-                var cachedThumbnailFile = await tempFolder.GetFileAsync(itemId);
-                using (var stream = await cachedThumbnailFile.OpenReadAsync())
+                var memoryStream = new MemoryStream();
+                try
                 {
-                    return stream.Size == 0 ? null : cachedThumbnailFile;
+                    _thumbnailDb.Download(itemId, memoryStream);
+
+                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    return new ValueTask<IRandomAccessStream>(memoryStream.AsRandomAccessStream());
+                }
+                catch
+                {
+                    memoryStream.Dispose();
+                    throw;
                 }
             }
             else
             {
-                return null;
+                return new ValueTask<IRandomAccessStream>();
             }
         }
 
 
-        public Task<StorageFile> GetThumbnailAsync(IStorageItem storageItem, CancellationToken ct)
+        public Task<IRandomAccessStream> GetThumbnailAsync(IStorageItem storageItem, CancellationToken ct)
         {
             if (storageItem is StorageFolder folder)
             {
@@ -267,9 +301,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<StorageFile> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
+        public async Task<IRandomAccessStream> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
         {
-            var itemId = GetStorageItemId(folder);
+            var itemId = ToId(folder);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
                 return cachedFile;
@@ -278,9 +312,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 #if WINDOWS_UWP
 
             var file = await GetCoverThumbnailImageAsync(folder, ct);
-            var tempFolder = await GetTempFolderAsync();
-            var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting);
-            return await GenerateThumbnailImageToFileAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            return await GenerateThumbnailImageAsync(file, itemId, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
             return null;
 #endif
@@ -338,26 +370,33 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             return file;
         }
 
-
-        public async Task<StorageFile> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
+        public async Task<IRandomAccessStream> GetThumbnailImageFromPathAsync(string path, CancellationToken ct)
         {
-            var itemId = GetStorageItemId(file);
+            var itemId = ToId(path);
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
+            {
+                return cachedFile;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public async Task<IRandomAccessStream> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
+        {
+            var itemId = ToId(file.Path);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
                 return cachedFile;
             }
 
-            var tempFolder = await GetTempFolderAsync();
-            var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
-            if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
-                )
-            {
-                return await GenerateThumbnailImageToFileAsync(file, thumbnailFile, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-            }
-            else
-            {
-                return await GenerateThumbnailImageToFileAsync(file, thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
-            }
+            Action<BitmapDecoder, BitmapEncoder> encoderSettingMapper = SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                ? EncodingForFolderOrArchiveFileThumbnailBitmap
+                : EncodingForImageFileThumbnailBitmap
+                ;
+
+            return await GenerateThumbnailImageAsync(file, itemId, encoderSettingMapper, ct);
         }
 
         public async Task<IRandomAccessStream> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
@@ -384,10 +423,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         static readonly object _lockForReadArchiveEntry = new object();
 
-        public async Task<StorageFile> GetArchiveEntryThumbnailImageFileAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
+        public async Task<IRandomAccessStream> GetArchiveEntryThumbnailImageFileAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
         {
             var path = GetArchiveEntryPath(sourceFile, archiveEntry);
-            var itemId = GetStorageItemId(path);
+            var itemId = ToId(path);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
                 return cachedFile;
@@ -395,23 +434,34 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
             if (archiveEntry.IsDirectory) { return null; }
 
-            using (var memoryStream = new MemoryStream())
+            var outputStream = new MemoryStream();
+            try
             {
-                var tempFolder = await GetTempFolderAsync();
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
-
-                // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
-                lock (_lockForReadArchiveEntry)
-                using (var entryStream = archiveEntry.OpenEntryStream())
+                using (var memoryStream = new MemoryStream())
                 {
-                    entryStream.CopyTo(memoryStream);
-                    memoryStream.Seek(0, SeekOrigin.Begin);
+                    // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
+                    lock (_lockForReadArchiveEntry)
+                        using (var entryStream = archiveEntry.OpenEntryStream())
+                        {
+                            entryStream.CopyTo(memoryStream);
+                            memoryStream.Seek(0, SeekOrigin.Begin);
 
-                    ct.ThrowIfCancellationRequested();
+                            ct.ThrowIfCancellationRequested();
+                        }
+
+                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream.AsRandomAccessStream(), outputStream.AsRandomAccessStream(), archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+
+                    UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
+
+                    outputStream.Seek(0, SeekOrigin.Begin);
+                    return outputStream.AsRandomAccessStream();
                 }
-
-                await TranscodeThumbnailImageToFileAsync(path, memoryStream.AsRandomAccessStream(), thumbnailFile, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
-                return thumbnailFile;
+            }
+            catch
+            {
+                outputStream.Dispose();
+                throw;
             }
         }
 
@@ -446,28 +496,39 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<StorageFile> GetPdfPageThumbnailImageFileAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
+        public async Task<IRandomAccessStream> GetPdfPageThumbnailImageFileAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
         {
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
-            var itemId = GetStorageItemId(path);
+            var itemId = ToId(path);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
             {
                 return cachedFile;
             }
 
-            using (var memoryStream = new InMemoryRandomAccessStream())            
-            using (await _fileReadWriteLock.LockAsync(ct))
+            var outputStream = new MemoryStream();
+            try
             {
-                var tempFolder = await GetTempFolderAsync();
-                var thumbnailFile = await tempFolder.CreateFileAsync(itemId, CreationCollisionOption.ReplaceExisting).AsTask(ct);
-                await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
-                memoryStream.Seek(0);
 
-                ct.ThrowIfCancellationRequested();
+                using (var memoryStream = new InMemoryRandomAccessStream())
+                using (await _fileReadWriteLock.LockAsync(ct))
+                {
+                    await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
+                    memoryStream.Seek(0);
 
-                await TranscodeThumbnailImageToFileAsync(path, memoryStream, thumbnailFile, EncodingForImageFileThumbnailBitmap, ct);
+                    ct.ThrowIfCancellationRequested();
 
-                return thumbnailFile;
+                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream, outputStream.AsRandomAccessStream(), EncodingForImageFileThumbnailBitmap, ct);
+
+                    UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
+                }
+
+                outputStream.Seek(0, SeekOrigin.Begin);
+                return outputStream.AsRandomAccessStream();
+            }
+            catch
+            {
+                outputStream.Dispose();
+                throw;
             }
         }
 
@@ -504,6 +565,54 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var outputStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite))
             {
                 return await GenerateThumbnailImageToStreamAsync(file, outputStream, setupEncoder, ct) ? outputFile: null;
+            }
+        }
+
+
+        class _files
+        {
+            public string Id { get; set; }
+            public string filename { get; set; }
+            public string mimeType { get; set; }
+            public long length { get; set; }
+            public int chunks { get; set; }
+            public DateTime uploadDate { get; set; }
+            public object metadata { get; set; } //You could replace object with a custom class
+        }
+
+        record ChunkId
+        {
+            public string f { get; set; }
+            public int n { get; set; }
+        }
+
+        class _chunks
+        {
+            [BsonId]
+            public ChunkId _id { get; set; }
+        }
+
+        private async Task<IRandomAccessStream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            bool result = false;
+            var memoryStream = new MemoryStream();
+            try
+            {
+                result = await GenerateThumbnailImageToStreamAsync(file, memoryStream.AsRandomAccessStream(), setupEncoder, ct);
+
+                if (result is false) { return null; }
+
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                UploadWithRetry(itemId, file.Name, memoryStream);
+
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                return memoryStream.AsRandomAccessStream();
+            }
+            catch
+            {
+                memoryStream.Dispose();
+                throw;
             }
         }
 
@@ -607,6 +716,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (var fileStream = await file.OpenReadAsync())
             {
                 await RandomAccessStream.CopyAsync(fileStream, outputStream.AsOutputStream()).AsTask(ct);
+                outputStream.Seek(0, SeekOrigin.Begin);
                 return true;
             }
         }
@@ -917,7 +1027,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
         {
-            var itemId = GetStorageItemId(folder);
+            var itemId = ToId(folder);
 
 #if WINDOWS_UWP
             var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
@@ -932,7 +1042,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, CancellationToken ct)
         {
-            var itemId = GetStorageItemId(file);
+            var itemId = ToId(file);
             return GenerateSecondaryThumbnailImageAsync(file, itemId, ct);
         }
 

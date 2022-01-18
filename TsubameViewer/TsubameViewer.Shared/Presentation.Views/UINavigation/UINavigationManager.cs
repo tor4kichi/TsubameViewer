@@ -16,17 +16,18 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
     public class UINavigationManager : IDisposable
     {
+        public static event UINavigationButtonEventHandler OnPressing;
 
         /// <summary>
         /// ボタンを離した瞬間を通知するイベントです。
         /// </summary>
-        public static event UINavigationButtonEventHandler Pressed;
+        public static event UINavigationButtonEventHandler OnPressed;
 
         /// <summary>
         /// ボタンを押し続けた場合に通知されるイベントです。<br />
         /// 一度のボタン押下中に対して一回だけホールドを検出して通知します。
         /// </summary>
-        public static event UINavigationButtonEventHandler Holding;
+        public static event UINavigationButtonEventHandler OnHolding;
 
 
 
@@ -185,12 +186,16 @@ namespace TsubameViewer.Presentation.Views.UINavigation
                         var pressing = RequiredUINavigationButtonsHelper.ToUINavigationButtons(currentInput.RequiredButtons)
                             | OptionalUINavigationButtonsHelper.ToUINavigationButtons(currentInput.OptionalButtons);
 
-                        //                var trigger = pressing & (_PrevPressingButtons ^ pressing);
-                        var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
+                        var trigger = pressing & (_PrevPressingButtons ^ pressing);
+                        if (trigger != UINavigationButtons.None)
+                        {
+                            OnPressing?.Invoke(this, trigger);
+                        }
 
+                        var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
                         if (released != UINavigationButtons.None)
                         {
-                            Pressed?.Invoke(this, released);
+                            OnPressed?.Invoke(this, released);
                         }
 
                         // ホールド入力の検出
@@ -219,7 +224,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
                         if (holdingButtons != UINavigationButtons.None)
                         {
-                            Holding?.Invoke(this, holdingButtons);
+                            OnHolding?.Invoke(this, holdingButtons);
                         }
 
                         // トリガー検出用に前フレームの入力情報を保存

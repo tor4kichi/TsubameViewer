@@ -1,8 +1,11 @@
 #### General
 
-Copy = copy
+Copy = Copy
 CopyToClipboard = Copy to clipboard
 Cancel = Cancel
+Delete = Delete
+Create = Create
+Apply = Apply
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -77,7 +80,6 @@ ChangeViewToImageListupPage = Switch to image list view
 
 
 FileSortTitle = Sorting
-FileSortType.UpdateTimeDescThenTitleAsc = Latest & Title Asc
 FileSortType.TitleAscending = Title Asc
 FileSortType.TitleDecending = Title Desc
 FileSortType.UpdateTimeAscending = Recent
@@ -86,7 +88,6 @@ FileSortType.UpdateTimeDecending = Latest
 Sort_InheritancePath = Sort inheritance source
 Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
-TitleDigitCompletion = Title digit completion
 
 
 OpenImageViewer = Open in reader
@@ -99,7 +100,7 @@ RemoveSecondaryTile = Unpin the start
 
 SetThumbnailImage = Set as thumbnail image
 
-FolderItemMenuNoActionSuggested = No action available
+
 
 #### ImageViewerPage
 
@@ -142,9 +143,30 @@ WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
 ResetEBookSettings = Reset settings
 
 DisplaySettings = Display settings
-Toc = table of contents
+Toc = Table of contents
 
 #### SearchResult
 
 SearchResultWith = Next search result
 SearchPlaceholder = Search for title
+
+
+
+#### Albam
+
+Albam = Album
+
+CreateAlbam = Create an album
+AlbamName_Placeholder = Enter the name of the album
+AlbamName_Default = New album
+AlbamEdit = Edit album
+AlbamDelete = Delete album
+AlbamDeleteConfirmDialogText = Do you want to delete the album "{0}"? (This operation cannot be undone)
+
+EditAlbamImage = Select the album to add to
+ChoiceTargetAlbam = Select an album
+AlbamItemRemove = Remove this image from the album
+
+FavoriteAlbam = Favorite
+AddFavoriteImage = Add to Favourites
+RemoveFavoriteImage = Remove from favorites

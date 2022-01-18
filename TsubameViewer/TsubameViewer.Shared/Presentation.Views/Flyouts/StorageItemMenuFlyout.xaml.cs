@@ -20,6 +20,9 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.Views.Helpers;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using Windows.Storage;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Models.UseCase;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -27,7 +30,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 {
     public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
-        public bool IsListupActionEnabled { get; set; } = true;
+        public bool IsRootPage { get; set; } = false;
 
         public StorageItemMenuFlyout()
         {
@@ -36,14 +39,22 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             var container = App.Current.Container;
             OpenListupItem.Command = container.Resolve<OpenListupCommand>();
             SetThumbnailImageMenuItem.Command = container.Resolve<ChangeStorageItemThumbnailImageCommand>();
+            AddFavariteImageMenuItem.Command = container.Resolve<FavoriteAddCommand>();
+            RemoveFavariteImageMenuItem.Command = container.Resolve<FavoriteRemoveCommand>();
+            AlbamItemEditMenuItem.Command = container.Resolve<AlbamItemEditCommand>();
+            AlbamItemRemoveMenuItem.Command = container.Resolve<AlbamItemRemoveCommand>();
+            AlbamEditMenuItem.Command = container.Resolve<AlbamEditCommand>();
+            AlbamDeleteMenuItem.Command = container.Resolve<AlbamDeleteCommand>();
             AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
             OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
             _secondaryTileManager = container.Resolve<SecondaryTileManager>();
+            _favoriteAlbam = container.Resolve<FavoriteAlbam>();
         }
 
-        private SecondaryTileManager _secondaryTileManager;
+        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly FavoriteAlbam _favoriteAlbam;
 
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
@@ -63,15 +74,34 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
             if (itemVM.Item is StorageItemImageSource or ArchiveEntryImageSource or PdfPageImageSource)
             {
-                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
-                SetThumbnailImageMenuItem.CommandParameter = itemVM;
-                SetThumbnailImageMenuItem.Visibility = (itemVM.IsSourceStorageItem is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
+                if (itemVM.Type == Models.Domain.StorageItemTypes.Image)
+                {
+                    var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                    AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                    AddFavariteImageMenuItem.CommandParameter = itemVM;
+                    RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                    RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+                    
+                    AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                    AlbamItemEditMenuItem.CommandParameter = itemVM;
+                }
+                else
+                {
+                    AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                    RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                    AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
+                }
 
-                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
+                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                SetThumbnailImageMenuItem.CommandParameter = itemVM;
+                SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
 
                 if (itemVM.Path is not null)
                 {
@@ -88,8 +118,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                     RemoveSecondaryTile.Visibility = Visibility.Collapsed;
                 }
 
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Visible;
-
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
 
@@ -98,20 +126,22 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             }
             else if (itemVM.Item is ArchiveDirectoryImageSource)
             {
-                NoActionDescMenuItem.Visibility = Visibility.Collapsed;
-
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;
+
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
 
-                FolderAndArchiveMenuSeparator1.Visibility = OpenListupItem.Visibility;
-
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
-
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -119,21 +149,93 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
             }
-            else
+            else if (itemVM.Item is AlbamImageSource albam)
             {
-                NoActionDescMenuItem.Visibility = Visibility.Visible;
+                bool isFavAlbamItem = albam.AlbamId == FavoriteAlbam.FavoriteAlbamId;
 
-                OpenListupItem.Visibility = Visibility.Collapsed;
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Visibility = Visibility.Visible;
+
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamEditMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
+                AlbamEditMenuItem.CommandParameter = itemVM;
+                AlbamDeleteMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
+                AlbamDeleteMenuItem.CommandParameter = itemVM;
+
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
+
+                OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator1.Visibility = Visibility.Collapsed;
-                FolderAndArchiveMenuSeparator2.Visibility = Visibility.Collapsed;
+            }
+            else if (itemVM.Item is AlbamItemImageSource albamItem)
+            {
+                bool isFavAlbamItem = albamItem.AlbamId == FavoriteAlbam.FavoriteAlbamId;
+
+                OpenListupItem.CommandParameter = itemVM;
+                OpenListupItem.Visibility = Visibility.Collapsed;
+
+                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
+                RemoveFavariteImageMenuItem.Visibility = isFavAlbamItem.TrueToVisible();
+                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
+                AlbamItemRemoveMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
+                AlbamItemRemoveMenuItem.CommandParameter = itemVM;
+
+                AlbamEditMenuItem.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+
+                AddSecondaryTile.Visibility = Visibility.Collapsed;
+                RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                OpenWithExplorerItem.CommandParameter = itemVM;
+                OpenWithExplorerItem.Visibility = Visibility.Visible;
+
+                OpenWithExternalAppMenuItem.CommandParameter = itemVM;
+                OpenWithExternalAppMenuItem.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                this.Hide();
+                return;
             }
 
-            if (IsListupActionEnabled is false)
+            AlbamMenuSeparator.Visibility = (
+                OpenListupItem.Visibility == Visibility.Visible
+                && (AddFavariteImageMenuItem.Visibility == Visibility.Visible
+                    || RemoveFavariteImageMenuItem.Visibility == Visibility.Visible
+                    || AlbamItemEditMenuItem.Visibility == Visibility.Visible
+                    || AlbamItemRemoveMenuItem.Visibility == Visibility.Visible
+                    || AlbamEditMenuItem.Visibility == Visibility.Visible
+                    || AlbamDeleteMenuItem.Visibility == Visibility.Visible
+                    )
+                ).TrueToVisible();
+
+            ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
+
+            FolderAndArchiveMenuSeparator1.Visibility = (
+                AddSecondaryTile.Visibility == Visibility.Visible
+                || RemoveSecondaryTile.Visibility == Visibility.Visible
+                ).TrueToVisible();
+
+            FolderAndArchiveMenuSeparator2.Visibility = (
+                OpenWithExplorerItem.Visibility == Visibility.Visible
+                || OpenWithExternalAppMenuItem.Visibility == Visibility.Visible
+                ).TrueToVisible();
+
+            if (IsRootPage is true)
             {
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             }

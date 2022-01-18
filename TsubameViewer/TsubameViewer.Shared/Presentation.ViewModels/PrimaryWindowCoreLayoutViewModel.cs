@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Input;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
@@ -63,8 +64,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage) },
-                //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
+                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
+                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
             };
             EventAggregator = eventAggregator;
             _scheduler = scheduler;
@@ -210,7 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
 
-            parameters.Add(PageNavigationConstants.Path, entry.Path);
+            parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
 
             if (storageItem is StorageFolder itemFolder)
             {
@@ -294,6 +295,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class MenuItemViewModel
     {
+        public string Title { get; set; }
         public string PageType { get; set; }
         public string Parameters { get; set; }
     }

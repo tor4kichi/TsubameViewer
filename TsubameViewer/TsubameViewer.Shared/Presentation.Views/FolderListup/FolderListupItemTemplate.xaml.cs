@@ -31,6 +31,8 @@ namespace TsubameViewer.Presentation.Views.FolderListup
         public DataTemplate FolderIcon { get; set; }
         public DataTemplate ArchiveIcon { get; set; }
         public DataTemplate ArchiveFolderIcon { get; set; }
+        public DataTemplate AlbamIcon { get; set; }
+        public DataTemplate AlbamImageIcon { get; set; }
         public DataTemplate EBookIcon { get; set; }
         public DataTemplate ImageIcon { get; set; }
 
@@ -43,6 +45,8 @@ namespace TsubameViewer.Presentation.Views.FolderListup
                 Models.Domain.StorageItemTypes.Folder => FolderIcon,
                 Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
                 Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                Models.Domain.StorageItemTypes.Albam => AlbamIcon,
+                Models.Domain.StorageItemTypes.AlbamImage => AlbamImageIcon,
                 Models.Domain.StorageItemTypes.EBook => EBookIcon,
                 Models.Domain.StorageItemTypes.Image => ImageIcon,
                 var type => throw new NotSupportedException(type.ToString()),
