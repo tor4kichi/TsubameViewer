@@ -842,7 +842,7 @@
         <VisualState>
           <VisualState.StateTriggers>
             <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}}" />
+            <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
             <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
           </VisualState.StateTriggers>
@@ -1031,7 +1031,7 @@
       </VisualStateGroup>
 
       <!-- マウススクロールのページ送り -->
-      <VisualStateGroup>
+      <VisualStateGroup x:Name="VSG_MouseScrool">
         <VisualState>
           <VisualState.StateTriggers>
             <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
@@ -1044,7 +1044,7 @@
             <Setter Target="ZommingMouseWheelTrigger.IsEnabled" Value="True" />
           </VisualState.Setters>
         </VisualState>
-        <VisualState>
+        <VisualState x:Name="VS_MouseScroolNotReadyToDisplay">
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
           </VisualState.StateTriggers>

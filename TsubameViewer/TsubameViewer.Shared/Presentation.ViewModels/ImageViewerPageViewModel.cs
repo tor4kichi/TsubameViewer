@@ -51,9 +51,18 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
+using Windows.System;
+using Microsoft.Toolkit.Uwp;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+    public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
+    {
+        
+    }
+
+
     public sealed class ImageViewerPageViewModel : ViewModelBase, IDisposable
     {
         private string _currentPath;
@@ -182,6 +191,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private ApplicationView _appView;
         CompositeDisposable _navigationDisposables;
+        private readonly DispatcherQueue _dispatcherQueue;
 
         public ImageViewerSettings ImageViewerSettings { get; }
 
@@ -250,6 +260,8 @@ namespace TsubameViewer.Presentation.ViewModels
             _folderListingSettings = folderListingSettings;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
+
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             ClearDisplayImages();
             _DisplayImages_0 = _displayImagesSingle[0];
@@ -865,6 +877,8 @@ namespace TsubameViewer.Presentation.ViewModels
                         _nowCurrenImageIndexChanging = false;
 
                         NowImageLoadingLongRunning = false;
+
+                        await _messenger.Send(new ImageLoadedMessage());
 
                         await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
                     }
