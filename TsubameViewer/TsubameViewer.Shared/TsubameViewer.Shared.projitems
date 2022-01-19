@@ -57,6 +57,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\StorageItemTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ImageCollectionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\EBook\EBookReaderSettings.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\TitleDigitCompletionComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\AsyncLock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\BinaryObjectSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Infrastructure\EnumerableTaskHelper.cs" />

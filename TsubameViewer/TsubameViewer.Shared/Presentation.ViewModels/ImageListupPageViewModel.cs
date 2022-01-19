@@ -590,12 +590,20 @@ namespace TsubameViewer.Presentation.ViewModels
 #region FileSortType
 
 
-        public static IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
+        public IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
         {
+            IComparer comparer = null;
+            if (_currentItem is StorageFile file
+                && SupportedFileTypesHelper.PdfFileType == file.FileType
+                )
+            {
+                comparer = TitleDigitCompletionComparer.Default;
+            }
+
             return fileSortType switch
             {
-                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending) },
-                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending) },
+                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, comparer) },
+                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, comparer) },
                 FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
                 FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
                 _ => throw new NotSupportedException(),
