@@ -357,8 +357,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
         {
-            // TODO: PDFの逆順取得に対応
-            return new (int.Parse(key));
+            var index = int.Parse(key);
+            return new (sort switch
+            {
+                FileSortType.None => index,
+                FileSortType.TitleAscending => index,
+                FileSortType.TitleDecending => (int)_pdfDocument.PageCount - index - 1,
+                FileSortType.UpdateTimeAscending => index,
+                FileSortType.UpdateTimeDecending => (int)_pdfDocument.PageCount - index - 1,
+                _ => throw new NotSupportedException(sort.ToString())
+            });
         }
     }
 }
