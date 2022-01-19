@@ -62,6 +62,9 @@ namespace TsubameViewer.Presentation.Services.UWP
             [BsonId]
             public string Path { get; set; }
 
+            [BsonId]
+            public string ThumbnailSubFolderName { get; set; }
+
             [BsonField]
             public string TiteId { get; set; }
         }
@@ -84,7 +87,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             var tiles = await SecondaryTile.FindAllAsync();
             Tiles = tiles.ToDictionary(x => x.TileId);
             // tilesに含まれない生成済みのセカンダリタイル用サムネイルを削除する
-            await _thumbnailManager.SecondaryThumbnailDeleteNotExist(tiles.Select(x => _secondaryTileIdRepository.FindPathFromTileId(x.TileId)));
+            await _thumbnailManager.SecondaryThumbnailDeleteNotExist(tiles.Select(x => x.TileId));
         }
 
 
@@ -108,7 +111,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             }
 
             var tileId = _secondaryTileIdRepository.GetTileId(storageItem.Path);
-            var tileThubmnails = await Task.Run(async () => await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem, CancellationToken.None));
+            var tileThubmnails = await Task.Run(async () => await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem, tileId, CancellationToken.None));
             var json = JsonSerializer.Serialize(arguments);
             var tile = new SecondaryTile(
                 tileId, 

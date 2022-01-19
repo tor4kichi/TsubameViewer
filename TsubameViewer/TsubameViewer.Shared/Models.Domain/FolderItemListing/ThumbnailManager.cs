@@ -1013,16 +1013,22 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public StorageFile Square150x150Logo { get; set; }
         }
 
-        public async Task SecondaryThumbnailDeleteNotExist(IEnumerable<string> itemIdList)
+        static string ToSafeName(string path)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars().ToHashSet();
+            return new string(path.Select(x => invalidChars.Contains(x) ? '_' : x).ToArray());
+        }
+
+        public async Task SecondaryThumbnailDeleteNotExist(IEnumerable<string> tileIdList)
         {
             await Task.Run(async () => 
             {
                 var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
-                var idSet = itemIdList.ToHashSet();
+                var existTileIdHashSet = tileIdList.ToHashSet();
 
                 var folders = await thumbnailFolder.GetFoldersAsync();
-                var alreadDeleteFolders = folders.Where(x => !idSet.Contains(x.Path));
-                foreach (var folder in alreadDeleteFolders)
+                var deletedTileFolders = folders.Where(x => existTileIdHashSet.Contains(x.Name) is false);
+                foreach (var folder in deletedTileFolders)
                 {
                     await folder.DeleteAsync(StorageDeleteOption.PermanentDelete);
                     Debug.WriteLine("delete secondary tile thumbnail: " + folder.Name);
@@ -1030,15 +1036,15 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             });
         }
 
-        public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(IStorageItem storageItem, CancellationToken ct)
+        public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(IStorageItem storageItem, string tileId, CancellationToken ct)
         {
             if (storageItem is StorageFolder folder)
             {
-                return GenerateSecondaryThumbnailImageAsync(folder, ct);
+                return GenerateSecondaryThumbnailImageAsync(folder, tileId, ct);
             }
             else if (storageItem is StorageFile file)
             {
-                return GenerateSecondaryThumbnailImageAsync(file, ct);
+                return GenerateSecondaryThumbnailImageAsync(file, tileId, ct);
             }
             else
             {
@@ -1046,10 +1052,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
+        public async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFolder folder, string tileId, CancellationToken ct)
         {
-            var itemId = ToId(folder);
-
 #if WINDOWS_UWP
             var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
             var count = await query.GetItemCountAsync().AsTask(ct);
@@ -1057,20 +1061,15 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (count == 0) { return null; }
 
             var files = await query.GetFilesAsync(0, 1).AsTask(ct);
-            return await GenerateSecondaryThumbnailImageAsync(files[0], itemId, ct);
+            return await GenerateSecondaryThumbnailImageAsync(files[0], tileId, ct);
 #endif
         }
 
-        public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, CancellationToken ct)
+        private async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, CancellationToken ct)
         {
-            var itemId = ToId(file);
-            return GenerateSecondaryThumbnailImageAsync(file, itemId, ct);
-        }
-
-        private async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, string itemId, CancellationToken ct)
-        {
-            var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
-            var itemFolder = await thumbnailFolder.CreateFolderAsync(itemId, CreationCollisionOption.ReplaceExisting);
+            
+            var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();            
+            var itemFolder = await thumbnailFolder.CreateFolderAsync(tileId, CreationCollisionOption.ReplaceExisting);
             var wideThumbFile = await itemFolder.CreateFileAsync("thumb310x150.png", CreationCollisionOption.ReplaceExisting);
             var square310ThumbFile = await itemFolder.CreateFileAsync("thumb310x310.png", CreationCollisionOption.ReplaceExisting);
             var square150ThumbFile = await itemFolder.CreateFileAsync("thumb150x150.png", CreationCollisionOption.ReplaceExisting);
