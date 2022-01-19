@@ -76,7 +76,7 @@ namespace TsubameViewer.Models.Domain.Albam
             {
                 return sort switch
                 {
-                    FileSortType.None => _collection.Query().Where(x => x.AlbamId == albamId).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                    FileSortType.None => _collection.Query().Where(x => x.AlbamId == albamId).Offset(skip).Limit(limit).ToEnumerable(),
                     FileSortType.TitleAscending => _collection.Query().Where(x => x.AlbamId == albamId).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
                     FileSortType.TitleDecending => _collection.Query().Where(x => x.AlbamId == albamId).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
                     FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.AlbamId == albamId).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),

@@ -98,7 +98,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
-        private readonly FileSortType DefaultFileSortType = FileSortType.None;
+        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
 
         private string _DisplaySortTypeInheritancePath;
         public string DisplaySortTypeInheritancePath
