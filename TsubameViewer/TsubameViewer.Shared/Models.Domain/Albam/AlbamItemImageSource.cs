@@ -66,5 +66,16 @@ namespace TsubameViewer.Models.Domain.Albam
         {
             return _imageSource.GetThumbnailSize();
         }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }
+            return this.Path == other.Path;
+        }
+
+        public override string ToString()
+        {
+            return Path;
+        }
     }
 }

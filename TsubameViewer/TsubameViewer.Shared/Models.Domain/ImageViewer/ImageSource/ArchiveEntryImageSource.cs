@@ -109,5 +109,16 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
         }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }
+            return this._path == other.Path;
+        }
+
+        public override string ToString()
+        {
+            return Path;
+        }
     }
 }

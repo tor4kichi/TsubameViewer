@@ -1201,14 +1201,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 image = new PrefetchImageInfo(source);
                 _CachedImages.Insert(0, image);
 
-                if (_CachedImages.Count > 6)
+                if (_CachedImages.Count > 8)
                 {
                     var last = _CachedImages.Last();
                     last.Dispose();
                     _CachedImages.Remove(last);
                     if (last.Image != null)
                     {
-                        RemoveFromDisplayImages(last.Image);
+                        //RemoveFromDisplayImages(last.Image);
                     }
 
                     Debug.WriteLine($"remove from display cache: {last.ImageSource.Name}");
@@ -1538,8 +1538,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool TryDisplayImagesSwapForward(IImageSource firstSource)
         {
-            var forwardCachedImageSource = _sourceImagesSingle[NextDisplayImageIndex][0];
-            if (forwardCachedImageSource == firstSource)
+            var firstForwardCachedImageSource = _sourceImagesSingle[NextDisplayImageIndex][0];
+            if (firstForwardCachedImageSource == null)
+            {
+                return false;
+            }
+
+            if (firstForwardCachedImageSource.Equals(firstSource))
             {
                 Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {NextDisplayImageIndex}");
                 SetCurrentDisplayImageIndex(NextDisplayImageIndex);
@@ -1555,12 +1560,18 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[NextDisplayImageIndex][1];
+            if (firstForwardCachedImageSource == null || secondForwardCachedImageSource == null)
+            {
+                return false;
+            }
+
             if (IsLeftBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
-            if (firstForwardCachedImageSource == firstSource
-                && secondForwardCachedImageSource == secondSource
+
+            if (firstForwardCachedImageSource.Equals(firstSource)
+                && secondForwardCachedImageSource.Equals(secondSource)
                 )
             {
                 Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {NextDisplayImageIndex}");
@@ -1577,8 +1588,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private bool TryDisplayImagesSwapBackward(IImageSource firstSource)
         {
-            var forwardCachedImageSource = _sourceImagesSingle[PrevDisplayImageIndex][0];
-            if (forwardCachedImageSource == firstSource)
+            var firstForwardCachedImageSource = _sourceImagesSingle[PrevDisplayImageIndex][0];
+            if (firstForwardCachedImageSource == null)
+            {
+                return false;
+            }
+
+            if (firstForwardCachedImageSource.Equals(firstSource))
             {
                 Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {PrevDisplayImageIndex}");
                 SetCurrentDisplayImageIndex(PrevDisplayImageIndex);
@@ -1594,13 +1610,19 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             var firstForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][0];
             var secondForwardCachedImageSource = _sourceImagesDouble[PrevDisplayImageIndex][1];
+
+            if (firstForwardCachedImageSource == null || secondForwardCachedImageSource == null)
+            {
+                return false;
+            }
+
             if (IsLeftBindingEnabled.Value is false)
             {
                 (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
 
-            if (firstForwardCachedImageSource == firstSource
-                && secondForwardCachedImageSource == secondSource
+            if (firstForwardCachedImageSource.Equals(firstSource)
+                && secondForwardCachedImageSource.Equals(secondSource)
                 )
             {
                 Debug.WriteLine($"swap display {CurrentDisplayImageIndex} -> {PrevDisplayImageIndex}");

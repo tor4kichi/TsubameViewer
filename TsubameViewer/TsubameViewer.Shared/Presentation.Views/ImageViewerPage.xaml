@@ -293,6 +293,8 @@
         <Grid.Resources>
           <Style TargetType="muxc:ItemsRepeater">
             <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="VerticalCacheLength" Value="100000" />
+            <Setter Property="HorizontalCacheLength" Value="100000" />
             <Setter Property="ItemTemplate">
               <Setter.Value>
                 <DataTemplate x:DataType="BitmapImage">

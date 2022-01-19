@@ -179,7 +179,7 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
 
             PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
-
+            
             _navigaitonCts = new CancellationTokenSource();
             var ct = _navigaitonCts.Token;
             bool isFirst = true;

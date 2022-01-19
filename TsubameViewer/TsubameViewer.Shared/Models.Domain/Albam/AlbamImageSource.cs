@@ -29,7 +29,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public string Path => AlbamEntry.Name;
 
-        public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;
+        public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;        
 
         public Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {
@@ -63,6 +63,17 @@ namespace TsubameViewer.Models.Domain.Albam
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
             return null;
+        }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }
+            return this.AlbamId == (other as AlbamImageSource)?.AlbamId;
+        }
+
+        public override string ToString()
+        {
+            return Path;
         }
     }
 }

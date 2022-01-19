@@ -10,7 +10,7 @@ using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
-    public interface IImageSource
+    public interface IImageSource : IEquatable<IImageSource>
     {
         IStorageItem StorageItem { get; }
         string Name { get; }
