@@ -223,21 +223,7 @@
             </ToggleButton>
 
           </Grid>
-
-          <i:Interaction.Behaviors>
-
-            <!-- TODO: コントローラーでの選択の切り替え 
-          <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
-            <uiNavigation:BypassToCurrentFocusElementAction>
-              <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
-            </uiNavigation:BypassToCurrentFocusElementAction>
-            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
-            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
-          </uiNavigation:UINavigationTriggerBehavior>
-          -->
-          </i:Interaction.Behaviors>
-
+          
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -296,21 +282,7 @@
             </ToggleButton>
 
           </Grid>
-          <i:Interaction.Behaviors>
-
-            <!-- TODO: コントローラーでの選択の切り替え 
-          <uiNavigation:UINavigationTriggerBehavior Kind="Accept" IsRequireFocus="True">
-            <uiNavigation:BypassToCurrentFocusElementAction>
-              <core:InvokeCommandAction Command="{x:Bind PrepareConnectedAnimationWithCurrentFocusElementCommand}" />
-            </uiNavigation:BypassToCurrentFocusElementAction>
-            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{x:Bind _vm.OpenFolderItemCommand}" />
-            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
-          </uiNavigation:UINavigationTriggerBehavior>
-          -->
-          </i:Interaction.Behaviors>
-
-
+          
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
               <VisualState x:Name="VS_ToggleButtonCollapsed" />
@@ -429,8 +401,8 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton Icon="Add" Label="アルバムに追加" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
             <AppBarButton Icon="Add" Label="お気に入りに追加" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton Icon="Add" Label="アルバムに追加" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
             <AppBarButton Icon="Add" Label="エクスプローラーで表示" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
             <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
               <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}" />

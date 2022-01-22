@@ -101,10 +101,10 @@ RemoveSecondaryTile = スタートのピン留めを解除
 SetThumbnailImage = サムネイル画像に設定
 
 
-
 #### ImageListupPage
-
 ImageSelection_SelectedCount = {0}個のアイテムを選択中
+SelectItems_ActionAs = 選択中アイテムを…
+
 
 
 #### ImageViewerPage

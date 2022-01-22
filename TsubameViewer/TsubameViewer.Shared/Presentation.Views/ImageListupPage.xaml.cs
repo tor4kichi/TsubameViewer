@@ -400,7 +400,7 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        ReactivePropertySlim<List<StorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>());
+        ReactivePropertySlim<IReadOnlyList<StorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
 
 
         private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -427,13 +427,13 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (itemVM.IsSelected)
                 {
-                    _selectedItems.Value.Add(itemVM);
-                    _selectedItems.ForceNotify();
+                    _vm.Selection.SelectedItems.Add(itemVM);
+                    _selectedItems.Value = _vm.Selection.SelectedItems;
                 }
                 else
                 {
-                    _selectedItems.Value.Remove(itemVM);
-                    _selectedItems.ForceNotify();
+                    _vm.Selection.SelectedItems.Remove(itemVM);
+                    _selectedItems.Value = _vm.Selection.SelectedItems;
                 }
                 SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
             }
@@ -441,9 +441,15 @@ namespace TsubameViewer.Presentation.Views
             lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
 
             var selectedItemsCount = SelectedItemsCount;
-            SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(selectedItemsCount);
+            if (selectedItemsCount > 0)
+            {
+                SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(selectedItemsCount);
+            }
+
             if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
             {
+                _selectedItems.Value = _vm.Selection.SelectedItems;
+                _vm.Selection.StartSelection();
                 _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
                 _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
                 {
@@ -453,11 +459,11 @@ namespace TsubameViewer.Presentation.Views
             }
             else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
             {
+                _vm.Selection.EndSelection();
+                lastSelectedItemIndex = -1;
                 _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
                 _messenger.Unregister<BackNavigationRequestingMessage>(this);
             }
-
-            _vm.Selection.IsSelectionModeEnabled = selectedItemsCount > 0;                  
         }
 
         public int SelectedItemsCount
@@ -473,17 +479,16 @@ namespace TsubameViewer.Presentation.Views
 
         public void ClearSelection()
         {
-            foreach (var itemVM in _selectedItems.Value)
+            foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<StorageItemViewModel>())
             {
                 itemVM.IsSelected = false;
             }
 
-            _selectedItems.Value.Clear();
-            _selectedItems.ForceNotify();
+            _selectedItems.Value = null;
             SelectedItemsCount = 0;
-            _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
-            _vm.Selection.IsSelectionModeEnabled = false;
+            _vm.Selection.EndSelection();
             lastSelectedItemIndex = -1;
+            _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
         }
 

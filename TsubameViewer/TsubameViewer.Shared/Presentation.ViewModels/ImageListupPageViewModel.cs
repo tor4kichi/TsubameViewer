@@ -49,7 +49,20 @@ namespace TsubameViewer.Presentation.ViewModels
         public bool IsSelectionModeEnabled
         {
             get => _isSelectionModeEnabled;
-            set => SetProperty(ref _isSelectionModeEnabled, value);
+            private set => SetProperty(ref _isSelectionModeEnabled, value);
+        }
+
+        public ObservableCollection<StorageItemViewModel> SelectedItems { get; } = new ();
+
+        public void StartSelection()
+        {
+            IsSelectionModeEnabled = true;
+        }
+
+        public void EndSelection()
+        {
+            IsSelectionModeEnabled = false;
+            SelectedItems.Clear();
         }
     }
 

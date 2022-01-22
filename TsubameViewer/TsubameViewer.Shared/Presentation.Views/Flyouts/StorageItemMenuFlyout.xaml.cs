@@ -40,14 +40,17 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             OpenListupItem.Command = container.Resolve<OpenListupCommand>();
             SetThumbnailImageMenuItem.Command = container.Resolve<ChangeStorageItemThumbnailImageCommand>();
             AddFavariteImageMenuItem.Command = container.Resolve<FavoriteAddCommand>();
+            SelectedItems_AddFavariteImageMenuItem.Command = AddFavariteImageMenuItem.Command;
             RemoveFavariteImageMenuItem.Command = container.Resolve<FavoriteRemoveCommand>();
             AlbamItemEditMenuItem.Command = container.Resolve<AlbamItemEditCommand>();
+            SelectedItems_AlbamItemEditMenuItem.Command = AlbamItemEditMenuItem.Command;
             AlbamItemRemoveMenuItem.Command = container.Resolve<AlbamItemRemoveCommand>();
             AlbamEditMenuItem.Command = container.Resolve<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = container.Resolve<AlbamDeleteCommand>();
             AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
+            SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
             OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
             _secondaryTileManager = container.Resolve<SecondaryTileManager>();
             _favoriteAlbam = container.Resolve<FavoriteAlbam>();
@@ -70,6 +73,18 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             {
                 flyout.Hide();
                 return;
+            }
+
+            if (itemVM.Selection is not null and var selection && selection.IsSelectionModeEnabled && selection.SelectedItems.Count >= 2)
+            {
+                SelectItemsSubItem.Visibility = Visibility.Visible;
+                SelectedItems_AddFavariteImageMenuItem.CommandParameter = itemVM.Selection.SelectedItems;
+                SelectedItems_AlbamItemEditMenuItem.CommandParameter = itemVM.Selection.SelectedItems;
+                SelectedItems_OpenWithExplorerItem.CommandParameter = itemVM.Selection.SelectedItems;
+            }
+            else
+            {
+                SelectItemsSubItem.Visibility = Visibility.Collapsed;
             }
 
             if (itemVM.Item is StorageItemImageSource or ArchiveEntryImageSource or PdfPageImageSource)
@@ -213,7 +228,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             }
 
             AlbamMenuSeparator.Visibility = (
-                OpenListupItem.Visibility == Visibility.Visible
+                (OpenListupItem.Visibility == Visibility.Visible || SelectItemsSubItem.Visibility is Visibility.Visible)
                 && (AddFavariteImageMenuItem.Visibility == Visibility.Visible
                     || RemoveFavariteImageMenuItem.Visibility == Visibility.Visible
                     || AlbamItemEditMenuItem.Visibility == Visibility.Visible

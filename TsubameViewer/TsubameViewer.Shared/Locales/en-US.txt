@@ -101,6 +101,11 @@ RemoveSecondaryTile = Unpin the start
 SetThumbnailImage = Set as thumbnail image
 
 
+#### ImageListupPage
+ImageSelection_SelectedCount = Selecting {0} items
+SelectItems_ActionAs = Select item...
+
+
 
 #### ImageViewerPage
 
