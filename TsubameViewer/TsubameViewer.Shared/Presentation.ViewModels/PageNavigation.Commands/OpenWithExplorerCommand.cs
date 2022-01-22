@@ -34,6 +34,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             }
         }
 
+        protected override bool CanExecute(IImageSource imageSource)
+        {
+            return imageSource is StorageItemImageSource;
+        }
+
         protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
         {
             var sample = imageSources.First();
