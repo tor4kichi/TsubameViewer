@@ -81,8 +81,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
-
             IntaractionWall.Tapped -= SwipeProcessScreen_Tapped;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
@@ -99,8 +97,6 @@ namespace TsubameViewer.Presentation.Views
 
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-
-            SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
         }
 
         public bool IsReadyToImageDisplay
@@ -118,16 +114,10 @@ namespace TsubameViewer.Presentation.Views
 
         #region Navigation
 
-        private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
+        void ForceClosePage(object sender, RoutedEventArgs e)
         {
-            if (IsOpenBottomMenu)
-            {
-                ToggleOpenCloseBottomUI();
-            }
-            else
-            {
-                (_vm.BackNavigationCommand as ICommand).Execute(null);
-            }
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            (_vm.BackNavigationCommand as ICommand).Execute(null);
         }
 
         CompositeDisposable _navigationDisposables;
@@ -152,9 +142,9 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonPressedBackgroundColor = null;
 
             appView.ExitFullScreenMode();
-
-            _messenger.Unregister<ImageLoadedMessage>(this);
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+            
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            _messenger.Unregister<ImageLoadedMessage>(this);            
 
             base.OnNavigatingFrom(e);
         }
@@ -178,8 +168,15 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
 
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
-            
+            _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
+            {
+                if (IsOpenBottomMenu)
+                {
+                    m.Value.IsHandled = true;
+                    ToggleOpenCloseBottomUI();
+                }
+            });
+
             _navigaitonCts = new CancellationTokenSource();
             var ct = _navigaitonCts.Token;
             bool isFirst = true;

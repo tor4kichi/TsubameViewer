@@ -498,7 +498,7 @@
         </Style>
       </StackPanel.Resources>
 
-      <Button x:Name="BottomUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}">
+      <Button x:Name="BottomUIBackNavigationButton" Click="ForceClosePage">
         <SymbolIcon Symbol="Clear" />
       </Button>
 

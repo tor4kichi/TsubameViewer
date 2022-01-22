@@ -558,11 +558,6 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        // NavigationManager.BackRequestedによる戻るを一時的に防止する
-        // ビューワー系ページでコントローラー操作でバックナビゲーションを手動で行うことが目的
-        public static bool IsPreventSystemBackNavigation { get; set; }
-        //public CoreTextEditContext _context { get; private set; }        
-
         static PageEntry MakePageEnetry(Type pageType, INavigationParameters parameters)
         {
             return new PageEntry(pageType.Name, parameters);
@@ -575,8 +570,6 @@ namespace TsubameViewer.Presentation.Views
                 CancelBusyWorkCommand.Execute(null);
                 return false;
             }
-
-            if (IsPreventSystemBackNavigation) { return false; }
 
             var currentPageType = ContentFrame.Content?.GetType();
             if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
@@ -731,8 +724,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void App_BackRequested(object sender, BackRequestedEventArgs e)
         {
-            if (IsPreventSystemBackNavigation) { return; }
-
             if (CanHandleBackRequest())
             {
                 Debug.WriteLine("back navigated with SystemNavigationManager.BackRequested");

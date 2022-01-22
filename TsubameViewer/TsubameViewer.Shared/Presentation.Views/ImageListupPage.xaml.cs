@@ -376,8 +376,8 @@ namespace TsubameViewer.Presentation.Views
         private int lastSelectedItemIndex = -1;
         private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
         {
-            if (SelectedItemsCount > 0
-                || Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) != CoreVirtualKeyStates.None
+            if (IsSelectionModeEnabled
+                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
                 )
             {
                 if ((sender as FrameworkElement).DataContext is StorageItemViewModel itemVM)
