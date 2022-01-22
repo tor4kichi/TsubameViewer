@@ -94,6 +94,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\NavigationParametersExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
@@ -107,7 +108,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\SecondaryTileAddCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BackNavigationRequestEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BackNavigationRequestingMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\BusyWallRequestEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\MenuDisplayMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\NavigationRequestMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\PageNavigationConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageTransisionHelper.cs" />
@@ -171,6 +174,7 @@
     </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\PointerInsideTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\StateTrigger\VirualKeyPressingTrigger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\TextInputDialog.xaml.cs">
       <DependentUpon>TextInputDialog.xaml</DependentUpon>

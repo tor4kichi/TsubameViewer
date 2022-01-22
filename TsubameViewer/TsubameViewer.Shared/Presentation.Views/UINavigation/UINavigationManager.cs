@@ -9,6 +9,7 @@ using Windows.UI.Xaml;
 using System.Threading;
 using Windows.UI.Core;
 using Uno.Threading;
+using System.Diagnostics;
 
 namespace TsubameViewer.Presentation.Views.UINavigation
 {
@@ -189,12 +190,14 @@ namespace TsubameViewer.Presentation.Views.UINavigation
                         var trigger = pressing & (_PrevPressingButtons ^ pressing);
                         if (trigger != UINavigationButtons.None)
                         {
+                            Debug.WriteLine($"pressing : {trigger}");
                             OnPressing?.Invoke(this, trigger);
                         }
 
                         var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
                         if (released != UINavigationButtons.None)
                         {
+                            Debug.WriteLine($"released : {released}");
                             OnPressed?.Invoke(this, released);
                         }
 

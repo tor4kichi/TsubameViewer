@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
@@ -11,44 +12,46 @@ using Windows.System;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenWithExplorerCommand : DelegateCommandBase
-    {
-        protected override bool CanExecute(object parameter)
+    public sealed class OpenWithExplorerCommand : ImageSourceCommandBase
+    {   
+        protected override async void Execute(IImageSource imageSource)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (imageSource is StorageItemImageSource)
             {
-                parameter = itemVM.Item;
+                if (imageSource.StorageItem is StorageFolder folder)
+                {
+                    await Launcher.LaunchFolderAsync(folder);
+                }
+                else if (imageSource.StorageItem is StorageFile file)
+                {
+                    await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(file.Path), new FolderLauncherOptions() { ItemsToSelect = { file } });
+                    //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
+                }
             }
-
-            return parameter is IImageSource;
+            else if (imageSource is AlbamItemImageSource albamItemImageSource)
+            {
+                await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(albamItemImageSource.Path), new FolderLauncherOptions() { ItemsToSelect = { albamItemImageSource.StorageItem } });
+            }
         }
 
-        protected override async void Execute(object parameter)
+        protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            var sample = imageSources.First();
+            var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
+            return imageSources.All(x => x is StorageItemImageSource item && x.StorageItem is StorageFile && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
+        }
+
+        protected override async void Execute(IEnumerable<IImageSource> imageSources)
+        {
+            var sample = imageSources.First();
+            var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
+            var options = new FolderLauncherOptions();
+            foreach (var storageItem in imageSources.Select(x => x.StorageItem))
             {
-                parameter = itemVM.Item;
+                options.ItemsToSelect.Add(storageItem);
             }
 
-            if (parameter is IImageSource imageSource)
-            {
-                if (imageSource is StorageItemImageSource)
-                {
-                    if (imageSource.StorageItem is StorageFolder folder)
-                    {
-                        await Launcher.LaunchFolderAsync(folder);
-                    }
-                    else if (imageSource.StorageItem is StorageFile file)
-                    {
-                        await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(file.Path), new FolderLauncherOptions() { ItemsToSelect = { file } });
-//                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
-                    }
-                }
-                else if (imageSource is AlbamItemImageSource albamItemImageSource)
-                {
-                    await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(albamItemImageSource.Path), new FolderLauncherOptions() { ItemsToSelect = { albamItemImageSource.StorageItem } });
-                }
-            }
+            await Launcher.LaunchFolderPathAsync(firstItemDirectoryName, options);
         }
     }
 }

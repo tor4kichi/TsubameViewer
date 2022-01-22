@@ -13,7 +13,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public class AlbamItemEditCommand : DelegateCommandBase
+    public class AlbamItemEditCommand : ImageSourceCommandBase
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;
@@ -29,97 +29,166 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
             _messenger = messenger;
             _albamDialogService = albamDialogService;
         }
-        protected override bool CanExecute(object parameter)
+       
+
+        protected override async void Execute(IImageSource imageSource)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            var albamSelectDialog = new Views.Dialogs.SelectItemDialog("ChoiceTargetAlbam".Translate(), "Apply".Translate());
+
+            var albams = _albamRepository.GetAlbams();
+            var existed = albams.Where(x => _albamRepository.IsExistAlbamItem(x._id, imageSource.Path)).ToList();
+            albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
+            albamSelectDialog.ItemsSource = albams;
+            albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
+            albamSelectDialog.SetSelectedItems(existed);
+
+            bool isCompleted = false;
+            while (isCompleted is false)
             {
-                parameter = itemVM.Item;
-            }
+                await albamSelectDialog.ShowAsync();
 
-            return parameter is IImageSource;
-        }
-
-        protected override async void Execute(object parameter)
-        {
-            if (parameter is StorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
-
-            if (parameter is IImageSource albamItem)
-            {
-                var albamSelectDialog = new Views.Dialogs.SelectItemDialog("ChoiceTargetAlbam".Translate(), "Apply".Translate());
-
-                var albams = _albamRepository.GetAlbams();
-                var existed = albams.Where(x => _albamRepository.IsExistAlbamItem(x._id, albamItem.Path)).ToList();
-                albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
-                albamSelectDialog.ItemsSource = albams;
-                albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
-                albamSelectDialog.SetSelectedItems(existed);
-
-                bool isCompleted = false;
-                while (isCompleted is false)
+                if (albamSelectDialog.IsOptionRequested)
                 {
-                    await albamSelectDialog.ShowAsync();
-
-                    if (albamSelectDialog.IsOptionRequested)
+                    var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
+                    if (isSuccess && string.IsNullOrWhiteSpace(albamName) is false)
                     {
-                        var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
-                        if (isSuccess && string.IsNullOrWhiteSpace(albamName) is false)
+                        if (string.IsNullOrEmpty(albamName) is false)
                         {
-                            if (string.IsNullOrEmpty(albamName) is false)
+                            AlbamEntry createdAlbam = null;
+
+                            // Guidの衝突可能性を潰すべく数回リトライする
+                            int count = 0;
+                            while (createdAlbam == null)
                             {
-                                AlbamEntry createdAlbam = null;
-
-                                // Guidの衝突可能性を潰すべく数回リトライする
-                                int count = 0;
-                                while (createdAlbam == null)
+                                if (++count >= 5)
                                 {
-                                    if (++count >= 5)
-                                    {
-                                        throw new InvalidOperationException();
-                                    }
-
-                                    try
-                                    {
-                                        createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), albamName);
-                                    }
-                                    catch { }
+                                    throw new InvalidOperationException();
                                 }
 
-                                _albamRepository.AddAlbamItem(createdAlbam._id, albamItem.Path, albamItem.Name);
+                                try
+                                {
+                                    createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), albamName);
+                                }
+                                catch { }
                             }
-                            isCompleted = true;
+
+                            _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name);
                         }
-                    }
-                    else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
-                    {
-                        var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
-                        var oldSelectedAlbamsHash = existed.Select(x=> x._id).ToHashSet();
-
-                        var removedAlbamIds = oldSelectedAlbamsHash.Except(selectedAlbamsHash);
-                        var addedAlbamIds = selectedAlbamsHash.Except(oldSelectedAlbamsHash);
-
-                        Debug.WriteLine($"prev selected albams : {string.Join(',', existed.Select(x => x.Name))}");
-                        Debug.WriteLine($"selected albams : {string.Join(',', selectedAlbams.Select(x => (x as AlbamEntry).Name))}");
-
-                        foreach (var albamId in removedAlbamIds)
-                        {
-                            _albamRepository.DeleteAlbamItem(albamId, albamItem.Path);
-                        }
-
-                        foreach (var albamId in addedAlbamIds)
-                        {
-                            _albamRepository.AddAlbamItem(albamId, albamItem.Path, albamItem.Name);
-                        }
-
                         isCompleted = true;
                     }
-                    else
+                }
+                else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
+                {
+                    var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
+                    var oldSelectedAlbamsHash = existed.Select(x => x._id).ToHashSet();
+
+                    var removedAlbamIds = oldSelectedAlbamsHash.Except(selectedAlbamsHash);
+                    var addedAlbamIds = selectedAlbamsHash.Except(oldSelectedAlbamsHash);
+
+                    Debug.WriteLine($"prev selected albams : {string.Join(',', existed.Select(x => x.Name))}");
+                    Debug.WriteLine($"selected albams : {string.Join(',', selectedAlbams.Select(x => (x as AlbamEntry).Name))}");
+
+                    foreach (var albamId in removedAlbamIds)
                     {
-                        isCompleted = true;
+                        _albamRepository.DeleteAlbamItem(albamId, imageSource.Path);
                     }
 
+                    foreach (var albamId in addedAlbamIds)
+                    {
+                        _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name);
+                    }
+
+                    isCompleted = true;
+                }
+                else
+                {
+                    isCompleted = true;
+                }
+
+            }
+        }
+
+        protected override async void Execute(IEnumerable<IImageSource> imageSources)
+        {
+            var albamSelectDialog = new Views.Dialogs.SelectItemDialog("ChoiceTargetAlbam".Translate(), "Apply".Translate());
+
+            var albams = _albamRepository.GetAlbams();
+            var existed = albams.Where(x => imageSources.Any(image => _albamRepository.IsExistAlbamItem(x._id, image.Path))).ToList();
+            albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
+            albamSelectDialog.ItemsSource = albams;
+            albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
+            albamSelectDialog.SetSelectedItems(existed);
+
+            bool isCompleted = false;
+            while (isCompleted is false)
+            {
+                await albamSelectDialog.ShowAsync();
+
+                if (albamSelectDialog.IsOptionRequested)
+                {
+                    var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
+                    if (isSuccess && string.IsNullOrWhiteSpace(albamName) is false)
+                    {
+                        if (string.IsNullOrEmpty(albamName) is false)
+                        {
+                            AlbamEntry createdAlbam = null;
+
+                            // Guidの衝突可能性を潰すべく数回リトライする
+                            int count = 0;
+                            while (createdAlbam == null)
+                            {
+                                if (++count >= 5)
+                                {
+                                    throw new InvalidOperationException();
+                                }
+
+                                try
+                                {
+                                    createdAlbam = _albamRepository.CreateAlbam(Guid.NewGuid(), albamName);
+                                }
+                                catch { }
+                            }
+
+                            foreach (var imageSource in imageSources)
+                            {
+                                _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name);
+                            }
+                        }
+                        isCompleted = true;
+                    }
+                }
+                else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
+                {
+                    var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
+                    var oldSelectedAlbamsHash = existed.Select(x => x._id).ToHashSet();
+
+                    var removedAlbamIds = oldSelectedAlbamsHash.Except(selectedAlbamsHash);
+                    var addedAlbamIds = selectedAlbamsHash.Except(oldSelectedAlbamsHash);
+
+                    Debug.WriteLine($"prev selected albams : {string.Join(',', existed.Select(x => x.Name))}");
+                    Debug.WriteLine($"selected albams : {string.Join(',', selectedAlbams.Select(x => (x as AlbamEntry).Name))}");
+
+                    foreach (var albamId in removedAlbamIds)
+                    {
+                        foreach (var imageSource in imageSources)
+                        {
+                            _albamRepository.DeleteAlbamItem(albamId, imageSource.Path);
+                        }
+                    }
+
+                    foreach (var albamId in addedAlbamIds)
+                    {
+                        foreach (var imageSource in imageSources)
+                        {
+                            _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name);
+                        }
+                    }
+
+                    isCompleted = true;
+                }
+                else
+                {
+                    isCompleted = true;
                 }
             }
         }

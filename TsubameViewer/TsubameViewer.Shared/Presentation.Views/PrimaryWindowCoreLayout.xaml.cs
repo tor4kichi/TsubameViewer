@@ -67,11 +67,12 @@ namespace TsubameViewer.Presentation.Views
             InitializeNavigation();
             InitializeThemeChangeRequest();
             InitializeSearchBox();
+            InitializeSelection();
 
             _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
             InitializeBusyWorkUI();
-        }
+                    }
 
 
 
@@ -189,6 +190,7 @@ namespace TsubameViewer.Presentation.Views
             if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
             var frame = (Frame)sender;
+
 
             // アプリメニュー表示の切替
             MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -566,12 +568,18 @@ namespace TsubameViewer.Presentation.Views
                 return false;
             }
 
+            if (IsPreventSystemBackNavigation) { return false; }
+
             var currentPageType = ContentFrame.Content?.GetType();
             if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
             {
                 Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
                 return false;
             }
+
+            var data = new BackNavigationRequestingMessageData();
+            _messenger.Send<BackNavigationRequestingMessage>(new(data));            
+            if (data.IsHandled) { return false; }
 
             return _navigationService.CanGoBack();
         }
@@ -914,6 +922,20 @@ namespace TsubameViewer.Presentation.Views
             {
                 defferal.Complete();
             }
+        }
+
+        #endregion
+
+
+        #region Selection
+
+
+        void InitializeSelection()
+        {
+            _messenger.Register<MenuDisplayMessage>(this, (r, m) => 
+            {
+                MyNavigtionView.IsPaneVisible = m.Value == Visibility.Visible;
+            });
         }
 
         #endregion

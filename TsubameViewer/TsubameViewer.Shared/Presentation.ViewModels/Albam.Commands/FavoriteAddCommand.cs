@@ -9,7 +9,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public sealed class FavoriteAddCommand : DelegateCommandBase
+    public sealed class FavoriteAddCommand : ImageSourceCommandBase
     {
         private readonly FavoriteAlbam _favoriteAlbam;
 
@@ -17,27 +17,10 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         {
             _favoriteAlbam = favoriteAlbam;
         }
-        protected override bool CanExecute(object parameter)
+        
+        protected override void Execute(IImageSource imageSource)
         {
-            if (parameter is StorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
-
-            return parameter is IImageSource;
-        }
-
-        protected override void Execute(object parameter)
-        {
-            if (parameter is StorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
-
-            if (parameter is IImageSource imageSource)
-            {
-                _favoriteAlbam.AddFavoriteItem(imageSource.Path, imageSource.Name);
-            }
+            _favoriteAlbam.AddFavoriteItem(imageSource.Path, imageSource.Name);
         }
     }
 }

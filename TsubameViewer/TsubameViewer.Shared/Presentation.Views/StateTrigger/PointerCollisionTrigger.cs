@@ -4,20 +4,13 @@ using System.Diagnostics;
 using System.Text;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Input;
 using WindowsStateTriggers;
 
 namespace TsubameViewer.Presentation.Views.StateTrigger
 {
-    public sealed class PointerCollisionTrigger : StateTriggerBase, ITriggerValue, IDisposable
+    public sealed class PointerCollisionTrigger : StateTriggerBase, ITriggerValue
     {
-        public void Dispose()
-        {
-            if (Target is not null and var target)
-            {
-                target.PointerMoved -= Item_PointerMoved;
-            }
-        }
-
         public UIElement Target
         {
             get { return (UIElement)GetValue(TargetProperty); }
@@ -30,10 +23,19 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
 
         private static void OnTargetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (e.NewValue is UIElement item)
+            if (e.NewValue is FrameworkElement item)
             {
-                item.PointerMoved += ((PointerCollisionTrigger)d).Item_PointerMoved;
+                var _this = d as PointerCollisionTrigger;
+                item.PointerMoved += _this.Item_PointerMoved;
+                item.Unloaded += _this.Item_Unloaded;
             }
+        }
+
+        private void Item_Unloaded(object sender, RoutedEventArgs e)
+        {
+            var item = sender as FrameworkElement;
+            item.PointerMoved -= Item_PointerMoved;
+            item.Unloaded -= Item_Unloaded;
         }
 
         private void Item_PointerMoved(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)

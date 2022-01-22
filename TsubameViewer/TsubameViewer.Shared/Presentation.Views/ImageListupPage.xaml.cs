@@ -28,6 +28,13 @@ using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Threading;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Ioc;
+using I18NPortable;
+using System.Collections.ObjectModel;
+using Reactive.Bindings;
+using Windows.UI.Core;
+using Reactive.Bindings.Extensions;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -38,6 +45,8 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageListupPage : Page
     {
+        private readonly IMessenger _messenger;
+
         public ImageListupPage()
         {
             InitializeComponent();
@@ -46,6 +55,7 @@ namespace TsubameViewer.Presentation.Views
             Unloaded += FolderListupPage_Unloaded;
 
             DataContextChanged += OnDataContextChanged;
+            _messenger = App.Current.Container.Resolve<IMessenger>();
         }
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -103,6 +113,8 @@ namespace TsubameViewer.Presentation.Views
                     _vm.ClearLastIntractItem();
                 }
             }
+
+            ClearSelection();
 
             base.OnNavigatingFrom(e);
         }
@@ -173,6 +185,8 @@ namespace TsubameViewer.Presentation.Views
 
             UIElement lastIntractItem = null;
             var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
+
+            if (currentItemsRepeater == null) { return null; }
 
             foreach (int count in Enumerable.Range(0, 10))
             {
@@ -286,9 +300,13 @@ namespace TsubameViewer.Presentation.Views
         {
             var item = sender as FrameworkElement;
 
-            _zoomUpAnimation
-                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Start(item);
+            var image = item.FindChild<Image>();
+            if (image != null)
+            {
+                _zoomUpAnimation
+                    .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                    .Start(image);
+            }
 
             if (item.DataContext is StorageItemViewModel itemVM)
             {
@@ -299,14 +317,15 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        
+
         private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
 
+            var image = item.FindChild<Image>();
             _zoomDownAnimation
-                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Start(item);
+                .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                .Start(image);
 
             if (item.DataContext is StorageItemViewModel itemVM)
             {
@@ -315,7 +334,6 @@ namespace TsubameViewer.Presentation.Views
                     itemVM.Image.Stop();
                 }
             }
-            
         }
 
         RelayCommand<TappedRoutedEventArgs> _PrepareConnectedAnimationWithTappedItemCommand;
@@ -347,6 +365,147 @@ namespace TsubameViewer.Presentation.Views
                 anim.Configuration = new BasicConnectedAnimationConfiguration();                
             }            
         });
+
+        private int lastSelectedItemIndex = -1;
+        private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
+        {
+            if (SelectedItemsCount > 0
+                || Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) != CoreVirtualKeyStates.None
+                )
+            {
+                if ((sender as FrameworkElement).DataContext is StorageItemViewModel itemVM)
+                {
+                    itemVM.IsSelected = !itemVM.IsSelected;
+                    ItemSelectedProcess(itemVM);
+                }
+
+                return;
+            }
+
+            var image = (sender as UIElement).FindDescendantOrSelf<Image>();
+            if (_vm.OpenImageViewerCommand is ICommand command
+                && command.CanExecute(image.DataContext)
+                )
+            {
+                if (image?.Source != null)
+                {
+                    SaveScrollStatus(sender as UIElement);
+
+                    var anim = ConnectedAnimationService.GetForCurrentView()
+                        .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                    anim.Configuration = new BasicConnectedAnimationConfiguration();
+                }
+
+                command.Execute(image.DataContext);
+            }
+        }
+
+        ReactivePropertySlim<List<StorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>());
+
+
+        private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+
+            if (sender is ToggleButton toggleButton)
+            {
+                ItemSelectedProcess(toggleButton.DataContext as StorageItemViewModel);
+            }
+        }
+
+        private void ItemSelectedProcess(StorageItemViewModel itemVM)
+        {
+            var prevSelectedItemIndex = lastSelectedItemIndex;
+            var lastSelectedItemsCount = SelectedItemsCount;
+            //if (prevSelectedItemIndex >= 0 
+            //    && Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Shift) != CoreVirtualKeyStates.None
+            //    )
+            //{
+
+            //}
+            //else
+            {
+                if (itemVM.IsSelected)
+                {
+                    _selectedItems.Value.Add(itemVM);
+                    _selectedItems.ForceNotify();
+                }
+                else
+                {
+                    _selectedItems.Value.Remove(itemVM);
+                    _selectedItems.ForceNotify();
+                }
+                SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+            }
+
+            lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
+
+            var selectedItemsCount = SelectedItemsCount;
+            SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(selectedItemsCount);
+            if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
+            {
+                _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+                _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
+                {
+                    m.Value.IsHandled = true;
+                    ClearSelection();
+                });
+            }
+            else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
+            {
+                _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+                _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            }
+
+            _vm.Selection.IsSelectionModeEnabled = selectedItemsCount > 0;                  
+        }
+
+        public int SelectedItemsCount
+        {
+            get { return (int)GetValue(SelectedItemsCountProperty); }
+            set { SetValue(SelectedItemsCountProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedItemsCount.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedItemsCountProperty =
+            DependencyProperty.Register("SelectedItemsCount", typeof(int), typeof(ImageListupPage), new PropertyMetadata(0));
+
+
+        public void ClearSelection()
+        {
+            foreach (var itemVM in _selectedItems.Value)
+            {
+                itemVM.IsSelected = false;
+            }
+
+            _selectedItems.Value.Clear();
+            _selectedItems.ForceNotify();
+            SelectedItemsCount = 0;
+            _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+            _vm.Selection.IsSelectionModeEnabled = false;
+            lastSelectedItemIndex = -1;
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        }
+
+        private RelayCommand<object> _SelectionChangeCommand;
+        public RelayCommand<object> SelectionChangeCommand => _SelectionChangeCommand ??= new RelayCommand<object>(item =>
+        {
+            var itemVM = item as StorageItemViewModel;
+            itemVM.IsSelected = !itemVM.IsSelected;
+            ItemSelectedProcess(item as StorageItemViewModel);
+        });
+
+        public string SelectedCountDisplayText
+        {
+            get { return (string)GetValue(SelectedCountDisplayTextProperty); }
+            set { SetValue(SelectedCountDisplayTextProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedCountDisplayText.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedCountDisplayTextProperty =
+            DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
+
+
     }
 
 

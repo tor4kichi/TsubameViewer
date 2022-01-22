@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -28,6 +29,7 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services.UWP;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
@@ -40,8 +42,20 @@ using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+
+    public sealed class SelectionContext : ObservableObject
+    {
+        private bool _isSelectionModeEnabled;
+        public bool IsSelectionModeEnabled
+        {
+            get => _isSelectionModeEnabled;
+            set => SetProperty(ref _isSelectionModeEnabled, value);
+        }
+    }
+
     public sealed class ImageListupPageViewModel : ViewModelBase
     {
+
         private readonly IMessenger _messenger;
         private readonly IScheduler _scheduler;
         private readonly BookmarkManager _bookmarkManager;
@@ -69,6 +83,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
         public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
         public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+        public AlbamItemEditCommand AlbamItemEditCommand { get; }
+        public FavoriteAddCommand FavoriteAddCommand { get; }
+        public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
 
@@ -95,7 +112,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-
+        public SelectionContext Selection { get; } = new SelectionContext();
 
         public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
@@ -182,7 +199,9 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileAddCommand secondaryTileAddCommand,
             SecondaryTileRemoveCommand secondaryTileRemoveCommand,
             ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
+            AlbamItemEditCommand albamItemEditCommand,
+            FavoriteAddCommand favoriteAddCommand
             )
         {
             _messenger = messenger;
@@ -205,6 +224,8 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
             OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
+            AlbamItemEditCommand = albamItemEditCommand;
+            FavoriteAddCommand = favoriteAddCommand;
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
@@ -570,7 +591,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    ImageFileItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager));
+                    ImageFileItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager, Selection));
                 }
                 Debug.WriteLine($"after added : {ImageFileItems.Count}");
             }

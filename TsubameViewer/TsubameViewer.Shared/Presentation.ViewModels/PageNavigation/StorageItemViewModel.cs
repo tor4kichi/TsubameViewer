@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.Albam;
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
+    using static TsubameViewer.Presentation.ViewModels.ImageListupPageViewModel;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
     public sealed class StorageItemViewModel : BindableBase, IDisposable
@@ -101,7 +102,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         private readonly BookmarkManager _bookmarkManager;
 
         public IImageSource Item { get; }
-        
+        public SelectionContext Selection { get; }
         public string Name { get; }
 
         
@@ -124,6 +125,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
 
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
 
         public StorageItemTypes Type { get; }
 
@@ -145,11 +152,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             Type = storageItemTypes;
         }
 
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, SelectionContext selectionContext = null)
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
-
+            Selection = selectionContext;            
             Item = item;
             DateCreated = Item.DateCreated;
             
