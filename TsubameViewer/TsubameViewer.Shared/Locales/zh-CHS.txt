@@ -104,7 +104,7 @@ SetThumbnailImage = 设置为缩略图
 #### ImageListupPage
 ImageSelection_SelectedCount = 选择 {0} 项
 SelectItems_ActionAs = 选择物品 ...
-
+StartMultiSelection = 多项选择
 
 
 #### ImageViewerPage

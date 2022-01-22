@@ -58,7 +58,8 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
-            OpenPageCommand openPageCommand
+            OpenPageCommand openPageCommand,
+            StartSelectionCommand startSelectionCommand
             )
         {
             MenuItems = new List<object>
@@ -77,8 +78,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand.OpenAfterChoice = true;
             RefreshNavigationCommand = refreshNavigationCommand;
             OpenPageCommand = openPageCommand;
-
-
+            StartSelectionCommand = startSelectionCommand;
             UpdateAutoSuggestCommand = new ReactiveCommand<string>();
 
             UpdateAutoSuggestCommand
@@ -122,7 +122,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }
         public OpenPageCommand OpenPageCommand { get; }
-
+        public StartSelectionCommand StartSelectionCommand { get; }
 
         public RelayCommand SendFeedbackWithMashmallowCommand { get; } = 
             new RelayCommand(async () => 

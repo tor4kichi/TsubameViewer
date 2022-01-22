@@ -102,6 +102,8 @@ namespace TsubameViewer.Presentation.Views
       
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            _messenger.Unregister<StartMultiSelectionMessage>(this);
+
             _navigationCts?.Cancel();
             _navigationCts?.Dispose();
             _navigationCts = null;
@@ -123,6 +125,11 @@ namespace TsubameViewer.Presentation.Views
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+
+            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
+            {
+                StartSelection();
+            });
 
             _navigationCts?.Cancel();
             _navigationCts?.Dispose();
@@ -448,21 +455,11 @@ namespace TsubameViewer.Presentation.Views
 
             if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
             {
-                _selectedItems.Value = _vm.Selection.SelectedItems;
-                _vm.Selection.StartSelection();
-                _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
-                _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
-                {
-                    m.Value.IsHandled = true;
-                    ClearSelection();
-                });
+                StartSelection();
             }
             else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
             {
-                _vm.Selection.EndSelection();
-                lastSelectedItemIndex = -1;
-                _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
-                _messenger.Unregister<BackNavigationRequestingMessage>(this);
+                ClearSelection();
             }
         }
 
@@ -477,14 +474,46 @@ namespace TsubameViewer.Presentation.Views
             DependencyProperty.Register("SelectedItemsCount", typeof(int), typeof(ImageListupPage), new PropertyMetadata(0));
 
 
+
+
+        public bool IsSelectionModeEnabled
+        {
+            get { return (bool)GetValue(IsSelectionModeEnabledProperty); }
+            set { SetValue(IsSelectionModeEnabledProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsSelectionModeEnabled.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsSelectionModeEnabledProperty =
+            DependencyProperty.Register("IsSelectionModeEnabled", typeof(bool), typeof(ImageListupPage), new PropertyMetadata(false));
+
+
+
+        public void StartSelection()
+        {
+            IsSelectionModeEnabled = true;
+            _selectedItems.Value = _vm.Selection.SelectedItems;
+            _vm.Selection.StartSelection();
+            _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+            if (_messenger.IsRegistered<BackNavigationRequestingMessage>(this) is false)
+            {
+                _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+                {
+                    m.Value.IsHandled = true;
+                    ClearSelection();
+                });
+            }
+        }
+
         public void ClearSelection()
         {
+            IsSelectionModeEnabled = false;
             foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<StorageItemViewModel>())
             {
                 itemVM.IsSelected = false;
             }
 
             _selectedItems.Value = null;
+            SelectedCountDisplayText = String.Empty;
             SelectedItemsCount = 0;
             _vm.Selection.EndSelection();
             lastSelectedItemIndex = -1;

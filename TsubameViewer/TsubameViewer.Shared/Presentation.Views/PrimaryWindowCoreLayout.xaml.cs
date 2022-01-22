@@ -221,6 +221,14 @@ namespace TsubameViewer.Presentation.Views
                 MyNavigtionView.SelectedItem = null;
             }
 
+            if (e.SourcePageType == typeof(ImageListupPage))
+            {
+                SelectionStartButton.IsEnabled = true;
+            }
+            else
+            {
+                SelectionStartButton.IsEnabled = false;
+            }
 
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);

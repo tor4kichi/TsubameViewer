@@ -741,7 +741,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:CompareStateTrigger Value="{x:Bind SelectedItemsCount, Mode=OneWay}" CompareTo="0" Comparison="GreaterThan" />
+            <StateTrigger IsActive="{x:Bind IsSelectionModeEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SelectActionsContainer.Visibility" Value="Visible" />
