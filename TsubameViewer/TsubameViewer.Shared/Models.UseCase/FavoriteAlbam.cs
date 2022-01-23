@@ -36,6 +36,11 @@ namespace TsubameViewer.Models.UseCase
 
         public AlbamItemEntry AddFavoriteItem(string path, string name)
         {
+            if (_albamRepository.IsExistAlbamItem(FavoriteAlbamId, path))
+            {
+                return null;
+            }
+
             return _albamRepository.AddAlbamItem(FavoriteAlbamId, path, name);
         }
 
