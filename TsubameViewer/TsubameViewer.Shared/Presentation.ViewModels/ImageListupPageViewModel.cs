@@ -28,6 +28,7 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -98,6 +99,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
         public AlbamItemEditCommand AlbamItemEditCommand { get; }
         public FavoriteAddCommand FavoriteAddCommand { get; }
+        public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
         public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
         public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
 
@@ -163,7 +165,14 @@ namespace TsubameViewer.Presentation.ViewModels
             get { return _CurrentFolderItem; }
             set { SetProperty(ref _CurrentFolderItem, value); }
         }
-        
+
+        private bool _IsFavoriteAlbam;
+        public bool IsFavoriteAlbam
+        {
+            get => _IsFavoriteAlbam;
+            set => SetProperty(ref _IsFavoriteAlbam, value);
+        }
+
         private string _currentArchiveFolderName;
 
         private string _DisplayCurrentArchiveFolderName;
@@ -214,7 +223,9 @@ namespace TsubameViewer.Presentation.ViewModels
             ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
             OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
             AlbamItemEditCommand albamItemEditCommand,
-            FavoriteAddCommand favoriteAddCommand
+            AlbamItemRemoveCommand albamItemRemoveCommand,
+            FavoriteAddCommand favoriteAddCommand,
+            FavoriteRemoveCommand favoriteRemoveCommand
             )
         {
             _messenger = messenger;
@@ -238,7 +249,9 @@ namespace TsubameViewer.Presentation.ViewModels
             ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
             OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
             AlbamItemEditCommand = albamItemEditCommand;
+            AlbamItemRemoveCommand = albamItemRemoveCommand;
             FavoriteAddCommand = favoriteAddCommand;
+            FavoriteRemoveCommand = favoriteRemoveCommand;
             ImageFileItems = new ObservableCollection<StorageItemViewModel>();
 
             FileItemsView = new AdvancedCollectionView(ImageFileItems);
@@ -518,6 +531,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer = null;
             ImageFileItems.Clear();
 
+            _IsFavoriteAlbam = false;
             _imageCollectionContext = null;
             _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
@@ -566,11 +580,14 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
                 CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _sourceStorageItemsRepository, _bookmarkManager);
+                _IsFavoriteAlbam = albam._id == FavoriteAlbam.FavoriteAlbamId;
             }
             else
             {
                 throw new NotSupportedException();
             }
+
+            RaisePropertyChanged(nameof(IsFavoriteAlbam));
 
             _isCompleteEnumeration = true;
 

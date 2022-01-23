@@ -45,7 +45,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
             bool isCompleted = false;
             while (isCompleted is false)
             {
-                await albamSelectDialog.ShowAsync();
+                var result = await albamSelectDialog.ShowAsync();
 
                 if (albamSelectDialog.IsOptionRequested)
                 {
@@ -77,7 +77,8 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                         isCompleted = true;
                     }
                 }
-                else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
+                else if (result == Windows.UI.Xaml.Controls.ContentDialogResult.Primary 
+                    && albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
                 {
                     var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
                     var oldSelectedAlbamsHash = existed.Select(x => x._id).ToHashSet();
@@ -122,8 +123,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
             bool isCompleted = false;
             while (isCompleted is false)
             {
-                await albamSelectDialog.ShowAsync();
-
+                var result = await albamSelectDialog.ShowAsync();
                 if (albamSelectDialog.IsOptionRequested)
                 {
                     var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
@@ -157,7 +157,8 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                         isCompleted = true;
                     }
                 }
-                else if (albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
+                else if (result == Windows.UI.Xaml.Controls.ContentDialogResult.Primary 
+                    && albamSelectDialog.GetSelectedItems() is not null and var selectedAlbams)
                 {
                     var selectedAlbamsHash = selectedAlbams.Cast<AlbamEntry>().Select(x => x._id).ToHashSet();
                     var oldSelectedAlbamsHash = existed.Select(x => x._id).ToHashSet();

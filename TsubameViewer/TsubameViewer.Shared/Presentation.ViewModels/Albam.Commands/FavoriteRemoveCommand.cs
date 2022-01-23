@@ -1,6 +1,7 @@
 ﻿using Prism.Commands;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
@@ -21,6 +22,11 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         protected override void Execute(IImageSource imageSource)
         {
             _favoriteAlbam.DeleteFavoriteItem(imageSource.Path);
+        }
+
+        protected override void Execute(IEnumerable<IImageSource> imageSources)
+        {
+            base.Execute(imageSources.ToArray());
         }
     }
 }

@@ -13,9 +13,15 @@ using Windows.System;
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenWithExplorerCommand : ImageSourceCommandBase
-    {   
+    {
+        protected override bool CanExecute(IImageSource imageSource)
+        {
+            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
+        }
+
         protected override async void Execute(IImageSource imageSource)
         {
+            imageSource = FlattenAlbamItemInnerImageSource(imageSource);
             if (imageSource is StorageItemImageSource)
             {
                 if (imageSource.StorageItem is StorageFolder folder)
@@ -28,30 +34,22 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
                 }
             }
-            else if (imageSource is AlbamItemImageSource albamItemImageSource)
-            {
-                await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(albamItemImageSource.Path), new FolderLauncherOptions() { ItemsToSelect = { albamItemImageSource.StorageItem } });
-            }
-        }
-
-        protected override bool CanExecute(IImageSource imageSource)
-        {
-            return imageSource is StorageItemImageSource;
         }
 
         protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
         {
             var sample = imageSources.First();
             var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
-            return imageSources.All(x => x is StorageItemImageSource item && x.StorageItem is StorageFile && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
+            return FlattenAlbamItemInnerImageSource(imageSources).All(x => x is StorageItemImageSource item && x.StorageItem is StorageFile && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
         }
 
         protected override async void Execute(IEnumerable<IImageSource> imageSources)
         {
-            var sample = imageSources.First();
+            var flattenImageSources = FlattenAlbamItemInnerImageSource(imageSources);
+            var sample = flattenImageSources.First();
             var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
             var options = new FolderLauncherOptions();
-            foreach (var storageItem in imageSources.Select(x => x.StorageItem))
+            foreach (var storageItem in flattenImageSources.Select(x => x.StorageItem))
             {
                 options.ItemsToSelect.Add(storageItem);
             }

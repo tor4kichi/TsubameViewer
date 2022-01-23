@@ -37,7 +37,7 @@ namespace TsubameViewer.Presentation.Services
                 albamName
                 );
 
-            await textInputDialog.ShowAsync();
+            await textInputDialog.ShowAsync();            
             if (textInputDialog.GetInputText() is not null and var newAlbamName && string.IsNullOrWhiteSpace(newAlbamName) is false)
             {
                 return (true, newAlbamName);

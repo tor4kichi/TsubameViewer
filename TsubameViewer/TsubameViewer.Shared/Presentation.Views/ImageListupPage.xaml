@@ -401,9 +401,11 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton Icon="Add" Label="お気に入りに追加" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton Icon="Add" Label="アルバムに追加" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton Icon="Add" Label="エクスプローラーで表示" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Icon="Add" Label="お気に入りから除去" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" />
+            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Icon="Add" Label="アルバムから削除" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed"  />
+            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Icon="Add" Label="お気に入りに追加" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_AlbamAddButton" Icon="Add" Label="アルバムに追加" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Icon="Add" Label="エクスプローラーで表示" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
             <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
               <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}" />
             </AppBarElementContainer>
@@ -751,6 +753,29 @@
             <Setter Target="ReturnSourceFolderPageButton.IsEnabled" Value="False" />
             <Setter Target="ChangeViewtoFolderListupPageButton.IsEnabled" Value="False" />
             <Setter Target="OptionalActionsButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- 表示元の種類による選択アクションの表示切り替え-->
+      <VisualStateGroup>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding IsFavoriteAlbam}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SelectAction_FavoriteRemoveButton.Visibility" Value="Visible" />
+            <Setter Target="SelectAction_FavoriteAddButton.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="Albam" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SelectAction_AlbamRemoveButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

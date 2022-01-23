@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
@@ -84,6 +85,16 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 Execute(image);
             }
+        }
+
+        protected IImageSource FlattenAlbamItemInnerImageSource(IImageSource imageSource)
+        {
+            return imageSource is AlbamItemImageSource albam ? albam.InnerImageSource : imageSource;
+        }
+
+        protected IEnumerable<IImageSource> FlattenAlbamItemInnerImageSource(IEnumerable<IImageSource> imageSources)
+        {
+            return imageSources.Select(x => x is AlbamItemImageSource albam ? albam.InnerImageSource : x);
         }
     }
 }

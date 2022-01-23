@@ -35,6 +35,7 @@ using System.Collections.ObjectModel;
 using Reactive.Bindings;
 using Windows.UI.Core;
 using Reactive.Bindings.Extensions;
+using TsubameViewer.Models.Domain.Albam;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -502,6 +503,32 @@ namespace TsubameViewer.Presentation.Views
                     ClearSelection();
                 });
             }
+            
+            if (_vm.CurrentFolderItem?.Type == Models.Domain.StorageItemTypes.Albam
+                && _messenger.IsRegistered<Models.Domain.Albam.AlbamItemRemovedMessage>(this) is false)
+            {
+                _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) => 
+                {
+                    var (albamId, path) = m.Value;
+                    List<StorageItemViewModel> removeTargets = new();
+                    foreach (var itemVM in _vm.Selection.SelectedItems)
+                    {
+                        if (itemVM.Item is AlbamItemImageSource albamItem)
+                        {
+                            if (albamItem.AlbamId == albamId && albamItem.Path == path)
+                            {
+                                removeTargets.Add(itemVM);
+                            }
+                        }
+                    }
+                    
+                    foreach (var itemVM in removeTargets)
+                    {
+                        itemVM.IsSelected = false;
+                        ItemSelectedProcess(itemVM);
+                    }
+                });
+            }
         }
 
         public void ClearSelection()
@@ -519,6 +546,7 @@ namespace TsubameViewer.Presentation.Views
             lastSelectedItemIndex = -1;
             _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            _messenger.Unregister<Models.Domain.Albam.AlbamItemRemovedMessage>(this);
         }
 
         private RelayCommand<object> _SelectionChangeCommand;

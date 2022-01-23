@@ -15,15 +15,15 @@ namespace TsubameViewer.Models.Domain.Albam
     public sealed class AlbamItemImageSource : IImageSource
     {
         private readonly AlbamItemEntry _albamItem;
-        private readonly IImageSource _imageSource;
+        public IImageSource InnerImageSource { get; }
 
         // 画像ソースの遅延解決
         public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource)
         {
             _albamItem = albamItem;
-            _imageSource = imageSource;
+            InnerImageSource = imageSource;
 
-            if (_imageSource.StorageItem is StorageFile file)
+            if (InnerImageSource.StorageItem is StorageFile file)
             {
                 if (file.FileType == SupportedFileTypesHelper.PdfFileType)
                 {
@@ -44,7 +44,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public Guid AlbamId => _albamItem.AlbamId;
 
-        public IStorageItem StorageItem => _imageSource.StorageItem;
+        public IStorageItem StorageItem => InnerImageSource.StorageItem;
 
         public string Name { get; }
 
@@ -54,17 +54,17 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {
-            return _imageSource.GetImageStreamAsync(ct);
+            return InnerImageSource.GetImageStreamAsync(ct);
         }
 
         public Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
         {
-            return _imageSource.GetThumbnailImageStreamAsync(ct);
+            return InnerImageSource.GetThumbnailImageStreamAsync(ct);
         }
 
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
-            return _imageSource.GetThumbnailSize();
+            return InnerImageSource.GetThumbnailSize();
         }
 
         public bool Equals(IImageSource other)
