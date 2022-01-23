@@ -45,6 +45,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             if (parameter is StorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
+
+                if (itemVM.Type == StorageItemTypes.AddFolder)
+                {
+                    return true;
+                }
+                else if (itemVM.Type == StorageItemTypes.AddAlbam)
+                {
+                    return true;
+                }
             }
 
             return parameter is IImageSource;
@@ -55,6 +64,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             if (parameter is StorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
+
+                if (itemVM.Type == StorageItemTypes.AddFolder)
+                {
+                    ((ICommand)_sourceChoiceCommand).Execute(null);
+                    return;
+                }
+                else if (itemVM.Type == StorageItemTypes.AddAlbam)
+                {
+                    ((ICommand)_albamCreateCommand).Execute(null);
+                    return;
+                }
             }
 
             if (parameter is IImageSource imageSource)
