@@ -401,11 +401,11 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Icon="Add" Label="お気に入りから除去" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" />
-            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Icon="Add" Label="アルバムから削除" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed"  />
-            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Icon="Add" Label="お気に入りに追加" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton x:Name="SelectAction_AlbamAddButton" Icon="Add" Label="アルバムに追加" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Icon="Add" Label="エクスプローラーで表示" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Icon="Add" Label="{i18nExt:Localize Key=RemoveFavoriteImage}" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" />
+            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Icon="Add" Label="{i18nExt:Localize Key=AlbamItemRemove}" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed"  />
+            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Icon="Add" Label="{i18nExt:Localize Key=AddFavoriteImage}" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_AlbamAddButton" Icon="Add" Label="{i18nExt:Localize Key=EditAlbamImage}" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Icon="Add" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
             <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
               <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}" />
             </AppBarElementContainer>
