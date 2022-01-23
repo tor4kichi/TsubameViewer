@@ -10,28 +10,21 @@ using Windows.System;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenWithExternalApplicationCommand : DelegateCommandBase
+    public sealed class OpenWithExternalApplicationCommand : ImageSourceCommandBase
     {
-        protected override bool CanExecute(object parameter)
+        protected override bool CanExecute(IImageSource imageSource)
         {
-            if (parameter is StorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
-
-            return parameter is IImageSource imageSource 
-                && SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource) is not Models.Domain.StorageItemTypes.Folder and not Models.Domain.StorageItemTypes.AddFolder and not Models.Domain.StorageItemTypes.AddAlbam
-                ;
+            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
         }
 
-        protected override void Execute(object parameter)
+        protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
         {
-            if (parameter is StorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
+            return false;
+        }
 
-            if (parameter is IImageSource imageSource)
+        protected override void Execute(IImageSource imageSource)
+        {
+            if (FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource storageItem)
             {
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is Models.Domain.StorageItemTypes.Image

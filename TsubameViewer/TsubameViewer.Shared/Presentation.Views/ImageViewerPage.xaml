@@ -599,8 +599,8 @@
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
                 <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+                <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem x:Name="Page1OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
               </MenuFlyout>
             </muxc:DropDownButton.Flyout>
           </muxc:DropDownButton >
@@ -617,8 +617,8 @@
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
                 <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
               </MenuFlyout>
             </muxc:DropDownButton.Flyout>
           </muxc:DropDownButton>
@@ -949,6 +949,17 @@
             <Setter Target="Page1ThumbnailImageSeparator.Visibility" Value="Collapsed" />
             <Setter Target="Page2SetThubmailImageButton.Visibility" Value="Collapsed" />
             <Setter Target="Page2ThumbnailImageSeparator.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding ItemType}" EqualTo="{x:Bind domainModels:StorageItemTypes.Archive}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1OpenWithExplorerButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page1OpenWithExternalAppButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page2OpenWithExplorerButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page2OpenWithExternalAppButton.Visibility" Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
