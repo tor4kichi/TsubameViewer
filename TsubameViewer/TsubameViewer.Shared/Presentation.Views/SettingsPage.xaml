@@ -57,32 +57,39 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Text="{Binding Source=RecentlyUsedFiles, Converter={StaticResource LocalizeConverter}}" 
+            
+            <uwpControls:Expander>
+              <uwpControls:Expander.Header>
+                <TextBlock Text="{Binding Source=RecentlyUsedFiles, Converter={StaticResource LocalizeConverter}}" 
                        Style="{StaticResource SubtitleTextBlockStyle}"
                        />
+              </uwpControls:Expander.Header>
+              <uwpControls:Expander.Content>
+                <ItemsControl ItemsSource="{x:Bind TempFiles}" IsTabStop="False">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
+                      <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 8">
+                        <uwpControls:DockPanel>
+                          <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
+                          <StackPanel>
+                            <TextBlock Text="{x:Bind FolderName}" />
+                            <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </uwpControls:DockPanel>
 
-            <ItemsControl ItemsSource="{x:Bind TempFiles}" IsTabStop="False">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
-                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 8">
-                    <uwpControls:DockPanel>
-                      <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
-                      <StackPanel>
-                        <TextBlock Text="{x:Bind FolderName}" />
-                        <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </uwpControls:DockPanel>
+                        <DropDownButton.Flyout>
+                          <MenuFlyout Placement="BottomEdgeAlignedRight">
+                            <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
+                          </MenuFlyout>
+                        </DropDownButton.Flyout>
+                      </DropDownButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                    <DropDownButton.Flyout>
-                      <MenuFlyout Placement="BottomEdgeAlignedRight">
-                        <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
-                      </MenuFlyout>
-                    </DropDownButton.Flyout>
-                  </DropDownButton>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
+              </uwpControls:Expander.Content>
+            </uwpControls:Expander>
+            
           </StackPanel>
         </DataTemplate>
 
@@ -150,8 +157,8 @@
       <StackPanel Spacing="16" Visibility="{x:Bind IsVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
         <TextBlock Text="{x:Bind  Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
         <ItemsControl ItemsSource="{x:Bind  Items}"
-                        ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
-                              HorizontalAlignment="Left"
+                      ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
+                      HorizontalAlignment="Stretch"                      
                       IsTabStop="False"
                         >
           <ItemsControl.ItemsPanel>
@@ -198,6 +205,8 @@
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                         IsTabStop="False"
+                        HorizontalAlignment="Left"
+                        MaxWidth="520"
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>

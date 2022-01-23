@@ -90,7 +90,7 @@ namespace TsubameViewer.Presentation.ViewModels
             });
 
             SettingGroups = new[]
-            {
+            {                
                 new SettingsGroupViewModel
                 {
                     Label = "SourceFoldersSettings".Translate(),
@@ -129,7 +129,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
-                        
+
                     }
                 },
             };
