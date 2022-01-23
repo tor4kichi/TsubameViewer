@@ -40,11 +40,11 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
             albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
             albamSelectDialog.ItemsSource = albams;
             albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
-            albamSelectDialog.SetSelectedItems(existed);
-
+            
             bool isCompleted = false;
             while (isCompleted is false)
             {
+                albamSelectDialog.SetSelectedItems(existed);
                 var result = await albamSelectDialog.ShowAsync();
 
                 if (albamSelectDialog.IsOptionRequested)
@@ -118,11 +118,11 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
             albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
             albamSelectDialog.ItemsSource = albams;
             albamSelectDialog.DisplayMemberPath = nameof(AlbamEntry.Name);
-            albamSelectDialog.SetSelectedItems(existed);
-
+            
             bool isCompleted = false;
             while (isCompleted is false)
             {
+                albamSelectDialog.SetSelectedItems(existed);
                 var result = await albamSelectDialog.ShowAsync();
                 if (albamSelectDialog.IsOptionRequested)
                 {
