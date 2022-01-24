@@ -675,37 +675,34 @@ namespace TsubameViewer.Presentation.ViewModels
                 })
                 .AddTo(_navigationDisposables);
 
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    if (_currentDisplayImageSources[0] != null && _currentDisplayImageSources[0].Path == path)
+                    {
+                        Page1Favorite = true;
+                    }
+                    else if (_currentDisplayImageSources[1] != null && _currentDisplayImageSources[1].Path == path)
+                    {
+                        Page2Favorite = true;
+                    }
+                }
+            });
 
             _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) => 
             {
                 var (albamId, path) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
-                    if (_currentDisplayImageSources[0] != null)
+                    if (_currentDisplayImageSources[0] != null && _currentDisplayImageSources[0].Path == path)
                     {
-                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                        Page1Favorite = false;
                     }
-
-                    if (_currentDisplayImageSources[1] != null)
+                    else if (_currentDisplayImageSources[1] != null && _currentDisplayImageSources[1].Path == path)
                     {
-                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
-                    }
-                }
-            });
-
-            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
-            {
-                var (albamId, path) = m.Value;
-                if (albamId == FavoriteAlbam.FavoriteAlbamId)
-                {
-                    if (_currentDisplayImageSources[0] != null)
-                    {
-                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
-                    }
-
-                    if (_currentDisplayImageSources[1] != null)
-                    {
-                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                        Page2Favorite = false;
                     }
                 }
             });

@@ -270,6 +270,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void RestoreThumbnailLoadingTask()
         {
+            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+
             if (_isAppearingRequestButLoadingCancelled)
             {
                 if (Image != null)
