@@ -37,6 +37,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     {
         private readonly ILiteDatabase _temporaryDb;
         private readonly ILiteStorage<string> _thumbnailDb;
+        private readonly ILiteCollection<BsonDocument> _thumbnailDbChunkCollection;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
@@ -125,6 +126,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             _temporaryDb = temporaryDb;
             _thumbnailDb = _temporaryDb.FileStorage;
+            _thumbnailDbChunkCollection = _temporaryDb.GetCollection("_chunks");
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
 
@@ -136,29 +138,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private void UploadWithRetry(string itemId, string filename, Stream stream)
         {
-            try
-            {
-                stream.Seek(0, SeekOrigin.Begin);
-                _thumbnailDb.Upload(itemId, filename, stream);
-            }
-            catch (LiteException liteException) when (liteException.Message.StartsWith("Cannot insert duplicate key in unique index '_id'"))
-            {
-                // see@ https://www.litedb.org/docs/filestorage/
-                // FileStorageはトランザクションに対応してないため_chunksの書き込み完了したところまでのデータが残っている可能性がある
-                // さらに_chunksには書き込まれているが_filesには書き込まれていない状況が発生しうることで
-                // _thumbnailDb.Delete(itemId) を実行しても消せないデータが残っているケースがある
-                // _filesに当該Idがない場合は_chunksの削除動作もスキップしているようなので手動で削除してから再試行する
-                var deleteCount = _temporaryDb.GetCollection("_chunks").DeleteMany($"$._id.f = '{itemId}'");
-                if (deleteCount > 0)
-                {
-                    stream.Seek(0, SeekOrigin.Begin);
-                    _thumbnailDb.Upload(itemId, filename, stream);
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            // _thumbnailDb.Deleteで消してからUploadすると、次回起動時に指定IDが削除済みになってしまう動作のため
+            // _thumbnailDb.Delete(itemId);
+
+            // 予め指定IDのデータチャンクを全て削除する
+            // Upload動作内には残ってるチャンクから同一IDのデータを消す動作が入っていないので自前で消す必要がある
+            _thumbnailDbChunkCollection.DeleteMany($"$._id.f = '{itemId}'");
+            stream.Seek(0, SeekOrigin.Begin);
+            _thumbnailDb.Upload(itemId, filename, stream);
 
             stream.Seek(0, SeekOrigin.Begin);
         }
