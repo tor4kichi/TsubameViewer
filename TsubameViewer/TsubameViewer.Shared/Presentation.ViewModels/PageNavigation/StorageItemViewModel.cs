@@ -19,6 +19,7 @@ using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
 using Uno.Disposables;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.UseCase;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
@@ -100,6 +101,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly AlbamRepository _albamRepository;
 
         public IImageSource Item { get; }
         public SelectionContext Selection { get; }
@@ -132,6 +134,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set => SetProperty(ref _isSelected, value);
         }
 
+        private bool _isFavorite;
+        public bool IsFavorite
+        {
+            get => _isFavorite;
+            set => SetProperty(ref _isFavorite, value);
+        }
+
         public StorageItemTypes Type { get; }
 
         private CancellationTokenSource _cts;
@@ -152,10 +161,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             Type = storageItemTypes;
         }
 
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, SelectionContext selectionContext = null)
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, AlbamRepository albamRepository, SelectionContext selectionContext = null)
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
+            _albamRepository = albamRepository;
             Selection = selectionContext;            
             Item = item;
             DateCreated = Item.DateCreated;
@@ -167,6 +177,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
 
             UpdateLastReadPosition();
+            _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
         }
 
         public void ClearImage()

@@ -86,6 +86,8 @@
       <Setter Property="Padding" Value="0" />
 
     </Style>
+
+    <TranslateTransform x:Key="IconOffsetTransform" Y="1" X="1" />
     
     <DataTemplate x:Key="FileItemTemplate_Line" >
       <UserControl x:Name="ItemControl">
@@ -106,14 +108,21 @@
             <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
           </ToolTipService.ToolTip>
 
-          <uwpControls:DockPanel Margin="4 0">
-            <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped"
+          <Grid>
+
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Right">
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
+
+            <uwpControls:DockPanel Margin="4 0">
+              <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped"
                         uwpControls:DockPanel.Dock="Left"
                         />
-            <StackPanel HorizontalAlignment="Stretch" Margin="4 0 0 0">
-              <TextBlock Text="{Binding Name}" TextAlignment="Start" HorizontalAlignment="Stretch" MaxLines="2" TextWrapping="Wrap" FontSize="13" />
-            </StackPanel>
-          </uwpControls:DockPanel>
+              <StackPanel HorizontalAlignment="Stretch" Margin="4 0 0 0">
+                <TextBlock Text="{Binding Name}" TextAlignment="Start" HorizontalAlignment="Stretch" MaxLines="2" TextWrapping="Wrap" FontSize="13" />
+              </StackPanel>
+            </uwpControls:DockPanel>
+          </Grid>
 
           <VisualStateManager.VisualStateGroups>
             <VisualStateGroup>
@@ -128,6 +137,16 @@
                 <VisualState.Setters>
                   <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
                   <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
                 </VisualState.Setters>
               </VisualState>
             </VisualStateGroup>
@@ -163,6 +182,10 @@
                           Visibility="Collapsed" 
                         >
             </ToggleButton>
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
           </Grid>
           
           <VisualStateManager.VisualStateGroups>
@@ -186,6 +209,16 @@
                 <VisualState.Setters>
                   <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
                   <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
                 </VisualState.Setters>
               </VisualState>
             </VisualStateGroup>
@@ -221,7 +254,10 @@
                           Visibility="Collapsed" 
                         >
             </ToggleButton>
-
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
           </Grid>
           
 
@@ -246,6 +282,16 @@
                 <VisualState.Setters>
                   <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
                   <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
                 </VisualState.Setters>
               </VisualState>
             </VisualStateGroup>
@@ -280,7 +326,10 @@
                           Visibility="Collapsed" 
                         >
             </ToggleButton>
-
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
           </Grid>
           
           <VisualStateManager.VisualStateGroups>
@@ -304,6 +353,16 @@
                 <VisualState.Setters>
                   <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
                   <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
                 </VisualState.Setters>
               </VisualState>
             </VisualStateGroup>

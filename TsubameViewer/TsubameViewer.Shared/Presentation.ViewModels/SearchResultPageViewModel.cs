@@ -18,6 +18,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
 using Uno.Extensions;
 using Windows.Storage;
+using TsubameViewer.Models.Domain.Albam;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -26,6 +27,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailManager _thumbnailManager;
 
         public ObservableCollection<StorageItemViewModel> SearchResultItems { get; } = new ObservableCollection<StorageItemViewModel>();
@@ -51,6 +53,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
+            AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             SecondaryTileManager secondaryTileManager,
 
@@ -67,6 +70,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
+            _albamRepository = albamRepository;
             _thumbnailManager = thumbnailManager;
             SecondaryTileManager = secondaryTileManager;
             OpenFolderItemCommand = openFolderItemCommand;
@@ -115,7 +119,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
             var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager);
+            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
