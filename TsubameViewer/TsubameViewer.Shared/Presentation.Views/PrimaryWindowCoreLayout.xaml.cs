@@ -178,8 +178,10 @@ namespace TsubameViewer.Presentation.Views
                 }
             });
 
-            _refreshNavigationEventSubscriber = _viewModel.EventAggregator.GetEvent<RefreshNavigationRequestEvent>()
-                .Subscribe(() => RefreshCommand.Execute(), keepSubscriberReferenceAlive: true);
+            _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
+            {
+                RefreshCommand.Execute();
+            });
 
             // ItemInvoke が動作しないことのワークアラウンドとして選択変更を使用
             MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
@@ -821,8 +823,10 @@ namespace TsubameViewer.Presentation.Views
 
         private void InitializeThemeChangeRequest()
         {
-            _themeChangeRequestEventSubscriber = _viewModel.EventAggregator.GetEvent<ThemeChangeRequestEvent>()
-                .Subscribe(theme => SetTheme(theme), keepSubscriberReferenceAlive: true);
+            _messenger.Register<ThemeChangeRequestMessage>(this, (r, m) => 
+            {
+                SetTheme(m.Value);
+            });
 
             SetTheme(_viewModel.ApplicationSettings.Theme);
         }

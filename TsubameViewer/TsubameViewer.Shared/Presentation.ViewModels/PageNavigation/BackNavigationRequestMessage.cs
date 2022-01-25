@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging.Messages;
-using Prism.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;

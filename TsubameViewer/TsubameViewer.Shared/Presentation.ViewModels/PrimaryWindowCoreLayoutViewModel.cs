@@ -3,7 +3,6 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
-using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -49,7 +48,6 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public PrimaryWindowCoreLayoutViewModel(
-            IEventAggregator eventAggregator,
             IScheduler scheduler,
             IMessenger messenger,
             ApplicationSettings applicationSettings,
@@ -67,7 +65,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
                 new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
             };
-            EventAggregator = eventAggregator;
             _scheduler = scheduler;
             _messenger = messenger;
             ApplicationSettings = applicationSettings;
@@ -115,7 +112,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 }                
             });
 
-        public IEventAggregator EventAggregator { get; }
         public ApplicationSettings ApplicationSettings { get; }
         public RestoreNavigationManager RestoreNavigationManager { get; }
         public SourceStorageItemsRepository SourceStorageItemsRepository { get; }

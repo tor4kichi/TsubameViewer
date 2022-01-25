@@ -3,7 +3,6 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
-using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -37,7 +36,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class SettingsPageViewModel : ViewModelBase, IDisposable
     {
-        private readonly IEventAggregator _eventAggregator;
         private readonly IMessenger _messenger;
         private readonly ApplicationSettings _applicationSettings;
         private readonly FolderListingSettings _folderListingSettings;
@@ -64,7 +62,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string ReportUserEnvString { get; } 
         public SettingsPageViewModel(
-            IEventAggregator eventAggregator,
             IMessenger messenger,
             ApplicationSettings applicationSettings,
             FolderListingSettings folderListingSettings,
@@ -73,7 +70,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ThumbnailManager thumbnailManager
             )
         {
-            _eventAggregator = eventAggregator;
             _messenger = messenger;
             _applicationSettings = applicationSettings;
             _folderListingSettings = folderListingSettings;
@@ -127,7 +123,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
-                        new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
+                        new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
 
                     }
@@ -430,17 +426,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
     {
-        private readonly IEventAggregator _eventAggregator;
+        private readonly IMessenger _messenger;
 
-        public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IEventAggregator eventAggregator)
+        public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IMessenger messenger)
         {
             Label = label;
-            _eventAggregator = eventAggregator;
+            _messenger = messenger;
             SelectedTheme = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Theme);
 
             _themeChangedSubscriber = SelectedTheme.Subscribe(theme => 
             {
-                _eventAggregator.GetEvent<ThemeChangeRequestEvent>().Publish(theme);
+                _messenger.Send<ThemeChangeRequestMessage>(new (theme));
             });
         }
 
