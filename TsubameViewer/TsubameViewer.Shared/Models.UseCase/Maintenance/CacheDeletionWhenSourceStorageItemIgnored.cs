@@ -172,33 +172,40 @@ namespace TsubameViewer.Models.UseCase.Maintenance
 
         async Task DeleteCacheWithDescendantsAsync(string path)
         {
-            var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
-
-            // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
-            if (_storageItemsRepository.IsIgnoredPath(item.Path))
+            try
             {
-                if (item is StorageFolder folder)
-                {
-                    await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
-                    {
-                        Debug.WriteLine($"Delete cache: {deletePath}");
-                        await DeleteCacheAllUnderPathAsync(deletePath);
-                    }
+                var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
 
-                    await DeleteCachePathAsync(folder.Path);
+                // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
+                if (_storageItemsRepository.IsIgnoredPath(item.Path))
+                {
+                    if (item is StorageFolder folder)
+                    {
+                        await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
+                        {
+                            Debug.WriteLine($"Delete cache: {deletePath}");
+                            await DeleteCacheAllUnderPathAsync(deletePath);
+                        }
+
+                        await DeleteCachePathAsync(folder.Path);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Delete cache: {path}");
+                        await DeleteCachePathAsync(path);
+                    }
                 }
                 else
                 {
-                    Debug.WriteLine($"Delete cache: {path}");
-                    await DeleteCachePathAsync(path);
+                    Debug.WriteLine($"Skiped delete cache: {path}");
                 }
-            }
-            else
-            {
-                Debug.WriteLine($"Skiped delete cache: {path}");
-            }
 
-            _storageItemsRepository.RemoveFolder(token);
+                _storageItemsRepository.RemoveFolder(token);
+            }
+            catch (Exception ex)
+            { 
+                
+            }
         }
 
         async Task DeleteCacheAllUnderPathAsync(string path)

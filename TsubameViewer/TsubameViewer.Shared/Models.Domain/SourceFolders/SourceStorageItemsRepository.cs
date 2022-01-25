@@ -470,7 +470,10 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public void AddIgnoreToken(string path)
         {
-            _ignoreStorageItemRepository.CreateItem(new () { Path = path });
+            if (_ignoreStorageItemRepository.IsIgnoredPath(path) is false)
+            {
+                _ignoreStorageItemRepository.CreateItem(new() { Path = path });
+            }
         }
 
         public bool IsIgnoredPath(string path)
