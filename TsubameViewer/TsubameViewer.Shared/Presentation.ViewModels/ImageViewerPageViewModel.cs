@@ -426,6 +426,11 @@ namespace TsubameViewer.Presentation.ViewModels
                             await Task.Delay(100);
                         }
 
+                        if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
+                        {
+                            parsedPageName = Path.GetFileName(itemPath);
+                        }
+
                         Images = default;
                         _CurrentImageIndex = 0;
 

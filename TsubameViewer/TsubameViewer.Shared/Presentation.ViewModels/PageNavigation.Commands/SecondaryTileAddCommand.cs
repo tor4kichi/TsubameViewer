@@ -40,12 +40,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             {
                 if (imageSource is StorageItemImageSource storageItemImageSource)
                 {
-                    var param = StorageItemViewModel.CreatePageParameter(imageSource);
-                    var tileArguments = new SecondaryTileArguments();
-                    if (param.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+                    var tileArguments = new SecondaryTileArguments()
                     {
-                        tileArguments.Path = Uri.UnescapeDataString(path);
-                    }
+                        Path = imageSource.Path,
+                    };
 
                     var result = await _secondaryTileManager.AddSecondaryTile(
                         tileArguments, 
