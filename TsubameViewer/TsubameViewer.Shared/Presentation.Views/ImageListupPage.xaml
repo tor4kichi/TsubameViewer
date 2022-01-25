@@ -89,7 +89,7 @@
 
     <TranslateTransform x:Key="IconOffsetTransform" Y="1" X="1" />
     
-    <DataTemplate x:Key="FileItemTemplate_Line" >
+    <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
 
         <i:Interaction.Behaviors>
@@ -155,7 +155,7 @@
       </UserControl>
     </DataTemplate>
 
-    <DataTemplate x:Key="FileItemTemplate_Small">
+    <DataTemplate x:Key="FileItemTemplate_Small" x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
 
         <i:Interaction.Behaviors>
@@ -228,7 +228,7 @@
       </UserControl>
     </DataTemplate>
 
-    <DataTemplate x:Key="FileItemTemplate_Midium">
+    <DataTemplate x:Key="FileItemTemplate_Midium" x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
 
         <i:Interaction.Behaviors>
@@ -300,7 +300,7 @@
       </UserControl>
     </DataTemplate>
 
-    <DataTemplate x:Key="FileItemTemplate_Large">
+    <DataTemplate x:Key="FileItemTemplate_Large" x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
 
         <i:Interaction.Behaviors>
