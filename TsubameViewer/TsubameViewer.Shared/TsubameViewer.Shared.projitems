@@ -68,6 +68,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\FavoriteAlbam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\SecondaryTileMaintenance.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />

@@ -48,7 +48,7 @@ namespace TsubameViewer.Presentation.Services.UWP
 
             public IEnumerable<string> GetAllTileIdUnderPath(string path)
             {
-                return _collection.Find(x => path.StartsWith(x.Path)).Select(x => x.TiteId);
+                return _collection.Find(x => x.Path.StartsWith(path)).Select(x => x.TiteId);
             }
 
             public bool RemoveTiteId(string path)

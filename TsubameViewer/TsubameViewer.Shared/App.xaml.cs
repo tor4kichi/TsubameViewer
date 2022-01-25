@@ -292,6 +292,8 @@ namespace TsubameViewer
 
             Type[] launchTimeMaintenanceTypes = new[]
             {
+                typeof(SecondaryTileMaintenance),
+
                 // v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、
                 // StorageItem.Path == string.Empty となるためアプリの挙動が壊れてしまっていた問題に対処する
                 typeof(RemoveSourceStorageItemWhenPathIsEmpty),
@@ -303,8 +305,7 @@ namespace TsubameViewer
                 typeof(CacheDeletionWhenSourceStorageItemIgnored),
 
                 // 1.5.1以降に追加したお気に入り用のDB項目の存在を確実化
-                typeof(EnsureFavoriteAlbam),
-
+                typeof(EnsureFavoriteAlbam),                
             };
 
             await Task.Run(async () =>
@@ -410,9 +411,6 @@ namespace TsubameViewer
             Window.Current.Content = Container.Resolve<PrimaryWindowCoreLayout>();
             Window.Current.Activate();
 
-            // セカンダリタイル管理の初期化
-            _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
-                        
             base.OnInitialized();
         }
 
