@@ -231,9 +231,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var id = ToId(path);
 
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-            foreach (var item in _thumbnailDb.Find(id).ToArray())
             {
-                _thumbnailDb.Delete(item.Id);
+                foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(path)).ToArray())
+                {
+                    _thumbnailDb.Delete(item.Id);
+                }
             }
         }
 
