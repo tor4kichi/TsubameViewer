@@ -85,8 +85,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _disposables = disposables;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
-            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null, true);
-
+            
             // アーカイブのフォルダ構造を見つける
             var structure = _archiveFileInnerStructure;
             _KeyToIndex = structure.Items.Select((x, i) => (Key: x, Index: i)).ToImmutableSortedDictionary(x => x.Key, x => x.Index);
@@ -99,6 +98,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             HashSet<int> supportedFileIndexies = new();
             int imagesCount = 0;
+            char? pathDirectorySeparator = null;
+            Dictionary<string, int> fileCountByDirectory = new();
             foreach (var index in structure.FileIndexies)
             {
                 var key = structure.Items[index];
@@ -108,15 +109,40 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
                     if (DirectoryPathHelper.GetDirectoryDepth(key) >= 1)
                     {
-                        var dicrectoryName = Path.GetDirectoryName(key);
-                        if (directories.Contains(dicrectoryName) is false)
-                        {
-                            directories.Add(dicrectoryName);
+                        var directoryName = Path.GetDirectoryName(key);                        
+                        if (directories.Contains(directoryName) is false)
+                        {                            
+                            directories.Add(directoryName);
                         }
+
+                        if (fileCountByDirectory.ContainsKey(directoryName) is false)
+                        {
+                            fileCountByDirectory.Add(directoryName, 0);
+                        }
+                        fileCountByDirectory[directoryName]++;
                     }
 
+
                     imagesCount++;
+
+                    if (pathDirectorySeparator is null)
+                    {
+                        if (key.Any(c => c == Path.DirectorySeparatorChar))
+                        {
+                            pathDirectorySeparator = Path.DirectorySeparatorChar;
+                        }
+                        else if (key.Any(c => c == Path.AltDirectorySeparatorChar))
+                        {
+                            pathDirectorySeparator = Path.AltDirectorySeparatorChar;
+                        }
+                    }
                 }
+            }
+
+            var rootDirectory = directories.FirstOrDefault(x => !fileCountByDirectory.ContainsKey(x));
+            if (rootDirectory != null)
+            {
+                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, GetEntryFromKey(rootDirectory), true);
             }
 
             _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
@@ -125,22 +151,49 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             ImagesCount = imagesCount;
             _imageSourcesCache = new IImageSource[structure.Items.Length];
             // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
-            if (directories.Any() is false)
+            if (fileCountByDirectory.Any() is false)
             {
+                _rootDirectoryToken ??= new ArchiveDirectoryToken(Archive, Archive.Entries.First(), true);
                 _directories = new[] { _rootDirectoryToken }.ToImmutableList();
             }
-            else if (directories.Count == 1)
+            else if (fileCountByDirectory.Count == 1)
             {
-                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, GetEntryFromKey(directories.ElementAt(0)), true);
+                _rootDirectoryToken ??= new ArchiveDirectoryToken(Archive, GetEntryFromKey(fileCountByDirectory.Keys.ElementAt(0)), true);
                 _directories = new[] { _rootDirectoryToken }.ToImmutableList();
             }
             else
             {
-                _directories = directories.Select(x => new ArchiveDirectoryToken(Archive, GetEntryFromKey(x), false)).OrderBy(x => x.Key).ToImmutableList();
-                if (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
+                _directories = fileCountByDirectory.Where(x => x.Value > 0).Select(x => x.Key).Select(x => 
                 {
-                    _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null, true);
-                }
+                    if (pathDirectorySeparator != null)
+                    {
+                        // セパレータがわかってる場合はKeyToIndexそのままで取れるであろう形でKeyを補完
+                        if (x.EndsWith(Path.DirectorySeparatorChar) is false && x.EndsWith(Path.AltDirectorySeparatorChar) is false)
+                        {
+                            return x + pathDirectorySeparator.Value;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+                    }
+                    else
+                    {
+                        // セパレータ不明の場合はとにかくKeyとして引っかかるよう最後尾のセパレータを削る
+                        if (x.EndsWith(Path.DirectorySeparatorChar) || x.EndsWith(Path.AltDirectorySeparatorChar))
+                        {
+                            return x.Substring(0, x.Length - 1);
+                        }
+                        else
+                        {
+                            return x;
+                        }
+                    }
+                })
+                    .Distinct()
+                    .Select(x => new ArchiveDirectoryToken(Archive, GetEntryFromKey(x), false)).OrderBy(x => x.Key).ToImmutableList();
+
+                _rootDirectoryToken ??= new ArchiveDirectoryToken(Archive, Archive.Entries.First(), true);
             }
         }
 
@@ -174,7 +227,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             if (string.IsNullOrEmpty(path)) { return _rootDirectoryToken; }
 
-            return _directories.FirstOrDefault(x => x.Key == path);
+            return _directories.FirstOrDefault(x => x.Key == path)
+                ?? _directories.FirstOrDefault(x => x.Key?.StartsWith(path) ?? false);
         }
 
 
@@ -221,7 +275,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                         return image;
                     }
 
-                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, token, this, _folderListingSettings, _thumbnailManager);
+                    var dirToken = GetDirectoryTokenFromPath(Path.GetDirectoryName(x.Key));
+                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
                 })
                 .ToList();
             

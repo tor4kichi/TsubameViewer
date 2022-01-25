@@ -49,9 +49,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             {
                 return true;
             }
-            else if (path.EndsWith(Path.DirectorySeparatorChar)
-                    || path.EndsWith(Path.AltDirectorySeparatorChar)
+            else if (Path.IsPathRooted(path) &&
+                ( path.EndsWith(Path.DirectorySeparatorChar)
+                    || path.EndsWith(Path.AltDirectorySeparatorChar))
                     )
+            {
+                return true;
+            }
+            else if (path.Contains(Path.DirectorySeparatorChar) is false && path.Contains(Path.AltDirectorySeparatorChar) is false)
             {
                 return true;
             }
@@ -128,7 +133,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 return IsRootDirectoryEntry(target);
             }
 
-            return DirectoryPathHelper.IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
+            if (target.Entry.IsDirectory)
+            {
+                return DirectoryPathHelper.IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
+            }
+            else
+            {
+                return DirectoryPathHelper.IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(Path.GetDirectoryName(target.Key)));
+            }
         }
 
         public static bool IsRootDirectoryEntry(this ArchiveDirectoryToken token)

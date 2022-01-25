@@ -766,11 +766,13 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (imageSources.Length >= 1)
                 {
                     var imageSource = imageSources[0];
-                    if (imageSource is ArchiveEntryImageSource)
+                    if (imageSource is ArchiveEntryImageSource archiveEntryImageSource)
                     {
-                        var names = imageSource.Path.Split(SeparateChars);
-                        Page1Name = names[names.Length - 1];
-                        PageFolderName = (names.Length >= 2 ? names[names.Length - 2] : string.Empty);
+                        Page1Name = Path.GetFileName(imageSource.Name);
+                        if (PageFolderNames.Any())
+                        {
+                            PageFolderName = archiveEntryImageSource.ArchiveDirectoryName.Split(SeparateChars, options: StringSplitOptions.RemoveEmptyEntries).Last();
+                        }
                     }
                     else
                     {
@@ -783,8 +785,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var imageSource = imageSources[1];
                     if (imageSource is ArchiveEntryImageSource)
                     {
-                        var names = imageSource.Path.Split(SeparateChars);
-                        Page2Name = names[names.Length - 1];
+                        Page2Name = Path.GetFileName(imageSource.Name);
                     }
                     else
                     {
@@ -1776,7 +1777,17 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else
                 {
-                    PageFolderNames = folders.Select(x => x.Name).ToArray();
+                    PageFolderNames = folders.Select(x =>
+                    {
+                        if (x is ArchiveDirectoryImageSource archiveDirectory)
+                        {
+                            return archiveDirectory.Name.TrimEnd(SeparateChars);
+                        }
+                        else
+                        {
+                            return x.Name.TrimEnd(SeparateChars);
+                        }
+                    }).ToArray();
                 }
             }
             else
@@ -1868,7 +1879,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 var folders = await _imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
                 var folder = folders
-                    .FirstOrDefault(x => x.Name == pageName);
+                    .FirstOrDefault(x => x.Name.TrimEnd(SeparateChars) == pageName);
                 if (string.IsNullOrEmpty(folder?.Path) is false)
                 {
                     var index = await _imageCollectionContext.GetIndexFromKeyAsync(folder.Path, SelectedFileSortType.Value, ct);
@@ -1884,11 +1895,12 @@ namespace TsubameViewer.Presentation.ViewModels
         public DelegateCommand<double?> ChangePageCommand =>
             _ChangePageCommand ?? (_ChangePageCommand = new DelegateCommand<double?>(ExecuteChangePageCommand));
 
-        void ExecuteChangePageCommand(double? parameter)
+        async void ExecuteChangePageCommand(double? parameter)
         {
             if (_nowCurrenImageIndexChanging) { return; }
 
-            _ = ResetImageIndex((int)parameter.Value);
+            await ResetImageIndex((int)parameter.Value);
+            RaisePropertyChanged(nameof(CurrentImageIndex));
         }
 
         private DelegateCommand _DoubleViewCorrectCommand;

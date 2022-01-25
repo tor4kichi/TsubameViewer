@@ -26,7 +26,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             _directoryToken = directoryToken;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
-            Name = _directoryToken.Key is not null ? new string(_directoryToken.Key.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
+            Name = _directoryToken.Label is not null ? new string(_directoryToken.Label.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
         }
 
         public IArchiveEntry ArchiveEntry => _directoryToken?.Entry;

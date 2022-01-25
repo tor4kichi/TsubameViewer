@@ -45,6 +45,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         IStorageItem IImageSource.StorageItem => StorageItem;
 
+        public string ArchiveDirectoryName => _archiveDirectoryToken?.Label;
 
         // Note: NameをImageViewerで表示時のページ名として扱っている
         // フォルダ名をスキップしてしまうとアーカイブ内に別フォルダに同名ファイルがある場合に
