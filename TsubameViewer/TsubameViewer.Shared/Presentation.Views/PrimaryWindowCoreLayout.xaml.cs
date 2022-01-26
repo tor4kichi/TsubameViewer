@@ -262,7 +262,7 @@ namespace TsubameViewer.Presentation.Views
                 ContentFrame.BackStack.Add(new PageStackEntry(HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(HomePageName)));
                 BackParametersStack.Add(new NavigationParameters());
 
-                _ = SaveNaviagtionParameterAsync();
+                SaveNaviagtionParameters();
             }
             else if (!isCanGoBackPage)
             {
@@ -277,7 +277,7 @@ namespace TsubameViewer.Presentation.Views
 
                 
 
-                _ = SaveNaviagtionParameterAsync();
+                SaveNaviagtionParameters();
             }
             else if (!_isFirstNavigation)
             {
@@ -352,7 +352,7 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }                
 
-                _ = SaveNaviagtionParameterAsync();
+                SaveNaviagtionParameters();
             }
 
             _isFirstNavigation = false;
@@ -476,10 +476,11 @@ namespace TsubameViewer.Presentation.Views
             ContentFrame.ForwardStack.Clear();
 
             await _navigationService.NavigateAsync(HomePageName);
-            await SaveNaviagtionParameterAsync();
+            SaveNaviagtionParameters();
         }
 
-        async Task SaveNaviagtionParameterAsync()
+        // デッドロックを防ぐために常にFireAndForgetで実行させる
+        async void SaveNaviagtionParameters()
         {
             using (await _navigationLock.LockAsync(CancellationToken.None))
             {
