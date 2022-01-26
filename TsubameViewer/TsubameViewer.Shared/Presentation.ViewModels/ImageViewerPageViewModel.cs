@@ -409,7 +409,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     if (_currentPath != itemPath)
                     {
-
                         _currentPath = itemPath;
 
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
@@ -431,8 +430,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             parsedPageName = Path.GetFileName(itemPath);
                         }
 
-                        Images = default;
-                        _CurrentImageIndex = 0;
+                        Images = default;                        
 
                         _appView.Title = currentFolderItem.Name;
                         Title = currentFolderItem.Name;
@@ -459,11 +457,11 @@ namespace TsubameViewer.Presentation.ViewModels
                             SelectedFileSortType.Value = DefaultFileSortType;
                         }
 
-
                         (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
                             = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
-
                     }
+
+                    _CurrentImageIndex = 0;
                 }
                 else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
