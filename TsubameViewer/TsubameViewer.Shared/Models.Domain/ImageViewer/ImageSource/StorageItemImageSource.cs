@@ -54,6 +54,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
                 {
                     return await file.OpenReadAsync().AsTask(ct);
                 }
+                else if (StorageItem is StorageFolder folder)
+                {
+                    return await _thumbnailManager.GetThumbnailAsync(folder, ct);
+                }
                 else
                 {
                     throw new NotSupportedException();

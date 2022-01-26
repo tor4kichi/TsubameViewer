@@ -36,6 +36,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
     public sealed class ThumbnailManager
     {
         private readonly ILiteDatabase _temporaryDb;
+        private readonly ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
         private readonly ILiteStorage<string> _thumbnailDb;
         private readonly ILiteCollection<BsonDocument> _thumbnailDbChunkCollection;
         private readonly FolderListingSettings _folderListingSettings;
@@ -83,6 +84,28 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
+        Random thumbnailIdPostfixRandom = new Random();
+        private string CreateThumbnailInsideId(string itemId)
+        {
+            var itemIdWithRndPostfix = itemId + thumbnailIdPostfixRandom.Next().ToString();
+            _thumbnailIdDb.Upsert(new ThumbnailItemIdEntry() { Id = itemId, InsideId = itemIdWithRndPostfix });
+            return itemIdWithRndPostfix;
+        }
+       
+        private bool TryGetThumbnailInsideId(string itemId, out string outInsideId)
+        {
+            if (_thumbnailIdDb.FindById(itemId) is not null and var idEntry)
+            {
+                outInsideId = idEntry.InsideId;
+                return true;
+            }
+            else
+            {
+                outInsideId = string.Empty;
+                return false;
+            }
+        }
+
         public long ComputeUsingSize()
         {
             return _thumbnailDb.FindAll().Sum(x => x.Length);
@@ -116,7 +139,13 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
         }
 
-        
+        class ThumbnailItemIdEntry
+        {
+            [BsonId]
+            public string Id { get; set; }
+
+            public string InsideId { get; set; }
+        }
         
         public ThumbnailManager(
             ILiteDatabase temporaryDb,
@@ -125,6 +154,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             )
         {
             _temporaryDb = temporaryDb;
+            _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
             _thumbnailDb = _temporaryDb.FileStorage;
             _thumbnailDbChunkCollection = _temporaryDb.GetCollection("_chunks");
             _folderListingSettings = folderListingSettings;
@@ -135,19 +165,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 .ToReadOnlyReactivePropertySlim();            
         }
 
-
         private void UploadWithRetry(string itemId, string filename, Stream stream)
         {
-            // _thumbnailDb.Deleteで消してからUploadすると、次回起動時に指定IDが削除済みになってしまう動作のため
-            // _thumbnailDb.Delete(itemId);
-
-            // 予め指定IDのデータチャンクを全て削除する
-            // Upload動作内には残ってるチャンクから同一IDのデータを消す動作が入っていないので自前で消す必要がある
-            _thumbnailDbChunkCollection.DeleteMany($"$._id.f = '{itemId}'");
-            stream.Seek(0, SeekOrigin.Begin);
-            _thumbnailDb.Upload(itemId, filename, stream);
+            if (TryGetThumbnailInsideId(itemId, out var insideId))
+            {
+                _thumbnailDb.Delete(insideId);
+                _thumbnailIdDb.Delete(itemId);
+            }
 
             stream.Seek(0, SeekOrigin.Begin);
+            _thumbnailDb.Upload(CreateThumbnailInsideId(itemId), filename, stream);
+            stream.Seek(0, SeekOrigin.Begin);            
         }
 
 
@@ -218,10 +246,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             _thumbnailImageInfoRepository.DeleteItem(path);
             var id = ToId(path);
+            if (TryGetThumbnailInsideId(id, out var insideId) is false) { return; }
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-            if (_thumbnailDb.Exists(id))
+            if (_thumbnailDb.Exists(insideId))
             {
-                _thumbnailDb.Delete(id);
+                _thumbnailDb.Delete(insideId);
             }
         }
 
@@ -229,10 +258,9 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             _thumbnailImageInfoRepository.DeleteAllUnderPath(path);
             var id = ToId(path);
-
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             {
-                foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(path)).ToArray())
+                foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(id)).ToArray())
                 {
                     _thumbnailDb.Delete(item.Id);
                 }
@@ -251,12 +279,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             {
                 var oldPathId = ToId(oldPath);
-
-                foreach (var oldPathItem in _thumbnailDb.Find(oldPathId).ToArray())
+                if (TryGetThumbnailInsideId(oldPathId, out var insideId) is false) { return; }
+                foreach (var oldPathItem in _thumbnailDb.Find(insideId).ToArray())
                 {
                     using (var memoryStream = new MemoryStream())
                     {
-                        oldPathItem.CopyTo(memoryStream);
+                        oldPathItem.CopyTo(memoryStream);                        
                         _thumbnailDb.Delete(oldPathItem.Id);
 
                         var newPathId = oldPathItem.Id.Replace(oldPath, newPath);
@@ -267,14 +295,17 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
+
         private ValueTask<IRandomAccessStream> GetThumbnailFromIdAsync(string itemId, CancellationToken ct)
         {
-            if (_thumbnailDb.Exists(itemId))
+            if (TryGetThumbnailInsideId(itemId, out var insideId)
+                && _thumbnailDb.Exists(insideId)
+                )
             {
                 var memoryStream = new MemoryStream();
                 try
                 {
-                    _thumbnailDb.Download(itemId, memoryStream);
+                    _thumbnailDb.Download(insideId, memoryStream);
 
                     memoryStream.Seek(0, SeekOrigin.Begin);
                     return new ValueTask<IRandomAccessStream>(memoryStream.AsRandomAccessStream());
