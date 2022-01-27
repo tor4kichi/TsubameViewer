@@ -316,7 +316,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
                 {
-                    SelectedFileSortType.Value = FileSortType.UpdateTimeDecending;
+                    SelectedFileSortType.Value = FileSortType.TitleAscending;
                     SetSortAsyncUnsafe(SelectedFileSortType.Value);
                 }
             }
