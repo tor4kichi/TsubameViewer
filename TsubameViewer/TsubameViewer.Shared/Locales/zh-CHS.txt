@@ -20,6 +20,7 @@ Import = 进口
 RefreshLatest = 更新到最新信息
 Settings = 组态
 SendFeedbackWithMashmallow = 发送反馈
+SendFeedbackWithStoreReview = 发送商店评论
 
 SourceStorageItemsPage = 夹
 CollectionPage = 采集

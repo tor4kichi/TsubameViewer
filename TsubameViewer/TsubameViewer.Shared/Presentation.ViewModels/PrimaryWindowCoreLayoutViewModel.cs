@@ -120,6 +120,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenPageCommand OpenPageCommand { get; }
         public StartSelectionCommand StartSelectionCommand { get; }
 
+
         public RelayCommand SendFeedbackWithMashmallowCommand { get; } = 
             new RelayCommand(async () => 
             {
@@ -135,6 +136,15 @@ namespace TsubameViewer.Presentation.ViewModels
                 await Clipboard.SetTextAsync(sb.ToString());
                 await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
             });
+
+
+        public RelayCommand SendFeedbackWithStoreReviewCommand { get; } =
+            new RelayCommand(async () =>
+            {
+                await Microsoft.Toolkit.Uwp.Helpers.SystemInformation.LaunchStoreForReviewAsync();
+            });
+
+
 
 
         #region Search

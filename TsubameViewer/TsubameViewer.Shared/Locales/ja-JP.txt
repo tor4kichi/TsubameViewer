@@ -20,6 +20,7 @@ Import = インポート
 RefreshLatest = 最新の情報に更新
 Settings = 設定
 SendFeedbackWithMashmallow = フィードバックを送る
+SendFeedbackWithStoreReview = ストアレビューを送る
 
 SourceStorageItemsPage = フォルダー
 CollectionPage = コレクション

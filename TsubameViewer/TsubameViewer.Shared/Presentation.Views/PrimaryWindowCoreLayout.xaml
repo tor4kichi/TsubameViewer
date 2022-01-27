@@ -140,6 +140,7 @@
 
             <AppBarSeparator />
             <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
 
           </CommandBar.SecondaryCommands>
         </CommandBar>
