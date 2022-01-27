@@ -55,7 +55,7 @@
         SelectionMode="None"
         XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
         IsTabStop="False"
-        ContextFlyout="{StaticResource NoListUpActionStorageItemMenuFlyout}"
+        ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
         >
 
         <GridView.ItemContainerTransitions>

@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -136,6 +137,9 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             public void Add(TokenListType tokenListType, string token, string path)
             {
+                // 古いトークンは捨てるように
+                _collection.DeleteMany(x => x.Path == path && x.TokenListType == tokenListType);
+
                 _collection.Upsert(new TokenToPathEntry() 
                 {
                     TokenListType = tokenListType,
@@ -156,7 +160,13 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             internal TokenToPathEntry GetTokenFromPath(string path)
             {
-                return _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
+                return _collection.Find(x => x.Path == path).FirstOrDefault()
+                    ?? _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
+            }
+
+            internal IEnumerable<TokenToPathEntry> GetAllTokenFromPath(string path)
+            {
+                return _collection.Find(x => path.StartsWith(x.Path));
             }
 
             internal TokenToPathEntry FindTokenToPathFromRoot(string path)
@@ -346,8 +356,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             return token;
         }
 
-        Dictionary<string, IStorageItem> _cached = new Dictionary<string, IStorageItem>();
-
+        ConcurrentDictionary<string, IStorageItem> _cached = new ();
+        
         private async Task<IStorageItem> GetItemAsync(string token)
         {
             if (_cached.TryGetValue(token, out var item)) { return item; }
@@ -374,7 +384,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             if (item is not null)
             {
-                _cached.Add(token, item);
+                _cached.TryAdd(token, item);
             }
 
             return item;
@@ -406,70 +416,64 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {            
-            var tokenEntry = _tokenToPathRepository.GetTokenFromPath(path);
+            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
 
             // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
             // 理想的には変更部分だけを差分更新するべき
-            if (tokenEntry is null)
+            if (tokenEntries.Any() is false)
             {
-                tokenEntry = await CheckAndGetTokenToPathAfterRefreshDb(path);
+                var token = await CheckAndGetTokenToPathAfterRefreshDb(path);
+                tokenEntries = new[] { token };
             }
 
-            var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
-
-            // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
-
-            // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
-            // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
-            if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
+            foreach (var tokenEntry in tokenEntries)
             {
-                tokenEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
-                if (tokenEntry == null)
+                var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
+
+                // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
+
+                // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
+                // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
+                if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
                 {
-                    throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
+                    var otherEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
+                    if (otherEntry == null)
+                    {
+                        throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
+                    }
+
+                    tokenStorageItem = await GetItemAsync(otherEntry.Token);
                 }
 
-                tokenStorageItem = await GetItemAsync(tokenEntry.Token);
+                if (tokenStorageItem?.Path == path)
+                {
+                    return tokenStorageItem;
+                }
+                else if (tokenStorageItem is StorageFolder folder)
+                {
+                    var subtractPath = path.Substring(tokenStorageItem.Path.Length);
+                    return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
+                }
+                else
+                {
+                    if (tokenEntry.TokenListType == TokenListType.MostRecentlyUsedList)
+                    {
+                        _tokenToPathRepository.DeleteItem(tokenEntry.Token);
+                    }
+                }
             }
 
-            if (tokenStorageItem?.Path == path)
-            {
-                return tokenStorageItem;
-            }
-            else if (tokenStorageItem is StorageFolder folder)
-            {
-                var subtractPath = path.Substring(tokenStorageItem.Path.Length);
-                return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
-            }
-            else
-            {
-                throw new ArgumentException();
-                // tokenからファイルやフォルダが取れなかった場合はpathをヒントにStorageFolderの取得を試みる
-                //await foreach (var item in GetParsistantItems())
-                //{
-                //    var folderPath = item.item.Path;
-                //    string dirName = Path.GetDirectoryName(path);
-                //    do
-                //    {
-                //        if (folderPath.Equals(dirName))
-                //        {
-                //            tokenStorageItem = item.item;
-                //            break;
-                //        }
-                //        dirName = Path.GetDirectoryName(dirName);
-                //    }
-                //    while (!string.IsNullOrEmpty(dirName));
-
-                //    if (tokenStorageItem != null) { break; }
-                //}
-            }
+            throw new ArgumentException($"not found StorageItem access permission to {path}");
         }
 
         #region Ignore Process
 
         public void AddIgnoreToken(string path)
         {
-            _ignoreStorageItemRepository.CreateItem(new () { Path = path });
+            if (_ignoreStorageItemRepository.IsIgnoredPath(path) is false)
+            {
+                _ignoreStorageItemRepository.CreateItem(new() { Path = path });
+            }
         }
 
         public bool IsIgnoredPath(string path)

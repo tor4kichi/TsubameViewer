@@ -1,10 +1,6 @@
 ﻿using Microsoft.Toolkit.Diagnostics;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
-using SharpCompress.Archives.Rar;
-using SharpCompress.Archives.SevenZip;
-using SharpCompress.Archives.Tar;
-using SharpCompress.Archives.Zip;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,12 +8,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
-using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
 
@@ -33,6 +27,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct);
 
+        ValueTask<int> GetImageFileCountAsync(CancellationToken ct);
+        ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct);
+        ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct);
+
+
         IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct);
         IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct);
 
@@ -44,7 +43,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
     public sealed class FolderImageCollectionContext : IImageCollectionContext
     {
-        public static readonly QueryOptions ImageFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions);
+        public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
         public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions));
 
         private readonly FolderListingSettings _folderListingSettings;
@@ -53,15 +52,18 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
         private StorageFileQueryResult _imageFileSearchQuery;
-        private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(ImageFileSearchQueryOptions);
+        private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
 
         public string Name => Folder.Name;
+
+        private readonly Dictionary<FileSortType, QueryOptions> _sortTypetoQueryOptions = new ();
 
         public FolderImageCollectionContext(StorageFolder storageFolder, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             Folder = storageFolder;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
+            _sortTypetoQueryOptions.Add(FileSortType.None, DefaultImageFileSearchQueryOptions);
         }
 
         public StorageFolder Folder { get; }
@@ -98,6 +100,102 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             var count = await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
             return count > 0;
+        }
+
+        public async ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
+        {
+            return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        }
+
+        private FileSortType _lastFileSortType;
+        public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            if (_lastFileSortType != sort)
+            {
+                _lastFileSortType = sort;
+                _imageFileSearchQuery.ApplyNewQueryOptions(GetSortQueryOptions(sort));
+            }
+
+            if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is not null and var files 
+                && files.ElementAtOrDefault(0) is not null and var imageSource)
+            {
+                return new StorageItemImageSource(imageSource, _folderListingSettings, _thumbnailManager);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
+            }
+        }
+
+
+        // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
+        static QueryOptions CreateDefaultImageFileSearchQueryOptions(FileSortType sort)
+        {
+            var query = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions);
+            query.SortOrder.Clear();
+            switch (sort)
+            {
+                case FileSortType.None:
+                    query.SortOrder.Add(new SortEntry() { PropertyName = "System.ItemNameDisplay", AscendingOrder = true });
+                    break;
+                case FileSortType.TitleAscending:
+                    query.SortOrder.Add(new SortEntry() { PropertyName = "System.ItemNameDisplay", AscendingOrder = true });
+                    break;
+                case FileSortType.TitleDecending:
+                    query.SortOrder.Add(new SortEntry() { PropertyName = "System.ItemNameDisplay", AscendingOrder = false });
+                    break;
+                case FileSortType.UpdateTimeAscending:
+                    query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateModified", AscendingOrder = true });
+                    break;
+                case FileSortType.UpdateTimeDecending:
+                    query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateModified", AscendingOrder = false });
+                    break;
+            }
+
+            return query;
+        }
+
+
+
+        private QueryOptions GetSortQueryOptions(FileSortType sort)
+        {
+            return _sortTypetoQueryOptions.TryGetValue(sort, out var queryOptions)
+                ? queryOptions
+                : _sortTypetoQueryOptions[sort] = CreateDefaultImageFileSearchQueryOptions(sort);
+        }
+
+
+        public async ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            if (_lastFileSortType != sort)
+            {
+                _lastFileSortType = sort;
+                _imageFileSearchQuery.ApplyNewQueryOptions(GetSortQueryOptions(sort));
+            }
+
+            if (sort is FileSortType.None or FileSortType.TitleAscending or FileSortType.TitleDecending)
+            {
+                var filename = Path.GetFileName(key);
+                var result = await ImageFileSearchQuery.FindStartIndexAsync(filename);
+                if (result == uint.MaxValue) { throw new KeyNotFoundException($"not found file : {filename}"); }
+                return (int)result;
+            }
+            else
+            {
+                // FindStartIndexAsync が意図したIndexを返さないので頭から走査する
+                int index = 0;
+                await foreach (var file in ImageFileSearchQuery.ToAsyncEnumerable(ct))
+                {
+                    if (file.Name == key || file.Path == key)
+                    {
+                        return index;
+                    }
+
+                    index++;
+                }
+
+                throw new InvalidOperationException();
+            }
         }
 
         public bool IsSupportedFolderContentsChanged => true;
@@ -158,7 +256,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
         {
-            return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
+            return ArchiveImageCollection.GetAllImages().ToAsyncEnumerable();
         }
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -168,7 +266,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
         {
-            return new(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).Any());
+            return new (ArchiveImageCollection.IsExistImageFromDirectory(ArchiveDirectoryToken));
+        }
+
+        public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
+        {
+            return ArchiveImageCollection.GetImageCountAsync(ct);
+        }
+
+        public ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return ArchiveImageCollection.GetImageAtAsync(index, sort, ct);
+        }
+
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            return ArchiveImageCollection.GetIndexFromKeyAsync(key, sort, ct);
         }
 
         public bool IsSupportedFolderContentsChanged => false;
@@ -226,6 +339,22 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
         {
             return new(_pdfImageCollection.GetAllImages().Any());
+        }
+
+
+        public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
+        {
+            return _pdfImageCollection.GetImageCountAsync(ct);
+        }
+
+        public ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return _pdfImageCollection.GetImageAtAsync(index, sort, ct);
+        }
+
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            return _pdfImageCollection.GetIndexFromKeyAsync(key, sort, ct);
         }
     }
 

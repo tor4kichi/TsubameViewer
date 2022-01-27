@@ -12,7 +12,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         public const double DefaultFolderImageWidth = 200d;
         public const double DefaultFolderItemTitleHeight = 52d;
 
-        public const string DefaultThumbnailPriorityTitleRegexString = "cover|Cover|COVER|カバー";
+        public const string DefaultThumbnailPriorityTitleRegexString = "";//"cover|Cover|COVER|カバー";
         public FolderListingSettings()
         {
             _FileDisplayMode = Read(FileDisplayMode.Midium, nameof(FileDisplayMode));
@@ -21,12 +21,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _IsArchiveFileGenerateThumbnailEnabled = Read(true, nameof(IsArchiveFileGenerateThumbnailEnabled));
             _IsArchiveEntryGenerateThumbnailEnabled = Read(false, nameof(IsArchiveEntryGenerateThumbnailEnabled));
 
-            _IsForceEnableXYNavigation = Read(false, nameof(IsForceEnableXYNavigation));
-            
             _FolderItemThumbnailImageSize = Read(new Size(DefaultFolderImageWidth, DefaultFolderImageHeight), nameof(FolderItemThumbnailImageSize));
             _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
             
-            _ThumbnailPriorityTitleRegexString = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegexString));
+            _ThumbnailPriorityTitleRegex = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegex));
         }
 
         private FileDisplayMode _FileDisplayMode;
@@ -64,13 +62,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             set { SetProperty(ref _IsArchiveEntryGenerateThumbnailEnabled, value); }
         }
 
-        private bool _IsForceEnableXYNavigation;
-        public bool IsForceEnableXYNavigation
-        {
-            get { return _IsForceEnableXYNavigation; }
-            set { SetProperty(ref _IsForceEnableXYNavigation, value); }
-        }
-
         private Size _FolderItemThumbnailImageSize;
         public Size FolderItemThumbnailImageSize
         {
@@ -86,11 +77,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
-        private string _ThumbnailPriorityTitleRegexString;
-        public string ThumbnailPriorityTitleRegexString
+        private string _ThumbnailPriorityTitleRegex;
+        public string ThumbnailPriorityTitleRegex
         {
-            get { return _ThumbnailPriorityTitleRegexString; }
-            set { SetProperty(ref _ThumbnailPriorityTitleRegexString, value); }
+            get { return _ThumbnailPriorityTitleRegex; }
+            set { SetProperty(ref _ThumbnailPriorityTitleRegex, value); }
         }
     }
 }

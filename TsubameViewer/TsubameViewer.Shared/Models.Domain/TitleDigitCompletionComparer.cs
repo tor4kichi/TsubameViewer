@@ -5,9 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain.ImageViewer;
-using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
-namespace TsubameViewer.Presentation.ViewModels.Sorting
+namespace TsubameViewer.Models.Domain
 {
     public sealed class TitleDigitCompletionComparer : IComparer<string>, IComparer
     {
@@ -16,6 +15,13 @@ namespace TsubameViewer.Presentation.ViewModels.Sorting
 
         public static int ComparePath(string x, string y)
         {
+            if (int.TryParse(x, out var numberX)
+                && int.TryParse(y, out var numberY)
+                )
+            {
+                return numberX.CompareTo(numberY);
+            }
+
             var xDictPath = Path.GetDirectoryName(x);
             var yDictPath = Path.GetDirectoryName(y);
 

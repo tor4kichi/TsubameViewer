@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.Helpers;
 using Uno;
 using Uno.Extensions;
 using Windows.Foundation;
@@ -57,20 +59,45 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        private bool IsRequireSetFocus()
+        {
+            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+                || UINavigation.UINavigationManager.NowControllerConnected
+                ;
+        }
+
+        CancellationTokenSource _navigationCts;
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = null;
+
+            base.OnNavigatingFrom(e);
+        }
+
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-            if (settings.IsForceEnableXYNavigation
-                || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                )
-            {
-                await Task.Delay(500);
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = new CancellationTokenSource();
+            var ct = _navigationCts.Token;
 
-                if (FoldersAdaptiveGridView.Items.Any())
+            try
+            {
+                if (IsRequireSetFocus())
                 {
+                    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
                     var firstItem = FoldersAdaptiveGridView.Items.First();
+                    await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
+                    
+                    // NavigationView.SelectionChanged が 実行され、MenuItemにフォーカスが移った後に
+                    // 改めてページの表示アイテムにフォーカスを移したい
+                    await Task.Delay(250);
                     var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
                     if (itemContainer != null)
                     {
@@ -78,6 +105,7 @@ namespace TsubameViewer.Presentation.Views
                     }
                 }
             }
+            catch (OperationCanceledException) { }
         }
     }
 }

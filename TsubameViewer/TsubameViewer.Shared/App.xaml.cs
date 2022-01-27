@@ -1,12 +1,14 @@
-﻿using LiteDB;
+﻿using DryIoc;
+using LiteDB;
 using Microsoft.Extensions.Logging;
+using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism;
+using Prism.DryIoc;
 using Prism.Ioc;
 using Prism.Mvvm;
 using Prism.Navigation;
-using Prism.Unity;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,7 +28,6 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
-using Unity;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.ApplicationModel;
@@ -117,12 +118,13 @@ namespace TsubameViewer
 
         protected override void RegisterRequiredTypes(IContainerRegistry container)
         {
-            string connectionString = $"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;";
-            var db = new LiteDatabase(connectionString);
-            container.RegisterInstance<ILiteDatabase>(db);
-
             var unityContainer = container.GetContainer();
-            unityContainer.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
+            container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
+
+            unityContainer.UseInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+            unityContainer.Register<ThumbnailManager>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+
+            unityContainer.UseInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             
             base.RegisterRequiredTypes(container);
         }
@@ -151,9 +153,9 @@ namespace TsubameViewer
             container.RegisterForNavigation<FolderListupPage>();
             container.RegisterForNavigation<ImageViewerPage>();
             container.RegisterForNavigation<EBookReaderPage>();
-            container.RegisterForNavigation<CollectionPage>();
             container.RegisterForNavigation<SettingsPage>();
             container.RegisterForNavigation<SearchResultPage>();
+            container.RegisterForNavigation<AlbamListupPage>();
         }
 
         bool isRestored = false;
@@ -235,35 +237,49 @@ namespace TsubameViewer
                     typeof(DropPathReferenceCountDb),
                     typeof(DropIgnoreStorageItemDbWhenIdNotString),
                     typeof(MigrateAsyncStorageApplicationPermissionToDb),
-
-                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper)
+                    typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper),
+                    typeof(DeleteThumbnailImagesOnTemporaryFolder),
+                    typeof(DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc),
                 };
 
+                List<Exception> exceptions = new List<Exception>();
                 await Task.Run(async () =>
                 {
                     foreach (var migratorType in migraterTypes)
                     {
-                        var migratorInstance = Container.Resolve(migratorType);
-                        if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                        try
                         {
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
+                            var migratorInstance = Container.Resolve(migratorType);
+                            if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                            {
+                                Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                            migrater.Migrate();
+                                migrater.Migrate();
 
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                                Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            }
+                            else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                            {
+                                Debug.WriteLine($"Start migrate: {migratorType.Name}");
+
+                                await asyncMigrater.MigrateAsync();
+
+                                Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            }
+                            else
+                            {
+                                Debug.WriteLine($"Skip migrate: {migratorType.Name}");
+                            }
                         }
-                        else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
+                        catch (Exception ex)
                         {
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
-
-                            await asyncMigrater.MigrateAsync();
-
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
+                            exceptions.Add(ex);
                         }
-                        else
-                        {
-                            Debug.WriteLine($"Skip migrate: {migratorType.Name}");
-                        }
+                    }
+
+                    if (exceptions.Any())
+                    {
+                        throw new AggregateException(exceptions);
                     }
                 });
             }
@@ -276,6 +292,8 @@ namespace TsubameViewer
 
             Type[] launchTimeMaintenanceTypes = new[]
             {
+                typeof(SecondaryTileMaintenance),
+
                 // v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、
                 // StorageItem.Path == string.Empty となるためアプリの挙動が壊れてしまっていた問題に対処する
                 typeof(RemoveSourceStorageItemWhenPathIsEmpty),
@@ -285,6 +303,9 @@ namespace TsubameViewer
                 // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
                 // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
                 typeof(CacheDeletionWhenSourceStorageItemIgnored),
+
+                // 1.5.1以降に追加したお気に入り用のDB項目の存在を確実化
+                typeof(EnsureFavoriteAlbam),                
             };
 
             await Task.Run(async () =>
@@ -332,19 +353,6 @@ namespace TsubameViewer
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
-#if DEBUG
-            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
-#endif
-
-            await UpdateMigrationAsync();
-
-            await MaintenanceAsync();
-
-            Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
-
-#if WINDOWS_UWP
-            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
-#endif
             // ローカリゼーション用のライブラリを初期化
             try
             {
@@ -366,10 +374,25 @@ namespace TsubameViewer
             {
                 I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
             }
-            catch 
+            catch
             {
                 I18NPortable.I18N.Current.Locale = "en-US";
             }
+
+
+#if DEBUG
+            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+#endif
+
+            await UpdateMigrationAsync();
+
+            await MaintenanceAsync();
+
+            Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
+
+#if WINDOWS_UWP
+            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
+#endif
 
             Resources["Strings"] = I18NPortable.I18N.Current;
 
@@ -388,9 +411,6 @@ namespace TsubameViewer
             Window.Current.Content = Container.Resolve<PrimaryWindowCoreLayout>();
             Window.Current.Activate();
 
-            // セカンダリタイル管理の初期化
-            _ = Container.Resolve<Presentation.Services.UWP.SecondaryTileManager>().InitializeAsync().ConfigureAwait(false);
-                        
             base.OnInitialized();
         }
 
@@ -486,16 +506,16 @@ namespace TsubameViewer
 
             NavigationParameters parameters = new NavigationParameters();
 
-            if (string.IsNullOrEmpty(info.Path))
-            {
-                throw new NullReferenceException("PageNavigationInfo.Path is can not be null.");
-            }
 
-            parameters.Add(PageNavigationConstants.Path, info.Path);
+            Guard.IsNotNullOrEmpty(info.Path, nameof(info.Path));
 
             if (!string.IsNullOrEmpty(info.PageName))
             {
-                parameters.Add(PageNavigationConstants.PageName, info.PageName);
+                parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(info.Path, info.PageName)));
+            }
+            else
+            {
+                parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(info.Path));
             }
 
             var item = await sourceFolderRepository.GetStorageItemFromPath(info.Path);

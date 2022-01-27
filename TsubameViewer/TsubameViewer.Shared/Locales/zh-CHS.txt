@@ -3,6 +3,9 @@
 Copy = 复制
 CopyToClipboard = 复制到剪贴板
 Cancel = 取消
+Delete = 删除
+Create = 创建
+Apply = 申请
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -17,6 +20,7 @@ Import = 进口
 RefreshLatest = 更新到最新信息
 Settings = 组态
 SendFeedbackWithMashmallow = 发送反馈
+SendFeedbackWithStoreReview = 发送商店评论
 
 SourceStorageItemsPage = 夹
 CollectionPage = 采集
@@ -77,7 +81,6 @@ ChangeViewToImageListupPage = 切换到图像列表视图
 
 
 FileSortTitle = 排序
-FileSortType.UpdateTimeDescThenTitleAsc = 新订单和标题升序
 FileSortType.TitleAscending = 文件名（升序）
 FileSortType.TitleDecending = 文件名（降序）
 FileSortType.UpdateTimeAscending = 最旧的优先
@@ -86,7 +89,6 @@ FileSortType.UpdateTimeDecending = 新命令
 Sort_InheritancePath = 排序继承源
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序
-TitleDigitCompletion = 标题数字完成
 
 
 OpenImageViewer = 在阅读器中打开
@@ -99,7 +101,12 @@ RemoveSecondaryTile = 取消开始
 
 SetThumbnailImage = 设置为缩略图
 
-FolderItemMenuNoActionSuggested = 没有可用的动作
+
+#### ImageListupPage
+ImageSelection_SelectedCount = 选择 {0} 项
+SelectItems_ActionAs = 选择物品 ...
+StartMultiSelection = 多项选择
+
 
 #### ImageViewerPage
 
@@ -148,3 +155,24 @@ Toc = 目录
 
 SearchResultWith = 下一个搜索结果
 SearchPlaceholder = 搜索标题
+
+
+
+#### Albam
+
+Albam = 专辑
+
+CreateAlbam = 创建相册
+AlbamName_Placeholder = 输入专辑名称
+AlbamName_Default = 新唱片
+AlbamEdit = 编辑相册
+AlbamDelete = 删除相册
+AlbamDeleteConfirmDialogText = 您要删除相册“{0}”吗？ （此操作无法撤消）
+
+EditAlbamImage = 选择要添加到的相册
+ChoiceTargetAlbam = 选择专辑
+AlbamItemRemove = 从相册中删除这张图片
+
+FavoriteAlbam = 最喜欢的
+AddFavoriteImage = 加入“最喜欢的
+RemoveFavoriteImage = 从收藏夹中删除

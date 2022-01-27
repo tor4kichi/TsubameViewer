@@ -27,6 +27,15 @@ using Windows.UI.Xaml.Media.Animation;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Threading;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Ioc;
+using I18NPortable;
+using System.Collections.ObjectModel;
+using Reactive.Bindings;
+using Windows.UI.Core;
+using Reactive.Bindings.Extensions;
+using TsubameViewer.Models.Domain.Albam;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -37,6 +46,8 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageListupPage : Page
     {
+        private readonly IMessenger _messenger;
+
         public ImageListupPage()
         {
             InitializeComponent();
@@ -45,6 +56,7 @@ namespace TsubameViewer.Presentation.Views
             Unloaded += FolderListupPage_Unloaded;
 
             DataContextChanged += OnDataContextChanged;
+            _messenger = App.Current.Container.Resolve<IMessenger>();
         }
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -87,83 +99,130 @@ namespace TsubameViewer.Presentation.Views
 
         #region 初期フォーカス設定
 
+        CancellationTokenSource _navigationCts;
+      
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-            this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
+            _messenger.Unregister<StartMultiSelectionMessage>(this);
 
-            try
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = null;
+
+            if (e.SourcePageType != typeof(ImageViewerPage))
             {
-                var currentFocus = FocusManager.GetFocusedElement();
-                if (currentFocus is FrameworkElement fe
-                    && fe.DataContext is StorageItemViewModel itemVM)
+                if (_vm.DisplayCurrentPath is not null)
                 {
-                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
-                        new LastIntractInfo()
-                        {
-                            ItemPath = itemVM.Path,
-                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                        };
-
-                    _vm.SetLastIntractItem(itemVM);
-                }
-                else if (_vm.DisplayCurrentPath is not null)
-                {
-                    _PathToLastIntractMap[_vm.DisplayCurrentPath] =
-                        new LastIntractInfo()
-                        {
-                            ItemPath = null,
-                            ScrollPositionRatio = ItemsScrollViewer.ScrollableHeight == 0 ? null : ItemsScrollViewer.VerticalOffset / ItemsScrollViewer.ScrollableHeight
-                        };
-
+                    _vm.ClearLastIntractItem();
                 }
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
-            }
+
+            ClearSelection();
 
             base.OnNavigatingFrom(e);
         }
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
-            if (e.NavigationMode == NavigationMode.New)
+            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
             {
-                var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-                if (settings.IsForceEnableXYNavigation
-                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                    )
+                StartSelection();
+            });
+
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = new CancellationTokenSource();
+            var ct = _navigationCts.Token;
+            ItemsScrollViewer.Opacity = 0.01;
+            try
+            {
+                if (e.NavigationMode == NavigationMode.New)
                 {
-                    if (GetCurrentDisplayItemsRepeater() is not null and var currentItemsRepeater 
-                        && currentItemsRepeater.ItemsSource != null
-                        && currentItemsRepeater.FindDescendant<Control>() is not null and var firstItem
-                        )
-                    {
-                        firstItem.Focus(FocusState.Keyboard);
-                    }
-                    else
-                    {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                    await ResetScrollPosition(ct);
 
-                        this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
-
-                        this.FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
-                        this.FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_Large_ElementPrepared;
+                    if (IsRequireSetFocus())
+                    {
+                        var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
+                        if (firstItem != null)
+                        {
+                            (firstItem as Control)?.Focus(FocusState.Keyboard);
+                        }
+                        else
+                        {
+                            ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        }
                     }
                 }
+                else
+                {
+                    await BringIntoViewLastIntractItem(ct);
+                }
             }
-            else
+            catch (OperationCanceledException) { }
+            finally
             {
-                BringIntoViewLastIntractItem();
+                ItemsScrollViewer.Opacity = 1.0;
             }
         }
+
+
+        private bool IsRequireSetFocus()
+        {
+            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+                || UINavigation.UINavigationManager.NowControllerConnected
+                ;
+        }
+
+
+        private void SaveScrollStatus(UIElement target)
+        {
+            if (target is FrameworkElement fe
+                        && fe.DataContext is StorageItemViewModel itemVM)
+            {
+                _vm.SetLastIntractItem(itemVM);
+            }
+        }
+
+        private async Task<UIElement> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
+        {
+            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
+
+            UIElement lastIntractItem = null;
+            var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
+
+            if (currentItemsRepeater == null) { return null; }
+
+            foreach (int count in Enumerable.Range(0, 10))
+            {
+                lastIntractItem = currentItemsRepeater.TryGetElement(index);
+                if (lastIntractItem is not null)
+                {
+                    await Task.Delay(50, ct);
+
+                    break;
+                }
+
+                await Task.Delay(50, ct);
+            }
+            return lastIntractItem;
+        }
+
+
+        private async Task ResetScrollPosition(CancellationToken ct)
+        {
+            var lastIntractItem = await WaitTargetIndexItemLoadingAsync(0, ct);
+            ItemsScrollViewer.ChangeView(null, 0.0, null, disableAnimation: true);
+
+            if (IsRequireSetFocus() && lastIntractItem is Control control)
+            {
+                control.Focus(FocusState.Keyboard);
+            }
+        }
+
 
         private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
         {
@@ -183,79 +242,37 @@ namespace TsubameViewer.Presentation.Views
             else { return null; }
         }
 
-        Dictionary<string, LastIntractInfo> _PathToLastIntractMap = new();
-        public async void BringIntoViewLastIntractItem()
+        public async Task BringIntoViewLastIntractItem(CancellationToken ct)
         {
-            while (_vm == null || _vm.NowProcessing)
-            {
-                await Task.Delay(10);
-            }
-
-            async void SetFocusToItem(StorageItemViewModel itemVM, bool withScroll = false)
-            {
-                var lastIntractItemIndex = _vm.FileItemsView.IndexOf(itemVM);
-                if (lastIntractItemIndex > 0)
-                {
-                    UIElement lastIntractItem = null;
-                    var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
-                    foreach (int count in Enumerable.Range(0, 10))                    
-                    {
-                        lastIntractItem = currentItemsRepeater.TryGetElement(lastIntractItemIndex);
-                        if (lastIntractItem is not null)
-                        {
-                            break;
-                        }
-                        await Task.Delay(100);
-                    }
-
-                    if (lastIntractItem is Control control) 
-                    {
-                        if (withScroll)
-                        {
-                            var transform = lastIntractItem.TransformToVisual(ItemsScrollViewer);
-                            var pt = transform.TransformPoint(new Point(0, 0));
-                            ItemsScrollViewer.ChangeView(null, pt.Y, null);
-
-                            await Task.Delay(100);
-                        }
-
-                        control.Focus(FocusState.Keyboard);
-                    }
-                }
-            }
+            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
 
             if (_vm.DisplayCurrentPath == null)
             { 
                 return;
             }
 
-            if (_PathToLastIntractMap.Remove(_vm.DisplayCurrentPath, out LastIntractInfo info) is false)
+            if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
             {
-                if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
+                var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
+                if (lastIntractItemIndex >= 0)
                 {
-                    SetFocusToItem(lastIntractItemVM, withScroll: true);                    
+                    UIElement lastIntractItem = await WaitTargetIndexItemLoadingAsync(lastIntractItemIndex, ct);
+                    if (lastIntractItem is Control control)
+                    {
+                        if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset 
+                            || ItemsScrollViewer.VerticalOffset + ItemsScrollViewer.ViewportHeight < lastIntractItem.ActualOffset.Y)
+                        {
+                            var targetOffset = lastIntractItem.ActualOffset.Y - (float)ItemsScrollViewer.ViewportHeight * 0.5f;
+                            ItemsScrollViewer.ChangeView(null, targetOffset, null, disableAnimation: true);
+                        }
+
+                        if (IsRequireSetFocus())
+                        {
+                            control.Focus(FocusState.Keyboard);
+                        }
+                    }
                 }
-
-                return;
             }
-
-            if (info.ScrollPositionRatio is not null)
-            {
-                ItemsScrollViewer.ChangeView(0, ItemsScrollViewer.ScrollableHeight * info.ScrollPositionRatio.Value, 0);
-            }
-
-            await Task.Delay(100);
-            if (info.ItemPath is not null and String itemPath)
-            {
-                var lastIntractItemVM = _vm.ImageFileItems.FirstOrDefault(x => x.Path == itemPath);
-                SetFocusToItem(lastIntractItemVM);
-            }
-        }
-
-        struct LastIntractInfo
-        {
-            public string ItemPath;
-            public double? ScrollPositionRatio;
         }
 
         #endregion
@@ -291,9 +308,13 @@ namespace TsubameViewer.Presentation.Views
         {
             var item = sender as FrameworkElement;
 
-            _zoomUpAnimation
-                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Start(item);
+            var image = item.FindChild<Image>();
+            if (image != null)
+            {
+                _zoomUpAnimation
+                    .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                    .Start(image);
+            }
 
             if (item.DataContext is StorageItemViewModel itemVM)
             {
@@ -304,14 +325,15 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        
+
         private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
 
+            var image = item.FindChild<Image>();
             _zoomDownAnimation
-                .CenterPoint(new Vector2((float)item.ActualWidth * 0.5f, (float)item.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
-                .Start(item);
+                .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
+                .Start(image);
 
             if (item.DataContext is StorageItemViewModel itemVM)
             {
@@ -320,12 +342,13 @@ namespace TsubameViewer.Presentation.Views
                     itemVM.Image.Stop();
                 }
             }
-            
         }
 
         RelayCommand<TappedRoutedEventArgs> _PrepareConnectedAnimationWithTappedItemCommand;
         public RelayCommand<TappedRoutedEventArgs> PrepareConnectedAnimationWithTappedItemCommand => _PrepareConnectedAnimationWithTappedItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(item =>
         {
+            SaveScrollStatus(item.OriginalSource as UIElement);
+
             var image = (item.OriginalSource as UIElement).FindDescendantOrSelf<Image>();
             if (image?.Source != null)
             {
@@ -336,16 +359,215 @@ namespace TsubameViewer.Presentation.Views
         });
 
         RelayCommand<UIElement> _OpenItemCommand;
+        private Models.Domain.FolderItemListing.FolderListingSettings _FolderListingSettings;
+
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
+            SaveScrollStatus(item);
+
             var image = item.FindDescendantOrSelf<Image>();
             if (image?.Source != null)
             {                
                 var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();                
-            }
+            }            
         });
+
+        private int lastSelectedItemIndex = -1;
+        private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
+        {
+            if (IsSelectionModeEnabled
+                || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
+                )
+            {
+                if ((sender as FrameworkElement).DataContext is StorageItemViewModel itemVM)
+                {
+                    itemVM.IsSelected = !itemVM.IsSelected;
+                    ItemSelectedProcess(itemVM);
+                }
+
+                return;
+            }
+
+            var image = (sender as UIElement).FindDescendantOrSelf<Image>();
+            if (_vm.OpenImageViewerCommand is ICommand command
+                && command.CanExecute(image.DataContext)
+                )
+            {
+                if (image?.Source != null)
+                {
+                    SaveScrollStatus(sender as UIElement);
+
+                    var anim = ConnectedAnimationService.GetForCurrentView()
+                        .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                    anim.Configuration = new BasicConnectedAnimationConfiguration();
+                }
+
+                command.Execute(image.DataContext);
+            }
+        }
+
+        ReactivePropertySlim<IReadOnlyList<StorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
+
+
+        private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+
+            if (sender is ToggleButton toggleButton)
+            {
+                ItemSelectedProcess(toggleButton.DataContext as StorageItemViewModel);
+            }
+        }
+
+        private void ItemSelectedProcess(StorageItemViewModel itemVM)
+        {
+            var prevSelectedItemIndex = lastSelectedItemIndex;
+            var lastSelectedItemsCount = SelectedItemsCount;
+            //if (prevSelectedItemIndex >= 0 
+            //    && Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Shift) != CoreVirtualKeyStates.None
+            //    )
+            //{
+
+            //}
+            //else
+            {
+                if (itemVM.IsSelected)
+                {
+                    _vm.Selection.SelectedItems.Add(itemVM);
+                    _selectedItems.Value = _vm.Selection.SelectedItems;
+                }
+                else
+                {
+                    _vm.Selection.SelectedItems.Remove(itemVM);
+                    _selectedItems.Value = _vm.Selection.SelectedItems;
+                }
+                SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+            }
+
+            lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
+
+            var selectedItemsCount = SelectedItemsCount;
+            if (selectedItemsCount > 0)
+            {
+                SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(selectedItemsCount);
+            }
+
+            if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
+            {
+                StartSelection();
+            }
+            else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
+            {
+                ClearSelection();
+            }
+        }
+
+        public int SelectedItemsCount
+        {
+            get { return (int)GetValue(SelectedItemsCountProperty); }
+            set { SetValue(SelectedItemsCountProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedItemsCount.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedItemsCountProperty =
+            DependencyProperty.Register("SelectedItemsCount", typeof(int), typeof(ImageListupPage), new PropertyMetadata(0));
+
+
+
+
+        public bool IsSelectionModeEnabled
+        {
+            get { return (bool)GetValue(IsSelectionModeEnabledProperty); }
+            set { SetValue(IsSelectionModeEnabledProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsSelectionModeEnabled.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsSelectionModeEnabledProperty =
+            DependencyProperty.Register("IsSelectionModeEnabled", typeof(bool), typeof(ImageListupPage), new PropertyMetadata(false));
+
+
+
+        public void StartSelection()
+        {
+            IsSelectionModeEnabled = true;
+            _selectedItems.Value = _vm.Selection.SelectedItems;
+            _vm.Selection.StartSelection();
+            _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+            if (_messenger.IsRegistered<BackNavigationRequestingMessage>(this) is false)
+            {
+                _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+                {
+                    m.Value.IsHandled = true;
+                    ClearSelection();
+                });
+            }
+            
+            if (_vm.CurrentFolderItem?.Type == Models.Domain.StorageItemTypes.Albam
+                && _messenger.IsRegistered<Models.Domain.Albam.AlbamItemRemovedMessage>(this) is false)
+            {
+                _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) => 
+                {
+                    var (albamId, path) = m.Value;
+                    List<StorageItemViewModel> removeTargets = new();
+                    foreach (var itemVM in _vm.Selection.SelectedItems)
+                    {
+                        if (itemVM.Item is AlbamItemImageSource albamItem)
+                        {
+                            if (albamItem.AlbamId == albamId && albamItem.Path == path)
+                            {
+                                removeTargets.Add(itemVM);
+                            }
+                        }
+                    }
+                    
+                    foreach (var itemVM in removeTargets)
+                    {
+                        itemVM.IsSelected = false;
+                        ItemSelectedProcess(itemVM);
+                    }
+                });
+            }
+        }
+
+        public void ClearSelection()
+        {
+            IsSelectionModeEnabled = false;
+            foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<StorageItemViewModel>())
+            {
+                itemVM.IsSelected = false;
+            }
+
+            _selectedItems.Value = null;
+            SelectedCountDisplayText = String.Empty;
+            SelectedItemsCount = 0;
+            _vm.Selection.EndSelection();
+            lastSelectedItemIndex = -1;
+            _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            _messenger.Unregister<Models.Domain.Albam.AlbamItemRemovedMessage>(this);
+        }
+
+        private RelayCommand<object> _SelectionChangeCommand;
+        public RelayCommand<object> SelectionChangeCommand => _SelectionChangeCommand ??= new RelayCommand<object>(item =>
+        {
+            var itemVM = item as StorageItemViewModel;
+            itemVM.IsSelected = !itemVM.IsSelected;
+            ItemSelectedProcess(item as StorageItemViewModel);
+        });
+
+        public string SelectedCountDisplayText
+        {
+            get { return (string)GetValue(SelectedCountDisplayTextProperty); }
+            set { SetValue(SelectedCountDisplayTextProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for SelectedCountDisplayText.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty SelectedCountDisplayTextProperty =
+            DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
+
+
     }
 
 

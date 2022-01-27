@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Gaming.Input;
+using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Markup;
@@ -114,23 +115,24 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         bool _NowFocusingElement = false;
 
-        CoreDispatcher _UIDispatcher;
+        DispatcherQueue _dispatcherQueue;
 
         protected override void OnAttached()
         {
-            _UIDispatcher = this.Dispatcher;
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             this.AssociatedObject.GotFocus += AssociatedObject_GotFocus;
             this.AssociatedObject.LostFocus += AssociatedObject_LostFocus;
 
-            UINavigationManager.Pressed += Instance_Pressed;
-            UINavigationManager.Holding += Instance_Holding;
+            UINavigationManager.OnPressing += UINavigationManager_OnPressing;
+            UINavigationManager.OnPressed += Instance_Pressed;
+            UINavigationManager.OnHolding += Instance_Holding;
         }
 
         bool _Holding = false;
-        private async void Instance_Holding(UINavigationManager sender, UINavigationButtons button)
+        private void Instance_Holding(UINavigationManager sender, UINavigationButtons button)
         {
-            await _UIDispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            _dispatcherQueue.TryEnqueue(() =>
             {
                 if (Hold && button.HasFlag(Kind))
                 {
@@ -144,23 +146,33 @@ namespace TsubameViewer.Presentation.Views.UINavigation
             this.AssociatedObject.GotFocus -= AssociatedObject_GotFocus;
             this.AssociatedObject.LostFocus -= AssociatedObject_LostFocus;
 
-            UINavigationManager.Pressed -= Instance_Pressed;
-            UINavigationManager.Holding -= Instance_Holding;
+            UINavigationManager.OnPressing -= UINavigationManager_OnPressing;
+            UINavigationManager.OnPressed -= Instance_Pressed;
+            UINavigationManager.OnHolding -= Instance_Holding;
             base.OnDetaching();
         }
 
-        private async void Instance_Pressed(UINavigationManager sender, UINavigationButtons button)
+        // Note: コンテキストメニュー上で押下した場合のエラーを回避する目的で押下時のフォーカス状態を取っている
+        //       コンテキストメニュー内のインタラクションはAccept押下開始時に判定するため
+        //       Accept押下終了後、ButtonUpタイミングでは既にコンテキストメニューからフォーカスが元要素に戻っている可能性がある
+        bool _IsFocusingWhenPressing = false;
+        private void UINavigationManager_OnPressing(UINavigationManager sender, UINavigationButtons buttons)
         {
-            await _UIDispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                if (!IsEnabled) { return; }
+            _IsFocusingWhenPressing = _NowFocusingElement;
+        }
 
-                if (Windows.UI.ViewManagement.InputPane.GetForCurrentView().Visible)
+        private void Instance_Pressed(UINavigationManager sender, UINavigationButtons button)
+        {
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.High, () =>
+            {
+                if (IsRequireFocus && !_IsFocusingWhenPressing)
                 {
                     return;
                 }
 
-                if (IsRequireFocus && !_NowFocusingElement)
+                if (!IsEnabled) { return; }
+
+                if (Windows.UI.ViewManagement.InputPane.GetForCurrentView().Visible)
                 {
                     return;
                 }
@@ -193,14 +205,5 @@ namespace TsubameViewer.Presentation.Views.UINavigation
         {
             _NowFocusingElement = true;
         }
-
-        
-
-       
     }
-
-
-
-
-
 }

@@ -2,32 +2,38 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
 using Windows.System;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenWithExternalApplicationCommand : DelegateCommandBase
+    public sealed class OpenWithExternalApplicationCommand : ImageSourceCommandBase
     {
-        protected override bool CanExecute(object parameter)
+        protected override bool CanExecute(IImageSource imageSource)
         {
-            return parameter is StorageItemViewModel item 
-                && item.Type is not Models.Domain.StorageItemTypes.Folder and not Models.Domain.StorageItemTypes.None
-                ;
+            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
         }
 
-        protected override void Execute(object parameter)
+        protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            return false;
+        }
+
+        protected override void Execute(IImageSource imageSource)
+        {
+            if (FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource storageItem)
             {
-                if (itemVM.Type is Models.Domain.StorageItemTypes.Image
-                    && itemVM.Item is ArchiveEntryImageSource or PdfPageImageSource)
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                if (type is Models.Domain.StorageItemTypes.Image
+                    && imageSource is ArchiveEntryImageSource or PdfPageImageSource)
                 {
                     return;
                 }
 
-                if (itemVM.Item.StorageItem is StorageFile file)
+                if (imageSource.StorageItem is StorageFile file)
                 {
                     _ = Launcher.LaunchFileAsync(file, new LauncherOptions() { DisplayApplicationPicker = true });
                 }

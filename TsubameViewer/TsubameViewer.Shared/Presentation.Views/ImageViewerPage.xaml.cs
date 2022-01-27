@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
 using Prism.Commands;
@@ -10,6 +11,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -54,6 +56,8 @@ namespace TsubameViewer.Presentation.Views
         private ImageViewerPageViewModel _vm { get; set; }
 
         private readonly DispatcherQueue _dispatcherQueue;
+        private readonly IMessenger _messenger;
+
         public ImageViewerPage()
         {
             this.InitializeComponent();
@@ -62,6 +66,7 @@ namespace TsubameViewer.Presentation.Views
             Unloaded += OnUnloaded;
             DataContextChanged += OnDataContextChanged;
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _messenger = App.Current.Container.Resolve<IMessenger>();
         }
 
         private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -76,8 +81,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
-
             IntaractionWall.Tapped -= SwipeProcessScreen_Tapped;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
@@ -94,8 +97,6 @@ namespace TsubameViewer.Presentation.Views
 
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-
-            SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
         }
 
         public bool IsReadyToImageDisplay
@@ -113,16 +114,10 @@ namespace TsubameViewer.Presentation.Views
 
         #region Navigation
 
-        private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
+        void ForceClosePage(object sender, RoutedEventArgs e)
         {
-            if (IsOpenBottomMenu)
-            {
-                ToggleOpenCloseBottomUI();
-            }
-            else
-            {
-                (_vm.BackNavigationCommand as ICommand).Execute(null);
-            }
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            (_vm.BackNavigationCommand as ICommand).Execute(null);
         }
 
         CompositeDisposable _navigationDisposables;
@@ -147,14 +142,15 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonPressedBackgroundColor = null;
 
             appView.ExitFullScreenMode();
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+            
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            _messenger.Unregister<ImageLoadedMessage>(this);            
 
             base.OnNavigatingFrom(e);
         }
 
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             IsReadyToImageDisplay = false;
             _navigationDisposables = new CompositeDisposable();
@@ -172,14 +168,46 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
 
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
+            _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
+            {
+                if (IsOpenBottomMenu)
+                {
+                    m.Value.IsHandled = true;
+                    ToggleOpenCloseBottomUI();
+                }
+            });
 
             _navigaitonCts = new CancellationTokenSource();
-            _ = StartNavigatedAnimationAsync(_navigaitonCts.Token);
+            var ct = _navigaitonCts.Token;
+            bool isFirst = true;
+            _messenger.Register<ImageLoadedMessage>(this, (r, m) => 
+            {
+                async Task<Unit> DelayReply()
+                { 
+                    _navigationDisposables.Add(InitializeZoomReaction());
 
-            await WaitImageLoadingAsync(_navigaitonCts.Token);
+                    while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
+                    {
+                        IsReadyToImageDisplay = true;
+                        await Task.Delay(1, ct);
+                    }
 
-            _navigationDisposables.Add(InitializeZoomReaction());
+                    return Unit.Default;
+                }
+
+                if (isFirst)
+                {
+                    m.Reply(DelayReply());
+                }
+                else
+                {
+                    m.Reply(Unit.Default);
+                }
+
+                isFirst = false;
+            });
+
+            _ = StartNavigatedAnimationAsync(ct);
 
             base.OnNavigatedTo(e);
         }
@@ -228,8 +256,7 @@ namespace TsubameViewer.Presentation.Views
             }
             catch (OperationCanceledException) { }
 
-            _dispatcherQueue.TryEnqueue(() => IsReadyToImageDisplay = true);
-            
+            IsReadyToImageDisplay = true;
         }
 
         private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
@@ -246,7 +273,6 @@ namespace TsubameViewer.Presentation.Views
                 if (await WaitImageLoadingAsync(ct) is not null and var images && images.Count() == 1)
                 {
                     // ConnectedAnimation.Start後にタイムアウトでフォールバックのアニメーションが起動する可能性に配慮が必要
-
                     isConnectedAnimationDone = true;
                     animation.TryStart(images.ElementAt(0));
                     AnimationBuilder.Create()
@@ -282,10 +308,10 @@ namespace TsubameViewer.Presentation.Views
             if (_vm == null)
             {
                 await this.ObserveDependencyProperty(DataContextProperty)
-                       .Where(x => _vm is not null)
-                       .Take(1)
-                       .ToAsyncOperation()
-                       .AsTask(ct);
+                         .Where(x => _vm is not null)
+                         .Take(1)
+                         .ToAsyncOperation()
+                         .AsTask(ct);
 
                 await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
                     .Take(1)
@@ -318,6 +344,8 @@ namespace TsubameViewer.Presentation.Views
                     await Task.Delay(1, ct);
                 }
 
+                IsReadyToImageDisplay = true;
+
                 return new[] { image };
             }
             else
@@ -346,7 +374,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     await Task.Delay(1, ct);
                 }
-
+                
                 return images;
             }
         }

@@ -30,11 +30,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             StorageItem = storageItem;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
+
+            Path = PageNavigationConstants.MakeStorageItemIdWithPage(storageItem.Path, _pdfPage.Index.ToString());
         }
 
         public string Name { get; }
 
-        public string Path => Name;
+        public string Path { get; }
         public DateTime DateCreated { get; }
         public StorageFile StorageItem { get; }
 
@@ -44,9 +46,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
-                var thumbnailFile = await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
             }
             else
             {
@@ -79,6 +79,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
             return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _pdfPage);
+        }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }
+            return this.Path == other.Path;
+        }
+
+        public override string ToString()
+        {
+            return Path;
         }
     }
 }

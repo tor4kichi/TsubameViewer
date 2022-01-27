@@ -558,7 +558,7 @@
           <VisualState.StateTriggers>
             <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
-            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <Visibility>Visible</Visibility>
@@ -588,7 +588,7 @@
           <VisualState.StateTriggers>
             <wst:CompositeStateTrigger Operator="And">
               <wst:FullScreenModeTrigger IsFullScreen="True" />
-              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Storyboard>

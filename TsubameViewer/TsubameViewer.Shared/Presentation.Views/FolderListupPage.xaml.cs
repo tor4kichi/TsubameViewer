@@ -72,8 +72,14 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
+        CancellationTokenSource _navigationCts;
+
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = null;
+
             if (_vm.DisplayCurrentPath != null) 
             {
                 try
@@ -94,46 +100,57 @@ namespace TsubameViewer.Presentation.Views
         }
         #region 初期フォーカス設定
 
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        private bool IsRequireSetFocus()
         {
-            ConnectedAnimationService.GetForCurrentView()
-                        .GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName)?.Cancel();
-
-            base.OnNavigatedTo(e);
-
-            var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
-            if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
-            {
-                if (settings.IsForceEnableXYNavigation
-                    || Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                    )
-                {
-                    if (FoldersAdaptiveGridView.Items.Any())
-                    {
-                        var firstItem = FoldersAdaptiveGridView.Items.First();
-                        var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                        itemContainer.Focus(FocusState.Keyboard);
-                    }
-                    else
-                    {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
-
-                        this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
-                        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
-                    }
-                }
-            }
-            else
-            {
-                BringIntoViewLastIntractItem();
-            }
+            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
+                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+                || UINavigation.UINavigationManager.NowControllerConnected
+                ;
         }
 
-        private void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            this.FoldersAdaptiveGridView.ContainerContentChanging -= FoldersAdaptiveGridView_ContainerContentChanging;
 
-            args.ItemContainer.Focus(FocusState.Keyboard);
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            _navigationCts?.Cancel();
+            _navigationCts?.Dispose();
+            _navigationCts = new CancellationTokenSource();
+            var ct = _navigationCts.Token;
+
+            try
+            {
+                ConnectedAnimationService.GetForCurrentView()
+                            .GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+
+                base.OnNavigatedTo(e);
+
+                var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
+                if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
+                {
+                    if (IsRequireSetFocus())
+                    {
+                        await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
+                        var firstItem = FoldersAdaptiveGridView.Items.First();
+                        if (firstItem is not null)
+                        {
+                            await FoldersAdaptiveGridView.WaitFillingValue(x => FoldersAdaptiveGridView.ContainerFromItem(firstItem) != null, ct);
+                            var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
+
+                            await Task.Delay(50);
+                            itemContainer.Focus(FocusState.Keyboard);
+                        }
+                        else
+                        {
+                            ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        }
+                    }
+                }
+                else
+                {
+                    await BringIntoViewLastIntractItem(ct);
+                }
+            }
+            catch (OperationCanceledException) { }
         }
 
         #endregion
@@ -147,13 +164,10 @@ namespace TsubameViewer.Presentation.Views
             FoldersAdaptiveGridView.DeselectAll();
         }
 
-        public async void BringIntoViewLastIntractItem()
+        public async Task BringIntoViewLastIntractItem(CancellationToken ct)
         {
-            while (_vm == null || _vm.NowProcessing)
-            {
-                await Task.Delay(10);
-            }
-                
+            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
+
             var lastIntaractItem = _vm.GetLastIntractItem();
             if (lastIntaractItem != null)
             {
@@ -167,7 +181,7 @@ namespace TsubameViewer.Presentation.Views
                     {
                         item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
-                        await Task.Delay(10);
+                        await Task.Delay(1, ct);
                     }
                     while (item == null);
 
@@ -179,6 +193,7 @@ namespace TsubameViewer.Presentation.Views
                             sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
                         }
 
+                        await Task.Delay(50, ct);
                         control.Focus(FocusState.Keyboard);
                     }
                 }                

@@ -70,6 +70,7 @@
                     IsSettingsVisible="False"
                     x:Name="MyNavigtionView"
                     XYFocusDownNavigationStrategy="Projection"
+                         SelectionFollowsFocus="Disabled"
                       >
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
@@ -84,7 +85,7 @@
       </i:Interaction.Behaviors>
       <muxc:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <muxc:NavigationViewItem Content="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" DataContext="{x:Bind}" />
+          <muxc:NavigationViewItem Content="{x:Bind Title}" DataContext="{x:Bind}" />
         </DataTemplate>
       </muxc:NavigationView.MenuItemTemplate>
 
@@ -125,18 +126,21 @@
 
       <muxc:NavigationView.PaneFooter>
         <CommandBar x:Name="MenuRightCommandBar"
-                    DefaultLabelPosition="Right"
+                    DefaultLabelPosition="Collapsed"
                     Background="Transparent"
+                    Width="240"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{Binding Source=AddNewFolder, Converter={StaticResource LocalizeConverter}}" Icon="NewFolder" Command="{x:Bind _viewModel.SourceChoiceCommand}" />
+            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Icon="NewFolder" Command="{x:Bind _viewModel.SourceChoiceCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=AddNewFolder}" />
+            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Icon="List" Command="{x:Bind _viewModel.StartSelectionCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=StartMultiSelection}" />
           </CommandBar.PrimaryCommands>
           <CommandBar.SecondaryCommands>
-            <AppBarButton Label="{Binding Source=RefreshLatest, Converter={StaticResource LocalizeConverter}}" Icon="Refresh" Command="{x:Bind _viewModel.RefreshNavigationCommand}" />
-            <AppBarButton Label="{Binding Source=Settings, Converter={StaticResource LocalizeConverter}}" Icon="Setting" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage"/>
+            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Icon="Refresh" Command="{x:Bind _viewModel.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}" />
+            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Icon="Setting" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
 
             <AppBarSeparator />
-            <AppBarButton Label="{Binding Source=SendFeedbackWithMashmallow, Converter={StaticResource LocalizeConverter}}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" />
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
 
           </CommandBar.SecondaryCommands>
         </CommandBar>
@@ -241,7 +245,8 @@
             <AdaptiveTrigger MinWindowWidth="1060" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MaxWidth" Value="480" />
+            <Setter Target="MenuRightCommandBar.MinWidth" Value="480" />
+            <Setter Target="MenuRightCommandBar.DefaultLabelPosition" Value="Right" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -249,7 +254,7 @@
             <AdaptiveTrigger MinWindowWidth="820" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MaxWidth" Value="320" />
+            <Setter Target="MenuRightCommandBar.MinWidth" Value="320" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -257,8 +262,8 @@
             <AdaptiveTrigger MinWindowWidth="610" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MaxWidth" Value="240" />
-            <Setter Target="MenuRightCommandBar.Margin" Value="16 0 24 0" />
+            <Setter Target="MenuRightCommandBar.MaxWidth" Value="200" />
+            <Setter Target="MenuRightCommandBar.Margin" Value="0 0 0 0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -267,7 +272,7 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="MenuRightCommandBar.MaxWidth" Value="48" />
-            <Setter Target="MenuRightCommandBar.Margin" Value="16 0 24 0" />
+            <Setter Target="MenuRightCommandBar.Margin" Value="0 0 0 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

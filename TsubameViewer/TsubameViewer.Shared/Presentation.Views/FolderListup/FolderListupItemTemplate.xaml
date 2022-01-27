@@ -38,6 +38,13 @@
 
 
   <local:StorageItemIconTemplateSelector x:Key="StorageItemIconTemplateSelector">
+    <local:StorageItemIconTemplateSelector.ImageIcon>
+      <DataTemplate>
+        <SymbolIcon Symbol="Pictures" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
+                    Opacity="0.35"
+                    />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.ImageIcon>
     <local:StorageItemIconTemplateSelector.FolderIcon>
       <DataTemplate>
         <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
@@ -63,6 +70,24 @@
         </FontIcon>
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.ArchiveFolderIcon>
+    <local:StorageItemIconTemplateSelector.AlbamIcon>
+      <DataTemplate>
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE728;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.AlbamIcon>
+    <local:StorageItemIconTemplateSelector.AlbamImageIcon>
+      <DataTemplate>
+        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE734;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
+          <FontIcon.RenderTransform>
+            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
+          </FontIcon.RenderTransform>
+        </FontIcon>
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.AlbamImageIcon>
     <local:StorageItemIconTemplateSelector.EBookIcon>
       <DataTemplate>
         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.4">
@@ -111,10 +136,10 @@
     </Grid>
   </DataTemplate>
 
-  <DataTemplate x:Key="AddNewFolderTemplate">
+  <DataTemplate x:Key="AddNewFolderTemplate" x:DataType="vm:StorageItemViewModel">
     <uwpControls:DockPanel>
       <ToolTipService.ToolTip>
-        <TextBlock Text="{i18nExt:Localize Key=AddNewFolder}" />
+        <TextBlock Text="{x:Bind Name}" />
       </ToolTipService.ToolTip>
 
       <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
@@ -124,7 +149,7 @@
           </SymbolIcon.RenderTransform>
         </SymbolIcon>
         <StackPanel VerticalAlignment="Center">
-          <TextBlock Text="{i18nExt:Localize Key=AddNewFolder}" />
+          <TextBlock Text="{x:Bind Name}" />
         </StackPanel>
       </uwpControls:DockPanel>
       <Border  />
@@ -136,6 +161,8 @@
                                  AddNewFolder="{StaticResource AddNewFolderTemplate}"
                                  Archive="{StaticResource StorageItemCardTemplate}"
                                  ArchiveFolder="{StaticResource StorageItemCardTemplate}"
+                                 Albam="{StaticResource StorageItemCardTemplate}"
+                                 AlbamImage="{StaticResource StorageItemCardTemplate}"
                                  Image="{StaticResource StorageItemCardTemplate}"
                                  EBook="{StaticResource StorageItemCardTemplate}"
                                      >
@@ -165,6 +192,8 @@
                               Folder="{StaticResource FolderStyle}"
                               Image="{StaticResource FolderStyle}"
                               Archive="{StaticResource FolderStyle}"
+                              Albam="{StaticResource FolderStyle}"
+                              AlbamImage="{StaticResource FolderStyle}"
                               EBook="{StaticResource FolderStyle}"
                               >
   </ss:FolderItemStyleSelector>

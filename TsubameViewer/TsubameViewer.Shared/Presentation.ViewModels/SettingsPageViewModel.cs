@@ -3,7 +3,6 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
-using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -37,7 +36,6 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class SettingsPageViewModel : ViewModelBase, IDisposable
     {
-        private readonly IEventAggregator _eventAggregator;
         private readonly IMessenger _messenger;
         private readonly ApplicationSettings _applicationSettings;
         private readonly FolderListingSettings _folderListingSettings;
@@ -64,7 +62,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public string ReportUserEnvString { get; } 
         public SettingsPageViewModel(
-            IEventAggregator eventAggregator,
             IMessenger messenger,
             ApplicationSettings applicationSettings,
             FolderListingSettings folderListingSettings,
@@ -73,7 +70,6 @@ namespace TsubameViewer.Presentation.ViewModels
             ThumbnailManager thumbnailManager
             )
         {
-            _eventAggregator = eventAggregator;
             _messenger = messenger;
             _applicationSettings = applicationSettings;
             _folderListingSettings = folderListingSettings;
@@ -90,7 +86,7 @@ namespace TsubameViewer.Presentation.ViewModels
             });
 
             SettingGroups = new[]
-            {
+            {                
                 new SettingsGroupViewModel
                 {
                     Label = "SourceFoldersSettings".Translate(),
@@ -127,13 +123,9 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsForceEnableXYNavigation".Translate(), _folderListingSettings, x => x.IsForceEnableXYNavigation)
-                        { 
-                            IsVisible = Xamarin.Essentials.DeviceInfo.Idiom != Xamarin.Essentials.DeviceIdiom.TV
-                        },
-                        new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _eventAggregator),
+                        new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
-                        
+
                     }
                 },
             };
@@ -219,25 +211,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             try
             {
-                var size = await Task.Run(async () =>
-                {
-                    var folder = await ThumbnailManager.GetTempFolderAsync();
-
-                    var query = folder.CreateFileQuery();
-                    ulong size = 0;
-                    await foreach (var file in query.ToAsyncEnumerable(ct))
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        var prop = await file.GetBasicPropertiesAsync().AsTask(ct);
-                        size += prop.Size;
-                    }
-
-                    return size;
-                }, ct);
+                var size = (ulong) await Task.Run(() => _thumbnailManager.ComputeUsingSize(), ct);
 
                 _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
 
             }
@@ -448,17 +426,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
     {
-        private readonly IEventAggregator _eventAggregator;
+        private readonly IMessenger _messenger;
 
-        public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IEventAggregator eventAggregator)
+        public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IMessenger messenger)
         {
             Label = label;
-            _eventAggregator = eventAggregator;
+            _messenger = messenger;
             SelectedTheme = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Theme);
 
             _themeChangedSubscriber = SelectedTheme.Subscribe(theme => 
             {
-                _eventAggregator.GetEvent<ThemeChangeRequestEvent>().Publish(theme);
+                _messenger.Send<ThemeChangeRequestMessage>(new (theme));
             });
         }
 

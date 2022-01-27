@@ -1,20 +1,18 @@
-﻿using Prism.Commands;
-using Prism.Events;
-using Prism.Navigation;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Unity.Attributes;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class RefreshNavigationCommand : DelegateCommandBase
     {
-        private readonly IEventAggregator _eventAggregator;
+        private readonly IMessenger _messenger;
 
-        public RefreshNavigationCommand(IEventAggregator eventAggregator)
+        public RefreshNavigationCommand(IMessenger messenger)
         {
-            _eventAggregator = eventAggregator;
+            _messenger = messenger;
         }
 
         protected override bool CanExecute(object parameter)
@@ -24,7 +22,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override void Execute(object parameter)
         {
-            _eventAggregator.GetEvent<RefreshNavigationRequestEvent>().Publish();
+            _messenger.Send<RefreshNavigationRequestMessage>();
         }
     }
 }

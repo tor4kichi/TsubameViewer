@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -32,6 +35,15 @@ namespace TsubameViewer.Presentation.Views.Helpers
                 }
 
             return null;
+        }
+
+
+        public static async ValueTask WaitFillingValue<TElement>(this TElement element, Predicate<TElement> whenComplete, CancellationToken ct)
+        {
+            while (whenComplete(element) is false)
+            {
+                await Task.Delay(10, ct);
+            }
         }
     }
 }

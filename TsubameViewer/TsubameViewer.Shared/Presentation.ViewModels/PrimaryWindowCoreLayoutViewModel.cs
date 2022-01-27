@@ -1,8 +1,8 @@
-﻿using Microsoft.Toolkit.Mvvm.Input;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Prism.Commands;
-using Prism.Events;
 using Prism.Mvvm;
 using Prism.Navigation;
 using Reactive.Bindings;
@@ -29,7 +29,6 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.SourceFolders.Commands;
-using Unity.Attributes;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.Storage;
@@ -49,7 +48,6 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
 
         public PrimaryWindowCoreLayoutViewModel(
-            IEventAggregator eventAggregator,
             IScheduler scheduler,
             IMessenger messenger,
             ApplicationSettings applicationSettings,
@@ -58,15 +56,15 @@ namespace TsubameViewer.Presentation.ViewModels
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand,
             RefreshNavigationCommand refreshNavigationCommand,
-            OpenPageCommand openPageCommand
+            OpenPageCommand openPageCommand,
+            StartSelectionCommand startSelectionCommand
             )
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage) },
-                //new MenuItemViewModel() { PageType = nameof(Views.CollectionPage) },
+                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
+                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
             };
-            EventAggregator = eventAggregator;
             _scheduler = scheduler;
             _messenger = messenger;
             ApplicationSettings = applicationSettings;
@@ -77,8 +75,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceChoiceCommand.OpenAfterChoice = true;
             RefreshNavigationCommand = refreshNavigationCommand;
             OpenPageCommand = openPageCommand;
-
-
+            StartSelectionCommand = startSelectionCommand;
             UpdateAutoSuggestCommand = new ReactiveCommand<string>();
 
             UpdateAutoSuggestCommand
@@ -115,13 +112,13 @@ namespace TsubameViewer.Presentation.ViewModels
                 }                
             });
 
-        public IEventAggregator EventAggregator { get; }
         public ApplicationSettings ApplicationSettings { get; }
         public RestoreNavigationManager RestoreNavigationManager { get; }
         public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }
         public OpenPageCommand OpenPageCommand { get; }
+        public StartSelectionCommand StartSelectionCommand { get; }
 
 
         public RelayCommand SendFeedbackWithMashmallowCommand { get; } = 
@@ -139,6 +136,15 @@ namespace TsubameViewer.Presentation.ViewModels
                 await Clipboard.SetTextAsync(sb.ToString());
                 await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
             });
+
+
+        public RelayCommand SendFeedbackWithStoreReviewCommand { get; } =
+            new RelayCommand(async () =>
+            {
+                await Microsoft.Toolkit.Uwp.Helpers.SystemInformation.LaunchStoreForReviewAsync();
+            });
+
+
 
 
         #region Search
@@ -210,7 +216,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
 
-            parameters.Add(PageNavigationConstants.Path, entry.Path);
+            parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
 
             if (storageItem is StorageFolder itemFolder)
             {
@@ -294,6 +300,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public class MenuItemViewModel
     {
+        public string Title { get; set; }
         public string PageType { get; set; }
         public string Parameters { get; set; }
     }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Presentation.Views;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -23,27 +24,27 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            return parameter is StorageItemViewModel;
+            if (parameter is StorageItemViewModel itemVM)
+            {
+                parameter = itemVM.Item;
+            }
+
+            return parameter is IImageSource;
         }
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel item)
+            if (parameter is StorageItemViewModel itemVM)
             {
-                if (item.Type == StorageItemTypes.Archive)
-                {
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
-                }
-                else if (item.Type == StorageItemTypes.Folder)
-                {
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(item));
-                }
-                else if (item.Type == StorageItemTypes.EBook)
-                {
+                parameter = itemVM.Item;
+            }
 
-                }
-                else if (item.Type == StorageItemTypes.None)
+            if (parameter is IImageSource imageSource)
+            {
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam)
                 {
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(imageSource));
                 }
             }
         }

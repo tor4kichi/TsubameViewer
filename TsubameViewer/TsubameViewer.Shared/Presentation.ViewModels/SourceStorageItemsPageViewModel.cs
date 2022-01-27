@@ -27,6 +27,7 @@ using Uno.Extensions;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using TsubameViewer.Models.Domain.Albam;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -41,6 +42,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
         private readonly BookmarkManager _bookmarkManager;
+        private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly IMessenger _messenger;
         private readonly FolderListingSettings _folderListingSettings;
@@ -70,6 +72,7 @@ namespace TsubameViewer.Presentation.ViewModels
             IMessenger messenger,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
+            AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderLastIntractItemManager folderLastIntractItemManager,
@@ -102,6 +105,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             _bookmarkManager = bookmarkManager;
+            _albamRepository = albamRepository;
             _thumbnailManager = thumbnailManager;
             _messenger = messenger;
             _folderListingSettings = folderListingSettings;
@@ -138,7 +142,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     _foldersInitialized = true;
 
-                    Folders.Add(new StorageItemViewModel(_sourceStorageItemsRepository, _bookmarkManager) { });
+                    Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Models.Domain.StorageItemTypes.AddFolder));
                     await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                     {
                         if (_sourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path))
@@ -149,7 +153,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         var storageItemImageSource = new StorageItemImageSource(item.item, _folderListingSettings, _thumbnailManager);
                         if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                         {
-                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager));
+                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
                         }
                         else
                         {
@@ -191,7 +195,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
                     var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-                    return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager);
+                    return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 }
 
                 var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
@@ -222,6 +226,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     _LastUpdatedRecentlyAccessEnties = recentlyAccessItems;
                 }
+                else
+                {
+                    var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
+                    foreach (var item in RecentlyItems)
+                    {
+                        if (item.Name == lastIntaractItemPath)
+                        {
+                            item.ThumbnailChanged();
+                            item.Initialize();
+                        }
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -246,7 +262,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValue(PageNavigationConstants.Path, out string path))
+            if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
             }
@@ -277,7 +293,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
                 {
                     // 追加用ボタンの次に配置するための 1
-                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager));
+                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
                 }
                 else
                 {

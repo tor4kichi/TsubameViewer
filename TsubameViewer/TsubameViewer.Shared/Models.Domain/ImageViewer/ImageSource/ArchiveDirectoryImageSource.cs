@@ -22,12 +22,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
-            Guard.IsNotNull(directoryToken.Key, nameof(directoryToken.Key));
             _imageCollection = archiveImageCollection;
             _directoryToken = directoryToken;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
-            Name = _directoryToken.Key is not null ? new string(_directoryToken.Key.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
+            Name = _directoryToken.Label is not null ? new string(_directoryToken.Label.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
         }
 
         public IArchiveEntry ArchiveEntry => _directoryToken?.Entry;
@@ -44,8 +43,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {
-            using var mylock = await ArchiveEntryImageSource.ArchiveEntryAccessLock.LockAsync(ct);
-
             var imageSource = GetNearestImageFromDirectory(_directoryToken);
             if (imageSource == null) { return null; }
 
@@ -64,11 +61,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
                     return await imageSource.GetThumbnailImageStreamAsync(ct);
                 }
-
-                if (file == null) { return null; }
-
-                var fileStream = await file.OpenStreamForReadAsync();
-                return fileStream.AsRandomAccessStream();
+                else
+                {
+                    return file;
+                }
             }
             else
             {
@@ -129,6 +125,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
             return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, ArchiveEntry);
+        }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }            
+            return this.Path == other.Path;
+        }
+        
+        public override string ToString()
+        {
+            return Path;
         }
     }
 }

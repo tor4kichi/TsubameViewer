@@ -18,38 +18,82 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
 using Uno.Disposables;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.UseCase;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
     using static TsubameViewer.Models.Domain.FolderItemListing.ThumbnailManager;
+    using static TsubameViewer.Presentation.ViewModels.ImageListupPageViewModel;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
     public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
         #region Navigation Parameters
 
-        public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
+        public static NavigationParameters CreatePageParameter(IImageSource imageSource)
         {
-            var escapedPath = Uri.EscapeDataString(vm.Item.StorageItem.Path);
-            if (vm.Type == StorageItemTypes.Image)
+            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+            if (type == StorageItemTypes.Image)
             {
-                return new NavigationParameters((PageNavigationConstants.Path, escapedPath), (PageNavigationConstants.PageName, Uri.EscapeDataString(vm.Name)));
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(imageSource.StorageItem.Path, imageSource.Name))));
             }
-            else if (vm.Type == StorageItemTypes.ArchiveFolder)
+            else if (imageSource is ArchiveDirectoryImageSource archiveFolderImageSource)
             {
-                var archiveFolderImageSource = vm.Item as ArchiveDirectoryImageSource;
-                
-                return CreateArchiveFolderPageParameter(escapedPath, Uri.EscapeDataString(archiveFolderImageSource.Path));
+                return CreatePageParameter(archiveFolderImageSource);
+            }
+            else if (imageSource is AlbamImageSource albam)
+            {
+                return CreatePageParameter(albam);
+            }
+            else if (imageSource is AlbamItemImageSource albamItem)
+            {
+                return CreatePageParameter(albamItem);
             }
             else
             {
-                return new NavigationParameters((PageNavigationConstants.Path, escapedPath));
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.StorageItem.Path)));
             }
         }
 
-        public static NavigationParameters CreateArchiveFolderPageParameter(string filePath, string archiveFolderPath)
+
+        public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
         {
-            return new NavigationParameters((PageNavigationConstants.Path, filePath), (PageNavigationConstants.ArchiveFolderName, archiveFolderPath));
+            if (vm.Type == StorageItemTypes.Image)
+            {
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(vm.Item.StorageItem.Path, vm.Name))));
+            }
+            else if (vm.Item is ArchiveDirectoryImageSource archiveFolderImageSource)
+            {
+                return CreatePageParameter(archiveFolderImageSource);
+            }
+            else if (vm.Item is AlbamImageSource albam)
+            {
+                return CreatePageParameter(albam);
+            }
+            else if (vm.Item is AlbamItemImageSource albamItem)
+            {
+                return CreatePageParameter(albamItem);
+            }
+            else
+            {
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(vm.Item.StorageItem.Path)));
+            }
+        }
+
+        public static NavigationParameters CreatePageParameter(ArchiveDirectoryImageSource archiveFolderImageSource)
+        {
+            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(archiveFolderImageSource.StorageItem.Path, archiveFolderImageSource.Path))));
+        }
+
+        public static NavigationParameters CreatePageParameter(AlbamImageSource albam)
+        {
+            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(albam.AlbamId.ToString())));
+        }
+
+        public static NavigationParameters CreatePageParameter(AlbamItemImageSource albamItem)
+        {
+            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(albamItem.AlbamId.ToString(), albamItem.Path))));
         }
 
         #endregion
@@ -57,9 +101,10 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
+        private readonly AlbamRepository _albamRepository;
 
         public IImageSource Item { get; }
-        
+        public SelectionContext Selection { get; }
         public string Name { get; }
 
         
@@ -82,6 +127,19 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         }
 
 
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        private bool _isFavorite;
+        public bool IsFavorite
+        {
+            get => _isFavorite;
+            set => SetProperty(ref _isFavorite, value);
+        }
 
         public StorageItemTypes Type { get; }
 
@@ -94,41 +152,32 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             set { SetProperty(ref _ReadParcentage, value); }
         }
 
-        public StorageItemViewModel(SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager) 
+        public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
+
+
+        public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)         
+        {
+            Name = name;
+            Type = storageItemTypes;
+        }
+
+        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, AlbamRepository albamRepository, SelectionContext selectionContext = null)
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
-
-#if WINDOWS_UWP
-            if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
-            {
-                // Load design-time books.
-                Name = "テスト";
-            }
-#endif
-        }
-
-        public bool IsSourceStorageItem => _sourceStorageItemsRepository.IsSourceStorageItem(Path);
-
-
-        public StorageItemViewModel() { }
-
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager)
-             : this(sourceStorageItemsRepository, bookmarkManager)
-        {
+            _albamRepository = albamRepository;
+            Selection = selectionContext;            
             Item = item;
             DateCreated = Item.DateCreated;
             
             Name = Item.Name;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
-            if (item is StorageItemImageSource storageItemImageSource)
-            {
-                Path = storageItemImageSource.Path;
-            }
+            Path = item.Path;
 
             _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
 
             UpdateLastReadPosition();
+            _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
         }
 
         public void ClearImage()
@@ -194,6 +243,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 {
                     if (stream is null || stream.Size == 0) { return; }
 
+                    stream.Seek(0);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
                     //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
@@ -209,7 +259,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             {
                 _isInitialized = false;
                 _isAppearingRequestButLoadingCancelled = true;
-            }
+            }            
         }
 
         public void UpdateLastReadPosition()
@@ -220,6 +270,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public void RestoreThumbnailLoadingTask()
         {
+            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+
             if (_isAppearingRequestButLoadingCancelled)
             {
                 if (Image != null)

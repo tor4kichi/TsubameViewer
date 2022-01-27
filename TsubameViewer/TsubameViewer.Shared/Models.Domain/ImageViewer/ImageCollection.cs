@@ -1,4 +1,5 @@
-﻿using SharpCompress.Archives;
+﻿using Microsoft.Toolkit.Diagnostics;
+using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -13,6 +14,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Data.Pdf;
 using Windows.Storage;
+using static TsubameViewer.Models.Domain.ImageViewer.ArchiveFileInnerStructureCache;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
@@ -20,6 +22,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         string Name { get; }
         IEnumerable<IImageSource> GetAllImages();
+        
+        ValueTask<int> GetImageCountAsync(CancellationToken ct);
+        ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct);
+        ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct);
     }
 
     public interface IImageCollectionDirectoryToken
@@ -27,88 +33,181 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         string Key { get; }
     }
 
-    public record ArchiveDirectoryToken(IArchive Archive, IArchiveEntry Entry) : IImageCollectionDirectoryToken
+    public record ArchiveDirectoryToken(string DirectoryPath, IArchive Archive, IArchiveEntry Entry, bool IsRoot) : IImageCollectionDirectoryToken
     {
-        private string _key;
-        public string Key => _key ??= (Entry?.Key is not null ? (Entry.IsDirectory ? Entry.Key : Path.GetDirectoryName(Entry.Key)) : null);
+        public string Key => DirectoryPath;
+
+        public string Label => DirectoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);        
     }
 
     public interface IImageCollectionWithDirectory : IImageCollection
     {
         ArchiveDirectoryToken GetDirectoryTokenFromPath(string path);
         IEnumerable<ArchiveDirectoryToken> GetDirectoryPaths();
-        List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token);
+        List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token);        
     }
 
 
 
     public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDisposable
     {
-
         public StorageFile File { get; }
         public IArchive Archive { get; }
 
+        private readonly ArchiveFileInnerSturcture _archiveFileInnerStructure;
         private readonly CompositeDisposable _disposables;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
         private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
-        public ArchiveImageCollection(StorageFile file, IArchive archive, CompositeDisposable disposables, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+
+        private readonly IImageSource[] _imageSourcesCache;
+        private readonly ImmutableSortedDictionary<string, int> _KeyToIndex;
+
+        private readonly ImmutableArray<int> _imageEntryIndexSortWithDateTime;
+        private readonly ImmutableArray<int> _imageEntryIndexSortWithTitle;
+        private readonly ImmutableSortedDictionary<string, int[]> _FileByFolder;
+        public ArchiveImageCollection(
+            StorageFile file, 
+            IArchive archive,
+            ArchiveFileInnerSturcture archiveFileInnerStructure,
+            CompositeDisposable disposables, 
+            FolderListingSettings folderListingSettings, 
+            ThumbnailManager thumbnailManager            
+            )
         {
             File = file;
             Archive = archive;
+            _archiveFileInnerStructure = archiveFileInnerStructure;
             _disposables = disposables;
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
-            _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
-
-            // ディレクトリベースでフォルダ構造を見つける
-            List<IArchiveEntry> notDirectoryItem = new List<IArchiveEntry>();
-            List<IArchiveEntry> directoryItem = new List<IArchiveEntry>();
-            foreach (var entry in Archive.Entries)
+            
+            // アーカイブのフォルダ構造を見つける
+            var structure = _archiveFileInnerStructure;
+            _KeyToIndex = structure.Items.Select((x, i) => (Key: x, Index: i)).ToImmutableSortedDictionary(x => x.Key, x => x.Index);
+            //_IndexToKey = structure.Items.ToImmutableArray();
+            
+            HashSet<int> supportedFileIndexies = new();
+            int imagesCount = 0;
+            foreach (var index in structure.FileIndexies)
             {
-                if (entry.IsDirectory)
+                var key = structure.Items[index];
+                if (SupportedFileTypesHelper.IsSupportedImageFileExtension(key))
                 {
-                    directoryItem.Add(entry);
-                }
-                else if (DirectoryPathHelper.GetDirectoryDepth(entry.Key) >= 1 && SupportedFileTypesHelper.IsSupportedImageFileExtension(entry.Key))
-                {
-                    notDirectoryItem.Add(entry);
+                    supportedFileIndexies.Add(index);
+
+                    if (DirectoryPathHelper.GetDirectoryDepth(key) >= 1)
+                    {
+                        var directoryName = Path.GetDirectoryName(key);                        
+                    }
+
+                    imagesCount++;
                 }
             }
 
-            var dir = Enumerable.Concat(directoryItem, notDirectoryItem).Distinct(ArchiveDirectoryEqualityComparer.Default);
 
-            // もしディレクトリベースのフォルダ構造が無い場合はファイル構造から見つける
-            _directories = dir.Select(x => new ArchiveDirectoryToken(Archive, x)).OrderBy(x => x.Key).ToImmutableList();
-            if (_rootDirectoryToken == null ||
-                (_directories.Count == 1 && _directories[0].Entry.IsRootDirectoryEntry())
-                )
+            if (string.IsNullOrEmpty(structure.RootDirectoryPath))
             {
-                _rootDirectoryToken = new ArchiveDirectoryToken(Archive, null);
+                RootDirectoryToken = new ArchiveDirectoryToken(string.Empty, Archive, null, true);
+            }
+            else
+            {
+                RootDirectoryToken = new ArchiveDirectoryToken(structure.RootDirectoryPath, Archive, GetEntryFromKey(structure.RootDirectoryPath), true);
+            }
+
+            _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
+            _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
+            _FileByFolder = structure.FilesByFolder.Select(x => (x.Key, x.Value.Where(x => supportedFileIndexies.Contains(x)))).Where(x => x.Item2.Any()).ToImmutableSortedDictionary(x => x.Key, x => x.Item2.ToArray());
+
+            ImagesCount = imagesCount;
+            _imageSourcesCache = new IImageSource[structure.Items.Length];
+            if (_FileByFolder.Any() is false)
+            {
+                var entry = Archive.Entries.First();
+                RootDirectoryToken ??= new ArchiveDirectoryToken(entry.GetDirectoryPath(), Archive, entry, true);
+                _directories = new[] { RootDirectoryToken }.ToImmutableList();
+            }
+            else if (_FileByFolder.Count == 1)
+            {
+                var entry = GetEntryFromKey(_FileByFolder.Keys.ElementAt(0));
+                RootDirectoryToken ??= new ArchiveDirectoryToken(entry.GetDirectoryPath(), Archive, entry, true);
+                _directories = new[] { RootDirectoryToken }.ToImmutableList();
+            }
+            else
+            {
+                _directories = _FileByFolder.Where(x => x.Value.Any()).Select(x => x.Key).Select(x => 
+                {
+                    if (x.EndsWith(Path.DirectorySeparatorChar) is false && x.EndsWith(Path.AltDirectorySeparatorChar) is false)
+                    {
+                        return x + structure.FolderPathSeparator;
+                    }
+                    else
+                    {
+                        return x;
+                    }
+                })
+                    .SelectMany(x => 
+                    {
+                        var sepChar = structure.FolderPathSeparator;
+                        var dirNames = x.Split(sepChar, StringSplitOptions.RemoveEmptyEntries);
+                        for (var i = 1; i < dirNames.Length; i++)
+                        {                            
+                            dirNames[i] = $"{dirNames[i - 1]}{sepChar}{dirNames[i]}";
+                        }
+
+                        return dirNames;
+                    })
+                    .Distinct()
+                    .Select(GetEntryFromKey)
+                    .Select(x => new ArchiveDirectoryToken(x.GetDirectoryPath(), Archive, x, false)).OrderBy(x => x.Key).ToImmutableList();
+
+                RootDirectoryToken ??= new ArchiveDirectoryToken(string.Empty, Archive, null, true);
             }
         }
 
+        public int GetImageCount() => ImagesCount;
 
 
-        private readonly ArchiveDirectoryToken _rootDirectoryToken;
+        private IArchiveEntry GetEntryFromKey(string key)
+        {
+            return Archive.Entries.ElementAt(GetIndexFromKey(key));
+        }
+
+        private int GetIndexFromKey(string key)
+        {
+            if (_KeyToIndex.TryGetValue(key, out int index))
+            {
+                return index;
+            }
+            else
+            {
+                var find = _KeyToIndex.FirstOrDefault(x => x.Key.StartsWith(key));
+                Guard.IsNotNullOrEmpty(find.Key, nameof(find.Key));
+                return find.Value;
+            }
+        }
+
+        public ArchiveDirectoryToken RootDirectoryToken { get; }
 
         public string Name => File.Name;
 
         public ArchiveDirectoryToken GetDirectoryTokenFromPath(string path)
         {
-            if (string.IsNullOrEmpty(path)) { return _rootDirectoryToken; }
+            if (string.IsNullOrEmpty(path)) { return RootDirectoryToken; }
+            if (RootDirectoryToken.Key == path) { return RootDirectoryToken; }
 
-            return _directories.FirstOrDefault(x => x.Key == path);
+            return _directories.FirstOrDefault(x => x.Key == path)
+                ?? _directories.FirstOrDefault(x => x.Key?.StartsWith(path) ?? false);
         }
 
 
         public IEnumerable<ArchiveDirectoryToken> GetSubDirectories(ArchiveDirectoryToken token)
         {
-            token ??= _rootDirectoryToken;
+            token ??= RootDirectoryToken;
             return _directories
-                .Where(x => token != x)
+                .Where(x => token.DirectoryPath != x.DirectoryPath)
                 .Where(x => token.IsChildDirectoryPath(x));
         }
 
@@ -127,23 +226,50 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return GetImagesFromDirectory(token).FirstOrDefault();
         }
 
+        public bool IsExistImageFromDirectory(ArchiveDirectoryToken token)
+        {            
+            return _FileByFolder.TryGetValue(token.DirectoryPath, out var indexies)
+                ? indexies.Any()
+                : false;
+        }
+
         public List<IImageSource> GetImagesFromDirectory(ArchiveDirectoryToken token)
         {
-            token ??= _rootDirectoryToken;
+            token ??= RootDirectoryToken;
 
             if (_entriesCacheByDirectory.TryGetValue(token, out var entries)) { return entries; }
-            if (token != _rootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
+            if (token != RootDirectoryToken && _directories.Contains(token) is false) { throw new InvalidOperationException(); }
 
-            var imageSourceItems = (token?.Key is null
-                ? Archive.Entries.Where(x => x.IsRootDirectoryEntry())
-                : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
-                )
-                .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
-                .Select(x => (IImageSource)new ArchiveEntryImageSource(x, token, this, _folderListingSettings, _thumbnailManager))
-                .ToList();
+            //if (token?.Key is not null && _FileByFolder.Keys.FirstOrDefault(x => token.Key.StartsWith(x)) is not null and var folderKey)
+            //{
+            //    var filesIndexies = _FileByFolder[folderKey];
+            //    var imageSourceItems = filesIndexies.Select(x => GetImageAt(x, FileSortType.None, token)).ToList();
+            //    _entriesCacheByDirectory.Add(token, imageSourceItems);
+            //    return imageSourceItems;
+            //}
+            //else
+            {
+                var imageSourceItems = (token.IsRoot
+                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry())
+                    : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
+                    )
+                    .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
+                    .Select(x =>
+                    {
+                        var index = GetIndexFromKey(x.Key);
+                        if (_imageSourcesCache[index] is not null and var image)
+                        {
+                            return image;
+                        }
 
-            _entriesCacheByDirectory.Add(token, imageSourceItems);
-            return imageSourceItems;
+                        var dirToken = GetDirectoryTokenFromPath(Path.GetDirectoryName(x.Key));
+                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
+                    })
+                    .ToList();
+
+                _entriesCacheByDirectory.Add(token, imageSourceItems);
+                return imageSourceItems;
+            }
         }
 
 
@@ -156,7 +282,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             if (_directories.Count == 0)
             {
-                return GetImagesFromDirectory(_rootDirectoryToken);
+                return GetImagesFromDirectory(RootDirectoryToken);
             }
             /*
             else if (_directories.Count == 1 && IsRootDirectoryEntry(_directories[0].Entry))
@@ -169,6 +295,62 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 return _directories.SelectMany(x => GetImagesFromDirectory(x)).ToList();
             }
         }
+
+        private readonly int ImagesCount;
+        public ValueTask<int> GetImageCountAsync(CancellationToken ct)
+        {
+            return new(ImagesCount);
+        }
+
+        public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return new(GetImageAt(index, sort));
+        }
+
+        private IImageSource GetImageAt(int index, FileSortType sort, ArchiveDirectoryToken token = null)
+        {
+            var sortedIndex = ToSortedIndex(index, sort);
+            if (_imageSourcesCache[sortedIndex] is not null and var image)
+            {
+                return image;
+            }
+
+            var imageEntry = Archive.Entries.ElementAt(sortedIndex);
+
+            Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
+
+            token ??= GetDirectoryTokenFromPath(Path.GetDirectoryName(imageEntry.Key));
+            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
+        }
+       
+        // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            foreach (var i in Enumerable.Range(0, ImagesCount))
+            {
+                var sortedIndex = ToSortedIndex(i, sort);
+                var imageEntry = Archive.Entries.ElementAt(sortedIndex);
+                if (key == imageEntry.Key || imageEntry.Key.StartsWith(key))
+                {
+                    return new (i);
+                }
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        private int ToSortedIndex(int index, FileSortType sort)
+        {
+            return sort switch
+            {
+                FileSortType.None => index,
+                FileSortType.TitleAscending => _imageEntryIndexSortWithTitle[index],
+                FileSortType.TitleDecending => _imageEntryIndexSortWithTitle[_imageEntryIndexSortWithTitle.Length - index - 1],
+                FileSortType.UpdateTimeAscending => _imageEntryIndexSortWithDateTime[index],
+                FileSortType.UpdateTimeDecending => _imageEntryIndexSortWithDateTime[_imageEntryIndexSortWithDateTime.Length - index - 1],
+                _ => throw new NotSupportedException(sort.ToString()),
+            };
+        }
     }
 
 
@@ -178,12 +360,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
+        private readonly IImageSource[] _imageSourcesCache;
         public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _pdfDocument = pdfDocument;
             _folderListingSettings = folderListingSettings;
             File = file;
             _thumbnailManager = thumbnailManager;
+
+            _imageSourcesCache = new IImageSource[_pdfDocument.PageCount];
         }
         public string Name => File.Name;
 
@@ -194,6 +379,37 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
               .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _thumbnailManager));
+        }
+
+
+        public ValueTask<int> GetImageCountAsync(CancellationToken ct)
+        {
+            return new ((int)_pdfDocument.PageCount);
+        }
+        
+        public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
+        {
+            return new(GetImageAt(index));
+        }
+
+        private IImageSource GetImageAt(int index)
+        {
+            var page = _pdfDocument.GetPage((uint)index);
+            return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _thumbnailManager);
+        }
+
+        public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+        {
+            var index = int.Parse(key);
+            return new (sort switch
+            {
+                FileSortType.None => index,
+                FileSortType.TitleAscending => index,
+                FileSortType.TitleDecending => (int)_pdfDocument.PageCount - index - 1,
+                FileSortType.UpdateTimeAscending => index,
+                FileSortType.UpdateTimeDecending => (int)_pdfDocument.PageCount - index - 1,
+                _ => throw new NotSupportedException(sort.ToString())
+            });
         }
     }
 }

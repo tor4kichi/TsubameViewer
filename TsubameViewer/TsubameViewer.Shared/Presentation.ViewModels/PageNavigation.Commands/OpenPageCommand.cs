@@ -4,7 +4,6 @@ using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Unity.Attributes;
 using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands

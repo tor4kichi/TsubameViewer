@@ -35,6 +35,7 @@ using Prism.Ioc;
 using AsyncLock = Uno.Threading.AsyncLock;
 using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using Microsoft.Toolkit.Mvvm.Messaging;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -54,7 +55,7 @@ namespace TsubameViewer.Presentation.Views
 #if DEBUG
             DebugPanel.Visibility = Visibility.Visible;
 #endif
-
+            _messenger = App.Current.Container.Resolve<IMessenger>();
 
             Loaded += ResetAnimationUIContainer_Loaded1;
             Unloaded += TapAndController_Unloaded;
@@ -92,6 +93,8 @@ namespace TsubameViewer.Presentation.Views
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             EPubRenderer.Visibility = Visibility.Collapsed;
+            
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
 
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
@@ -104,9 +107,7 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonInactiveBackgroundColor = null;
             appView.TitleBar.ButtonPressedBackgroundColor = null;
 
-            appView.ExitFullScreenMode();
-
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = false;
+            appView.ExitFullScreenMode();            
 
             base.OnNavigatingFrom(e);
         }
@@ -140,7 +141,14 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
 
-            PrimaryWindowCoreLayout.IsPreventSystemBackNavigation = true;
+            _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
+            {
+                if (TocContainer.Visibility == Visibility.Visible)
+                {
+                    m.Value.IsHandled = true;
+                    CloseTocPaneCommand.Execute();
+                }
+            });
 
             ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
@@ -208,7 +216,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void TapAndController_Unloaded(object sender, RoutedEventArgs e)
         {
-            SystemNavigationManager.GetForCurrentView().BackRequested -= ImageViewerPage_BackRequested;
         }
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
@@ -218,20 +225,6 @@ namespace TsubameViewer.Presentation.Views
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
             SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted;
             SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
-
-            SystemNavigationManager.GetForCurrentView().BackRequested += ImageViewerPage_BackRequested;
-        }
-
-        private void ImageViewerPage_BackRequested(object sender, BackRequestedEventArgs e)
-        {
-            if (TocContainer.Visibility == Visibility.Visible)
-            {
-                CloseTocPaneCommand.Execute();
-            }      
-            else
-            {
-                (_vm.BackNavigationCommand as ICommand).Execute(null);
-            }
         }
 
         private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
@@ -438,7 +431,7 @@ namespace TsubameViewer.Presentation.Views
         // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
         public static readonly DependencyProperty InnerGoPrevImageCommandProperty =
             DependencyProperty.Register("InnerGoPrevImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
-
+        private readonly IMessenger _messenger;
 
         async void ExecuteGoPrevCommand()
         {

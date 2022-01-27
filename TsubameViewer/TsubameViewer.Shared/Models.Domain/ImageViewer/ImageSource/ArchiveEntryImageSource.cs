@@ -45,6 +45,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         IStorageItem IImageSource.StorageItem => StorageItem;
 
+        public string ArchiveDirectoryName => _archiveDirectoryToken?.Label;
 
         // Note: NameをImageViewerで表示時のページ名として扱っている
         // フォルダ名をスキップしてしまうとアーカイブ内に別フォルダに同名ファイルがある場合に
@@ -53,7 +54,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         //public string Name => _name ??= System.IO.Path.GetFileName(_entry.Key);
         public string Name => _name ??= _entry.Key;
 
-        public string Path => _entry.Key;
+        private string _path; 
+        public string Path => _path ??= PageNavigationConstants.MakeStorageItemIdWithPage(StorageItem.Path, _entry.Key);
 
         public DateTime DateCreated { get; }
 
@@ -82,9 +84,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
-                var thumbnailFile = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
-                var stream = await thumbnailFile.OpenStreamForReadAsync();
-                return stream.AsRandomAccessStream();
+                return await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
             }
             else
             {
@@ -96,6 +96,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public IArchiveEntry GetParentDirectoryEntry()
         {
             if (_archiveDirectoryToken.Key == null
+                || _archiveDirectoryToken.IsRoot
                 || !(_archiveDirectoryToken.Key.Contains(System.IO.Path.DirectorySeparatorChar) || _archiveDirectoryToken.Entry.Key.Contains(System.IO.Path.AltDirectorySeparatorChar))                
                 )
             {
@@ -108,6 +109,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
             return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
+        }
+
+        public bool Equals(IImageSource other)
+        {
+            if (other == null) { return false; }
+            return this._path == other.Path;
+        }
+
+        public override string ToString()
+        {
+            return Path;
         }
     }
 }

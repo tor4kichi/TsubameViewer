@@ -1,5 +1,4 @@
-﻿using Prism.Events;
-using Reactive.Bindings.Extensions;
+﻿using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Disposables;
@@ -16,6 +15,7 @@ using System.Diagnostics;
 using Windows.Storage;
 using System.Linq;
 using System.IO;
+using TsubameViewer.Models.Domain.ImageViewer;
 
 namespace TsubameViewer.Models.UseCase.Maintenance
 {   
@@ -33,7 +33,8 @@ namespace TsubameViewer.Models.UseCase.Maintenance
         private readonly SecondaryTileManager _secondaryTileManager;
         private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-        
+        private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
+
         public CacheDeletionWhenSourceStorageItemIgnored(
             IMessenger messenger,
             SourceStorageItemsRepository storageItemsRepository,
@@ -43,7 +44,8 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             ThumbnailManager thumbnailManager,
             SecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
-            DisplaySettingsByPathRepository displaySettingsByPathRepository
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
+            ArchiveFileInnerStructureCache archiveFileInnerStructureCache
             )
         {
             _messenger = messenger;
@@ -55,7 +57,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _secondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
-
+            _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
             _messenger.RegisterAll(this);
         }
 
@@ -81,6 +83,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
                 _recentlyAccessManager.Delete(oldPath);
                 _folderContainerTypeManager.Delete(oldPath);
                 _folderLastIntractItemManager.Remove(oldPath);
+                _archiveFileInnerStructureCache.DeleteUnderPath(oldPath);
 
                 await Task.WhenAll(tasks);
 
@@ -169,33 +172,40 @@ namespace TsubameViewer.Models.UseCase.Maintenance
 
         async Task DeleteCacheWithDescendantsAsync(string path)
         {
-            var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
-
-            // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
-            if (_storageItemsRepository.IsIgnoredPath(item.Path))
+            try
             {
-                if (item is StorageFolder folder)
-                {
-                    await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
-                    {
-                        Debug.WriteLine($"Delete cache: {deletePath}");
-                        await DeleteCacheAllUnderPathAsync(deletePath);
-                    }
+                var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
 
-                    await DeleteCachePathAsync(folder.Path);
+                // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
+                if (_storageItemsRepository.IsIgnoredPath(item.Path))
+                {
+                    if (item is StorageFolder folder)
+                    {
+                        await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
+                        {
+                            Debug.WriteLine($"Delete cache: {deletePath}");
+                            await DeleteCacheAllUnderPathAsync(deletePath);
+                        }
+
+                        await DeleteCachePathAsync(folder.Path);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Delete cache: {path}");
+                        await DeleteCachePathAsync(path);
+                    }
                 }
                 else
                 {
-                    Debug.WriteLine($"Delete cache: {path}");
-                    await DeleteCachePathAsync(path);
+                    Debug.WriteLine($"Skiped delete cache: {path}");
                 }
-            }
-            else
-            {
-                Debug.WriteLine($"Skiped delete cache: {path}");
-            }
 
-            _storageItemsRepository.RemoveFolder(token);
+                _storageItemsRepository.RemoveFolder(token);
+            }
+            catch (Exception ex)
+            { 
+                
+            }
         }
 
         async Task DeleteCacheAllUnderPathAsync(string path)
@@ -210,6 +220,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _folderContainerTypeManager.DeleteAllUnderPath(path);
             _folderLastIntractItemManager.RemoveAllUnderPath(path);
             _displaySettingsByPathRepository.DeleteUnderPath(path);
+            _archiveFileInnerStructureCache.DeleteUnderPath(path);
 
             await Task.WhenAll(tasks);
         }
@@ -226,6 +237,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
             _folderContainerTypeManager.Delete(path);
             _folderLastIntractItemManager.Remove(path);
             _displaySettingsByPathRepository.Delete(path);
+            _archiveFileInnerStructureCache.Delete(path);
 
             await Task.WhenAll(tasks);
         }

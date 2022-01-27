@@ -9,6 +9,7 @@ using Windows.UI.Xaml;
 using System.Threading;
 using Windows.UI.Core;
 using Uno.Threading;
+using System.Diagnostics;
 
 namespace TsubameViewer.Presentation.Views.UINavigation
 {
@@ -16,17 +17,18 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
     public class UINavigationManager : IDisposable
     {
+        public static event UINavigationButtonEventHandler OnPressing;
 
         /// <summary>
         /// ボタンを離した瞬間を通知するイベントです。
         /// </summary>
-        public static event UINavigationButtonEventHandler Pressed;
+        public static event UINavigationButtonEventHandler OnPressed;
 
         /// <summary>
         /// ボタンを押し続けた場合に通知されるイベントです。<br />
         /// 一度のボタン押下中に対して一回だけホールドを検出して通知します。
         /// </summary>
-        public static event UINavigationButtonEventHandler Holding;
+        public static event UINavigationButtonEventHandler OnHolding;
 
 
 
@@ -47,6 +49,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         bool _IsDisposed;
 
+        public static bool NowControllerConnected => UINavigationController.UINavigationControllers.Count > 0;
 
         public static bool InitialEnabling = true;
 
@@ -71,6 +74,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
             IsEnabled = InitialEnabling;
         }
 
+        
         private bool _IsEnabled;
         public bool IsEnabled
         {
@@ -183,12 +187,18 @@ namespace TsubameViewer.Presentation.Views.UINavigation
                         var pressing = RequiredUINavigationButtonsHelper.ToUINavigationButtons(currentInput.RequiredButtons)
                             | OptionalUINavigationButtonsHelper.ToUINavigationButtons(currentInput.OptionalButtons);
 
-                        //                var trigger = pressing & (_PrevPressingButtons ^ pressing);
-                        var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
+                        var trigger = pressing & (_PrevPressingButtons ^ pressing);
+                        if (trigger != UINavigationButtons.None)
+                        {
+                            Debug.WriteLine($"pressing : {trigger}");
+                            OnPressing?.Invoke(this, trigger);
+                        }
 
+                        var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
                         if (released != UINavigationButtons.None)
                         {
-                            Pressed?.Invoke(this, released);
+                            Debug.WriteLine($"released : {released}");
+                            OnPressed?.Invoke(this, released);
                         }
 
                         // ホールド入力の検出
@@ -217,7 +227,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
                         if (holdingButtons != UINavigationButtons.None)
                         {
-                            Holding?.Invoke(this, holdingButtons);
+                            OnHolding?.Invoke(this, holdingButtons);
                         }
 
                         // トリガー検出用に前フレームの入力情報を保存
