@@ -16,7 +16,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             bool pathAEmpty = string.IsNullOrEmpty(pathA);
             bool pathBEmpty = string.IsNullOrEmpty(pathB);
-            if (pathAEmpty && pathBEmpty) { return true; }
+            if (pathAEmpty && GetDirectoryDepth(pathB) == 0) { return true; }
+            else if (pathBEmpty && GetDirectoryDepth(pathA) == 0) { return true; }
+            else if (pathAEmpty && pathBEmpty) { return true; }
             else if (pathAEmpty ^ pathBEmpty) { return false; }
 
             bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
@@ -75,7 +77,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     
     public static class ArchivePathExtensions
     {
-        
+        public static string GetDirectoryPath(this IArchiveEntry entry)
+        {
+            return entry.IsDirectory ? entry.Key : Path.GetDirectoryName(entry.Key);
+        }
 
         public static bool IsRootDirectoryEntry(this IArchiveEntry entry)
         {

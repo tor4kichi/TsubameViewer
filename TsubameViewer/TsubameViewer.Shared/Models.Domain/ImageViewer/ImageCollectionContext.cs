@@ -256,7 +256,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
         {
-            return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
+            return ArchiveImageCollection.GetAllImages().ToAsyncEnumerable();
         }
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -266,7 +266,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
         {
-            return new(ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).Any());
+            return new (ArchiveImageCollection.IsExistImageFromDirectory(ArchiveDirectoryToken));
         }
 
         public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)

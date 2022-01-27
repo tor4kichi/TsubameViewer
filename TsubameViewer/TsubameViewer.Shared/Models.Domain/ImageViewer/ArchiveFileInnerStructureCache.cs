@@ -3,6 +3,7 @@ using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -26,7 +27,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             public int[] FolderIndexies { get; set; }
 
-            public int[] FileIndexiesSortWithDateTime { get; set; }            
+            public int[] FileIndexiesSortWithDateTime { get; set; }
+
+            public string RootDirectoryPath { get; set; }
+
+            public Dictionary<string, int[]> FilesByFolder { get; set; }
+            
+            public char FolderPathSeparator { get; set; }
         }
 
         public sealed record ArchiveFileInnerSturctureItem(string Key, bool IsDirectory);
@@ -62,6 +69,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             public ArchiveFileLastSizeCacheRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
             {
+                
             }
 
             public long? FindById(string path)
@@ -89,17 +97,45 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             List<string> items = new List<string>();
             List<(IArchiveEntry Entry, int Index)> fileIndexies = new();
             List<int> folderIndexies = new();
+            Dictionary<string, List<int>> filesByFolder = new();
+            char? folderPathSepalator = null;
             foreach (var (entry, index) in archive.Entries.Select((x, i) => (x, i)))
             {
                 items.Add(entry.Key);
                 if (entry.IsDirectory)
                 {
                     folderIndexies.Add(index);
+
+                    var directoryName = entry.Key;
+                    if (filesByFolder.TryGetValue(directoryName, out var filesIndexiesInFolder) is false)
+                    {
+                        filesByFolder.Add(directoryName, filesIndexiesInFolder = new());
+                    }
                 }
                 else
                 {
                     // Note: 将来の拡張子対応の変更に備えてキャッシュデータ上では絞り込みを行わない。
                     fileIndexies.Add((entry, index));
+
+                    var directoryName = Path.GetDirectoryName(entry.Key);
+                    if (filesByFolder.TryGetValue(directoryName, out var filesIndexiesInFolder) is false)
+                    {
+                        filesByFolder.Add(directoryName, filesIndexiesInFolder = new());
+                    }
+
+                    filesIndexiesInFolder.Add(index);
+
+                    if (folderPathSepalator == null)
+                    {
+                        if (entry.Key.Any(c => c == Path.DirectorySeparatorChar))
+                        {
+                            folderPathSepalator = Path.DirectorySeparatorChar;
+                        }
+                        else if (entry.Key.Any(c => c == Path.AltDirectorySeparatorChar))
+                        {
+                            folderPathSepalator = Path.AltDirectorySeparatorChar;
+                        }
+                    }
                 }
 
                 ct.ThrowIfCancellationRequested();
@@ -110,7 +146,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 .OrderBy(x => x.DateTime)
                 .Select(x => x.Index)
                 .ToArray();
-               
+
+            folderPathSepalator ??= Path.DirectorySeparatorChar;
+
             var cacheEntry = new ArchiveFileInnerSturcture()
             {
                 Path = path,
@@ -118,7 +156,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 FileIndexies = fileIndexies.Select(x => x.Index).ToArray(),
                 FolderIndexies = folderIndexies.ToArray(),
                 FileIndexiesSortWithDateTime = fileIndexiesSortWithDateTime,
+                FilesByFolder = filesByFolder.ToDictionary(x => x.Key, x => x.Value.ToArray()),
+                FolderPathSeparator = folderPathSepalator.Value,
+                RootDirectoryPath = string.Join(folderPathSepalator.Value, filesByFolder.Keys.Select(x => x.Split(folderPathSepalator.Value)).Aggregate((a, b) => a.Intersect(b).ToArray())),
             };
+
+            Debug.WriteLine(cacheEntry.RootDirectoryPath);
 
             _archiveFileLastSizeCacheRepository.UpdateItem(new ArchiveFileLastSizeCache() { Path = path, Size = archive.TotalSize });
             _archiveFileInnerStructureCacheRepository.UpdateItem(cacheEntry);
