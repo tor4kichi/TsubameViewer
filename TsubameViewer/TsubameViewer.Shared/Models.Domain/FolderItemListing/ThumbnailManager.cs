@@ -323,7 +323,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
-        public Task<IRandomAccessStream> GetThumbnailAsync(IStorageItem storageItem, CancellationToken ct)
+        public ValueTask<IRandomAccessStream> GetThumbnailAsync(IStorageItem storageItem, CancellationToken ct)
         {
             if (storageItem is StorageFolder folder)
             {
@@ -339,7 +339,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<IRandomAccessStream> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
+        public async ValueTask<IRandomAccessStream> GetFolderThumbnailImageFileAsync(StorageFolder folder, CancellationToken ct)
         {
             var itemId = ToId(folder);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
@@ -424,7 +424,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<IRandomAccessStream> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
+        public async ValueTask<IRandomAccessStream> GetFileThumbnailImageFileAsync(StorageFile file, CancellationToken ct)
         {
             var itemId = ToId(file.Path);
             if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
@@ -464,7 +464,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         static readonly object _lockForReadArchiveEntry = new object();
 
-        public async Task<IRandomAccessStream> GetArchiveEntryThumbnailImageFileAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
+        public async ValueTask<IRandomAccessStream> GetArchiveEntryThumbnailImageFileAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
         {
             var path = GetArchiveEntryPath(sourceFile, archiveEntry);
             var itemId = ToId(path);
@@ -537,7 +537,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-        public async Task<IRandomAccessStream> GetPdfPageThumbnailImageFileAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
+        public async ValueTask<IRandomAccessStream> GetPdfPageThumbnailImageFileAsync(StorageFile sourceFile, PdfPage pdfPage, CancellationToken ct)
         {
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
             var itemId = ToId(path);
