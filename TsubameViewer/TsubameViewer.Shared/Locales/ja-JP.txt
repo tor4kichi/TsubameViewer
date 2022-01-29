@@ -22,7 +22,7 @@ Settings = 設定
 SendFeedbackWithMashmallow = フィードバックを送る
 SendFeedbackWithStoreReview = ストアレビューを送る
 
-SourceStorageItemsPage = フォルダー
+SourceStorageItemsPage = フォルダ
 CollectionPage = コレクション
 
 
