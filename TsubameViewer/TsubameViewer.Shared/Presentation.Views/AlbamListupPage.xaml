@@ -13,15 +13,14 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:navigationVM="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
   xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors"
-  mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+  mc:Ignorable="d">
 
   <Page.Resources>
     
   </Page.Resources>
   
   
-  <Grid>
+  <Grid Background="{ThemeResource ApplicationContentBackgroundBrush}">
     <controls:AdaptiveGridView 
       x:Name="ItemsAdaptiveGridView"      
       ItemsSource="{x:Bind _vm.Albams}"
