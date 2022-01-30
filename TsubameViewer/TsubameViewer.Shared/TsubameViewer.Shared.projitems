@@ -115,7 +115,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\MenuDisplayMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\NavigationRequestMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\PageNavigationConstants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageTransisionHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\PageTransitionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />

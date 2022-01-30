@@ -68,7 +68,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     {
                         if (await collectionContext.IsExistImageFileAsync(ct))
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                             var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                         }
                         else
@@ -76,7 +76,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                             var leaves = await collectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);                      
                             if (leaves.Count == 0)
                             {
-                                var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                                 var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                             }
                             else if (leaves.Count == 1)
@@ -96,7 +96,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                                 }
                                 else
                                 {
-                                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                                 }
                             }
@@ -112,12 +112,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
                 }
@@ -127,12 +127,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     {
                         if (archiveFolderItem.IsContainsSubDirectory())
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(archiveFolderItem);
+                            var parameters = PageTransitionHelper.CreatePageParameter(archiveFolderItem);
                             var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                         }
                         else
                         {
-                            var parameters = StorageItemViewModel.CreatePageParameter(archiveFolderItem);
+                            var parameters = PageTransitionHelper.CreatePageParameter(archiveFolderItem);
                             var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                         }
                     }
@@ -143,12 +143,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 }
                 else if (imageSource is AlbamImageSource albam)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(albam);
+                    var parameters = PageTransitionHelper.CreatePageParameter(albam);
                     var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
                 else if (imageSource is AlbamItemImageSource albamItem)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(albamItem);
+                    var parameters = PageTransitionHelper.CreatePageParameter(albamItem);
                     var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
             }

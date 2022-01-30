@@ -353,7 +353,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {
                 var anim = ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();
             }
         });
@@ -369,7 +369,7 @@ namespace TsubameViewer.Presentation.Views
             if (image?.Source != null)
             {                
                 var anim = ConnectedAnimationService.GetForCurrentView()
-                    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                    .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
                 anim.Configuration = new BasicConnectedAnimationConfiguration();                
             }            
         });
@@ -400,7 +400,7 @@ namespace TsubameViewer.Presentation.Views
                     SaveScrollStatus(sender as UIElement);
 
                     var anim = ConnectedAnimationService.GetForCurrentView()
-                        .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
+                        .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
                     anim.Configuration = new BasicConnectedAnimationConfiguration();
                 }
 

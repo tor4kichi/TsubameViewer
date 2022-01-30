@@ -29,74 +29,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
     public sealed class StorageItemViewModel : BindableBase, IDisposable
     {
-        #region Navigation Parameters
-
-        public static NavigationParameters CreatePageParameter(IImageSource imageSource)
-        {
-            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type == StorageItemTypes.Image)
-            {
-                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(imageSource.StorageItem.Path, imageSource.Name))));
-            }
-            else if (imageSource is ArchiveDirectoryImageSource archiveFolderImageSource)
-            {
-                return CreatePageParameter(archiveFolderImageSource);
-            }
-            else if (imageSource is AlbamImageSource albam)
-            {
-                return CreatePageParameter(albam);
-            }
-            else if (imageSource is AlbamItemImageSource albamItem)
-            {
-                return CreatePageParameter(albamItem);
-            }
-            else
-            {
-                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.StorageItem.Path)));
-            }
-        }
-
-
-        public static NavigationParameters CreatePageParameter(StorageItemViewModel vm)
-        {
-            if (vm.Type == StorageItemTypes.Image)
-            {
-                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(vm.Item.StorageItem.Path, vm.Name))));
-            }
-            else if (vm.Item is ArchiveDirectoryImageSource archiveFolderImageSource)
-            {
-                return CreatePageParameter(archiveFolderImageSource);
-            }
-            else if (vm.Item is AlbamImageSource albam)
-            {
-                return CreatePageParameter(albam);
-            }
-            else if (vm.Item is AlbamItemImageSource albamItem)
-            {
-                return CreatePageParameter(albamItem);
-            }
-            else
-            {
-                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(vm.Item.StorageItem.Path)));
-            }
-        }
-
-        public static NavigationParameters CreatePageParameter(ArchiveDirectoryImageSource archiveFolderImageSource)
-        {
-            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(archiveFolderImageSource.StorageItem.Path, archiveFolderImageSource.Path))));
-        }
-
-        public static NavigationParameters CreatePageParameter(AlbamImageSource albam)
-        {
-            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(albam.AlbamId.ToString())));
-        }
-
-        public static NavigationParameters CreatePageParameter(AlbamItemImageSource albamItem)
-        {
-            return new NavigationParameters((PageNavigationConstants.AlbamPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(albamItem.AlbamId.ToString(), albamItem.Path))));
-        }
-
-        #endregion
+        
 
 
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;

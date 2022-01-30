@@ -219,7 +219,7 @@ namespace TsubameViewer.Presentation.Views
 
             bool isConnectedAnimationDone = false;
             var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-            ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+            ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
                 try

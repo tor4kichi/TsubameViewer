@@ -44,7 +44,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam)
                 {
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), StorageItemViewModel.CreatePageParameter(imageSource));
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(imageSource));
                 }
             }
         }

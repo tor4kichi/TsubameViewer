@@ -120,7 +120,7 @@ namespace TsubameViewer.Presentation.Views
             try
             {
                 ConnectedAnimationService.GetForCurrentView()
-                            .GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName)?.Cancel();
+                            .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
 
                 base.OnNavigatedTo(e);
 
