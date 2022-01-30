@@ -9,7 +9,10 @@
   xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" xmlns:local="using:TsubameViewer.Presentation.Views.FolderListup">
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" 
+  xmlns:local="using:TsubameViewer.Presentation.Views.FolderListup"
+  xmlns:fluentIcon="using:Fluent.Icons"
+  >
 
   <Style TargetType="ProgressBar" x:Key="ReadParcentageProgressBarStyle" >
     <Setter Property="Minimum" Value="0.0" />
@@ -40,63 +43,54 @@
   <local:StorageItemIconTemplateSelector x:Key="StorageItemIconTemplateSelector">
     <local:StorageItemIconTemplateSelector.ImageIcon>
       <DataTemplate>
-        <SymbolIcon Symbol="Pictures" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
-                    Opacity="0.35"
-                    />
+        <fluentIcon:FluentSymbolIcon Symbol="Image24" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.ImageIcon>
     <local:StorageItemIconTemplateSelector.FolderIcon>
       <DataTemplate>
-        <SymbolIcon Symbol="Folder" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0"
-                    Opacity="0.35"
-                    />
+        <fluentIcon:FluentSymbolIcon Symbol="Folder24Filled" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.FolderIcon>
     <local:StorageItemIconTemplateSelector.ArchiveIcon>
       <DataTemplate>
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE736;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
+        <fluentIcon:FluentSymbolIcon Symbol="FolderZip24" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.ArchiveIcon>
     <local:StorageItemIconTemplateSelector.ArchiveFolderIcon>
       <DataTemplate>
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF012;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
+        <fluentIcon:FluentSymbolIcon Symbol="FolderZip24Filled" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.ArchiveFolderIcon>
     <local:StorageItemIconTemplateSelector.AlbamIcon>
       <DataTemplate>
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE728;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
+        <fluentIcon:FluentSymbolIcon Symbol="Album24" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.AlbamIcon>
     <local:StorageItemIconTemplateSelector.AlbamImageIcon>
       <DataTemplate>
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE734;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.35">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.40" ScaleY="1.40" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
+        <fluentIcon:FluentSymbolIcon Symbol="Image24" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.AlbamImageIcon>
     <local:StorageItemIconTemplateSelector.EBookIcon>
       <DataTemplate>
-        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE82D;" VerticalAlignment="Center" HorizontalAlignment="Right" Width="20" Height="20" Margin="0 4 16 0" UseLayoutRounding="True" Opacity="0.4">
-          <FontIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.20" ScaleY="1.20" CenterX="10" CenterY="10" />
-          </FontIcon.RenderTransform>
-        </FontIcon>
+        <fluentIcon:FluentSymbolIcon Symbol="Book24" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.EBookIcon>
+    <local:StorageItemIconTemplateSelector.AddFolderIcon>
+      <DataTemplate>
+        <fluentIcon:FluentSymbolIcon Symbol="ImageAdd24" />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.AddFolderIcon>
+    <local:StorageItemIconTemplateSelector.AddAlbamIcon>
+      <DataTemplate>
+        <fluentIcon:FluentSymbolIcon Symbol="AlbumAdd24" />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.AddAlbamIcon>
+    <local:StorageItemIconTemplateSelector.FavoriteIcon>
+      <DataTemplate>
+        <SymbolIcon Symbol="Favorite" />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.FavoriteIcon>
   </local:StorageItemIconTemplateSelector>
 
   
@@ -130,7 +124,9 @@
           </animation:Explicit.Animations>
         </Border>
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right" />
+        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+                        Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
+                        />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
     </Grid>
@@ -143,11 +139,10 @@
       </ToolTipService.ToolTip>
 
       <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
-        <SymbolIcon Symbol="NewFolder" uwpControls:DockPanel.Dock="Right" VerticalAlignment="Center" Width="20" Height="20" Margin="0 4 4 0">
-          <SymbolIcon.RenderTransform>
-            <ScaleTransform ScaleX="1.30" ScaleY="1.30" CenterX="12" CenterY="12" />
-          </SymbolIcon.RenderTransform>
-        </SymbolIcon>
+        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+                        UseLayoutRounding="True" uwpControls:DockPanel.Dock="Right"
+                        Margin="0 0 4 0"
+                        />
         <StackPanel VerticalAlignment="Center">
           <TextBlock Text="{x:Bind Name}" />
         </StackPanel>
