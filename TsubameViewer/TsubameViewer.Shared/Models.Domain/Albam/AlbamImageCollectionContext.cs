@@ -19,7 +19,7 @@ using Windows.Storage;
 namespace TsubameViewer.Models.Domain.Albam
 {
  
-    public sealed class AlbamImageCollectionContext : IImageCollectionContext
+    public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisposable
     {
         private readonly AlbamEntry _albam;
         private readonly AlbamRepository _albamRepository;
@@ -52,8 +52,22 @@ namespace TsubameViewer.Models.Domain.Albam
         }
 
 
+        public void Dispose()
+        {
+            foreach (var context in _archiveImageCollectionContextCache.Values)
+            {
+                (context as IDisposable)?.Dispose();
+            }
+        }
+
+
+        private readonly Dictionary<Guid, IImageSource> _imagesCache = new();
+        private readonly Dictionary<string, IImageCollectionContext> _archiveImageCollectionContextCache = new();
+
         private async Task<IImageSource> GetAlbamItemImageSourceAsync(AlbamItemEntry entry, CancellationToken ct)
         {
+            if (_imagesCache.TryGetValue(entry._id, out var image)) { return image; }
+
             var (itemPath, pageName, _) = PageNavigationConstants.ParseStorageItemId(entry.Path);
 
             var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(itemPath);
@@ -68,7 +82,12 @@ namespace TsubameViewer.Models.Domain.Albam
                 }
                 else if (SupportedFileTypesHelper.IsSupportedMangaFile(file))
                 {
-                    var collection = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, archiveDirectoryPath: null, ct);
+                    if (_archiveImageCollectionContextCache.TryGetValue(file.Path, out IImageCollectionContext collection) is false)
+                    {
+                        collection = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, archiveDirectoryPath: null, ct);
+                        _archiveImageCollectionContextCache.Add(file.Path, collection);
+                    }
+
                     var index = await collection.GetIndexFromKeyAsync(pageName, FileSortType.None, ct);
                     imageSource = await collection.GetImageFileAtAsync(index, FileSortType.None, ct);
                 }
@@ -79,7 +98,9 @@ namespace TsubameViewer.Models.Domain.Albam
                 throw new NotSupportedException(entry.Path);
             }
 
-            return new AlbamItemImageSource(entry, imageSource);
+            var albamImage = new AlbamItemImageSource(entry, imageSource);
+            _imagesCache.Add(entry._id, albamImage);
+            return albamImage;
         }        
 
 
@@ -169,11 +190,6 @@ namespace TsubameViewer.Models.Domain.Albam
         {
             throw new NotSupportedException();
         }
-
-
-
-
-
 
 
         sealed class AlbamItemRemovedObservable : IObservable<(Guid AlbamId, string Path)>
