@@ -395,13 +395,12 @@
 
       </Button>
 
-      <Button x:Name="ToggleBottomMenuButton"
-              Command="{x:Bind ToggleBottomMenuCommand}" 
+      <Border x:Name="ToggleMenuButton"
               Grid.Column="1"
               Grid.ColumnSpan="1"
               Opacity="0" 
-              HorizontalContentAlignment="Stretch"
-              VerticalContentAlignment="Stretch"
+              Background="Transparent"
+              IsHitTestVisible="True"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden" />
