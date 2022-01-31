@@ -49,6 +49,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\Albam\AlbamRepository.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\FileControlSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Migrate\PackageVersionHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\AlbamDialogService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
@@ -124,6 +126,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
@@ -138,6 +141,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Converters\PointToRectConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml.cs">
+      <DependentUpon>StorageItemDeleteConfirmDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\SelectItemDialog.xaml.cs">
       <DependentUpon>SelectItemDialog.xaml</DependentUpon>
     </Compile>
@@ -214,6 +220,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="$(MSBuildThisFileDirectory)Presentation.Styles\SettingsControlStyles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

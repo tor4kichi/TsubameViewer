@@ -47,6 +47,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamItemRemoveMenuItem.Command = container.Resolve<AlbamItemRemoveCommand>();
             AlbamEditMenuItem.Command = container.Resolve<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = container.Resolve<AlbamDeleteCommand>();
+            StorageItemDeleteMenuItem.Command = container.Resolve<FileDeleteCommand>();
             AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
@@ -133,6 +134,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                     RemoveSecondaryTile.Visibility = Visibility.Collapsed;
                 }
 
+                StorageItemDeleteMenuItem.CommandParameter = itemVM;
+                StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
+
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
 
@@ -157,6 +161,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -185,6 +191,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
+
+                StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -215,6 +223,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 AddSecondaryTile.Visibility = Visibility.Collapsed;
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
+                StorageItemDeleteMenuItem.CommandParameter = itemVM;
+                StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
+
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Visible;
 
@@ -239,6 +250,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 ).TrueToVisible();
 
             ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
+
+            FileControlMenuSeparator.Visibility =
+                StorageItemDeleteMenuItem.Visibility
+                ;
 
             FolderAndArchiveMenuSeparator1.Visibility = (
                 AddSecondaryTile.Visibility == Visibility.Visible

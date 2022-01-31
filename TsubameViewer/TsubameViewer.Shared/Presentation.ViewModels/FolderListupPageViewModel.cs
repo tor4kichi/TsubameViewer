@@ -39,6 +39,7 @@ using System.Reactive.Concurrency;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain.Albam;
+using Windows.UI.Xaml;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -402,7 +403,19 @@ namespace TsubameViewer.Presentation.ViewModels
                 _imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
                     .Subscribe(_ =>
                     {
-                        requireRefresh = true;
+                        _scheduler.Schedule(async () => 
+                        {
+                            if (Window.Current.Visible)
+                            {
+                                requireRefresh = false;
+                                await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            }
+                            else
+                            {
+                                requireRefresh = true;
+                            }
+                        });
+
                         Debug.WriteLine("Folder andor Archive Update required. " + _currentPath);
                     })
                     .AddTo(_navigationDisposables);
