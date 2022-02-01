@@ -108,6 +108,15 @@ namespace TsubameViewer.Presentation.Views
         }.ToImmutableHashSet();
 
 
+
+        private readonly static ImmutableHashSet<Type> SelectionAvairablePageTypes = new Type[]
+        {
+            typeof(ImageListupPage),
+            typeof(FolderListupPage),
+        }.ToImmutableHashSet();
+
+
+
         private readonly IPlatformNavigationService _navigationService;
 
         private IDisposable _refreshNavigationEventSubscriber;
@@ -223,14 +232,8 @@ namespace TsubameViewer.Presentation.Views
                 MyNavigtionView.SelectedItem = null;
             }
 
-            if (e.SourcePageType == typeof(ImageListupPage))
-            {
-                SelectionStartButton.IsEnabled = true;
-            }
-            else
-            {
-                SelectionStartButton.IsEnabled = false;
-            }
+            // 複数選択ボタンの有効無効
+            SelectionStartButton.IsEnabled = SelectionAvairablePageTypes.Contains(e.SourcePageType);
 
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);

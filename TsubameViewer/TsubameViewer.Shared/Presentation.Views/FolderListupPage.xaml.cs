@@ -246,9 +246,69 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+        void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FoldersAdaptiveGridView.SelectionMode == ListViewSelectionMode.None)
+            {                
+                return;
+            }
+
+            if (e.AddedItems?.Any() ?? false)
+            {
+                _vm.Selection.SelectedItems.AddRange(e.AddedItems.Cast<StorageItemViewModel>());
+            }
+            
+            if (e.RemovedItems?.Any() ?? false)
+            {
+                foreach (var itemVM in e.RemovedItems.Cast<StorageItemViewModel>())
+                {
+                    _vm.Selection.SelectedItems.Remove(itemVM);
+                }
+
+                if (FoldersAdaptiveGridView.SelectedItems.Count == 0)
+                {
+                    _vm.Selection.EndSelection();
+                }
+            }
+        }
+
+
+        RelayCommand<object> _SelectionChangeCommand;
+        public RelayCommand<object> SelectionChangeCommand => _SelectionChangeCommand ??= new RelayCommand<object>(item =>
+        {
+            if (item is StorageItemViewModel itemVM)
+            {
+                if (_vm.Selection.IsSelectionModeEnabled is false)
+                {
+                    _vm.Selection.StartSelection();
+                }
+
+                if (FoldersAdaptiveGridView.SelectedItems.Any(x => x == itemVM))
+                {
+                    FoldersAdaptiveGridView.SelectedItems.Remove(itemVM);
+                }
+                else
+                {
+                    FoldersAdaptiveGridView.SelectedItems.Add(itemVM);
+                }
+            }
+        });
+
         RelayCommand<StorageItemViewModel> _OpenItemCommand;
         public RelayCommand<StorageItemViewModel> OpenItemCommand => _OpenItemCommand ??= new RelayCommand<StorageItemViewModel>(itemVM => 
-        {
+        {                                    
+            if (_vm.Selection.IsSelectionModeEnabled is false
+                && ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0)
+            {
+                _vm.Selection.StartSelection();
+                return;
+            }
+
+            if (FoldersAdaptiveGridView.SelectionMode != ListViewSelectionMode.None)
+            {
+                return;
+            }
+
             var container = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
             if (container is GridViewItem gvi)
             {

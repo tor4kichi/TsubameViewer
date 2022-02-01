@@ -31,7 +31,7 @@
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
 
   <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
-  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=StorageItemDelete}" />
+  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
 
 
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />

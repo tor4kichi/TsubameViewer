@@ -16,7 +16,9 @@
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
   xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
-  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" xmlns:models="using:TsubameViewer.Models.Domain"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  xmlns:models="using:TsubameViewer.Models.Domain" 
+  xmlns:fluentIcon="using:Fluent.Icons"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
@@ -27,6 +29,46 @@
   <Grid >
 
     <uwpControls:DockPanel>
+
+      <Grid x:Name="SelectActionsContainer" Visibility="Collapsed" uwpControls:DockPanel.Dock="Top"   
+            Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+          >
+        <CommandBar DefaultLabelPosition="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
+          <CommandBar.Content>
+
+            <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}" VerticalAlignment="Center" Margin="48 0">
+
+            </TextBlock>
+          </CommandBar.Content>
+
+          <CommandBar.PrimaryCommands>
+            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton" Label="{i18nExt:Localize Key=Delete}" Command="{x:Bind _vm.FileDeleteCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}" >
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="Delete" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Delete" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="Open24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="O" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
+              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind _vm.Selection.EndSelection}" >
+                <Button.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="Escape" />
+                </Button.KeyboardAccelerators>
+              </Button>
+            </AppBarElementContainer>
+          </CommandBar.PrimaryCommands>
+        </CommandBar>
+      </Grid>
+      
       <StackPanel x:Name="HeaderLayout" Background="{ThemeResource ApplicationContentBackgroundBrush}"
                     uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
                   uwpControls:DockPanel.Dock="Top"
@@ -154,11 +196,13 @@
         ItemClickCommand="{x:Bind OpenItemCommand}"
         IsSynchronizedWithCurrentItem="False"
         SelectionMode="None"        
+        IsMultiSelectCheckBoxEnabled="True"
         IsTabStop="False"
         ContextFlyout="{StaticResource StorageItemMenuFlyout}"
         uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
         XYFocusUp="{x:Bind FileSortButton}"
-        SelectedItem="{x:Bind _vm.FolderLastIntractItem.Value, Mode=TwoWay}"
+        SelectedItem="{x:Bind _vm.FolderLastIntractItem.Value, Mode=TwoWay}"  
+        SelectionChanged="OnSelectionChanged"
         >
 
         <GridView.ItemContainerTransitions>
@@ -169,6 +213,11 @@
           <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
             <core:CallMethodAction MethodName="Initialize" />
           </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
+          <uiNavigation:UINavigationTriggerBehavior Kind="Context1">
+            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+              <core:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />
+            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+          </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
       </uwpControls:AdaptiveGridView>
@@ -177,6 +226,21 @@
        
     
     <VisualStateManager.VisualStateGroups>
+
+      <!-- 選択中の表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Selection.IsSelectionModeEnabled, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FoldersAdaptiveGridView.SelectionMode" Value="Multiple" />
+            <Setter Target="SelectActionsContainer.Visibility" Value="Visible" />
+            <Setter Target="ReturnSourceFolderPageButton.IsEnabled" Value="False" />
+            <Setter Target="ChangetoImageListupButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
       
       <!-- フォルダまたはアーカイブ内フォルダかによる表示切替 -->
       <VisualStateGroup>

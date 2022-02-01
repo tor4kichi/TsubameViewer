@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services;
 using Windows.Storage;
@@ -25,7 +26,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 
         protected override bool CanExecute(IImageSource imageSource)
         {
-            return imageSource.StorageItem is IStorageItem;
+            return imageSource is StorageItemImageSource;
         }
 
         protected override async void Execute(IImageSource imageSource)
