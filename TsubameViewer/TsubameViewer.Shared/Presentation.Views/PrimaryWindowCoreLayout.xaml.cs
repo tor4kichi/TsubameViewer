@@ -108,6 +108,15 @@ namespace TsubameViewer.Presentation.Views
         }.ToImmutableHashSet();
 
 
+
+        private readonly static ImmutableHashSet<Type> SelectionAvairablePageTypes = new Type[]
+        {
+            typeof(ImageListupPage),
+            typeof(FolderListupPage),
+        }.ToImmutableHashSet();
+
+
+
         private readonly IPlatformNavigationService _navigationService;
 
         private IDisposable _refreshNavigationEventSubscriber;
@@ -139,8 +148,8 @@ namespace TsubameViewer.Presentation.Views
                     SetCurrentNavigationParameters(m.Parameters);
 
                     var result = await (m.Parameters != null
-                       ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
-                       : _navigationService.NavigateAsync(m.PageName, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
+                       ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
+                       : _navigationService.NavigateAsync(m.PageName, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
                        );                    
                     if (result is null || result.Success is false)
                     {
@@ -223,14 +232,8 @@ namespace TsubameViewer.Presentation.Views
                 MyNavigtionView.SelectedItem = null;
             }
 
-            if (e.SourcePageType == typeof(ImageListupPage))
-            {
-                SelectionStartButton.IsEnabled = true;
-            }
-            else
-            {
-                SelectionStartButton.IsEnabled = false;
-            }
+            // 複数選択ボタンの有効無効
+            SelectionStartButton.IsEnabled = SelectionAvairablePageTypes.Contains(e.SourcePageType);
 
             // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
             var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
@@ -259,7 +262,7 @@ namespace TsubameViewer.Presentation.Views
                 }
                 ForwardParametersStack.Clear();
 
-                ContentFrame.BackStack.Add(new PageStackEntry(HomePageType, null, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(HomePageName)));
+                ContentFrame.BackStack.Add(new PageStackEntry(HomePageType, null, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(HomePageName)));
                 BackParametersStack.Add(new NavigationParameters());
 
                 SaveNaviagtionParameters();
@@ -418,7 +421,7 @@ namespace TsubameViewer.Presentation.Views
                     {
                         currentNavParameters.Add(PageNavigationConstants.Restored, string.Empty);
                     }
-                    var result = await _navigationService.NavigateAsync(currentEntry.PageName, currentNavParameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(currentEntry.PageName));
+                    var result = await _navigationService.NavigateAsync(currentEntry.PageName, currentNavParameters, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(currentEntry.PageName));
                     if (!result.Success)
                     {
                         await Task.Delay(50);
@@ -438,7 +441,7 @@ namespace TsubameViewer.Presentation.Views
                     {
                         var pageType = Type.GetType($"TsubameViewer.Presentation.Views.{backNavItem.PageName}");
                         var parameters = MakeNavigationParameter(backNavItem.Parameters);
-                        ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, PageTransisionHelper.MakeNavigationTransitionInfoFromPageName(backNavItem.PageName)));
+                        ContentFrame.BackStack.Add(new PageStackEntry(pageType, parameters, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(backNavItem.PageName)));
                         BackParametersStack.Add(parameters);
 
                         Debug.WriteLine($"[NavigationRestore] Restored BackStackPage: {backNavItem.PageName} {string.Join(',', backNavItem.Parameters.Select(x => $"{x.Key}={x.Value}"))}");
@@ -802,7 +805,7 @@ namespace TsubameViewer.Presentation.Views
             _AnimationCancelTimer.Interval = _BusyWallDisplayDelayTime;
             _AnimationCancelTimer.Tick += (_, _) =>
             {
-                var animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+                var animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
                 if (animation != null)
                 {
                     animation.Cancel();

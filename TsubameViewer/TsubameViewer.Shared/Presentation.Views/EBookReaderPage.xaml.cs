@@ -150,7 +150,7 @@ namespace TsubameViewer.Presentation.Views
                 }
             });
 
-            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+            ConnectedAnimation animation = ConnectedAnimationService.GetForCurrentView().GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
                 animation.Cancel();                

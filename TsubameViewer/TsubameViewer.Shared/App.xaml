@@ -14,6 +14,7 @@
   xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls" 
   xmlns:myFlyouts="using:TsubameViewer.Presentation.Views.Flyouts"
+  xmlns:fi="using:Fluent.Icons"
   >
 
   <prism:PrismApplication.Resources>
@@ -83,6 +84,7 @@
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
+      
     </ResourceDictionary>
   </prism:PrismApplication.Resources>
 </prism:PrismApplication>

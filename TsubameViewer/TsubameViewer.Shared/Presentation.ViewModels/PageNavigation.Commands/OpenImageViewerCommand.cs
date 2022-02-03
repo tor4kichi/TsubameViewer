@@ -44,12 +44,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (type == StorageItemTypes.EBook)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
             }

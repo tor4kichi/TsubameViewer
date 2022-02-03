@@ -39,6 +39,8 @@ using System.Reactive.Concurrency;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain.Albam;
+using Windows.UI.Xaml;
+using I18NPortable;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -96,6 +98,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
         public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
         public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+        public FileDeleteCommand FileDeleteCommand { get; }
         public ObservableCollection<StorageItemViewModel> FolderItems { get; private set; }
 
         private AdvancedCollectionView _FileItemsView;
@@ -141,6 +144,16 @@ namespace TsubameViewer.Presentation.ViewModels
             get { return _CurrentFolderItem; }
             set { SetProperty(ref _CurrentFolderItem, value); }
         }
+        
+        public SelectionContext Selection { get; } = new SelectionContext();
+
+        private string _selectedCountDisplayText;
+        public string SelectedCountDisplayText
+        {
+            get => _selectedCountDisplayText;
+            set => SetProperty(ref _selectedCountDisplayText, value);
+        }
+
 
         IDisposable _ImageCollectionDisposer;
 
@@ -183,7 +196,8 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileAddCommand secondaryTileAddCommand,
             SecondaryTileRemoveCommand secondaryTileRemoveCommand,
             ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-            OpenWithExternalApplicationCommand openWithExternalApplicationCommand
+            OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
+            FileDeleteCommand fileDeleteCommand
             )
         {
             _scheduler = scheduler;
@@ -210,6 +224,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
             ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
             OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
+            FileDeleteCommand = fileDeleteCommand;
             FolderItems = new ObservableCollection<StorageItemViewModel>();
             FileItemsView = new AdvancedCollectionView(FolderItems);
             FolderLastIntractItem = new ReactivePropertySlim<StorageItemViewModel>()
@@ -225,6 +240,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async void OnNavigatedFrom(INavigationParameters parameters)
         {
+            Selection.EndSelection();
             using (await _NavigationLock.LockAsync(default))
             {
                 _leavePageCancellationTokenSource?.Cancel();
@@ -241,6 +257,9 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
+                
+                _messenger.Unregister<BackNavigationRequestingMessage>(this);
+                _messenger.Unregister<StartMultiSelectionMessage>(this);
 
                 base.OnNavigatedFrom(parameters);
             }
@@ -402,7 +421,19 @@ namespace TsubameViewer.Presentation.ViewModels
                 _imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
                     .Subscribe(_ =>
                     {
-                        requireRefresh = true;
+                        _scheduler.Schedule(async () => 
+                        {
+                            if (Window.Current.Visible)
+                            {
+                                requireRefresh = false;
+                                await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                            }
+                            else
+                            {
+                                requireRefresh = true;
+                            }
+                        });
+
                         Debug.WriteLine("Folder andor Archive Update required. " + _currentPath);
                     })
                     .AddTo(_navigationDisposables);
@@ -419,6 +450,42 @@ namespace TsubameViewer.Presentation.ViewModels
                     })
                     .AddTo(_navigationDisposables);
             }
+
+            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
+            {
+                Selection.StartSelection();
+                FileDeleteCommand.RaiseCanExecuteChanged();
+                OpenWithExplorerCommand.RaiseCanExecuteChanged();
+            });
+
+            Selection.ObserveProperty(x => x.IsSelectionModeEnabled)
+                .Subscribe(selectionEnabled => 
+                {
+                    if (selectionEnabled)
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+                        _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+                        {
+                            m.Value.IsHandled = true;
+                            Selection.EndSelection();
+                        });
+                    }
+                    else
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+                        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+                    }
+                })
+                .AddTo(_navigationDisposables);
+
+            Selection.SelectedItems.ObserveProperty(x => x.Count)
+                .Subscribe(count =>
+                {
+                    SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(count);
+                    FileDeleteCommand.RaiseCanExecuteChanged();
+                    OpenWithExplorerCommand.RaiseCanExecuteChanged();
+                })
+                .AddTo(_navigationDisposables);
 
             await base.OnNavigatedToAsync(parameters);
         }

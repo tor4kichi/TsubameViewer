@@ -17,6 +17,7 @@
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:fi="using:Fluent.Icons"
   mc:Ignorable="d"
   Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -59,6 +60,8 @@
 
       <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
       <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
+         
+      
 
     </ResourceDictionary>
   </Page.Resources>
@@ -107,7 +110,6 @@
                         FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                             >
           <i:Interaction.Behaviors>
-
             <core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{x:Bind _viewModel.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
             </core:EventTriggerBehavior>
@@ -131,16 +133,40 @@
                     Width="240"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Icon="NewFolder" Command="{x:Bind _viewModel.SourceChoiceCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=AddNewFolder}" />
-            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Icon="List" Command="{x:Bind _viewModel.StartSelectionCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=StartMultiSelection}" />
+            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _viewModel.SourceChoiceCommand}">
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="ImageAdd24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _viewModel.StartSelectionCommand}">
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="Multiselect24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
           </CommandBar.PrimaryCommands>
           <CommandBar.SecondaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Icon="Refresh" Command="{x:Bind _viewModel.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}" />
-            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Icon="Setting" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
+            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Command="{x:Bind _viewModel.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}">
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="ArrowSync24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="Settings24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
 
             <AppBarSeparator />
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Icon="Send" Command="{x:Bind _viewModel.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" />
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="PersonFeedback24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _viewModel.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="PersonFeedback24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
 
           </CommandBar.SecondaryCommands>
         </CommandBar>

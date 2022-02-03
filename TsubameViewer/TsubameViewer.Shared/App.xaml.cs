@@ -24,10 +24,12 @@ using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Models.UseCase.Maintenance;
 using TsubameViewer.Models.UseCase.Migrate;
+using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
+using TsubameViewer.Presentation.Views.Dialogs;
 using Uno.Extensions;
 using Uno.Threading;
 using Windows.ApplicationModel;
@@ -129,13 +131,12 @@ namespace TsubameViewer
             base.RegisterRequiredTypes(container);
         }
 
-        
-
         public override void RegisterTypes(IContainerRegistry container)
         {
             container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
             container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
             container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
+            container.RegisterSingleton<FileControlSettings>();
 
             container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
 
@@ -147,6 +148,9 @@ namespace TsubameViewer
             container.RegisterSingleton<ImageViewerPageViewModel>();
             container.RegisterSingleton<EBookReaderPageViewModel>();
             //container.RegisterSingleton<SearchResultPageViewModel>();
+
+            // Services
+            container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();
 
             container.RegisterForNavigation<SourceStorageItemsPage>();
             container.RegisterForNavigation<ImageListupPage>();

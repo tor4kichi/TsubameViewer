@@ -22,7 +22,9 @@
   xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
-  xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations" xmlns:myTrigger="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations" 
+  xmlns:myTrigger="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:fluentIcon="using:Fluent.Icons"
   NavigationCacheMode="Enabled"
   x:Name="PageRoot"
   >
@@ -460,13 +462,52 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Icon="Add" Label="{i18nExt:Localize Key=RemoveFavoriteImage}" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" />
-            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Icon="Add" Label="{i18nExt:Localize Key=AlbamItemRemove}" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed"  />
-            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Icon="Add" Label="{i18nExt:Localize Key=AddFavoriteImage}" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton x:Name="SelectAction_AlbamAddButton" Icon="Add" Label="{i18nExt:Localize Key=EditAlbamImage}" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
-            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Icon="Add" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" />
+            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Label="{i18nExt:Localize Key=RemoveFavoriteImage}" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="UnFavorite" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="F" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Label="{i18nExt:Localize Key=AlbamItemRemove}" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="Album24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="A" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Label="{i18nExt:Localize Key=AddFavoriteImage}" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="Favorite" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="F" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_AlbamAddButton" Label="{i18nExt:Localize Key=EditAlbamImage}" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="AlbumAdd24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="A" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="Open24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="O" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
             <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
-              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}" />
+              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}">
+                <Button.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="Escape" />
+                </Button.KeyboardAccelerators>
+              </Button>
             </AppBarElementContainer>
           </CommandBar.PrimaryCommands>
         </CommandBar>

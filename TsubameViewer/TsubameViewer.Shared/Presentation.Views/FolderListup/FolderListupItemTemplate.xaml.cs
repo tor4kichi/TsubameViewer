@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -36,23 +38,32 @@ namespace TsubameViewer.Presentation.Views.FolderListup
         public DataTemplate EBookIcon { get; set; }
         public DataTemplate ImageIcon { get; set; }
 
+        public DataTemplate AddFolderIcon { get; set; }
+        public DataTemplate AddAlbamIcon { get; set; }
+        public DataTemplate FavoriteIcon { get; set; }
+
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
             if (item == null) { return base.SelectTemplateCore(item, container); }
 
-            return (item as StorageItemViewModel).Type switch
+            if (item is StorageItemViewModel itemVM)
             {
-                Models.Domain.StorageItemTypes.Folder => FolderIcon,
-                Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
-                Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
-                Models.Domain.StorageItemTypes.Albam => AlbamIcon,
-                Models.Domain.StorageItemTypes.AlbamImage => AlbamImageIcon,
-                Models.Domain.StorageItemTypes.EBook => EBookIcon,
-                Models.Domain.StorageItemTypes.Image => ImageIcon,
-                var type => throw new NotSupportedException(type.ToString()),
-            };
+                return itemVM.Type switch
+                {
+                    Models.Domain.StorageItemTypes.Folder => FolderIcon,
+                    Models.Domain.StorageItemTypes.Archive => ArchiveIcon,
+                    Models.Domain.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                    Models.Domain.StorageItemTypes.Albam => (itemVM.Item as AlbamImageSource).AlbamId == FavoriteAlbam.FavoriteAlbamId ? FavoriteIcon : AlbamIcon,
+                    Models.Domain.StorageItemTypes.AlbamImage => AlbamImageIcon,
+                    Models.Domain.StorageItemTypes.EBook => EBookIcon,
+                    Models.Domain.StorageItemTypes.Image => ImageIcon,
+                    Models.Domain.StorageItemTypes.AddFolder => AddFolderIcon,
+                    Models.Domain.StorageItemTypes.AddAlbam => AddAlbamIcon,
+                    var type => throw new NotSupportedException(type.ToString()),
+                };
+            }
 
-            //return base.SelectTemplateCore(item, container);
+            return base.SelectTemplateCore(item, container);
         }
 
         protected override DataTemplate SelectTemplateCore(object item)

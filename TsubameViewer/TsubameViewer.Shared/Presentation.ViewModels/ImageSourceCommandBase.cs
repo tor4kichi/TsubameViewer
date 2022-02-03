@@ -41,7 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         protected virtual bool CanExecute(IImageSource imageSource) => true;
 
-        protected virtual bool CanExecute(IEnumerable<IImageSource> imageSources) => true;
+        protected virtual bool CanExecute(IEnumerable<IImageSource> imageSources) => imageSources.All(CanExecute);
 
         protected override void Execute(object parameter)
         {

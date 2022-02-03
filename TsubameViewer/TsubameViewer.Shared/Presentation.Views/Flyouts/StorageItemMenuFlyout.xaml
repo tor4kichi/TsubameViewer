@@ -30,6 +30,10 @@
   <MenuFlyoutSeparator x:Name="ThumbnailMenuSeparator" />
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
 
+  <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
+  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
+
+
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
   <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
   <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{i18nExt:Localize Key=RemoveSecondaryTile}" />
@@ -37,5 +41,6 @@
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
   <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
   <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
-  
+
+
 </MenuFlyout>

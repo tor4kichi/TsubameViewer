@@ -81,7 +81,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            IntaractionWall.Tapped -= SwipeProcessScreen_Tapped;
+            IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
@@ -92,9 +92,8 @@ namespace TsubameViewer.Presentation.Views
             CloseBottomUI();
 
             IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-            IntaractionWall.Tapped += SwipeProcessScreen_Tapped;
+            IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
-
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
         }
@@ -144,8 +143,8 @@ namespace TsubameViewer.Presentation.Views
             appView.ExitFullScreenMode();
             
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
-            _messenger.Unregister<ImageLoadedMessage>(this);            
-
+            _messenger.Unregister<ImageLoadedMessage>(this);
+            
             base.OnNavigatingFrom(e);
         }
 
@@ -220,7 +219,7 @@ namespace TsubameViewer.Presentation.Views
 
             bool isConnectedAnimationDone = false;
             var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-            ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransisionHelper.ImageJumpConnectedAnimationName);
+            ConnectedAnimation animation = connectedAnimationService.GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName);
             if (animation != null)
             {
                 try
@@ -384,13 +383,16 @@ namespace TsubameViewer.Presentation.Views
 
         #region Touch and Controller UI
 
-        private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
+
+        private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
             if (!_nowZoomCenterMovingWithPointer)
             {
-                var pt = e.GetPosition(RootGrid);                
+                var pointer = e.GetCurrentPoint(RootGrid);
+                var pt = pointer.Position;
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
-                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }                
+                if (pointer.Properties.IsLeftButtonPressed is false) { return; }
 
                 if (!IsOpenBottomMenu && !IsZoomingEnabled)
                 {
@@ -415,11 +417,11 @@ namespace TsubameViewer.Presentation.Views
                                 break;
                             }
                         }
-                        else if (item == ToggleBottomMenuButton)
+                        else if (item == ToggleMenuButton)
                         {
-                            if (ToggleBottomMenuButton.Command?.CanExecute(null) ?? false)
+                            if (ToggleBottomMenuCommand is ICommand command && command.CanExecute(null))
                             {
-                                ToggleBottomMenuButton.Command.Execute(null);
+                                command.Execute(null);
                                 e.Handled = true;
                                 break;
                             }

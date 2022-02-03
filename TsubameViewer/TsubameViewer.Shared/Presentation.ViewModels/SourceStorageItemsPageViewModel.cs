@@ -262,9 +262,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+            if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string q))
             {
-                _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), Uri.UnescapeDataString(path));
+                var (path, pageName, archiveName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
+                _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);
             }
 
             base.OnNavigatedFrom(parameters);

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Markup;
 
@@ -39,7 +40,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
         {
             var currentFocusElement = FocusManager.GetFocusedElement();
 
-			Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext);
+			Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext ?? (currentFocusElement as SelectorItem).Content);
 
             return true;
         }

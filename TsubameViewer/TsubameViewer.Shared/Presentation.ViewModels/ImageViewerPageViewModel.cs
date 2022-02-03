@@ -79,11 +79,18 @@ namespace TsubameViewer.Presentation.ViewModels
             private set { SetProperty(ref _Images, value); }
         }
 
+        private bool _nowImagesChanging = false;
+
         private int _CurrentImageIndex;
         public int CurrentImageIndex
         {
             get => _CurrentImageIndex;
-            set => SetProperty(ref _CurrentImageIndex, value);
+            set
+            {
+                if (_nowImagesChanging) { return; }
+                
+                SetProperty(ref _CurrentImageIndex, value);
+            }
         }
 
         private string _pathForSettings = null;
@@ -186,6 +193,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _nowImageLoadingLongRunning, value); }
         }
 
+        
 
         readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
@@ -1804,7 +1812,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
             _nowCurrenImageIndexChanging = true;
+            _nowImagesChanging = true;
             Images = new IImageSource[imageCount];
+            _nowImagesChanging = false;
             _nowCurrenImageIndexChanging = false;
         }
 

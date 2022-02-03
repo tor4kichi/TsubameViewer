@@ -82,7 +82,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
                 else if (type == StorageItemTypes.Folder)
@@ -90,18 +90,18 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                     }
                     else
                     {
-                        var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                     }
                 }
                 else if (type == StorageItemTypes.EBook)
                 {
-                    var parameters = StorageItemViewModel.CreatePageParameter(imageSource);
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
                 else if (type == StorageItemTypes.AddFolder)

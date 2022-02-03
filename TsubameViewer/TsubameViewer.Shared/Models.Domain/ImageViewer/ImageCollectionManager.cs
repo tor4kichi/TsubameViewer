@@ -5,6 +5,7 @@ using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
 using SharpCompress.Archives.Zip;
+using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -126,13 +127,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
+            var prop = await file.GetBasicPropertiesAsync();
             try
             {
                 ct.ThrowIfCancellationRequested();
                 var zipArchive = ZipArchive.Open(stream)
                     .AddTo(disposables);
 
-                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, zipArchive, ct);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, zipArchive, ct);
 
                 return new ArchiveImageCollection(file, zipArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
@@ -156,11 +158,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
+            var prop = await file.GetBasicPropertiesAsync();
             try
             {
                 var rarArchive = RarArchive.Open(stream)
                     .AddTo(disposables);
-                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, rarArchive, ct);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, rarArchive, ct);
                 return new ArchiveImageCollection(file, rarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
@@ -177,11 +180,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
+            var prop = await file.GetBasicPropertiesAsync();
             try
             {
+                IReader reader = ReaderFactory.Open(stream);
                 var szArchive = SevenZipArchive.Open(stream)
                     .AddTo(disposables);
-                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, szArchive, ct);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, szArchive, ct);
                 return new ArchiveImageCollection(file, szArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch
@@ -197,11 +202,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             var stream = await file.OpenStreamForReadAsync();
             disposables.Add(stream);
 
+            var prop = await file.GetBasicPropertiesAsync();
             try
             {
                 var tarArchive = TarArchive.Open(stream)
                     .AddTo(disposables);
-                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, tarArchive, ct);
+                var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, tarArchive, ct);
                 return new ArchiveImageCollection(file, tarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
             }
             catch

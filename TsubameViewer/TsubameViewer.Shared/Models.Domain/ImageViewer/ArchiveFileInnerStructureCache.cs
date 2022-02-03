@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using TsubameViewer.Models.Infrastructure;
+using Windows.Storage;
 
 namespace TsubameViewer.Models.Domain.ImageViewer
 {
@@ -61,7 +62,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             [BsonId]
             public string Path { get; set; }
 
-            public long Size { get; set; }
+            public ulong Size { get; set; }
         }
 
 
@@ -72,7 +73,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 
             }
 
-            public long? FindById(string path)
+            public ulong? FindById(string path)
             {
                 return _collection.FindById(path)?.Size;
             }
@@ -92,7 +93,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _archiveFileLastSizeCacheRepository = new ArchiveFileLastSizeCacheRepository(liteDatabase);
         }
 
-        public ArchiveFileInnerSturcture AddOrUpdateStructure(string path, IArchive archive, CancellationToken ct)
+        public ArchiveFileInnerSturcture AddOrUpdateStructure(string path, ulong fileSize, IArchive archive, CancellationToken ct)
         {
             List<string> items = new List<string>();
             List<(IArchiveEntry Entry, int Index)> fileIndexies = new();
@@ -163,7 +164,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             Debug.WriteLine(cacheEntry.RootDirectoryPath);
 
-            _archiveFileLastSizeCacheRepository.UpdateItem(new ArchiveFileLastSizeCache() { Path = path, Size = archive.TotalSize });
+            _archiveFileLastSizeCacheRepository.UpdateItem(new ArchiveFileLastSizeCache() { Path = path, Size = fileSize });
             _archiveFileInnerStructureCacheRepository.UpdateItem(cacheEntry);
 
             Debug.WriteLine($"create Archive file folder structure. {path}");
@@ -171,11 +172,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             return cacheEntry;
         }
 
-        public bool IsArchiveCachedAndSameSize(string path, IArchive archive)
+        public bool IsArchiveCachedAndSameSize(string path, ulong fileSize)
         {
-            if (_archiveFileLastSizeCacheRepository.FindById(path) is not null and long size)
+            if (_archiveFileLastSizeCacheRepository.FindById(path) is not null and ulong cachedSize)
             {
-                return archive.TotalSize == size;
+                return fileSize == cachedSize;
             }
             else
             {
@@ -183,9 +184,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        public ArchiveFileInnerSturcture GetOrCreateStructure(string path, IArchive archive, CancellationToken ct)
+        public ArchiveFileInnerSturcture GetOrCreateStructure(string path, ulong fileSize, IArchive archive, CancellationToken ct)
         {
-            if (IsArchiveCachedAndSameSize(path, archive))
+            if (IsArchiveCachedAndSameSize(path, fileSize))
             {
                 var cacheEntry = _archiveFileInnerStructureCacheRepository.FindById(path);
                 if (cacheEntry is not null)
@@ -195,7 +196,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 }
             }
 
-            return AddOrUpdateStructure(path, archive, ct);
+            return AddOrUpdateStructure(path, fileSize, archive, ct);
         }
 
         public void Delete(string path)

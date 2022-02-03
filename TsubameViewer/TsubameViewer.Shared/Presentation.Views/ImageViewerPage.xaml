@@ -22,7 +22,7 @@
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:behaviours="using:Microsoft.Toolkit.Uwp.UI.Behaviors"
   xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
-  xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
+  xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)" xmlns:fluentIcon="using:Fluent.Icons"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -142,7 +142,7 @@
                    Label="{i18nExt:Localize Key=SwitchFullScreen}"     
                    >
       <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="FullScreen" />
+        <fluentIcon:FluentIconSource Symbol="FullScreenMaximize24" />
       </XamlUICommand.IconSource>
       <XamlUICommand.KeyboardAccelerators>
         <KeyboardAccelerator Key="F11" />
@@ -154,7 +154,7 @@
                    Description="{i18nExt:Localize Key=IsLeftBindingView}"
                    >
       <XamlUICommand.IconSource>
-        <SymbolIconSource Symbol="Forward" />
+        <fluentIcon:FluentIconSource Symbol="ArrowSort24" />
       </XamlUICommand.IconSource>
       <XamlUICommand.KeyboardAccelerators>
       </XamlUICommand.KeyboardAccelerators>
@@ -395,13 +395,12 @@
 
       </Button>
 
-      <Button x:Name="ToggleBottomMenuButton"
-              Command="{x:Bind ToggleBottomMenuCommand}" 
+      <Border x:Name="ToggleMenuButton"
               Grid.Column="1"
               Grid.ColumnSpan="1"
               Opacity="0" 
-              HorizontalContentAlignment="Stretch"
-              VerticalContentAlignment="Stretch"
+              Background="Transparent"
+              IsHitTestVisible="True"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden" />
@@ -518,28 +517,45 @@
 
       <Button x:Name="DoubleViewCorrectButton" 
               Command="{StaticResource DoubleViewCorrectUICommand}"
-              IsEnabled="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}">
+              IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}"
+              Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
+              >
         <Button.Content>
-          <SymbolIcon Symbol="Page2" />
+          <Grid>
+            <fluentIcon:FluentSymbolIcon Symbol="BookPulse24">
+              <fluentIcon:FluentSymbolIcon.RenderTransform>
+                <TranslateTransform X="-2" Y="-1"/>
+              </fluentIcon:FluentSymbolIcon.RenderTransform>
+            </fluentIcon:FluentSymbolIcon>
+          </Grid>
         </Button.Content>
       </Button>
 
       <ToggleButton x:Name="DoubleViewToggleButton" IsChecked="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}" 
-                    Command="{StaticResource DoubleViewToggleUICommand}">
+                    Command="{StaticResource DoubleViewToggleUICommand}"  
+                    >
         <ToggleButton.Content>
-          <SymbolIcon Symbol="TwoPage" />
+          <fluentIcon:FluentSymbolIcon Symbol="BookOpen24" Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
+            <fluentIcon:FluentSymbolIcon.RenderTransform>
+              <TranslateTransform X="-1" Y="-1"/>
+            </fluentIcon:FluentSymbolIcon.RenderTransform>
+          </fluentIcon:FluentSymbolIcon>
         </ToggleButton.Content>
       </ToggleButton>
 
       <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" 
                     Command="{StaticResource LeftBindingToggleUICommand}">
         <ToggleButton.Content>
-          <SymbolIcon Symbol="Forward" />
+          <fluentIcon:FluentSymbolIcon Symbol="ArrowImport20Filled">
+            <fluentIcon:FluentSymbolIcon.RenderTransform>
+              <TranslateTransform X="-1" Y="-1"/>
+            </fluentIcon:FluentSymbolIcon.RenderTransform>
+          </fluentIcon:FluentSymbolIcon>
         </ToggleButton.Content>
       </ToggleButton>
       <Button x:Name="ImagesSortButton" Flyout="{StaticResource PageFlyout}" >
         <Button.Content>
-          <SymbolIcon Symbol="Sort" />
+          <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending24" />
         </Button.Content>
       </Button>
 
@@ -980,7 +996,7 @@
             <StateTrigger IsActive="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DoubleViewCorrectButton.Visibility" Value="Visible" />
+            <Setter Target="DoubleViewCorrectButton.Foreground" Value="{ThemeResource ApplicationForegroundThemeBrush}" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>

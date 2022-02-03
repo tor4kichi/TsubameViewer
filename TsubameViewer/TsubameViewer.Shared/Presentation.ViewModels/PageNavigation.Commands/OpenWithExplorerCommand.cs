@@ -40,7 +40,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
         {
             var sample = imageSources.First();
             var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
-            return FlattenAlbamItemInnerImageSource(imageSources).All(x => x is StorageItemImageSource item && x.StorageItem is StorageFile && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
+            return FlattenAlbamItemInnerImageSource(imageSources).All(x => x is StorageItemImageSource item && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
         }
 
         protected override async void Execute(IEnumerable<IImageSource> imageSources)
