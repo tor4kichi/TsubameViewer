@@ -1400,19 +1400,19 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_0 = _displayImagesSingle[0];
                     _DisplayImages_0[0] = firstImage;
                     _sourceImagesSingle[0][0] = firstSource;
-                    OnPropertyChanged(nameof(DisplayImages_0));
+                    DisplayImages_0 = new BitmapImage[1] { firstImage };
                     break;
                 case 1:
                     _DisplayImages_1 = _displayImagesSingle[1];
                     _DisplayImages_1[0] = firstImage;
                     _sourceImagesSingle[1][0] = firstSource;
-                    OnPropertyChanged(nameof(DisplayImages_1));
+                    DisplayImages_1 = new BitmapImage[1] { firstImage };
                     break;
                 case 2:
                     _DisplayImages_2 = _displayImagesSingle[2];
                     _DisplayImages_2[0] = firstImage;
                     _sourceImagesSingle[2][0] = firstSource;
-                    OnPropertyChanged(nameof(DisplayImages_2));
+                    DisplayImages_2 = new BitmapImage[1] { firstImage };
                     break;
             }
         }
@@ -1450,7 +1450,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_0[1] = secondImage;
                     _sourceImagesDouble[0][0] = firstSource;
                     _sourceImagesDouble[0][1] = secondSource;
-                    OnPropertyChanged(nameof(DisplayImages_0));
+                    DisplayImages_0 = new BitmapImage[2] { firstImage, secondImage };
                     break;
                 case 1:
                     _DisplayImages_1 = _displayImagesDouble[1];
@@ -1458,7 +1458,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_1[1] = secondImage;
                     _sourceImagesDouble[1][0] = firstSource;
                     _sourceImagesDouble[1][1] = secondSource;
-                    OnPropertyChanged(nameof(DisplayImages_1));
+                    DisplayImages_1 = new BitmapImage[2] { firstImage, secondImage };
                     break;
                 case 2:
                     _DisplayImages_2 = _displayImagesDouble[2];
@@ -1466,7 +1466,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_2[1] = secondImage;
                     _sourceImagesDouble[2][0] = firstSource;
                     _sourceImagesDouble[2][1] = secondSource;
-                    OnPropertyChanged(nameof(DisplayImages_2));
+                    DisplayImages_2 = new BitmapImage[2] { firstImage, secondImage };
                     break;
             }
         }

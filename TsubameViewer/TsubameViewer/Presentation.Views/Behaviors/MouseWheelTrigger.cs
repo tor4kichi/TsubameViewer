@@ -96,7 +96,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 			}
 			else
 			{
-				App.Current.Window.CoreWindow.PointerWheelChanged += CoreWindow_PointerWheelChanged;
+				//App.Current.Window.CoreWindow.PointerWheelChanged += CoreWindow_PointerWheelChanged;
 			}
 		}
 
@@ -146,7 +146,7 @@ namespace TsubameViewer.Presentation.Views.Behaviors
 
 		private void Unregister()
 		{
-			App.Current.Window.CoreWindow.PointerWheelChanged -= CoreWindow_PointerWheelChanged;
+			//App.Current.Window.CoreWindow.PointerWheelChanged -= CoreWindow_PointerWheelChanged;
 
 			if (this.AssociatedObject is FrameworkElement fe)
             {

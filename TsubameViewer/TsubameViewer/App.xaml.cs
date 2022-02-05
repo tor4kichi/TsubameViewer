@@ -130,6 +130,12 @@ namespace TsubameViewer
             return AppWindow.GetFromWindowId(myWndId);
         }
 
+        public Windows.UI.ViewManagement.UIViewSettings GetUIViewSettings()
+        {
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+            return Windows.UI.ViewManagement.UIViewSettingsInterop.GetForWindow(hWnd);
+        }
+
         /// <summary>
         /// Configures the services for the application.
         /// </summary>
@@ -182,6 +188,7 @@ namespace TsubameViewer
 
 
             container.Register<Presentation.Services.UWP.SecondaryTileManager>(reuse: new SingletonReuse());
+            container.RegisterDelegate<Presentation.Services.WindowsTriggers>(() => new WindowsTriggers(App.Current.Window), reuse: new SingletonReuse());
 
             container.Register<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
 
@@ -239,6 +246,8 @@ namespace TsubameViewer
                 _window = new Window();
                 _window.Content = Ioc.Default.GetRequiredService<PrimaryWindowCoreLayout>();
                 _isInitialized = true;
+
+                _window.Activate();
                 await InitializeAsync();
             }
 

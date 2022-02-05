@@ -6,10 +6,11 @@ using Windows.Foundation;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using CommunityToolkit.WinUI.UI.Triggers;
+using CommunityToolkit.WinUI.UI.Triggers_Custom;
 
 namespace TsubameViewer.Presentation.Views.StateTrigger
 {
-    public sealed class PointerCollisionTrigger : StateTriggerBase
+    public sealed class PointerCollisionTrigger : StateTriggerBase, ITriggerValue
     {
         public UIElement Target
         {

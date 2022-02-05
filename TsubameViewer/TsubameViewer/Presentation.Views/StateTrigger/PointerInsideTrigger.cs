@@ -4,10 +4,11 @@ using System.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using CommunityToolkit.WinUI.UI.Triggers;
+using CommunityToolkit.WinUI.UI.Triggers_Custom;
 
 namespace TsubameViewer.Presentation.Views.StateTrigger
 {
-    public sealed class PointerInsideTrigger : StateTriggerBase
+    public sealed class PointerInsideTrigger : StateTriggerBase, ITriggerValue
     {
         public UIElement Target
         {

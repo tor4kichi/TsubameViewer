@@ -41,6 +41,9 @@ using Windows.UI;
 using DryIoc;
 using ManipulationModes = Microsoft.UI.Xaml.Input.ManipulationModes;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using TsubameViewer.Presentation.Services;
+using Windows.Graphics;
+using Microsoft.UI.Windowing;
 
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
@@ -56,6 +59,7 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;
+        private WindowsTriggers _windowsTriggers { get; }
 
         public ImageViewerPage()
         {
@@ -63,6 +67,7 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _vm = Ioc.Default.GetService<ImageViewerPageViewModel>();
             _messenger = Ioc.Default.GetService<IMessenger>();
+            _windowsTriggers = Ioc.Default.GetService<WindowsTriggers>();
             _dispatcherQueue = DispatcherQueue;
 
             Loaded += OnLoaded;
@@ -80,13 +85,13 @@ namespace TsubameViewer.Presentation.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             CloseBottomUI();
-            /*
+            
             IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-            */
+            
         }
 
         public bool IsReadyToImageDisplay
@@ -120,39 +125,57 @@ namespace TsubameViewer.Presentation.Views
             _navigaitonCts.Dispose();
             _navigaitonCts = null;
 
+            App.Current.Window.SizeChanged -= Window_SizeChanged;
+
+            var appView = App.Current.AppWindow;
+            appView.TitleBar.ResetToDefault();
             App.Current.Window.ExtendsContentIntoTitleBar = false;
             App.Current.Window.SetTitleBar(null);
 
-            var appView = App.Current.AppWindow;
-            appView.TitleBar.ButtonBackgroundColor = null;
-            appView.TitleBar.ButtonHoverBackgroundColor = null;
-            appView.TitleBar.ButtonInactiveBackgroundColor = null;
-            appView.TitleBar.ButtonPressedBackgroundColor = null;
+            if (appView.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen)
+            {
+                appView.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Default);
+            }
 
-            appView.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Default);
-            
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             _messenger.Unregister<ImageLoadedMessage>(this);
-            
+
+            IsReadyToImageDisplay = false;
             base.OnNavigatingFrom(e);
         }
 
+        const int titleBarRightMargin = 320;
+
+        private RectInt32[] MakeDragRectangles(AppWindow appWindow)
+        {
+            var tb = appWindow.TitleBar;
+            int backButtonWidth = 48;
+            int pageNumberTextWidth = 80;
+            int fullScreenButtonWidth = 94;
+            return new Windows.Graphics.RectInt32[2]
+            {                
+                new Windows.Graphics.RectInt32(backButtonWidth , 0, appWindow.Size.Width - tb.RightInset - pageNumberTextWidth  - fullScreenButtonWidth - backButtonWidth , tb .Height),
+                new Windows.Graphics.RectInt32(appWindow.Size.Width - tb.RightInset - pageNumberTextWidth, 0, pageNumberTextWidth, tb.Height),
+            };
+        }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             IsReadyToImageDisplay = false;
             _navigationDisposables = new CompositeDisposable();
 
-            //App.Current.Window.ExtendsContentIntoTitleBar = true;
-            //App.Current.Window.SetTitleBar(DraggableTitleBarArea_Desktop);
-
-            /*
             var appView = App.Current.AppWindow;
             appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
             appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
             appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
-            */
+            appView.TitleBar.ExtendsContentIntoTitleBar = true;
+            appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
+            //App.Current.Window.ExtendsContentIntoTitleBar = true;
+            App.Current.Window.SetTitleBar(DraggableTitleBarArea_Desktop);
+
+            App.Current.Window.SizeChanged -= Window_SizeChanged;
+            App.Current.Window.SizeChanged += Window_SizeChanged;
 
             _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
             {
@@ -172,10 +195,10 @@ namespace TsubameViewer.Presentation.Views
                 { 
                     _navigationDisposables.Add(InitializeZoomReaction());
 
-                    //while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
+                    while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
                     {
-                    //    IsReadyToImageDisplay = true;
-                        await Task.Delay(1, ct);
+                        IsReadyToImageDisplay = true;
+                        await Task.Delay(2, ct);
                     }
 
                     return Unit.Default;
@@ -193,13 +216,21 @@ namespace TsubameViewer.Presentation.Views
                 isFirst = false;
             });
 
-            //_ = StartNavigatedAnimationAsync(ct);
-
+            _ = StartNavigatedAnimationAsync(ct);
+            
             base.OnNavigatedTo(e);
+        }
+
+        private void Window_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)
+        {
+            var appView = App.Current.AppWindow;
+            appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
         }
 
         private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
         {
+            await Task.Delay(50);
+
             AnimationBuilder.Create()
                 .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
                 .Start(ImageItemsControl_0);
@@ -327,7 +358,7 @@ namespace TsubameViewer.Presentation.Views
 
                 while (image.ActualSize is { X: 0, Y: 0 })
                 {
-                    await Task.Delay(1, ct);
+                    await Task.Delay(2, ct);
                 }
 
                 IsReadyToImageDisplay = true;
@@ -358,7 +389,7 @@ namespace TsubameViewer.Presentation.Views
 
                 while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
                 {
-                    await Task.Delay(1, ct);
+                    await Task.Delay(2, ct);
                 }
                 
                 return images;

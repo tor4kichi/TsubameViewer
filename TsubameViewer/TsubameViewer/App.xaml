@@ -79,6 +79,9 @@
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
+
+      <myConv:EqualToConverter x:Key="EqualToConverter" />
+      <myConv:NotEqualToConverter x:Key="NotEqualToConverter " />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

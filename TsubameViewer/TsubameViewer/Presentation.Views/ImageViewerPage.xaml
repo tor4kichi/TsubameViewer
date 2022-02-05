@@ -8,7 +8,9 @@
   xmlns:i="using:Microsoft.Xaml.Interactivity" 
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters"
+  xmlns:conv="using:CommunityToolkit.WinUI.UI.Converters"
   xmlns:wst="using:CommunityToolkit.WinUI.UI.Triggers" 
+  xmlns:wstc="using:CommunityToolkit.WinUI.UI.Triggers_Custom" 
   xmlns:uwpControls="using:CommunityToolkit.WinUI.UI.Controls"
   xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors"
   xmlns:uwpUIExtensions="using:CommunityToolkit.WinUI.UI" 
@@ -21,8 +23,8 @@
   xmlns:viewModels="using:TsubameViewer.Presentation.ViewModels" 
   xmlns:animation="using:CommunityToolkit.WinUI.UI.Animations"
   xmlns:behaviours="using:CommunityToolkit.WinUI.UI.Behaviors"
-  xmlns:system="http://schemas.microsoft.com/winfx/2009/xaml"
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"   
+  xmlns:services="using:TsubameViewer.Presentation.Services"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -33,10 +35,9 @@
       
     </core:EventTriggerBehavior>
   </i:Interaction.Behaviors>
-  
-  
-  <Page.Resources>
 
+
+  <Page.Resources>
     <myConv:SliderValueChangedEventArgsConverter x:Key="SliderValueChangedEventArgsConverter" />
 
     <MenuFlyout x:Key="OtherSettingsFlyout" Placement="BottomEdgeAlignedRight">
@@ -300,6 +301,7 @@
         </i:Interaction.Behaviors>
         <Grid.Resources>
           <Style TargetType="ItemsRepeater">
+            <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="VerticalCacheLength" Value="100000" />
             <Setter Property="HorizontalCacheLength" Value="100000" />
@@ -312,7 +314,7 @@
             </Setter>
             <Setter Property="Layout">
               <Setter.Value>
-                <uwpControls:WrapLayout />
+                <StackLayout Orientation="Horizontal" />
               </Setter.Value>
             </Setter>
           </Style>
@@ -795,14 +797,14 @@
                 uwpControls:DockPanel.Dock="Right" Margin="0 6 144 6"
                 MinWidth="40"
                 >
-          <TextBlock VerticalAlignment="Center" FontSize="12" Margin="8 0 0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
+          <TextBlock x:Name="TopBarPageNumberTextBlock" VerticalAlignment="Center" FontSize="12" Margin="8 0 0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
             <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
           </TextBlock>
 
         </Border>
         
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Spacing="8">
-          <Button Height="40" MaxWidth="120" Background="Transparent" Command="{StaticResource FullScreenToggleUICommand}" Opacity="0.7">
+          <Button x:Name="TopBarFullScreenButton" Height="40" MaxWidth="120" Background="Transparent" Command="{StaticResource FullScreenToggleUICommand}" Opacity="0.7">
             <Button.RenderTransform>
               <TranslateTransform Y="1" />
             </Button.RenderTransform>
@@ -882,7 +884,7 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
         <VisualState>
@@ -900,12 +902,11 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:CompositeStateTrigger Operator="And">
-              <wst:UserInteractionModeStateTrigger InteractionMode="Mouse" />
-              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
-            </wst:CompositeStateTrigger>
-            -->
+            <wstc:CompositeStateTrigger Operator="And">
+              <StateTrigger IsActive="{x:Bind _windowsTriggers.DeviceFamily, ConverterParameter=Desktop, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
+              <StateTrigger IsActive="{x:Bind _windowsTriggers.InteractionMode, ConverterParameter=Mouse, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
+            </wstc:CompositeStateTrigger>
+
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <!--
@@ -915,17 +916,16 @@
         </VisualState>
       </VisualStateGroup>
 
-            
+
       <!-- フルスクリーン -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:CompositeStateTrigger Operator="And">
-              <wst:FullScreenModeStateTrigger IsFullScreen="True" />
+            <wstc:CompositeStateTrigger Operator="And">
+              <StateTrigger IsActive="{x:Bind _windowsTriggers.IsFullScreen, Mode=OneWay}" />
               <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-            </wst:CompositeStateTrigger>
-            -->
+            </wstc:CompositeStateTrigger>
+
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
@@ -944,7 +944,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:FullScreenModeStateTrigger IsFullScreen="True" />
+            <StateTrigger IsActive="{x:Bind _windowsTriggers.IsFullScreen, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
@@ -964,12 +964,10 @@
 
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:CompositeStateTrigger Operator="And">
-              <wst:UserInteractionModeStateTrigger InteractionMode="Mouse" />
-              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
-            </wst:CompositeStateTrigger>
-            -->
+            <wstc:CompositeStateTrigger Operator="And">
+              <StateTrigger IsActive="{x:Bind _windowsTriggers.DeviceFamily, ConverterParameter=Desktop, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
+              <StateTrigger IsActive="{x:Bind _windowsTriggers.InteractionMode, ConverterParameter=Mouse, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
+            </wstc:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ContentContainer.Margin" Value="0 32 0 0" />
@@ -978,7 +976,7 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-            
+
       <!-- 拡大縮小 -->
       <VisualStateGroup>
         <VisualState>
@@ -990,8 +988,8 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
-      
+
+
       <!-- アルバムかそれ以外かで画像のアクションを表示切り替え -->
       <VisualStateGroup>
         <VisualState>
@@ -1017,7 +1015,7 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
       <!--見開き補正 -->
       <VisualStateGroup>
         <VisualState>
@@ -1183,15 +1181,13 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
       <!-- デスクトップ、タッチ、コントローラーそれぞれの表示切替 -->
       <VisualStateGroup>
 
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
-            -->
+            <StateTrigger IsActive="{x:Bind _windowsTriggers.DeviceFamily, ConverterParameter=TV, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
@@ -1199,12 +1195,10 @@
             <Setter Target="ImageSelectorContainer.Margin" Value="0 32" />
           </VisualState.Setters>
         </VisualState>
-        
+
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:UserInteractionModeStateTrigger InteractionMode="Touch" />
-            -->
+            <StateTrigger IsActive="{x:Bind _windowsTriggers.InteractionMode, ConverterParameter=Touch, Converter={StaticResource EqualToConverter}, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
@@ -1214,22 +1208,14 @@
 
         <VisualState>
           <VisualState.StateTriggers>
-            <!--
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
-            -->
+            <StateTrigger IsActive="{x:Bind _windowsTriggers.DeviceFamily, ConverterParameter=Desktop, Converter={StaticResource EqualToConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="TopBarContainer.Visibility" Value="Visible" />
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
-            
           </VisualState.Setters>
         </VisualState>
-
-        
-
       </VisualStateGroup>
-
     </VisualStateManager.VisualStateGroups>
-
   </Grid>
 </Page>

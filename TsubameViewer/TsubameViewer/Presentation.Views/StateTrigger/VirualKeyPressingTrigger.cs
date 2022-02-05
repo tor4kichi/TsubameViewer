@@ -6,10 +6,11 @@ using Windows.System;
 using Microsoft.UI.Xaml;
 using CommunityToolkit.WinUI.UI.Triggers;
 using Microsoft.UI.Input;
+using CommunityToolkit.WinUI.UI.Triggers_Custom;
 
 namespace TsubameViewer.Presentation.Views.StateTrigger
 {
-    public sealed class VirualKeyPressingTrigger : StateTriggerBase, IDisposable
+    public sealed class VirualKeyPressingTrigger : StateTriggerBase, IDisposable, ITriggerValue
     {
         public FrameworkElement Target
         {
