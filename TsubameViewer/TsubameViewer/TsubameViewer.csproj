@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>TsubameViewer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x86;x64;arm64</Platforms>
+    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <StartupObject></StartupObject>
+    <NeutralLanguage>ja-JP</NeutralLanguage>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'">
+    <DefineConstants>WINDOWS;</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Locales\en-US.txt" />
+    <None Remove="Locales\ja-JP.txt" />
+    <None Remove="Locales\zh-CHS.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Locales\en-US.txt" />
+    <EmbeddedResource Include="Locales\ja-JP.txt" />
+    <EmbeddedResource Include="Locales\zh-CHS.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="CommunityToolkit.Common" Version="7.1.2" />
+	<PackageReference Include="CommunityToolkit.WinUI.UI.Animations" Version="7.1.2" />
+	<PackageReference Include="CommunityToolkit.WinUI.UI.Behaviors" Version="7.1.2" />
+	<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Layout" Version="7.1.2" />
+	<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Primitives" Version="7.1.2" />
+	<PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.0.0-preview-02" />
+	<PackageReference Include="I18NPortable" Version="1.0.1" />
+	<PackageReference Include="LiteDB" Version="5.0.11" />
+	<PackageReference Include="Microsoft.Graphics.Win2D" Version="1.0.0.30" />
+	<PackageReference Include="Microsoft.Toolkit.Diagnostics" Version="7.1.2" />
+	<PackageReference Include="Microsoft.Toolkit.Mvvm" Version="7.1.2" />
+	<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.0.0" />
+	<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22543-preview" />
+	<PackageReference Include="ReactiveProperty" Version="8.0.3" />
+	<PackageReference Include="SharpCompress" Version="0.30.0" />
+	<PackageReference Include="System.Linq.Async" Version="6.0.1" />
+	<PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
+	<PackageReference Include="System.Text.Json" Version="6.0.1" />
+	<PackageReference Include="VersOne.Epub" Version="3.0.3.1" />
+	<PackageReference Include="Xamarin.Essentials" Version="1.5.3.2" />
+
+	<Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+</Project>

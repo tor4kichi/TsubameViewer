@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="18803tor4kichi.TsubameViewer"
+    Publisher="CN=DFF1CEA0-5963-4197-8676-6105C5E8CE4B"
+    Version="1.6.2.0" />
+
+  <Properties>
+    <DisplayName>TsubameViewer</DisplayName>
+    <PublisherDisplayName>tor4kichi</PublisherDisplayName>
+    <Logo>Images\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="x-generate"/>
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$">
+      <uap:VisualElements
+        DisplayName="TsubameViewer"
+        Description="TsubameViewer"
+        BackgroundColor="transparent"
+        Square150x150Logo="Images\Square150x150Logo.png"
+        Square44x44Logo="Images\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Images\Wide310x150Logo.png" />
+        <uap:SplashScreen Image="Images\SplashScreen.png" />
+        <uap:InitialRotationPreference>
+          <uap:Rotation Preference="landscape"/>
+          <uap:Rotation Preference="portrait"/>
+          <uap:Rotation Preference="landscapeFlipped"/>
+          <uap:Rotation Preference="portraitFlipped"/></uap:InitialRotationPreference>
+      </uap:VisualElements>
+		<Extensions>
+			<uap:Extension Category="windows.fileTypeAssociation">
+				<uap:FileTypeAssociation Name="tsubame_viewer">
+					<uap:SupportedFileTypes>
+						<uap:FileType ContentType="image/jpeg">.jpg</uap:FileType>
+						<uap:FileType ContentType="image/png">.png</uap:FileType>
+						<uap:FileType ContentType="application/zip">.zip</uap:FileType>
+						<uap:FileType ContentType="application/vnd.rar">.rar</uap:FileType>
+						<uap:FileType ContentType="application/pdf">.pdf</uap:FileType>
+						<uap:FileType ContentType="image/bmp">.bmp</uap:FileType>
+						<uap:FileType ContentType="image/tiff">.tif</uap:FileType>
+						<uap:FileType ContentType="image/tiff">.tiff</uap:FileType>
+						<uap:FileType ContentType="image/svg+xml">.svg</uap:FileType>
+						<uap:FileType ContentType="application/epub+zip">.epub</uap:FileType>
+						<uap:FileType ContentType="application/vnd.comicbook-rar">.cbr</uap:FileType>
+						<uap:FileType ContentType="application/vnd.comicbook+zip">.cbz</uap:FileType>
+						<uap:FileType ContentType="application/x-7z-compressed">.7z</uap:FileType>
+						<uap:FileType ContentType="application/x-cb7">.cb7</uap:FileType>
+					</uap:SupportedFileTypes>
+					<uap:DisplayName>TsubameViewer</uap:DisplayName>
+					<uap:EditFlags OpenIsSafe="true"/>
+				</uap:FileTypeAssociation>
+			</uap:Extension>
+		</Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

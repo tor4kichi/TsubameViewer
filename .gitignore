@@ -8,3 +8,7 @@ TsubameViewer/TsubameViewer.UWP/TsubameViewer.Uwp_temporarykey.pfx
 /TsubameViewer/.vs/TsubameViewer/v16/.suo
 *.user
 /.vs/TsubameViewer
+/TsubameViewer/TsubameViewer/bin
+/TsubameViewer/TsubameViewer (Package)/AppPackages
+/TsubameViewer/TsubameViewer (Package)/bin
+/TsubameViewer/TsubameViewer (Package)/BundleArtifacts
