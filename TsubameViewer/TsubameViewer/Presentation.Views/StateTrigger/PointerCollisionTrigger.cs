@@ -47,7 +47,6 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
             {
                 var pt = e.GetCurrentPoint(null);
                 SetActive(IsActive = collisionRect.Contains(pt.Position));
-                Debug.WriteLine(pt.Position.Y);
             }
             else
             {
