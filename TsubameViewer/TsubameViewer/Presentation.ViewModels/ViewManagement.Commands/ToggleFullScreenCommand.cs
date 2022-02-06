@@ -25,11 +25,13 @@ namespace TsubameViewer.Presentation.Views.ViewManagement.Commands
         {
             System.Diagnostics.Debug.WriteLine("ToggleFullScreenCommand");
             if (_currentView.Presenter.Kind == AppWindowPresenterKind.FullScreen)
-            {
+            {                
                 _currentView.SetPresenter(AppWindowPresenterKind.Default);
+                App.Current.RestoreWindowPositionAndSize();
             }
             else
             {
+                App.Current.SaveWindowPositionAndSize();
                 _currentView.SetPresenter(AppWindowPresenterKind.FullScreen);
             }
         }

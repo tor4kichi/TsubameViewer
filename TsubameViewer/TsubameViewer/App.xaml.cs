@@ -35,6 +35,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics;
 using Windows.Storage;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -53,6 +54,7 @@ namespace TsubameViewer
         /// </summary>
         public new static App Current => (App)Application.Current;
 
+        private WindowSettings _windowSettings;
         private Window _window;
         private Presentation.Views.SplashScreen _splashScreen;
 
@@ -264,9 +266,10 @@ namespace TsubameViewer
                 }
 #endif
                 Resources["DebugTVMode"] = Container.Resolve<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
-
+                
                 SystemInformation.Instance.TrackAppUse(actiavatedEventArgs);
 
+                _windowSettings = Ioc.Default.GetService<WindowSettings>();
                 _window = new Window();
 
                 _splashScreen = new Presentation.Views.SplashScreen();
@@ -281,9 +284,24 @@ namespace TsubameViewer
                 
                 _window.Content = rootGrid;
                 SetWindowTitle();
-                _isInitialized = true;                
+                _isInitialized = true;
+
+                if (_windowSettings.LastWindowPresenterKind is not AppWindowPresenterKind.Default and not AppWindowPresenterKind.Overlapped)
+                {
+                    AppWindow.SetPresenter(_windowSettings.LastWindowPresenterKind);
+                }                
+
+                if (AppWindow.Presenter.Kind != AppWindowPresenterKind.FullScreen)
+                {
+                    RestoreWindowPositionAndSize();
+                }
+
+                _lastWindowPosition = AppWindow.Position;
                 await Task.Delay(5);
-                _window.Activate();                
+                _window.Activate();
+
+                AppWindow.Changed += AppWindow_Changed;
+                AppWindow.Closing += AppWindow_Closing;
 
                 await InitializeAsync();
 
@@ -304,6 +322,92 @@ namespace TsubameViewer
                     .Start(_splashScreen, () => _splashScreen.Visibility = Visibility.Collapsed);
             }
         }
+
+
+        #region Window Position and Size
+
+        private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
+        {
+            SaveWindowPositionAndSize();
+        }
+
+        public void RestoreWindowPositionAndSize()
+        {
+            if (AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped)
+            {
+                if (_windowSettings.LastOverlappedWindowPosition is not { X: 0, Y: 0 } && _windowSettings.LastOverlappedWindowSize is not { Width: 0, Height: 0 })
+                {
+                    AppWindow.MoveAndResize(new RectInt32(
+                        (int)_windowSettings.LastOverlappedWindowPosition.X,
+                        (int)_windowSettings.LastOverlappedWindowPosition.Y,
+                        (int)_windowSettings.LastOverlappedWindowSize.Width,
+                        (int)_windowSettings.LastOverlappedWindowSize.Height
+                        ));
+                }
+            }
+            else if (AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay)
+            {
+                if (_windowSettings.LastOverlappedWindowPosition is not { X: 0, Y: 0 } && _windowSettings.LastOverlappedWindowSize is not { Width: 0, Height: 0 })
+                {
+                    AppWindow.MoveAndResize(new RectInt32(
+                    (int)_windowSettings.LastOverlappedWindowPosition.X,
+                    (int)_windowSettings.LastOverlappedWindowPosition.Y,
+                    (int)_windowSettings.LastOverlappedWindowSize.Width,
+                    (int)_windowSettings.LastOverlappedWindowSize.Height
+                    ));
+                }
+            }
+        }
+
+        public void SaveWindowPositionAndSize()
+        {
+            var windowSettings = Ioc.Default.GetService<WindowSettings>();
+            var pos = AppWindow.Position;
+            var size = AppWindow.Size;
+
+            if (AppWindow.Presenter.Kind == AppWindowPresenterKind.Overlapped)
+            {
+                windowSettings.LastOverlappedWindowPosition = new System.Windows.Point(pos.X, pos.Y);
+                windowSettings.LastOverlappedWindowSize = new System.Windows.Size(size.Width, size.Height);
+            }
+            else if (AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay)
+            {
+                windowSettings.LastCompactOverlayWindowPosition = new System.Windows.Point(pos.X, pos.Y);
+                windowSettings.LastCompactOverlayWindowSize = new System.Windows.Size(size.Width, size.Height);
+            }
+
+            windowSettings.LastWindowPresenterKind = AppWindow.Presenter.Kind;
+        }
+
+        private int MinWindowWidth = 500;
+        private int MinWindowHeight = 500;
+
+        private PointInt32 _lastWindowPosition;
+        private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+        {
+            if (args.DidSizeChange)
+            {
+                if (sender.Size.Width < MinWindowWidth || sender.Size.Height < MinWindowHeight)
+                {
+                    var newSize = new SizeInt32(Math.Max(MinWindowWidth, sender.Size.Width), Math.Max(MinWindowHeight, sender.Size.Height));
+                    if (args.DidPositionChange)
+                    {
+                        sender.MoveAndResize(new RectInt32(_lastWindowPosition.X, _lastWindowPosition.Y, newSize.Width, newSize.Height));
+                    }
+                    else
+                    {
+                        sender.Resize(newSize);
+                    }
+                }                
+            }
+
+            if (args.DidPositionChange)
+            {
+                _lastWindowPosition = sender.Position;
+            }
+        }
+
+        #endregion Window Position and Size
 
         public void SetWindowTitle(string? title = null)
         {
@@ -365,6 +469,55 @@ namespace TsubameViewer
 
             _window.Activate();
         }
+
+
+        private async Task InitializeAsync()
+        {
+            
+
+#if DEBUG
+            foreach (var collectionName in Container.Resolve<ILiteDatabase>().GetCollectionNames())
+            {
+                Debug.WriteLine(collectionName);
+            }
+#endif
+
+            await UpdateMigrationAsync();
+
+            await MaintenanceAsync();
+
+            //Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
+
+#if WINDOWS_UWP || WINDOWS
+            //Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
+#endif
+
+            Resources["Strings"] = I18NPortable.I18N.Current;
+
+            Resources["SmallImageWidth"] = ListingImageConstants.SmallFileThumbnailImageWidth;
+            Resources["SmallImageHeight"] = ListingImageConstants.SmallFileThumbnailImageHeight;
+            Resources["SmallImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.SmallFileThumbnailImageHeight, ListingImageConstants.SmallFileThumbnailImageHeight));
+            Resources["MidiumImageWidth"] = ListingImageConstants.MidiumFileThumbnailImageWidth;
+            Resources["MidiumImageHeight"] = ListingImageConstants.MidiumFileThumbnailImageHeight;
+            Resources["MidiumImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.MidiumFileThumbnailImageHeight, ListingImageConstants.MidiumFileThumbnailImageHeight));
+            Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
+            Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
+            Resources["LargeImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.LargeFileThumbnailImageHeight, ListingImageConstants.LargeFileThumbnailImageHeight));
+
+            UpdateFolderItemSizingResourceValues();
+
+            //App.Current.Window.Content = Container.Resolve<PrimaryWindowCoreLayout>();
+            //App.Current.Window.Activate();
+        }
+
+        public void UpdateFolderItemSizingResourceValues()
+        {
+            var folderListingSettings = Container.Resolve<Models.Domain.FolderItemListing.FolderListingSettings>();
+            Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
+            Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
+            Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
+        }
+
 
 
         private async ValueTask UpdateMigrationAsync()
@@ -490,54 +643,6 @@ namespace TsubameViewer
                 }
             });
         }
-
-        private async Task InitializeAsync()
-        {
-            
-
-#if DEBUG
-            foreach (var collectionName in Container.Resolve<ILiteDatabase>().GetCollectionNames())
-            {
-                Debug.WriteLine(collectionName);
-            }
-#endif
-
-            await UpdateMigrationAsync();
-
-            await MaintenanceAsync();
-
-            //Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
-
-#if WINDOWS_UWP || WINDOWS
-            //Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
-#endif
-
-            Resources["Strings"] = I18NPortable.I18N.Current;
-
-            Resources["SmallImageWidth"] = ListingImageConstants.SmallFileThumbnailImageWidth;
-            Resources["SmallImageHeight"] = ListingImageConstants.SmallFileThumbnailImageHeight;
-            Resources["SmallImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.SmallFileThumbnailImageHeight, ListingImageConstants.SmallFileThumbnailImageHeight));
-            Resources["MidiumImageWidth"] = ListingImageConstants.MidiumFileThumbnailImageWidth;
-            Resources["MidiumImageHeight"] = ListingImageConstants.MidiumFileThumbnailImageHeight;
-            Resources["MidiumImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.MidiumFileThumbnailImageHeight, ListingImageConstants.MidiumFileThumbnailImageHeight));
-            Resources["LargeImageWidth"] = ListingImageConstants.LargeFileThumbnailImageWidth;
-            Resources["LargeImageHeight"] = ListingImageConstants.LargeFileThumbnailImageHeight;
-            Resources["LargeImageRect"] = new Rect(new Point(), new Point(ListingImageConstants.LargeFileThumbnailImageHeight, ListingImageConstants.LargeFileThumbnailImageHeight));
-
-            UpdateFolderItemSizingResourceValues();
-
-            //App.Current.Window.Content = Container.Resolve<PrimaryWindowCoreLayout>();
-            //App.Current.Window.Activate();
-        }
-
-        public void UpdateFolderItemSizingResourceValues()
-        {
-            var folderListingSettings = Container.Resolve<Models.Domain.FolderItemListing.FolderListingSettings>();
-            Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
-            Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
-            Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
-        }
-
 
 
 
