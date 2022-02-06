@@ -49,10 +49,25 @@ namespace TsubameViewer.Presentation.Services
 
 				_window.SizeChanged += weakEvent.OnEvent;
 			}
+
+            {
+				var weakEvent =
+					new WeakEventListener<WindowsTriggers, AppWindow, AppWindowChangedEventArgs>(this)
+					{
+						OnEventAction = (instance, source, eventArgs) => instance.OnAppWindowChanged(source, eventArgs),
+						OnDetachAction = (weakEventListener) => _appWindow.Changed -= weakEventListener.OnEvent
+					};
+
+				_appWindow.Changed += weakEvent.OnEvent;
+			}
 		}
 
+        private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+        {
+			IsFullScreen = _appWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
+		}
 
-		private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs args)
+        private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs args)
 		{
 			IsFullScreen = _appWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
 			InteractionMode = GetUIViewSettings(_window).UserInteractionMode;
