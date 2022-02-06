@@ -91,7 +91,9 @@ namespace TsubameViewer.Presentation.Views
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
-            
+
+            _vm.CanvasWidth.Value = ImagesContainer.ActualWidth;
+            _vm.CanvasHeight.Value = ImagesContainer.ActualHeight;
         }
 
         public bool IsReadyToImageDisplay
