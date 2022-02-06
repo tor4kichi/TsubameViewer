@@ -24,7 +24,9 @@
   xmlns:animation="using:CommunityToolkit.WinUI.UI.Animations"
   xmlns:behaviours="using:CommunityToolkit.WinUI.UI.Behaviors"
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"   
-  xmlns:services="using:TsubameViewer.Presentation.Services"
+  xmlns:services="using:TsubameViewer.Presentation.Services" 
+  xmlns:ui="using:CommunityToolkit.WinUI.UI"
+  xmlns:media="using:CommunityToolkit.WinUI.UI.Media"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
@@ -38,6 +40,8 @@
 
 
   <Page.Resources>
+    <media:AttachedCardShadow x:Key="CommonShadow" Offset="4" />
+
     <myConv:SliderValueChangedEventArgsConverter x:Key="SliderValueChangedEventArgsConverter" />
 
     <MenuFlyout x:Key="OtherSettingsFlyout" Placement="BottomEdgeAlignedRight">
@@ -455,6 +459,139 @@
     </Grid>
 
     <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
+
+    <!-- 下側のボタン類 -->
+    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}" 
+              Grid.ColumnSpan="3"
+              VerticalAlignment="Bottom"
+              HorizontalAlignment="Center"
+            IsHitTestVisible="True"
+            MinWidth="380"
+              MaxWidth="420"
+              CornerRadius="8"
+              Margin="0 0 0 16"            
+            ui:Effects.Shadow="{StaticResource CommonShadow}"
+              >
+
+      
+      <animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0, 16" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, 180, 16" EasingType="Cubic" Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+      
+      
+      <StackPanel Margin="8" Spacing="4">
+
+        <Grid>
+          <Grid.Resources>
+            <ScaleTransform x:Key="FavoriteIconTransform" ScaleX="0.9" ScaleY="0.9" />
+          </Grid.Resources>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition />
+          </Grid.ColumnDefinitions>
+
+          <DropDownButton x:Name="Page1ActionButton" Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0">
+            <uwpControls:DockPanel>
+              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
+              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
+              <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
+              </TextBlock>
+            </uwpControls:DockPanel>
+
+            <DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem x:Name="Page1AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem x:Name="Page1RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
+                <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
+                <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem x:Name="Page1OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton >
+          <DropDownButton x:Name="Page2ActionButton" Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0">
+            <uwpControls:DockPanel>
+              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
+              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
+              <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
+              </TextBlock>
+            </uwpControls:DockPanel>
+
+            <DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem x:Name="Page2AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem x:Name="Page2RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
+                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+        </Grid>
+
+
+
+        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
+             XYFocus*を使って強制的に移動先を指定している 
+        -->
+        <ComboBox x:Name="PageFolderNamesSelector" uwpControls:DockPanel.Dock="Top"
+                  ItemsSource="{Binding PageFolderNames}"
+                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                  SelectionChangedTrigger="Committed"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0 4"
+                  >
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="SelectionChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+        </ComboBox>
+
+
+        <Slider x:Name="PageSelector" uwpControls:DockPanel.Dock="Bottom"
+                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Minimum="0"
+                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
+                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
+                TickFrequency="1"
+                StepFrequency="1"
+                Padding="0"     
+                Margin="0 0"       
+                XYFocusDown="{x:Bind PageFolderNamesSelector}"
+                >
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="ValueChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+        </Slider>
+
+        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
+
+          <TextBlock.RenderTransform>
+            <TranslateTransform Y="-6" />
+          </TextBlock.RenderTransform>
+          <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+        </TextBlock>
+
+      </StackPanel>
+
+    </Border>
+
     
     <!-- ボタン類 -->
     <StackPanel x:Name="ButtonsContainer" 
@@ -462,27 +599,22 @@
                 Grid.ColumnSpan="3"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
-                IsHitTestVisible="True"
                 CornerRadius="8"
                 Orientation="Horizontal"
                 Padding="4 4"
                 Margin="0 48 0 0"
-                Spacing="4"             
-                Windows10version1903:Translation="0, 0, 16"
+                Spacing="4"   
+                ui:Effects.Shadow="{StaticResource CommonShadow}"
                 >
-      <Windows10version1903:StackPanel.Shadow>
-        <ThemeShadow  />
-      </Windows10version1903:StackPanel.Shadow>
-
-      <!--
+      
+      
       <animation:Implicit.ShowAnimations>
-        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, 0, 32" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, -88" EasingType="Cubic" Duration="0:0:0.175" />
+        <animation:TranslationAnimation To="0, -98, 0" EasingType="Cubic" Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
-      -->
-
+      
       <StackPanel.Resources>
         <Style TargetType="Button">
           <Setter Property="Height" Value="40" />
@@ -592,138 +724,7 @@
 
 
 
-    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}" 
-              Grid.ColumnSpan="3"
-              VerticalAlignment="Bottom"
-              HorizontalAlignment="Center"
-            MinWidth="380"
-              MaxWidth="420"
-              CornerRadius="8"
-              Margin="0 0 0 16"
-            Windows10version1903:Translation="0, 0, 16"
-              >
-
-      <Windows10version1903:Border.Shadow>
-        <ThemeShadow  />
-      </Windows10version1903:Border.Shadow>
-      
-      <animation:Implicit.ShowAnimations>
-        <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
-      </animation:Implicit.ShowAnimations>
-      <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 180" EasingType="Cubic" Duration="0:0:0.175" />
-      </animation:Implicit.HideAnimations>
-
-      <StackPanel Margin="8" Spacing="4">
-
-        <Grid>
-          <Grid.Resources>
-            <ScaleTransform x:Key="FavoriteIconTransform" ScaleX="0.9" ScaleY="0.9" />
-          </Grid.Resources>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-            <ColumnDefinition Width="16" />
-            <ColumnDefinition />
-          </Grid.ColumnDefinitions>
-
-          <DropDownButton x:Name="Page1ActionButton" Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0">
-            <uwpControls:DockPanel>
-              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
-              <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
-              </TextBlock>
-            </uwpControls:DockPanel>
-
-            <DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem x:Name="Page1AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
-                <MenuFlyoutItem x:Name="Page1RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
-                <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
-                <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
-                <MenuFlyoutItem x:Name="Page1OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
-              </MenuFlyout>
-            </DropDownButton.Flyout>
-          </DropDownButton >
-          <DropDownButton x:Name="Page2ActionButton" Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0">
-            <uwpControls:DockPanel>
-              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
-              <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
-              </TextBlock>
-            </uwpControls:DockPanel>
-
-            <DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem x:Name="Page2AddFavoriteButton" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed" />
-                <MenuFlyoutItem x:Name="Page2RemoveFavoriteButton" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed" />
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}" />
-                <MenuFlyoutSeparator />
-                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}" />
-                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
-                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" />
-                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}" />
-              </MenuFlyout>
-            </DropDownButton.Flyout>
-          </DropDownButton>
-        </Grid>
-        
-
-        
-        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
-             XYFocus*を使って強制的に移動先を指定している 
-        -->
-        <ComboBox x:Name="PageFolderNamesSelector" uwpControls:DockPanel.Dock="Top"
-                  ItemsSource="{Binding PageFolderNames}"
-                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                  SelectionChangedTrigger="Committed"
-                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="0 4"
-                  >
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
-              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-        </ComboBox>
-
-
-        <Slider x:Name="PageSelector" uwpControls:DockPanel.Dock="Bottom"
-                Value="{Binding CurrentImageIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                Minimum="0"
-                Maximum="{Binding Images.Length, Converter={StaticResource NumberMinus1Converter}}"
-                ThumbToolTipValueConverter="{StaticResource NumberStartFrom1Converter}"
-                TickFrequency="1"
-                StepFrequency="1"
-                Padding="0"     
-                Margin="0 0"       
-                XYFocusDown="{x:Bind PageFolderNamesSelector}"
-                >
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="ValueChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-        </Slider>
-
-        <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0" HorizontalAlignment="Right" uwpControls:DockPanel.Dock="Bottom">
-
-          <TextBlock.RenderTransform>
-            <TranslateTransform Y="-6" />
-          </TextBlock.RenderTransform>
-          <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
-        </TextBlock>
-
-      </StackPanel>
-
-    </Border>
-
+    
     <Grid x:Name="ZoomingControlUI" Visibility="Collapsed"
           Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"
           Windows10version1903:Translation="0, 0, 16"
@@ -733,10 +734,8 @@
           Padding="16 8"
           CornerRadius="8"
           IsHitTestVisible="False"
+          ui:Effects.Shadow="{StaticResource CommonShadow}"
           >
-      <Windows10version1903:Grid.Shadow>
-        <ThemeShadow />
-      </Windows10version1903:Grid.Shadow>
 
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1.0" Duration="0:0:0.175" />

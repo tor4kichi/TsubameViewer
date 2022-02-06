@@ -47,6 +47,7 @@
 	<PackageReference Include="CommunityToolkit.WinUI.UI.Behaviors" Version="7.1.2" />
 	<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Layout" Version="7.1.2" />
 	<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Primitives" Version="7.1.2" />
+	<PackageReference Include="CommunityToolkit.WinUI.UI.Media" Version="7.1.2" />
 	<PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.0.0-preview-02" />
 	<PackageReference Include="I18NPortable" Version="1.0.1" />
 	<PackageReference Include="LiteDB" Version="5.0.11" />

@@ -464,6 +464,7 @@ namespace TsubameViewer.Presentation.Views
             IsOpenBottomMenu = true;
             ButtonsContainer.Visibility = Visibility.Visible;
             ImageSelectorContainer.Visibility = Visibility.Visible;
+
             ZoomInButton.Focus(FocusState.Keyboard);
         }
 
