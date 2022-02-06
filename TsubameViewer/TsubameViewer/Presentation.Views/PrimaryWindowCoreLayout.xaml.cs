@@ -655,7 +655,7 @@ namespace TsubameViewer.Presentation.Views
                         ContentFrame.GoBack();
 
                         var currentPage = ContentFrame.Content as Page;
-                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
                     }
                     catch
                     {
@@ -707,7 +707,7 @@ namespace TsubameViewer.Presentation.Views
                     ContentFrame.GoForward();
 
                     var currentPage = ContentFrame.Content as Page;
-                    await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+                    await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters);
                 }
                 catch
                 {

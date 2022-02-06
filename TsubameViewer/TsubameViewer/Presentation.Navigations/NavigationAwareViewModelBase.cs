@@ -42,7 +42,15 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (base.TryGetValue(key, out object temp))
             {
-                outValue = (T)temp;
+                var type = typeof(T);
+                if (type.IsEnum && temp is string strTemp)
+                {
+                    outValue = (T)Enum.Parse(type, strTemp);
+                }
+                else
+                {
+                    outValue = (T)temp;
+                }
                 return true;
             }
             else
