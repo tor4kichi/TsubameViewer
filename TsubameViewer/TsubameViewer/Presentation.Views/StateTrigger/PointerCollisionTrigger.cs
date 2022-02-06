@@ -27,7 +27,7 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
             if (e.NewValue is FrameworkElement item)
             {
                 var _this = d as PointerCollisionTrigger;
-                //item.PointerMoved += _this.Item_PointerMoved;
+                item.PointerMoved += _this.Item_PointerMoved;
                 item.Unloaded += _this.Item_Unloaded;
             }
         }
@@ -45,8 +45,9 @@ namespace TsubameViewer.Presentation.Views.StateTrigger
             var oldIsActive = IsActive;
             if (!collisionRect.IsEmpty)
             {
-                var pt = e.GetCurrentPoint((UIElement)sender);
+                var pt = e.GetCurrentPoint(null);
                 SetActive(IsActive = collisionRect.Contains(pt.Position));
+                Debug.WriteLine(pt.Position.Y);
             }
             else
             {
