@@ -91,10 +91,13 @@ namespace TsubameViewer.Presentation.Views
             App.Current.Window.SetTitleBar(null);
 
             var appView = App.Current.AppWindow;
-            appView.TitleBar.ButtonBackgroundColor = null;
-            appView.TitleBar.ButtonHoverBackgroundColor = null;
-            appView.TitleBar.ButtonInactiveBackgroundColor = null;
-            appView.TitleBar.ButtonPressedBackgroundColor = null;
+            if (appView.TitleBar != null)
+            {
+                appView.TitleBar.ButtonBackgroundColor = null;
+                appView.TitleBar.ButtonHoverBackgroundColor = null;
+                appView.TitleBar.ButtonInactiveBackgroundColor = null;
+                appView.TitleBar.ButtonPressedBackgroundColor = null;
+            }
 
             appView.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Default);
 
@@ -122,10 +125,13 @@ namespace TsubameViewer.Presentation.Views
                 .Start(TocContentPanel);
 
             var appView = App.Current.AppWindow;
-            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
+            if (appView.TitleBar != null)
+            {
+                appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+                appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+                appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
+                appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
+            }            
 
             _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
             {

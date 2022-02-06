@@ -130,7 +130,7 @@ namespace TsubameViewer.Presentation.Views
             App.Current.Window.SizeChanged -= Window_SizeChanged;
 
             var appView = App.Current.AppWindow;
-            appView.TitleBar.ResetToDefault();
+            appView.TitleBar?.ResetToDefault();
             App.Current.Window.ExtendsContentIntoTitleBar = false;
             App.Current.Window.SetTitleBar(null);
             
@@ -167,12 +167,15 @@ namespace TsubameViewer.Presentation.Views
             _navigationDisposables = new CompositeDisposable();
 
             var appView = App.Current.AppWindow;
-            appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
-            appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
-            appView.TitleBar.ExtendsContentIntoTitleBar = true;
-            appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
+            if (appView.TitleBar != null)
+            {
+                appView.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+                appView.TitleBar.ButtonHoverBackgroundColor = Color.FromArgb(0x7f, 0xff, 0xff, 0xff);
+                appView.TitleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0xcf, 0xff, 0xff, 0xff);
+                appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
+                appView.TitleBar.ExtendsContentIntoTitleBar = true;
+                appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
+            }
             App.Current.Window.SetTitleBar(DraggableTitleBarArea_Desktop);
 
             App.Current.Window.SizeChanged -= Window_SizeChanged;
@@ -225,7 +228,10 @@ namespace TsubameViewer.Presentation.Views
         private void Window_SizeChanged(object sender, Microsoft.UI.Xaml.WindowSizeChangedEventArgs args)
         {
             var appView = App.Current.AppWindow;
-            appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
+            if (appView.TitleBar != null)
+            {
+                appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
+            }
         }
 
         private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)

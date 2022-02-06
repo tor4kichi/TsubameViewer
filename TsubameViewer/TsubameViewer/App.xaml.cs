@@ -412,7 +412,11 @@ namespace TsubameViewer
         public void SetWindowTitle(string? title = null)
         {
             var appWindow = GetAppWindowForCurrentWindow();
-            appWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
+            if (appWindow.TitleBar != null)
+            {
+                appWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
+            }
+
             appWindow.Title = !string.IsNullOrEmpty(title) ? $"{title} - {nameof(TsubameViewer)}" : nameof(TsubameViewer);
         }
 
