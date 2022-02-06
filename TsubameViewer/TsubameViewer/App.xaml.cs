@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.WinUI.Helpers;
+using CommunityToolkit.WinUI.UI.Animations;
 using DryIoc;
 using LiteDB;
 using Microsoft.Toolkit.Diagnostics;
@@ -8,6 +9,7 @@ using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,11 +54,13 @@ namespace TsubameViewer
         public new static App Current => (App)Application.Current;
 
         private Window _window;
+        private Presentation.Views.SplashScreen _splashScreen;
+
         public Window Window => _window;
 
         public XamlRoot XamlRoot => _window.Content.XamlRoot;
 
-        public Container Container { get; }
+        public Container Container { get; private set; }
 
         public void InitializeWithWindow(object dialog)
         {
@@ -118,18 +122,6 @@ namespace TsubameViewer
             {
                 Debug.WriteLine(ex.ToString());
             }
-
-            Container = ConfigureServices();
-
-            var applicationSettings = Container.Resolve<Models.Domain.ApplicationSettings>();
-            try
-            {
-                I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
-            }
-            catch
-            {
-                I18NPortable.I18N.Current.Locale = "en-US";
-            }            
         }
 
         
@@ -233,16 +225,38 @@ namespace TsubameViewer
         /// <param name="args">Details about the launch request and process.</param>
         protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            var instance = AppInstance.FindOrRegisterInstanceForKey("Main");
-            if (instance.IsCurrentInstance is false)
+            // If this is the first instance launched, then register it as the "main" instance.
+            // If this isn't the first instance launched, then "main" will already be registered,
+            // so retrieve it.
+            var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("main");
+
+            // If the instance that's executing the OnLaunched handler right now
+            // isn't the "main" instance.
+            if (!mainInstance.IsCurrent)
             {
-                instance.RedirectActivationTo();
+                // Redirect the activation (and args) to the "main" instance, and exit.
+                var activatedEventArgs =
+                    Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+                await mainInstance.RedirectActivationToAsync(activatedEventArgs);
+                System.Diagnostics.Process.GetCurrentProcess().Kill();
                 return;
             }
 
             var actiavatedEventArgs = AppInstance.GetActivatedEventArgs();
             if (_isInitialized is false)
             {
+                Container = ConfigureServices();
+
+                var applicationSettings = Container.Resolve<Models.Domain.ApplicationSettings>();
+                try
+                {
+                    I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
+                }
+                catch
+                {
+                    I18NPortable.I18N.Current.Locale = "en-US";
+                }
+
 #if DEBUG
                 if (System.Diagnostics.Debugger.IsAttached)
                 {
@@ -254,14 +268,41 @@ namespace TsubameViewer
                 SystemInformation.Instance.TrackAppUse(actiavatedEventArgs);
 
                 _window = new Window();
-                _window.Content = Ioc.Default.GetRequiredService<PrimaryWindowCoreLayout>();
-                _isInitialized = true;
 
-                _window.Activate();
+                _splashScreen = new Presentation.Views.SplashScreen();
+
+                var rootGrid = new Grid()
+                {
+                    Children =
+                    {
+                        _splashScreen,
+                    }
+                };
+                
+                _window.Content = rootGrid;
+                SetWindowTitle();
+                _isInitialized = true;                
+                await Task.Delay(5);
+                _window.Activate();                
+
                 await InitializeAsync();
+
+                _primaryWindowCoreLayout = Ioc.Default.GetRequiredService<PrimaryWindowCoreLayout>();
+                rootGrid.Children.Insert(0, _primaryWindowCoreLayout);
+            }
+            else
+            {
+                AppWindow.Show();
             }
 
             await OnActivatedAsync(actiavatedEventArgs);
+
+            if (_splashScreen.Opacity == 1.0)
+            {
+                AnimationBuilder.Create()
+                    .Opacity(0.0, duration: TimeSpan.FromSeconds(0.25), easingType: EasingType.Cubic)
+                    .Start(_splashScreen, () => _splashScreen.Visibility = Visibility.Collapsed);
+            }
         }
 
         public void SetWindowTitle(string? title = null)
@@ -274,6 +315,8 @@ namespace TsubameViewer
         bool _isInitialized = false;
 
         bool isRestored = false;
+        private PrimaryWindowCoreLayout _primaryWindowCoreLayout;
+
         private async Task OnActivatedAsync(IActivatedEventArgs args)
         {
             PageNavigationInfo pageNavigationInfo = null;
@@ -317,8 +360,7 @@ namespace TsubameViewer
 
             if (isRestored is false)
             {
-                var shell = _window.Content as PrimaryWindowCoreLayout;
-                await shell.RestoreNavigationStack();
+                await _primaryWindowCoreLayout.RestoreNavigationStack();
             }
 
             _window.Activate();
