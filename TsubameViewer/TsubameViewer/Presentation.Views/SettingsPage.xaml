@@ -174,17 +174,23 @@
   <Grid>
     <uwpControls:DockPanel>
       <Grid uwpControls:DockPanel.Dock="Top" Padding="32 16">
-        <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" 
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Command="{x:Bind _vm.BackNavigationCommand}">
+            <SymbolIcon Symbol="Back" />
+          </Button>
+          <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" 
                    IsTextSelectionEnabled="True"
+                     VerticalAlignment="Center"
                    >
-          <TextBlock.ContextFlyout>
-            <MenuFlyout>
-              <MenuFlyoutSubItem Text="Debug">
-                <ToggleMenuFlyoutItem Text="Enable Xbox Appearnce" IsChecked="{x:Bind _vm.IsForceXboxAppearanceModeEnabled, Mode=TwoWay}" />
-              </MenuFlyoutSubItem>
-            </MenuFlyout>
-          </TextBlock.ContextFlyout>
-        </TextBlock>
+            <TextBlock.ContextFlyout>
+              <MenuFlyout>
+                <MenuFlyoutSubItem Text="Debug">
+                  <ToggleMenuFlyoutItem Text="Enable Xbox Appearnce" IsChecked="{x:Bind _vm.IsForceXboxAppearanceModeEnabled, Mode=TwoWay}" />
+                </MenuFlyoutSubItem>
+              </MenuFlyout>
+            </TextBlock.ContextFlyout>
+          </TextBlock>
+        </StackPanel>
 
         <TextBlock Text="{x:Bind _vm.ReportUserEnvString}" IsTextSelectionEnabled="True" HorizontalAlignment="Right"
                    TextAlignment="Right"

@@ -27,6 +27,9 @@ using Windows.Storage;
 using Microsoft.UI.Xaml.Controls;
 using Xamarin.Essentials;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Windows.ApplicationModel.DataTransfer;
+using TsubameViewer.Presentation.Services;
+using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -38,6 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
         private readonly ThumbnailManager _thumbnailManager;
+        private readonly WindowsTriggers _windowsTriggers;
 
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
@@ -56,14 +60,18 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        public string ReportUserEnvString { get; } 
+        public string ReportUserEnvString { get; }
+        public BackNavigationCommand BackNavigationCommand { get; }
+
         public SettingsPageViewModel(
             IMessenger messenger,
             ApplicationSettings applicationSettings,
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
-            ThumbnailManager thumbnailManager
+            ThumbnailManager thumbnailManager,
+            WindowsTriggers windowsTriggers,
+            BackNavigationCommand backNavigationCommand
             )
         {
             _messenger = messenger;
@@ -72,13 +80,16 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
             _thumbnailManager = thumbnailManager;
-
+            _windowsTriggers = windowsTriggers;
+            BackNavigationCommand = backNavigationCommand;
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
             
             AppInfoCopyToClipboard = new RelayCommand(async () =>
             {
-                await Clipboard.SetTextAsync(ReportUserEnvString);
+                var data = new DataPackage();
+                data.SetText(ReportUserEnvString);
+                Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(data);
             });
 
             SettingGroups = new[]
@@ -147,7 +158,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 .AppendLine();
             sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
                 .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
-                .Append(" ").Append(DeviceInfo.Idiom)
+                .Append(" ").Append(_windowsTriggers.DeviceFamily.ToString())
                 ;
             ReportUserEnvString = sb.ToString();
         }
