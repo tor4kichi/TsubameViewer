@@ -347,13 +347,13 @@ namespace TsubameViewer
             }
             else if (AppWindow.Presenter.Kind == AppWindowPresenterKind.CompactOverlay)
             {
-                if (_windowSettings.LastOverlappedWindowPosition is not { X: 0, Y: 0 } && _windowSettings.LastOverlappedWindowSize is not { Width: 0, Height: 0 })
+                if (_windowSettings.LastCompactOverlayWindowPosition is not { X: 0, Y: 0 } && _windowSettings.LastCompactOverlayWindowSize is not { Width: 0, Height: 0 })
                 {
                     AppWindow.MoveAndResize(new RectInt32(
-                    (int)_windowSettings.LastOverlappedWindowPosition.X,
-                    (int)_windowSettings.LastOverlappedWindowPosition.Y,
-                    (int)_windowSettings.LastOverlappedWindowSize.Width,
-                    (int)_windowSettings.LastOverlappedWindowSize.Height
+                    (int)_windowSettings.LastCompactOverlayWindowPosition.X,
+                    (int)_windowSettings.LastCompactOverlayWindowPosition.Y,
+                    (int)_windowSettings.LastCompactOverlayWindowSize.Width,
+                    (int)_windowSettings.LastCompactOverlayWindowSize.Height
                     ));
                 }
             }
