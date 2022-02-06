@@ -131,7 +131,7 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ResetToDefault();
             App.Current.Window.ExtendsContentIntoTitleBar = false;
             App.Current.Window.SetTitleBar(null);
-
+            
             if (appView.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen)
             {
                 appView.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Default);
@@ -171,7 +171,6 @@ namespace TsubameViewer.Presentation.Views
             appView.TitleBar.ButtonPressedBackgroundColor = Color.FromArgb(0x9f, 0xff, 0xff, 0xff);
             appView.TitleBar.ExtendsContentIntoTitleBar = true;
             appView.TitleBar.SetDragRectangles(MakeDragRectangles(appView));
-            //App.Current.Window.ExtendsContentIntoTitleBar = true;
             App.Current.Window.SetTitleBar(DraggableTitleBarArea_Desktop);
 
             App.Current.Window.SizeChanged -= Window_SizeChanged;

@@ -211,7 +211,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 _readingSessionDisposer.Dispose();
                 _readingSessionDisposer = null;
 
-                _applicationView.Title = string.Empty;
+                App.Current.SetWindowTitle();
             }
 
             base.OnNavigatedFrom(parameters);
@@ -568,8 +568,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // タイトルを更新
             Title = _currentBook.Title;
-            _applicationView.Title = _currentBook.Title;
-
+            App.Current.SetWindowTitle(_currentBook.Title);
 
             _recentlyAccessManager.AddWatched(_currentPath, DateTimeOffset.Now);
         }

@@ -237,6 +237,7 @@ namespace TsubameViewer
             if (instance.IsCurrentInstance is false)
             {
                 instance.RedirectActivationTo();
+                return;
             }
 
             var actiavatedEventArgs = AppInstance.GetActivatedEventArgs();
@@ -263,6 +264,12 @@ namespace TsubameViewer
             await OnActivatedAsync(actiavatedEventArgs);
         }
 
+        public void SetWindowTitle(string? title = null)
+        {
+            var appWindow = GetAppWindowForCurrentWindow();
+            appWindow.TitleBar.IconShowOptions = IconShowOptions.HideIconAndSystemMenu;
+            appWindow.Title = !string.IsNullOrEmpty(title) ? $"{title} - {nameof(TsubameViewer)}" : nameof(TsubameViewer);
+        }
 
         bool _isInitialized = false;
 

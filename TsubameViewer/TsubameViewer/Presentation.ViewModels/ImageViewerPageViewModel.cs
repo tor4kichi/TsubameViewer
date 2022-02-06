@@ -368,7 +368,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _imageLoadingCts?.Cancel();
             _imageLoadingCts?.Dispose();
 
-            _appView.Title = String.Empty;
+            App.Current.SetWindowTitle();
             ParentFolderOrArchiveName = String.Empty;
 
             _messenger.Unregister<AlbamItemAddedMessage>(this);
@@ -431,9 +431,9 @@ namespace TsubameViewer.Presentation.ViewModels
                             parsedPageName = Path.GetFileName(itemPath);
                         }
 
-                        Images = default;                        
+                        Images = default;
 
-                        _appView.Title = currentFolderItem.Name;
+                        App.Current.SetWindowTitle(currentFolderItem.Name);
                         Title = currentFolderItem.Name;
 
                         _currentFolderItem = currentFolderItem;
@@ -480,7 +480,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         Images = default;
                         _CurrentImageIndex = 0;
 
-                        _appView.Title = albam.Name;
+                        App.Current.SetWindowTitle(albam.Name);
                         Title = albam.Name;
 
                         _currentFolderItem = albam;
@@ -1762,7 +1762,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 AlbamEntry albam => albam.Name,
                 _ => throw new NotSupportedException(),
             };
-            _appView.Title = name;
+            App.Current.SetWindowTitle(name);
             Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : name;
 
             await ReloadItemsAsync(imageCollectionContext, ct);
