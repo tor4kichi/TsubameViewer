@@ -117,9 +117,12 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         DispatcherQueue _dispatcherQueue;
 
+        InputPane _inputPane;
+
         protected override void OnAttached()
         {
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _inputPane = App.Current.GetInputPane();
 
             this.AssociatedObject.GotFocus += AssociatedObject_GotFocus;
             this.AssociatedObject.LostFocus += AssociatedObject_LostFocus;
@@ -143,6 +146,8 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
         protected override void OnDetaching()
         {
+            _inputPane = null;
+
             this.AssociatedObject.GotFocus -= AssociatedObject_GotFocus;
             this.AssociatedObject.LostFocus -= AssociatedObject_LostFocus;
 
@@ -172,7 +177,7 @@ namespace TsubameViewer.Presentation.Views.UINavigation
 
                 if (!IsEnabled) { return; }
 
-                if (InputPane.GetForCurrentView().Visible)
+                if (_inputPane.Visible)
                 {
                     return;
                 }

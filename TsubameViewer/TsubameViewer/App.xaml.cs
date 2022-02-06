@@ -45,6 +45,51 @@ namespace TsubameViewer
     /// </summary>
     public partial class App : Application
     {
+
+        /// <summary>
+        /// Gets the current <see cref="App"/> instance in use
+        /// </summary>
+        public new static App Current => (App)Application.Current;
+
+        private Window _window;
+        public Window Window => _window;
+
+        public XamlRoot XamlRoot => _window.Content.XamlRoot;
+
+        public Container Container { get; }
+
+        public void InitializeWithWindow(object dialog)
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+
+            // Associate the HWND with the file picker
+            WinRT.Interop.InitializeWithWindow.Initialize(dialog, hwnd);
+        }
+
+        private AppWindow _appWindow;
+        public AppWindow AppWindow => _appWindow ??= GetAppWindowForCurrentWindow();
+
+        // see@ https://docs.microsoft.com/ja-jp/windows/apps/windows-app-sdk/windowing/windowing-overview
+        private AppWindow GetAppWindowForCurrentWindow()
+        {
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+            WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            return AppWindow.GetFromWindowId(myWndId);
+        }
+
+        public Windows.UI.ViewManagement.UIViewSettings GetUIViewSettings()
+        {
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+            return Windows.UI.ViewManagement.UIViewSettingsInterop.GetForWindow(hWnd);
+        }
+
+        public Windows.UI.ViewManagement.InputPane GetInputPane()
+        {
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
+            return Windows.UI.ViewManagement.InputPaneInterop.GetForWindow(hWnd);
+        }
+
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -99,42 +144,6 @@ namespace TsubameViewer
             }
         }
 
-        /// <summary>
-        /// Gets the current <see cref="App"/> instance in use
-        /// </summary>
-        public new static App Current => (App)Application.Current;
-
-        private Window _window;
-        public Window Window => _window;
-
-        public XamlRoot XamlRoot => _window.Content.XamlRoot;
-
-        public Container Container { get; }
-
-        public void InitializeWithWindow(object dialog)
-        {
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
-
-            // Associate the HWND with the file picker
-            WinRT.Interop.InitializeWithWindow.Initialize(dialog, hwnd);
-        }
-
-        private AppWindow _appWindow;
-        public AppWindow AppWindow => _appWindow ??= GetAppWindowForCurrentWindow();
-
-        // see@ https://docs.microsoft.com/ja-jp/windows/apps/windows-app-sdk/windowing/windowing-overview
-        private AppWindow GetAppWindowForCurrentWindow()
-        {
-            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
-            WindowId myWndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            return AppWindow.GetFromWindowId(myWndId);
-        }
-
-        public Windows.UI.ViewManagement.UIViewSettings GetUIViewSettings()
-        {
-            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
-            return Windows.UI.ViewManagement.UIViewSettingsInterop.GetForWindow(hWnd);
-        }
 
         /// <summary>
         /// Configures the services for the application.
