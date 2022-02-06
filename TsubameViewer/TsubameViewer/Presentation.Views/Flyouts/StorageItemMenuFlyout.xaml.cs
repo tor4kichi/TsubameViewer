@@ -49,7 +49,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamEditMenuItem.Command = container.GetService<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = container.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = container.GetService<FileDeleteCommand>();
-            AddSecondaryTile.Command = container.GetService<SecondaryTileAddCommand>();
+            //AddSecondaryTile.Command = container.GetService<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = container.GetService<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = container.GetService<OpenWithExplorerCommand>();
             SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
@@ -124,10 +124,12 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 {
                     bool isExistTile = _secondaryTileManager.ExistTile(itemVM.Path);
                     AddSecondaryTile.CommandParameter = itemVM;
-                    AddSecondaryTile.Visibility = isExistTile.FalseToVisible();
+                    //AddSecondaryTile.Visibility = isExistTile.FalseToVisible();
+                    AddSecondaryTile.Visibility = Visibility.Collapsed;
 
                     RemoveSecondaryTile.CommandParameter = itemVM;
-                    RemoveSecondaryTile.Visibility = isExistTile.TrueToVisible();
+                    //RemoveSecondaryTile.Visibility = isExistTile.TrueToVisible();
+                    RemoveSecondaryTile.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
