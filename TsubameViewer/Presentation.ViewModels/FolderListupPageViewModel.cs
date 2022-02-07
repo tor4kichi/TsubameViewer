@@ -268,7 +268,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ClearContent()
         {
-            FolderItems.AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.Dispose());
+            foreach (var itemVM in FolderItems)
+            {
+                itemVM.Dispose();
+            }
             FolderItems.Clear();
 
             _ImageCollectionDisposer?.Dispose();

@@ -457,7 +457,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        ImageFileItems?.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
+                        foreach (var itemVM in ImageFileItems)
+                        {
+                            itemVM.RestoreThumbnailLoadingTask();
+                        }
                     }
                 }
                 else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
