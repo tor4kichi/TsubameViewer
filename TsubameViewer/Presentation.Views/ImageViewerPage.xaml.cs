@@ -131,7 +131,7 @@ namespace TsubameViewer.Presentation.Views
             
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             _messenger.Unregister<ImageLoadedMessage>(this);
-            
+
             base.OnNavigatingFrom(e);
         }
 
@@ -199,10 +199,10 @@ namespace TsubameViewer.Presentation.Views
         }
 
         private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
-        {
+        {                        
             AnimationBuilder.Create()
                 .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-                .Start(ImageItemsControl_0);
+                .Start(ImageItemsControl_0);            
 
             bool isConnectedAnimationDone = false;
             var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
@@ -291,20 +291,6 @@ namespace TsubameViewer.Presentation.Views
 
         private async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
         {
-            if (_vm == null)
-            {
-                await this.ObserveDependencyProperty(DataContextProperty)
-                         .Where(x => _vm is not null)
-                         .Take(1)
-                         .ToAsyncOperation()
-                         .AsTask(ct);
-
-                await _vm.ObserveProperty(x => x.DisplayImages_0, isPushCurrentValueAtFirst: false)
-                    .Take(1)
-                    .ToAsyncOperation()
-                    .AsTask(ct);
-            }
-
             if (_vm.DisplayImages_0.Length == 1)
             {
                 UIElement image = null;
