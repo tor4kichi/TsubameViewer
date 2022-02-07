@@ -1,1 +1,0 @@
-C:\Users\tor4k\source\repos\TsubameViewer\TsubameViewer\TsubameViewer.csproj;x64
