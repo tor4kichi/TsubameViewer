@@ -1,7 +1,4 @@
-﻿using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
-using Reactive.Bindings;
+﻿using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -20,11 +17,7 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.EBook;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.SourceFolders;
-using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
-using TsubameViewer.Presentation.Views;
-using TsubameViewer.Presentation.Views.ViewManagement.Commands;
-using Uno.Threading;
 using VersOne.Epub;
 using Windows.Storage;
 using Windows.UI;
@@ -32,6 +25,10 @@ using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.Web.Http;
+using TsubameViewer.Presentation.Navigations;
+using Microsoft.Toolkit.Mvvm.Input;
+using Windows.UI.Xaml.Navigation;
+using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -41,7 +38,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public string Id { get; set; }
     }
 
-    public sealed class EBookReaderPageViewModel : ViewModelBase
+    public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
     {
         string _AppCSS;
         string _LightThemeCss;
@@ -124,9 +121,9 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        private DelegateCommand _ResetEBookReaderSettingsCommand;
-        public DelegateCommand ResetEBookReaderSettingsCommand =>
-            _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new DelegateCommand(ExecuteResetEBookReaderSettingsCommand));
+        private RelayCommand _ResetEBookReaderSettingsCommand;
+        public RelayCommand ResetEBookReaderSettingsCommand =>
+            _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new RelayCommand(ExecuteResetEBookReaderSettingsCommand));
 
         void ExecuteResetEBookReaderSettingsCommand()
         {

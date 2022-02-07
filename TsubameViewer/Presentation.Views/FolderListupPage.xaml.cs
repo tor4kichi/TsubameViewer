@@ -21,18 +21,16 @@ using System.Reactive;
 using System.Reactive.Subjects;
 using System.Reactive.Linq;
 using Reactive.Bindings.Extensions;
-using Uno.Extensions;
-using Uno.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;
-using Uno.UI.Toolkit;
 using TsubameViewer.Presentation.Views.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Mvvm.Input;
 using System.Windows.Input;
 using Windows.UI.Xaml.Media.Animation;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -47,22 +45,12 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
+            DataContext = _vm = Ioc.Default.GetService<FolderListupPageViewModel>();
+
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-
-            DataContextChanged += FolderListupPage_DataContextChanged;
         }
 
-        private void FolderListupPage_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as FolderListupPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();                
-            }
-        }
-
-        private FolderListupPageViewModel _vm { get; set; }
+        private FolderListupPageViewModel _vm { get; }
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
@@ -255,7 +243,10 @@ namespace TsubameViewer.Presentation.Views
 
             if (e.AddedItems?.Any() ?? false)
             {
-                _vm.Selection.SelectedItems.AddRange(e.AddedItems.Cast<StorageItemViewModel>());
+                foreach (var itemVM in e.AddedItems.Cast<StorageItemViewModel>())
+                {
+                    _vm.Selection.SelectedItems.Add(itemVM);
+                }
             }
             
             if (e.RemovedItems?.Any() ?? false)

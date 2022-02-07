@@ -1,7 +1,7 @@
-﻿using Prism.Navigation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using TsubameViewer.Presentation.Navigations;
 
 namespace TsubameViewer.Presentation.ViewModels
 {

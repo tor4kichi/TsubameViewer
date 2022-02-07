@@ -1,10 +1,8 @@
 ﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -24,9 +22,9 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Converters;
-using Uno.Disposables;
 using Windows.Storage;
 using Windows.UI.Popups;
 using Windows.UI.Xaml.Controls;
@@ -34,7 +32,7 @@ using Xamarin.Essentials;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public sealed class SettingsPageViewModel : ViewModelBase, IDisposable
+    public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDisposable
     {
         private readonly IMessenger _messenger;
         private readonly ApplicationSettings _applicationSettings;
@@ -171,12 +169,12 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             foreach (var group in SettingGroups)
             {
-                group.TryDispose();
+                (group as IDisposable)?.Dispose();
             }
 
             foreach (var group in AdvancedSettingGroups)
             {
-                group.TryDispose();
+                (group as IDisposable)?.Dispose();
             }
         }
 
@@ -229,17 +227,25 @@ namespace TsubameViewer.Presentation.ViewModels
 
     }
 
-    public abstract class SettingItemViewModelBase : BindableBase
+    public abstract class SettingItemViewModelBase : ObservableObject
     {
         public bool IsVisible { get; set; } = true;
     }
 
-    public sealed class SettingsGroupViewModel 
+    public sealed class SettingsGroupViewModel : IDisposable
     {
         public bool IsVisible => Items?.Any(x => x.IsVisible) ?? false;
 
         public string Label { get; set; }
         public List<SettingItemViewModelBase> Items { get; set; } = new List<SettingItemViewModelBase>();
+
+        public void Dispose() 
+        {
+            foreach (var item in Items)
+            {
+                (item as IDisposable)?.Dispose();
+            }
+        }
     }
 
 
@@ -316,9 +322,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public IStorageItem Item { get; set; }
 
 
-        private DelegateCommand _DeleteStoredFolderCommand;
-        public DelegateCommand DeleteStoredFolderCommand =>
-            _DeleteStoredFolderCommand ??= new DelegateCommand(async () => 
+        private RelayCommand _DeleteStoredFolderCommand;
+        public RelayCommand DeleteStoredFolderCommand =>
+            _DeleteStoredFolderCommand ??= new RelayCommand(async () => 
             {
                 _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
 
@@ -501,9 +507,9 @@ namespace TsubameViewer.Presentation.ViewModels
             _themeChangedSubscriber.Dispose();
         }
 
-        private DelegateCommand _RestartApplicationCommand;
-        public DelegateCommand RestartApplicationCommand =>
-            _RestartApplicationCommand ?? (_RestartApplicationCommand = new DelegateCommand(ExecuteRestartApplicationCommand));
+        private RelayCommand _RestartApplicationCommand;
+        public RelayCommand RestartApplicationCommand =>
+            _RestartApplicationCommand ?? (_RestartApplicationCommand = new RelayCommand(ExecuteRestartApplicationCommand));
 
         void ExecuteRestartApplicationCommand()
         {

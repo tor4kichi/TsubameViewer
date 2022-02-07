@@ -1,7 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.UI;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -25,9 +22,6 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
-using Uno.Disposables;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
@@ -41,6 +35,10 @@ using System.Windows.Input;
 using TsubameViewer.Models.Domain.Albam;
 using Windows.UI.Xaml;
 using I18NPortable;
+using TsubameViewer.Presentation.Navigations;
+using System.Reactive.Disposables;
+using Windows.UI.Xaml.Navigation;
+using Microsoft.Toolkit.Mvvm.Input;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -58,12 +56,15 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public void DisposeItems()
         {
-            FolderItems.DisposeAll();
+            foreach (var itemVM in FolderItems)
+            {
+                itemVM.Dispose();
+            }
         }
     }
 
 
-    public sealed class FolderListupPageViewModel : ViewModelBase
+    public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     {
         private bool _NowProcessing;
         public bool NowProcessing
@@ -250,7 +251,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 _navigationDisposables?.Dispose();
                 _navigationDisposables = null;
 
-                FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
+                FolderItems.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.StopImageLoading());
 
                 if (_currentPath != null && 
                     parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) &&  parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
@@ -267,7 +268,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         void ClearContent()
         {
-            FolderItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
+            FolderItems.AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.Dispose());
             FolderItems.Clear();
 
             _ImageCollectionDisposer?.Dispose();
@@ -382,7 +383,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        FolderItems?.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
+                        FolderItems?.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
                     }
 
                     _currentPath = unescapedPath;
@@ -454,8 +455,8 @@ namespace TsubameViewer.Presentation.ViewModels
             _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
             {
                 Selection.StartSelection();
-                FileDeleteCommand.RaiseCanExecuteChanged();
-                OpenWithExplorerCommand.RaiseCanExecuteChanged();
+                FileDeleteCommand.NotifyCanExecuteChanged();
+                OpenWithExplorerCommand.NotifyCanExecuteChanged();
             });
 
             Selection.ObserveProperty(x => x.IsSelectionModeEnabled)
@@ -482,8 +483,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 .Subscribe(count =>
                 {
                     SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(count);
-                    FileDeleteCommand.RaiseCanExecuteChanged();
-                    OpenWithExplorerCommand.RaiseCanExecuteChanged();
+                    FileDeleteCommand.NotifyCanExecuteChanged();
+                    OpenWithExplorerCommand.NotifyCanExecuteChanged();
                 })
                 .AddTo(_navigationDisposables);
 
@@ -598,12 +599,11 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 // 削除アイテム
                 Debug.WriteLine($"items count : {FolderItems.Count}");
-                FolderItems.Remove(itemVM =>
+                foreach (var itemVM in FolderItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
                 {
-                    var delete = deletedItems.Contains(itemVM.Path);
-                    if (delete) { itemVM.Dispose(); }
-                    return delete;
-                });
+                    itemVM.Dispose();
+                    FolderItems.Remove(itemVM);
+                }
 
                 Debug.WriteLine($"after deleted : {FolderItems.Count}");
                 // 新規アイテム
@@ -643,9 +643,9 @@ namespace TsubameViewer.Presentation.ViewModels
             };
         }
 
-        private DelegateCommand<object> _ChangeFileSortCommand;
-        public DelegateCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort =>
+        private RelayCommand<object> _ChangeFileSortCommand;
+        public RelayCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)
@@ -691,9 +691,9 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        private DelegateCommand<object> _ChangeChildFileSortCommand;
-        public DelegateCommand<object> ChangeChildFileSortCommand =>
-            _ChangeChildFileSortCommand ??= new DelegateCommand<object>(sort =>
+        private RelayCommand<object> _ChangeChildFileSortCommand;
+        public RelayCommand<object> ChangeChildFileSortCommand =>
+            _ChangeChildFileSortCommand ??= new RelayCommand<object>(sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)

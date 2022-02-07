@@ -1,8 +1,6 @@
 ﻿using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
-using Prism.Commands;
-using Prism.Navigation;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -36,6 +34,9 @@ using Microsoft.Toolkit.Uwp;
 using Reactive.Bindings;
 using TsubameViewer.Models.Infrastructure;
 using System.Collections.Immutable;
+using TsubameViewer.Presentation.Navigations;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using TsubameViewer.Presentation.Services;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -49,6 +50,7 @@ namespace TsubameViewer.Presentation.Views
         private readonly IMessenger _messenger;
 
         private readonly DispatcherQueue _dispatcherQueue;
+        private readonly IViewLocator _viewLocator;
         private readonly DispatcherQueueTimer _AnimationCancelTimer;
         private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
 
@@ -62,8 +64,7 @@ namespace TsubameViewer.Presentation.Views
             DataContext = _viewModel = viewModel;
             _messenger = messenger;
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            _navigationService = NavigationService.Create(this.ContentFrame, Window.Current.CoreWindow);
-
+            _viewLocator = Ioc.Default.GetService<IViewLocator>();
             InitializeNavigation();
             InitializeThemeChangeRequest();
             InitializeSearchBox();
@@ -71,8 +72,8 @@ namespace TsubameViewer.Presentation.Views
 
             _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
-            InitializeBusyWorkUI();
-                    }
+            InitializeBusyWorkUI();                    
+        }
 
 
 
@@ -115,10 +116,6 @@ namespace TsubameViewer.Presentation.Views
             typeof(FolderListupPage),
         }.ToImmutableHashSet();
 
-
-
-        private readonly IPlatformNavigationService _navigationService;
-
         private IDisposable _refreshNavigationEventSubscriber;
         private IDisposable _themeChangeRequestEventSubscriber;
 
@@ -145,18 +142,10 @@ namespace TsubameViewer.Presentation.Views
                         _isForgetNavigationRequested = true;
                     }
 
-                    SetCurrentNavigationParameters(m.Parameters);
+                    var parameters = m.Parameters ?? new NavigationParameters();
+                    parameters.SetNavigationMode(NavigationMode.New);
 
-                    var result = await (m.Parameters != null
-                       ? _navigationService.NavigateAsync(m.PageName, m.Parameters, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
-                       : _navigationService.NavigateAsync(m.PageName, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(m.PageName))
-                       );                    
-                    if (result is null || result.Success is false)
-                    {
-                        throw result?.Exception ?? new Exception("failed navigation with unknown error. also check Xaml.");
-                    }
-
-                    return result;
+                    return await NavigateAsync(m.PageName, parameters, m.IsForgetNavigaiton is false);
                 }
                 catch
                 {
@@ -189,7 +178,7 @@ namespace TsubameViewer.Presentation.Views
 
             _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
             {
-                RefreshCommand.Execute();
+                RefreshCommand.Execute(null);
             });
 
             // ItemInvoke が動作しないことのワークアラウンドとして選択変更を使用
@@ -243,7 +232,7 @@ namespace TsubameViewer.Presentation.Views
                 : AppViewBackButtonVisibility.Collapsed
                 ;
             
-            //BackCommand.RaiseCanExecuteChanged();
+            //BackCommand.NotifyCanExecuteChanged();
 
 
             // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
@@ -361,6 +350,57 @@ namespace TsubameViewer.Presentation.Views
             _isFirstNavigation = false;
         }
 
+        private async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, bool isNavigationStackEnabled = true)
+        {
+            var viewType = _viewLocator.ResolveView(pageName);
+
+            SetCurrentNavigationParameters(parameters);
+
+            var prevPage = ContentFrame.Content as Page;
+            var options = new FrameNavigationOptions() { IsNavigationStackEnabled = isNavigationStackEnabled, TransitionInfoOverride = PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) };
+            var result = ContentFrame.Navigate(viewType, parameters, options.TransitionInfoOverride);
+
+            if (result)
+            {
+                var currentPage = ContentFrame.Content as Page;
+                return await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+            }
+            else
+            {
+                return new NavigationResult() { IsSuccess = false, Exception = new Exception("failed navigation with unknown error. also check Xaml.") };
+            }
+        }
+
+        private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
+        {
+            try
+            {
+                if (fromPageVM != null)
+                {
+                    fromPageVM.OnNavigatedFrom(parameters);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new NavigationResult() { IsSuccess = false, Exception = ex };
+            }
+
+            try
+            {
+                if (toPageVM != null)
+                {
+                    toPageVM.OnNavigatedTo(parameters);
+                    await toPageVM.OnNavigatedToAsync(parameters);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new NavigationResult() { IsSuccess = false, Exception = ex };
+            }
+
+            return new NavigationResult() { IsSuccess = true };
+        }
+
 
         private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
         {
@@ -373,17 +413,17 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        private DelegateCommand _BackCommand;
-        public DelegateCommand BackCommand =>
-            _BackCommand ??= new DelegateCommand(
-                () => _ = _navigationService?.GoBackAsync(),
-                () => _navigationService?.CanGoBack() ?? false
+        private RelayCommand _BackCommand;
+        public RelayCommand BackCommand =>
+            _BackCommand ??= new RelayCommand(
+                () => ContentFrame.GoBack(),
+                () => ContentFrame.CanGoBack
                 );
 
-        private DelegateCommand _RefreshCommand;
-        public DelegateCommand RefreshCommand =>
-            _RefreshCommand ??= new DelegateCommand(
-                () => _ = _navigationService?.RefreshAsync()
+        private RelayCommand _RefreshCommand;
+        public RelayCommand RefreshCommand =>
+            _RefreshCommand ??= new RelayCommand(
+                () => throw new NotImplementedException()
                 );
 
 
@@ -391,14 +431,15 @@ namespace TsubameViewer.Presentation.Views
 
         #region Back/Forward Navigation
 
-        public async Task RestoreNavigationStack()
+        // デッドロックさせないようにFireAndForgetで実行
+        public async void RestoreNavigationStack()
         {
             var navigationManager = _viewModel.RestoreNavigationManager;
 
 
             try
             {
-                using (await _navigationLock.LockAsync(CancellationToken.None))
+                //using (await _navigationLock.LockAsync(CancellationToken.None))
                 {
                     var currentEntry = navigationManager.GetCurrentNavigationEntry();
                     if (currentEntry == null)
@@ -421,8 +462,8 @@ namespace TsubameViewer.Presentation.Views
                     {
                         currentNavParameters.Add(PageNavigationConstants.Restored, string.Empty);
                     }
-                    var result = await _navigationService.NavigateAsync(currentEntry.PageName, currentNavParameters, PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(currentEntry.PageName));
-                    if (!result.Success)
+                    var result = await _messenger.NavigateAsync(currentEntry.PageName, currentNavParameters);
+                    if (!result.IsSuccess)
                     {
                         await Task.Delay(50);
                         Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + currentEntry.PageName);
@@ -478,7 +519,7 @@ namespace TsubameViewer.Presentation.Views
             ContentFrame.BackStack.Clear();
             ContentFrame.ForwardStack.Clear();
 
-            await _navigationService.NavigateAsync(HomePageName);
+            await _messenger.NavigateAsync(HomePageName);
             SaveNaviagtionParameters();
         }
 
@@ -543,7 +584,7 @@ namespace TsubameViewer.Presentation.Views
         
         private void SetCurrentNavigationParameters(INavigationParameters parameters)
         {
-            if (parameters?.GetNavigationMode() == Prism.Navigation.NavigationMode.Refresh) { return; }
+            if (parameters?.GetNavigationMode() == NavigationMode.Refresh) { return; }
 
             _prevNavigationParameters = _currentNavigationParameters;
             _currentNavigationParameters = parameters;
@@ -588,14 +629,14 @@ namespace TsubameViewer.Presentation.Views
             _messenger.Send<BackNavigationRequestingMessage>(new(data));            
             if (data.IsHandled) { return false; }
 
-            return _navigationService.CanGoBack();
+            return ContentFrame.CanGoBack;
         }
 
         async Task HandleBackRequestAsync()
         {
             using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
 
-            if (_navigationService.CanGoBack())
+            if (ContentFrame.CanGoBack)
             {
                 if (_isForgetNavigationRequested)
                 {
@@ -613,18 +654,19 @@ namespace TsubameViewer.Presentation.Views
 
                     BackParametersStack.Remove(lastNavigationParameters);
                     ForwardParametersStack.Add(parameters);
-                    var result = await (lastNavigationParameters == null
-                        ? _navigationService.GoBackAsync()
-                        : _navigationService.GoBackAsync(lastNavigationParameters)
-                        );
+                    var prevPage = ContentFrame.Content as Page;
+                    try
+                    {
+                        ContentFrame.GoBack();
 
-                    if (result.Success is false)
+                        var currentPage = ContentFrame.Content as Page;
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
+                    }
+                    catch
                     {
                         _currentNavigationParameters = lastNavigationParametersSet.Current;
                         _prevNavigationParameters = lastNavigationParametersSet.Prev;
                     }
-
-                    return;
                 }
                 else
                 {
@@ -641,14 +683,14 @@ namespace TsubameViewer.Presentation.Views
                 return false;
             }
 
-            return _navigationService.CanGoForward();
+            return ContentFrame.CanGoForward;
         }
 
         async Task HandleForwardRequest()
         {
             using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
 
-            if (_navigationService.CanGoForward())
+            if (ContentFrame.CanGoForward)
             {
                 var forwardNavigationParameters = ForwardParametersStack.Last();
                 var lastNavigationParametersSet = GetNavigationParametersSet();
@@ -662,12 +704,15 @@ namespace TsubameViewer.Presentation.Views
                 _currentNavigationParameters = forwardNavigationParameters;
                 _prevNavigationParameters = lastNavigationParametersSet.Current;
 
-                var result = await (forwardNavigationParameters == null
-                   ? _navigationService.GoForwardAsync()
-                   : _navigationService.GoForwardAsync(forwardNavigationParameters)
-                   );
+                var prevPage = ContentFrame.Content as Page;
+                try
+                {
+                    ContentFrame.GoForward();
 
-                if (result.Success is false)
+                    var currentPage = ContentFrame.Content as Page;
+                    await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters);
+                }
+                catch
                 {
                     _currentNavigationParameters = lastNavigationParametersSet.Current;
                     _prevNavigationParameters = lastNavigationParametersSet.Prev;

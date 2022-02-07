@@ -1,7 +1,4 @@
 ﻿using I18NPortable;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -17,17 +14,16 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
-using TsubameViewer.Presentation.Views.SourceFolders.Commands;
-using Uno.Disposables;
-using Uno.Extensions.Specialized;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.Services.UWP;
-using Uno.Extensions;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
+using System.Reactive.Disposables;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -36,7 +32,7 @@ namespace TsubameViewer.Presentation.ViewModels
 {
     // TODO: アクセス履歴対応
 
-    public sealed class SourceStorageItemsPageViewModel : ViewModelBase, IDisposable
+    public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBase, IDisposable
     {
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
@@ -201,7 +197,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
                 if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
                 {
-                    RecentlyItems.ForEach((StorageItemViewModel x) => x.TryDispose());
+                    foreach (var itemVM in RecentlyItems)
+                    {
+                        itemVM.Dispose();
+                    }
+
                     RecentlyItems.Clear();
                     foreach (var item in recentlyAccessItems)
                     {
@@ -257,8 +257,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationCts.Dispose();
             _navigationCts = null;
 
-            Folders.ForEach(x => x.StopImageLoading());
-            RecentlyItems.ForEach(x => x.StopImageLoading());
+            Enumerable.Concat(Folders, RecentlyItems).AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.StopImageLoading());
 
             _navigationDisposables?.Dispose();
 

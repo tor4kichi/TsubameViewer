@@ -1,6 +1,4 @@
-﻿using Prism.Mvvm;
-using Prism.Navigation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -16,13 +14,13 @@ using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Views;
-using Uno.Extensions;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.Navigations;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public sealed class SearchResultPageViewModel : ViewModelBase
+    public sealed class SearchResultPageViewModel : NavigationAwareViewModelBase
     {
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;

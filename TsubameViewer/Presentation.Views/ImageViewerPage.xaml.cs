@@ -1,9 +1,8 @@
-﻿using Microsoft.Toolkit.Mvvm.Input;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
-using Prism.Commands;
-using Prism.Ioc;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -13,6 +12,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reactive;
 using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -21,10 +21,6 @@ using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.UINavigation;
-using Uno.Disposables;
-using Uno.Extensions;
-using Uno.Extensions.Specialized;
-using Uno.Threading;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
 using Windows.Foundation;
@@ -53,7 +49,7 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageViewerPage : Page
     {
-        private ImageViewerPageViewModel _vm { get; set; }
+        private ImageViewerPageViewModel _vm { get; }
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;
@@ -62,21 +58,12 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
+            DataContext = _vm = Ioc.Default.GetService<ImageViewerPageViewModel>();
+            _messenger = Ioc.Default.GetService<IMessenger>();
+            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            DataContextChanged += OnDataContextChanged;
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-            _messenger = App.Current.Container.Resolve<IMessenger>();
-        }
-
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as ImageViewerPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -471,9 +458,9 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        private DelegateCommand _toggleBottomMenuCommand;
-        public DelegateCommand ToggleBottomMenuCommand =>
-            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new DelegateCommand(ExecuteToggleBottomMenuCommand, () => true) { IsActive = true });
+        private RelayCommand _toggleBottomMenuCommand;
+        public RelayCommand ToggleBottomMenuCommand =>
+            _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new RelayCommand(ExecuteToggleBottomMenuCommand, () => true));
 
         void ExecuteToggleBottomMenuCommand()
         {
@@ -526,7 +513,7 @@ namespace TsubameViewer.Presentation.Views
 
         private int GetDefaultZoomFactorListIndex()
         {
-            return ZoomFactorList.IndexOf(1.0f);
+            return Array.IndexOf(ZoomFactorList, 1.0f);
         }
 
         private IDisposable InitializeZoomReaction()
@@ -551,7 +538,7 @@ namespace TsubameViewer.Presentation.Views
                 .Subscribe(_ =>
                 {
                     ZoomFactor = 1.0;
-                    CurrentZoomFactorIndex = ZoomFactorList.IndexOf(1.0f);
+                    CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
                 }),
                 this.ObserveDependencyProperty(ZoomFactorProperty)
                 .Select(x => this.ZoomFactor)

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
-using Prism.Commands;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -15,7 +14,6 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.Views.EBookControls;
-using Uno.Threading;
 using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -31,11 +29,11 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Windows.Web.Http;
 using Xamarin.Essentials;
-using Prism.Ioc;
-using AsyncLock = Uno.Threading.AsyncLock;
 using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -46,21 +44,23 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class EBookReaderPage : Page
     {
+
+        private EBookReaderPageViewModel _vm { get; }
+
         public EBookReaderPage()
         {
             this.InitializeComponent();
             
-            Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
+            DataContext = _vm = Ioc.Default.GetService<EBookReaderPageViewModel>();
+            _messenger = Ioc.Default.GetService<IMessenger>();
 
 #if DEBUG
             DebugPanel.Visibility = Visibility.Visible;
 #endif
-            _messenger = App.Current.Container.Resolve<IMessenger>();
+            Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
             Loaded += ResetAnimationUIContainer_Loaded1;
             Unloaded += TapAndController_Unloaded;
-
-
 
             EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
             EPubRenderer.ContentRefreshComplete += WebView_ContentRefreshComplete;
@@ -71,24 +71,8 @@ namespace TsubameViewer.Presentation.Views
             EPubRenderer.WebResourceRequested += WebView_WebResourceRequested;
 
             this.Loaded += PageNavigationCommandInitialize_Loaded;
-            this.Unloaded += PageNavigationCommandDispose_Unloaded;
-
-            DataContextChanged += OnDataContextChanged;
+            this.Unloaded += PageNavigationCommandDispose_Unloaded;            
         }
-
-
-
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as EBookReaderPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
-        }
-
-
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
@@ -146,7 +130,7 @@ namespace TsubameViewer.Presentation.Views
                 if (TocContainer.Visibility == Visibility.Visible)
                 {
                     m.Value.IsHandled = true;
-                    CloseTocPaneCommand.Execute();
+                    CloseTocPaneCommand.Execute(null);
                 }
             });
 
@@ -160,10 +144,6 @@ namespace TsubameViewer.Presentation.Views
 
             base.OnNavigatedTo(e);
         }
-
-
-
-        private EBookReaderPageViewModel _vm { get; set; }
 
         private void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
         {
@@ -203,8 +183,8 @@ namespace TsubameViewer.Presentation.Views
         private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
         {
             var pageVM = _vm;
-            this.InnerGoPrevImageCommand = new DelegateCommand(ExecuteGoPrevCommand);
-            this.InnerGoNextImageCommand = new DelegateCommand(ExecuteGoNextCommand);
+            this.InnerGoPrevImageCommand = new RelayCommand(ExecuteGoPrevCommand);
+            this.InnerGoNextImageCommand = new RelayCommand(ExecuteGoNextCommand);
 
             _disposables = new CompositeDisposable();
         }
@@ -457,9 +437,9 @@ namespace TsubameViewer.Presentation.Views
 
 
 
-        private DelegateCommand _OpenTocPaneCommand;
-        public DelegateCommand OpenTocPaneCommand =>
-            _OpenTocPaneCommand ?? (_OpenTocPaneCommand = new DelegateCommand(ExecuteOpenTocPaneCommand));
+        private RelayCommand _OpenTocPaneCommand;
+        public RelayCommand OpenTocPaneCommand =>
+            _OpenTocPaneCommand ?? (_OpenTocPaneCommand = new RelayCommand(ExecuteOpenTocPaneCommand));
 
         async void ExecuteOpenTocPaneCommand()
         {
@@ -476,9 +456,9 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
-        private DelegateCommand _CloseTocPaneCommand;
-        public DelegateCommand CloseTocPaneCommand =>
-            _CloseTocPaneCommand ?? (_CloseTocPaneCommand = new DelegateCommand(ExecuteCloseTocPaneCommand));
+        private RelayCommand _CloseTocPaneCommand;
+        public RelayCommand CloseTocPaneCommand =>
+            _CloseTocPaneCommand ?? (_CloseTocPaneCommand = new RelayCommand(ExecuteCloseTocPaneCommand));
 
         void ExecuteCloseTocPaneCommand()
         {

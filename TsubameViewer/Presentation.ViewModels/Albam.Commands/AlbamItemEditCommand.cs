@@ -1,6 +1,5 @@
 ﻿using I18NPortable;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,5 +1,4 @@
-﻿using Prism.Mvvm;
-using Reactive.Bindings;
+﻿using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
@@ -14,8 +13,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;

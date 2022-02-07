@@ -19,8 +19,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Infrastructure;
-using Uno;
-using Uno.Threading;
 using VersOne.Epub;
 using Windows.Data.Pdf;
 using Windows.Foundation;
@@ -41,7 +39,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private readonly ILiteCollection<BsonDocument> _thumbnailDbChunkCollection;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
-        private readonly static Uno.Threading.AsyncLock _fileReadWriteLock = new ();
+        private readonly static AsyncLock _fileReadWriteLock = new ();
 
         private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 

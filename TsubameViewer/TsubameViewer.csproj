@@ -188,6 +188,9 @@
     <Compile Include="Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
     <Compile Include="Models.UseCase\Migrate\PackageVersionHelper.cs" />
+    <Compile Include="Presentation.Navigations\IViewLocator.cs" />
+    <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
+    <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
     <Compile Include="Presentation.Services\AlbamDialogService.cs" />
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
@@ -203,6 +206,7 @@
     <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="Presentation.ViewModels\AlbamListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
+    <Compile Include="Presentation.ViewModels\CommandBase.cs" />
     <Compile Include="Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\FolderListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
@@ -389,6 +393,9 @@
     <PackageReference Include="CommunityToolkit.Common">
       <Version>7.1.2</Version>
     </PackageReference>
+    <PackageReference Include="DryIoc">
+      <Version>4.8.6</Version>
+    </PackageReference>
     <PackageReference Include="Fluent.Icons">
       <Version>1.1.110</Version>
     </PackageReference>
@@ -409,8 +416,6 @@
 			-->
       <Version>6.2.13</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Filter" Version="1.1.1" />
     <PackageReference Include="Microsoft.Toolkit.Diagnostics">
       <Version>7.1.2</Version>
     </PackageReference>
@@ -450,12 +455,8 @@
     <PackageReference Include="System.Text.Json">
       <Version>4.7.2</Version>
     </PackageReference>
-    <PackageReference Include="Uno.Core" Version="2.0.0" />
-    <PackageReference Include="Uno.Prism.DryIoc.Uno">
-      <Version>7.1.0-pre.4</Version>
-    </PackageReference>
     <PackageReference Include="Uno.WindowsStateTriggers">
-      <Version>1.1.1-uno.119</Version>
+      <Version>1.1.1-uno.132</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
       <Version>3.0.3.1</Version>

@@ -1,11 +1,11 @@
-﻿using Prism.Navigation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.Views;
 using Windows.UI.Xaml.Media.Animation;
 

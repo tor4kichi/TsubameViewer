@@ -1,10 +1,8 @@
 ﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -25,19 +23,18 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
-using TsubameViewer.Presentation.Views.SourceFolders.Commands;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
 using Xamarin.Essentials;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public sealed class PrimaryWindowCoreLayoutViewModel : BindableBase
+    public sealed class PrimaryWindowCoreLayoutViewModel : ObservableObject
     {
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
@@ -102,9 +99,9 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        DelegateCommand<object> _OpenMenuItemCommand;
-        public DelegateCommand<object> OpenMenuItemCommand =>
-            _OpenMenuItemCommand ??= new DelegateCommand<object>(item => 
+        RelayCommand<object> _OpenMenuItemCommand;
+        public RelayCommand<object> OpenMenuItemCommand =>
+            _OpenMenuItemCommand ??= new RelayCommand<object>(item => 
             {
                 if (item is MenuItemViewModel menuItem)
                 {
@@ -186,7 +183,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
-                    _AutoSuggestItemsGroup.Items.AddRange(result);
+                    foreach (var item in result)
+                    {
+                        _AutoSuggestItemsGroup.Items.Add(item);
+                    }
                     _cts = null;
                 }
             }
@@ -197,9 +197,9 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        private DelegateCommand<IStorageItem> _SuggestChosenCommand;
-        public DelegateCommand<IStorageItem> SuggestChosenCommand =>
-            _SuggestChosenCommand ?? (_SuggestChosenCommand = new DelegateCommand<IStorageItem>(ExecuteSuggestChosenCommand));
+        private RelayCommand<IStorageItem> _SuggestChosenCommand;
+        public RelayCommand<IStorageItem> SuggestChosenCommand =>
+            _SuggestChosenCommand ?? (_SuggestChosenCommand = new RelayCommand<IStorageItem>(ExecuteSuggestChosenCommand));
 
         async void ExecuteSuggestChosenCommand(IStorageItem entry)
         {
@@ -211,13 +211,9 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             var path = entry.Path;
-
             var parameters = new NavigationParameters();
-
             var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
-
             parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
-
             if (storageItem is StorageFolder itemFolder)
             {
                 var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, ct), CancellationToken.None);
@@ -254,9 +250,9 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        private DelegateCommand<object> _SearchQuerySubmitCommand;
-        public DelegateCommand<object> SearchQuerySubmitCommand =>
-            _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new DelegateCommand<object>(ExecuteSearchQuerySubmitCommand));
+        private RelayCommand<object> _SearchQuerySubmitCommand;
+        public RelayCommand<object> SearchQuerySubmitCommand =>
+            _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new RelayCommand<object>(ExecuteSearchQuerySubmitCommand));
         
         async void ExecuteSearchQuerySubmitCommand(object parameter)
         {
@@ -286,7 +282,7 @@ namespace TsubameViewer.Presentation.ViewModels
     }
 
 
-    public class AutoSuggestBoxGroupBase : BindableBase
+    public class AutoSuggestBoxGroupBase : ObservableObject
     {
         public string Label { get; set; }
         public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();

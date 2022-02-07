@@ -1,5 +1,4 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +8,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    public abstract class ImageSourceCommandBase : DelegateCommandBase
+    public abstract class ImageSourceCommandBase : CommandBase
     {
         protected override bool CanExecute(object parameter)
         {

@@ -1,12 +1,11 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class RefreshNavigationCommand : DelegateCommandBase
+    public sealed class RefreshNavigationCommand : CommandBase
     {
         private readonly IMessenger _messenger;
 

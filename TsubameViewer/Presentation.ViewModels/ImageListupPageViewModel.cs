@@ -1,9 +1,7 @@
 ﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -29,15 +27,15 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.Storage;
+using Windows.UI.Xaml.Navigation;
 using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
@@ -67,7 +65,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
     }
 
-    public sealed class ImageListupPageViewModel : ViewModelBase
+    public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     {
 
         private readonly IMessenger _messenger;
@@ -312,7 +310,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.StopImageLoading());
+            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.StopImageLoading());
 
             base.OnNavigatedFrom(parameters);
         }
@@ -325,7 +323,7 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
 
-            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForEach(x => x.Dispose());
+            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.Dispose());
             ImageFileItems.Clear();
 
             CurrentFolderItem?.Dispose();
@@ -386,7 +384,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             HasFileItem = ImageFileItems.Any();
 
-            RaisePropertyChanged(nameof(ImageFileItems));
+            OnPropertyChanged(nameof(ImageFileItems));
         }
 
         async Task ResetContentWithAlbam(Guid albamId, CancellationToken ct)
@@ -426,7 +424,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             HasFileItem = ImageFileItems.Any();
 
-            RaisePropertyChanged(nameof(ImageFileItems));
+            OnPropertyChanged(nameof(ImageFileItems));
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
@@ -459,7 +457,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        ImageFileItems?.AsParallel().WithDegreeOfParallelism(4).ForEach((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
+                        ImageFileItems?.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
                     }
                 }
                 else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
@@ -610,7 +608,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 throw new NotSupportedException();
             }
 
-            RaisePropertyChanged(nameof(IsFavoriteAlbam));
+            OnPropertyChanged(nameof(IsFavoriteAlbam));
 
             _isCompleteEnumeration = true;
 
@@ -634,12 +632,11 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 // 削除アイテム
                 Debug.WriteLine($"items count : {ImageFileItems.Count}");
-                ImageFileItems.Remove(itemVM =>
+                foreach (var itemVM in ImageFileItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
                 {
-                    var delete = deletedItems.Contains(itemVM.Path);
-                    if (delete) { itemVM.Dispose(); }
-                    return delete;
-                });
+                    itemVM.Dispose();
+                    ImageFileItems.Remove(itemVM);
+                }
                 Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
@@ -684,9 +681,9 @@ namespace TsubameViewer.Presentation.ViewModels
             };
         }
 
-        private DelegateCommand<object> _ChangeFileSortCommand;
-        public DelegateCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort =>
+        private RelayCommand<object> _ChangeFileSortCommand;
+        public RelayCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)
@@ -764,9 +761,9 @@ namespace TsubameViewer.Presentation.ViewModels
             catch (COMException) { }
         }
 
-        private DelegateCommand _SetParentFileSortWithCurrentSettingCommand;
-        public DelegateCommand SetParentFileSortWithCurrentSettingCommand =>
-            _SetParentFileSortWithCurrentSettingCommand ??= new DelegateCommand(() =>
+        private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
+        public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
+            _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
             {
                 _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentPath), SelectedFileSortType.Value);
             });

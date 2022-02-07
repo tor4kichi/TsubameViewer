@@ -1,5 +1,4 @@
 ﻿using LiteDB;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

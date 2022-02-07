@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,8 +10,6 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
-using Uno;
-using Uno.Extensions;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -36,20 +35,10 @@ namespace TsubameViewer.Presentation.Views
             this.InitializeComponent();
 
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-            DataContextChanged += OnDataContextChanged;
+            DataContext = _vm = Ioc.Default.GetService<SourceStorageItemsPageViewModel>();
         }
 
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as SourceStorageItemsPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
-        }
-
-        private SourceStorageItemsPageViewModel _vm { get; set; }
+        private SourceStorageItemsPageViewModel _vm { get; }
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,22 +24,12 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class AlbamListupPage : Page
     {
+        private AlbamListupPageViewModel _vm { get; }
+
         public AlbamListupPage()
         {
             this.InitializeComponent();
-            DataContextChanged += OnDataContextChanged;
+            DataContext = _vm = Ioc.Default.GetService<AlbamListupPageViewModel>();
         }
-
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as AlbamListupPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
-        }
-
-        private AlbamListupPageViewModel _vm;
     }
 }

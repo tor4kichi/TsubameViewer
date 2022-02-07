@@ -1,7 +1,5 @@
 ﻿using I18NPortable;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -20,10 +18,11 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Linq;
+using TsubameViewer.Presentation.Navigations;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
-    internal sealed class AlbamListupPageViewModel : ViewModelBase
+    internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;

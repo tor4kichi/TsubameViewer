@@ -1,10 +1,10 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using TsubameViewer.Presentation.Navigations;
 using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation

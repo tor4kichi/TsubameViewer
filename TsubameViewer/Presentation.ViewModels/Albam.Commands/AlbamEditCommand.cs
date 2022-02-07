@@ -1,5 +1,4 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
@@ -8,7 +7,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public sealed class AlbamEditCommand : DelegateCommandBase
+    public sealed class AlbamEditCommand : CommandBase
     {
         private readonly AlbamRepository _albamRepository;
         private readonly AlbamDialogService _albamDialogService;

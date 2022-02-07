@@ -1,10 +1,9 @@
-﻿<prism:PrismApplication
+﻿<Application
     x:Class="TsubameViewer.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:win="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:local="using:TsubameViewer"
-  xmlns:prism="using:Prism.DryIoc" 
   xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
   xmlns:locale="using:TsubameViewer.Locales" 
   xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
@@ -17,7 +16,7 @@
   xmlns:fi="using:Fluent.Icons"
   >
 
-  <prism:PrismApplication.Resources>
+  <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
@@ -86,5 +85,5 @@
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
       
     </ResourceDictionary>
-  </prism:PrismApplication.Resources>
-</prism:PrismApplication>
+  </Application.Resources>
+</Application>

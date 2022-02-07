@@ -1,6 +1,5 @@
 ﻿using I18NPortable;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +8,7 @@ using TsubameViewer.Presentation.Services;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public sealed class AlbamCreateCommand : DelegateCommandBase
+    public sealed class AlbamCreateCommand : CommandBase
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;

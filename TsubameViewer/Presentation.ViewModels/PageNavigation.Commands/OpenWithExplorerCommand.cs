@@ -1,10 +1,8 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using Windows.Storage;

@@ -1,14 +1,9 @@
 ﻿using DryIoc;
 using LiteDB;
-using Microsoft.Extensions.Logging;
 using Microsoft.Toolkit.Diagnostics;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.Helpers;
-using Prism;
-using Prism.DryIoc;
-using Prism.Ioc;
-using Prism.Mvvm;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,14 +19,13 @@ using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Models.UseCase.Maintenance;
 using TsubameViewer.Models.UseCase.Migrate;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views;
 using TsubameViewer.Presentation.Views.Dialogs;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -52,16 +46,21 @@ namespace TsubameViewer
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
-    sealed partial class App : PrismApplication
+    sealed partial class App : Application
     {
+        public new static App Current => (App)Application.Current;
+
+        public Container Container { get; private set; }
+
+        Models.Infrastructure.AsyncLock _InitializeLock = new();
+
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
         public App()
         {
-            ConfigureFilters(global::Uno.Extensions.LogExtensionPoint.AmbientLoggerFactory);
-
             this.InitializeComponent();
             this.Suspending += OnSuspending;
             UnhandledException += App_UnhandledException;
@@ -71,9 +70,24 @@ namespace TsubameViewer
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
+
+            // ローカリゼーション用のライブラリを初期化
+            try
+            {
+                I18NPortable.I18N.Current
+#if DEBUG
+                    //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
+                    .SetNotFoundSymbol("🍣")
+#endif
+                    .SetFallbackLocale("en")
+                    .Init(GetType().Assembly);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
         }
 
-        Models.Infrastructure.AsyncLock _InitializeLock = new ();
 
         private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
@@ -83,104 +97,93 @@ namespace TsubameViewer
             Debug.WriteLine(e.Exception.ToString());
         }
 
-        public override void ConfigureViewModelLocator()
+        private Container ConfigureService()
         {
-            ViewModelLocationProvider.SetDefaultViewTypeToViewModelTypeResolver(viewType =>
-            {
-                var pageToken = viewType.Name;
+            var rules = Rules.Default
+                .WithAutoConcreteTypeResolution()
+                .With(Made.Of(FactoryMethod.ConstructorWithResolvableArguments))
+                .WithoutThrowOnRegisteringDisposableTransient()
+                .WithFuncAndLazyWithoutRegistration()
+                .WithDefaultIfAlreadyRegistered(IfAlreadyRegistered.Replace);
 
-                if (pageToken.EndsWith("_TV"))
-                {
-                    pageToken = pageToken.Remove(pageToken.IndexOf("_TV"));
-                }
-                else if (pageToken.EndsWith("_Mobile"))
-                {
-                    pageToken = pageToken.Remove(pageToken.IndexOf("_Mobile"));
-                }
+            var container = new Container(rules);
 
-                var assemblyQualifiedAppType = viewType.AssemblyQualifiedName;
+            RegisterRequiredTypes(container);
+            RegisterTypes(container);
 
-                var pageNameWithParameter = assemblyQualifiedAppType.Replace(viewType.FullName, "TsubameViewer.Presentation.ViewModels.{0}ViewModel");
-
-                var viewModelFullName = string.Format(CultureInfo.InvariantCulture, pageNameWithParameter, pageToken);
-                var viewModelType = Type.GetType(viewModelFullName);
-
-                if (viewModelType == null)
-                {
-                    throw new ArgumentException(
-                        string.Format(CultureInfo.InvariantCulture, pageToken, this.GetType().Namespace + ".ViewModels"),
-                        "pageToken");
-                }
-
-                return viewModelType;
-
-            });
-            base.ConfigureViewModelLocator();
+            Ioc.Default.ConfigureServices(container);
+            return container;
         }
 
-        protected override void RegisterRequiredTypes(IContainerRegistry container)
+        private void RegisterRequiredTypes(Container container)
         {
-            var unityContainer = container.GetContainer();
             container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
 
-            unityContainer.UseInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
-            unityContainer.Register<ThumbnailManager>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+            container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
+            container.Register<ThumbnailManager>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
 
-            unityContainer.UseInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
-            
-            base.RegisterRequiredTypes(container);
+            container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
+            container.Register<IViewLocator, ViewLocator>();
+
+            container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
+            container.Register<SourceStorageItemsPage>();
+            container.Register<ImageListupPage>();
+            container.Register<FolderListupPage>();
+            container.Register<ImageViewerPage>();
+            container.Register<EBookReaderPage>();
+            container.Register<SettingsPage>();
+            container.Register<SearchResultPage>();
+            container.Register<AlbamListupPage>();
         }
 
-        public override void RegisterTypes(IContainerRegistry container)
+        private void RegisterTypes(Container container)
         {
             container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
-            container.RegisterSingleton<Models.Domain.ImageViewer.ImageViewerSettings>();
-            container.RegisterSingleton<Models.Domain.FolderItemListing.FolderListingSettings>();
-            container.RegisterSingleton<FileControlSettings>();
+            container.Register<Models.Domain.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
+            container.Register<Models.Domain.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
+            container.Register<FileControlSettings>(reuse: new SingletonReuse());
 
-            container.RegisterSingleton<Presentation.Services.UWP.SecondaryTileManager>();
+            container.Register<Presentation.Services.UWP.SecondaryTileManager>(reuse: new SingletonReuse());
 
-            container.RegisterSingleton<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>();
+            container.Register<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
             
-            container.RegisterSingleton<SourceStorageItemsPageViewModel>();
-            //container.RegisterSingleton<ImageListupPageViewModel>();
-            //container.RegisterSingleton<FolderListupPageViewModel>();
-            container.RegisterSingleton<ImageViewerPageViewModel>();
-            container.RegisterSingleton<EBookReaderPageViewModel>();
-            //container.RegisterSingleton<SearchResultPageViewModel>();
+            container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
+            //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
+            //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
+            container.Register<ImageViewerPageViewModel>(reuse: new SingletonReuse());
+            container.Register<EBookReaderPageViewModel>(reuse: new SingletonReuse());
+            //container.Register<SearchResultPageViewModel>(reuse: new SingletonReuse());
 
             // Services
             container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();
 
-            container.RegisterForNavigation<SourceStorageItemsPage>();
-            container.RegisterForNavigation<ImageListupPage>();
-            container.RegisterForNavigation<FolderListupPage>();
-            container.RegisterForNavigation<ImageViewerPage>();
-            container.RegisterForNavigation<EBookReaderPage>();
-            container.RegisterForNavigation<SettingsPage>();
-            container.RegisterForNavigation<SearchResultPage>();
-            container.RegisterForNavigation<AlbamListupPage>();
         }
 
+        protected override async void OnFileActivated(FileActivatedEventArgs args)
+        {
+            await OnActivationAsync(args);
+        }
+
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
+        {
+            await InitializeAsync();
+            await OnActivationAsync(args);
+        }
+
+
+
         bool isRestored = false;
-        public override async Task OnStartAsync(StartArgs args)
+        public async Task OnActivationAsync(IActivatedEventArgs args)
         {
             using var releaser = await _InitializeLock.LockAsync(default);
-#if DEBUG
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                this.DebugSettings.EnableFrameRateCounter = true;
-            }
-#endif
-            Resources["DebugTVMode"] = Container.Resolve<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
 
-            if (args.Arguments is IActivatedEventArgs activated)
+            if (args is IActivatedEventArgs activated)
             {
                 SystemInformation.Instance.TrackAppUse(activated);
             }
 
             PageNavigationInfo pageNavigationInfo = null;
-            if (args.Arguments is LaunchActivatedEventArgs launchActivatedEvent)
+            if (args is LaunchActivatedEventArgs launchActivatedEvent)
             {
                 if (launchActivatedEvent.PrelaunchActivated == false)
                 {
@@ -199,7 +202,7 @@ namespace TsubameViewer
                     }
                 }
             }
-            else if (args.Arguments is FileActivatedEventArgs fileActivatedEventArgs)
+            else if (args is FileActivatedEventArgs fileActivatedEventArgs)
             {
                 try
                 {
@@ -210,9 +213,9 @@ namespace TsubameViewer
 
             if (pageNavigationInfo != null)
             {
-                IMessenger messenger = Container.Resolve<IMessenger>();
+                IMessenger messenger = Ioc.Default.GetService<IMessenger>();
                 var result = await NavigateAsync(pageNavigationInfo, messenger);
-                if (result.Success)
+                if (result.IsSuccess)
                 {
                     isRestored = true;
                     
@@ -222,10 +225,8 @@ namespace TsubameViewer
             if (isRestored is false)
             {
                 var shell = Window.Current.Content as PrimaryWindowCoreLayout;
-                await shell.RestoreNavigationStack();
+                shell.RestoreNavigationStack();
             }
-
-            await base.OnStartAsync(args);
         }
 
 
@@ -253,7 +254,7 @@ namespace TsubameViewer
                     {
                         try
                         {
-                            var migratorInstance = Container.Resolve(migratorType);
+                            var migratorInstance = Ioc.Default.GetService(migratorType);
                             if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
                             {
                                 Debug.WriteLine($"Start migrate: {migratorType.Name}");
@@ -316,7 +317,7 @@ namespace TsubameViewer
             {
                 foreach (var maintenanceType in launchTimeMaintenanceTypes)
                 {
-                    var instance = Container.Resolve(maintenanceType);
+                    var instance = Ioc.Default.GetService(maintenanceType);
                     if (instance is ILaunchTimeMaintenance restorable)
                     {
                         Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
@@ -353,27 +354,28 @@ namespace TsubameViewer
             });
         }
 
-        public override async void OnInitialized()
+        bool _isInitialized = false;
+
+        private async Task InitializeAsync()
         {
             using var releaser = await _InitializeLock.LockAsync(default);
 
-            // ローカリゼーション用のライブラリを初期化
-            try
-            {
-                I18NPortable.I18N.Current
-#if DEBUG
-                    //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
-                    .SetNotFoundSymbol("🍣")
-#endif
-                    .SetFallbackLocale("en")
-                    .Init(GetType().Assembly);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
-            }
+            if (_isInitialized) { return; }
 
-            var applicationSettings = Container.Resolve<Models.Domain.ApplicationSettings>();
+            _isInitialized = true;
+
+            Container = ConfigureService();
+
+#if DEBUG
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                this.DebugSettings.EnableFrameRateCounter = true;
+            }
+#endif
+            Resources["DebugTVMode"] = Ioc.Default.GetService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
+
+
+            var applicationSettings = Ioc.Default.GetService<Models.Domain.ApplicationSettings>();
             try
             {
                 I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
@@ -385,7 +387,10 @@ namespace TsubameViewer
 
 
 #if DEBUG
-            Container.Resolve<ILiteDatabase>().GetCollectionNames().ForEach((string x) => Debug.WriteLine(x));
+            foreach (var collectionName in Ioc.Default.GetService<ILiteDatabase>().GetCollectionNames())
+            {
+                Debug.WriteLine(collectionName);
+            }
 #endif
 
             await UpdateMigrationAsync();
@@ -412,15 +417,13 @@ namespace TsubameViewer
 
             UpdateFolderItemSizingResourceValues();
 
-            Window.Current.Content = Container.Resolve<PrimaryWindowCoreLayout>();
+            Window.Current.Content = Ioc.Default.GetService<PrimaryWindowCoreLayout>();
             Window.Current.Activate();
-
-            base.OnInitialized();
         }
 
         public void UpdateFolderItemSizingResourceValues()
         {
-            var folderListingSettings = Container.Resolve<Models.Domain.FolderItemListing.FolderListingSettings>();
+            var folderListingSettings = Ioc.Default.GetService<Models.Domain.FolderItemListing.FolderListingSettings>();
             Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
             Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
             Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
@@ -442,60 +445,6 @@ namespace TsubameViewer
         }
 
 
-        /// <summary>
-        /// Configures global logging
-        /// </summary>
-        /// <param name="factory"></param>
-        static void ConfigureFilters(ILoggerFactory factory)
-        {
-            factory
-                .WithFilter(new FilterLoggerSettings
-                    {
-                        { "Uno", LogLevel.Warning },
-                        { "Windows", LogLevel.Warning },
-
-						// Debug JS interop
-						// { "Uno.Foundation.WebAssemblyRuntime", LogLevel.Debug },
-
-						// Generic Xaml events
-						// { "Windows.UI.Xaml", LogLevel.Debug },
-						// { "Windows.UI.Xaml.VisualStateGroup", LogLevel.Debug },
-						// { "Windows.UI.Xaml.StateTriggerBase", LogLevel.Debug },
-						// { "Windows.UI.Xaml.UIElement", LogLevel.Debug },
-
-						// Layouter specific messages
-						// { "Windows.UI.Xaml.Controls", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.Layouter", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.Panel", LogLevel.Debug },
-						// { "Windows.Storage", LogLevel.Debug },
-
-						// Binding related messages
-						// { "Windows.UI.Xaml.Data", LogLevel.Debug },
-
-						// DependencyObject memory references tracking
-						// { "ReferenceHolder", LogLevel.Debug },
-
-						// ListView-related messages
-						// { "Windows.UI.Xaml.Controls.ListViewBase", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.ListView", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.GridView", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.VirtualizingPanelLayout", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.NativeListViewBase", LogLevel.Debug },
-						// { "Windows.UI.Xaml.Controls.ListViewBaseSource", LogLevel.Debug }, //iOS
-						// { "Windows.UI.Xaml.Controls.ListViewBaseInternalContainer", LogLevel.Debug }, //iOS
-						// { "Windows.UI.Xaml.Controls.NativeListViewBaseAdapter", LogLevel.Debug }, //Android
-						// { "Windows.UI.Xaml.Controls.BufferViewCache", LogLevel.Debug }, //Android
-						// { "Windows.UI.Xaml.Controls.VirtualizingPanelGenerator", LogLevel.Debug }, //WASM
-					}
-                )
-#if DEBUG
-				.AddConsole(LogLevel.Debug);
-#else
-                .AddConsole(LogLevel.Information);
-#endif
-        }
-
-
         public class PageNavigationInfo
         {
             public string Path { get; set; }
@@ -505,8 +454,8 @@ namespace TsubameViewer
 
         async Task<INavigationResult> NavigateAsync(PageNavigationInfo info, IMessenger messenger = null)
         {
-            messenger ??= Container.Resolve<IMessenger>();
-            var sourceFolderRepository = Container.Resolve<SourceStorageItemsRepository>();
+            messenger ??= Ioc.Default.GetService<IMessenger>();
+            var sourceFolderRepository = Ioc.Default.GetService<SourceStorageItemsRepository>();
 
             NavigationParameters parameters = new NavigationParameters();
 
@@ -526,7 +475,7 @@ namespace TsubameViewer
 
             if (item is StorageFolder itemFolder)
             {
-                var containerTypeManager = Container.Resolve<FolderContainerTypeManager>();
+                var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
                     return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
@@ -568,7 +517,7 @@ namespace TsubameViewer
         async Task<PageNavigationInfo> FileActivatedArgumentToNavigationInfo(FileActivatedEventArgs args)
         {
             // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
-            var sourceStroageItemsRepo = Container.Resolve<SourceStorageItemsRepository>();
+            var sourceStroageItemsRepo = Ioc.Default.GetService<SourceStorageItemsRepository>();
             string path = null;
             foreach (var item in args.Files)
             {

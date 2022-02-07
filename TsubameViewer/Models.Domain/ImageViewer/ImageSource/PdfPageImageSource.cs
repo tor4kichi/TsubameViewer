@@ -1,5 +1,4 @@
-﻿using Prism.Mvvm;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -8,7 +7,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
-using Uno.Disposables;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Streams;

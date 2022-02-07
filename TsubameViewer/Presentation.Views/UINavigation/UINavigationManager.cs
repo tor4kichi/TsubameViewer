@@ -8,8 +8,8 @@ using Windows.Gaming.Input;
 using Windows.UI.Xaml;
 using System.Threading;
 using Windows.UI.Core;
-using Uno.Threading;
 using System.Diagnostics;
+using TsubameViewer.Models.Infrastructure;
 
 namespace TsubameViewer.Presentation.Views.UINavigation
 {

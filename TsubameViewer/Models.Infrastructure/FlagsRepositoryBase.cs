@@ -1,5 +1,5 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
-using Prism.Mvvm;
+﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Uwp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,7 +7,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using Uno.Threading;
 using Windows.Storage;
 
 namespace TsubameViewer.Models.Infrastructure
@@ -31,7 +30,7 @@ namespace TsubameViewer.Models.Infrastructure
     /// <remarks>
     /// 注意：BinaryJsonObjectSerializer は Nullale[T] をシリアライズできない
     /// </remarks>
-    public abstract class FlagsRepositoryBase : BindableBase
+    public abstract class FlagsRepositoryBase : ObservableObject
     {
         private readonly static BytesApplicationDataStorageHelper _LocalStorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());
         private static readonly Models.Infrastructure.AsyncLock _fileUpdateLock = new ();
@@ -71,7 +70,7 @@ namespace TsubameViewer.Models.Infrastructure
             _LocalStorageHelper.Save(propertyName, value);
         }
 
-        protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
+        protected new bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
         {
             if (base.SetProperty(ref storage, value, propertyName))
             {

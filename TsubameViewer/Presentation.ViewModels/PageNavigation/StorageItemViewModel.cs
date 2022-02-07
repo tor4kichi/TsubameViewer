@@ -1,6 +1,4 @@
-﻿using Prism.Mvvm;
-using Prism.Navigation;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reactive.Linq;
@@ -13,13 +11,12 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
-using Uno.Threading;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
-using Uno.Disposables;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.UseCase;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
@@ -27,7 +24,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
     using static TsubameViewer.Presentation.ViewModels.ImageListupPageViewModel;
     using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
-    public sealed class StorageItemViewModel : BindableBase, IDisposable
+    public sealed class StorageItemViewModel : ObservableObject, IDisposable
     {
         
 
@@ -175,7 +172,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
-
+                    
                     stream.Seek(0);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
@@ -231,7 +228,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _disposed = true;
             _cts?.Cancel();
             _cts?.Dispose();
-            Item.TryDispose();
+            (Item as IDisposable)?.Dispose();
             Image = null;
         }
         bool _disposed;

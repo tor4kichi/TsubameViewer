@@ -1,41 +1,29 @@
-﻿using Microsoft.Toolkit.Uwp.UI;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Toolkit.Uwp;
+using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using System.Numerics;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
-using Uno.Threading;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using System.Numerics;
-using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Media.Animation;
-using System.Windows.Input;
-using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Threading;
-using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Ioc;
-using I18NPortable;
-using System.Collections.ObjectModel;
-using Reactive.Bindings;
-using Windows.UI.Core;
-using Reactive.Bindings.Extensions;
-using TsubameViewer.Models.Domain.Albam;
+using Windows.UI.Xaml.Navigation;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -52,24 +40,14 @@ namespace TsubameViewer.Presentation.Views
         {
             InitializeComponent();
 
+            DataContext = _vm = Ioc.Default.GetService<ImageListupPageViewModel>();
+            _messenger = Ioc.Default.GetService<IMessenger>();
+
             Loaded += FolderListupPage_Loaded;
             Unloaded += FolderListupPage_Unloaded;
-
-            DataContextChanged += OnDataContextChanged;
-            _messenger = App.Current.Container.Resolve<IMessenger>();
         }
 
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as ImageListupPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
-        }
-
-        private ImageListupPageViewModel _vm { get; set; }
+        private ImageListupPageViewModel _vm { get; }
 
 
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)

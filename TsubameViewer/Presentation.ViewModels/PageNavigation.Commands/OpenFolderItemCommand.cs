@@ -1,7 +1,5 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Xaml.Interactivity;
-using Prism.Commands;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,15 +10,15 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
-using TsubameViewer.Presentation.Views.SourceFolders.Commands;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenFolderItemCommand : DelegateCommandBase
+    public sealed class OpenFolderItemCommand : CommandBase
     {
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;

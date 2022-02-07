@@ -1,7 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Converters;
-using Prism.Commands;
-using Prism.Mvvm;
-using Prism.Navigation;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -29,10 +26,6 @@ using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
-using TsubameViewer.Presentation.Views.ViewManagement.Commands;
-using Uno;
-using Uno.Extensions;
-using Uno.Threading;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
@@ -43,7 +36,6 @@ using static TsubameViewer.Models.Domain.ImageViewer.ImageCollectionManager;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using TsubameViewer.Presentation.Services.UWP;
-using Uno.Disposables;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using System.Numerics;
 using Windows.UI.Xaml.Media;
@@ -54,6 +46,10 @@ using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using Windows.System;
 using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Mvvm.Messaging.Messages;
+using TsubameViewer.Presentation.Navigations;
+using Windows.UI.Xaml.Navigation;
+using Microsoft.Toolkit.Mvvm.Input;
+using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -63,7 +59,7 @@ namespace TsubameViewer.Presentation.ViewModels
     }
 
 
-    public sealed class ImageViewerPageViewModel : ViewModelBase, IDisposable
+    public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDisposable
     {
         private string _currentPath;
         private object _currentFolderItem;
@@ -315,15 +311,15 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (SwapIfDoubleView(DisplayImages_0))
                 {
-                    RaisePropertyChanged(nameof(DisplayImages_0));
+                    OnPropertyChanged(nameof(DisplayImages_0));
                 }
                 if (SwapIfDoubleView(DisplayImages_1))
                 {
-                    RaisePropertyChanged(nameof(DisplayImages_1));
+                    OnPropertyChanged(nameof(DisplayImages_1));
                 }
                 if (SwapIfDoubleView(DisplayImages_2))
                 {
-                    RaisePropertyChanged(nameof(DisplayImages_2));
+                    OnPropertyChanged(nameof(DisplayImages_2));
                 }
             }).AddTo(_disposables);
             IsDoubleViewEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged)
@@ -361,7 +357,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (Images?.Any() ?? false)
             {
-                Images.ForEach((IImageSource x) => x.TryDispose());
+                foreach (var itemVM in Images)
+                {
+                    (itemVM as IDisposable)?.Dispose();
+                }
                 _nowCurrenImageIndexChanging = true;
                 Images = null;
                 _nowCurrenImageIndexChanging = false;
@@ -396,8 +395,8 @@ namespace TsubameViewer.Presentation.ViewModels
             PageFolderName = null;
 
             // 一旦ボタン類を押せないように変更通知
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
+            GoNextImageCommand.NotifyCanExecuteChanged();
+            GoPrevImageCommand.NotifyCanExecuteChanged();
 
             string parsedPageName = null;
             string parsedArchiveFolderName = null;
@@ -580,7 +579,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
             _nowCurrenImageIndexChanging = true;
-            RaisePropertyChanged(nameof(CurrentImageIndex));
+            OnPropertyChanged(nameof(CurrentImageIndex));
             _nowCurrenImageIndexChanging = false;
 
             await ResetImageIndex(CurrentImageIndex);
@@ -590,8 +589,8 @@ namespace TsubameViewer.Presentation.ViewModels
             IsAlreadySetDisplayImages = true;
 
             // 表示画像が揃ったら改めてボタンを有効化
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();
+            GoNextImageCommand.NotifyCanExecuteChanged();
+            GoPrevImageCommand.NotifyCanExecuteChanged();
 
             // 画像更新
             Observable.Merge(
@@ -627,7 +626,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
                         }
 
-                        RaisePropertyChanged(nameof(CurrentDisplayImageSources));
+                        OnPropertyChanged(nameof(CurrentDisplayImageSources));
 
                         var imageSource = imageSources[0];
                         if (_currentFolderItem is IStorageItem)
@@ -668,8 +667,8 @@ namespace TsubameViewer.Presentation.ViewModels
                         ClearCachedImages();
                         ClearDisplayImages(PrevDisplayImageIndex);
                         ClearDisplayImages(NextDisplayImageIndex);
-                        RaisePropertyChanged(DisplayImageIndexToName(PrevDisplayImageIndex));
-                        RaisePropertyChanged(DisplayImageIndexToName(NextDisplayImageIndex));
+                        OnPropertyChanged(DisplayImageIndexToName(PrevDisplayImageIndex));
+                        OnPropertyChanged(DisplayImageIndexToName(NextDisplayImageIndex));
                     }
 
                     await ResetImageIndex(CurrentImageIndex);
@@ -1263,9 +1262,9 @@ namespace TsubameViewer.Presentation.ViewModels
         private void SetCurrentDisplayImageIndex(int index)
         {
             _currentDisplayImageIndex = index;
-            RaisePropertyChanged(nameof(CurrentDisplayImageIndex));
-            RaisePropertyChanged(nameof(PrevDisplayImageIndex));
-            RaisePropertyChanged(nameof(NextDisplayImageIndex));
+            OnPropertyChanged(nameof(CurrentDisplayImageIndex));
+            OnPropertyChanged(nameof(PrevDisplayImageIndex));
+            OnPropertyChanged(nameof(NextDisplayImageIndex));
         }
 
         private int GetDisplayImageIndex(PrefetchIndexType type)
@@ -1407,19 +1406,19 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_0 = _displayImagesSingle[0];
                     _DisplayImages_0[0] = firstImage;
                     _sourceImagesSingle[0][0] = firstSource;
-                    RaisePropertyChanged(nameof(DisplayImages_0));
+                    OnPropertyChanged(nameof(DisplayImages_0));
                     break;
                 case 1:
                     _DisplayImages_1 = _displayImagesSingle[1];
                     _DisplayImages_1[0] = firstImage;
                     _sourceImagesSingle[1][0] = firstSource;
-                    RaisePropertyChanged(nameof(DisplayImages_1));
+                    OnPropertyChanged(nameof(DisplayImages_1));
                     break;
                 case 2:
                     _DisplayImages_2 = _displayImagesSingle[2];
                     _DisplayImages_2[0] = firstImage;
                     _sourceImagesSingle[2][0] = firstSource;
-                    RaisePropertyChanged(nameof(DisplayImages_2));
+                    OnPropertyChanged(nameof(DisplayImages_2));
                     break;
             }
         }
@@ -1457,7 +1456,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_0[1] = secondImage;
                     _sourceImagesDouble[0][0] = firstSource;
                     _sourceImagesDouble[0][1] = secondSource;
-                    RaisePropertyChanged(nameof(DisplayImages_0));
+                    OnPropertyChanged(nameof(DisplayImages_0));
                     break;
                 case 1:
                     _DisplayImages_1 = _displayImagesDouble[1];
@@ -1465,7 +1464,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_1[1] = secondImage;
                     _sourceImagesDouble[1][0] = firstSource;
                     _sourceImagesDouble[1][1] = secondSource;
-                    RaisePropertyChanged(nameof(DisplayImages_1));
+                    OnPropertyChanged(nameof(DisplayImages_1));
                     break;
                 case 2:
                     _DisplayImages_2 = _displayImagesDouble[2];
@@ -1473,7 +1472,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     _DisplayImages_2[1] = secondImage;
                     _sourceImagesDouble[2][0] = firstSource;
                     _sourceImagesDouble[2][1] = secondSource;
-                    RaisePropertyChanged(nameof(DisplayImages_2));
+                    OnPropertyChanged(nameof(DisplayImages_2));
                     break;
             }
         }
@@ -1801,14 +1800,14 @@ namespace TsubameViewer.Presentation.ViewModels
                 PageFolderNames = new string[0];
             }
 
-            GoNextImageCommand.RaiseCanExecuteChanged();
-            GoPrevImageCommand.RaiseCanExecuteChanged();            
+            GoNextImageCommand.NotifyCanExecuteChanged();
+            GoPrevImageCommand.NotifyCanExecuteChanged();            
         }
 
 
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
-            Images?.AsParallel().WithDegreeOfParallelism(4).ForEach((IImageSource x) => x.TryDispose());
+            Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
 
             var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
             _nowCurrenImageIndexChanging = true;
@@ -1831,9 +1830,9 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
         public FavoriteToggleCommand FavoriteToggleCommand { get; }
 
-        private DelegateCommand _GoNextImageCommand;
-        public DelegateCommand GoNextImageCommand =>
-            _GoNextImageCommand ??= new DelegateCommand(ExecuteGoNextImageCommand, CanGoNextCommand) { IsActive = true };
+        private RelayCommand _GoNextImageCommand;
+        public RelayCommand GoNextImageCommand =>
+            _GoNextImageCommand ??= new RelayCommand(ExecuteGoNextImageCommand, CanGoNextCommand);
 
         private void ExecuteGoNextImageCommand()
         {
@@ -1846,9 +1845,9 @@ namespace TsubameViewer.Presentation.ViewModels
             return true;
         }
 
-        private DelegateCommand _GoPrevImageCommand;
-        public DelegateCommand GoPrevImageCommand =>
-            _GoPrevImageCommand ??= new DelegateCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand) { IsActive = true };
+        private RelayCommand _GoPrevImageCommand;
+        public RelayCommand GoPrevImageCommand =>
+            _GoPrevImageCommand ??= new RelayCommand(ExecuteGoPrevImageCommand, CanGoPrevCommand);
 
         private void ExecuteGoPrevImageCommand()
         {
@@ -1864,18 +1863,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         ISubject<int> _SizeChangedSubject = new BehaviorSubject<int>(-1);
 
-        private DelegateCommand _SizeChangedCommand;
-        public DelegateCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new DelegateCommand(async () =>
+        private RelayCommand _SizeChangedCommand;
+        public RelayCommand SizeChangedCommand =>
+            _SizeChangedCommand ??= new RelayCommand(async () =>
             {
                 if (!(Images?.Any() ?? false)) { return; }
                 
                 _SizeChangedSubject.OnNext(CurrentImageIndex);
             });
 
-        private DelegateCommand<string> _changePageFolderCommand;
-        public DelegateCommand<string> ChangePageFolderCommand =>
-            _changePageFolderCommand ?? (_changePageFolderCommand = new DelegateCommand<string>(ExecuteChangePageFolderCommand));
+        private RelayCommand<string> _changePageFolderCommand;
+        public RelayCommand<string> ChangePageFolderCommand =>
+            _changePageFolderCommand ?? (_changePageFolderCommand = new RelayCommand<string>(ExecuteChangePageFolderCommand));
 
         async void ExecuteChangePageFolderCommand(string pageName)
         {
@@ -1899,21 +1898,21 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        private DelegateCommand<double?> _ChangePageCommand;
-        public DelegateCommand<double?> ChangePageCommand =>
-            _ChangePageCommand ?? (_ChangePageCommand = new DelegateCommand<double?>(ExecuteChangePageCommand));
+        private RelayCommand<double?> _ChangePageCommand;
+        public RelayCommand<double?> ChangePageCommand =>
+            _ChangePageCommand ?? (_ChangePageCommand = new RelayCommand<double?>(ExecuteChangePageCommand));
 
         async void ExecuteChangePageCommand(double? parameter)
         {
             if (_nowCurrenImageIndexChanging) { return; }
 
             await ResetImageIndex((int)parameter.Value);
-            RaisePropertyChanged(nameof(CurrentImageIndex));
+            OnPropertyChanged(nameof(CurrentImageIndex));
         }
 
-        private DelegateCommand _DoubleViewCorrectCommand;
-        public DelegateCommand DoubleViewCorrectCommand =>
-            _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new DelegateCommand(ExecuteDoubleViewCorrectCommand));
+        private RelayCommand _DoubleViewCorrectCommand;
+        public RelayCommand DoubleViewCorrectCommand =>
+            _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new RelayCommand(ExecuteDoubleViewCorrectCommand));
 
         void ExecuteDoubleViewCorrectCommand()
         {
@@ -1922,9 +1921,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
 
-        private DelegateCommand<object> _ChangeFileSortCommand;
-        public DelegateCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new DelegateCommand<object>(async sort =>
+        private RelayCommand<object> _ChangeFileSortCommand;
+        public RelayCommand<object> ChangeFileSortCommand =>
+            _ChangeFileSortCommand ??= new RelayCommand<object>(async sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)

@@ -1,5 +1,4 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +9,7 @@ using TsubameViewer.Presentation.Services.UWP;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class SecondaryTileAddCommand : DelegateCommandBase
+    public sealed class SecondaryTileAddCommand : CommandBase
     {
         private readonly SecondaryTileManager _secondaryTileManager;
 

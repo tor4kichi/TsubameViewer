@@ -14,7 +14,6 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using Prism.Ioc;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.Views.Helpers;
@@ -23,6 +22,7 @@ using Windows.Storage;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -36,25 +36,24 @@ namespace TsubameViewer.Presentation.Views.Flyouts
         {
             this.InitializeComponent();
 
-            var container = App.Current.Container;
-            OpenListupItem.Command = container.Resolve<OpenListupCommand>();
-            SetThumbnailImageMenuItem.Command = container.Resolve<ChangeStorageItemThumbnailImageCommand>();
-            AddFavariteImageMenuItem.Command = container.Resolve<FavoriteAddCommand>();
+            OpenListupItem.Command = Ioc.Default.GetService<OpenListupCommand>();
+            SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
+            AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
             SelectedItems_AddFavariteImageMenuItem.Command = AddFavariteImageMenuItem.Command;
-            RemoveFavariteImageMenuItem.Command = container.Resolve<FavoriteRemoveCommand>();
-            AlbamItemEditMenuItem.Command = container.Resolve<AlbamItemEditCommand>();
+            RemoveFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteRemoveCommand>();
+            AlbamItemEditMenuItem.Command = Ioc.Default.GetService<AlbamItemEditCommand>();
             SelectedItems_AlbamItemEditMenuItem.Command = AlbamItemEditMenuItem.Command;
-            AlbamItemRemoveMenuItem.Command = container.Resolve<AlbamItemRemoveCommand>();
-            AlbamEditMenuItem.Command = container.Resolve<AlbamEditCommand>();
-            AlbamDeleteMenuItem.Command = container.Resolve<AlbamDeleteCommand>();
-            StorageItemDeleteMenuItem.Command = container.Resolve<FileDeleteCommand>();
-            AddSecondaryTile.Command = container.Resolve<SecondaryTileAddCommand>();
-            RemoveSecondaryTile.Command = container.Resolve<SecondaryTileRemoveCommand>();
-            OpenWithExplorerItem.Command = container.Resolve<OpenWithExplorerCommand>();
+            AlbamItemRemoveMenuItem.Command = Ioc.Default.GetService<AlbamItemRemoveCommand>();
+            AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
+            AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
+            StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
+            AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
+            RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
+            OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
             SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
-            OpenWithExternalAppMenuItem.Command = container.Resolve<OpenWithExternalApplicationCommand>();
-            _secondaryTileManager = container.Resolve<SecondaryTileManager>();
-            _favoriteAlbam = container.Resolve<FavoriteAlbam>();
+            OpenWithExternalAppMenuItem.Command = Ioc.Default.GetService<OpenWithExternalApplicationCommand>();
+            _secondaryTileManager = Ioc.Default.GetService<SecondaryTileManager>();
+            _favoriteAlbam = Ioc.Default.GetService<FavoriteAlbam>();
         }
 
         private readonly SecondaryTileManager _secondaryTileManager;

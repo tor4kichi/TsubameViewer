@@ -1,28 +1,23 @@
-﻿using Prism.Commands;
-using Prism.Navigation;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Linq;
+using System.Threading;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.Views;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
-using Prism.Ioc;
 using StorageItemTypes = TsubameViewer.Models.Domain.StorageItemTypes;
-using System.Threading;
-using Uno.Disposables;
-using System.Linq;
-using System.IO;
-using Microsoft.Toolkit.Mvvm.Messaging;
-using System.Threading.Tasks;
-using TsubameViewer.Presentation.Views;
-using TsubameViewer.Models.Domain.Albam;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenListupCommand : DelegateCommandBase
+    public sealed class OpenListupCommand : CommandBase
     {
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
@@ -61,7 +56,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type == StorageItemTypes.Archive)
                 {
-                    var imageCollectionManager = App.Current.Container.Resolve<ImageCollectionManager>();
+                    var imageCollectionManager = Ioc.Default.GetService<ImageCollectionManager>();
                     CancellationToken ct = CancellationToken.None;
                     var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
                     try
@@ -104,7 +99,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                     }
                     finally
                     {
-                        collectionContext.TryDispose();
+                        (collectionContext as IDisposable)?.Dispose();
                     }
                 }
                 else if (type == StorageItemTypes.Folder)

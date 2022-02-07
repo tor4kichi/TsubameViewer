@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,11 +26,15 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class SearchResultPage : Page
     {
+        private readonly SearchResultPageViewModel _vm;
+
         public SearchResultPage()
         {
             this.InitializeComponent();
 
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+
+            DataContext = _vm = Ioc.Default.GetService<SearchResultPageViewModel>();
         }
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)

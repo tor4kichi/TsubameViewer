@@ -1,6 +1,4 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,7 +9,7 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
-    public sealed class OpenImageViewerCommand : DelegateCommandBase
+    public sealed class OpenImageViewerCommand : CommandBase
     {
         private readonly IMessenger _messenger;
 

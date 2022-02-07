@@ -1,17 +1,17 @@
 ﻿using I18NPortable;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
-using Prism.Navigation;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views;
 
-namespace TsubameViewer.Presentation.Views.SourceFolders.Commands
+namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 {
-    public sealed class SourceChoiceCommand : DelegateCommandBase
+    public sealed class SourceChoiceCommand : CommandBase
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;

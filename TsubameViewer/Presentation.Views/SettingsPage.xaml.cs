@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,19 +28,9 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
-            DataContextChanged += OnDataContextChanged;
+            DataContext = _vm = Ioc.Default.GetService<SettingsPageViewModel>();
         }
 
-        private void OnDataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
-        {
-            var oldViewModel = _vm;
-            _vm = args.NewValue as SettingsPageViewModel;
-            if (_vm != null && oldViewModel != _vm)
-            {
-                this.Bindings.Update();
-            }
-        }
-
-        private SettingsPageViewModel _vm { get; set; }
+        private SettingsPageViewModel _vm { get; }
     }
 }

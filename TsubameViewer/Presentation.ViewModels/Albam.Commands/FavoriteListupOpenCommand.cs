@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +7,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public sealed class FavoriteListupOpenCommand : DelegateCommandBase
+    public sealed class FavoriteListupOpenCommand : CommandBase
     {
         private readonly IMessenger _messenger;
 

@@ -1,6 +1,5 @@
 ﻿using I18NPortable;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using Prism.Commands;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,7 +11,7 @@ using Windows.UI.Popups;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
-    public sealed class AlbamDeleteCommand : DelegateCommandBase
+    public sealed class AlbamDeleteCommand : CommandBase
     {
         private readonly AlbamRepository _albamRepository;
         private readonly IMessenger _messenger;

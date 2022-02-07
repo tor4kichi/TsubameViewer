@@ -1,5 +1,4 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -12,7 +11,7 @@ using Windows.Storage.Streams;
 
 namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 {
-    public sealed class ChangeStorageItemThumbnailImageCommand : DelegateCommandBase
+    public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;

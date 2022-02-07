@@ -1,6 +1,5 @@
 ﻿using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
-using Prism.Commands;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -17,8 +16,6 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Models.Domain.EBook;
-//using TsubameViewer.Presentation.ViewModels;
-using Uno.Threading;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;

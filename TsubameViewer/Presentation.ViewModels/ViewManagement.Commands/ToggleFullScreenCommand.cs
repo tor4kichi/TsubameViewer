@@ -1,13 +1,12 @@
-﻿using Prism.Commands;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using Windows.UI.ViewManagement;
 using Xamarin.Essentials;
 
-namespace TsubameViewer.Presentation.Views.ViewManagement.Commands
+namespace TsubameViewer.Presentation.ViewModels.ViewManagement.Commands
 {
-    public sealed class ToggleFullScreenCommand : DelegateCommandBase
+    public sealed class ToggleFullScreenCommand : CommandBase
     {
         private ApplicationView _currentView;
 
