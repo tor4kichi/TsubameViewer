@@ -1,0 +1,1006 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Roots >
+  <Roots.Interfaces>
+    <RootInterface FullName="Windows.UI.Xaml.Data.IValueConverter" />
+  </Roots.Interfaces>
+  <Roots.PropertyPathNames>
+    <RootPropertyPathName Name="TemplateSettings" />
+    <RootPropertyPathName Name="KnobOffToOnOffset" />
+    <RootPropertyPathName Name="KnobOnToOffOffset" />
+    <RootPropertyPathName Name="KnobCurrentToOffOffset" />
+    <RootPropertyPathName Name="KnobCurrentToOnOffset" />
+    <RootPropertyPathName Name="DialogTitle" />
+    <RootPropertyPathName Name="OpenTocPaneCommand" />
+    <RootPropertyPathName Name="ToggleFullScreenCommand" />
+    <RootPropertyPathName Name="Label" />
+    <RootPropertyPathName Name="InnerGoPrevImageCommand" />
+    <RootPropertyPathName Name="NowEnablePageMove" />
+    <RootPropertyPathName Name="NowProcessing" />
+    <RootPropertyPathName Name="CurrentFolderItem" />
+    <RootPropertyPathName Name="Type" />
+    <RootPropertyPathName Name="SelectionChangeCommand" />
+    <RootPropertyPathName Name="Name" />
+    <RootPropertyPathName Name="ImageAspectRatioWH" />
+    <RootPropertyPathName Name="IsSelected" />
+    <RootPropertyPathName Name="Image" />
+    <RootPropertyPathName Name="IsFavorite" />
+    <RootPropertyPathName Name="Selection" />
+    <RootPropertyPathName Name="IsSelectionModeEnabled" />
+    <RootPropertyPathName Name="IsFavoriteAlbam" />
+    <RootPropertyPathName Name="Images" />
+    <RootPropertyPathName Name="Length" />
+    <RootPropertyPathName Name="CurrentImageIndex" />
+    <RootPropertyPathName Name="ChangePageCommand" />
+    <RootPropertyPathName Name="PageFolderNames" />
+    <RootPropertyPathName Name="PageFolderName" />
+    <RootPropertyPathName Name="ChangePageFolderCommand" />
+    <RootPropertyPathName Name="Value" />
+    <RootPropertyPathName Name="ItemType" />
+    <RootPropertyPathName Name="Items" />
+    <RootPropertyPathName Name="MenuItems" />
+    <RootPropertyPathName Name="Title" />
+    <RootPropertyPathName Name="SearchResultItems" />
+    <RootPropertyPathName Name="OpenFolderItemCommand" />
+    <RootPropertyPathName Name="SearchText" />
+    <RootPropertyPathName Name="IsVisible" />
+    <RootPropertyPathName Name="DeleteStoredFolderCommand" />
+    <RootPropertyPathName Name="DisplayName" />
+    <RootPropertyPathName Name="Locale" />
+  </Roots.PropertyPathNames>
+  <Roots.RootTypes>
+    <RootType FullName="Prism.DryIoc.PrismApplication">
+      <RootProperty Name="Resources" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.ResourceDictionary">
+      <RootProperty Name="MergedDictionaries" />
+      <RootProperty Name="ThemeDictionaries" />
+      <RootProperty Name="Source" />
+    </RootType>
+    <RootType FullName="Microsoft.UI.Xaml.Controls.XamlControlsResources" />
+    <RootType FullName="TsubameViewer.Presentation.Views.FolderListup.FolderListupItemTemplate" />
+    <RootType FullName="Windows.UI.Xaml.Media.SolidColorBrush">
+      <RootProperty Name="Color" />
+      <RootProperty Name="Opacity" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.DirectUI.ProxyTypes.ThemeResourceExtension" />
+    <RootType FullName="System.Boolean" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Flyouts.StorageItemMenuFlyout">
+      <RootProperty Name="IsRootPage" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Locales.LocalizeConverter" />
+    <RootType FullName="TsubameViewer.Locales.LocaleToDisplayNameConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.ItemClickEventArgsConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.RoutedEventOriginalSourceConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.NavigationViewItemInvokedEventArgsConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.DateTimeToStringConverter" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Converters.BoolNegationConverter" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Converters.BoolToVisibilityConverter" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Converters.EmptyCollectionToObjectConverter">
+      <RootProperty Name="EmptyValue" />
+      <RootProperty Name="NotEmptyValue" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Converters.EmptyStringToObjectConverter">
+      <RootProperty Name="EmptyValue" />
+      <RootProperty Name="NotEmptyValue" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.ColorToBrush" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.NotTransparentColorToBooleanConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.NullableColorConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.NumberStartFrom1Converter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.NumberMinus1Converter" />
+    <RootType FullName="Windows.UI.Xaml.Controls.ToggleSwitch">
+      <RootProperty Name="IsOn" />
+      <RootProperty Name="Header" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Padding" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Control">
+      <RootProperty Name="Foreground" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="FontFamily" />
+      <RootProperty Name="FontSize" />
+      <RootProperty Name="UseSystemFocusVisuals" />
+      <RootProperty Name="Template" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="VerticalContentAlignment" />
+      <RootProperty Name="CornerRadius" />
+      <RootProperty Name="BorderBrush" />
+      <RootProperty Name="BorderThickness" />
+      <RootProperty Name="IsTabStop" />
+      <RootMethod Name="GetIsTemplateFocusTarget" />
+      <RootMethod Name="SetIsTemplateFocusTarget" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.FrameworkElement">
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="FocusVisualPrimaryBrush" />
+      <RootProperty Name="FocusVisualPrimaryThickness" />
+      <RootProperty Name="MinWidth" />
+      <RootProperty Name="MinHeight" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.UIElement">
+      <RootProperty Name="ManipulationMode" />
+      <RootProperty Name="Shadow" />
+      <RootProperty Name="ContextFlyout" />
+      <RootProperty Name="RenderTransformOrigin" />
+      <RootProperty Name="RenderTransform" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Setter">
+      <RootProperty Name="Property" />
+      <RootProperty Name="Value" />
+      <RootProperty Name="Target" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ControlTemplate">
+      <RootProperty Name="TargetType" />
+      <RootProperty Name="Template" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Grid">
+      <RootProperty Name="BorderBrush" />
+      <RootProperty Name="BorderThickness" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="ColumnDefinitions" />
+      <RootProperty Name="Children" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="RenderTransform" />
+      <RootProperty Name="ContextFlyout" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="MaxWidth" />
+      <RootProperty Name="IsTapEnabled" />
+      <RootProperty Name="Translation" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="CornerRadius" />
+      <RootProperty Name="Shadow" />
+      <RootProperty Name="Resources" />
+      <RootProperty Name="AllowDrop" />
+      <RootEvent Name="DragEnter" />
+      <RootEvent Name="Drop" />
+      <RootMethod Name="GetColumn" />
+      <RootMethod Name="SetColumn" />
+      <RootMethod Name="GetRow" />
+      <RootMethod Name="SetRow" />
+      <RootMethod Name="GetRowSpan" />
+      <RootMethod Name="SetRowSpan" />
+      <RootMethod Name="GetColumnSpan" />
+      <RootMethod Name="SetColumnSpan" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.VisualStateManager">
+      <RootMethod Name="GetVisualStateGroups" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.DirectUI.ProxyTypes.TemplateBindingExtension" />
+    <RootType FullName="Windows.UI.Xaml.Controls.ColumnDefinition">
+      <RootProperty Name="Width" />
+      <RootProperty Name="MaxWidth" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.VisualStateGroup">
+      <RootProperty Name="States" />
+      <RootProperty Name="Transitions" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.VisualState">
+      <RootProperty Name="Storyboard" />
+      <RootProperty Name="StateTriggers" />
+      <RootProperty Name="Setters" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.Storyboard">
+      <RootProperty Name="Children" />
+      <RootMethod Name="GetTargetProperty" />
+      <RootMethod Name="SetTargetProperty" />
+      <RootMethod Name="GetTargetName" />
+      <RootMethod Name="SetTargetName" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.DoubleAnimation">
+      <RootProperty Name="Duration" />
+      <RootProperty Name="To" />
+      <RootProperty Name="BeginTime" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.ObjectAnimationUsingKeyFrames">
+      <RootProperty Name="KeyFrames" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.DiscreteObjectKeyFrame">
+      <RootProperty Name="KeyTime" />
+      <RootProperty Name="Value" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.VisualTransition">
+      <RootProperty Name="From" />
+      <RootProperty Name="GeneratedDuration" />
+      <RootProperty Name="To" />
+      <RootProperty Name="Storyboard" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.RepositionThemeAnimation">
+      <RootProperty Name="FromHorizontalOffset" />
+      <RootProperty Name="TargetName" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Data.Binding">
+      <RootProperty Name="RelativeSource" />
+      <RootProperty Name="ElementName" />
+      <RootProperty Name="Path" />
+      <RootProperty Name="Source" />
+      <RootProperty Name="Converter" />
+      <RootProperty Name="ConverterParameter" />
+      <RootProperty Name="Mode" />
+      <RootProperty Name="UpdateSourceTrigger" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Data.RelativeSource">
+      <RootProperty Name="Mode" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ContentPresenter">
+      <RootProperty Name="Margin" />
+      <RootProperty Name="ContentTemplate" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="Foreground" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="VerticalAlignment" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Automation.AutomationProperties">
+      <RootMethod Name="GetAccessibilityView" />
+      <RootMethod Name="SetAccessibilityView" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Shapes.Rectangle">
+      <RootProperty Name="Height" />
+      <RootProperty Name="RadiusY" />
+      <RootProperty Name="RadiusX" />
+      <RootProperty Name="Stroke" />
+      <RootProperty Name="StrokeThickness" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="Fill" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="Stretch" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="VerticalAlignment" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Primitives.Thumb">
+      <RootProperty Name="Template" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.TranslateTransform">
+      <RootProperty Name="Y" />
+      <RootProperty Name="X" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Shapes.Ellipse">
+      <RootProperty Name="Fill" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="Width" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Page">
+      <RootProperty Name="Resources" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="NavigationCacheMode" />
+      <RootProperty Name="Transitions" />
+      <RootProperty Name="Background" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Controls.AdaptiveGridView">
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="ItemTemplateSelector" />
+      <RootProperty Name="ItemContainerStyleSelector" />
+      <RootProperty Name="DesiredWidth" />
+      <RootProperty Name="ItemHeight" />
+      <RootProperty Name="StretchContentForSingleRow" />
+      <RootProperty Name="OneRowModeEnabled" />
+      <RootProperty Name="IsItemClickEnabled" />
+      <RootProperty Name="IsSynchronizedWithCurrentItem" />
+      <RootProperty Name="SelectionMode" />
+      <RootProperty Name="ItemClickCommand" />
+      <RootProperty Name="ContextFlyout" />
+      <RootProperty Name="ItemContainerTransitions" />
+      <RootProperty Name="ItemContainerStyle" />
+      <RootProperty Name="IsMultiSelectCheckBoxEnabled" />
+      <RootProperty Name="IsTabStop" />
+      <RootProperty Name="XYFocusUp" />
+      <RootProperty Name="SelectedItem" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="XYFocusDownNavigationStrategy" />
+      <RootProperty Name="Header" />
+      <RootProperty Name="GroupStyle" />
+      <RootEvent Name="SelectionChanged" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactivity.Interaction">
+      <RootMethod Name="GetBehaviors" />
+      <RootMethod Name="SetBehaviors" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.DirectUI.ProxyTypes.BindExtension">
+      <RootProperty Name="Mode" />
+      <RootProperty Name="Converter" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.DirectUI.ProxyTypes.StaticResourceExtension">
+      <RootProperty Name="ResourceKey" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.Animation.TransitionCollection" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Behaviors.ListViewBaseFirstAppearTriggerBehavior">
+      <RootProperty Name="Actions" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactions.Core.CallMethodAction">
+      <RootProperty Name="MethodName" />
+      <RootProperty Name="TargetObject" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.AdaptiveTrigger">
+      <RootProperty Name="MinWindowWidth" />
+    </RootType>
+    <RootType FullName="WindowsStateTriggers.DeviceFamilyStateTrigger">
+      <RootProperty Name="DeviceFamily" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.StateTrigger">
+      <RootProperty Name="IsActive" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.AlbamListupPage" />
+    <RootType FullName="Windows.UI.Xaml.Controls.ContentDialog">
+      <RootProperty Name="CloseButtonText" />
+      <RootProperty Name="Title" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="PrimaryButtonText" />
+      <RootProperty Name="SecondaryButtonText" />
+    </RootType>
+    <RootType FullName="I18NPortable.Xaml.Extensions.LocalizeExtension">
+      <RootProperty Name="Key" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Controls.DockPanel">
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="Children" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Visibility" />
+      <RootMethod Name="GetDock" />
+      <RootMethod Name="SetDock" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Button">
+      <RootProperty Name="Content" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Command" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="Flyout" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="MinHeight" />
+      <RootProperty Name="MinWidth" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="IsTabStop" />
+      <RootProperty Name="KeyboardAccelerators" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Style" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="VerticalContentAlignment" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="KeyboardAcceleratorPlacementMode" />
+      <RootProperty Name="IsEnabled" />
+      <RootProperty Name="CommandParameter" />
+      <RootProperty Name="XYFocusRight" />
+      <RootProperty Name="Tag" />
+      <RootProperty Name="MaxWidth" />
+      <RootProperty Name="RenderTransform" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="Foreground" />
+      <RootProperty Name="XYFocusLeft" />
+      <RootEvent Name="Click" />
+      <RootEvent Name="PointerEntered" />
+      <RootEvent Name="PointerExited" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.TextBlock">
+      <RootProperty Name="Text" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Inlines" />
+      <RootProperty Name="Style" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="TextTrimming" />
+      <RootProperty Name="TextWrapping" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="FontSize" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="MaxLines" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="MaxWidth" />
+      <RootProperty Name="HorizontalTextAlignment" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="TextAlignment" />
+      <RootProperty Name="RenderTransform" />
+      <RootProperty Name="IsTextSelectionEnabled" />
+      <RootProperty Name="ContextFlyout" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ListView">
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="SelectionMode" />
+      <RootProperty Name="IsMultiSelectCheckBoxEnabled" />
+      <RootProperty Name="DisplayMemberPath" />
+      <RootProperty Name="SingleSelectionFollowsFocus" />
+      <RootProperty Name="AllowFocusOnInteraction" />
+      <RootProperty Name="ItemContainerTransitions" />
+      <RootProperty Name="SelectedItem" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="Header" />
+      <RootProperty Name="ItemTemplate" />
+      <RootProperty Name="ItemTemplateSelector" />
+      <RootProperty Name="XYFocusLeft" />
+      <RootProperty Name="ItemContainerStyle" />
+      <RootProperty Name="ItemsPanel" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.FrameworkElementExtensions">
+      <RootMethod Name="GetEnableActualSizeBinding" />
+      <RootMethod Name="SetEnableActualSizeBinding" />
+      <RootMethod Name="GetActualHeight" />
+      <RootMethod Name="SetActualHeight" />
+      <RootMethod Name="GetActualWidth" />
+      <RootMethod Name="SetActualWidth" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Dialogs.SelectItemDialog" />
+    <RootType FullName="Windows.UI.Xaml.Controls.Primitives.ToggleButton">
+      <RootProperty Name="Content" />
+      <RootProperty Name="Style" />
+      <RootProperty Name="IsChecked" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Translation" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="Command" />
+      <RootEvent Name="Tapped" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Dialogs.StorageItemDeleteConfirmDialog" />
+    <RootType FullName="Windows.UI.Xaml.Controls.TextBox">
+      <RootProperty Name="KeyboardAccelerators" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Input.KeyboardAccelerator">
+      <RootProperty Name="Key" />
+      <RootProperty Name="IsEnabled" />
+      <RootEvent Name="Invoked" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Dialogs.TextInputDialog" />
+    <RootType FullName="Windows.UI.Xaml.Controls.UserControl">
+      <RootProperty Name="Content" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.WebView">
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="IsTapEnabled" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="IsAccessKeyScope" />
+      <RootProperty Name="AllowFocusOnInteraction" />
+      <RootProperty Name="DefaultBackgroundColor" />
+      <RootEvent Name="WebResourceRequested" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.EBookControls.EPubRenderer">
+      <RootProperty Name="PageHtml" />
+      <RootProperty Name="FirstApproachingPageIndex" />
+      <RootProperty Name="IsTapEnabled" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="IsAccessKeyScope" />
+      <RootProperty Name="AllowFocusOnInteraction" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="PageBackgroundColor" />
+      <RootProperty Name="FontColor" />
+      <RootProperty Name="FontSize" />
+      <RootProperty Name="LetterSpacingInPixel" />
+      <RootProperty Name="LineHeightInNoUnit" />
+      <RootProperty Name="RubyFontSizeInPixel" />
+      <RootProperty Name="ContentsFontFamily" />
+      <RootProperty Name="RubyFontFamily" />
+      <RootProperty Name="OverrideWritingMode" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.DataTemplate">
+      <RootProperty Name="Template" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Flyout">
+      <RootProperty Name="AllowFocusOnInteraction" />
+      <RootProperty Name="Placement" />
+      <RootProperty Name="Content" />
+      <RootEvent Name="Opening" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ScrollViewer">
+      <RootProperty Name="Padding" />
+      <RootProperty Name="XYFocusUp" />
+      <RootProperty Name="Content" />
+      <RootMethod Name="GetIsVerticalScrollChainingEnabled" />
+      <RootMethod Name="SetIsVerticalScrollChainingEnabled" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.MenuFlyout">
+      <RootProperty Name="Items" />
+      <RootProperty Name="Placement" />
+      <RootEvent Name="Opened" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.MenuFlyoutItem">
+      <RootProperty Name="Text" />
+      <RootProperty Name="Command" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="KeyboardAccelerators" />
+      <RootProperty Name="CommandParameter" />
+      <RootProperty Name="IsEnabled" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.StackPanel">
+      <RootProperty Name="Spacing" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Children" />
+      <RootProperty Name="Orientation" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="CornerRadius" />
+      <RootProperty Name="Translation" />
+      <RootProperty Name="Shadow" />
+      <RootProperty Name="Resources" />
+      <RootProperty Name="Width" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ComboBox">
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="SelectedItem" />
+      <RootProperty Name="Header" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="ItemTemplate" />
+      <RootProperty Name="SelectionChangedTrigger" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="SelectedValue" />
+      <RootProperty Name="DisplayMemberPath" />
+      <RootProperty Name="SelectedValuePath" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ToolTipService">
+      <RootMethod Name="GetPlacement" />
+      <RootMethod Name="SetPlacement" />
+      <RootMethod Name="GetToolTip" />
+      <RootMethod Name="SetToolTip" />
+      <RootMethod Name="GetPlacementTarget" />
+      <RootMethod Name="SetPlacementTarget" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Border">
+      <RootProperty Name="BorderBrush" />
+      <RootProperty Name="BorderThickness" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Child" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="Opacity" />
+      <RootProperty Name="CornerRadius" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="MinWidth" />
+      <RootProperty Name="MaxWidth" />
+      <RootProperty Name="Translation" />
+      <RootProperty Name="Shadow" />
+      <RootProperty Name="IsHitTestVisible" />
+      <RootProperty Name="KeyboardAcceleratorPlacementMode" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ColorPicker">
+      <RootProperty Name="Color" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ToolTip">
+      <RootProperty Name="Content" />
+      <RootProperty Name="PlacementRect" />
+      <RootProperty Name="Placement" />
+      <RootProperty Name="VerticalOffset" />
+      <RootProperty Name="PlacementTarget" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Documents.Run">
+      <RootProperty Name="Text" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Behaviors.MouseWheelTrigger">
+      <RootProperty Name="UpActions" />
+      <RootProperty Name="DownActions" />
+      <RootProperty Name="IsEnabled" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Behaviors.MouseCenterClickTrigger">
+      <RootProperty Name="CenterClickActions" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Behaviors.PointerCursolAutoHideBehavior">
+      <RootProperty Name="IsAutoHideEnabled" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.UINavigation.UINavigationTriggerBehavior">
+      <RootProperty Name="Kind" />
+      <RootProperty Name="IsRequireFocus" />
+      <RootProperty Name="Actions" />
+      <RootProperty Name="IsEnabled" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactions.Core.InvokeCommandAction">
+      <RootProperty Name="Command" />
+      <RootProperty Name="InputConverter" />
+      <RootProperty Name="CommandParameter" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Animations.Implicit">
+      <RootMethod Name="GetShowAnimations" />
+      <RootMethod Name="SetShowAnimations" />
+      <RootMethod Name="GetHideAnimations" />
+      <RootMethod Name="SetHideAnimations" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Animations.TranslationAnimation">
+      <RootProperty Name="To" />
+      <RootProperty Name="Duration" />
+      <RootProperty Name="EasingType" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ContentControl">
+      <RootProperty Name="IsTabStop" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="ContentTemplateSelector" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="UseLayoutRounding" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Opacity" />
+      <RootEvent Name="Tapped" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Image">
+      <RootProperty Name="Source" />
+      <RootProperty Name="MaxHeight" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Stretch" />
+      <RootProperty Name="Style" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.SymbolIcon">
+      <RootProperty Name="Symbol" />
+      <RootProperty Name="RenderTransform" />
+      <RootProperty Name="Foreground" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="RenderTransformOrigin" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.ScaleTransform">
+      <RootProperty Name="ScaleX" />
+      <RootProperty Name="ScaleY" />
+      <RootProperty Name="CenterX" />
+      <RootProperty Name="CenterY" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactions.Core.EventTriggerBehavior">
+      <RootProperty Name="EventName" />
+      <RootProperty Name="Actions" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Animations.OpacityAnimation">
+      <RootProperty Name="To" />
+      <RootProperty Name="Duration" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactions.Core.DataTriggerBehavior">
+      <RootProperty Name="Binding" />
+      <RootProperty Name="Value" />
+      <RootProperty Name="ComparisonCondition" />
+      <RootProperty Name="Actions" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.DirectUI.ProxyTypes.NullExtension" />
+    <RootType FullName="WindowsStateTriggers.UserInteractionModeTrigger">
+      <RootProperty Name="InteractionMode" />
+    </RootType>
+    <RootType FullName="WindowsStateTriggers.EqualsStateTrigger">
+      <RootProperty Name="Value" />
+      <RootProperty Name="EqualTo" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Visibility" />
+    <RootType FullName="WindowsStateTriggers.FullScreenModeTrigger">
+      <RootProperty Name="IsFullScreen" />
+    </RootType>
+    <RootType FullName="WindowsStateTriggers.CompositeStateTrigger">
+      <RootProperty Name="Operator" />
+      <RootProperty Name="StateTriggers" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.StateTrigger.PointerCollisionTrigger">
+      <RootProperty Name="Target" />
+      <RootProperty Name="CollisionRect" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.EBookReaderPage" />
+    <RootType FullName="Windows.UI.Xaml.Controls.MenuFlyoutSubItem">
+      <RootProperty Name="Text" />
+      <RootProperty Name="Items" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.MenuFlyoutSeparator" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.ScrollViewerExtensions">
+      <RootMethod Name="GetVerticalScrollBarMargin" />
+      <RootMethod Name="SetVerticalScrollBarMargin" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.UINavigation.BypassToCurrentFocusElementDataContextAction">
+      <RootProperty Name="Actions" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.DropDownButton">
+      <RootProperty Name="Content" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="Flyout" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="Margin" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Models.Domain.FolderItemListing.FileSortType" />
+    <RootType FullName="Windows.UI.Xaml.Controls.CommandBar">
+      <RootProperty Name="DefaultLabelPosition" />
+      <RootProperty Name="VerticalContentAlignment" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="PrimaryCommands" />
+      <RootProperty Name="Background" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="SecondaryCommands" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.AppBarButton">
+      <RootProperty Name="Label" />
+      <RootProperty Name="Command" />
+      <RootProperty Name="CommandParameter" />
+      <RootProperty Name="Icon" />
+      <RootProperty Name="KeyboardAccelerators" />
+      <RootProperty Name="Visibility" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.AppBarElementContainer">
+      <RootProperty Name="VerticalContentAlignment" />
+      <RootProperty Name="IsTabStop" />
+      <RootProperty Name="Content" />
+    </RootType>
+    <RootType FullName="Fluent.Icons.FluentIconElement">
+      <RootProperty Name="Symbol" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.FolderListupPage" />
+    <RootType FullName="Windows.UI.Xaml.Controls.ProgressBar">
+      <RootProperty Name="Value" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="Style" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Primitives.RangeBase">
+      <RootProperty Name="Minimum" />
+      <RootProperty Name="Maximum" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.FolderListup.StorageItemIconTemplateSelector">
+      <RootProperty Name="ImageIcon" />
+      <RootProperty Name="FolderIcon" />
+      <RootProperty Name="ArchiveIcon" />
+      <RootProperty Name="ArchiveFolderIcon" />
+      <RootProperty Name="AlbamIcon" />
+      <RootProperty Name="AlbamImageIcon" />
+      <RootProperty Name="EBookIcon" />
+      <RootProperty Name="AddFolderIcon" />
+      <RootProperty Name="AddAlbamIcon" />
+      <RootProperty Name="FavoriteIcon" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.TemplateSelector.FolderItemTemplateSelector">
+      <RootProperty Name="Folder" />
+      <RootProperty Name="AddNewFolder" />
+      <RootProperty Name="Archive" />
+      <RootProperty Name="ArchiveFolder" />
+      <RootProperty Name="Albam" />
+      <RootProperty Name="AlbamImage" />
+      <RootProperty Name="Image" />
+      <RootProperty Name="EBook" />
+    </RootType>
+    <RootType FullName="System.Double" />
+    <RootType FullName="Windows.UI.Xaml.Controls.GridViewItem" />
+    <RootType FullName="TsubameViewer.Presentation.Views.StyleSelector.FolderItemStyleSelector">
+      <RootProperty Name="AddNewFolder" />
+      <RootProperty Name="Folder" />
+      <RootProperty Name="Image" />
+      <RootProperty Name="Archive" />
+      <RootProperty Name="Albam" />
+      <RootProperty Name="AlbamImage" />
+      <RootProperty Name="EBook" />
+    </RootType>
+    <RootType FullName="Fluent.Icons.FluentSymbolIcon">
+      <RootProperty Name="Symbol" />
+      <RootProperty Name="RenderTransform" />
+      <RootProperty Name="Foreground" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.PointToRectConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.ImageItemWidthConverter" />
+    <RootType FullName="TsubameViewer.Presentation.Views.TemplateSelector.FileDisplayModeTemplateSelector">
+      <RootProperty Name="Line" />
+      <RootProperty Name="Small" />
+      <RootProperty Name="Midium" />
+      <RootProperty Name="Large" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Canvas">
+      <RootMethod Name="GetLeft" />
+      <RootMethod Name="SetLeft" />
+      <RootMethod Name="GetTop" />
+      <RootMethod Name="SetTop" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.StateTrigger.PointerInsideTrigger">
+      <RootProperty Name="Target" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Media.ThemeShadow" />
+    <RootType FullName="Microsoft.UI.Xaml.Controls.ItemsRepeater">
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="ItemTemplate" />
+      <RootProperty Name="Visibility" />
+      <RootProperty Name="DataContext" />
+      <RootProperty Name="Layout" />
+      <RootProperty Name="FocusVisualSecondaryBrush" />
+      <RootProperty Name="VerticalCacheLength" />
+      <RootProperty Name="HorizontalCacheLength" />
+      <RootProperty Name="RenderTransform" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Controls.WrapLayout">
+      <RootProperty Name="Orientation" />
+      <RootProperty Name="HorizontalSpacing" />
+      <RootProperty Name="VerticalSpacing" />
+    </RootType>
+    <RootType FullName="Microsoft.UI.Xaml.Controls.FlowLayout">
+      <RootProperty Name="Orientation" />
+      <RootProperty Name="MinRowSpacing" />
+      <RootProperty Name="MinColumnSpacing" />
+      <RootProperty Name="LineAlignment" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ListViewItem" />
+    <RootType FullName="Windows.UI.Xaml.Controls.ItemsPanelTemplate">
+      <RootProperty Name="Template" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ItemsStackPanel">
+      <RootProperty Name="Orientation" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Controls.WrapPanel">
+      <RootProperty Name="Orientation" />
+      <RootProperty Name="Children" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Models.Domain.FolderItemListing.FileDisplayMode" />
+    <RootType FullName="TsubameViewer.Presentation.Views.ImageListupPage" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.SliderValueChangedEventArgsConverter" />
+    <RootType FullName="Windows.UI.Xaml.Input.XamlUICommand">
+      <RootProperty Name="Command" />
+      <RootProperty Name="Label" />
+      <RootProperty Name="IconSource" />
+      <RootProperty Name="KeyboardAccelerators" />
+      <RootProperty Name="Description" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.SymbolIconSource">
+      <RootProperty Name="Symbol" />
+    </RootType>
+    <RootType FullName="Fluent.Icons.FluentIconSource">
+      <RootProperty Name="Symbol" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Documents.LineBreak" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Animations.Explicit">
+      <RootMethod Name="GetAnimations" />
+      <RootMethod Name="SetAnimations" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Animations.AnimationSet" />
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Behaviors.StartAnimationAction">
+      <RootProperty Name="Animation" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.Slider">
+      <RootProperty Name="Value" />
+      <RootProperty Name="Minimum" />
+      <RootProperty Name="Maximum" />
+      <RootProperty Name="ThumbToolTipValueConverter" />
+      <RootProperty Name="TickFrequency" />
+      <RootProperty Name="StepFrequency" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="XYFocusDown" />
+    </RootType>
+    <RootType FullName="Microsoft.UI.Xaml.Controls.DropDownButton">
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="Flyout" />
+    </RootType>
+    <RootType FullName="Microsoft.Xaml.Interactions.Core.ChangePropertyAction">
+      <RootProperty Name="TargetObject" />
+      <RootProperty Name="PropertyName" />
+      <RootProperty Name="Value" />
+    </RootType>
+    <RootType FullName="WindowsStateTriggers.CompareStateTrigger">
+      <RootProperty Name="Value" />
+      <RootProperty Name="CompareTo" />
+      <RootProperty Name="Comparison" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.StateTrigger.VirualKeyPressingTrigger">
+      <RootProperty Name="Key" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.Behaviors.DependencyObjectExtensions">
+      <RootMethod Name="GetDisposeOnUnloadedTarget" />
+      <RootMethod Name="SetDisposeOnUnloadedTarget" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.ImageViewerPage" />
+    <RootType FullName="TsubameViewer.Presentation.Views.Converters.AutoSuggestBoxQuerySubmittedEventArgsConverter" />
+    <RootType FullName="Windows.UI.Xaml.Data.CollectionViewSource">
+      <RootProperty Name="Source" />
+      <RootProperty Name="IsSourceGrouped" />
+      <RootProperty Name="ItemsPath" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.TemplateSelector.MenuItemTemplateSelector">
+      <RootProperty Name="MenuSeparator" />
+      <RootProperty Name="MenuItem" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Thickness" />
+    <RootType FullName="Microsoft.UI.Xaml.Controls.NavigationView">
+      <RootProperty Name="MenuItemsSource" />
+      <RootProperty Name="PaneDisplayMode" />
+      <RootProperty Name="IsBackButtonVisible" />
+      <RootProperty Name="IsSettingsVisible" />
+      <RootProperty Name="XYFocusDownNavigationStrategy" />
+      <RootProperty Name="SelectionFollowsFocus" />
+      <RootProperty Name="PaneHeader" />
+      <RootProperty Name="MenuItemTemplate" />
+      <RootProperty Name="AutoSuggestBox" />
+      <RootProperty Name="PaneFooter" />
+      <RootProperty Name="Content" />
+    </RootType>
+    <RootType FullName="Microsoft.UI.Xaml.Controls.ProgressRing">
+      <RootProperty Name="IsActive" />
+      <RootProperty Name="IsIndeterminate" />
+      <RootProperty Name="Height" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="HorizontalAlignment" />
+    </RootType>
+    <RootType FullName="Microsoft.UI.Xaml.Controls.NavigationViewItem">
+      <RootProperty Name="Content" />
+      <RootProperty Name="DataContext" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.AutoSuggestBox">
+      <RootProperty Name="PlaceholderText" />
+      <RootProperty Name="QueryIcon" />
+      <RootProperty Name="VerticalAlignment" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="Padding" />
+      <RootProperty Name="Width" />
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="TextMemberPath" />
+      <RootProperty Name="UpdateTextOnSelect" />
+      <RootProperty Name="AutoMaximizeSuggestionArea" />
+      <RootProperty Name="IsSuggestionListOpen" />
+      <RootProperty Name="IsFocusEngagementEnabled" />
+      <RootProperty Name="UseSystemFocusVisuals" />
+      <RootProperty Name="FocusVisualSecondaryBrush" />
+      <RootProperty Name="ItemTemplate" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.AppBarSeparator" />
+    <RootType FullName="Windows.UI.Xaml.Controls.Frame">
+      <RootProperty Name="DataContext" />
+      <RootProperty Name="CacheSize" />
+      <RootProperty Name="XYFocusDownNavigationStrategy" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.PrimaryWindowCoreLayout" />
+    <RootType FullName="TsubameViewer.Presentation.Views.SearchResultPage" />
+    <RootType FullName="TsubameViewer.Presentation.Views.TemplateSelector.SettingsItemTemplateSelector">
+      <RootProperty Name="ToggleSwitchSettingItem" />
+      <RootProperty Name="StoredFoldersSettingItem" />
+      <RootProperty Name="UpdatableTextSettingItem" />
+      <RootProperty Name="ButtonSettingItem" />
+      <RootProperty Name="ThemeSelectSettingItem" />
+      <RootProperty Name="LocaleSelectSettingItem" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ItemsControl">
+      <RootProperty Name="ItemsSource" />
+      <RootProperty Name="ItemTemplateSelector" />
+      <RootProperty Name="HorizontalAlignment" />
+      <RootProperty Name="IsTabStop" />
+      <RootProperty Name="ItemsPanel" />
+      <RootProperty Name="ItemTemplate" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="MaxWidth" />
+    </RootType>
+    <RootType FullName="Microsoft.Toolkit.Uwp.UI.Controls.Expander">
+      <RootProperty Name="Header" />
+      <RootProperty Name="Content" />
+      <RootProperty Name="Margin" />
+      <RootProperty Name="Visibility" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.HyperlinkButton">
+      <RootProperty Name="Content" />
+      <RootProperty Name="NavigateUri" />
+      <RootProperty Name="HorizontalContentAlignment" />
+      <RootProperty Name="FontWeight" />
+      <RootProperty Name="Width" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.ToggleMenuFlyoutItem">
+      <RootProperty Name="Text" />
+      <RootProperty Name="IsChecked" />
+    </RootType>
+    <RootType FullName="TsubameViewer.Presentation.Views.SettingsPage" />
+    <RootType FullName="Windows.UI.Xaml.Controls.GroupStyle">
+      <RootProperty Name="HidesIfEmpty" />
+      <RootProperty Name="HeaderTemplate" />
+      <RootProperty Name="HeaderContainerStyle" />
+    </RootType>
+    <RootType FullName="Windows.UI.Xaml.Controls.GridViewHeaderItem" />
+    <RootType FullName="TsubameViewer.Presentation.Views.SourceStorageItemsPage" />
+  </Roots.RootTypes>
+</Roots>

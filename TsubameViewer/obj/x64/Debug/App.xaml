@@ -1,0 +1,91 @@
+﻿<prism:PrismApplication
+    x:Class="TsubameViewer.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:win="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:local="using:TsubameViewer"
+  xmlns:prism="using:Prism.DryIoc" 
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
+  xmlns:locale="using:TsubameViewer.Locales" 
+  xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
+  xmlns:ss="using:TsubameViewer.Presentation.Views.StyleSelector"
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
+  xmlns:folderListup="using:TsubameViewer.Presentation.Views.FolderListup"
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:myFlyouts="using:TsubameViewer.Presentation.Views.Flyouts"
+  xmlns:fi="using:Fluent.Icons"
+  >
+
+  <prism:PrismApplication.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+        <folderListup:FolderListupItemTemplate />
+        <ResourceDictionary Source="Presentation.Styles/SettingsControlStyles.xaml"/>
+      </ResourceDictionary.MergedDictionaries>
+
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="ApplicationHeaderBackgroundBrush" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="ApplicationContentBackgroundBrush" Color="{ThemeResource SystemChromeMediumLowColor}" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+
+      <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
+
+
+      <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" IsRootPage="False" />
+      <myFlyouts:StorageItemMenuFlyout x:Key="RootPageStorageItemMenuFlyout" IsRootPage="True" />
+
+      <locale:LocalizeConverter x:Key="LocalizeConverter" />
+      <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
+
+      <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
+      <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
+      <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
+      <myConv:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
+
+      <uwpConv:BoolNegationConverter x:Key="BoolNegationConverter" />
+      <uwpConv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+      <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
+        <uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
+        <uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyCollectionToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyCollectionToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringNotEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToBooleanConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <myConv:ColorToBrush x:Key="ColorToBrush" />
+      <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />
+      <myConv:NullableColorConverter x:Key="NullableColorConverter" />
+      <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
+      <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
+      
+    </ResourceDictionary>
+  </prism:PrismApplication.Resources>
+</prism:PrismApplication>
+

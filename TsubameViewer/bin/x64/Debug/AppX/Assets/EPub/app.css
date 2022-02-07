@@ -1,0 +1,10 @@
+﻿img {
+    max-height: 100vh !important;
+    margin-left: 32px !important;
+    margin-right: 32px !important;
+
+    display: block !important;
+    break-before: always !important;
+    break-after: always !important;
+    break-inside: avoid !important;
+}

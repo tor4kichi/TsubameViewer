@@ -1,0 +1,42 @@
+﻿<ContentDialog x:ConnectionId='1'
+  x:Name="MyDialog"
+  x:Class="TsubameViewer.Presentation.Views.Dialogs.SelectItemDialog"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:local="using:TsubameViewer.Presentation.Views.Dialogs"
+  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  mc:Ignorable="d"
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions" 
+  CloseButtonText="{i18nExt:Localize Key=Cancel}" 
+  xmlns:toolkitUI="using:Microsoft.Toolkit.Uwp.UI"
+  >
+  <ContentDialog.Title>
+    <uwpControls:DockPanel x:ConnectionId='2' HorizontalAlignment="Stretch"                                                                                            >
+      <Button x:ConnectionId='3' x:Name="OptionButton"
+                                                          
+                uwpControls:DockPanel.Dock="Right"
+                />
+
+      <TextBlock Text="{Binding ElementName=MyDialog, Path=DialogTitle}" />
+    </uwpControls:DockPanel>
+  </ContentDialog.Title>
+  <Grid>
+    <ListView x:ConnectionId='4' 
+      x:Name="MyListView"
+                                                     
+      SelectionMode="Multiple" 
+      IsMultiSelectCheckBoxEnabled="True"
+                                                                 
+      SingleSelectionFollowsFocus="False"
+      AllowFocusOnInteraction="True"
+      toolkitUI:FrameworkElementExtensions.EnableActualSizeBinding="True"
+      >
+      <ListView.ItemContainerTransitions>
+        <TransitionCollection />
+      </ListView.ItemContainerTransitions>
+    </ListView>
+  </Grid>
+</ContentDialog>
+

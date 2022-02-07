@@ -1,0 +1,886 @@
+﻿<Page
+    x:Class="TsubameViewer.Presentation.Views.ImageListupPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationContentBackgroundBrush}"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  xmlns:ts="using:TsubameViewer.Presentation.Views.TemplateSelector" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:i="using:Microsoft.Xaml.Interactivity" 
+  xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
+  xmlns:myBehaior="using:TsubameViewer.Presentation.Views.Behaviors" 
+  xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:models ="using:TsubameViewer.Models.Domain.FolderItemListing" 
+  xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
+  xmlns:vm="using:TsubameViewer.Presentation.ViewModels.PageNavigation" 
+  xmlns:uwpConv="using:Microsoft.Toolkit.Uwp.UI.Converters" 
+  xmlns:myConv="using:TsubameViewer.Presentation.Views.Converters" 
+  xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
+  xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations" 
+  xmlns:myTrigger="using:TsubameViewer.Presentation.Views.StateTrigger"
+  xmlns:fluentIcon="using:Fluent.Icons"
+  NavigationCacheMode="Enabled"
+  x:Name="PageRoot"
+  >
+  
+
+  <!-- NavigaitonCacheMode = Enabled にすると
+    ItemsRepeaterの中身が残る？ためキャッシュは利用していない
+  -->
+
+  <!-- ItemsRepeaterのメモリリークの修正
+  https://github.com/microsoft/microsoft-ui-xaml/issues/1954
+  -->
+
+  <!-- SmallImageWidth 等の定数はApp.xaml.csで設定している -->
+  <!-- その定数自体は Models.Domain/FolderItemListing/ListingImageConstants.cs で定義している -->
+
+
+
+  <Page.Resources>
+
+    <myConv:PointToRectConverter x:Key="PointToRectConverter" />
+
+    <local:ImageItemWidthConverter x:Key="ImageItemWidthConverter" />
+    
+    <!-- Note: KeyboardNavigaiton(リモートやXboxOneなど）のために
+               UserControlによるカーソル移動サポートを有効化している -->
+    <Style x:Key="ImageItemBorderStyle" TargetType="Border">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{ThemeResource SystemChromeDisabledHighColor}" />
+      <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+    </Style>
+
+    <Style x:Key="ImageItemSelectionToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonRevealStyle}">
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Width" Value="24" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="IsTabStop" Value="False" />
+      <Setter Property="Background" Value="{ThemeResource ApplicationSecondaryForegroundThemeBrush}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource ApplicationContentBackgroundBrush}" />
+      <Setter Property="ToggleButton.Shadow">
+        <Setter.Value>
+          <ThemeShadow />
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="ApplicationSecondaryForegroundThemeBrush"  />
+    <StaticResource x:Key="ToggleButtonBorderBrushPointerOver" ResourceKey="ApplicationContentBackgroundBrush"  />
+
+    <Style x:Key="ImageItemButtonStyle" TargetType="Button">
+      <Setter Property="IsTabStop" Value="True" />
+      <Setter Property="UseSystemFocusVisuals" Value="True" />
+      <Setter Property="ContextFlyout" Value="{StaticResource StorageItemMenuFlyout}" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{ThemeResource SystemChromeDisabledHighColor}" />
+      <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+      <Setter Property="FocusVisualPrimaryBrush" Value="{ThemeResource SystemAccentColor}" />
+      <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+      <Setter Property="Padding" Value="0" />
+
+    </Style>
+
+    <TranslateTransform x:Key="IconOffsetTransform" Y="1" X="1" />
+    
+    <DataTemplate x:Key="FileItemTemplate_Line" x:DataType="vm:StorageItemViewModel">
+      <UserControl x:Name="ItemControl">
+
+        <i:Interaction.Behaviors>
+          <uiNavigation:UINavigationTriggerBehavior Kind="Context1" IsRequireFocus="True">
+            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+          </uiNavigation:UINavigationTriggerBehavior>
+        </i:Interaction.Behaviors>
+
+        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="40" Width="240"
+              HorizontalContentAlignment="Left"
+              Click="ImageListItem_Clicked"
+              >
+          <ToolTipService.ToolTip>
+            <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+          </ToolTipService.ToolTip>
+
+          <Grid>
+
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Right">
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
+
+            <uwpControls:DockPanel Margin="4 0">
+              <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped"
+                        uwpControls:DockPanel.Dock="Left"
+                        />
+              <StackPanel HorizontalAlignment="Stretch" Margin="4 0 0 0">
+                <TextBlock Text="{Binding Name}" TextAlignment="Start" HorizontalAlignment="Stretch" MaxLines="2" TextWrapping="Wrap" FontSize="13" />
+              </StackPanel>
+            </uwpControls:DockPanel>
+          </Grid>
+
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+              <VisualState x:Name="VS_ToggleButtonCollapsed" />
+              <VisualState x:Name="VS_ToggleButtonVisible" />
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsSelected}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
+                  <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Button>
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Small" x:DataType="vm:StorageItemViewModel">
+      <UserControl x:Name="ItemControl">
+
+        <i:Interaction.Behaviors>
+          <uiNavigation:UINavigationTriggerBehavior Kind="Context1" IsRequireFocus="True">
+            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+          </uiNavigation:UINavigationTriggerBehavior>
+        </i:Interaction.Behaviors>
+
+        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="{StaticResource SmallImageHeight}" MinWidth="48" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource SmallImageHeight}, Mode=OneWay}"
+              Click="ImageListItem_Clicked" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited"
+              >
+          
+          <ToolTipService.ToolTip>
+            <ToolTip PlacementRect="{StaticResource SmallImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+              <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+          <Grid>
+            <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}"  Stretch="UniformToFill" />
+            <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                          Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
+                          Visibility="Collapsed" 
+                        >
+            </ToggleButton>
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
+          </Grid>
+          
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+              <VisualState x:Name="VS_ToggleButtonCollapsed" />
+              <VisualState x:Name="VS_ToggleButtonVisible">
+                <VisualState.StateTriggers>
+                  <myTrigger:PointerInsideTrigger Target="{Binding ElementName=MyButton}" />
+                  <StateTrigger IsActive="{Binding Selection.IsSelectionModeEnabled}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="SelectionToggleButton.Visibility" Value="Visible" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsSelected}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
+                  <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+
+        </Button>
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Midium" x:DataType="vm:StorageItemViewModel">
+      <UserControl x:Name="ItemControl">
+
+        <i:Interaction.Behaviors>
+          <uiNavigation:UINavigationTriggerBehavior Kind="Context1" IsRequireFocus="True">
+            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+          </uiNavigation:UINavigationTriggerBehavior>
+        </i:Interaction.Behaviors>
+
+        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}"
+              Click="ImageListItem_Clicked" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited"
+              >
+          <ToolTipService.ToolTip>
+            <ToolTip PlacementRect="{StaticResource MidiumImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+              <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+          <Grid>
+            <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Stretch="UniformToFill" />
+            <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                          Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
+                          Visibility="Collapsed" 
+                        >
+            </ToggleButton>
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
+          </Grid>
+          
+
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+              <VisualState x:Name="VS_ToggleButtonCollapsed" />
+              <VisualState x:Name="VS_ToggleButtonVisible">
+                <VisualState.StateTriggers>
+                  <myTrigger:PointerInsideTrigger Target="{Binding ElementName=MyButton}" />
+                  <StateTrigger IsActive="{Binding Selection.IsSelectionModeEnabled}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="SelectionToggleButton.Visibility" Value="Visible" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsSelected}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
+                  <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Button>
+      </UserControl>
+    </DataTemplate>
+
+    <DataTemplate x:Key="FileItemTemplate_Large" x:DataType="vm:StorageItemViewModel">
+      <UserControl x:Name="ItemControl">
+
+        <i:Interaction.Behaviors>
+          <uiNavigation:UINavigationTriggerBehavior Kind="Context1" IsRequireFocus="True">
+            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+              <core:InvokeCommandAction Command="{Binding ElementName=PageRoot, Path=SelectionChangeCommand}" />
+            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+          </uiNavigation:UINavigationTriggerBehavior>
+        </i:Interaction.Behaviors>
+
+        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
+              Click="ImageListItem_Clicked" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited"
+              >
+          <ToolTipService.ToolTip>
+            <ToolTip PlacementRect="{StaticResource LargeImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
+              <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+          <Grid>
+            <Image x:Name="Image" Source="{Binding Image, Mode=OneWay}" Stretch="UniformToFill" />
+            <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" 
+                          Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
+                          Visibility="Collapsed" 
+                        >
+            </ToggleButton>
+            <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+              <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
+              <SymbolIcon Symbol="Favorite" />
+            </Grid>
+          </Grid>
+          
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+              <VisualState x:Name="VS_ToggleButtonCollapsed" />
+              <VisualState x:Name="VS_ToggleButtonVisible">
+                <VisualState.StateTriggers>
+                  <myTrigger:PointerInsideTrigger Target="{Binding ElementName=MyButton}" />
+                  <StateTrigger IsActive="{Binding Selection.IsSelectionModeEnabled}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="SelectionToggleButton.Visibility" Value="Visible" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsSelected}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="MyButton.BorderBrush" Value="{ThemeResource SystemAccentColorLight1}" />
+                  <Setter Target="MyButton.BorderThickness" Value="2" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup>
+              <VisualState>
+                <VisualState.StateTriggers>
+                  <StateTrigger IsActive="{Binding IsFavorite}" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                  <Setter Target="FavoriteIcon.Opacity" Value="1.0" />
+                </VisualState.Setters>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Button>
+      </UserControl>
+      
+    </DataTemplate>
+
+
+    <ts:FileDisplayModeTemplateSelector x:Key="FileDisplayModeTemplateSelector">
+      <ts:FileDisplayModeTemplateSelector.Line>
+        <DataTemplate>
+          <Grid Height="13" Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    VerticalAlignment="Top"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                  VerticalAlignment="Bottom"
+                  />
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Line>
+      <ts:FileDisplayModeTemplateSelector.Small>
+        <DataTemplate >
+          <Grid Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="5"
+                    Canvas.Left="2"
+                    
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="5" Width="13"
+                    Canvas.Top="2"
+                  />
+
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Small>
+      <ts:FileDisplayModeTemplateSelector.Midium>
+        <DataTemplate >
+          <Grid Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Margin="4 0 0 0"
+                  />
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="7" Width="7"
+                  HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0 0 3 0"
+                  />
+          </Grid>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Midium>
+      <ts:FileDisplayModeTemplateSelector.Large>
+        <DataTemplate >
+          <Border Width="20">
+            <Border BorderBrush="{ThemeResource ApplicationForegroundThemeBrush}" BorderThickness="1" 
+                  Height="13" Width="13"
+                  />
+          </Border>
+        </DataTemplate>
+      </ts:FileDisplayModeTemplateSelector.Large>
+    </ts:FileDisplayModeTemplateSelector>
+
+  </Page.Resources>
+  
+  
+  
+  <Grid>
+
+    <uwpControls:DockPanel x:Name="ContentRootStackPanel" Margin="0 0 0 0">
+
+
+      <Grid x:Name="SelectActionsContainer" Visibility="Collapsed" uwpControls:DockPanel.Dock="Top"   
+            Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+          >
+        <CommandBar DefaultLabelPosition="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
+          <CommandBar.Content>
+
+            <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}" VerticalAlignment="Center" Margin="48 0">
+
+            </TextBlock>
+          </CommandBar.Content>
+
+          <CommandBar.PrimaryCommands>
+            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Label="{i18nExt:Localize Key=RemoveFavoriteImage}" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="UnFavorite" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="F" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Label="{i18nExt:Localize Key=AlbamItemRemove}" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="Album24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="A" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Label="{i18nExt:Localize Key=AddFavoriteImage}" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="Favorite" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="F" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_AlbamAddButton" Label="{i18nExt:Localize Key=EditAlbamImage}" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="AlbumAdd24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="A" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+              <AppBarButton.Icon>
+                <fluentIcon:FluentIconElement Symbol="Open24" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="O" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
+              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind ClearSelection}">
+                <Button.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="Escape" />
+                </Button.KeyboardAccelerators>
+              </Button>
+            </AppBarElementContainer>
+          </CommandBar.PrimaryCommands>
+        </CommandBar>
+      </Grid>
+
+      <StackPanel x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Padding="48 8 48 8"
+                Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                Spacing="8"
+                >
+        <uwpControls:DockPanel>
+
+          <StackPanel x:Name="HeaderStackPanel"
+                uwpControls:DockPanel.Dock="Left"
+                    Spacing="8"
+                >
+
+            <uwpControls:WrapPanel Orientation="Horizontal">
+              <TextBlock Opacity="0.7" TextWrapping="Wrap">
+            <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
+              </TextBlock>
+
+            </uwpControls:WrapPanel>
+            <Button x:Name="ReturnSourceFolderPageButton"
+            Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
+            Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
+            >
+
+            </Button>
+          </StackPanel>
+
+          <Border uwpControls:DockPanel.Dock="Right"
+                Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                >
+            <Button x:Name="ChangeViewtoFolderListupPageButton" Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
+                Command="{x:Bind _vm.OpenFolderListupCommand}"
+                CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
+                />
+          </Border>
+
+
+          <Border />
+
+        </uwpControls:DockPanel>
+
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 0 0 0">
+
+          <Border uwpControls:DockPanel.Dock="Bottom" Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}"
+                >
+            <TextBlock Opacity="0.7">
+            <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+            </TextBlock>
+          </Border>
+
+          <DropDownButton x:Name="FileSortButton" 
+                          uwpControls:DockPanel.Dock="Left" 
+                          Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                          Background="Transparent"
+                          ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
+                          >
+            <DropDownButton.Flyout>
+              <MenuFlyout>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeFileSortCommand}"
+                                CommandParameter="{x:Null}"
+                                />
+
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>TitleAscending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
+                  <MenuFlyoutItem.CommandParameter>
+                    <models:FileSortType>TitleDecending</models:FileSortType>
+                  </MenuFlyoutItem.CommandParameter>
+                </MenuFlyoutItem>
+              </MenuFlyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+
+
+
+          <Button x:Name="OptionalActionsButton"
+                Margin="8 0 0 0" 
+                XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                >
+            <Button.Content>
+              <SymbolIcon Symbol="More" />
+            </Button.Content>
+
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <StackPanel Spacing="8">
+                  <!--
+                <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
+                -->
+
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+
+
+
+          <ListView x:Name="FileDisplayModeItemsListView"
+                  uwpControls:DockPanel.Dock="Right"
+                ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
+                SelectedItem="{x:Bind _vm.FileDisplayMode.Value, Mode=TwoWay}"
+                ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                SelectionMode="Single"
+                SingleSelectionFollowsFocus="False"
+                XYFocusLeft="{x:Bind OptionalActionsButton}"
+                  >
+            <ListView.ItemContainerTransitions>
+              <TransitionCollection />
+            </ListView.ItemContainerTransitions>
+
+            <ListView.ItemContainerStyle>
+              <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
+                <Setter Property="MinWidth" Value="40" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="Padding" Value="0 0 0 0" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+
+              </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.ItemsPanel>
+              <ItemsPanelTemplate>
+                <ItemsStackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+          </ListView>
+
+          <Border />
+        </uwpControls:DockPanel>
+
+      </StackPanel>
+
+
+      <ScrollViewer Padding="48 0 48 0" 
+                    XYFocusUp="{x:Bind FileSortButton}"
+                    x:Name="ItemsScrollViewer"
+                    >
+        <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
+          <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Line}"
+                               Visibility="Collapsed"           
+                               DataContext="{x:Null}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+            </winUI:ItemsRepeater.Layout>
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Small}"
+                               Visibility="Collapsed"
+                               DataContext="{x:Null}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+            </winUI:ItemsRepeater.Layout>
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Midium}"
+                               Visibility="Collapsed"
+                               FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                               DataContext="{x:Null}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
+            </winUI:ItemsRepeater.Layout>
+          </winUI:ItemsRepeater>
+
+          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
+                                  ItemsSource="{x:Bind _vm.FileItemsView}"
+                                  ItemTemplate="{StaticResource FileItemTemplate_Large}"
+                               Visibility="Collapsed"
+                               FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                               DataContext="{x:Null}"
+                                  >
+            <winUI:ItemsRepeater.Layout>
+              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+            </winUI:ItemsRepeater.Layout>
+          </winUI:ItemsRepeater>
+        </Grid>
+      </ScrollViewer>
+    </uwpControls:DockPanel>
+
+    <VisualStateManager.VisualStateGroups>
+
+      <!-- 表示内容切替中の全体の表示切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <!-- x:Bind _vm.NowProcessing だと反映されないのでBindingを使用 -->
+            <StateTrigger IsActive="{Binding NowProcessing}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsContainer.Opacity" Value="0.0" />
+            <Setter Target="FileSortButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+            
+      <!-- ファイルの表示方法切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Line</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Line.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Small</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Small.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Midium</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Midium.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <models:FileDisplayMode>Large</models:FileDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+      
+      <!-- ファイルアイテムの表示方法切替 -->
+      <VisualStateGroup>
+                <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.HasFileItem, Mode=OneWay}" />
+            <!-- Note: ファイルの表示方法切替の時に 0になると一瞬表示が消えてしまう -->
+            <!--<wst:EqualsStateTrigger Value="{Binding FileItems.Count}" EqualTo="0" />-->
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FileDisplayModeItemsListView.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- 画面サイズによる表示切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1600" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1220" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="HeaderLayout.Padding" Value="12 8" />
+            <Setter Target="ItemsScrollViewer.Padding" Value="12 0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- 選択モードによる切り替え -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsSelectionModeEnabled, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SelectActionsContainer.Visibility" Value="Visible" />
+            <Setter Target="FileSortButton.IsEnabled" Value="True" />
+            <Setter Target="FileDisplayModeItemsListView.IsEnabled" Value="True" />
+            
+            <Setter Target="ReturnSourceFolderPageButton.IsEnabled" Value="False" />
+            <Setter Target="ChangeViewtoFolderListupPageButton.IsEnabled" Value="False" />
+            <Setter Target="OptionalActionsButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- 表示元の種類による選択アクションの表示切り替え-->
+      <VisualStateGroup>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{Binding IsFavoriteAlbam}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SelectAction_FavoriteRemoveButton.Visibility" Value="Visible" />
+            <Setter Target="SelectAction_FavoriteAddButton.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="Albam" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SelectAction_AlbamRemoveButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+
+    </VisualStateManager.VisualStateGroups>
+  </Grid>
+</Page>

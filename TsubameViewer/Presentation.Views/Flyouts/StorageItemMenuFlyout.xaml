@@ -1,0 +1,46 @@
+﻿<MenuFlyout
+    x:Class="TsubameViewer.Presentation.Views.Flyouts.StorageItemMenuFlyout"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views.Flyouts"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  Opened="FolderAndArchiveMenuFlyout_Opened"
+    >
+
+  
+  
+  <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
+
+  <MenuFlyoutSubItem x:Name="SelectItemsSubItem" Text="{i18nExt:Localize Key=SelectItems_ActionAs}">
+    <MenuFlyoutItem x:Name="SelectedItems_AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />
+    <MenuFlyoutItem x:Name="SelectedItems_AlbamItemEditMenuItem" Text="{i18nExt:Localize Key=EditAlbamImage}" />
+    <MenuFlyoutItem x:Name="SelectedItems_OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
+  </MenuFlyoutSubItem>
+  
+  <MenuFlyoutSeparator x:Name="AlbamMenuSeparator" />
+  <MenuFlyoutItem x:Name="AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />
+  <MenuFlyoutItem x:Name="RemoveFavariteImageMenuItem" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" />
+  <MenuFlyoutItem x:Name="AlbamItemEditMenuItem" Text="{i18nExt:Localize Key=EditAlbamImage}" />
+  <MenuFlyoutItem x:Name="AlbamItemRemoveMenuItem" Text="{i18nExt:Localize Key=AlbamItemRemove}" />
+  <MenuFlyoutItem x:Name="AlbamEditMenuItem" Text="{i18nExt:Localize Key=AlbamEdit}" />
+  <MenuFlyoutItem x:Name="AlbamDeleteMenuItem" Text="{i18nExt:Localize Key=AlbamDelete}" />
+
+  <MenuFlyoutSeparator x:Name="ThumbnailMenuSeparator" />
+  <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
+
+  <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
+  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
+
+
+  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
+  <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
+  <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{i18nExt:Localize Key=RemoveSecondaryTile}" />
+  
+  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
+  <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
+  <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
+
+
+</MenuFlyout>
