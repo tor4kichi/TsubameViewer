@@ -8,3 +8,5 @@ TsubameViewer/TsubameViewer.UWP/TsubameViewer.Uwp_temporarykey.pfx
 /TsubameViewer/.vs/TsubameViewer/v16/.suo
 *.user
 /.vs/TsubameViewer
+TsubameViewer/bin
+TsubameViewer/obj
