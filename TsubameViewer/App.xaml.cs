@@ -71,21 +71,16 @@ namespace TsubameViewer
 
             ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
 
-            // ローカリゼーション用のライブラリを初期化
-            try
-            {
-                I18NPortable.I18N.Current
+            Container = ConfigureService();
+
 #if DEBUG
-                    //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
-                    .SetNotFoundSymbol("🍣")
-#endif
-                    .SetFallbackLocale("en")
-                    .Init(GetType().Assembly);
-            }
-            catch (Exception ex)
+            if (System.Diagnostics.Debugger.IsAttached)
             {
-                Debug.WriteLine(ex.ToString());
+                this.DebugSettings.EnableFrameRateCounter = false;
             }
+#endif
+            // App.xamlで宣言してるコントロール内でローカライズ処理が走るため、それより先に初期化したい
+            InitializeLocalization();
         }
 
 
@@ -170,7 +165,35 @@ namespace TsubameViewer
             await OnActivationAsync(args);
         }
 
+        void InitializeLocalization()
+        {
+            // ローカリゼーション用のライブラリを初期化
+            try
+            {
+                I18NPortable.I18N.Current
+#if DEBUG
+                    //.SetLogger(text => System.Diagnostics.Debug.WriteLine(text))
+                    .SetNotFoundSymbol("🍣")
+#endif
+                    .SetFallbackLocale("en")
+                    .Init(GetType().Assembly);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
 
+            var applicationSettings = Ioc.Default.GetService<Models.Domain.ApplicationSettings>();
+            try
+            {
+                I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
+            }
+            catch
+            {
+                I18NPortable.I18N.Current.Locale = "en-US";
+            }
+
+        }
 
         bool isRestored = false;
         public async Task OnActivationAsync(IActivatedEventArgs args)
@@ -364,27 +387,7 @@ namespace TsubameViewer
 
             _isInitialized = true;
 
-            Container = ConfigureService();
-
-#if DEBUG
-            if (System.Diagnostics.Debugger.IsAttached)
-            {
-                this.DebugSettings.EnableFrameRateCounter = true;
-            }
-#endif
             Resources["DebugTVMode"] = Ioc.Default.GetService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
-
-
-            var applicationSettings = Ioc.Default.GetService<Models.Domain.ApplicationSettings>();
-            try
-            {
-                I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
-            }
-            catch
-            {
-                I18NPortable.I18N.Current.Locale = "en-US";
-            }
-
 
 #if DEBUG
             foreach (var collectionName in Ioc.Default.GetService<ILiteDatabase>().GetCollectionNames())
@@ -399,9 +402,6 @@ namespace TsubameViewer
 
             Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
-#if WINDOWS_UWP
-            Resources.MergedDictionaries.Add(new Microsoft.UI.Xaml.Controls.XamlControlsResources());
-#endif
 
             Resources["Strings"] = I18NPortable.I18N.Current;
 
