@@ -552,7 +552,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             SelectedTocItem = TocItems.FirstOrDefault();
 
-            var thumbnailFile = await _thumbnailManager.GetFileThumbnailImageFileAsync(_currentFolderItem, ct);
+            var thumbnailFile = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageFileAsync(_currentFolderItem, ct));
             if (thumbnailFile != null)
             {
                 using (thumbnailFile)

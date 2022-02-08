@@ -46,6 +46,15 @@ namespace TsubameViewer.Presentation.Views
     {
 
         private readonly EBookReaderPageViewModel _vm;
+        private readonly IMessenger _messenger;
+
+        private readonly Models.Infrastructure.AsyncLock _movePageLock = new();
+
+        private readonly RelayCommand _InnerGoNextImageCommand;
+        private readonly RelayCommand _InnerGoPrevImageCommand;
+
+        private readonly RelayCommand _OpenTocPaneCommand;
+
 
         public EBookReaderPage()
         {
@@ -71,7 +80,32 @@ namespace TsubameViewer.Presentation.Views
             EPubRenderer.WebResourceRequested += WebView_WebResourceRequested;
 
             this.Loaded += PageNavigationCommandInitialize_Loaded;
-            this.Unloaded += PageNavigationCommandDispose_Unloaded;            
+            this.Unloaded += PageNavigationCommandDispose_Unloaded;
+
+            _InnerGoPrevImageCommand = new RelayCommand(() =>
+            {
+                if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+                {
+                    ExecuteGoNextCommand();
+                }
+                else
+                {
+                    ExecuteGoPrevCommand();
+                }
+            });
+            _InnerGoNextImageCommand = new RelayCommand(() =>
+            {
+                if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+                {
+                    ExecuteGoPrevCommand();
+                }
+                else
+                {
+                    ExecuteGoNextCommand();
+                }
+            });
+
+            _OpenTocPaneCommand = new RelayCommand(ExecuteOpenTocPaneCommand);
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
@@ -182,10 +216,6 @@ namespace TsubameViewer.Presentation.Views
 
         private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
         {
-            var pageVM = _vm;
-            this.InnerGoPrevImageCommand = new RelayCommand(ExecuteGoPrevCommand);
-            this.InnerGoNextImageCommand = new RelayCommand(ExecuteGoNextCommand);
-
             _disposables = new CompositeDisposable();
         }
 
@@ -316,8 +346,6 @@ namespace TsubameViewer.Presentation.Views
                 .AddTo(_RendererObserveDisposer);
 
             NowEnablePageMove = false;
-
-
         }
 
         private void WebView_Unloaded(object sender, RoutedEventArgs e)
@@ -361,22 +389,10 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-        public ICommand InnerGoNextImageCommand
-        {
-            get { return (ICommand)GetValue(InnerGoNextImageCommandProperty); }
-            private set { SetValue(InnerGoNextImageCommandProperty, value); }
-        }
-
-
-        Models.Infrastructure.AsyncLock _movePageLock = new ();
-
-        // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty InnerGoNextImageCommandProperty =
-            DependencyProperty.Register("InnerGoNextImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
-
-
         async void ExecuteGoNextCommand()
         {
+            if (NowEnablePageMove is false) { return; }
+
             using (await _movePageLock.LockAsync(default))
             {
                 if (EPubRenderer.CanGoNext())
@@ -397,24 +413,10 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
-
-
-
-
-        public ICommand InnerGoPrevImageCommand
-        {
-            get { return (ICommand)GetValue(InnerGoPrevImageCommandProperty); }
-            private set { SetValue(InnerGoPrevImageCommandProperty, value); }
-        }
-
-        // Using a DependencyProperty as the backing store for MyProperty.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty InnerGoPrevImageCommandProperty =
-            DependencyProperty.Register("InnerGoPrevImageCommand", typeof(ICommand), typeof(EBookReaderPage), new PropertyMetadata(null));
-        private readonly IMessenger _messenger;
-
         async void ExecuteGoPrevCommand()
         {
+            if (NowEnablePageMove is false) { return; }
+
             using (await _movePageLock.LockAsync(default))
             {
                 if (EPubRenderer.CanGoPreview())
@@ -435,14 +437,10 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
-
-        private RelayCommand _OpenTocPaneCommand;
-        public RelayCommand OpenTocPaneCommand =>
-            _OpenTocPaneCommand ?? (_OpenTocPaneCommand = new RelayCommand(ExecuteOpenTocPaneCommand));
-
         async void ExecuteOpenTocPaneCommand()
         {
+            if (NowEnablePageMove is false) { return; }
+
             TocContainer.Visibility = Visibility.Visible;
             await Task.Delay(250);
             if (TocItemsListView.SelectedItem != null)
