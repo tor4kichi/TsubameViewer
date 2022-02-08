@@ -172,11 +172,7 @@ namespace TsubameViewer.Presentation.Views
                 { 
                     _navigationDisposables.Add(InitializeZoomReaction());
 
-                    while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
-                    {
-                        IsReadyToImageDisplay = true;
-                        await Task.Delay(1, ct);
-                    }
+                    await StartNavigatedAnimationAsync(ct);
 
                     return Unit.Default;
                 }
@@ -193,16 +189,20 @@ namespace TsubameViewer.Presentation.Views
                 isFirst = false;
             });
 
-            _ = StartNavigatedAnimationAsync(ct);
+            AnimationBuilder.Create()
+                .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
+                .Start(ImageItemsControl_0);
 
             base.OnNavigatedTo(e);
         }
 
         private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
-        {                        
-            AnimationBuilder.Create()
-                .Opacity(0.001, duration: TimeSpan.FromMilliseconds(1))
-                .Start(ImageItemsControl_0);            
+        {
+            IsReadyToImageDisplay = true;
+            while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
+            {
+                await Task.Delay(5, navigationCt);
+            }
 
             bool isConnectedAnimationDone = false;
             var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
@@ -212,12 +212,6 @@ namespace TsubameViewer.Presentation.Views
                 try
                 {
                     isConnectedAnimationDone = await TryStartSingleImageAnimationAsync(animation, navigationCt);
-                    if (isConnectedAnimationDone)
-                    {
-                        // ConnectedAnimation中に依存プロパティを変更してしまうと
-                        // VisualState.StateTriggers が更新されないので待機する
-                        await Task.Delay(connectedAnimationService.DefaultDuration);
-                    }
                 }
                 catch (OperationCanceledException) { }
             }
@@ -226,8 +220,6 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (isConnectedAnimationDone is false)
                 {
-                    await WaitImageLoadingAsync(navigationCt);
-
                     await AnimationBuilder.Create()
                        .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
@@ -241,8 +233,6 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
             catch (OperationCanceledException) { }
-
-            IsReadyToImageDisplay = true;
         }
 
         private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
@@ -252,10 +242,7 @@ namespace TsubameViewer.Presentation.Views
             try
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, navigationCt);
-
                 var ct = linkedCts.Token;
-
-
                 if (await WaitImageLoadingAsync(ct) is not null and var images && images.Count() == 1)
                 {
                     // ConnectedAnimation.Start後にタイムアウトでフォールバックのアニメーションが起動する可能性に配慮が必要
@@ -315,8 +302,6 @@ namespace TsubameViewer.Presentation.Views
                 {
                     await Task.Delay(1, ct);
                 }
-
-                IsReadyToImageDisplay = true;
 
                 return new[] { image };
             }
