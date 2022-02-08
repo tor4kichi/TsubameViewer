@@ -251,7 +251,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 _navigationDisposables?.Dispose();
                 _navigationDisposables = null;
 
-                FolderItems.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.StopImageLoading());
+                foreach (var itemVM in FolderItems)
+                {
+                    itemVM.StopImageLoading();
+                }
 
                 if (_currentPath != null && 
                     parameters.ContainsKey(PageNavigationConstants.GeneralPathKey) &&  parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
@@ -386,7 +389,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        FolderItems?.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.RestoreThumbnailLoadingTask());
+                        if (FolderItems != null)
+                        {
+                            foreach (var itemVM in FolderItems)
+                            {
+                                itemVM.RestoreThumbnailLoadingTask();
+                            }
+                        }
                     }
 
                     _currentPath = unescapedPath;

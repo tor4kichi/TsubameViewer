@@ -44,28 +44,13 @@ namespace TsubameViewer.Presentation.Views.Behaviors
             {
                 AssociatedObject.ChoosingItemContainer -= AssociatedObject_ChoosingItemContainer;
             }
-            _map.Clear();
             base.OnDetaching();
         }
 
-        public void Clear()
-        {
-            _map.Clear();
-        }
-
-        HashSet<object> _map = new HashSet<object>();
 
         private void AssociatedObject_ChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)
         {
-            var context = args.Item;
-            if (_map.Contains(context))
-            {
-                return;
-            }
-
-            Microsoft.Xaml.Interactivity.Interaction.ExecuteActions(context, Actions, null);
-
-            _map.Add(context);
+            Microsoft.Xaml.Interactivity.Interaction.ExecuteActions(args.Item, Actions, null);
         }
     }
 }

@@ -257,7 +257,10 @@ namespace TsubameViewer.Presentation.ViewModels
             _navigationCts.Dispose();
             _navigationCts = null;
 
-            Enumerable.Concat(Folders, RecentlyItems).AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.StopImageLoading());
+            foreach (var itemVM in Enumerable.Concat(Folders, RecentlyItems))
+            {
+                itemVM.StopImageLoading();
+            }
 
             _navigationDisposables?.Dispose();
 

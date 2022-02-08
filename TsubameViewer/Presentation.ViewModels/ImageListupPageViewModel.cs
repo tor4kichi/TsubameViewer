@@ -99,7 +99,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public FavoriteAddCommand FavoriteAddCommand { get; }
         public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
         public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
-        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; private set; }
+        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
 
 
 
@@ -310,7 +310,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForAll((StorageItemViewModel x) => x.StopImageLoading());
+            foreach (var itemVM in ImageFileItems)
+            {
+                itemVM.StopImageLoading();
+            }
 
             base.OnNavigatedFrom(parameters);
         }
@@ -323,7 +326,10 @@ namespace TsubameViewer.Presentation.ViewModels
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
 
-            ImageFileItems.AsParallel().WithDegreeOfParallelism(4).ForAll(x => x.Dispose());
+            foreach (var itemVM in ImageFileItems)
+            {
+                itemVM.Dispose();
+            }
             ImageFileItems.Clear();
 
             CurrentFolderItem?.Dispose();
