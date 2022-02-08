@@ -1,0 +1,560 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{DC398F89-BA75-4E03-B549-BDDFC0B00833}</ProjectGuid>
+    <OutputType>AppContainerExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TsubameViewer</RootNamespace>
+    <AssemblyName>TsubameViewer</AssemblyName>
+    <DefaultLanguage>ja-JP</DefaultLanguage>
+    <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.22000.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
+    <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <LangVersion>Preview</LangVersion>
+    <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <AppxBundle>Always</AppxBundle>
+    <AppxBundlePlatforms>x86|x64|arm|arm64</AppxBundlePlatforms>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\ARM\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>ARM</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM'">
+    <OutputPath>bin\ARM\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>ARM</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\ARM64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM64'">
+    <OutputPath>bin\ARM64\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="IsExternalInit.cs" />
+    <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
+    <Compile Include="Locales\LocalizeConverter.cs" />
+    <Compile Include="Locales\LocalizeExtension.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamImageCollectionContext.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamImageSource.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamItemImageSource.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamItemMessage.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamMessage.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamRepository.cs" />
+    <Compile Include="Models.Domain\ApplicationSettings.cs" />
+    <Compile Include="Models.Domain\EBook\EBookReaderSettings.cs" />
+    <Compile Include="Models.Domain\FolderHelper.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\FileDisplayMode.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\FileSortType.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\FolderContainerTypeRepository.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\FolderItemsCacheRepository.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\FolderListingSettings.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\ListingImageConstants.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\RecentlyAccessManager.cs" />
+    <Compile Include="Models.Domain\FolderItemListing\ThumbnailManager.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ArchiveFileInnerStructureCache.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
+    <Compile Include="Models.Domain\ImageViewer\DirectoryPathHelper.cs" />
+    <Compile Include="Models.Domain\ImageViewer\IImageSource.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageCollection.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageCollectionContext.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageCollectionManager.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageSource\ArchiveEntryImageSource.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
+    <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
+    <Compile Include="Models.Domain\PageNavigationConstants.cs" />
+    <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
+    <Compile Include="Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
+    <Compile Include="Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="Models.Domain\SourceFolders\FileControlSettings.cs" />
+    <Compile Include="Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
+    <Compile Include="Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
+    <Compile Include="Models.Domain\SourceFolders\SourceOriginConstants.cs" />
+    <Compile Include="Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
+    <Compile Include="Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="Models.Domain\StorageItemTypes.cs" />
+    <Compile Include="Models.Domain\SupportedFileTypesHelper.cs" />
+    <Compile Include="Models.Domain\TitleDigitCompletionComparer.cs" />
+    <Compile Include="Models.Infrastructure\AsyncLock.cs" />
+    <Compile Include="Models.Infrastructure\BinaryObjectSerializer.cs" />
+    <Compile Include="Models.Infrastructure\EnumerableTaskHelper.cs" />
+    <Compile Include="Models.Infrastructure\FlagsRepositoryBase.cs" />
+    <Compile Include="Models.Infrastructure\LiteDbService.cs" />
+    <Compile Include="Models.UseCase\FavoriteAlbam.cs" />
+    <Compile Include="Models.UseCase\Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
+    <Compile Include="Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
+    <Compile Include="Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
+    <Compile Include="Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
+    <Compile Include="Models.UseCase\Maintenance\SecondaryTileMaintenance.cs" />
+    <Compile Include="Models.UseCase\Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
+    <Compile Include="Models.UseCase\Migrate\DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc.cs" />
+    <Compile Include="Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
+    <Compile Include="Models.UseCase\Migrate\DropPathReferenceCountDb.cs" />
+    <Compile Include="Models.UseCase\Migrate\DropSearchIndexDb.cs" />
+    <Compile Include="Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
+    <Compile Include="Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
+    <Compile Include="Models.UseCase\Migrate\PackageVersionHelper.cs" />
+    <Compile Include="Presentation.Navigations\IViewLocator.cs" />
+    <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
+    <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
+    <Compile Include="Presentation.Services\AlbamDialogService.cs" />
+    <Compile Include="Presentation.Services\FileControlDialogService.cs" />
+    <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
+    <Compile Include="Presentation.Services\UWP\SecondaryTileManager.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteAddCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
+    <Compile Include="Presentation.ViewModels\AlbamListupPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
+    <Compile Include="Presentation.ViewModels\CommandBase.cs" />
+    <Compile Include="Presentation.ViewModels\EBookReaderPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\FolderListupPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
+    <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\NavigationParametersExtensions.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenWithExternalApplicationCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\SecondaryTileAddCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\StartSelectionCommand.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\BackNavigationRequestingMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\BackNavigationRequestMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\BusyWallRequestMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\MenuDisplayMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\NavigationRequestMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\PageTransitionHelper.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
+    <Compile Include="Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\SearchResultPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\SettingsPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
+    <Compile Include="Presentation.Views\AlbamListupPage.xaml.cs">
+      <DependentUpon>AlbamListupPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
+    <Compile Include="Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
+    <Compile Include="Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
+    <Compile Include="Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
+    <Compile Include="Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
+    <Compile Include="Presentation.Views\Behaviors\Swipe.cs" />
+    <Compile Include="Presentation.Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\ColorToBrush.cs" />
+    <Compile Include="Presentation.Views\Converters\DateTimetoStringConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\ItemClickEventArgsConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\NotTransparentColorToBooleanConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\NullableColorConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\NumberMinus1Converter.cs" />
+    <Compile Include="Presentation.Views\Converters\NumberStartFrom1Converter.cs" />
+    <Compile Include="Presentation.Views\Converters\PointToRectConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\SliderValueChangedEventArgsConverter.cs" />
+    <Compile Include="Presentation.Views\Converters\ToKMGTPEZYConverter.cs" />
+    <Compile Include="Presentation.Views\Dialogs\SelectItemDialog.xaml.cs">
+      <DependentUpon>SelectItemDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml.cs">
+      <DependentUpon>StorageItemDeleteConfirmDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\Dialogs\TextInputDialog.xaml.cs">
+      <DependentUpon>TextInputDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\EBookControls\EPubRenderer.xaml.cs">
+      <DependentUpon>EPubRenderer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\EBookReaderPage.xaml.cs">
+      <DependentUpon>EBookReaderPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
+      <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\FolderListupPage.xaml.cs">
+      <DependentUpon>FolderListupPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\FolderListup\FolderListupItemTemplate.xaml.cs">
+      <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\Helpers\CodeBehindExtensions.cs" />
+    <Compile Include="Presentation.Views\Helpers\VisualTreeExtensions.cs" />
+    <Compile Include="Presentation.Views\ImageListupPage.xaml.cs">
+      <DependentUpon>ImageListupPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\ImageViewerPage.xaml.cs">
+      <DependentUpon>ImageViewerPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\PrimaryWindowCoreLayout.xaml.cs">
+      <DependentUpon>PrimaryWindowCoreLayout.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\SearchResultPage.xaml.cs">
+      <DependentUpon>SearchResultPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\SettingsPage.xaml.cs">
+      <DependentUpon>SettingsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\SourceStorageItemsPage.xaml.cs">
+      <DependentUpon>SourceStorageItemsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
+    <Compile Include="Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
+    <Compile Include="Presentation.Views\StateTrigger\PointerInsideTrigger.cs" />
+    <Compile Include="Presentation.Views\StateTrigger\VirualKeyPressingTrigger.cs" />
+    <Compile Include="Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
+    <Compile Include="Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
+    <Compile Include="Presentation.Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
+    <Compile Include="Presentation.Views\TemplateSelector\FolderItemTemplateSelector.cs" />
+    <Compile Include="Presentation.Views\TemplateSelector\MenuItemTemplateSelector.cs" />
+    <Compile Include="Presentation.Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
+    <Compile Include="Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
+    <Compile Include="Presentation.Views\UINavigation\UINavigationButtons.cs" />
+    <Compile Include="Presentation.Views\UINavigation\UINavigationManager.cs" />
+    <Compile Include="Presentation.Views\UINavigation\UINavigationTrigger.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\EPub\app.css" />
+    <Content Include="Assets\EPub\DarkTheme.css" />
+    <Content Include="Assets\EPub\LightTheme.css" />
+    <Content Include="Assets\LargeTile.scale-100.png" />
+    <Content Include="Assets\LargeTile.scale-125.png" />
+    <Content Include="Assets\LargeTile.scale-150.png" />
+    <Content Include="Assets\LargeTile.scale-200.png" />
+    <Content Include="Assets\LargeTile.scale-400.png" />
+    <Content Include="Assets\lockscreenlogo.scale-200.png" />
+    <Content Include="Assets\SmallTile.scale-100.png" />
+    <Content Include="Assets\SmallTile.scale-125.png" />
+    <Content Include="Assets\SmallTile.scale-150.png" />
+    <Content Include="Assets\SmallTile.scale-200.png" />
+    <Content Include="Assets\SmallTile.scale-400.png" />
+    <Content Include="Assets\SplashScreen.scale-100.png" />
+    <Content Include="Assets\SplashScreen.scale-125.png" />
+    <Content Include="Assets\SplashScreen.scale-150.png" />
+    <Content Include="Assets\splashscreen.scale-200.png" />
+    <Content Include="Assets\SplashScreen.scale-400.png" />
+    <Content Include="Assets\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Square150x150Logo.scale-125.png" />
+    <Content Include="Assets\Square150x150Logo.scale-150.png" />
+    <Content Include="Assets\square150x150logo.scale-200.png" />
+    <Content Include="Assets\Square150x150Logo.scale-400.png" />
+    <Content Include="Assets\Square44x44Logo.altform-lightunplated_targetsize-16.png" />
+    <Content Include="Assets\Square44x44Logo.altform-lightunplated_targetsize-24.png" />
+    <Content Include="Assets\Square44x44Logo.altform-lightunplated_targetsize-256.png" />
+    <Content Include="Assets\Square44x44Logo.altform-lightunplated_targetsize-32.png" />
+    <Content Include="Assets\Square44x44Logo.altform-lightunplated_targetsize-48.png" />
+    <Content Include="Assets\Square44x44Logo.altform-unplated_targetsize-16.png" />
+    <Content Include="Assets\Square44x44Logo.altform-unplated_targetsize-24.png" />
+    <Content Include="Assets\Square44x44Logo.altform-unplated_targetsize-256.png" />
+    <Content Include="Assets\Square44x44Logo.altform-unplated_targetsize-32.png" />
+    <Content Include="Assets\Square44x44Logo.altform-unplated_targetsize-48.png" />
+    <Content Include="Assets\Square44x44Logo.scale-100.png" />
+    <Content Include="Assets\Square44x44Logo.scale-125.png" />
+    <Content Include="Assets\Square44x44Logo.scale-150.png" />
+    <Content Include="Assets\square44x44logo.scale-200.png" />
+    <Content Include="Assets\Square44x44Logo.scale-400.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-16.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-24.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-256.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-32.png" />
+    <Content Include="Assets\Square44x44Logo.targetsize-48.png" />
+    <Content Include="Assets\StoreLogo.backup.png" />
+    <Content Include="Assets\StoreLogo.scale-100.png" />
+    <Content Include="Assets\StoreLogo.scale-125.png" />
+    <Content Include="Assets\StoreLogo.scale-150.png" />
+    <Content Include="Assets\StoreLogo.scale-200.png" />
+    <Content Include="Assets\StoreLogo.scale-400.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-100.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-125.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-150.png" />
+    <Content Include="Assets\wide310x150logo.scale-200.png" />
+    <Content Include="Assets\Wide310x150Logo.scale-400.png" />
+    <EmbeddedResource Include="Locales\en-US.txt" />
+    <EmbeddedResource Include="Locales\ja-JP.txt" />
+    <EmbeddedResource Include="Locales\zh-CHS.txt" />
+    <None Include="Package.StoreAssociation.xml" />
+    <Content Include="Properties\Default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Common">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="DryIoc">
+      <Version>4.8.6</Version>
+    </PackageReference>
+    <PackageReference Include="Fluent.Icons">
+      <Version>1.1.110</Version>
+    </PackageReference>
+    <PackageReference Include="I18NPortable">
+      <Version>1.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="LiteDB">
+      <Version>5.0.11</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+      <Version>6.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
+      <!-- 
+			If, in the same solution, you are referencing a project that uses https://github.com/onovotny/MSBuildSdkExtras,
+			you need to make sure that the version provided here matches https://github.com/onovotny/MSBuildSdkExtras/blob/master/Source/MSBuild.Sdk.Extras/DefaultItems/ImplicitPackages.targets#L11.
+			This is not an issue when libraries are referenced through nuget packages. See https://github.com/unoplatform/uno/issues/446 for more details.
+			-->
+      <Version>6.2.13</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Diagnostics">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Mvvm">
+      <Version>7.1.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Animations">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Behaviors">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls.Layout">
+      <Version>7.1.2</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.UI.Xaml">
+      <Version>2.7.1-prerelease.211026002</Version>
+    </PackageReference>
+    <PackageReference Include="ReactiveProperty">
+      <Version>7.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="ReactiveProperty.UWP">
+      <Version>7.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="sharpcompress">
+      <Version>0.30.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Linq.Async">
+      <Version>5.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Encoding.CodePages">
+      <Version>5.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>5.0.2</Version>
+    </PackageReference>
+    <PackageReference Include="Uno.WindowsStateTriggers">
+      <Version>1.1.1-uno.132</Version>
+    </PackageReference>
+    <PackageReference Include="VersOne.Epub">
+      <Version>3.0.3.1</Version>
+    </PackageReference>
+    <PackageReference Include="Xamarin.Essentials">
+      <Version>1.5.3.2</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="Presentation.Styles\SettingsControlStyles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\AlbamListupPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\Dialogs\SelectItemDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\Dialogs\TextInputDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\EBookControls\EPubRenderer.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\EBookReaderPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\FolderListupPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\FolderListup\FolderListupItemTemplate.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\ImageListupPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\ImageViewerPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\PrimaryWindowCoreLayout.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\SearchResultPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\SettingsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\SourceStorageItemsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
+    <VisualStudioVersion>14.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

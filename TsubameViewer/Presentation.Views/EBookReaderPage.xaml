@@ -1,0 +1,683 @@
+﻿<Page
+  x:Name="PageRoot"
+    x:Class="TsubameViewer.Presentation.Views.EBookReaderPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Presentation.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:i="using:Microsoft.Xaml.Interactivity" 
+  xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+  xmlns:winUI="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:uwpUI="using:Microsoft.Toolkit.Uwp.UI" 
+  xmlns:myBehaviour="using:TsubameViewer.Presentation.Views.Behaviors" 
+  xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
+  xmlns:eBookControls="using:TsubameViewer.Presentation.Views.EBookControls" 
+  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
+  xmlns:wst="using:WindowsStateTriggers" 
+  xmlns:myStateTriggers="using:TsubameViewer.Presentation.Views.StateTrigger" 
+  xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+  xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+  mc:Ignorable="d"
+  NavigationCacheMode="Enabled"
+  >
+  <Page.Transitions>
+    <TransitionCollection>
+      
+    </TransitionCollection>
+  </Page.Transitions>
+  
+  <Page.Resources>
+
+    <DataTemplate x:Key="PixelUnitTextTemplate">
+      <TextBlock>
+        <Run Text="{Binding}" />px
+      </TextBlock>
+    </DataTemplate>
+    
+    <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True" Placement="BottomEdgeAlignedLeft" ScrollViewer.IsVerticalScrollChainingEnabled="True">
+      <StackPanel Spacing="16" HorizontalAlignment="Right">
+
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
+                      />
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                      />
+
+        <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
+                  Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=18px}}" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{x:Bind _vm.LeffterSpacingItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
+                  Header="{Binding Source=LetterSpacing, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=0px}}" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{x:Bind _vm.LineHeightItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
+                  Header="{Binding Source=LineHeight, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=1.5}}" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+        <ComboBox ItemsSource="{x:Bind _vm.RubySizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
+                  Header="{Binding Source=RubyFontSize, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ItemTemplate="{StaticResource PixelUnitTextTemplate}"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="{Binding Source=DefaultWithParameter, Converter={StaticResource LocalizeConverter}, ConverterParameter={Binding Source=12px}}" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=TwoWay}" 
+                  Header="{Binding Source=FontFamily, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
+                  Header="{Binding Source=RubyFontFamily, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ToolTipService.ToolTip>
+            <ToolTip >
+              <TextBlock Text="" />
+            </ToolTip>
+          </ToolTipService.ToolTip>
+        </ComboBox>
+
+
+        <StackPanel HorizontalAlignment="Stretch">
+          <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
+          <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid>
+              <TextBlock Text="{Binding Source=ChangeBackgroundColor, Converter={StaticResource LocalizeConverter}}" />
+            </Grid>
+
+            <Button.Flyout>
+              <Flyout Placement="Left" Opening="BackgroundColorPickerFlyout_Opening">
+                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=TwoWay}"
+                               >
+
+                </ColorPicker>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+
+        <StackPanel HorizontalAlignment="Stretch">
+          <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
+          <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid>
+              <TextBlock Text="{Binding Source=ChangeForegroundColor, Converter={StaticResource LocalizeConverter}}" />
+            </Grid>
+            <Button.Flyout>
+              <Flyout Placement="Left" Opening="ForegroundColorPickerFlyout_Opening">
+                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"
+                             >
+
+                </ColorPicker>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+
+        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
+                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
+
+        <Button Content="{Binding Source=ResetEBookSettings, Converter={StaticResource LocalizeConverter}}" 
+                HorizontalAlignment="Stretch"
+                Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}"
+                />
+      </StackPanel>
+    </Flyout>
+
+    <MenuFlyout x:Key="DesktopViewManagementFlyout">
+      <MenuFlyoutItem Text="{Binding Source=SwitchFullScreen, Converter={StaticResource LocalizeConverter}}" Command="{x:Bind _vm.ToggleFullScreenCommand}"
+                      x:Name="SwitchFullScreeMenuItem"
+                      Visibility="Collapsed"
+                      >
+        <MenuFlyoutItem.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11" IsEnabled="False" />
+        </MenuFlyoutItem.KeyboardAccelerators>
+      </MenuFlyoutItem>
+    </MenuFlyout>
+  </Page.Resources>
+
+  <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
+        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
+        >
+
+    <i:Interaction.Behaviors>
+      
+      <!-- Mouse Input-->
+      <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
+      <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
+        <myBehaviour:MouseWheelTrigger.UpActions>
+          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.UpActions>
+        <myBehaviour:MouseWheelTrigger.DownActions>
+          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+        </myBehaviour:MouseWheelTrigger.DownActions>
+      </myBehaviour:MouseWheelTrigger>
+      <myBehaviour:MouseCenterClickTrigger>
+        <core:InvokeCommandAction Command="{Binding ToggleFullScreenCommand}" />
+      </myBehaviour:MouseCenterClickTrigger>
+
+      <myBehaviour:PointerCursolAutoHideBehavior x:Name="PointerCursolAutoHideBehavior" IsAutoHideEnabled="False" />
+
+      <!-- GamePad Input-->
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
+        <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+      <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
+        <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+
+      <uiNavigation:UINavigationTriggerBehavior Kind="View">
+        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind _OpenTocPaneCommand}" />
+      </uiNavigation:UINavigationTriggerBehavior>
+
+
+    </i:Interaction.Behaviors>
+
+    <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
+         そのため、非表示のButtonのKeyboardAcceleratorsを利用する
+    -->
+    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
+      <Button.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F11" />
+      </Button.KeyboardAccelerators>
+    </Button>
+    
+    <!-- 電子書籍ビューワー -->
+    <eBookControls:EPubRenderer x:Name="EPubRenderer"
+                                PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
+                                FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
+                               IsTapEnabled="False"
+                               IsHitTestVisible="False"
+                               IsAccessKeyScope="False"
+                               AllowFocusOnInteraction="False"
+                               Margin="48 27 48 72"
+                               PageBackgroundColor="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay}"
+                                FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
+                                FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
+                                LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"
+                                LineHeightInNoUnit="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=OneWay}"
+                                RubyFontSizeInPixel="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=OneWay}"
+                                ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
+                                RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
+                                OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
+                                
+             >
+      
+    </eBookControls:EPubRenderer>
+
+    <!-- コントロールUI（共通）-->
+    <Grid x:Name="UIContainer"
+          IsHitTestVisible="True" 
+          Background="Transparent"
+          Margin="0 0 0 0" 
+          >
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="4*" />
+        <ColumnDefinition Width="3*" />
+      </Grid.ColumnDefinitions>
+
+      <Grid x:Name="PageTitleLayout" VerticalAlignment="Bottom" Margin="0 0 0 24" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center"  >
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
+                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}"
+                     >
+            <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" />
+          </TextBlock>
+          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
+           <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+      
+      <Button x:Name="LeftPageMoveButton"
+        Command="{x:Bind _InnerGoNextImageCommand}"
+              Grid.Column="0"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Left" />
+          <KeyboardAccelerator Key="LeftButton" />
+          <KeyboardAccelerator Key="A" />
+        </Button.KeyboardAccelerators>
+
+        <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+          <SymbolIcon Symbol="Back" />
+        </Border>
+
+      </Button>
+
+      <Button x:Name="ToggleTocMenuButton_Touch"
+              Command="{x:Bind _OpenTocPaneCommand}" 
+              Grid.Column="1"
+              Grid.ColumnSpan="1"
+              Opacity="0" 
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Bottom"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              Height="64"
+              />
+
+      <Button x:Name="RightPageMoveButton"
+        Command="{x:Bind _InnerGoPrevImageCommand}"
+              Grid.Column="2"
+              Opacity="0"
+              HorizontalContentAlignment="Stretch"
+              VerticalContentAlignment="Stretch"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              KeyboardAcceleratorPlacementMode="Hidden"
+              >
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Right" />
+          <KeyboardAccelerator Key="RightButton" />
+          <KeyboardAccelerator Key="D" />
+        </Button.KeyboardAccelerators>
+
+        <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+          <SymbolIcon Symbol="Forward" />
+        </Border>
+      </Button>
+    </Grid>
+    
+    
+    <!-- デバッグ -->
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                Opacity="0.5"
+                x:Name="DebugPanel"
+                Visibility="Collapsed"
+                >
+    </StackPanel>
+
+    <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
+    <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
+      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0" />
+
+      <Grid x:Name="DraggableTitleBarArea_TVorTouch" IsHitTestVisible="True" Background="Transparent" />
+
+
+      <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="3" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="13" Margin="32 24 32 27"
+                   Opacity="0.5"
+                   >
+            <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+      </TextBlock>
+            
+    </Grid>
+
+
+    <!-- 補助コントロールUI（デスクトップ） -->
+    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
+      <Grid.RenderTransform>
+        <TranslateTransform />
+      </Grid.RenderTransform>
+      
+      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
+        
+      </Grid>
+      <uwpControls:DockPanel>
+        <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
+          <SymbolIcon Symbol="Back">
+            <SymbolIcon.RenderTransform>
+              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+            </SymbolIcon.RenderTransform>
+          </SymbolIcon>
+        </Button>
+
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
+          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
+            <SymbolIcon Symbol="Setting" />
+          </Button>
+          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
+        </StackPanel>
+
+        <uwpControls:DockPanel Padding="8 0" >
+          
+          <Button Command="{x:Bind _OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
+            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
+              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+            </TextBlock>
+          </Button>
+        </uwpControls:DockPanel>
+      </uwpControls:DockPanel>
+    </Grid>
+
+    <!-- Toc -->
+    <Grid x:Name="TocContainer" Visibility="Collapsed">
+
+      <Grid x:Name="TocBackgroundPanel" Background="{ThemeResource SystemAltMediumLowColor}"  IsHitTestVisible="True"
+            Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            >
+
+        <animation:Implicit.ShowAnimations>
+          <animation:OpacityAnimation To="1" Duration="0:0:0.25" />
+        </animation:Implicit.ShowAnimations>
+        <animation:Implicit.HideAnimations>
+          <animation:OpacityAnimation To="0" Duration="0:0:0.25" />
+        </animation:Implicit.HideAnimations>
+        
+        <i:Interaction.Behaviors>
+          <core:EventTriggerBehavior EventName="Tapped">
+            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </core:EventTriggerBehavior>
+          <core:DataTriggerBehavior Binding="{x:Bind _vm.CurrentImageIndex, Mode=OneWay}" Value="{x:Null}" ComparisonCondition="NotEqual">
+            <core:InvokeCommandAction Command="{x:Bind CloseTocPaneCommand}" />
+          </core:DataTriggerBehavior>
+
+        </i:Interaction.Behaviors>
+      </Grid>
+      <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
+            Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            >
+        
+        <animation:Implicit.ShowAnimations>
+          <animation:TranslationAnimation To="0, 0" Duration="0:0:0.25" />
+        </animation:Implicit.ShowAnimations>
+        <animation:Implicit.HideAnimations>
+          <animation:TranslationAnimation To="-320, 0" Duration="0:0:0.25" />
+        </animation:Implicit.HideAnimations>
+        
+        <ListView x:Name="TocItemsListView"
+                  ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
+                  SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  SelectionMode="Single"
+                  SingleSelectionFollowsFocus="False"
+                  Padding="0 32 4 27"
+                  >
+          <ListView.ItemContainerTransitions>
+            <TransitionCollection />
+          </ListView.ItemContainerTransitions>
+          <ListView.Header>
+            <StackPanel>
+
+              <Button x:Name="TocContainerUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Width="60" Visibility="Collapsed" Margin="0 8">
+                <SymbolIcon Symbol="Back">
+                  <SymbolIcon.RenderTransform>
+                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Button>
+
+              <Button x:Name="TocContainerSettingsButton" Flyout="{StaticResource SettingsFlyout}" Visibility="Collapsed" Margin="0 0 0 8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <SymbolIcon Symbol="Setting" />
+                  <TextBlock Text="{i18nExt:Localize Key=DisplaySettings}" />
+                </StackPanel> 
+              </Button>
+              
+              <ContentControl Tapped="CoverImage_Tapped" IsTabStop="False">
+                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}" MaxHeight="160" Margin="0 8" VerticalAlignment="Top" Stretch="UniformToFill" />
+              </ContentControl>
+
+              <TextBlock Text="{i18nExt:Localize Key=Toc}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0" />
+            </StackPanel>
+          </ListView.Header>
+          <ListView.ItemTemplate>
+            <DataTemplate >
+              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="0 4" />
+            </DataTemplate>
+          </ListView.ItemTemplate>
+
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="Tapped">
+              <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}" MethodName="PrepareTocSelectionChange" />
+              <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+        </ListView>
+      </Grid>
+    </Grid>
+
+
+
+    <VisualStateManager.VisualStateGroups>
+
+      <!-- マウスカーソルの自動非表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- フルスクリーン -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:FullScreenModeTrigger IsFullScreen="True" />
+              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="Toolbar_Desktop"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:FullScreenModeTrigger IsFullScreen="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-32"
+                               Storyboard.TargetName="Toolbar_Desktop"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="EPubRenderer.Margin" Value="32 56 24 56" />
+            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- スクロールのページ送りを逆にする -->
+      <VisualStateGroup>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+            
+      <!-- 左右移動を抑止する -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- デスクトップ、タッチ、コントローラーそれぞれの表示切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
+            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+            <Setter Target="TocItemsListView.Padding" Value="48 27 8 27" />
+            <Setter Target="PageTitleLayout.Margin" Value="0 0 0 18" />
+            <Setter Target="TocContainerUIBackNavigationButton.Visibility" Value="Visible" />
+            <Setter Target="TocContainerSettingsButton.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:UserInteractionModeTrigger InteractionMode="Touch" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+
+        
+
+      </VisualStateGroup>
+
+    </VisualStateManager.VisualStateGroups>
+
+  </Grid>
+</Page>
