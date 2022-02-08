@@ -45,7 +45,7 @@ namespace TsubameViewer.Presentation.Views
     public sealed partial class EBookReaderPage : Page
     {
 
-        private EBookReaderPageViewModel _vm { get; }
+        private readonly EBookReaderPageViewModel _vm;
 
         public EBookReaderPage()
         {

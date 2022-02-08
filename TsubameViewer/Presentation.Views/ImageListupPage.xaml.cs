@@ -47,7 +47,7 @@ namespace TsubameViewer.Presentation.Views
             Unloaded += FolderListupPage_Unloaded;
         }
 
-        private ImageListupPageViewModel _vm { get; }
+        private readonly ImageListupPageViewModel _vm;
 
 
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)

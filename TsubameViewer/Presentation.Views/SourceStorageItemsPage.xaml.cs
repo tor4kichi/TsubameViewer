@@ -38,7 +38,7 @@ namespace TsubameViewer.Presentation.Views
             DataContext = _vm = Ioc.Default.GetService<SourceStorageItemsPageViewModel>();
         }
 
-        private SourceStorageItemsPageViewModel _vm { get; }
+        private readonly SourceStorageItemsPageViewModel _vm;
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {

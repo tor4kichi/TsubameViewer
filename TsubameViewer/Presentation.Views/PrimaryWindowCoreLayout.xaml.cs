@@ -46,7 +46,7 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class PrimaryWindowCoreLayout : Page
     {        
-        private readonly PrimaryWindowCoreLayoutViewModel _viewModel;
+        private readonly PrimaryWindowCoreLayoutViewModel _vm;
         private readonly IMessenger _messenger;
 
         private readonly DispatcherQueue _dispatcherQueue;
@@ -61,7 +61,7 @@ namespace TsubameViewer.Presentation.Views
         {
             this.InitializeComponent();
 
-            DataContext = _viewModel = viewModel;
+            DataContext = _vm = viewModel;
             _messenger = messenger;
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
             _viewLocator = Ioc.Default.GetService<IViewLocator>();
@@ -408,7 +408,7 @@ namespace TsubameViewer.Presentation.Views
 
             if (args.SelectedItem != null)
             {
-                _viewModel.OpenMenuItemCommand.Execute(args.SelectedItem);
+                _vm.OpenMenuItemCommand.Execute(args.SelectedItem);
             }
         }
 
@@ -434,7 +434,7 @@ namespace TsubameViewer.Presentation.Views
         // デッドロックさせないようにFireAndForgetで実行
         public async void RestoreNavigationStack()
         {
-            var navigationManager = _viewModel.RestoreNavigationManager;
+            var navigationManager = _vm.RestoreNavigationManager;
 
 
             try
@@ -541,7 +541,7 @@ namespace TsubameViewer.Presentation.Views
                 }
 #endif
 
-                _viewModel.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, currentNavigationParameter));
+                _vm.RestoreNavigationManager.SetCurrentNavigationEntry(MakePageEnetry(ContentFrame.CurrentSourcePageType, currentNavigationParameter));
                 {
                     PageEntry[] backNavigationPageEntries = new PageEntry[BackParametersStack.Count];
                     for (var backStackIndex = 0; backStackIndex < BackParametersStack.Count; backStackIndex++)
@@ -551,7 +551,7 @@ namespace TsubameViewer.Presentation.Views
                         backNavigationPageEntries[backStackIndex] = MakePageEnetry(stackEntry.SourcePageType, parameters);
                         Debug.WriteLine($"[NavigationRestore] Save BackStackPage: {backNavigationPageEntries[backStackIndex].PageName} {string.Join(',', backNavigationPageEntries[backStackIndex].Parameters.Select(x => $"{x.Key}={x.Value}"))}");
                     }
-                    await _viewModel.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
+                    await _vm.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
                 }
                 /*
                 {
@@ -877,7 +877,7 @@ namespace TsubameViewer.Presentation.Views
                 SetTheme(m.Value);
             });
 
-            SetTheme(_viewModel.ApplicationSettings.Theme);
+            SetTheme(_vm.ApplicationSettings.Theme);
         }
 
         public void SetTheme(Models.Domain.ApplicationTheme applicationTheme)
@@ -939,11 +939,11 @@ namespace TsubameViewer.Presentation.Views
                 {
                     if (storageItem is StorageFolder)
                     {
-                        token = await _viewModel.SourceStorageItemsRepository.AddItemPersistantAsync(storageItem, SourceOriginConstants.DragAndDrop);
+                        token = await _vm.SourceStorageItemsRepository.AddItemPersistantAsync(storageItem, SourceOriginConstants.DragAndDrop);
                     }
                     else if (storageItem is StorageFile file)
                     {
-                        token = await _viewModel.SourceStorageItemsRepository.AddFileTemporaryAsync(file, SourceOriginConstants.DragAndDrop);
+                        token = await _vm.SourceStorageItemsRepository.AddFileTemporaryAsync(file, SourceOriginConstants.DragAndDrop);
                     }
 
                     openStorageItem = storageItem;

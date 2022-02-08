@@ -31,6 +31,6 @@ namespace TsubameViewer.Presentation.Views
             DataContext = _vm = Ioc.Default.GetService<SettingsPageViewModel>();
         }
 
-        private SettingsPageViewModel _vm { get; }
+        private readonly SettingsPageViewModel _vm;
     }
 }

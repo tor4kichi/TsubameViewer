@@ -24,7 +24,7 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class AlbamListupPage : Page
     {
-        private AlbamListupPageViewModel _vm { get; }
+        private readonly AlbamListupPageViewModel _vm;
 
         public AlbamListupPage()
         {

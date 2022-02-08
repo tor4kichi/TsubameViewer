@@ -49,7 +49,7 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageViewerPage : Page
     {
-        private ImageViewerPageViewModel _vm { get; }
+        private readonly ImageViewerPageViewModel _vm;
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;

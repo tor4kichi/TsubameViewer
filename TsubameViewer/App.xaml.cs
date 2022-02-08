@@ -50,7 +50,7 @@ namespace TsubameViewer
     {
         public new static App Current => (App)Application.Current;
 
-        public Container Container { get; private set; }
+        public Container Container { get; }
 
         Models.Infrastructure.AsyncLock _InitializeLock = new();
 

@@ -37,7 +37,7 @@
       <myConv:AutoSuggestBoxQuerySubmittedEventArgsConverter x:Key="AutoSuggestBoxQuerySubmittedEventArgsConverter" />
 
       <CollectionViewSource x:Key="AutoSuggestBoxItems"
-                          Source="{x:Bind _viewModel.AutoSuggestBoxItems}"
+                          Source="{x:Bind _vm.AutoSuggestBoxItems}"
                           IsSourceGrouped="True"
                           ItemsPath="Items"
                           >
@@ -82,7 +82,7 @@
       <i:Interaction.Behaviors>
         <!--
         <core:EventTriggerBehavior EventName="ItemInvoked">
-          <core:InvokeCommandAction Command="{x:Bind _viewModel.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
+          <core:InvokeCommandAction Command="{x:Bind _vm.OpenMenuItemCommand}" InputConverter="{StaticResource NavigationViewItemInvokedEventArgsConverter}" />
         </core:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
@@ -111,7 +111,7 @@
                             >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="QuerySubmitted">
-              <core:InvokeCommandAction Command="{x:Bind _viewModel.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+              <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
             </core:EventTriggerBehavior>
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
               <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
@@ -133,36 +133,36 @@
                     Width="240"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _viewModel.SourceChoiceCommand}">
+            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="ImageAdd24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _viewModel.StartSelectionCommand}">
+            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _vm.StartSelectionCommand}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="Multiselect24" />
               </AppBarButton.Icon>
             </AppBarButton>
           </CommandBar.PrimaryCommands>
           <CommandBar.SecondaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Command="{x:Bind _viewModel.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}">
+            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Command="{x:Bind _vm.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="ArrowSync24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _viewModel.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="Settings24" />
               </AppBarButton.Icon>
             </AppBarButton>
 
             <AppBarSeparator />
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Command="{x:Bind _viewModel.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Command="{x:Bind _vm.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="PersonFeedback24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _viewModel.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _vm.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="PersonFeedback24" />
               </AppBarButton.Icon>

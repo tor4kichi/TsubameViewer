@@ -50,7 +50,7 @@ namespace TsubameViewer.Presentation.Views
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         }
 
-        private FolderListupPageViewModel _vm { get; }
+        private readonly FolderListupPageViewModel _vm;
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
