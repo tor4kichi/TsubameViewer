@@ -73,11 +73,6 @@
           </GroupStyle.HeaderContainerStyle>
         </GroupStyle>
       </GridView.GroupStyle>
-      <i:Interaction.Behaviors>
-        <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-          <core:CallMethodAction MethodName="Initialize" />
-        </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-      </i:Interaction.Behaviors>
     </uwpControls:AdaptiveGridView>
 
     <VisualStateManager.VisualStateGroups>

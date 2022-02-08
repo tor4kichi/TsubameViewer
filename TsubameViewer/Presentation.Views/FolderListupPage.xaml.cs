@@ -56,17 +56,17 @@ namespace TsubameViewer.Presentation.Views
         {
             if (args.Item is StorageItemViewModel itemVM)
             {
+                itemVM.Initialize(_ct);
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM .Name, TextWrapping = TextWrapping.Wrap } });
             }
         }
 
         CancellationTokenSource _navigationCts;
-
+        CancellationToken _ct;
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
-            _navigationCts = null;
+            _navigationCts.Cancel();
+            _navigationCts.Dispose();
 
             if (_vm.DisplayCurrentPath != null) 
             {
@@ -100,10 +100,8 @@ namespace TsubameViewer.Presentation.Views
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
             _navigationCts = new CancellationTokenSource();
-            var ct = _navigationCts.Token;
+            var ct = _ct = _navigationCts.Token;
 
             try
             {

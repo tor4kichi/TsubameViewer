@@ -39,12 +39,6 @@
       <GridView.ItemContainerTransitions>
         <TransitionCollection />
       </GridView.ItemContainerTransitions>
-
-      <i:Interaction.Behaviors>
-        <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-          <core:CallMethodAction MethodName="Initialize" />
-        </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-      </i:Interaction.Behaviors>
     </controls:AdaptiveGridView>
 
     

@@ -449,11 +449,11 @@ namespace TsubameViewer.Presentation.ViewModels
                 _currentArchiveFolderName = null;
 
                 if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
-                {
+                {                    
                     (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                     var unescapedPath = itemPath;                    
                     if (unescapedPath != _currentPath
-                        || (_currentArchiveFolderName != null
+                        || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
                             && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
                             && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
                             )
@@ -465,7 +465,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         foreach (var itemVM in ImageFileItems)
                         {
-                            itemVM.RestoreThumbnailLoadingTask();
+                            itemVM.RestoreThumbnailLoadingTask(ct);
                         }
                     }
                 }

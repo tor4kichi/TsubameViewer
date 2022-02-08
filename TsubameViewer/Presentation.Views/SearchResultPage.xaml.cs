@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -41,8 +42,29 @@ namespace TsubameViewer.Presentation.Views
         {
             if (args.Item is StorageItemViewModel itemVM)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                if (_navigationCts.IsCancellationRequested is false)
+                {
+                    ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                }
+
+                itemVM.Initialize(_ct);
             }
+        }
+
+        CancellationTokenSource _navigationCts;
+        CancellationToken _ct;
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            _navigationCts = new CancellationTokenSource();
+            _ct = _navigationCts.Token;
+            base.OnNavigatedTo(e);
+        }
+
+        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        {
+            _navigationCts.Cancel();
+            _navigationCts.Dispose();            
+            base.OnNavigatingFrom(e);
         }
     }
 }

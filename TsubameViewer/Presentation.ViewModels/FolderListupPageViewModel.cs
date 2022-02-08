@@ -307,7 +307,6 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             HasFileItem = false;
 
-            _currentPath = path;
             // PathReferenceCountManagerへの登録が遅延する可能性がある
             foreach (var _ in Enumerable.Repeat(0, 10))
             {
@@ -331,25 +330,25 @@ namespace TsubameViewer.Presentation.ViewModels
             if (settings != null)
             {
                 SelectedFileSortType.Value = settings.Sort;
-                SetSortAsyncUnsafe(SelectedFileSortType.Value);
+                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
             }
             else
             {
                 if (_currentItem is StorageFolder)
                 {
                     SelectedFileSortType.Value = FileSortType.TitleAscending;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value);
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
                 }
                 else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
                 {
                     SelectedFileSortType.Value = FileSortType.TitleAscending;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value);
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
                 }
             }
 
             SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
 
-            await RefreshFolderItems(ct);
+            await RefreshFolderItems(path, ct);
         }
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
@@ -378,7 +377,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         throw new InvalidOperationException();
                     }
                     else if (_currentPath != unescapedPath
-                        || (_currentArchiveFolderName != null
+                        || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
                             && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
                             && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
                             )
@@ -393,7 +392,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             foreach (var itemVM in FolderItems)
                             {
-                                itemVM.RestoreThumbnailLoadingTask();
+                                itemVM.RestoreThumbnailLoadingTask(ct);
                             }
                         }
                     }
@@ -408,7 +407,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (lastIntractItemVM != null)
                     {
                         lastIntractItemVM.ThumbnailChanged();
-                        lastIntractItemVM.Initialize();
+                        lastIntractItemVM.Initialize(ct);
 
                         FolderLastIntractItem.Value = lastIntractItemVM;
                     }
@@ -508,7 +507,7 @@ namespace TsubameViewer.Presentation.ViewModels
         #region Refresh Item
 
         private static readonly Models.Infrastructure.AsyncLock _RefreshLock = new ();
-        private async Task RefreshFolderItems(CancellationToken ct)
+        private async Task RefreshFolderItems(string path, CancellationToken ct)
         {
             using var lockObject = await _RefreshLock.LockAsync(ct);
 
@@ -539,7 +538,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                         catch (UnauthorizedAccessException)
                         {
-                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
+                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(path));
                             if (parentItem is StorageFolder parentFolder)
                             {
                                 imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
@@ -679,11 +678,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using (await _RefreshLock.LockAsync(ct))
             {
-                SetSortAsyncUnsafe(fileSort);
+                SetSortAsyncUnsafe(fileSort, _currentPath);
             }
         }
 
-        private void SetSortAsyncUnsafe(FileSortType fileSort)
+        private void SetSortAsyncUnsafe(FileSortType fileSort, string path)
         {
             var sortDescriptions = ToSortDescription(fileSort);
             using (FileItemsView.DeferRefresh())
@@ -697,7 +696,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
-                _currentPath,
+                path,
                 fileSort
                 );
         }

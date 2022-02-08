@@ -49,7 +49,6 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly ImageListupPageViewModel _vm;
 
-
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
         {
             FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
@@ -78,14 +77,13 @@ namespace TsubameViewer.Presentation.Views
         #region 初期フォーカス設定
 
         CancellationTokenSource _navigationCts;
-      
+        CancellationToken _ct;
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             _messenger.Unregister<StartMultiSelectionMessage>(this);
 
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
-            _navigationCts = null;
+            _navigationCts.Cancel();
+            _navigationCts.Dispose();
 
             if (e.SourcePageType != typeof(ImageViewerPage))
             {
@@ -110,10 +108,8 @@ namespace TsubameViewer.Presentation.Views
                 StartSelection();
             });
 
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
             _navigationCts = new CancellationTokenSource();
-            var ct = _navigationCts.Token;
+            var ct = _ct = _navigationCts.Token;
             ItemsScrollViewer.Opacity = 0.01;
             try
             {
@@ -261,7 +257,7 @@ namespace TsubameViewer.Presentation.Views
                 && fe.DataContext is StorageItemViewModel itemVM
                 )
             {
-                itemVM.Initialize();                
+                itemVM.Initialize(_ct);                
             }
         }
 

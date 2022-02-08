@@ -144,7 +144,6 @@ namespace TsubameViewer.Presentation.Views
 
                     var parameters = m.Parameters ?? new NavigationParameters();
                     parameters.SetNavigationMode(NavigationMode.New);
-
                     return await NavigateAsync(m.PageName, parameters, m.IsForgetNavigaiton is false);
                 }
                 catch
@@ -315,6 +314,7 @@ namespace TsubameViewer.Presentation.Views
                             foreach (var pair in prevNavParam)
                             {
                                 if (pair.Key == PageNavigationConstants.Restored) { continue; }
+                                if (pair.Key == TsubameViewer.Presentation.Navigations.NavigationParametersExtensions.NavigationModeKey) { continue; }
 
                                 prevParameters.Add(pair.Key, pair.Value);
                             }
@@ -462,6 +462,7 @@ namespace TsubameViewer.Presentation.Views
                     {
                         currentNavParameters.Add(PageNavigationConstants.Restored, string.Empty);
                     }
+
                     var result = await _messenger.NavigateAsync(currentEntry.PageName, currentNavParameters);
                     if (!result.IsSuccess)
                     {
@@ -658,8 +659,8 @@ namespace TsubameViewer.Presentation.Views
                     try
                     {
                         ContentFrame.GoBack();
-
-                        var currentPage = ContentFrame.Content as Page;
+                        lastNavigationParameters.SetNavigationMode(NavigationMode.Back);
+                        var currentPage = ContentFrame.Content as Page;                        
                         await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
                     }
                     catch
@@ -708,7 +709,7 @@ namespace TsubameViewer.Presentation.Views
                 try
                 {
                     ContentFrame.GoForward();
-
+                    forwardNavigationParameters.SetNavigationMode(NavigationMode.Forward);
                     var currentPage = ContentFrame.Content as Page;
                     await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters);
                 }

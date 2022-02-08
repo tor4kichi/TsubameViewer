@@ -176,7 +176,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             folderItem.ThumbnailChanged();                            
                         }
 
-                        folderItem.Initialize();
+                        folderItem.Initialize(ct);
                     }
 
                     foreach (var ignoreItem in ignoredItems)
@@ -213,7 +213,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         try
                         {
                             var itemVM = await ToStorageItemViewModel(item);
-                            itemVM.Initialize();
+                            itemVM.Initialize(ct);
                             RecentlyItems.Add(itemVM);
                         }
                         catch
@@ -234,7 +234,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         if (item.Name == lastIntaractItemPath)
                         {
                             item.ThumbnailChanged();
-                            item.Initialize();
+                            item.Initialize(ct);
                         }
                     }
                 }

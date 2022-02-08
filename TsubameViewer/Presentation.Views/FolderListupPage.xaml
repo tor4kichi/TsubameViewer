@@ -210,9 +210,6 @@
         </GridView.ItemContainerTransitions>
 
         <i:Interaction.Behaviors>
-          <myBehaior:ListViewBaseFirstAppearTriggerBehavior>
-            <core:CallMethodAction MethodName="Initialize" />
-          </myBehaior:ListViewBaseFirstAppearTriggerBehavior>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1">
             <uiNavigation:BypassToCurrentFocusElementDataContextAction>
               <core:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />

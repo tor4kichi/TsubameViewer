@@ -22,7 +22,7 @@ namespace TsubameViewer.Presentation.Navigations
             }
         }
 
-        const string NavigationModeKey = "__nm";
+        public const string NavigationModeKey = "__nm";
         public static NavigationMode GetNavigationMode(this INavigationParameters parameters)
         {
             return parameters.TryGetValue<NavigationMode>(NavigationModeKey, out var mode) ? mode : throw new InvalidOperationException();

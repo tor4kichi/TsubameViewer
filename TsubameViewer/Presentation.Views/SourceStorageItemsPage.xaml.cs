@@ -42,9 +42,14 @@ namespace TsubameViewer.Presentation.Views
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.Item is StorageItemViewModel itemVM && itemVM.IsSourceStorageItem is false && itemVM.Name != null)
+            if (args.Item is StorageItemViewModel itemVM)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts.IsCancellationRequested is false)
+                {
+                    ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                }
+
+                itemVM.Initialize(_ct);
             }
         }
 
@@ -57,12 +62,11 @@ namespace TsubameViewer.Presentation.Views
         }
 
         CancellationTokenSource _navigationCts;
-
+        CancellationToken _ct;
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
-            _navigationCts = null;
+            _navigationCts.Cancel();
+            _navigationCts.Dispose();
 
             base.OnNavigatingFrom(e);
         }
@@ -71,10 +75,8 @@ namespace TsubameViewer.Presentation.Views
         {
             base.OnNavigatedTo(e);
 
-            _navigationCts?.Cancel();
-            _navigationCts?.Dispose();
             _navigationCts = new CancellationTokenSource();
-            var ct = _navigationCts.Token;
+            var ct = _ct = _navigationCts.Token;
 
             try
             {

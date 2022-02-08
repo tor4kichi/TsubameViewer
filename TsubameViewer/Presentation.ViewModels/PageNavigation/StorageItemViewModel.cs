@@ -73,8 +73,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public StorageItemTypes Type { get; }
 
-        private CancellationTokenSource _cts;
-
         private double _ReadParcentage;
         public double ReadParcentage
         {
@@ -108,66 +106,36 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
             UpdateLastReadPosition();
             _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
+        
         }
 
-        public void ClearImage()
-        {
-            if (_disposed) { return; }
 
-#if DEBUG
-            if (Image == null)
-            {
-                Debug.WriteLine("Thumbnail Cancel: " + Name);
-            }
-#endif
-
-            if (_cts?.IsCancellationRequested == false)
-            {
-                _cts.Cancel();
-            }
-
-            Image = null;
-        }
-
+        private bool _isRequestImageLoading = false;
+        private bool _isRequireLoadImageWhenRestored = false;
         public void StopImageLoading()
         {
-            if (_disposed) { return; }
-
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
+            _isRequestImageLoading = false;
         }
 
-        private bool _isAppearingRequestButLoadingCancelled;
         private readonly static Models.Infrastructure.AsyncLock _asyncLock = new (5);
 
         bool _isInitialized = false;
-        public async void Initialize()
+        public async void Initialize(CancellationToken ct)
         {
             if (_isInitialized) { return; }
             if (_disposed) { return; }
+            if (Item == null) { return; }
 
             // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
             // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
-            var ct = _cts.Token;
+            _isRequestImageLoading = true;
 
             try
             {
                 using var lockReleaser = await _asyncLock.LockAsync(ct);
 
-                if (Item == null) { return; }
-
-                if (ct.IsCancellationRequested)
-                {
-                    _isAppearingRequestButLoadingCancelled = true;
-                    return; 
-                }
-
-                ct.ThrowIfCancellationRequested();
-
-                _isAppearingRequestButLoadingCancelled = false;
+                if (_isInitialized) { return; }
+                if (_isRequestImageLoading is false) { return; }
 
                 using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
                 {
@@ -183,13 +151,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
                 ImageAspectRatioWH ??= Item.GetThumbnailSize()?.RatioWH;
 
+                _isRequireLoadImageWhenRestored = false;
                 _isInitialized = true;
             }
             catch (OperationCanceledException)
             {
+                _isRequireLoadImageWhenRestored = true;
                 _isInitialized = false;
-                _isAppearingRequestButLoadingCancelled = true;
-            }            
+            }                       
         }
 
         public void UpdateLastReadPosition()
@@ -198,20 +167,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
         }
 
-        public void RestoreThumbnailLoadingTask()
+        public void RestoreThumbnailLoadingTask(CancellationToken ct)
         {
             IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
 
-            if (_isAppearingRequestButLoadingCancelled)
+            if (_isRequireLoadImageWhenRestored && Image == null)
             {
-                if (Image != null)
-                {
-                    return;
-                }
-
-                _isInitialized = false;
-                
-                Initialize();
+                Initialize(ct);
             }
         }
 
@@ -226,10 +188,8 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             if (_disposed) { return; }
             
             _disposed = true;
-            _cts?.Cancel();
-            _cts?.Dispose();
             (Item as IDisposable)?.Dispose();
-            Image = null;
+            _image = null;
         }
         bool _disposed;
     }
