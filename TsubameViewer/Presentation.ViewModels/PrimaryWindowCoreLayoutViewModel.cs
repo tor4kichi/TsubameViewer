@@ -78,7 +78,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             UpdateAutoSuggestCommand
                 .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
-                .Where(_ => OnceSkipSuggestUpdate is false)
+                .Where(_ => _onceSkipSuggestUpdate is false)
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
@@ -149,10 +149,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
-        bool OnceSkipSuggestUpdate = false;
-        Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
-        CancellationTokenSource _cts;
-        async void ExecuteUpdateAutoSuggestCommand(string parameter)
+        private bool _onceSkipSuggestUpdate = false;
+        private readonly Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
+        private CancellationTokenSource _cts;
+        private async void ExecuteUpdateAutoSuggestCommand(string parameter)
         {            
             CancellationTokenSource cts;
             CancellationToken ct = default;
@@ -163,9 +163,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _AutoSuggestItemsGroup.Items.Clear();
 
-                if (OnceSkipSuggestUpdate) 
+                if (_onceSkipSuggestUpdate) 
                 {
-                    OnceSkipSuggestUpdate = false;
+                    _onceSkipSuggestUpdate = false;
                     return; 
                 }
                 if (string.IsNullOrWhiteSpace(parameter)) { return; }
@@ -206,7 +206,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using (await _suggestUpdateLock.LockAsync(default))
             {
-                OnceSkipSuggestUpdate = true;
+                _onceSkipSuggestUpdate = true;
                 _cts?.Cancel();
                 _cts = null;
             }
@@ -246,7 +246,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             using (await _suggestUpdateLock.LockAsync(default))
             { 
-                OnceSkipSuggestUpdate = false;
+                _onceSkipSuggestUpdate = false;
             }
         }
 
@@ -261,7 +261,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
-                    OnceSkipSuggestUpdate = true;
+                    _onceSkipSuggestUpdate = true;
                     _cts?.Cancel();
                     _cts = null;
                 }
@@ -269,7 +269,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
-                    OnceSkipSuggestUpdate = false;                
+                    _onceSkipSuggestUpdate = false;                
                 }
             }
             else if (parameter is IStorageItem entry)

@@ -1155,7 +1155,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var secondImage = candidateImages.ElementAt(1);
                     ThumbnailManager.ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
 
-                    bool canDoubleView = false;
+                    bool canDoubleView;
                     if (firstImageSize is not null and ThumbnailManager.ThumbnailSize fistImageSizeReal 
                         && secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal)
                     {
@@ -1654,12 +1654,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (direction is IndexMoveDirection.Refresh or IndexMoveDirection.Forward)
             {
-                var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);
+                await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);
                 SetPrefetchDisplayImageSingleWhenNowDoubleView(PrefetchIndexType.Next);
             }
             else if (direction is IndexMoveDirection.Backward)
             {
-                var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Prev, IndexMoveDirection.Backward, requestIndex, ct);
+                await LoadImagesAsync(PrefetchIndexType.Prev, IndexMoveDirection.Backward, requestIndex, ct);
             }
         }
 

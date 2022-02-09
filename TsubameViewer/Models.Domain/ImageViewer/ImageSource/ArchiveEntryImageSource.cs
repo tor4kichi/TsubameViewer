@@ -58,7 +58,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
-            using var mylock = await ArchiveEntryAccessLock.LockAsync(ct);
+            using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
 
             var memoryStream = new InMemoryRandomAccessStream();
             using (var entryStream = _entry.OpenEntryStream())
@@ -75,7 +75,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
 
-        internal static readonly Models.Infrastructure.AsyncLock ArchiveEntryAccessLock = new ();
+        internal static readonly Models.Infrastructure.AsyncLock _archiveEntryAccessLock = new ();
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {

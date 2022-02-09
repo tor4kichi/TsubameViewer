@@ -278,7 +278,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
 
-                Folders.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
+                Folders.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -291,7 +291,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
 
-                TempFiles.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
+                TempFiles.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -311,13 +311,11 @@ namespace TsubameViewer.Presentation.ViewModels
     public class StoredFolderViewModel
     {
         private readonly IMessenger _messenger;
-        private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
 
-        public StoredFolderViewModel(IMessenger messenger, SourceStorageItemsRepository SourceStorageItemsRepository, StoredFoldersSettingItemViewModel parentVM)
+        public StoredFolderViewModel(IMessenger messenger, StoredFoldersSettingItemViewModel parentVM)
         {
             _messenger = messenger;
-            _SourceStorageItemsRepository = SourceStorageItemsRepository;
             _parentVM = parentVM;
         }
 
@@ -332,8 +330,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _DeleteStoredFolderCommand ??= new RelayCommand(() => 
             {
                 _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
-
-                //_SourceStorageItemsRepository.RemoveFolder(Token);
                 _parentVM.RemoveItem(this);
 
                 /*
@@ -344,7 +340,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 dialog.Commands.Add(new UICommand("RemoveSourceFolderFromApp".Translate(), _ => 
                 {
-                    _SourceStorageItemsRepository.RemoveFolder(Token);
+                    _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
                     _parentVM.RemoveItem(this);
                 }));
 

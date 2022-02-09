@@ -314,24 +314,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             base.OnNavigatedFrom(parameters);
         }
-
         
-
-
-        void ClearCurrentContent()
-        {
-            _ImageCollectionDisposer?.Dispose();
-            _ImageCollectionDisposer = null;
-
-            foreach (var itemVM in ImageFileItems)
-            {
-                itemVM.Dispose();
-            }
-            ImageFileItems.Clear();
-
-            CurrentFolderItem?.Dispose();
-            CurrentFolderItem = null;
-        }
 
         async Task ResetContentWithStorageItem(string path, CancellationToken ct)
         {

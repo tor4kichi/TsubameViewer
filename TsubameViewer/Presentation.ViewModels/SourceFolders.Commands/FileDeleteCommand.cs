@@ -33,7 +33,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
         {
             if (imageSource.StorageItem is IStorageItem item)
             {
-                bool isDelete = false;
+                bool isDelete;
                 if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
                 {
                     isDelete = true;

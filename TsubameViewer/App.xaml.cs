@@ -197,7 +197,7 @@ namespace TsubameViewer
 
         }
 
-        bool isRestored = false;
+        bool _isRestored = false;
         public async Task OnActivationAsync(IActivatedEventArgs args)
         {
             using var releaser = await _InitializeLock.LockAsync(default);
@@ -242,12 +242,12 @@ namespace TsubameViewer
                 var result = await NavigateAsync(pageNavigationInfo, messenger);
                 if (result.IsSuccess)
                 {
-                    isRestored = true;
+                    _isRestored = true;
                     
                 }
             }
 
-            if (isRestored is false)
+            if (_isRestored is false)
             {
                 var shell = Window.Current.Content as PrimaryWindowCoreLayout;
                 shell.RestoreNavigationStack();

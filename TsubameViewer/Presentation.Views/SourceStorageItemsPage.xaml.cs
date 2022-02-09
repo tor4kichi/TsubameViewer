@@ -82,7 +82,7 @@ namespace TsubameViewer.Presentation.Views
             base.OnNavigatedTo(e);
 
             _navigationCts = new CancellationTokenSource();
-            var ct = _ct = _navigationCts.Token;
+            _ct = _navigationCts.Token;
             _isFirstItem = true;
         }
     }

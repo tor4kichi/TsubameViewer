@@ -53,7 +53,6 @@ namespace TsubameViewer.Presentation.Views
     {
         private readonly ImageViewerPageViewModel _vm;
 
-        private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;
         private readonly FocusHelper _focusHelper;
 
@@ -64,7 +63,6 @@ namespace TsubameViewer.Presentation.Views
             DataContext = _vm = Ioc.Default.GetService<ImageViewerPageViewModel>();
             _messenger = Ioc.Default.GetService<IMessenger>();
             _focusHelper = Ioc.Default.GetService<FocusHelper>();
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
