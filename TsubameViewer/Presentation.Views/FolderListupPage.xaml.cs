@@ -188,13 +188,15 @@ namespace TsubameViewer.Presentation.Views
             }
             
             if (e.RemovedItems?.Any() ?? false)
-            {
+            {                
+                var prevCount = FoldersAdaptiveGridView.SelectedItems.Count;
                 foreach (var itemVM in e.RemovedItems.Cast<StorageItemViewModel>())
                 {
                     _vm.Selection.SelectedItems.Remove(itemVM);
                 }
 
-                if (FoldersAdaptiveGridView.SelectedItems.Count == 0)
+                // 複数選択開始時に選択アイテムが無い場合にそのまま選択動作が終了しないようにしている
+                if (prevCount != 0 && FoldersAdaptiveGridView.SelectedItems.Count == 0)
                 {
                     _vm.Selection.EndSelection();
                 }
