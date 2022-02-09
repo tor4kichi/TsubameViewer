@@ -182,7 +182,31 @@
       <XamlUICommand.KeyboardAccelerators>
       </XamlUICommand.KeyboardAccelerators>
     </XamlUICommand>
-    
+
+    <XamlUICommand x:Key="GoNextImageUICommand" Command="{x:Bind _vm.GoNextImageCommand}" 
+                   Label="{i18nExt:Localize Key=GoNextPage}"
+                   Description="{i18nExt:Localize Key=GoNextPage}"
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Forward" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Space" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="GoPrevImageUICommand" Command="{x:Bind _vm.GoPrevImageCommand}"
+                   Label="{i18nExt:Localize Key=GoNextPage}"
+                   Description="{i18nExt:Localize Key=GoNextPage}"
+                   >
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Back" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Space" Modifiers="Shift" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
   </Page.Resources>
 
   <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
@@ -198,18 +222,18 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand}" />
+          <core:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
+          <core:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
@@ -229,16 +253,16 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True" IsEnabled="False">
-        <core:InvokeCommandAction Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{StaticResource GoPrevImageUICommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="ReverseGamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True" IsEnabled="False">
-        <core:InvokeCommandAction Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}" />
+        <core:InvokeCommandAction Command="{StaticResource GoNextImageUICommand}"  />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRTTriggerBehavior" Kind="PageUp" IsRequireFocus="True" IsEnabled="True">
@@ -353,7 +377,7 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
-        Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}"
+        Command="{StaticResource GoNextImageUICommand}" 
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -374,7 +398,7 @@
       </Button>
 
       <Button x:Name="ReverseLeftPageMoveButton"
-        Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}"
+        Command="{StaticResource GoPrevImageUICommand}"
               Grid.Column="0"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -406,7 +430,7 @@
               KeyboardAcceleratorPlacementMode="Hidden" />
 
       <Button x:Name="RightPageMoveButton"
-        Command="{x:Bind _vm.GoPrevImageCommand, Mode=OneTime}"
+        Command="{StaticResource GoPrevImageUICommand}"
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"
@@ -425,7 +449,7 @@
       </Button>
 
       <Button x:Name="ReverseRightPageMoveButton"
-        Command="{x:Bind _vm.GoNextImageCommand, Mode=OneTime}"
+        Command="{StaticResource GoNextImageUICommand}" 
               Grid.Column="2"
               Opacity="0"
               HorizontalContentAlignment="Stretch"

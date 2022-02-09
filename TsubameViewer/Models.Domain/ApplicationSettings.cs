@@ -13,6 +13,7 @@ namespace TsubameViewer.Models.Domain
             _Theme = Read(ApplicationTheme.Default, nameof(Theme));
             _Locale = Read(default(string), nameof(Locale));
             _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
+            _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
         }
 
         private ApplicationTheme _Theme;
@@ -47,6 +48,13 @@ namespace TsubameViewer.Models.Domain
         {
             get => _ForceXboxAppearanceModeEnabled;
             set => SetProperty(ref _ForceXboxAppearanceModeEnabled, value);
+        }
+
+        private bool _IsUINavigationFocusAssistanceEnabled;
+        public bool IsUINavigationFocusAssistanceEnabled
+        {
+            get => _IsUINavigationFocusAssistanceEnabled;
+            set => SetProperty(ref _IsUINavigationFocusAssistanceEnabled, value);
         }
     }
 

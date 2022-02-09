@@ -56,6 +56,7 @@ IsReverseImageFliping_Button = Reverse left/right page feed
 
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
+ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
 
 PrivacyPolicy = privacy policy
 ThirdPartyLibraryNotice = Third-party library license display

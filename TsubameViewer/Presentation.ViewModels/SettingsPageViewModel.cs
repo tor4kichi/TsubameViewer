@@ -121,9 +121,12 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#if DEBUG
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#endif
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
-
                     }
                 },
             };

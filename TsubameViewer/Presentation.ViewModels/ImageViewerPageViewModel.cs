@@ -197,6 +197,7 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _navigationDisposables;
         private readonly DispatcherQueue _dispatcherQueue;
 
+        public ApplicationSettings ApplicationSettings { get; }
         public ImageViewerSettings ImageViewerSettings { get; }
 
         public ReactivePropertySlim<bool> IsLeftBindingEnabled { get; }
@@ -223,6 +224,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageViewerPageViewModel(
             IScheduler scheduler,
             IMessenger messenger,
+            ApplicationSettings applicationSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             AlbamRepository albamRepository,
             ImageCollectionManager imageCollectionManager,
@@ -245,6 +247,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _scheduler = scheduler;
             _messenger = messenger;
+            ApplicationSettings = applicationSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _albamRepository = albamRepository;
             _imageCollectionManager = imageCollectionManager;

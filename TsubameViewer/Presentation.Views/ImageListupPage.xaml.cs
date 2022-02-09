@@ -13,7 +13,9 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
@@ -34,7 +36,9 @@ namespace TsubameViewer.Presentation.Views
     /// </summary>
     public sealed partial class ImageListupPage : Page
     {
+        private readonly ImageListupPageViewModel _vm;
         private readonly IMessenger _messenger;
+        private readonly FocusHelper _focusHelper;
 
         public ImageListupPage()
         {
@@ -42,12 +46,12 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _vm = Ioc.Default.GetService<ImageListupPageViewModel>();
             _messenger = Ioc.Default.GetService<IMessenger>();
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
 
             Loaded += FolderListupPage_Loaded;
             Unloaded += FolderListupPage_Unloaded;
         }
 
-        private readonly ImageListupPageViewModel _vm;
 
         private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -117,7 +121,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     await ResetScrollPosition(ct);
 
-                    if (IsRequireSetFocus())
+                    if (_focusHelper.IsRequireSetFocus())
                     {
                         var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
                         if (firstItem != null)
@@ -142,16 +146,6 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
-        private bool IsRequireSetFocus()
-        {
-            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
-                || UINavigation.UINavigationManager.NowControllerConnected
-                ;
-        }
-
-
         private void SaveScrollStatus(UIElement target)
         {
             if (target is FrameworkElement fe
@@ -163,7 +157,7 @@ namespace TsubameViewer.Presentation.Views
 
         private async Task<UIElement> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
         {
-            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
+            await this.WaitFillingValue(x => x.GetCurrentDisplayItemsRepeater() != null, ct);
 
             UIElement lastIntractItem = null;
             var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
@@ -191,7 +185,7 @@ namespace TsubameViewer.Presentation.Views
             var lastIntractItem = await WaitTargetIndexItemLoadingAsync(0, ct);
             ItemsScrollViewer.ChangeView(null, 0.0, null, disableAnimation: true);
 
-            if (IsRequireSetFocus() && lastIntractItem is Control control)
+            if (_focusHelper.IsRequireSetFocus() && lastIntractItem is Control control)
             {
                 control.Focus(FocusState.Keyboard);
             }
@@ -204,7 +198,10 @@ namespace TsubameViewer.Presentation.Views
             this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
             this.FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
 
-            (args.Element as Control)?.Focus(FocusState.Keyboard);
+            if (_focusHelper.IsRequireSetFocus())
+            {
+                (args.Element as Control)?.Focus(FocusState.Keyboard);
+            }
         }
 
 
@@ -240,7 +237,7 @@ namespace TsubameViewer.Presentation.Views
                             ItemsScrollViewer.ChangeView(null, targetOffset, null, disableAnimation: true);
                         }
 
-                        if (IsRequireSetFocus())
+                        if (_focusHelper.IsRequireSetFocus())
                         {
                             control.Focus(FocusState.Keyboard);
                         }

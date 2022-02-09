@@ -7,6 +7,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
@@ -36,9 +37,11 @@ namespace TsubameViewer.Presentation.Views
 
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
             DataContext = _vm = Ioc.Default.GetService<SourceStorageItemsPageViewModel>();
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
         }
 
         private readonly SourceStorageItemsPageViewModel _vm;
+        private readonly FocusHelper _focusHelper;
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
@@ -50,15 +53,16 @@ namespace TsubameViewer.Presentation.Views
                 }
 
                 itemVM.Initialize(_ct);
-            }
-        }
 
-        private bool IsRequireSetFocus()
-        {
-            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
-                || UINavigation.UINavigationManager.NowControllerConnected
-                ;
+                if (_isFirstItem )
+                {
+                    _isFirstItem = false;
+                    if (_focusHelper.IsRequireSetFocus() && itemVM.Type is not Models.Domain.StorageItemTypes.AddFolder)
+                    {
+                        args.ItemContainer.Focus(FocusState.Keyboard);
+                    }
+                }
+            }
         }
 
         CancellationTokenSource _navigationCts;
@@ -71,32 +75,15 @@ namespace TsubameViewer.Presentation.Views
             base.OnNavigatingFrom(e);
         }
 
+        bool _isFirstItem = false;
+
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 
             _navigationCts = new CancellationTokenSource();
             var ct = _ct = _navigationCts.Token;
-
-            try
-            {
-                if (IsRequireSetFocus())
-                {
-                    await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
-                    var firstItem = FoldersAdaptiveGridView.Items.First();
-                    await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
-                    
-                    // NavigationView.SelectionChanged が 実行され、MenuItemにフォーカスが移った後に
-                    // 改めてページの表示アイテムにフォーカスを移したい
-                    await Task.Delay(250);
-                    var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                    if (itemContainer != null)
-                    {
-                        itemContainer.Focus(FocusState.Keyboard);
-                    }
-                }
-            }
-            catch (OperationCanceledException) { }
+            _isFirstItem = true;
         }
     }
 }

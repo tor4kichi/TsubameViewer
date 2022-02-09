@@ -137,6 +137,7 @@ namespace TsubameViewer
             container.Register<Models.Domain.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
             container.Register<Models.Domain.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
             container.Register<FileControlSettings>(reuse: new SingletonReuse());
+            container.Register<ApplicationSettings>(reuse: new SingletonReuse());
 
             container.Register<Presentation.Services.UWP.SecondaryTileManager>(reuse: new SingletonReuse());
 
@@ -386,8 +387,11 @@ namespace TsubameViewer
             if (_isInitialized) { return; }
 
             _isInitialized = true;
-
+#if DEBUG
             Resources["DebugTVMode"] = Ioc.Default.GetService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
+#else
+            Resources["DebugTVMode"] = false;
+#endif
 
 #if DEBUG
             foreach (var collectionName in Ioc.Default.GetService<ILiteDatabase>().GetCollectionNames())

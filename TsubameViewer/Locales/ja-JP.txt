@@ -56,6 +56,7 @@ IsReverseImageFliping_Button = 左右のページ送りを逆にする
 
 GeneralUISettings = 操作設定
 IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
+ForceXboxAppearanceModeEnabled = ウィンドウ周囲に余白を追加（大きい画面向け）
 
 PrivacyPolicy = プライバシーポリシー
 ThirdPartyLibraryNotice = サードパーティライブラリのライセンス表示

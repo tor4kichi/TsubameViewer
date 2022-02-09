@@ -203,10 +203,14 @@ namespace TsubameViewer.Presentation.Views
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
                 {
+                    // 選択位置を変える際に選択時のコマンドが実行されないようにする
                     _nowChangingMenuItem = true;
                     try
                     {
+                        // 選択変更時にフォーカスがページコンテンツからメニュー項目に奪われないようにする
+                        MyNavigtionView.IsEnabled = false;
                         MyNavigtionView.SelectedItem = selectedMeuItemVM;
+                        MyNavigtionView.IsEnabled = true;
                     }
                     catch { }
                     _nowChangingMenuItem = false;

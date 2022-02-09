@@ -181,6 +181,7 @@
     <Compile Include="Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="Models.UseCase\FavoriteAlbam.cs" />
+    <Compile Include="Models.UseCase\FocusHelper.cs" />
     <Compile Include="Models.UseCase\Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
     <Compile Include="Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />

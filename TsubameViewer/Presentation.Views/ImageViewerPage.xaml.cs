@@ -18,6 +18,8 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.UINavigation;
@@ -53,6 +55,7 @@ namespace TsubameViewer.Presentation.Views
 
         private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;
+        private readonly FocusHelper _focusHelper;
 
         public ImageViewerPage()
         {
@@ -60,6 +63,7 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _vm = Ioc.Default.GetService<ImageViewerPageViewModel>();
             _messenger = Ioc.Default.GetService<IMessenger>();
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             Loaded += OnLoaded;
@@ -404,7 +408,11 @@ namespace TsubameViewer.Presentation.Views
             IsOpenBottomMenu = true;
             ButtonsContainer.Visibility = Visibility.Visible;
             ImageSelectorContainer.Visibility = Visibility.Visible;
-            ZoomInButton.Focus(FocusState.Keyboard);
+
+            if (_focusHelper.IsRequireSetFocus())
+            {
+                ZoomInButton.Focus(FocusState.Keyboard);
+            }            
         }
 
         private void CloseBottomUI()

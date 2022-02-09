@@ -31,6 +31,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using System.Windows.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using TsubameViewer.Models.UseCase;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -46,11 +47,12 @@ namespace TsubameViewer.Presentation.Views
             this.InitializeComponent();
 
             DataContext = _vm = Ioc.Default.GetService<FolderListupPageViewModel>();
-
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
             this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         }
 
         private readonly FolderListupPageViewModel _vm;
+        private readonly FocusHelper _focusHelper;
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
@@ -88,15 +90,6 @@ namespace TsubameViewer.Presentation.Views
         }
         #region 初期フォーカス設定
 
-        private bool IsRequireSetFocus()
-        {
-            return Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
-                || UINavigation.UINavigationManager.NowControllerConnected
-                ;
-        }
-
-
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -110,16 +103,15 @@ namespace TsubameViewer.Presentation.Views
 
                 base.OnNavigatedTo(e);
 
-                var settings = new Models.Domain.FolderItemListing.FolderListingSettings();
                 if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New)
                 {
-                    if (IsRequireSetFocus())
+                    if (_focusHelper.IsRequireSetFocus())
                     {
                         await FoldersAdaptiveGridView.WaitFillingValue(x => x.Items.Any(), ct);
                         var firstItem = FoldersAdaptiveGridView.Items.First();
                         if (firstItem is not null)
                         {
-                            await FoldersAdaptiveGridView.WaitFillingValue(x => FoldersAdaptiveGridView.ContainerFromItem(firstItem) != null, ct);
+                            await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
                             var itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
 
                             await Task.Delay(50);
@@ -152,82 +144,30 @@ namespace TsubameViewer.Presentation.Views
 
         public async Task BringIntoViewLastIntractItem(CancellationToken ct)
         {
-            await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
-
             var lastIntaractItem = _vm.GetLastIntractItem();
-            if (lastIntaractItem != null)
+            if (lastIntaractItem == null)
             {
-                if (lastIntaractItem.Type is not Models.Domain.StorageItemTypes.Image)
-                {
-                    FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
-
-                    // 並び替えを伴う場合にスクロール位置がズレる問題を回避するためDelayを入れてる                    
-                    DependencyObject item;
-                    do
-                    {
-                        item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
-
-                        await Task.Delay(1, ct);
-                    }
-                    while (item == null);
-
-                    if (item is Control control)
-                    {
-                        var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-                        if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
-                        {
-                            sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
-                        }
-
-                        await Task.Delay(50, ct);
-                        control.Focus(FocusState.Keyboard);
-                    }
-                }                
+                ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                return;
             }
-            //else if (pageVM.ImageLastIntractItem.Value >= 1)
+
+            FoldersAdaptiveGridView.ScrollIntoView(lastIntaractItem, ScrollIntoViewAlignment.Leading);
+
+            await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(lastIntaractItem) != null, ct);
+
+            DependencyObject item;
+            item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
+
+            if (item is Control control)
             {
-                // 実際にスクロールするまでItemTemplateは解決されない
-                // 一旦Opacity=0.0に設定した上で要素が取れるまでプログラマチックにスクロールしていく
-                // 要素が取れてスクロールが完了したらOpacity=1.0に戻す
-                /*
-                DependencyObject item;
-                var visibleItemsRepeater = new[] { FileItemsRepeater_Line, FileItemsRepeater_Small, FileItemsRepeater_Midium, FileItemsRepeater_Large }.First(x => x.Visibility == Visibility.Visible);
-                visibleItemsRepeater.Opacity = 0.0;
-                RootScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
-                double offset = 0;
+                var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
+                if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
                 {
-                    var transform = visibleItemsRepeater.TransformToVisual(RootScrollViewer);
-                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
-                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
-                    offset = positionInScrollViewer.Y;
-                }
-                
-                do
-                {
-                    item = visibleItemsRepeater.TryGetElement(pageVM.ImageLastIntractItem.Value);
-
-                    RootScrollViewer.ChangeView(null, offset, null, true);
-
-                    offset += RootScrollViewer.ViewportHeight;
-
-                    await Task.Delay(10);
-                }
-                while (item == null);
-
-                await Task.Delay(100);
-
-                if (item is Control control)
-                {
-                    var transform = control.TransformToVisual(RootScrollViewer);
-                    var positionInScrollViewer = transform.TransformPoint(new Point(0, 0));
-                    control.Focus(FocusState.Keyboard);
-                    RootScrollViewer.StartBringIntoView(new BringIntoViewOptions() { AnimationDesired = false });
-//                    RootScrollViewer.ChangeView(null, positionInScrollViewer.Y, null, true);
+                    sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
                 }
 
-                visibleItemsRepeater.Opacity = 1.0;
-                RootScrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Visible;
-                */
+                await Task.Delay(50, ct);
+                control.Focus(FocusState.Keyboard);
             }
         }
 
