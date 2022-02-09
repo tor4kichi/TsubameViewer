@@ -195,7 +195,7 @@ namespace TsubameViewer.Presentation.ViewModels
         ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
         
 
-        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+        public override Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             _navigationCts?.Cancel();
             _navigationCts?.Dispose();            
@@ -206,6 +206,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _ = RefreshThumbnailFilesSizeAsync(ct);
             // base.OnNavigatedToAsync(parameters);
+
+            return Task.CompletedTask;
         }
 
         private async Task RefreshThumbnailFilesSizeAsync(CancellationToken ct)
@@ -327,7 +329,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand _DeleteStoredFolderCommand;
         public RelayCommand DeleteStoredFolderCommand =>
-            _DeleteStoredFolderCommand ??= new RelayCommand(async () => 
+            _DeleteStoredFolderCommand ??= new RelayCommand(() => 
             {
                 _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
 

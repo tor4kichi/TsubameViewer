@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
@@ -148,8 +149,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private CancellationTokenSource _leavePageCancellationTokenSource;
 
-        bool _isCompleteEnumeration = false;
-
         private string _DisplayCurrentPath;
         public string DisplayCurrentPath
         {
@@ -188,8 +187,6 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
             Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
-
-        static bool _LastIsImageFileGenerateThumbnailEnabled;
 
 
         public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
@@ -448,7 +445,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _currentArchiveFolderName = null;
 
-                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {                    
                     (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                     var unescapedPath = itemPath;                    
@@ -469,7 +466,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
                 }
-                else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
                     (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
@@ -563,7 +560,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _IsFavoriteAlbam = false;
             _imageCollectionContext = null;
-            _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
             if (currentItem is StorageFolder folder)
             {
@@ -618,8 +614,6 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             OnPropertyChanged(nameof(IsFavoriteAlbam));
-
-            _isCompleteEnumeration = true;
 
             if (imageCollectionContext == null) { return; }
 

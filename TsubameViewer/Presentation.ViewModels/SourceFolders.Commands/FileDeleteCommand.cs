@@ -55,7 +55,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 
                         //item.
                     }
-                    catch (FileNotFoundException fnfe)
+                    catch (FileNotFoundException)
                     {
 
                     }

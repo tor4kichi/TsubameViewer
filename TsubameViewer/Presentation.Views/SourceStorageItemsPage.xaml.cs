@@ -77,7 +77,7 @@ namespace TsubameViewer.Presentation.Views
 
         bool _isFirstItem = false;
 
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
 

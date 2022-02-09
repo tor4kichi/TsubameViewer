@@ -37,6 +37,7 @@ using System.Collections.Immutable;
 using TsubameViewer.Presentation.Navigations;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Presentation.Services;
+using TsubameViewer.Models.Domain.Navigation;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -115,9 +116,6 @@ namespace TsubameViewer.Presentation.Views
             typeof(ImageListupPage),
             typeof(FolderListupPage),
         }.ToImmutableHashSet();
-
-        private IDisposable _refreshNavigationEventSubscriber;
-        private IDisposable _themeChangeRequestEventSubscriber;
 
         private readonly AsyncLock _navigationLock = new ();
         private bool _isForgetNavigationRequested = false;

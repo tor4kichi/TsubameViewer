@@ -316,7 +316,7 @@
         </i:Interaction.Behaviors>
         <Grid.Resources>
           <Style TargetType="muxc:ItemsRepeater">
-            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalCacheLength" Value="100000" />
             <Setter Property="HorizontalCacheLength" Value="100000" />
             <Setter Property="ItemTemplate">
@@ -328,9 +328,7 @@
             </Setter>
             <Setter Property="Layout">
               <Setter.Value>
-                <muxc:FlowLayout Orientation="Horizontal"
-                           LineAlignment="Center"
-                           />
+                <muxc:StackLayout Orientation="Horizontal" />
               </Setter.Value>
             </Setter>
           </Style>
@@ -607,7 +605,7 @@
               >
 
       <Windows10version1903:Border.Shadow>
-        <ThemeShadow  />
+        <Windows10version1903:ThemeShadow  />
       </Windows10version1903:Border.Shadow>
       
       <animation:Implicit.ShowAnimations>
@@ -738,7 +736,7 @@
           IsHitTestVisible="False"
           >
       <Windows10version1903:Grid.Shadow>
-        <ThemeShadow />
+        <Windows10version1903:ThemeShadow />
       </Windows10version1903:Grid.Shadow>
 
       <animation:Implicit.ShowAnimations>

@@ -329,9 +329,7 @@ namespace TsubameViewer.Presentation.Views
             }
         });
 
-        RelayCommand<UIElement> _OpenItemCommand;
-        private Models.Domain.FolderItemListing.FolderListingSettings _FolderListingSettings;
-
+        RelayCommand<UIElement> _OpenItemCommand;        
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
             SaveScrollStatus(item);

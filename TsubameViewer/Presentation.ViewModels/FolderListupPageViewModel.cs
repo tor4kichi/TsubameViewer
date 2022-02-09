@@ -39,6 +39,7 @@ using TsubameViewer.Presentation.Navigations;
 using System.Reactive.Disposables;
 using Windows.UI.Xaml.Navigation;
 using Microsoft.Toolkit.Mvvm.Input;
+using TsubameViewer.Models.Domain.Navigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -129,8 +130,6 @@ namespace TsubameViewer.Presentation.ViewModels
         private IStorageItem _currentItem;
 
         private CancellationTokenSource _leavePageCancellationTokenSource;
-
-        bool _isCompleteEnumeration = false;
 
         private string _DisplayCurrentPath;
         public string DisplayCurrentPath
@@ -367,7 +366,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _currentArchiveFolderName = null;
 
-                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
@@ -516,7 +515,6 @@ namespace TsubameViewer.Presentation.ViewModels
             CurrentFolderItem = null;
 
             _imageCollectionContext = null;
-            _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
             try
             {
@@ -566,8 +564,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     throw new NotSupportedException();
                 }
-
-                _isCompleteEnumeration = true;
             }
             catch (OperationCanceledException)
             {

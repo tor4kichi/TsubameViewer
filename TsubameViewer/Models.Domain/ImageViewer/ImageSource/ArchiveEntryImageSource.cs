@@ -27,7 +27,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+        public ArchiveEntryImageSource(string path, IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _entry = entry;
             _archiveDirectoryToken = archiveDirectoryToken;
@@ -36,6 +36,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             StorageItem = _archiveImageCollection.File;
             _thumbnailManager = thumbnailManager;
             DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
+            Path = path;
         }
 
         public StorageFile StorageItem { get; }
@@ -51,8 +52,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         //public string Name => _name ??= System.IO.Path.GetFileName(_entry.Key);
         public string Name => _name ??= _entry.Key;
 
-        private string _path; 
-        public string Path => _path ??= PageNavigationConstants.MakeStorageItemIdWithPage(StorageItem.Path, _entry.Key);
+        public string Path { get; }
 
         public DateTime DateCreated { get; }
 
@@ -111,7 +111,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public bool Equals(IImageSource other)
         {
             if (other == null) { return false; }
-            return this._path == other.Path;
+            return this.Path == other.Path;
         }
 
         public override string ToString()

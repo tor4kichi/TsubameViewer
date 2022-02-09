@@ -29,6 +29,7 @@ using TsubameViewer.Presentation.Navigations;
 using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Models.Domain.Navigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {

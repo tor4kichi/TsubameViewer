@@ -5,7 +5,7 @@ using System.Text;
 using System.Web;
 using TsubameViewer.Presentation.Views;
 
-namespace TsubameViewer.Models.Domain
+namespace TsubameViewer.Models.Domain.Navigation
 {
     public static class PageNavigationConstants
     {

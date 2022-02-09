@@ -24,6 +24,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using System.Reactive.Disposables;
+using TsubameViewer.Models.Domain.Navigation;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -264,7 +265,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string q))
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
             {
                 var (path, pageName, archiveName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);

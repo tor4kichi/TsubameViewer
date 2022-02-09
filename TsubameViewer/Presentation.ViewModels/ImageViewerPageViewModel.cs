@@ -50,6 +50,7 @@ using TsubameViewer.Presentation.Navigations;
 using Windows.UI.Xaml.Navigation;
 using Microsoft.Toolkit.Mvvm.Input;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Models.Domain.Navigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -410,7 +411,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 || mode == NavigationMode.Forward
                 )
             {
-                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
@@ -473,7 +474,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     _CurrentImageIndex = 0;
                 }
-                else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
                     var unescapedPath = Uri.UnescapeDataString(albamPath);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
@@ -1868,7 +1869,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand _SizeChangedCommand;
         public RelayCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new RelayCommand(async () =>
+            _SizeChangedCommand ??= new RelayCommand(() =>
             {
                 if (!(Images?.Any() ?? false)) { return; }
                 
@@ -1926,7 +1927,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand<object> _ChangeFileSortCommand;
         public RelayCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new RelayCommand<object>(async sort =>
+            _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)

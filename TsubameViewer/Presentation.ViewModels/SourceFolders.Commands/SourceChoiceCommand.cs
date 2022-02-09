@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;

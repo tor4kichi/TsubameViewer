@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Models.UseCase.Maintenance;

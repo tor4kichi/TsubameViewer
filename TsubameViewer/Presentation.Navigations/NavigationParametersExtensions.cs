@@ -9,7 +9,7 @@ namespace TsubameViewer.Presentation.Navigations
 {
     public static class NavigationParametersExtensions
     {
-        public static bool TryGetValueSafe<T>(this INavigationParameters parameters, string key, out T outValue)
+        public static bool TryGetValue<T>(this INavigationParameters parameters, string key, out T outValue)
         {
             if (!parameters.ContainsKey(key))
             {

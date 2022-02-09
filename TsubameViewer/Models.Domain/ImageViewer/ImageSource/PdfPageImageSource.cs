@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Streams;

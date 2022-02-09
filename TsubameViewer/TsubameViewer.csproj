@@ -162,10 +162,9 @@
     <Compile Include="Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
-    <Compile Include="Models.Domain\PageNavigationConstants.cs" />
     <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
-    <Compile Include="Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
-    <Compile Include="Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="Models.Domain\Navigation\FolderLastIntractItemManager.cs" />
+    <Compile Include="Models.Domain\Navigation\RestoreNavigationManager.cs" />
     <Compile Include="Models.Domain\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
@@ -198,6 +197,7 @@
     <Compile Include="Presentation.Navigations\IViewLocator.cs" />
     <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
     <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
+    <Compile Include="Models.Domain\Navigation\PageNavigationConstants.cs" />
     <Compile Include="Presentation.Services\AlbamDialogService.cs" />
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
@@ -219,7 +219,6 @@
     <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\NavigationParametersExtensions.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
