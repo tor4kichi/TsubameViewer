@@ -65,7 +65,26 @@ namespace TsubameViewer.Presentation.Views
             _focusHelper = Ioc.Default.GetService<FocusHelper>();
 
             Loaded += OnLoaded;
-            Unloaded += OnUnloaded;
+            Unloaded += OnUnloaded;            
+        }
+
+        private void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Escape)
+            {
+                if (IsOpenBottomMenu)
+                {
+                    CloseBottomUI();
+                }
+                else
+                {
+                    ClosePage();
+                }
+            }
+            else if (e.Key is VirtualKey.Number1 or VirtualKey.Number2 or VirtualKey.Number3 or VirtualKey.Number4)
+            {
+                ShowBottomUI();
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -74,6 +93,8 @@ namespace TsubameViewer.Presentation.Views
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
+
+            KeyDown -= ImageViewerPage_KeyDown;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -85,6 +106,8 @@ namespace TsubameViewer.Presentation.Views
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
+
+            KeyDown += ImageViewerPage_KeyDown;
         }
 
         public bool IsReadyToImageDisplay
@@ -103,6 +126,11 @@ namespace TsubameViewer.Presentation.Views
         #region Navigation
 
         void ForceClosePage(object sender, RoutedEventArgs e)
+        {
+            ClosePage();
+        }
+
+        void ClosePage()
         {
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             (_vm.BackNavigationCommand as ICommand).Execute(null);
