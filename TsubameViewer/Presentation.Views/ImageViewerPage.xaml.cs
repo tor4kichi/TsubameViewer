@@ -22,6 +22,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.Helpers;
 using TsubameViewer.Presentation.Views.UINavigation;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
@@ -250,7 +251,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (isConnectedAnimationDone is false)
                 {
-                    await AnimationBuilder.Create()
+                    AnimationBuilder.Create()
                        .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
                            .TimedKeyFrames(ke =>
@@ -259,7 +260,7 @@ namespace TsubameViewer.Presentation.Views
                                ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                            })
                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                       .StartAsync(ImageItemsControl_0, navigationCt);
+                       .Start(ImageItemsControl_0, navigationCt);
                 }
             }
             catch (OperationCanceledException) { }
@@ -311,57 +312,24 @@ namespace TsubameViewer.Presentation.Views
             if (_vm.DisplayImages_0.Length == 1)
             {
                 UIElement image = null;
-                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage)
+                await VisualTreeExtentions.WaitFillingValue(() => 
                 {
-                    image = readyImage;
-                }
-                else
-                {
-                    image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                      h => ImageItemsControl_0.ElementPrepared += h,
-                      h => ImageItemsControl_0.ElementPrepared -= h
-                      )
-                      .Select(x => x.EventArgs.Element)
-                      .Take(1)
-                      .ToAsyncOperation()
-                      .AsTask(ct);
-
-                }
-
-                while (image.ActualSize is { X: 0, Y: 0 })
-                {
-                    await Task.Delay(1, ct);
-                }
-
+                    image ??= ImageItemsControl_0.TryGetElement(0);
+                    if (image == null) { return false; }
+                    return image.ActualSize is not { X: 0, Y: 0 };
+                }, ct);
                 return new[] { image };
             }
             else
             {
-                IList<UIElement> images = null;
-                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage1
-                    && ImageItemsControl_0.TryGetElement(1) is not null and var readyImage2
-                    )
+                UIElement[] images = new UIElement[2];
+                await VisualTreeExtentions.WaitFillingValue(() =>
                 {
-                    images = new[] { readyImage1, readyImage2 };
-                }
-                else
-                {
-                    images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                           h => ImageItemsControl_0.ElementPrepared += h,
-                           h => ImageItemsControl_0.ElementPrepared -= h
-                           )
-                           .Select(x => x.EventArgs.Element)
-                           .Take(2)
-                           .Buffer(2)
-                           .ToAsyncOperation()
-                           .AsTask(ct);
-                }
-
-                while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
-                {
-                    await Task.Delay(1, ct);
-                }
-                
+                    images[0] ??= ImageItemsControl_0.TryGetElement(0);
+                    images[1] ??= ImageItemsControl_0.TryGetElement(1);
+                    if (images.Any(x => x is null)) { return false; }
+                    return images.All(x => x.ActualSize is not { X: 0, Y: 0 });
+                }, ct);
                 return images;
             }
         }
