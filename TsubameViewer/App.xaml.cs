@@ -158,6 +158,7 @@ namespace TsubameViewer
 
         protected override async void OnFileActivated(FileActivatedEventArgs args)
         {
+            await InitializeAsync();
             await OnActivationAsync(args);
         }
 
