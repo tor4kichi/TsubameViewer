@@ -539,6 +539,10 @@ namespace TsubameViewer.Presentation.ViewModels
             _currentItem = currentItem;
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
+            foreach (var item in ImageFileItems)
+            {
+                item.Dispose();
+            }
             ImageFileItems.Clear();
 
             _IsFavoriteAlbam = false;
