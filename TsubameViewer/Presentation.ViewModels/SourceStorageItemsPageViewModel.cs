@@ -182,6 +182,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     foreach (var ignoreItem in ignoredItems)
                     {
+                        ignoreItem.Dispose();
                         Folders.Remove(ignoreItem);
                     }
 
@@ -321,12 +322,14 @@ namespace TsubameViewer.Presentation.ViewModels
             var existInFolders = Folders.Skip(1).FirstOrDefault(x => x.Path == path);
             if (existInFolders != null)
             {
+                existInFolders.Dispose();
                 Folders.Remove(existInFolders);
             }
 
             var existInFiles = RecentlyItems.Where(x => x.Path == path).ToList();
             foreach (var item in existInFiles)
             {
+                item.Dispose();
                 RecentlyItems.Remove(item);
             }
         }

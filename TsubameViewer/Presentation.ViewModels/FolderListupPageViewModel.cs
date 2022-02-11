@@ -382,7 +382,6 @@ namespace TsubameViewer.Presentation.ViewModels
                             )
                         )
                     {        
-                        ClearContent();
                         await ResetContent(unescapedPath, ct);
                     }
                     else
@@ -510,7 +509,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using var lockObject = await _RefreshLock.LockAsync(ct);
 
-            FolderItems.Clear();
+            ClearContent();
             DisplayCurrentArchiveFolderName = null;
             CurrentFolderItem = null;
 
