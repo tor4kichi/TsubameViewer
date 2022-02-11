@@ -88,18 +88,22 @@
       </i:Interaction.Behaviors>
       <muxc:NavigationView.MenuItemTemplate>
         <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <muxc:NavigationViewItem Content="{x:Bind Title}" DataContext="{x:Bind}" />
+          <muxc:NavigationViewItem Content="{x:Bind Title}" DataContext="{x:Bind}" AccessKey="{x:Bind AccessKey}">
+            <muxc:NavigationViewItem.KeyboardAccelerators>
+              <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}" Modifiers="Control" />
+            </muxc:NavigationViewItem.KeyboardAccelerators>
+          </muxc:NavigationViewItem>
         </DataTemplate>
       </muxc:NavigationView.MenuItemTemplate>
 
       <muxc:NavigationView.AutoSuggestBox>
-        <AutoSuggestBox PlaceholderText="{Binding Source=SearchPlaceholder, Converter={StaticResource LocalizeConverter}}" 
+        <AutoSuggestBox PlaceholderText="{i18Ext:Localize Key=SearchPlaceholder}" 
                         QueryIcon="Find"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         x:Name="AutoSuggestBox"
                         Padding="0"
-                        Width="196"
+                        Width="196"                        
                         ItemsSource="{Binding Source={StaticResource AutoSuggestBoxItems}}"
                         TextMemberPath="Title"
                         UpdateTextOnSelect="False"
@@ -108,7 +112,9 @@
                         IsFocusEngagementEnabled="True"
                         UseSystemFocusVisuals="True"
                         FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                            >
+                        AccessKey="F"
+                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
@@ -118,6 +124,10 @@
             </uiNavigation:UINavigationTriggerBehavior>
           </i:Interaction.Behaviors>
 
+          <AutoSuggestBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="KeyboardAccelerator_Invoked" />
+          </AutoSuggestBox.KeyboardAccelerators>
+          
           <AutoSuggestBox.ItemTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding Name}" FontSize="12" TextWrapping="Wrap" />
@@ -133,12 +143,12 @@
                     Width="240"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}">
+            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}" AccessKey="O" KeyTipPlacementMode="Bottom">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="ImageAdd24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _vm.StartSelectionCommand}">
+            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _vm.StartSelectionCommand}" AccessKey="M" KeyTipPlacementMode="Bottom">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="Multiselect24" />
               </AppBarButton.Icon>
@@ -150,7 +160,7 @@
                 <fi:FluentIconElement Symbol="ArrowSync24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="Settings24" />
               </AppBarButton.Icon>
@@ -162,7 +172,7 @@
                 <fi:FluentIconElement Symbol="PersonFeedback24" />
               </AppBarButton.Icon>
             </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _vm.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}" >
+            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _vm.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="PersonFeedback24" />
               </AppBarButton.Icon>
@@ -200,6 +210,7 @@
                 Height="48"
                 HorizontalAlignment="Center"
                 Style="{ThemeResource AccentButtonStyle}"
+                AccessKey="C"
                 />
 
 

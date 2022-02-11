@@ -96,7 +96,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 try
                 {
-                    await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct))
+                    await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct).WithCancellation(ct))
                     {
                         SearchResultItems.Add(ConvertStorageItemViewModel(entry));
                     }

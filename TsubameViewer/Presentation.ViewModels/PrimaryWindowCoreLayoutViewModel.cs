@@ -30,6 +30,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
 using Windows.Storage;
+using Windows.System;
 using Windows.UI.Xaml.Media.Animation;
 using Xamarin.Essentials;
 
@@ -60,8 +61,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
-                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
+                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate(), AccessKey = "1", KeyboardAceseralator = VirtualKey.Number1 },
+                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "2", KeyboardAceseralator = VirtualKey.Number2 },
             };
             _scheduler = scheduler;
             _messenger = messenger;
@@ -132,7 +133,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     .Append(" ").Append(DeviceInfo.Idiom)
                     ;
                 await Clipboard.SetTextAsync(sb.ToString());
-                await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("https://marshmallow-qa.com/tor4kichi"));
             });
 
 
@@ -259,6 +260,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (parameter is string q)
             {
+                if (string.IsNullOrWhiteSpace(q)) { return; }
+
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
                     _onceSkipSuggestUpdate = true;
@@ -286,7 +289,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public class AutoSuggestBoxGroupBase : ObservableObject
     {
         public string Label { get; set; }
-        public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();
+        public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();        
     }
 
 
@@ -300,6 +303,8 @@ namespace TsubameViewer.Presentation.ViewModels
         public string Title { get; set; }
         public string PageType { get; set; }
         public string Parameters { get; set; }
+        public string AccessKey { get; set; }
+        public VirtualKey KeyboardAceseralator { get; set; }
     }
 
 }

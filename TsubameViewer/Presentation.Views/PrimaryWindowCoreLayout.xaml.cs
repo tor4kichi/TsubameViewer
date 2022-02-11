@@ -831,6 +831,20 @@ namespace TsubameViewer.Presentation.Views
             (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
         }
 
+
+
+        private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+        {
+            (sender as Control).Focus(FocusState.Keyboard);
+            args.Handled = true;
+        }
+
+        private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            (args.Element as Control).Focus(FocusState.Keyboard);
+            args.Handled = true;
+        }
+
         #endregion
 
         #region Busy Work
@@ -993,7 +1007,10 @@ namespace TsubameViewer.Presentation.Views
             });
         }
 
+
         #endregion
+
+       
     }
 
 
