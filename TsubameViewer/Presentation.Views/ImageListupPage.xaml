@@ -699,7 +699,7 @@
                                DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="6" VerticalSpacing="6" />
+              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
           </winUI:ItemsRepeater>
 
