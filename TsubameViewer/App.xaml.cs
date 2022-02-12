@@ -121,6 +121,8 @@ namespace TsubameViewer
             container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             container.Register<IViewLocator, ViewLocator>();
 
+            container.Register<ISupportedImageCodec, SupportedImageCodec>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
+
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();
             container.Register<ImageListupPage>();
@@ -195,8 +197,7 @@ namespace TsubameViewer
             {
                 I18NPortable.I18N.Current.Locale = "en-US";
             }
-
-        }
+        }        
 
         bool _isRestored = false;
         public async Task OnActivationAsync(IActivatedEventArgs args)

@@ -355,6 +355,13 @@ namespace TsubameViewer.Presentation.ViewModels
             // ナビゲーション全体をカバーしてロックしていないと_leavePageCancellationTokenSourceが先にキャンセルされているケースがある
             using var lockReleaser = await _NavigationLock.LockAsync(default);
 
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource.Token);
+                return;
+            }
+
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource();
             var ct = _leavePageCancellationTokenSource.Token;
@@ -362,8 +369,6 @@ namespace TsubameViewer.Presentation.ViewModels
             NowProcessing = true;
             try
             {
-                var mode = parameters.GetNavigationMode();
-
                 _currentArchiveFolderName = null;
 
                 if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
@@ -521,7 +526,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -542,7 +547,7 @@ namespace TsubameViewer.Presentation.ViewModels
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -551,11 +556,11 @@ namespace TsubameViewer.Presentation.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                         }
                     }
                 }
@@ -615,7 +620,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    FolderItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                    FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
                     ct.ThrowIfCancellationRequested();
                 }
                 Debug.WriteLine($"after added : {FolderItems.Count}");

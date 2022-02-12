@@ -67,6 +67,7 @@
   </Page.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop"
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        x:Name="RootGrid"
         >
     <muxc:NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
                     IsBackButtonVisible="Collapsed"

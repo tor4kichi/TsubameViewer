@@ -25,6 +25,7 @@ using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using System.Reactive.Disposables;
 using TsubameViewer.Models.Domain.Navigation;
+using Windows.UI.Xaml.Navigation;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -128,6 +129,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                return;
+            }
+
             _navigationDisposables = new CompositeDisposable();
             _navigationCts = new CancellationTokenSource();
 
@@ -150,7 +157,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         var storageItemImageSource = new StorageItemImageSource(item.item, _folderListingSettings, _thumbnailManager);
                         if (storageItemImageSource.ItemTypes == Models.Domain.StorageItemTypes.Folder)
                         {
-                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
                         }
                         else
                         {
@@ -193,7 +200,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
                     var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-                    return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 }
 
                 var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
@@ -298,7 +305,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
                 {
                     // 追加用ボタンの次に配置するための 1
-                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
                 }
                 else
                 {

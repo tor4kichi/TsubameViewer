@@ -6,6 +6,8 @@ Cancel = 取消
 Delete = 删除
 Create = 创建
 Apply = 申请
+Open = 打开
+Close = 特写
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -24,6 +26,8 @@ SendFeedbackWithStoreReview = 发送商店评论
 
 SourceStorageItemsPage = 夹
 CollectionPage = 采集
+
+OpenImageCodecExtensionStorePageWithFileType = {0} 需要扩展才能显示图像格式。你想开店吗？
 
 
 #### SettingsPage

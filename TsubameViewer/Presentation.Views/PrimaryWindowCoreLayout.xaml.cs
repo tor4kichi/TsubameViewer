@@ -38,6 +38,9 @@ using TsubameViewer.Presentation.Navigations;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Presentation.Services;
 using TsubameViewer.Models.Domain.Navigation;
+using TsubameViewer.Presentation.Services.UWP;
+using TsubameViewer.Presentation.ViewModels.SourceFolders;
+using I18NPortable;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -74,7 +77,11 @@ namespace TsubameViewer.Presentation.Views
             _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
             CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
             InitializeBusyWorkUI();                    
+
+            _supportedImageCodec = Ioc.Default.GetService<ISupportedImageCodec>();
+            InitializeImageCodecExtensions();
         }
+
 
 
 
@@ -414,18 +421,10 @@ namespace TsubameViewer.Presentation.Views
             }
         }
 
-
-        private RelayCommand _BackCommand;
-        public RelayCommand BackCommand =>
-            _BackCommand ??= new RelayCommand(
-                () => ContentFrame.GoBack(),
-                () => ContentFrame.CanGoBack
-                );
-
         private RelayCommand _RefreshCommand;
         public RelayCommand RefreshCommand =>
             _RefreshCommand ??= new RelayCommand(
-                () => throw new NotImplementedException()
+                () => _ = HandleRefreshReqest()
                 );
 
 
@@ -724,6 +723,15 @@ namespace TsubameViewer.Presentation.Views
         }
 
 
+
+        private async Task HandleRefreshReqest()
+        {
+            var parameters = _currentNavigationParameters.Clone();
+            parameters.SetNavigationMode(NavigationMode.Refresh);
+            var currentPage = ContentFrame.Content as Page;
+            await HandleViewModelNavigation(null, currentPage?.DataContext as INavigationAware, parameters);
+        }
+
         private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
         {
             if (args.KeyModifiers == Windows.System.VirtualKeyModifiers.None
@@ -1010,7 +1018,54 @@ namespace TsubameViewer.Presentation.Views
 
         #endregion
 
-       
+
+
+
+        #region Image codec Extension
+
+
+        private readonly ISupportedImageCodec _supportedImageCodec;
+
+        void InitializeImageCodecExtensions()
+        {
+            _messenger.Register<RequireInstallImageCodecExtensionMessage>(this, (r, m) =>
+            {
+                void TeachTooltip_Closed(Microsoft.UI.Xaml.Controls.TeachingTip sender, Microsoft.UI.Xaml.Controls.TeachingTipClosedEventArgs args)
+                {
+                    sender.Closed -= TeachTooltip_Closed;
+                    sender.ActionButtonClick -= TeachTooltip_ActionButtonClick;
+                    RootGrid.Children.Remove(sender);
+                }
+
+                void TeachTooltip_ActionButtonClick(Microsoft.UI.Xaml.Controls.TeachingTip sender, object args)
+                {
+                    _ = _supportedImageCodec.OpenImageCodecExtensionStorePageAsync(m.Value);
+
+                    sender.IsOpen = false;
+                    MenuRightCommandBar.IsOpen = true;
+                }
+
+                var teachTooltip = new Microsoft.UI.Xaml.Controls.TeachingTip()
+                {
+                    PreferredPlacement = Microsoft.UI.Xaml.Controls.TeachingTipPlacementMode.Top
+                };
+                teachTooltip.Content = new TextBlock()
+                {
+                    Text = "OpenImageCodecExtensionStorePageWithFileType".Translate(m.Value),
+                    Margin = new Thickness(16),
+                    TextWrapping = TextWrapping.Wrap,
+                };
+                teachTooltip.Closed += TeachTooltip_Closed;
+                teachTooltip.ActionButtonClick += TeachTooltip_ActionButtonClick;
+                teachTooltip.ActionButtonContent = "Open".Translate();
+                teachTooltip.CloseButtonContent = "Cancel".Translate();
+                RootGrid.Children.Add(teachTooltip);
+                teachTooltip.IsOpen = true;
+            });
+        }
+
+        #endregion
+
     }
 
 

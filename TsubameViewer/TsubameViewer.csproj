@@ -162,6 +162,7 @@
     <Compile Include="Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
+    <Compile Include="Models.Domain\ImageViewer\NotSupportedImageFormatException.cs" />
     <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
     <Compile Include="Models.Domain\Navigation\FolderLastIntractItemManager.cs" />
     <Compile Include="Models.Domain\Navigation\RestoreNavigationManager.cs" />
@@ -202,6 +203,7 @@
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="Presentation.Services\UWP\SecondaryTileManager.cs" />
+    <Compile Include="Presentation.Services\UWP\SupportedImageCodec.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
@@ -249,6 +251,7 @@
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
     <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="Presentation.Views\AlbamListupPage.xaml.cs">
@@ -337,6 +340,7 @@
     <Content Include="Assets\EPub\app.css" />
     <Content Include="Assets\EPub\DarkTheme.css" />
     <Content Include="Assets\EPub\LightTheme.css" />
+    <Content Include="Assets\ImageCodecExtensions.json" />
     <Content Include="Assets\LargeTile.scale-100.png" />
     <Content Include="Assets\LargeTile.scale-125.png" />
     <Content Include="Assets\LargeTile.scale-150.png" />

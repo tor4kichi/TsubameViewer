@@ -36,7 +36,7 @@ MSストアアプリで開く →
 ## 対応しているファイル形式
 
 * 画像
-  * .jpg/.png/.bmp/.gif/.tiff/.svg/.webp
+  * .jpg/.png/.bmp/.gif/.tiff/.svg/.webp/.avif
 * アーカイブ
   * .zip/.cbz/.rar/.cbr/.7z/.cb7/.tar/.pdf
 * 電子書籍

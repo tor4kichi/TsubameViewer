@@ -51,6 +51,7 @@ using Windows.UI.Xaml.Navigation;
 using Microsoft.Toolkit.Mvvm.Input;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Models.Domain.Navigation;
+using TsubameViewer.Presentation.ViewModels.SourceFolders;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -389,6 +390,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                return;
+            }
+
             _navigationDisposables = new CompositeDisposable();
             _navigationCts = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
@@ -405,7 +412,6 @@ namespace TsubameViewer.Presentation.ViewModels
             string parsedPageName = null;
             string parsedArchiveFolderName = null;
 
-            var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
                 || mode == NavigationMode.Forward
@@ -851,67 +857,56 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 using (await _imageLoadingLock.LockAsync(ct))
-                {
-                    try
+                {                  
+                    // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
+                    // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
+
+                    var currentIndex = request ?? CurrentImageIndex;
+                    var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
+
+                    // 最後尾から先頭にジャンプした場合に音を鳴らす
+                    if (isJumpHeadTail)
                     {
-                        // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
-                        // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
+                        ElementSoundPlayer.State = ElementSoundPlayerState.On;
+                        ElementSoundPlayer.Volume = 1.0;
+                        ElementSoundPlayer.Play(ElementSoundKind.Invoke);
 
-                        var currentIndex = request ?? CurrentImageIndex;
-                        var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
-
-                        // 最後尾から先頭にジャンプした場合に音を鳴らす
-                        if (isJumpHeadTail)
+                        _ = Task.Delay(500).ContinueWith(prevTask =>
                         {
-                            ElementSoundPlayer.State = ElementSoundPlayerState.On;
-                            ElementSoundPlayer.Volume = 1.0;
-                            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
-
-                            _ = Task.Delay(500).ContinueWith(prevTask =>
+                            _scheduler.Schedule(async () =>
                             {
-                                _scheduler.Schedule(async () =>
+                                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                                 {
-                                    using (await _imageLoadingLock.LockAsync(CancellationToken.None))
-                                    {
-                                        ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
-                                    }
-                                });
+                                    ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
+                                }
                             });
-                        }
-
-                        NowDoubleImageView = displayImageCount == 2;
-
-                        _nowCurrenImageIndexChanging = true;
-                        CurrentImageIndex = movedIndex;
-                        _nowCurrenImageIndexChanging = false;
-
-                        NowImageLoadingLongRunning = false;
-
-                        await _messenger.Send(new ImageLoadedMessage());
-
-                        await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
+                        });
                     }
-                    catch (OperationCanceledException)
-                    {
-                        int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
-                        CurrentImageIndex = direction switch
-                        {
-                            IndexMoveDirection.Refresh => CurrentImageIndex,
-                            IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + requestImageCount, Images.Length - 1),
-                            IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - requestImageCount, 0),
-                            _ => throw new NotSupportedException(),
-                        };
-                        NowImageLoadingLongRunning = true;
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine(e.ToString());
-                    }
+
+                    NowDoubleImageView = displayImageCount == 2;
+
+                    _nowCurrenImageIndexChanging = true;
+                    CurrentImageIndex = movedIndex;
+                    _nowCurrenImageIndexChanging = false;
+
+                    NowImageLoadingLongRunning = false;
+
+                    await _messenger.Send(new ImageLoadedMessage());
+
+                    await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
                 }
             }
             catch (OperationCanceledException)
             {
-
+                NowImageLoadingLongRunning = true;
+            }
+            catch (NotSupportedImageFormatException ex)
+            {
+                _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.ToString());
             }
         }
 
@@ -2032,7 +2027,14 @@ namespace TsubameViewer.Presentation.ViewModels
                         var image = new BitmapImage();
                         using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
                         {
-                            await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            try
+                            {
+                                await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            }
+                            catch (Exception ex) when (ex.HResult == -1072868846)
+                            {
+                                throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
+                            }
                         }
                         Image = image;
 

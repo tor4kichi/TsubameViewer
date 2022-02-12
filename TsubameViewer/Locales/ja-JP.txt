@@ -6,6 +6,8 @@ Cancel = キャンセル
 Delete = 削除
 Create = 作成
 Apply = 適用する
+Open = 開く
+Close = 閉じる
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -24,6 +26,8 @@ SendFeedbackWithStoreReview = ストアレビューを送る
 
 SourceStorageItemsPage = フォルダ
 CollectionPage = コレクション
+
+OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
 
 
 #### SettingsPage

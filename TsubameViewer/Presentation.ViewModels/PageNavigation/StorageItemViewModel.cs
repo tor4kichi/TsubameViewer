@@ -17,6 +17,8 @@ using Windows.UI.Xaml.Media.Imaging;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.UseCase;
 using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using TsubameViewer.Presentation.ViewModels.SourceFolders;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 {
@@ -26,9 +28,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
     public sealed class StorageItemViewModel : ObservableObject, IDisposable
     {
-        
-
-
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly BookmarkManager _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
@@ -89,13 +89,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             Type = storageItemTypes;
         }
 
-        public StorageItemViewModel(IImageSource item, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, AlbamRepository albamRepository, SelectionContext selectionContext = null)
+        public StorageItemViewModel(IImageSource item, IMessenger messenger, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, AlbamRepository albamRepository, SelectionContext selectionContext = null)
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             _albamRepository = albamRepository;
             Selection = selectionContext;            
             Item = item;
+            _messenger = messenger;
             DateCreated = Item.DateCreated;
             
             Name = Item.Name;
@@ -159,6 +160,15 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
                 _isRequireLoadImageWhenRestored = true;
                 _isInitialized = false;
             }                       
+            catch (NotSupportedImageFormatException ex) 
+            {
+                // 0xC00D5212
+                // "コンテンツをエンコードまたはデコードするための適切な変換が見つかりませんでした。"
+                _isRequireLoadImageWhenRestored = true;
+                _isInitialized = false;
+                _messenger.Send<RequireInstallImageCodecExtensionMessage>(new (ex.FileType));
+                throw;
+            }
         }
 
         public void UpdateLastReadPosition()

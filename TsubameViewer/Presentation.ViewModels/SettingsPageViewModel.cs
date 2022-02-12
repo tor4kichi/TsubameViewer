@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Converters;
 using Windows.Storage;
@@ -40,7 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
         private readonly ThumbnailManager _thumbnailManager;
-
+        
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
@@ -74,7 +75,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
             _thumbnailManager = thumbnailManager;
-
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
             
@@ -197,6 +197,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh)
+            {
+                return Task.CompletedTask;
+            }
+
             _navigationCts?.Cancel();
             _navigationCts?.Dispose();            
             _navigationCts = new CancellationTokenSource();
