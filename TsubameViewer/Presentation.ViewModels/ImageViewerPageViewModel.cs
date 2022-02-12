@@ -418,59 +418,56 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     (var itemPath, parsedPageName, parsedArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
 
-                    if (_currentPath != itemPath)
+                    _currentPath = itemPath;
+
+                    // PathReferenceCountManagerへの登録が遅延する可能性がある
+                    IStorageItem currentFolderItem = null;
+                    foreach (var _ in Enumerable.Repeat(0, 10))
                     {
-                        _currentPath = itemPath;
-
-                        // PathReferenceCountManagerへの登録が遅延する可能性がある
-                        IStorageItem currentFolderItem = null;
-                        foreach (var _ in Enumerable.Repeat(0, 10))
+                        currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                        if (currentFolderItem != null)
                         {
-                            currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
-                            if (currentFolderItem != null)
-                            {
-                                _currentPath = currentFolderItem.Path;
-                                break;
-                            }
-
-                            await Task.Delay(100);
+                            _currentPath = currentFolderItem.Path;
+                            break;
                         }
 
-                        if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
-                        {
-                            parsedPageName = Path.GetFileName(itemPath);
-                        }
-
-                        Images = default;                        
-
-                        _appView.Title = currentFolderItem.Name;
-                        Title = currentFolderItem.Name;
-
-                        _currentFolderItem = currentFolderItem;
-
-                        DisplaySortTypeInheritancePath = null;
-                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
-                            ? Path.GetDirectoryName(_currentPath)
-                            : _currentPath;
-
-                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                        if (settings != null)
-                        {
-                            SelectedFileSortType.Value = settings.Sort;
-                        }
-                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
-                        {
-                            DisplaySortTypeInheritancePath = parentSort.Path;
-                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                        }
-                        else
-                        {
-                            SelectedFileSortType.Value = DefaultFileSortType;
-                        }
-
-                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
-                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
+                        await Task.Delay(100);
                     }
+
+                    if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
+                    {
+                        parsedPageName = Path.GetFileName(itemPath);
+                    }
+
+                    Images = default;
+
+                    _appView.Title = currentFolderItem.Name;
+                    Title = currentFolderItem.Name;
+
+                    _currentFolderItem = currentFolderItem;
+
+                    DisplaySortTypeInheritancePath = null;
+                    _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
+                        ? Path.GetDirectoryName(_currentPath)
+                        : _currentPath;
+
+                    var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
+                    if (settings != null)
+                    {
+                        SelectedFileSortType.Value = settings.Sort;
+                    }
+                    else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                    }
+
+                    (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                        = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
 
                     _CurrentImageIndex = 0;
                 }
