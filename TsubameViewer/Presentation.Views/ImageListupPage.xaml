@@ -541,6 +541,7 @@
             <Button x:Name="ReturnSourceFolderPageButton"
             Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
             Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
+                    AccessKey="R"
             >
 
             </Button>
@@ -552,6 +553,7 @@
             <Button x:Name="ChangeViewtoFolderListupPageButton" Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
                 Command="{x:Bind _vm.OpenFolderListupCommand}"
                 CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
+                    AccessKey="L"
                 />
           </Border>
 
@@ -574,6 +576,7 @@
                           Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                           Background="Transparent"
                           ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
+                          AccessKey="S"
                           >
             <DropDownButton.Flyout>
               <MenuFlyout>
@@ -603,6 +606,10 @@
                 </MenuFlyoutItem>
               </MenuFlyout>
             </DropDownButton.Flyout>
+
+            <DropDownButton.KeyboardAccelerators>
+              <KeyboardAccelerator Key="S" Modifiers="Control" />
+            </DropDownButton.KeyboardAccelerators>
           </DropDownButton>
 
 
@@ -610,6 +617,7 @@
           <Button x:Name="OptionalActionsButton"
                 Margin="8 0 0 0" 
                 XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                  Visibility="Collapsed"
                 >
             <Button.Content>
               <SymbolIcon Symbol="More" />
@@ -637,6 +645,7 @@
                 SelectionMode="Single"
                 SingleSelectionFollowsFocus="False"
                 XYFocusLeft="{x:Bind OptionalActionsButton}"
+                  AccessKey="I"
                   >
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
