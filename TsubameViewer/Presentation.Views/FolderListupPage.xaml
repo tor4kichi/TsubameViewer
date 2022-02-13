@@ -50,7 +50,7 @@
                 <KeyboardAccelerator Key="Delete" />
               </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
-            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
+            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}" AccessKey="O">
               <AppBarButton.Icon>
                 <fluentIcon:FluentIconElement Symbol="Open24" />
               </AppBarButton.Icon>
@@ -59,7 +59,7 @@
               </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
             <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
-              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind _vm.Selection.EndSelection}" >
+              <Button Content="{i18nExt:Localize Key=Cancel}" Click="{x:Bind _vm.Selection.EndSelection}" AccessKey="Q">
                 <Button.KeyboardAccelerators>
                   <KeyboardAccelerator Key="Escape" />
                 </Button.KeyboardAccelerators>
@@ -83,6 +83,7 @@
                   Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
                   Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
                     XYFocusRight="{x:Bind ChangetoImageListupButton}"
+                    AccessKey="R"
                   >
             </Button>
           </StackPanel>
@@ -94,6 +95,7 @@
                     Command="{x:Bind _vm.OpenImageListupCommand}"
                     CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
                     x:Name="ChangetoImageListupButton"
+                    AccessKey="L"
                     >
             </Button>
           </Border>
@@ -107,6 +109,7 @@
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
                             ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
+                          AccessKey="S"
                             >
             <DropDownButton.Flyout>
               <MenuFlyout>
@@ -132,6 +135,10 @@
                 </MenuFlyoutItem>
               </MenuFlyout>
             </DropDownButton.Flyout>
+
+            <DropDownButton.KeyboardAccelerators>
+              <KeyboardAccelerator Key="S" Modifiers="Control" />
+            </DropDownButton.KeyboardAccelerators>
           </DropDownButton>
 
           <Button Margin="8 0 0 0">

@@ -20,6 +20,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
@@ -29,6 +30,7 @@ using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Presentation.Views;
 using Windows.Storage;
+using Windows.System;
 using Windows.UI.Xaml.Media.Animation;
 using Xamarin.Essentials;
 
@@ -59,8 +61,8 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             MenuItems = new List<object>
             {
-                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate() },
-                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate() },
+                new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "SourceStorageItemsPage".Translate(), AccessKey = "1", KeyboardAceseralator = VirtualKey.Number1 },
+                new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "2", KeyboardAceseralator = VirtualKey.Number2 },
             };
             _scheduler = scheduler;
             _messenger = messenger;
@@ -77,7 +79,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             UpdateAutoSuggestCommand
                 .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
-                .Where(_ => OnceSkipSuggestUpdate is false)
+                .Where(_ => _onceSkipSuggestUpdate is false)
                 .Subscribe(ExecuteUpdateAutoSuggestCommand)
                 .AddTo(_disposables);
 
@@ -131,7 +133,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     .Append(" ").Append(DeviceInfo.Idiom)
                     ;
                 await Clipboard.SetTextAsync(sb.ToString());
-                await Launcher.OpenAsync("https://marshmallow-qa.com/tor4kichi");
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("https://marshmallow-qa.com/tor4kichi"));
             });
 
 
@@ -148,10 +150,10 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
-        bool OnceSkipSuggestUpdate = false;
-        Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
-        CancellationTokenSource _cts;
-        async void ExecuteUpdateAutoSuggestCommand(string parameter)
+        private bool _onceSkipSuggestUpdate = false;
+        private readonly Models.Infrastructure.AsyncLock _suggestUpdateLock = new ();
+        private CancellationTokenSource _cts;
+        private async void ExecuteUpdateAutoSuggestCommand(string parameter)
         {            
             CancellationTokenSource cts;
             CancellationToken ct = default;
@@ -162,9 +164,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 _AutoSuggestItemsGroup.Items.Clear();
 
-                if (OnceSkipSuggestUpdate) 
+                if (_onceSkipSuggestUpdate) 
                 {
-                    OnceSkipSuggestUpdate = false;
+                    _onceSkipSuggestUpdate = false;
                     return; 
                 }
                 if (string.IsNullOrWhiteSpace(parameter)) { return; }
@@ -205,7 +207,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             using (await _suggestUpdateLock.LockAsync(default))
             {
-                OnceSkipSuggestUpdate = true;
+                _onceSkipSuggestUpdate = true;
                 _cts?.Cancel();
                 _cts = null;
             }
@@ -245,7 +247,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             using (await _suggestUpdateLock.LockAsync(default))
             { 
-                OnceSkipSuggestUpdate = false;
+                _onceSkipSuggestUpdate = false;
             }
         }
 
@@ -258,9 +260,11 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             if (parameter is string q)
             {
+                if (string.IsNullOrWhiteSpace(q)) { return; }
+
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
-                    OnceSkipSuggestUpdate = true;
+                    _onceSkipSuggestUpdate = true;
                     _cts?.Cancel();
                     _cts = null;
                 }
@@ -268,7 +272,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
                 using (await _suggestUpdateLock.LockAsync(default))
                 {
-                    OnceSkipSuggestUpdate = false;                
+                    _onceSkipSuggestUpdate = false;                
                 }
             }
             else if (parameter is IStorageItem entry)
@@ -285,7 +289,7 @@ namespace TsubameViewer.Presentation.ViewModels
     public class AutoSuggestBoxGroupBase : ObservableObject
     {
         public string Label { get; set; }
-        public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();
+        public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();        
     }
 
 
@@ -299,6 +303,8 @@ namespace TsubameViewer.Presentation.ViewModels
         public string Title { get; set; }
         public string PageType { get; set; }
         public string Parameters { get; set; }
+        public string AccessKey { get; set; }
+        public VirtualKey KeyboardAceseralator { get; set; }
     }
 
 }

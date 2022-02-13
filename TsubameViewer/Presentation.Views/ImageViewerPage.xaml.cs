@@ -18,8 +18,11 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.Helpers;
 using TsubameViewer.Presentation.Views.UINavigation;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
@@ -51,8 +54,8 @@ namespace TsubameViewer.Presentation.Views
     {
         private readonly ImageViewerPageViewModel _vm;
 
-        private readonly DispatcherQueue _dispatcherQueue;
         private readonly IMessenger _messenger;
+        private readonly FocusHelper _focusHelper;
 
         public ImageViewerPage()
         {
@@ -60,10 +63,29 @@ namespace TsubameViewer.Presentation.Views
 
             DataContext = _vm = Ioc.Default.GetService<ImageViewerPageViewModel>();
             _messenger = Ioc.Default.GetService<IMessenger>();
-            _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
 
             Loaded += OnLoaded;
-            Unloaded += OnUnloaded;
+            Unloaded += OnUnloaded;            
+        }
+
+        private void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Escape)
+            {
+                if (IsOpenBottomMenu)
+                {
+                    CloseBottomUI();
+                }
+                else
+                {
+                    ClosePage();
+                }
+            }
+            else if (e.Key is VirtualKey.Number1 or VirtualKey.Number2 or VirtualKey.Number3 or VirtualKey.Number4)
+            {
+                ShowBottomUI();
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -72,6 +94,8 @@ namespace TsubameViewer.Presentation.Views
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
+
+            KeyDown -= ImageViewerPage_KeyDown;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
@@ -83,6 +107,8 @@ namespace TsubameViewer.Presentation.Views
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
+
+            KeyDown += ImageViewerPage_KeyDown;
         }
 
         public bool IsReadyToImageDisplay
@@ -101,6 +127,11 @@ namespace TsubameViewer.Presentation.Views
         #region Navigation
 
         void ForceClosePage(object sender, RoutedEventArgs e)
+        {
+            ClosePage();
+        }
+
+        void ClosePage()
         {
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             (_vm.BackNavigationCommand as ICommand).Execute(null);
@@ -220,7 +251,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (isConnectedAnimationDone is false)
                 {
-                    await AnimationBuilder.Create()
+                    AnimationBuilder.Create()
                        .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
                            .TimedKeyFrames(ke =>
@@ -229,7 +260,7 @@ namespace TsubameViewer.Presentation.Views
                                ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                            })
                        .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                       .StartAsync(ImageItemsControl_0, navigationCt);
+                       .Start(ImageItemsControl_0, navigationCt);
                 }
             }
             catch (OperationCanceledException) { }
@@ -281,57 +312,24 @@ namespace TsubameViewer.Presentation.Views
             if (_vm.DisplayImages_0.Length == 1)
             {
                 UIElement image = null;
-                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage)
+                await VisualTreeExtentions.WaitFillingValue(() => 
                 {
-                    image = readyImage;
-                }
-                else
-                {
-                    image = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                      h => ImageItemsControl_0.ElementPrepared += h,
-                      h => ImageItemsControl_0.ElementPrepared -= h
-                      )
-                      .Select(x => x.EventArgs.Element)
-                      .Take(1)
-                      .ToAsyncOperation()
-                      .AsTask(ct);
-
-                }
-
-                while (image.ActualSize is { X: 0, Y: 0 })
-                {
-                    await Task.Delay(1, ct);
-                }
-
+                    image ??= ImageItemsControl_0.TryGetElement(0);
+                    if (image == null) { return false; }
+                    return image.ActualSize is not { X: 0, Y: 0 };
+                }, ct);
                 return new[] { image };
             }
             else
             {
-                IList<UIElement> images = null;
-                if (ImageItemsControl_0.TryGetElement(0) is not null and var readyImage1
-                    && ImageItemsControl_0.TryGetElement(1) is not null and var readyImage2
-                    )
+                UIElement[] images = new UIElement[2];
+                await VisualTreeExtentions.WaitFillingValue(() =>
                 {
-                    images = new[] { readyImage1, readyImage2 };
-                }
-                else
-                {
-                    images = await WindowsObservable.FromEventPattern<ItemsRepeater, ItemsRepeaterElementPreparedEventArgs>(
-                           h => ImageItemsControl_0.ElementPrepared += h,
-                           h => ImageItemsControl_0.ElementPrepared -= h
-                           )
-                           .Select(x => x.EventArgs.Element)
-                           .Take(2)
-                           .Buffer(2)
-                           .ToAsyncOperation()
-                           .AsTask(ct);
-                }
-
-                while (images.All(image => image.ActualSize is { X: 0, Y: 0 }))
-                {
-                    await Task.Delay(1, ct);
-                }
-                
+                    images[0] ??= ImageItemsControl_0.TryGetElement(0);
+                    images[1] ??= ImageItemsControl_0.TryGetElement(1);
+                    if (images.Any(x => x is null)) { return false; }
+                    return images.All(x => x.ActualSize is not { X: 0, Y: 0 });
+                }, ct);
                 return images;
             }
         }
@@ -404,7 +402,11 @@ namespace TsubameViewer.Presentation.Views
             IsOpenBottomMenu = true;
             ButtonsContainer.Visibility = Visibility.Visible;
             ImageSelectorContainer.Visibility = Visibility.Visible;
-            ZoomInButton.Focus(FocusState.Keyboard);
+
+            if (_focusHelper.IsRequireSetFocus())
+            {
+                ZoomInButton.Focus(FocusState.Keyboard);
+            }            
         }
 
         private void CloseBottomUI()

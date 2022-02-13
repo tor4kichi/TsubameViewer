@@ -42,7 +42,15 @@ namespace TsubameViewer.Presentation.Views.Helpers
         {
             while (whenComplete(element) is false)
             {
-                await Task.Delay(10, ct);
+                await Task.Delay(1, ct);
+            }
+        }
+
+        public static async ValueTask WaitFillingValue(Func<bool> whenComplete, CancellationToken ct)
+        {
+            while (whenComplete() is false)
+            {
+                await Task.Delay(1, ct);
             }
         }
     }

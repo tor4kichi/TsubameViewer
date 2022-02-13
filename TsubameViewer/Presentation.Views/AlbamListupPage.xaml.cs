@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Foundation;
@@ -27,16 +28,18 @@ namespace TsubameViewer.Presentation.Views
     public sealed partial class AlbamListupPage : Page
     {
         private readonly AlbamListupPageViewModel _vm;
+        private readonly FocusHelper _focusHelper;
 
         public AlbamListupPage()
         {
             this.InitializeComponent();
             DataContext = _vm = Ioc.Default.GetService<AlbamListupPageViewModel>();
+            _focusHelper = Ioc.Default.GetService<FocusHelper>();
 
             this.ItemsAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         }
 
-
+        bool _isFirstItem = false;
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             if (args.Item is StorageItemViewModel itemVM && _navigationCts.IsCancellationRequested is false)
@@ -47,6 +50,15 @@ namespace TsubameViewer.Presentation.Views
                 }
 
                 itemVM.Initialize(_navigationCts.Token);
+
+                if (_isFirstItem && itemVM.Type != Models.Domain.StorageItemTypes.AddAlbam)
+                {
+                    _isFirstItem = false;
+                    if (_focusHelper.IsRequireSetFocus())
+                    {
+                        args.ItemContainer.Focus(FocusState.Keyboard);
+                    }
+                }
             }
         }
 
@@ -55,6 +67,7 @@ namespace TsubameViewer.Presentation.Views
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             _navigationCts = new CancellationTokenSource();
+            _isFirstItem = true;
             base.OnNavigatedTo(e);
         }
 

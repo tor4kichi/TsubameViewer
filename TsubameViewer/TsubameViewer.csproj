@@ -162,10 +162,10 @@
     <Compile Include="Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
-    <Compile Include="Models.Domain\PageNavigationConstants.cs" />
+    <Compile Include="Models.Domain\ImageViewer\NotSupportedImageFormatException.cs" />
     <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
-    <Compile Include="Models.Domain\RestoreNavigation\FolderLastIntractItemManager.cs" />
-    <Compile Include="Models.Domain\RestoreNavigation\RestoreNavigationManager.cs" />
+    <Compile Include="Models.Domain\Navigation\FolderLastIntractItemManager.cs" />
+    <Compile Include="Models.Domain\Navigation\RestoreNavigationManager.cs" />
     <Compile Include="Models.Domain\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
@@ -181,6 +181,7 @@
     <Compile Include="Models.Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="Models.Infrastructure\LiteDbService.cs" />
     <Compile Include="Models.UseCase\FavoriteAlbam.cs" />
+    <Compile Include="Models.UseCase\FocusHelper.cs" />
     <Compile Include="Models.UseCase\Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
     <Compile Include="Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
@@ -197,10 +198,12 @@
     <Compile Include="Presentation.Navigations\IViewLocator.cs" />
     <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
     <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
+    <Compile Include="Models.Domain\Navigation\PageNavigationConstants.cs" />
     <Compile Include="Presentation.Services\AlbamDialogService.cs" />
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="Presentation.Services\UWP\SecondaryTileManager.cs" />
+    <Compile Include="Presentation.Services\UWP\SupportedImageCodec.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
@@ -218,7 +221,6 @@
     <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\NavigationParametersExtensions.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
@@ -249,6 +251,7 @@
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
     <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="Presentation.Views\AlbamListupPage.xaml.cs">
@@ -337,12 +340,12 @@
     <Content Include="Assets\EPub\app.css" />
     <Content Include="Assets\EPub\DarkTheme.css" />
     <Content Include="Assets\EPub\LightTheme.css" />
+    <Content Include="Assets\ImageCodecExtensions.json" />
     <Content Include="Assets\LargeTile.scale-100.png" />
     <Content Include="Assets\LargeTile.scale-125.png" />
     <Content Include="Assets\LargeTile.scale-150.png" />
     <Content Include="Assets\LargeTile.scale-200.png" />
     <Content Include="Assets\LargeTile.scale-400.png" />
-    <Content Include="Assets\lockscreenlogo.scale-200.png" />
     <Content Include="Assets\SmallTile.scale-100.png" />
     <Content Include="Assets\SmallTile.scale-125.png" />
     <Content Include="Assets\SmallTile.scale-150.png" />
@@ -378,7 +381,6 @@
     <Content Include="Assets\Square44x44Logo.targetsize-256.png" />
     <Content Include="Assets\Square44x44Logo.targetsize-32.png" />
     <Content Include="Assets\Square44x44Logo.targetsize-48.png" />
-    <Content Include="Assets\StoreLogo.backup.png" />
     <Content Include="Assets\StoreLogo.scale-100.png" />
     <Content Include="Assets\StoreLogo.scale-125.png" />
     <Content Include="Assets\StoreLogo.scale-150.png" />

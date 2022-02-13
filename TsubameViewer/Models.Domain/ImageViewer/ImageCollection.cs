@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.Domain.Navigation;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using static TsubameViewer.Models.Domain.ImageViewer.ArchiveFileInnerStructureCache;
@@ -121,7 +122,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
             _FileByFolder = structure.FilesByFolder.Select(x => (x.Key, x.Value.Where(x => supportedFileIndexies.Contains(x)))).Where(x => x.Item2.Any()).ToImmutableSortedDictionary(x => x.Key, x => x.Item2.ToArray());
 
-            ImagesCount = imagesCount;
+            _imagesCount = imagesCount;
             _imageSourcesCache = new IImageSource[structure.Items.Length];
             if (_FileByFolder.Any() is false)
             {
@@ -167,7 +168,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        public int GetImageCount() => ImagesCount;
+        public int GetImageCount() => _imagesCount;
 
 
         private IArchiveEntry GetEntryFromKey(string key)
@@ -263,7 +264,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                         }
 
                         var dirToken = GetDirectoryTokenFromPath(Path.GetDirectoryName(x.Key));
-                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
+                        var itemPath = PageNavigationConstants.MakeStorageItemIdWithPage((dirToken ?? token).DirectoryPath, x.Key);
+                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(itemPath, x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
                     })
                     .ToList();
 
@@ -296,10 +298,10 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
         }
 
-        private readonly int ImagesCount;
+        private readonly int _imagesCount;
         public ValueTask<int> GetImageCountAsync(CancellationToken ct)
         {
-            return new(ImagesCount);
+            return new(_imagesCount);
         }
 
         public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
@@ -320,13 +322,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
 
             token ??= GetDirectoryTokenFromPath(Path.GetDirectoryName(imageEntry.Key));
-            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
+            var itemPath = PageNavigationConstants.MakeStorageItemIdWithPage(token.DirectoryPath, imageEntry.Key);
+            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(itemPath, imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
         }
        
         // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない
         public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
         {
-            foreach (var i in Enumerable.Range(0, ImagesCount))
+            foreach (var i in Enumerable.Range(0, _imagesCount))
             {
                 var sortedIndex = ToSortedIndex(i, sort);
                 var imageEntry = Archive.Entries.ElementAt(sortedIndex);

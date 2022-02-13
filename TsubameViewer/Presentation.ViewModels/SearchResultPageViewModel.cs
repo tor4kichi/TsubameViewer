@@ -17,11 +17,14 @@ using TsubameViewer.Presentation.Views;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.Navigations;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
     public sealed class SearchResultPageViewModel : NavigationAwareViewModelBase
     {
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly BookmarkManager _bookmarkManager;
@@ -48,6 +51,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
 
         public SearchResultPageViewModel(
+            IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,
             BookmarkManager bookmarkManager,
@@ -65,6 +69,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SecondaryTileRemoveCommand secondaryTileRemoveCommand
             )
         {
+            _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
@@ -86,6 +91,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                return;
+            }
+
             SearchResultItems.Clear();
             _navigationCts = new CancellationTokenSource();
             var ct = _navigationCts.Token;
@@ -96,7 +107,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 try
                 {
-                    await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct))
+                    await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct).WithCancellation(ct))
                     {
                         SearchResultItems.Add(ConvertStorageItemViewModel(entry));
                     }
@@ -117,7 +128,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
             var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+            return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)

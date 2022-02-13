@@ -39,6 +39,7 @@ namespace TsubameViewer.Models.Domain
                 TiffFileType,
                 SvgFileType,
                 WebpFileType,
+                AvifFileType,
             }
             .SelectMany(x => new[] { x, x.ToUpper() })
             .ToHashSet();
@@ -70,6 +71,7 @@ namespace TsubameViewer.Models.Domain
         public const string TiffFileType = ".tiff";
         public const string SvgFileType = ".svg";
         public const string WebpFileType = ".webp";
+        public const string AvifFileType = ".avif";
 
         public const string EPubFileType = ".epub";
 

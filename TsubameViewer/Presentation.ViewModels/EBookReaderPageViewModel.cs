@@ -29,6 +29,7 @@ using TsubameViewer.Presentation.Navigations;
 using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Models.Domain.Navigation;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -218,13 +219,18 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                return;
+            }
+
             _AppCSS ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
             _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
             _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
 
             _navigationDisposables = new CompositeDisposable();
             _leavePageCancellationTokenSource = new CancellationTokenSource();
-            var mode = parameters.GetNavigationMode();
 
             string parsedPageName = null;
 
@@ -393,7 +399,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                         {
                                             // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
                                             /// <see cref="ResolveWebResourceRequest"/>
-                                            imageSourceAttr.Value = DummyReosurceRequestDomain + image.Key;
+                                            imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
                                         }
                                     }
                                 }
@@ -483,8 +489,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
 
-        const string DummyReosurceRequestDomain = "https://dummy.com/";
-        object _lock = new object();
+        private const string _dummyReosurceRequestDomain = "https://dummy.com/";
+        private readonly object _lock = new object();
         public Stream ResolveWebResourceRequest(Uri requestUri)
         {
             // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
@@ -498,7 +504,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // ページが表示されていない状態の場合はnullを返す
                 if (_navigationDisposables == null) { throw new InvalidOperationException(); }
 
-                var key = requestUri.OriginalString.Remove(0, DummyReosurceRequestDomain.Length);
+                var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
                 foreach (var image in _currentBook.Content.Images)
                 {
                     if (image.Key == key)

@@ -50,6 +50,8 @@ using TsubameViewer.Presentation.Navigations;
 using Windows.UI.Xaml.Navigation;
 using Microsoft.Toolkit.Mvvm.Input;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Models.Domain.Navigation;
+using TsubameViewer.Presentation.ViewModels.SourceFolders;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -197,6 +199,7 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _navigationDisposables;
         private readonly DispatcherQueue _dispatcherQueue;
 
+        public ApplicationSettings ApplicationSettings { get; }
         public ImageViewerSettings ImageViewerSettings { get; }
 
         public ReactivePropertySlim<bool> IsLeftBindingEnabled { get; }
@@ -223,6 +226,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public ImageViewerPageViewModel(
             IScheduler scheduler,
             IMessenger messenger,
+            ApplicationSettings applicationSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             AlbamRepository albamRepository,
             ImageCollectionManager imageCollectionManager,
@@ -245,6 +249,7 @@ namespace TsubameViewer.Presentation.ViewModels
         {
             _scheduler = scheduler;
             _messenger = messenger;
+            ApplicationSettings = applicationSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _albamRepository = albamRepository;
             _imageCollectionManager = imageCollectionManager;
@@ -385,6 +390,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                return;
+            }
+
             _navigationDisposables = new CompositeDisposable();
             _navigationCts = new CancellationTokenSource()
                 .AddTo(_navigationDisposables);
@@ -401,76 +412,72 @@ namespace TsubameViewer.Presentation.ViewModels
             string parsedPageName = null;
             string parsedArchiveFolderName = null;
 
-            var mode = parameters.GetNavigationMode();
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
                 || mode == NavigationMode.Forward
                 )
             {
-                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
 
                     (var itemPath, parsedPageName, parsedArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
 
-                    if (_currentPath != itemPath)
+                    _currentPath = itemPath;
+
+                    // PathReferenceCountManagerへの登録が遅延する可能性がある
+                    IStorageItem currentFolderItem = null;
+                    foreach (var _ in Enumerable.Repeat(0, 10))
                     {
-                        _currentPath = itemPath;
-
-                        // PathReferenceCountManagerへの登録が遅延する可能性がある
-                        IStorageItem currentFolderItem = null;
-                        foreach (var _ in Enumerable.Repeat(0, 10))
+                        currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                        if (currentFolderItem != null)
                         {
-                            currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
-                            if (currentFolderItem != null)
-                            {
-                                _currentPath = currentFolderItem.Path;
-                                break;
-                            }
-
-                            await Task.Delay(100);
+                            _currentPath = currentFolderItem.Path;
+                            break;
                         }
 
-                        if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
-                        {
-                            parsedPageName = Path.GetFileName(itemPath);
-                        }
-
-                        Images = default;                        
-
-                        _appView.Title = currentFolderItem.Name;
-                        Title = currentFolderItem.Name;
-
-                        _currentFolderItem = currentFolderItem;
-
-                        DisplaySortTypeInheritancePath = null;
-                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
-                            ? Path.GetDirectoryName(_currentPath)
-                            : _currentPath;
-
-                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                        if (settings != null)
-                        {
-                            SelectedFileSortType.Value = settings.Sort;
-                        }
-                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
-                        {
-                            DisplaySortTypeInheritancePath = parentSort.Path;
-                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                        }
-                        else
-                        {
-                            SelectedFileSortType.Value = DefaultFileSortType;
-                        }
-
-                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
-                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
+                        await Task.Delay(100);
                     }
+
+                    if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
+                    {
+                        parsedPageName = Path.GetFileName(itemPath);
+                    }
+
+                    Images = default;
+
+                    _appView.Title = currentFolderItem.Name;
+                    Title = currentFolderItem.Name;
+
+                    _currentFolderItem = currentFolderItem;
+
+                    DisplaySortTypeInheritancePath = null;
+                    _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
+                        ? Path.GetDirectoryName(_currentPath)
+                        : _currentPath;
+
+                    var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
+                    if (settings != null)
+                    {
+                        SelectedFileSortType.Value = settings.Sort;
+                    }
+                    else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                    }
+
+                    (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                        = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
 
                     _CurrentImageIndex = 0;
                 }
-                else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
                     var unescapedPath = Uri.UnescapeDataString(albamPath);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
@@ -850,67 +857,56 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 using (await _imageLoadingLock.LockAsync(ct))
-                {
-                    try
+                {                  
+                    // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
+                    // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
+
+                    var currentIndex = request ?? CurrentImageIndex;
+                    var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
+
+                    // 最後尾から先頭にジャンプした場合に音を鳴らす
+                    if (isJumpHeadTail)
                     {
-                        // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
-                        // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
+                        ElementSoundPlayer.State = ElementSoundPlayerState.On;
+                        ElementSoundPlayer.Volume = 1.0;
+                        ElementSoundPlayer.Play(ElementSoundKind.Invoke);
 
-                        var currentIndex = request ?? CurrentImageIndex;
-                        var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
-
-                        // 最後尾から先頭にジャンプした場合に音を鳴らす
-                        if (isJumpHeadTail)
+                        _ = Task.Delay(500).ContinueWith(prevTask =>
                         {
-                            ElementSoundPlayer.State = ElementSoundPlayerState.On;
-                            ElementSoundPlayer.Volume = 1.0;
-                            ElementSoundPlayer.Play(ElementSoundKind.Invoke);
-
-                            _ = Task.Delay(500).ContinueWith(prevTask =>
+                            _scheduler.Schedule(async () =>
                             {
-                                _scheduler.Schedule(async () =>
+                                using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                                 {
-                                    using (await _imageLoadingLock.LockAsync(CancellationToken.None))
-                                    {
-                                        ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
-                                    }
-                                });
+                                    ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
+                                }
                             });
-                        }
-
-                        NowDoubleImageView = displayImageCount == 2;
-
-                        _nowCurrenImageIndexChanging = true;
-                        CurrentImageIndex = movedIndex;
-                        _nowCurrenImageIndexChanging = false;
-
-                        NowImageLoadingLongRunning = false;
-
-                        await _messenger.Send(new ImageLoadedMessage());
-
-                        await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
+                        });
                     }
-                    catch (OperationCanceledException)
-                    {
-                        int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
-                        CurrentImageIndex = direction switch
-                        {
-                            IndexMoveDirection.Refresh => CurrentImageIndex,
-                            IndexMoveDirection.Forward => Math.Min(CurrentImageIndex + requestImageCount, Images.Length - 1),
-                            IndexMoveDirection.Backward => Math.Max(CurrentImageIndex - requestImageCount, 0),
-                            _ => throw new NotSupportedException(),
-                        };
-                        NowImageLoadingLongRunning = true;
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine(e.ToString());
-                    }
+
+                    NowDoubleImageView = displayImageCount == 2;
+
+                    _nowCurrenImageIndexChanging = true;
+                    CurrentImageIndex = movedIndex;
+                    _nowCurrenImageIndexChanging = false;
+
+                    NowImageLoadingLongRunning = false;
+
+                    await _messenger.Send(new ImageLoadedMessage());
+
+                    await PrefetchDisplayImagesAsync(direction, movedIndex, ct);
                 }
             }
             catch (OperationCanceledException)
             {
-
+                NowImageLoadingLongRunning = true;
+            }
+            catch (NotSupportedImageFormatException ex)
+            {
+                _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.ToString());
             }
         }
 
@@ -1151,7 +1147,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var secondImage = candidateImages.ElementAt(1);
                     ThumbnailManager.ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
 
-                    bool canDoubleView = false;
+                    bool canDoubleView;
                     if (firstImageSize is not null and ThumbnailManager.ThumbnailSize fistImageSizeReal 
                         && secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal)
                     {
@@ -1650,12 +1646,12 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (direction is IndexMoveDirection.Refresh or IndexMoveDirection.Forward)
             {
-                var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);
+                await LoadImagesAsync(PrefetchIndexType.Next, IndexMoveDirection.Forward, requestIndex, ct);
                 SetPrefetchDisplayImageSingleWhenNowDoubleView(PrefetchIndexType.Next);
             }
             else if (direction is IndexMoveDirection.Backward)
             {
-                var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Prev, IndexMoveDirection.Backward, requestIndex, ct);
+                await LoadImagesAsync(PrefetchIndexType.Prev, IndexMoveDirection.Backward, requestIndex, ct);
             }
         }
 
@@ -1865,7 +1861,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand _SizeChangedCommand;
         public RelayCommand SizeChangedCommand =>
-            _SizeChangedCommand ??= new RelayCommand(async () =>
+            _SizeChangedCommand ??= new RelayCommand(() =>
             {
                 if (!(Images?.Any() ?? false)) { return; }
                 
@@ -1923,7 +1919,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand<object> _ChangeFileSortCommand;
         public RelayCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new RelayCommand<object>(async sort =>
+            _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
             {
                 FileSortType? sortType = null;
                 if (sort is int num)
@@ -2031,7 +2027,14 @@ namespace TsubameViewer.Presentation.ViewModels
                         var image = new BitmapImage();
                         using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
                         {
-                            await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            try
+                            {
+                                await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            }
+                            catch (Exception ex) when (ex.HResult == -1072868846)
+                            {
+                                throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
+                            }
                         }
                         Image = image;
 

@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Converters;
 using Windows.Storage;
@@ -40,7 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
         private readonly ThumbnailManager _thumbnailManager;
-
+        
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
@@ -74,7 +75,6 @@ namespace TsubameViewer.Presentation.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
             _thumbnailManager = thumbnailManager;
-
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
             
@@ -121,9 +121,12 @@ namespace TsubameViewer.Presentation.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#if DEBUG
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#endif
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
-
                     }
                 },
             };
@@ -192,8 +195,14 @@ namespace TsubameViewer.Presentation.ViewModels
         ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
         
 
-        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+        public override Task OnNavigatedToAsync(INavigationParameters parameters)
         {
+            var mode = parameters.GetNavigationMode();
+            if (mode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh)
+            {
+                return Task.CompletedTask;
+            }
+
             _navigationCts?.Cancel();
             _navigationCts?.Dispose();            
             _navigationCts = new CancellationTokenSource();
@@ -203,6 +212,8 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _ = RefreshThumbnailFilesSizeAsync(ct);
             // base.OnNavigatedToAsync(parameters);
+
+            return Task.CompletedTask;
         }
 
         private async Task RefreshThumbnailFilesSizeAsync(CancellationToken ct)
@@ -273,7 +284,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
 
-                Folders.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
+                Folders.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -286,7 +297,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
 
-                TempFiles.Add(new StoredFolderViewModel(_messenger, _SourceStorageItemsRepository, this)
+                TempFiles.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
                     FolderName = item.item.Name,
@@ -306,13 +317,11 @@ namespace TsubameViewer.Presentation.ViewModels
     public class StoredFolderViewModel
     {
         private readonly IMessenger _messenger;
-        private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
 
-        public StoredFolderViewModel(IMessenger messenger, SourceStorageItemsRepository SourceStorageItemsRepository, StoredFoldersSettingItemViewModel parentVM)
+        public StoredFolderViewModel(IMessenger messenger, StoredFoldersSettingItemViewModel parentVM)
         {
             _messenger = messenger;
-            _SourceStorageItemsRepository = SourceStorageItemsRepository;
             _parentVM = parentVM;
         }
 
@@ -324,11 +333,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private RelayCommand _DeleteStoredFolderCommand;
         public RelayCommand DeleteStoredFolderCommand =>
-            _DeleteStoredFolderCommand ??= new RelayCommand(async () => 
+            _DeleteStoredFolderCommand ??= new RelayCommand(() => 
             {
                 _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
-
-                //_SourceStorageItemsRepository.RemoveFolder(Token);
                 _parentVM.RemoveItem(this);
 
                 /*
@@ -339,7 +346,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 dialog.Commands.Add(new UICommand("RemoveSourceFolderFromApp".Translate(), _ => 
                 {
-                    _SourceStorageItemsRepository.RemoveFolder(Token);
+                    _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
                     _parentVM.RemoveItem(this);
                 }));
 

@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Models.UseCase.Maintenance;
@@ -120,6 +121,8 @@ namespace TsubameViewer
             container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             container.Register<IViewLocator, ViewLocator>();
 
+            container.Register<ISupportedImageCodec, SupportedImageCodec>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
+
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();
             container.Register<ImageListupPage>();
@@ -137,6 +140,7 @@ namespace TsubameViewer
             container.Register<Models.Domain.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
             container.Register<Models.Domain.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
             container.Register<FileControlSettings>(reuse: new SingletonReuse());
+            container.Register<ApplicationSettings>(reuse: new SingletonReuse());
 
             container.Register<Presentation.Services.UWP.SecondaryTileManager>(reuse: new SingletonReuse());
 
@@ -156,6 +160,7 @@ namespace TsubameViewer
 
         protected override async void OnFileActivated(FileActivatedEventArgs args)
         {
+            await InitializeAsync();
             await OnActivationAsync(args);
         }
 
@@ -192,10 +197,9 @@ namespace TsubameViewer
             {
                 I18NPortable.I18N.Current.Locale = "en-US";
             }
+        }        
 
-        }
-
-        bool isRestored = false;
+        bool _isRestored = false;
         public async Task OnActivationAsync(IActivatedEventArgs args)
         {
             using var releaser = await _InitializeLock.LockAsync(default);
@@ -240,12 +244,12 @@ namespace TsubameViewer
                 var result = await NavigateAsync(pageNavigationInfo, messenger);
                 if (result.IsSuccess)
                 {
-                    isRestored = true;
+                    _isRestored = true;
                     
                 }
             }
 
-            if (isRestored is false)
+            if (_isRestored is false)
             {
                 var shell = Window.Current.Content as PrimaryWindowCoreLayout;
                 shell.RestoreNavigationStack();
@@ -386,8 +390,11 @@ namespace TsubameViewer
             if (_isInitialized) { return; }
 
             _isInitialized = true;
-
+#if DEBUG
             Resources["DebugTVMode"] = Ioc.Default.GetService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
+#else
+            Resources["DebugTVMode"] = false;
+#endif
 
 #if DEBUG
             foreach (var collectionName in Ioc.Default.GetService<ILiteDatabase>().GetCollectionNames())

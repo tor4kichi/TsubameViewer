@@ -65,11 +65,6 @@
       <Setter Property="IsTabStop" Value="False" />
       <Setter Property="Background" Value="{ThemeResource ApplicationSecondaryForegroundThemeBrush}" />
       <Setter Property="BorderBrush" Value="{ThemeResource ApplicationContentBackgroundBrush}" />
-      <Setter Property="ToggleButton.Shadow">
-        <Setter.Value>
-          <ThemeShadow />
-        </Setter.Value>
-      </Setter>
     </Style>
 
     <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="ApplicationSecondaryForegroundThemeBrush"  />
@@ -118,8 +113,12 @@
 
             <uwpControls:DockPanel Margin="4 0">
               <ToggleButton x:Name="SelectionToggleButton" Style="{StaticResource ImageItemSelectionToggleButtonStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="0" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped"
-                        uwpControls:DockPanel.Dock="Left"
-                        />
+                        uwpControls:DockPanel.Dock="Left"                            
+                        >
+                <Windows10version1903:ToggleButton.Shadow>
+                  <Windows10version1903:ThemeShadow />
+                </Windows10version1903:ToggleButton.Shadow>
+              </ToggleButton>
               <StackPanel HorizontalAlignment="Stretch" Margin="4 0 0 0">
                 <TextBlock Text="{Binding Name}" TextAlignment="Start" HorizontalAlignment="Stretch" MaxLines="2" TextWrapping="Wrap" FontSize="13" />
               </StackPanel>
@@ -183,6 +182,9 @@
                           Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
                           Visibility="Collapsed" 
                         >
+              <Windows10version1903:ToggleButton.Shadow>
+                <Windows10version1903:ThemeShadow />
+              </Windows10version1903:ToggleButton.Shadow>
             </ToggleButton>
             <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
               <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
@@ -255,6 +257,9 @@
                           Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
                           Visibility="Collapsed" 
                         >
+              <Windows10version1903:ToggleButton.Shadow>
+                <Windows10version1903:ThemeShadow />
+              </Windows10version1903:ToggleButton.Shadow>
             </ToggleButton>
             <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
               <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
@@ -327,6 +332,9 @@
                           Margin="3" HorizontalAlignment="Right" VerticalAlignment="Top" Translation="0, 0, 8" Tapped="ImageListToggleSelectButton_Tapped" 
                           Visibility="Collapsed" 
                         >
+              <Windows10version1903:ToggleButton.Shadow>
+                <Windows10version1903:ThemeShadow />
+              </Windows10version1903:ToggleButton.Shadow>
             </ToggleButton>
             <Grid x:Name="FavoriteIcon" Opacity="0.0" HorizontalAlignment="Left" VerticalAlignment="Bottom">
               <SymbolIcon Symbol="Favorite" Foreground="{ThemeResource ApplicationPageBackgroundThemeBrush}" RenderTransform="{StaticResource IconOffsetTransform}" />
@@ -533,6 +541,7 @@
             <Button x:Name="ReturnSourceFolderPageButton"
             Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
             Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
+                    AccessKey="R"
             >
 
             </Button>
@@ -544,6 +553,7 @@
             <Button x:Name="ChangeViewtoFolderListupPageButton" Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
                 Command="{x:Bind _vm.OpenFolderListupCommand}"
                 CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
+                    AccessKey="L"
                 />
           </Border>
 
@@ -566,6 +576,7 @@
                           Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                           Background="Transparent"
                           ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
+                          AccessKey="S"
                           >
             <DropDownButton.Flyout>
               <MenuFlyout>
@@ -595,6 +606,10 @@
                 </MenuFlyoutItem>
               </MenuFlyout>
             </DropDownButton.Flyout>
+
+            <DropDownButton.KeyboardAccelerators>
+              <KeyboardAccelerator Key="S" Modifiers="Control" />
+            </DropDownButton.KeyboardAccelerators>
           </DropDownButton>
 
 
@@ -602,6 +617,7 @@
           <Button x:Name="OptionalActionsButton"
                 Margin="8 0 0 0" 
                 XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                  Visibility="Collapsed"
                 >
             <Button.Content>
               <SymbolIcon Symbol="More" />
@@ -629,6 +645,7 @@
                 SelectionMode="Single"
                 SingleSelectionFollowsFocus="False"
                 XYFocusLeft="{x:Bind OptionalActionsButton}"
+                  AccessKey="I"
                   >
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
@@ -671,7 +688,7 @@
                                DataContext="{x:Null}"
                                   >
             <winUI:ItemsRepeater.Layout>
-              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+              <winUI:UniformGridLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
             </winUI:ItemsRepeater.Layout>
           </winUI:ItemsRepeater>
 

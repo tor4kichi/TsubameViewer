@@ -6,6 +6,8 @@ Cancel = Cancel
 Delete = Delete
 Create = Create
 Apply = Apply
+Open = Open
+Close = Close
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -24,6 +26,8 @@ SendFeedbackWithStoreReview = Send a store review
 
 SourceStorageItemsPage = Folder
 CollectionPage = Collection
+
+OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
 
 
 #### SettingsPage
@@ -56,6 +60,7 @@ IsReverseImageFliping_Button = Reverse left/right page feed
 
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
+ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
 
 PrivacyPolicy = privacy policy
 ThirdPartyLibraryNotice = Third-party library license display

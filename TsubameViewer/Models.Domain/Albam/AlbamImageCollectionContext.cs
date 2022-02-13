@@ -13,7 +13,9 @@ using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.Navigations;
 using Windows.Storage;
 
 namespace TsubameViewer.Models.Domain.Albam

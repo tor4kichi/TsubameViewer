@@ -9,6 +9,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.Views;
 using Windows.Storage;

@@ -202,10 +202,7 @@ namespace TsubameViewer.Models.UseCase.Maintenance
 
                 _storageItemsRepository.RemoveFolder(token);
             }
-            catch (Exception ex)
-            { 
-                
-            }
+            catch { }
         }
 
         async Task DeleteCacheAllUnderPathAsync(string path)

@@ -18,6 +18,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Infrastructure;
 using VersOne.Epub;
 using Windows.Data.Pdf;
@@ -36,14 +37,11 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private readonly ILiteDatabase _temporaryDb;
         private readonly ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
         private readonly ILiteStorage<string> _thumbnailDb;
-        private readonly ILiteCollection<BsonDocument> _thumbnailDbChunkCollection;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static AsyncLock _fileReadWriteLock = new ();
 
         private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
-
-        Dictionary<string, string> _FilePathToHashCodeStringMap = new Dictionary<string, string>();
 
         private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
         {
@@ -82,10 +80,14 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         }
 
 
-        Random thumbnailIdPostfixRandom = new Random();
+
+        // Note: LiteDBはDeleteしたEntryのIDを削除対象としてマークして、後でまとめて削除するような動作になっている
+        //       そのため上書きした画像データのIDが後で消えないようにIDがユニークになるようにしている
+
+        Random _thumbnailIdPostfixRandom = new Random();
         private string CreateThumbnailInsideId(string itemId)
         {
-            var itemIdWithRndPostfix = itemId + thumbnailIdPostfixRandom.Next().ToString();
+            var itemIdWithRndPostfix = itemId + _thumbnailIdPostfixRandom.Next().ToString();
             _thumbnailIdDb.Upsert(new ThumbnailItemIdEntry() { Id = itemId, InsideId = itemIdWithRndPostfix });
             return itemIdWithRndPostfix;
         }
@@ -154,7 +156,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _temporaryDb = temporaryDb;
             _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
             _thumbnailDb = _temporaryDb.FileStorage;
-            _thumbnailDbChunkCollection = _temporaryDb.GetCollection("_chunks");
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
 
@@ -268,12 +269,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         
         public async Task FolderChangedAsync(string oldPath, string newPath)
         {
-            // LiteDB内の_filesのファイル名を変更するだけで対応できる？
-            // see@ https://github.com/mbdavid/LiteDB/issues/974
-
-            // それだと_idベースの検索が出来なくてインデックスを二重で張るような面倒がありそう
-            // 新規IDにハードコピーして古いIDの項目を消す
-
             using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
             {
                 var oldPathId = ToId(oldPath);
@@ -598,39 +593,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             }
         }
 
-
-        private async Task<StorageFile> GenerateThumbnailImageToFileAsync(StorageFile file, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
-        {
-            using (var outputStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite))
-            {
-                return await GenerateThumbnailImageToStreamAsync(file, outputStream, setupEncoder, ct) ? outputFile: null;
-            }
-        }
-
-
-        class _files
-        {
-            public string Id { get; set; }
-            public string filename { get; set; }
-            public string mimeType { get; set; }
-            public long length { get; set; }
-            public int chunks { get; set; }
-            public DateTime uploadDate { get; set; }
-            public object metadata { get; set; } //You could replace object with a custom class
-        }
-
-        record ChunkId
-        {
-            public string f { get; set; }
-            public int n { get; set; }
-        }
-
-        class _chunks
-        {
-            [BsonId]
-            public ChunkId _id { get; set; }
-        }
-
         private async Task<IRandomAccessStream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             bool result = false;
@@ -657,47 +619,41 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private async Task<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            try
+            using (var stream = new InMemoryRandomAccessStream().AsStream())
             {
-                using (var stream = new InMemoryRandomAccessStream().AsStream())
+                var result = await (file.FileType switch
                 {
-                    var result = await(file.FileType switch
-                    {
-                        SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.CbzFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.CbrFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.SevenZipFileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.Cb7FileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.TarFileType => TarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.PdfFileType => PdfFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.CbzFileType => ZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.CbrFileType => RarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.SevenZipFileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.Cb7FileType => SevenZipFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.TarFileType => TarFileThumbnailImageWriteToStreamAsync(file, stream, ct),
 
 
-                        SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
-                        SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.JpgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.JpegFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.JfifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.PngFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.BmpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.GifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.TifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
+                    SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
 
-                        SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
-                        _ => throw new NotSupportedException(file.FileType)
-                    });
+                    SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                    _ => throw new NotSupportedException(file.FileType)
+                });
 
-                    if (!result || stream.Length == 0) { return false; }
+                if (!result || stream.Length == 0) { return false; }
 
-                    ct.ThrowIfCancellationRequested();
-                    await TranscodeThumbnailImageToStreamAsync(file.Path, stream.AsRandomAccessStream(), outputStream, setupEncoder, ct);
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
+                ct.ThrowIfCancellationRequested();
+                await TranscodeThumbnailImageToStreamAsync(file.Path, stream.AsRandomAccessStream(), outputStream, setupEncoder, ct);
+                return true;
             }
         }
 
@@ -707,14 +663,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
         };
 
-        private async Task TranscodeThumbnailImageToFileAsync(string path, IRandomAccessStream stream, StorageFile outputFile, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
-        {
-            using (var outputStream = await outputFile.OpenAsync(FileAccessMode.ReadWrite).AsTask(ct))
-            {
-                await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
-            }
-        }
-
         private Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             return TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
@@ -723,31 +671,38 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
-                
-            var decoder = await BitmapDecoder.CreateAsync(stream);
 
-            // サムネイルサイズ情報を記録
-            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+            try
             {
-                Path = path,
-                ImageWidth = decoder.PixelWidth,
-                ImageHeight = decoder.PixelHeight,
-                RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
-            });
+                var decoder = await BitmapDecoder.CreateAsync(stream);
 
-            var pixelData = await decoder.GetPixelDataAsync();
-            var detachedPixelData = pixelData.DetachPixelData();
-            pixelData = null;
+                // サムネイルサイズ情報を記録
+                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                {
+                    Path = path,
+                    ImageWidth = decoder.PixelWidth,
+                    ImageHeight = decoder.PixelHeight,
+                    RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
+                });
 
-            var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
+                var pixelData = await decoder.GetPixelDataAsync();
+                var detachedPixelData = pixelData.DetachPixelData();
+                pixelData = null;
 
-            setupEncoder(decoder, encoder);
+                var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
 
-            Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
-            encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
+                setupEncoder(decoder, encoder);
 
-            await encoder.FlushAsync().AsTask(ct);
-            await outputStream.FlushAsync().AsTask(ct);
+                Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+                encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
+
+                await encoder.FlushAsync().AsTask(ct);
+                await outputStream.FlushAsync().AsTask(ct);
+            }
+            catch (Exception ex) when(ex.HResult == -1072868846)
+            {
+                throw new NotSupportedImageFormatException(Path.GetExtension(path));
+            }
         }
 
         private async Task<bool> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
@@ -1030,13 +985,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             public StorageFile Square310x310Logo { get; set; }
             public StorageFile Square150x150Logo { get; set; }
         }
-
-        static string ToSafeName(string path)
-        {
-            var invalidChars = Path.GetInvalidFileNameChars().ToHashSet();
-            return new string(path.Select(x => invalidChars.Contains(x) ? '_' : x).ToArray());
-        }
-
+       
         public async Task SecondaryThumbnailDeleteNotExist(IEnumerable<string> tileIdList)
         {
             await Task.Run(async () => 
@@ -1111,6 +1060,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                         SupportedFileTypesHelper.TiffFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
+                        SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream.AsStreamForWrite(), ct),
                         _ => throw new NotSupportedException(file.FileType)
                     });

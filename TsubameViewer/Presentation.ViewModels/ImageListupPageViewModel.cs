@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
@@ -146,9 +147,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private string _currentPath;
         private object _currentItem;
 
-        private CancellationTokenSource _leavePageCancellationTokenSource;
-
-        bool _isCompleteEnumeration = false;
+        private CancellationTokenSource _navigationCts;
 
         private string _DisplayCurrentPath;
         public string DisplayCurrentPath
@@ -188,8 +187,6 @@ namespace TsubameViewer.Presentation.ViewModels
             Models.Domain.FolderItemListing.FileDisplayMode.Small,
             Models.Domain.FolderItemListing.FileDisplayMode.Line,
         };
-
-        static bool _LastIsImageFileGenerateThumbnailEnabled;
 
 
         public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
@@ -317,24 +314,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             base.OnNavigatedFrom(parameters);
         }
-
         
-
-
-        void ClearCurrentContent()
-        {
-            _ImageCollectionDisposer?.Dispose();
-            _ImageCollectionDisposer = null;
-
-            foreach (var itemVM in ImageFileItems)
-            {
-                itemVM.Dispose();
-            }
-            ImageFileItems.Clear();
-
-            CurrentFolderItem?.Dispose();
-            CurrentFolderItem = null;
-        }
 
         async Task ResetContentWithStorageItem(string path, CancellationToken ct)
         {
@@ -386,7 +366,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             
             await SetSort(SelectedFileSortType.Value, ct);
-            await RefreshFolderItems(currentItem, _leavePageCancellationTokenSource.Token);
+            await RefreshFolderItems(currentItem, _navigationCts.Token);
 
             HasFileItem = ImageFileItems.Any();
 
@@ -426,7 +406,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
             await SetSort(SelectedFileSortType.Value, ct);
-            await RefreshFolderItems(albam, _leavePageCancellationTokenSource.Token);
+            await RefreshFolderItems(albam, _navigationCts.Token);
 
             HasFileItem = ImageFileItems.Any();
 
@@ -435,20 +415,25 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
-            _navigationDisposables = new CompositeDisposable();
-            _leavePageCancellationTokenSource = new CancellationTokenSource();
-            _navigationDisposables.Add(_leavePageCancellationTokenSource);
+            var mode = parameters.GetNavigationMode();
+            if (mode == NavigationMode.Refresh)
+            {
+                await ReloadItemsAsync(_imageCollectionContext, _navigationCts.Token);
+                return;
+            }
 
-            var ct = _leavePageCancellationTokenSource.Token;
+            _navigationDisposables = new CompositeDisposable();
+            _navigationCts = new CancellationTokenSource();
+            _navigationDisposables.Add(_navigationCts);
+
+            var ct = _navigationCts.Token;
 
             NowProcessing = true;
             try
             {
-                var mode = parameters.GetNavigationMode();
-
                 _currentArchiveFolderName = null;
 
-                if (parameters.TryGetValueSafe(PageNavigationConstants.GeneralPathKey, out string path))
+                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {                    
                     (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                     var unescapedPath = itemPath;                    
@@ -469,7 +454,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
                 }
-                else if (parameters.TryGetValueSafe(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
                     (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
@@ -559,17 +544,20 @@ namespace TsubameViewer.Presentation.ViewModels
             _currentItem = currentItem;
             _ImageCollectionDisposer?.Dispose();
             _ImageCollectionDisposer = null;
+            foreach (var item in ImageFileItems)
+            {
+                item.Dispose();
+            }
             ImageFileItems.Clear();
 
             _IsFavoriteAlbam = false;
             _imageCollectionContext = null;
-            _isCompleteEnumeration = false;
             IImageCollectionContext imageCollectionContext = null;
             if (currentItem is StorageFolder folder)
             {
                 Debug.WriteLine(folder.Path);
                 imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-                CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
             }
             else if (currentItem is StorageFile file)
             {
@@ -590,7 +578,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
 
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 }
                 else if (file.IsSupportedMangaFile())
                 {
@@ -598,18 +586,18 @@ namespace TsubameViewer.Presentation.ViewModels
                     DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                     if (_currentArchiveFolderName == null)
                     {
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                     }
                     else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                     {
-                        CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                        CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                     }
                 }
             }
             else if (currentItem is AlbamEntry albam)
             {
                 imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
-                CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 _IsFavoriteAlbam = albam._id == FavoriteAlbam.FavoriteAlbamId;
             }
             else
@@ -618,8 +606,6 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             OnPropertyChanged(nameof(IsFavoriteAlbam));
-
-            _isCompleteEnumeration = true;
 
             if (imageCollectionContext == null) { return; }
 
@@ -650,7 +636,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    ImageFileItems.Add(new StorageItemViewModel(item, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository, Selection));
+                    ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository, Selection));
                 }
                 Debug.WriteLine($"after added : {ImageFileItems.Count}");
             }
