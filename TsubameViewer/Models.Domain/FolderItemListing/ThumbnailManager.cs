@@ -471,9 +471,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var outputStream = new MemoryStream();
             try
             {
-                using (var memoryStream = new MemoryStream())
+                using (var memoryStream = new MemoryStream((int)archiveEntry.Size))
                 {
                     // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
+                    
                     lock (_lockForReadArchiveEntry)
                         using (var entryStream = archiveEntry.OpenEntryStream())
                         {
@@ -507,7 +508,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var outputStream = new InMemoryRandomAccessStream();
             try
             {
-                using (var memoryStream = new MemoryStream())
+                using (var memoryStream = new MemoryStream((int)archiveEntry.Size))
                 {
                     // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
                     lock (_lockForReadArchiveEntry)
@@ -542,7 +543,6 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var outputStream = new MemoryStream();
             try
             {
-
                 using (var memoryStream = new InMemoryRandomAccessStream())
                 using (await _fileReadWriteLock.LockAsync(ct))
                 {
