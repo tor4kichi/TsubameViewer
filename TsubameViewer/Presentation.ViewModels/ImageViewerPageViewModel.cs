@@ -1124,7 +1124,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         struct ImageDoubleViewCulcResult
         {
-            public bool CanDoubleView = false;
+            public bool CanDoubleView;
             public IImageSource Slot1Image;
             public IImageSource Slot2Image;
         }
