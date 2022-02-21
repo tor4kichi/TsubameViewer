@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Microsoft.IO;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -40,6 +41,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
         private readonly static AsyncLock _fileReadWriteLock = new ();
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
         private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 
@@ -158,6 +160,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             _thumbnailDb = _temporaryDb.FileStorage;
             _folderListingSettings = folderListingSettings;
             _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
+            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
             _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
                 .Select(x => string.IsNullOrWhiteSpace(x) is false ? new Regex(x) : null)
@@ -187,7 +190,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 {
                     if (requireTrancode)
                     {
-                        using (var memoryStream = new MemoryStream()) // InMemoryRandomAccessStream では問題が起きる
+                        using (var memoryStream = _recyclableMemoryStreamManager.GetStream()) // InMemoryRandomAccessStream では問題が起きる
                         {
                             await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);                            
                             UploadWithRetry(itemId, targetItem.Name, memoryStream);
@@ -212,7 +215,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 {
                     if (requireTrancode)
                     {
-                        using (var memoryStream = new MemoryStream())
+                        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                         {
                             await TranscodeThumbnailImageToStreamAsync(path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 
@@ -275,7 +278,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 if (TryGetThumbnailInsideId(oldPathId, out var insideId) is false) { return; }
                 foreach (var oldPathItem in _thumbnailDb.Find(insideId).ToArray())
                 {
-                    using (var memoryStream = new MemoryStream())
+                    using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                     {
                         oldPathItem.CopyTo(memoryStream);                        
                         _thumbnailDb.Delete(oldPathItem.Id);
@@ -295,7 +298,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 && _thumbnailDb.Exists(insideId)
                 )
             {
-                var memoryStream = new MemoryStream();
+                var memoryStream = _recyclableMemoryStreamManager.GetStream();
                 try
                 {
                     _thumbnailDb.Download(insideId, memoryStream);
@@ -357,7 +360,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 #if WINDOWS_UWP
 
             var file = await GetCoverThumbnailImageAsync(folder, ct);
-            var outputStream = new InMemoryRandomAccessStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             try
             {
                 return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : null;
@@ -435,7 +438,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<IRandomAccessStream> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
         {
-            var outputStream = new InMemoryRandomAccessStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             try
             {
                 if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
@@ -468,10 +471,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
             if (archiveEntry.IsDirectory) { return null; }
 
-            var outputStream = new MemoryStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream();
             try
             {
-                using (var memoryStream = new MemoryStream((int)archiveEntry.Size))
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
                     // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
                     
@@ -505,10 +508,10 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (archiveEntry.IsDirectory) { return null; }
 
             var path = GetArchiveEntryPath(sourceFile, archiveEntry);
-            var outputStream = new InMemoryRandomAccessStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             try
             {
-                using (var memoryStream = new MemoryStream((int)archiveEntry.Size))
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
                     // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
                     lock (_lockForReadArchiveEntry)
@@ -540,20 +543,21 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 return cachedFile;
             }
 
-            var outputStream = new MemoryStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream();
             try
             {
-                using (var memoryStream = new InMemoryRandomAccessStream())
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
+                    var ras = memoryStream.AsRandomAccessStream();
                     using (await _fileReadWriteLock.LockAsync(ct))
                     {
-                        await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
-                        memoryStream.Seek(0);
+                        await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
+                        ras.Seek(0);
 
                         ct.ThrowIfCancellationRequested();
                     }
 
-                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream, outputStream.AsRandomAccessStream(), EncodingForImageFileThumbnailBitmap, ct);
+                    await TranscodeThumbnailImageToStreamAsync(path, ras, outputStream.AsRandomAccessStream(), EncodingForImageFileThumbnailBitmap, ct);
 
                     UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
                 }
@@ -572,18 +576,19 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         {
             var path = GetArchiveEntryPath(sourceFile, pdfPage);
 
-            var outputStream = new InMemoryRandomAccessStream();
+            var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             try
             {
-                using (var memoryStream = new InMemoryRandomAccessStream())
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 using (await _fileReadWriteLock.LockAsync(ct))
                 {
-                    await pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
-                    memoryStream.Seek(0);
+                    var ras = memoryStream.AsRandomAccessStream();
+                    await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
+                    ras.Seek(0);
 
                     ct.ThrowIfCancellationRequested();
 
-                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream, outputStream, EncodingForImageFileThumbnailBitmap, ct);
+                    await TranscodeThumbnailImageToStreamAsync(path, ras, outputStream, EncodingForImageFileThumbnailBitmap, ct);
                 }
 
                 return outputStream;
@@ -598,19 +603,20 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
         private async Task<IRandomAccessStream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             bool result = false;
-            var memoryStream = new MemoryStream();
+            var memoryStream = _recyclableMemoryStreamManager.GetStream();
+            var ras = memoryStream.AsRandomAccessStream();
             try
             {
-                result = await GenerateThumbnailImageToStreamAsync(file, memoryStream.AsRandomAccessStream(), setupEncoder, ct);
+                result = await GenerateThumbnailImageToStreamAsync(file, ras, setupEncoder, ct);
 
                 if (result is false) { return null; }
 
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                ras.Seek(0);
 
                 UploadWithRetry(itemId, file.Name, memoryStream);
 
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                return memoryStream.AsRandomAccessStream();
+                ras.Seek(0);
+                return ras;
             }
             catch
             {
@@ -742,7 +748,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 if (entry == null) { return (false, default); }
 
-                InMemoryRandomAccessStream memoryStream = new ();
+                var memoryStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
                 using (var inputStream = entry.Open())
                 {
                     await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream);
@@ -768,7 +774,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 if (entry == null) { return default; }
 
-                InMemoryRandomAccessStream memoryStream = new();
+                var memoryStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
                 using (var inputStream = entry.OpenEntryStream())
                 {
                     await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream);
@@ -794,7 +800,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 if (entry == null) { return default; }
 
-                InMemoryRandomAccessStream memoryStream = new();
+                var memoryStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
                 using (var inputStream = entry.OpenEntryStream())
                 {
                     await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream);
@@ -820,7 +826,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
                 if (entry == null) { return default; }
 
-                InMemoryRandomAccessStream memoryStream = new();
+                var memoryStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
                 using (var inputStream = entry.OpenEntryStream())
                 {
                     await RandomAccessStream.CopyAsync(inputStream.AsInputStream(), memoryStream);
@@ -836,7 +842,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
             if (pdfDocument.PageCount == 0) { return default; }
 
-            InMemoryRandomAccessStream memoryStream = new();
+            var memoryStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             using var page = pdfDocument.GetPage(0);
             await page.RenderToStreamAsync(memoryStream).AsTask(ct);
             return (true, memoryStream);
@@ -848,7 +854,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
             var epubBook = await EpubReader.OpenBookAsync(fileStream);
 
-            MemoryStream memoryStream = new();
+            var memoryStream = _recyclableMemoryStreamManager.GetStream();
             if (await epubBook.ReadCoverAsync() is not null and var cover)
             {
                 await memoryStream.WriteAsync(cover, 0, cover.Length);
@@ -1089,7 +1095,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     };
 
                     var decoder = await BitmapDecoder.CreateAsync(stream);
-                    using (var memStream = new InMemoryRandomAccessStream())
+                    using (var memStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream())
                     {
                         foreach (var item in items)
                         {
