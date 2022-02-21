@@ -190,7 +190,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 {
                     if (requireTrancode)
                     {
-                        using (var memoryStream = _recyclableMemoryStreamManager.GetStream()) // InMemoryRandomAccessStream では問題が起きる
+                        using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                         {
                             await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);                            
                             UploadWithRetry(itemId, targetItem.Name, memoryStream);
@@ -472,12 +472,12 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (archiveEntry.IsDirectory) { return null; }
 
             var outputStream = _recyclableMemoryStreamManager.GetStream();
+            var outputRas = outputStream.AsRandomAccessStream();
             try
             {
                 using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
-                    // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける
-                    
+                    // アーカイブファイル内のシーク制御を確実に同期的に行わせるために別途ロックを仕掛ける                    
                     lock (_lockForReadArchiveEntry)
                         using (var entryStream = archiveEntry.OpenEntryStream())
                         {
@@ -487,13 +487,13 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                             ct.ThrowIfCancellationRequested();
                         }
 
-                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream.AsRandomAccessStream(), outputStream.AsRandomAccessStream(), archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
-                    outputStream.Seek(0, SeekOrigin.Begin);
+                    await TranscodeThumbnailImageToStreamAsync(path, memoryStream.AsRandomAccessStream(), outputRas, archiveEntry.IsDirectory ? EncodingForFolderOrArchiveFileThumbnailBitmap : EncodingForImageFileThumbnailBitmap, ct);
+                    outputRas.Seek(0);
 
                     UploadWithRetry(itemId, Path.GetFileName(path), outputStream);
 
-                    outputStream.Seek(0, SeekOrigin.Begin);
-                    return outputStream.AsRandomAccessStream();
+                    outputRas.Seek(0);
+                    return outputRas;
                 }
             }
             catch

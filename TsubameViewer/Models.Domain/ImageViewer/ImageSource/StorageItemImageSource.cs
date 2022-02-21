@@ -29,8 +29,6 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public DateTime DateCreated => StorageItem.DateCreated.DateTime;
 
-        private readonly AsyncLock _fileLock = new AsyncLock();
-
         /// <summary>
         /// Tokenで取得されたファイルやフォルダ
         /// </summary>
@@ -46,28 +44,23 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
-            using (await _fileLock.LockAsync(ct))
+            if (StorageItem is StorageFile file
+                && SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
             {
-                if (StorageItem is StorageFile file
-                    && SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                {
-                    return await file.OpenReadAsync().AsTask(ct);
-                }
-                else if (StorageItem is StorageFolder folder)
-                {
-                    return await _thumbnailManager.GetThumbnailAsync(folder, ct);
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
+                return await file.OpenReadAsync().AsTask(ct);
+            }
+            else if (StorageItem is StorageFolder folder)
+            {
+                return await _thumbnailManager.GetThumbnailAsync(folder, ct);
+            }
+            else
+            {
+                throw new NotSupportedException();
             }
         }
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
-            using var _ = await _fileLock.LockAsync(ct);
-
             if (StorageItem is StorageFile file)
             {
                 if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
