@@ -416,7 +416,8 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {            
-            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
+            // .Where() は 例えば「_A_B」と「_A」というフォルダ名を分別するために必要
+            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).Where(x => x.Path.StartsWith(path)).ToArray();
 
             // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
             // 理想的には変更部分だけを差分更新するべき

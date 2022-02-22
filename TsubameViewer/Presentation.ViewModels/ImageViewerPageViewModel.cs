@@ -1124,7 +1124,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         struct ImageDoubleViewCulcResult
         {
-            public bool CanDoubleView = false;
+            public bool CanDoubleView;
             public IImageSource Slot1Image;
             public IImageSource Slot2Image;
         }
@@ -2025,7 +2025,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     if (Image == null)
                     {
                         var image = new BitmapImage();
-                        using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
+                        using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
                         {
                             try
                             {

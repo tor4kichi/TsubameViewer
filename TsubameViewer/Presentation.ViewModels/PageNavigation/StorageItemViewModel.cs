@@ -118,11 +118,13 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             _isRequestImageLoading = false;
         }
 
-        private readonly static Models.Infrastructure.AsyncLock _asyncLock = new (5);
+        private readonly static Models.Infrastructure.AsyncLock _asyncLock = new (4);
 
         bool _isInitialized = false;
         public async void Initialize(CancellationToken ct)
         {
+            using var _ = await _asyncLock.LockAsync(ct);
+
             if (_isInitialized) { return; }
             if (_disposed) { return; }
             if (Item == null) { return; }
@@ -133,8 +135,6 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
             try
             {
-                using var lockReleaser = await _asyncLock.LockAsync(ct);
-
                 if (_isInitialized) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
