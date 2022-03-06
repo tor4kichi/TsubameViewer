@@ -251,8 +251,9 @@ namespace TsubameViewer.Presentation.Views
             {
                 if (isConnectedAnimationDone is false)
                 {
+                    await WaitImageLoadingAsync(navigationCt);
                     AnimationBuilder.Create()
-                       .CenterPoint(ImagesContainer.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
+                       .CenterPoint(ImageItemsControl_0.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                        .Scale()
                            .TimedKeyFrames(ke =>
                            {
@@ -316,7 +317,7 @@ namespace TsubameViewer.Presentation.Views
                 {
                     image ??= ImageItemsControl_0.TryGetElement(0);
                     if (image == null) { return false; }
-                    return image.ActualSize is not { X: 0, Y: 0 };
+                    return image.ActualSize.X is not 0 && image.ActualSize.Y is not 0;
                 }, ct);
                 return new[] { image };
             }
@@ -328,7 +329,7 @@ namespace TsubameViewer.Presentation.Views
                     images[0] ??= ImageItemsControl_0.TryGetElement(0);
                     images[1] ??= ImageItemsControl_0.TryGetElement(1);
                     if (images.Any(x => x is null)) { return false; }
-                    return images.All(x => x.ActualSize is not { X: 0, Y: 0 });
+                    return images.All(x => x.ActualSize.X is not 0 && x.ActualSize.Y is not 0);
                 }, ct);
                 return images;
             }
