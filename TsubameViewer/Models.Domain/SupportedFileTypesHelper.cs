@@ -176,5 +176,14 @@ namespace TsubameViewer.Models.Domain
             };
         }
 
+        public static StorageItemTypes StorageItemToStorageItemTypesWithFlattenAlbamItem(this IImageSource item)
+        {
+            return StorageItemToStorageItemTypes(FlattenAlbamItemInnerImageSource(item));
+        }
+
+        public static IImageSource FlattenAlbamItemInnerImageSource(this IImageSource imageSource)
+        {
+            return imageSource is AlbamItemImageSource albam ? albam.InnerImageSource : imageSource;
+        }
     }
 }

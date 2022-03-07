@@ -79,6 +79,9 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {
+            // 画像ビューアから読み込む時のためにロックが必要
+            using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
+
             if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
             {
                 return await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);

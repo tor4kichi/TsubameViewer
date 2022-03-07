@@ -109,18 +109,25 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
 
 
+
+            _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
+            _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
+            _FileByFolder = structure.FilesByFolder.Select(x => (x.Key, x.Value.Where(x => supportedFileIndexies.Contains(x)))).Where(x => x.Item2.Any()).ToImmutableSortedDictionary(x => x.Key, x => x.Item2.ToArray());
             if (string.IsNullOrEmpty(structure.RootDirectoryPath))
             {
-                RootDirectoryToken = new ArchiveDirectoryToken(string.Empty, Archive, null, true);
+                if (_FileByFolder.Count == 1)
+                {
+                    RootDirectoryToken = new ArchiveDirectoryToken(_FileByFolder.First().Key, Archive, null, true); ;
+                }
+                else
+                {
+                    RootDirectoryToken = new ArchiveDirectoryToken(string.Empty, Archive, null, true);
+                }
             }
             else
             {
                 RootDirectoryToken = new ArchiveDirectoryToken(structure.RootDirectoryPath, Archive, GetEntryFromKey(structure.RootDirectoryPath), true);
             }
-
-            _imageEntryIndexSortWithDateTime = structure.FileIndexiesSortWithDateTime.Where(supportedFileIndexies.Contains).ToImmutableArray();
-            _imageEntryIndexSortWithTitle = structure.FileIndexies.Where(supportedFileIndexies.Contains).Select(x => structure.Items[x]).OrderBy(x => x).Select(x => _KeyToIndex[x]).ToImmutableArray();
-            _FileByFolder = structure.FilesByFolder.Select(x => (x.Key, x.Value.Where(x => supportedFileIndexies.Contains(x)))).Where(x => x.Item2.Any()).ToImmutableSortedDictionary(x => x.Key, x => x.Item2.ToArray());
 
             _imagesCount = imagesCount;
             _imageSourcesCache = new IImageSource[structure.Items.Length];
