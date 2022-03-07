@@ -71,7 +71,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == VirtualKey.Escape)
+            if (e.Key == VirtualKey.Escape && e.OriginalKey != VirtualKey.GamepadB)
             {
                 if (IsOpenBottomMenu)
                 {
