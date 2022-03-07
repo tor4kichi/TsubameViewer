@@ -44,7 +44,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     public sealed class FolderImageCollectionContext : IImageCollectionContext
     {
         public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
-        public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions));
+        public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)) { FolderDepth = FolderDepth.Shallow };
 
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
@@ -131,7 +131,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
         static QueryOptions CreateDefaultImageFileSearchQueryOptions(FileSortType sort)
         {
-            var query = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions);
+            var query = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions)
+            {
+                FolderDepth = FolderDepth.Shallow,
+                IndexerOption = IndexerOption.UseIndexerWhenAvailable,
+            };
             query.SortOrder.Clear();
             switch (sort)
             {
@@ -175,12 +179,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             if (sort is FileSortType.None or FileSortType.TitleAscending or FileSortType.TitleDecending)
             {
-                var filename = Path.GetFileName(key);
-                var result = await ImageFileSearchQuery.FindStartIndexAsync(filename);
-                if (result == uint.MaxValue) { throw new KeyNotFoundException($"not found file : {filename}"); }
-                return (int)result;
+                string filename = Path.GetFileName(key);
+                uint result = await ImageFileSearchQuery.FindStartIndexAsync(filename);
+                return result != uint.MaxValue ? (int)result : throw new KeyNotFoundException($"not found file : {filename}");
             }
-            else
+            else 
             {
                 // FindStartIndexAsync が意図したIndexを返さないので頭から走査する
                 int index = 0;
@@ -194,7 +197,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     index++;
                 }
 
-                throw new InvalidOperationException();
+                throw new KeyNotFoundException($"not found file : {Path.GetFileName(key)}");
             }
         }
 
