@@ -1257,11 +1257,12 @@
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <!--
             <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
-
+            -->
             <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
             <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
             <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
