@@ -210,14 +210,13 @@ namespace TsubameViewer.Presentation.Views
 
                 if (isFirst)
                 {
+                    isFirst = false;
                     m.Reply(DelayReply());
                 }
                 else
                 {
                     m.Reply(Unit.Default);
                 }
-
-                isFirst = false;
             });
 
             AnimationBuilder.Create()
@@ -875,5 +874,28 @@ namespace TsubameViewer.Presentation.Views
             DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
 
         #endregion
+
+
+
+    }
+
+    public class SelectorSelectedChangedToStringConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (value is SelectionChangedEventArgs args)
+            {
+                return args.AddedItems.FirstOrDefault() as string;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

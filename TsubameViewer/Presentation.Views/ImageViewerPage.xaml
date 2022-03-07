@@ -796,7 +796,11 @@
                   >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" >
+                <core:InvokeCommandAction.InputConverter>
+                  <local:SelectorSelectedChangedToStringConverter />
+                </core:InvokeCommandAction.InputConverter>
+              </core:InvokeCommandAction>
               <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
             </core:EventTriggerBehavior>
           </i:Interaction.Behaviors>
