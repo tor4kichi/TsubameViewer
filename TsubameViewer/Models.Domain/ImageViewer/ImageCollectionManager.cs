@@ -33,7 +33,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager, 
             FolderListingSettings folderListingSettings,
-            ArchiveFileInnerStructureCache archiveFileInnerStructureCache
+            ArchiveFileInnerStructureCache archiveFileInnerStructureCache            
             )
         {
             _thumbnailManager = thumbnailManager;

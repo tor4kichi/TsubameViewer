@@ -123,19 +123,17 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         bool _isInitialized = false;
         public async void Initialize(CancellationToken ct)
         {
-            using var _ = await _asyncLock.LockAsync(ct);
-
-            if (_isInitialized) { return; }
-            if (_disposed) { return; }
-            if (Item == null) { return; }
-
             // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
             // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
             _isRequestImageLoading = true;
 
             try
             {
+                using var _ = await _asyncLock.LockAsync(ct);
+
                 if (_isInitialized) { return; }
+                if (_disposed) { return; }
+                if (Item == null) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
                 using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))

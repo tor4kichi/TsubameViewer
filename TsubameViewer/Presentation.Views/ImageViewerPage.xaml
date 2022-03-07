@@ -796,7 +796,11 @@
                   >
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" CommandParameter="{x:Bind PageFolderNamesSelector.SelectedValue, Mode=OneWay}" />
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}" >
+                <core:InvokeCommandAction.InputConverter>
+                  <local:SelectorSelectedChangedToStringConverter />
+                </core:InvokeCommandAction.InputConverter>
+              </core:InvokeCommandAction>
               <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}" MethodName="Hide" />
             </core:EventTriggerBehavior>
           </i:Interaction.Behaviors>
@@ -1253,11 +1257,12 @@
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <!--
             <Setter Target="LeftPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="ReverseLeftPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="RightPageMoveButton.IsEnabled" Value="False" />
             <Setter Target="ReverseRightPageMoveButton.IsEnabled" Value="False" />
-
+            -->
             <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
             <Setter Target="ReverseGamePadLeftTriggerBehavior.IsEnabled" Value="False" />
             <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />

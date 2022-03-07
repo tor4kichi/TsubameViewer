@@ -417,7 +417,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
         public async Task<IStorageItem> GetStorageItemFromPath(string path)
         {            
             // .Where() は 例えば「_A_B」と「_A」というフォルダ名を分別するために必要
-            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).Where(x => x.Path.StartsWith(path)).ToArray();
+            var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
 
             // 登録アイテムがリネーム等されていた場合に内部DBを再構築する
             // 理想的には変更部分だけを差分更新するべき
@@ -427,41 +427,52 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 tokenEntries = new[] { token };
             }
 
+            async Task<IStorageItem> FindStorageItem(TokenToPathEntry tokenEntry)
+            {
+                try
+                {
+                    var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
+
+                    // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
+
+                    // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
+                    // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
+                    if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
+                    {
+                        var otherEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
+                        if (otherEntry == null)
+                        {
+                            throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
+                        }
+
+                        tokenStorageItem = await GetItemAsync(otherEntry.Token);
+                    }
+
+                    if (tokenStorageItem?.Path == path)
+                    {
+                        return tokenStorageItem;
+                    }
+                    else if (tokenStorageItem is StorageFolder folder)
+                    {
+                        var subtractPath = path.Substring(tokenStorageItem.Path.Length);
+                        return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
+                    }
+                    else
+                    {
+                        if (tokenEntry.TokenListType == TokenListType.MostRecentlyUsedList)
+                        {
+                            _tokenToPathRepository.DeleteItem(tokenEntry.Token);
+                        }
+                    }
+                }
+                catch (FileNotFoundException) { }
+
+                return null;
+            }
+
             foreach (var tokenEntry in tokenEntries)
             {
-                var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
-
-                // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
-
-                // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
-                // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
-                if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
-                {
-                    var otherEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
-                    if (otherEntry == null)
-                    {
-                        throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
-                    }
-
-                    tokenStorageItem = await GetItemAsync(otherEntry.Token);
-                }
-
-                if (tokenStorageItem?.Path == path)
-                {
-                    return tokenStorageItem;
-                }
-                else if (tokenStorageItem is StorageFolder folder)
-                {
-                    var subtractPath = path.Substring(tokenStorageItem.Path.Length);
-                    return await FolderHelper.GetFolderItemFromPath(folder, subtractPath);
-                }
-                else
-                {
-                    if (tokenEntry.TokenListType == TokenListType.MostRecentlyUsedList)
-                    {
-                        _tokenToPathRepository.DeleteItem(tokenEntry.Token);
-                    }
-                }
+                if (await FindStorageItem(tokenEntry) is not null and IStorageItem result) { return result; }
             }
 
             throw new ArgumentException($"not found StorageItem access permission to {path}");

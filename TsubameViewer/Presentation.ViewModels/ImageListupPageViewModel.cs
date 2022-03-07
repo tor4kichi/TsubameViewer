@@ -307,7 +307,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _navigationDisposables?.Dispose();
 
-            foreach (var itemVM in ImageFileItems)
+            foreach (var itemVM in ImageFileItems.Reverse())
             {
                 itemVM.StopImageLoading();
             }

@@ -986,61 +986,128 @@ namespace TsubameViewer.Presentation.ViewModels
                 var sizeCheckResult = await CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(candidateImages, ct);
                 if (sizeCheckResult.CanDoubleView)
                 {
+                    bool isLoadRequired = false;
                     if (direction == IndexMoveDirection.Backward)
                     {
                         if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image))
                         {
-                            SetDisplayImages(indexType,
-                                sizeCheckResult.Slot2Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct),
-                                sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
-                                );
+                            isLoadRequired = true;
+                           
                         }
                     }
                     else if (direction == IndexMoveDirection.Forward)
                     {
                         if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image))
                         {
-                            SetDisplayImages(indexType,
-                                sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct),
-                                sizeCheckResult.Slot2Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct)
-                                );
+                            isLoadRequired = true;
                         }
                     }
                     else
                     {
+                        isLoadRequired = true;
+                    }
+
+                    if (isLoadRequired is true)
+                    {
+                        var originalImageLoadTask1 = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct);
+                        var originalImageLoadTask2 = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct);
+                        
+                        if (direction == IndexMoveDirection.Refresh)
+                        {
+                            var flattenImageSource1 = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
+                            var flattenImageSource2 = sizeCheckResult.Slot2Image.FlattenAlbamItemInnerImageSource();
+                            bool isEnabledThumbnailOut =
+                                (flattenImageSource1 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource1 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
+                                && (flattenImageSource2 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource2 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
+                                ;
+
+                            if (isEnabledThumbnailOut)
+                            {
+                                async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
+                                {
+                                    using var imageStream = await Task.Run(async () => await imageSource.GetThumbnailImageStreamAsync(ct));
+                                    var thumbImage = new BitmapImage();
+                                    thumbImage.SetSource(imageStream);
+                                    return thumbImage;
+                                }
+
+                                var thumbnailLoadTask1 = LoadThumbnailAsync(sizeCheckResult.Slot1Image, ct);
+                                var thumbnailLoadTask2 = LoadThumbnailAsync(sizeCheckResult.Slot2Image, ct);
+
+                                SetDisplayImages(indexType,
+                                    sizeCheckResult.Slot1Image, await thumbnailLoadTask1,
+                                    sizeCheckResult.Slot2Image, await thumbnailLoadTask2
+                                        );
+
+                                await _messenger.Send(new ImageLoadedMessage());
+                            }                            
+                        }
+
                         SetDisplayImages(indexType,
-                            sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct),
-                            sizeCheckResult.Slot2Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct)
-                            );
+                            sizeCheckResult.Slot2Image, await originalImageLoadTask1,
+                            sizeCheckResult.Slot1Image, await originalImageLoadTask2
+                        );
                     }
 
                     return 2;
                 }
                 else
-                {
+                {                   
+                    bool isRequireLoad = false;
                     if (direction == IndexMoveDirection.Backward)
                     {
                         if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot1Image))
                         {
-                            SetDisplayImages(indexType,
-                                sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
-                                );
+                            isRequireLoad = true;
                         }
                     }
                     else if (direction == IndexMoveDirection.Forward)
                     {
                         if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot1Image))
                         {
-                            SetDisplayImages(indexType,
-                                sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
-                                );
+                            isRequireLoad = true;
                         }
                     }
                     else
                     {
+                        isRequireLoad = true;
+                    }
+
+                    if (isRequireLoad is true)
+                    {
+                        var originalImageLoadTask = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct);
+
+                        if (direction == IndexMoveDirection.Refresh)
+                        {
+                            var flattenImageSource = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
+                            bool isEnabledThumbnailOut =
+                                (flattenImageSource is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
+                                || (flattenImageSource is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
+                                ;
+
+                            if (isEnabledThumbnailOut)
+                            {
+                                async Task<BitmapImage> LoadThumbnailAsync(IImageSource imageSource, CancellationToken ct)
+                                {
+                                    using var imageStream = await Task.Run(async () => await imageSource.GetThumbnailImageStreamAsync(ct));
+                                    var thumbImage = new BitmapImage();
+                                    thumbImage.SetSource(imageStream);
+                                    return thumbImage;
+                                }
+
+                                var thumbnailLoadTask = LoadThumbnailAsync(sizeCheckResult.Slot1Image, ct);
+
+                                SetDisplayImages(indexType,
+                                    sizeCheckResult.Slot1Image, await thumbnailLoadTask
+                                        );
+
+                                await _messenger.Send(new ImageLoadedMessage());
+                            }
+                        }
+
                         SetDisplayImages(indexType,
-                                sizeCheckResult.Slot1Image, await GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct)
-                                );
+                            sizeCheckResult.Slot1Image, await originalImageLoadTask
+                            );
                     }
 
                     return 1;
