@@ -502,10 +502,13 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 // アプリ内部操作も含めて変更を検知する
                 _imageCollectionContext.CreateImageFileChangedObserver()
-                    .Subscribe(async _ =>
+                    .Subscribe(_ =>
                     {
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Images Update required. " + _currentPath);
+                        _scheduler.Schedule(async () => 
+                        {
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
+                            Debug.WriteLine("Images Update required. " + _currentPath);
+                        });
                     })
                     .AddTo(_navigationDisposables);
             }
