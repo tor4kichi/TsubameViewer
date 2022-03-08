@@ -30,6 +30,13 @@ CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
 
 
+#### Notification
+
+
+
+
+
+
 #### SettingsPage
 
 SettingsPageTitle = Setting
@@ -65,6 +72,9 @@ ForceXboxAppearanceModeEnabled = Added margin around the window (for large scree
 PrivacyPolicy = privacy policy
 ThirdPartyLibraryNotice = Third-party library license display
 AskQuestionWithMashmarrow = Send marshmallow (bug report/question/suggestion)
+
+ImageCodecExtensions = Image codec extension
+
 
 
 

@@ -221,6 +221,7 @@
     <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\Notification\InAppNotificationRequestMessage.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
