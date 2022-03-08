@@ -1044,8 +1044,8 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         SetDisplayImages(indexType,
-                            sizeCheckResult.Slot2Image, await originalImageLoadTask1,
-                            sizeCheckResult.Slot1Image, await originalImageLoadTask2
+                            sizeCheckResult.Slot1Image, await originalImageLoadTask1,
+                            sizeCheckResult.Slot2Image, await originalImageLoadTask2
                         );
                     }
 
