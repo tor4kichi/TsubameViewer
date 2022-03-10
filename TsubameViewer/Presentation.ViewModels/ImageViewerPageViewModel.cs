@@ -960,9 +960,10 @@ namespace TsubameViewer.Presentation.ViewModels
             bool canNotSwapping = indexType != PrefetchIndexType.Current;
             if (requestDoubleView)
             {
+                // RightToLeftを基準に
                 var indexies = direction == IndexMoveDirection.Backward
                     ? new[] { 0, -1 }
-                    : new[] { 0, 1 }
+                    : new[] { 1, 0 }
                     ;
 
                 // 表示用のインデックスを生成
@@ -989,7 +990,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     bool isLoadRequired = false;
                     if (direction == IndexMoveDirection.Backward)
                     {
-                        if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image))
+                        if (canNotSwapping || !TryDisplayImagesSwapBackward(sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image))
                         {
                             isLoadRequired = true;
                            
@@ -1488,12 +1489,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage, IImageSource secondSource, BitmapImage secondImage)
         {
-            if (IsLeftBindingEnabled.Value is false)
-            {
-                (firstImage, secondImage) = (secondImage, firstImage);
-                (firstSource, secondSource) = (secondSource, firstSource);
-            }
-
             // (firstImage.PixelWidth + secondImage.PixelWidth < CanvasWidth.Value) は常にtrue
             SetDecodePixelHeightWhenLargerThenCanvasHeight(firstImage);
             SetDecodePixelHeightWhenLargerThenCanvasHeight(secondImage);
@@ -1636,11 +1631,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 return false;
             }
 
-            if (IsLeftBindingEnabled.Value is false)
-            {
-                (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
-            }
-
             if (firstForwardCachedImageSource.Equals(firstSource)
                 && secondForwardCachedImageSource.Equals(secondSource)
                 )
@@ -1685,11 +1675,6 @@ namespace TsubameViewer.Presentation.ViewModels
             if (firstForwardCachedImageSource == null || secondForwardCachedImageSource == null)
             {
                 return false;
-            }
-
-            if (IsLeftBindingEnabled.Value is false)
-            {
-                (firstForwardCachedImageSource, secondForwardCachedImageSource) = (secondForwardCachedImageSource, firstForwardCachedImageSource);
             }
 
             if (firstForwardCachedImageSource.Equals(firstSource)
