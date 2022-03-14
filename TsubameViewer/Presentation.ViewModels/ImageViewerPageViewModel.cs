@@ -963,7 +963,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 // RightToLeftを基準に
                 var indexies = direction == IndexMoveDirection.Backward
                     ? new[] { 0, -1 }
-                    : new[] { 1, 0 }
+                    : new[] { 0, 1 }
                     ;
 
                 // 表示用のインデックスを生成
@@ -998,7 +998,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else if (direction == IndexMoveDirection.Forward)
                     {
-                        if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image))
+                        if (canNotSwapping || !TryDisplayImagesSwapForward(sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image))
                         {
                             isLoadRequired = true;
                         }
@@ -1010,13 +1010,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     if (isLoadRequired is true)
                     {
-                        var originalImageLoadTask1 = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot1Image, ct);
-                        var originalImageLoadTask2 = GetBitmapImageWithCacheAsync(sizeCheckResult.Slot2Image, ct);
-                        
+                        var (imageSource1, imageSource2) = direction switch
+                        {
+                            IndexMoveDirection.Backward => (sizeCheckResult.Slot1Image, sizeCheckResult.Slot2Image),
+                            _ => (sizeCheckResult.Slot2Image, sizeCheckResult.Slot1Image)
+                        };
+
+                        var originalImageLoadTask1 = GetBitmapImageWithCacheAsync(imageSource1, ct);
+                        var originalImageLoadTask2 = GetBitmapImageWithCacheAsync(imageSource2, ct);
+
                         if (direction == IndexMoveDirection.Refresh)
                         {
-                            var flattenImageSource1 = sizeCheckResult.Slot1Image.FlattenAlbamItemInnerImageSource();
-                            var flattenImageSource2 = sizeCheckResult.Slot2Image.FlattenAlbamItemInnerImageSource();
+                            var flattenImageSource1 = imageSource1.FlattenAlbamItemInnerImageSource();
+                            var flattenImageSource2 = imageSource2.FlattenAlbamItemInnerImageSource();
                             bool isEnabledThumbnailOut =
                                 (flattenImageSource1 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource1 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
                                 && (flattenImageSource2 is ArchiveEntryImageSource && _folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled) || (flattenImageSource2 is StorageItemImageSource && _folderListingSettings.IsImageFileGenerateThumbnailEnabled)
@@ -1032,12 +1038,12 @@ namespace TsubameViewer.Presentation.ViewModels
                                     return thumbImage;
                                 }
 
-                                var thumbnailLoadTask1 = LoadThumbnailAsync(sizeCheckResult.Slot1Image, ct);
-                                var thumbnailLoadTask2 = LoadThumbnailAsync(sizeCheckResult.Slot2Image, ct);
+                                var thumbnailLoadTask1 = LoadThumbnailAsync(imageSource1, ct);
+                                var thumbnailLoadTask2 = LoadThumbnailAsync(imageSource2, ct);
 
                                 SetDisplayImages(indexType,
-                                    sizeCheckResult.Slot1Image, await thumbnailLoadTask1,
-                                    sizeCheckResult.Slot2Image, await thumbnailLoadTask2
+                                    imageSource1, await thumbnailLoadTask1,
+                                    imageSource2, await thumbnailLoadTask2
                                         );
 
                                 await _messenger.Send(new ImageLoadedMessage());
@@ -1045,8 +1051,8 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
 
                         SetDisplayImages(indexType,
-                            sizeCheckResult.Slot1Image, await originalImageLoadTask1,
-                            sizeCheckResult.Slot2Image, await originalImageLoadTask2
+                            imageSource1, await originalImageLoadTask1,
+                            imageSource2, await originalImageLoadTask2
                         );
                     }
 
