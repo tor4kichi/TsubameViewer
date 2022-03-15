@@ -368,13 +368,15 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         private readonly PdfDocument _pdfDocument;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly ImageViewerSettings _imageViewerSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
         private readonly IImageSource[] _imageSourcesCache;
-        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+        public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ImageViewerSettings imageViewerSettings, ThumbnailManager thumbnailManager)
         {
             _pdfDocument = pdfDocument;
             _folderListingSettings = folderListingSettings;
+            _imageViewerSettings = imageViewerSettings;
             File = file;
             _thumbnailManager = thumbnailManager;
 
@@ -388,7 +390,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             return Enumerable.Range(0, (int)_pdfDocument.PageCount)
               .Select(x => _pdfDocument.GetPage((uint)x))
-              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _thumbnailManager));
+              .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _imageViewerSettings, _thumbnailManager));
         }
 
 
@@ -405,7 +407,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private IImageSource GetImageAt(int index)
         {
             var page = _pdfDocument.GetPage((uint)index);
-            return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _thumbnailManager);
+            return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _imageViewerSettings, _thumbnailManager);
         }
 
         public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)

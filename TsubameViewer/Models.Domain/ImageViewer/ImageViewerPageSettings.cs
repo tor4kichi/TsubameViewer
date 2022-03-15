@@ -17,6 +17,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
             _IsEnableDoubleView = Read(true, nameof(IsEnableDoubleView));
             _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
+            _PdfImageAlternateHeight = Read(new AlternateSize(500, 1280), nameof(PdfImageAlternateHeight));
+            _PdfImageAlternateWidth = Read(default(AlternateSize?), nameof(PdfImageAlternateWidth));
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -48,6 +50,25 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         {
             get { return _IsEnablePrefetch; }
             set { SetProperty(ref _IsEnablePrefetch, value); }
+        }
+
+
+        // 代替サイズ指定
+        // PDFのメタデータ指定における高さが（800ptあるのに）350ptなどと設定されているケースに手動対応する
+        public record struct AlternateSize(uint Threshold, uint Alternate);
+
+        private AlternateSize? _PdfImageAlternateWidth;
+        public AlternateSize? PdfImageAlternateWidth
+        {
+            get => _PdfImageAlternateWidth;
+            set => SetProperty(ref _PdfImageAlternateWidth, value);
+        }
+
+        private AlternateSize? _PdfImageAlternateHeight;
+        public AlternateSize? PdfImageAlternateHeight
+        {
+            get => _PdfImageAlternateHeight;
+            set => SetProperty(ref _PdfImageAlternateHeight, value);
         }
 
 

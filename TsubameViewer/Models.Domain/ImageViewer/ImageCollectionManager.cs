@@ -28,16 +28,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly ImageViewerSettings _imageViewerSettings;
         private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
         public ImageCollectionManager(
             ThumbnailManager thumbnailManager, 
             FolderListingSettings folderListingSettings,
+            ImageViewerSettings imageViewerSettings,
             ArchiveFileInnerStructureCache archiveFileInnerStructureCache            
             )
         {
             _thumbnailManager = thumbnailManager;
             _folderListingSettings = folderListingSettings;
+            _imageViewerSettings = imageViewerSettings;
             _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
         }
 
@@ -148,7 +151,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
         private async Task<IImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
         {
             var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
-            return new PdfImageCollection(file, pdfDocument, _folderListingSettings, _thumbnailManager);
+            return new PdfImageCollection(file, pdfDocument, _folderListingSettings, _imageViewerSettings, _thumbnailManager);
         }
 
 

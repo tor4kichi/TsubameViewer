@@ -19,15 +19,17 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
     {
         private readonly PdfPage _pdfPage;
         private readonly FolderListingSettings _folderListingSettings;
+        private readonly ImageViewerSettings _imageViewerSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+        public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, FolderListingSettings folderListingSettings, ImageViewerSettings imageViewerSettings, ThumbnailManager thumbnailManager)
         {
             _pdfPage = pdfPage;
             Name = (_pdfPage.Index + 1).ToString();
             DateCreated = storageItem.DateCreated.DateTime;
             StorageItem = storageItem;
             _folderListingSettings = folderListingSettings;
+            _imageViewerSettings = imageViewerSettings;
             _thumbnailManager = thumbnailManager;
 
             Path = PageNavigationConstants.MakeStorageItemIdWithPage(storageItem.Path, _pdfPage.Index.ToString());
@@ -57,7 +59,21 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             var memoryStream = new InMemoryRandomAccessStream();
             {
-                await _pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
+                if (_imageViewerSettings.PdfImageAlternateHeight is not null and ImageViewerSettings.AlternateSize altHeight
+                    && _pdfPage.Size.Height < altHeight.Threshold)
+                {
+                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() { DestinationWidth = altHeight.Alternate }).AsTask(ct);
+                }
+                else if (_imageViewerSettings.PdfImageAlternateWidth is not null and ImageViewerSettings.AlternateSize altWidth 
+                    && _pdfPage.Size.Width < altWidth.Threshold)
+                {
+                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() {  DestinationWidth = altWidth.Alternate }).AsTask(ct);
+                }
+                else
+                {
+                    await _pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
+                }
+                
 
                 ct.ThrowIfCancellationRequested();
 
