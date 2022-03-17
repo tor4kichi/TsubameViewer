@@ -478,7 +478,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) => 
                 {
-                    var (albamId, path) = m.Value;
+                    var (albamId, path, itemType) = m.Value;
                     List<StorageItemViewModel> removeTargets = new();
                     foreach (var itemVM in _vm.Selection.SelectedItems)
                     {

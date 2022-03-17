@@ -107,6 +107,8 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
+    <CodeAnalysisRuleSet>
+    </CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -133,6 +135,7 @@
     <Compile Include="Locales\LocalizeExtension.cs" />
     <Compile Include="Models.Domain\Albam\AlbamImageCollectionContext.cs" />
     <Compile Include="Models.Domain\Albam\AlbamImageSource.cs" />
+    <Compile Include="Models.Domain\Albam\AlbamItemExtensions.cs" />
     <Compile Include="Models.Domain\Albam\AlbamItemImageSource.cs" />
     <Compile Include="Models.Domain\Albam\AlbamItemMessage.cs" />
     <Compile Include="Models.Domain\Albam\AlbamMessage.cs" />
@@ -163,6 +166,7 @@
     <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
     <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="Models.Domain\ImageViewer\NotSupportedImageFormatException.cs" />
+    <Compile Include="Models.Domain\MessengerObservableExtensions.cs" />
     <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
     <Compile Include="Models.Domain\Navigation\FolderLastIntractItemManager.cs" />
     <Compile Include="Models.Domain\Navigation\RestoreNavigationManager.cs" />
@@ -552,6 +556,7 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

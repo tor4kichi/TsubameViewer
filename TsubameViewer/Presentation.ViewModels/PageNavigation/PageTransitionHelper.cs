@@ -58,7 +58,14 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
             }
             else if (imageSource is AlbamItemImageSource albamItem)
             {
-                return CreatePageParameter(albamItem);
+                if (albamItem.GetAlbamItemType() == AlbamItemType.Image)
+                {
+                    return CreatePageParameter(albamItem);
+                }
+                else
+                {
+                    return CreatePageParameter(albamItem.InnerImageSource);
+                }
             }
             else
             {

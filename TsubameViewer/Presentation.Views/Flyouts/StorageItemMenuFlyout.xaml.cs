@@ -23,6 +23,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using TsubameViewer.Models.Domain;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -92,23 +93,14 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
-                if (itemVM.Type == Models.Domain.StorageItemTypes.Image)
-                {
-                    var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-                    AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
-                    AddFavariteImageMenuItem.CommandParameter = itemVM;
-                    RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
-                    RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-                    
-                    AlbamItemEditMenuItem.Visibility = Visibility.Visible;
-                    AlbamItemEditMenuItem.CommandParameter = itemVM;
-                }
-                else
-                {
-                    AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                    RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                    AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
-                }
+                var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                AddFavariteImageMenuItem.CommandParameter = itemVM;
+                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
 
                 AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
@@ -147,13 +139,20 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;
 
-                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
-                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+                var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                AddFavariteImageMenuItem.CommandParameter = itemVM;
+                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
+
+                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 AlbamEditMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
@@ -203,8 +202,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             {
                 bool isFavAlbamItem = albamItem.AlbamId == FavoriteAlbam.FavoriteAlbamId;
 
+                AlbamItemType itemType = albamItem.GetAlbamItemType();
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(albamItem);
                 OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Visibility = Visibility.Collapsed;
+                OpenListupItem.Visibility = (type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.ArchiveFolder or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 RemoveFavariteImageMenuItem.Visibility = isFavAlbamItem.TrueToVisible();

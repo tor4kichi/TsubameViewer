@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
@@ -78,14 +79,28 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             if (parameter is IImageSource imageSource)
             {
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-                if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
+                if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.AlbamImage)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                 }
+                else if (type is StorageItemTypes.Albam)
+                {
+                    var albamImageSource = imageSource as AlbamImageSource;
+                    if (await albamImageSource.IsExistFolderOrArchiveFileAsync())
+                    {
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    }
+                    else
+                    {
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    }
+                }
                 else if (type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);

@@ -281,6 +281,10 @@ namespace TsubameViewer.Presentation.Views
                 {
                     sourcePageTypeName = nameof(Views.SourceStorageItemsPage);
                 }
+                if (GetCurrentNavigationParameter().TryGetValue(PageNavigationConstants.AlbamPathKey, out _))
+                {
+                    sourcePageTypeName = nameof(Views.AlbamListupPage);
+                }
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
                 {

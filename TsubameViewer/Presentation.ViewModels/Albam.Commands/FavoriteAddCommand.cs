@@ -19,7 +19,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         
         protected override void Execute(IImageSource imageSource)
         {
-            _favoriteAlbam.AddFavoriteItem(imageSource.Path, imageSource.Name);
+            _favoriteAlbam.AddFavoriteItem(imageSource);
         }
     }
 }

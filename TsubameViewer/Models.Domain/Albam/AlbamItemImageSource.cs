@@ -38,6 +38,10 @@ namespace TsubameViewer.Models.Domain.Albam
                     Name = imageSource.Name;
                 }
             }
+            else if (InnerImageSource.StorageItem is StorageFolder folder)
+            {
+                Name = folder.Name;
+            }
         }
 
 

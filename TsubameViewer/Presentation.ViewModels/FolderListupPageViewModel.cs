@@ -302,53 +302,7 @@ namespace TsubameViewer.Presentation.ViewModels
             return null;
         }
 
-        async Task ResetContent(string path, CancellationToken ct)
-        {
-            HasFileItem = false;
-
-            // PathReferenceCountManagerへの登録が遅延する可能性がある
-            foreach (var _ in Enumerable.Repeat(0, 10))
-            {
-                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(path);
-                if (_currentItem != null)
-                {
-                    break;
-                }
-                await Task.Delay(100, ct);
-            }
-
-            if (_currentItem == null)
-            {
-                throw new Exception();
-            }
-
-            DisplayCurrentPath = _currentItem.Path;
-
-            var settingPath = path;
-            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
-            if (settings != null)
-            {
-                SelectedFileSortType.Value = settings.Sort;
-                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
-            }
-            else
-            {
-                if (_currentItem is StorageFolder)
-                {
-                    SelectedFileSortType.Value = FileSortType.TitleAscending;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
-                }
-                else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
-                {
-                    SelectedFileSortType.Value = FileSortType.TitleAscending;
-                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
-                }
-            }
-
-            SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
-
-            await RefreshFolderItems(path, ct);
-        }
+        
 
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
@@ -380,13 +334,15 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         throw new InvalidOperationException();
                     }
-                    else if (_currentPath != unescapedPath
-                        || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
+                    else if (_currentPath != unescapedPath)                        
+                    {        
+                        await ResetContent(unescapedPath, ct);
+                    }
+                    else if (string.IsNullOrEmpty(_currentArchiveFolderName) is false
                             && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
                             && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
                             )
-                        )
-                    {        
+                    {
                         await ResetContent(unescapedPath, ct);
                     }
                     else
@@ -402,7 +358,19 @@ namespace TsubameViewer.Presentation.ViewModels
 
                     _currentPath = unescapedPath;
                 }
-                
+                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
+                {
+                    _currentPath = null;
+
+                    (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
+
+                    if (Guid.TryParse(albamIdString, out Guid albamId))
+                    {
+                        var albam = _albamRepository.GetAlbam(albamId);
+                        await ResetContentWithAlbam(albam, ct);
+                    }
+                }
+
 
                 if (mode != NavigationMode.New)
                 {
@@ -507,6 +475,91 @@ namespace TsubameViewer.Presentation.ViewModels
 
         IImageCollectionContext _imageCollectionContext;
 
+        async Task ResetContent(string path, CancellationToken ct)
+        {
+            HasFileItem = false;
+
+            // PathReferenceCountManagerへの登録が遅延する可能性がある
+            foreach (var _ in Enumerable.Repeat(0, 10))
+            {
+                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(path);
+                if (_currentItem != null)
+                {
+                    break;
+                }
+                await Task.Delay(100, ct);
+            }
+
+            if (_currentItem == null)
+            {
+                throw new Exception();
+            }
+
+            DisplayCurrentPath = _currentItem.Path;
+
+            var settingPath = path;
+            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
+            if (settings != null)
+            {
+                SelectedFileSortType.Value = settings.Sort;
+                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+            }
+            else
+            {
+                if (_currentItem is StorageFolder)
+                {
+                    SelectedFileSortType.Value = FileSortType.TitleAscending;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                }
+                else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
+                {
+                    SelectedFileSortType.Value = FileSortType.TitleAscending;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                }
+            }
+
+            SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
+
+            await RefreshFolderItems(path, ct);
+        }
+
+        async Task ResetContentWithAlbam(AlbamEntry albam, CancellationToken ct)
+        {
+            HasFileItem = false;
+            
+            DisplayCurrentPath = "Albam".Translate();
+
+            string path = albam._id.ToString();
+            /*
+            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path);
+            if (settings != null)
+            {
+                SelectedFileSortType.Value = settings.Sort;
+                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+            }
+            else
+            {
+                if (_currentItem is StorageFolder)
+                {
+                    SelectedFileSortType.Value = FileSortType.TitleAscending;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                }
+                else if (_currentItem is StorageFile file && file.IsSupportedMangaFile())
+                {
+                    SelectedFileSortType.Value = FileSortType.TitleAscending;
+                    SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                }
+            }
+            */
+
+            //SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
+            SelectedChildFileSortType.Value = FileSortType.None;
+            SelectedFileSortType.Value = FileSortType.UpdateTimeDecending;
+            SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+
+            await RefreshFolderItems(albam, ct);
+        }
+
         #region Refresh Item
 
         private static readonly Models.Infrastructure.AsyncLock _RefreshLock = new ();
@@ -597,7 +650,34 @@ namespace TsubameViewer.Presentation.ViewModels
                 (_backNavigationCommand as ICommand).Execute(null);
             }
         }
-        
+
+        private async Task RefreshFolderItems(AlbamEntry albam, CancellationToken ct)
+        {
+            using var lockObject = await _RefreshLock.LockAsync(ct);
+
+            ClearContent();
+            DisplayCurrentArchiveFolderName = null;
+            CurrentFolderItem = null;
+
+            _imageCollectionContext = null;
+            AlbamImageCollectionContext imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
+            CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+            DisplayCurrentArchiveFolderName = imageCollectionContext.Name;
+
+            _imageCollectionContext = imageCollectionContext;
+            _ImageCollectionDisposer = imageCollectionContext as IDisposable;
+
+            try
+            {
+                await ReloadItemsAsync(_imageCollectionContext, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                ClearContent();
+                (_backNavigationCommand as ICommand).Execute(null);
+            }
+        }
+
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
             var oldItemPathMap = FolderItems.Select(x => x.Path).ToHashSet();

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.Domain.ImageViewer;
 
 namespace TsubameViewer.Models.UseCase
 {
@@ -31,22 +32,23 @@ namespace TsubameViewer.Models.UseCase
 
         public bool IsFavorite(string path)
         {
-            return _albamRepository.IsExistAlbamItem(FavoriteAlbamId, path);
+            return _albamRepository.IsExistAlbamItem(FavoriteAlbamId, path, AlbamItemType.Image);
         }
 
-        public AlbamItemEntry AddFavoriteItem(string path, string name)
+        public AlbamItemEntry AddFavoriteItem(IImageSource imageSource)
         {
-            if (_albamRepository.IsExistAlbamItem(FavoriteAlbamId, path))
+            var itemType = imageSource.GetAlbamItemType();
+            if (_albamRepository.IsExistAlbamItem(FavoriteAlbamId, imageSource.Path, itemType))
             {
                 return null;
             }
 
-            return _albamRepository.AddAlbamItem(FavoriteAlbamId, path, name);
+            return _albamRepository.AddAlbamItem(FavoriteAlbamId, imageSource.Path, imageSource.Name, itemType);
         }
 
-        public bool DeleteFavoriteItem(string path)
+        public bool DeleteFavoriteItem(IImageSource imageSource)
         {
-            return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, path);
+            return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, imageSource.Path, imageSource.GetAlbamItemType());
         }
     }
 }

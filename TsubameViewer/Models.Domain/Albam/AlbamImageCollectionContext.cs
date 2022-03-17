@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -84,15 +85,30 @@ namespace TsubameViewer.Models.Domain.Albam
                 }
                 else if (SupportedFileTypesHelper.IsSupportedMangaFile(file))
                 {
-                    if (_archiveImageCollectionContextCache.TryGetValue(file.Path, out IImageCollectionContext collection) is false)
+                    if (string.IsNullOrEmpty(pageName) is false)
                     {
-                        collection = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, archiveDirectoryPath: null, ct);
-                        _archiveImageCollectionContextCache.Add(file.Path, collection);
-                    }
+                        if (_archiveImageCollectionContextCache.TryGetValue(file.Path, out IImageCollectionContext collection) is false)
+                        {
+                            collection = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, archiveDirectoryPath: null, ct);
+                            _archiveImageCollectionContextCache.Add(file.Path, collection);
+                        }
 
-                    var index = await collection.GetIndexFromKeyAsync(pageName, FileSortType.None, ct);
-                    imageSource = await collection.GetImageFileAtAsync(index, FileSortType.None, ct);
+                        var index = await collection.GetIndexFromKeyAsync(pageName, FileSortType.None, ct);
+                        imageSource = await collection.GetImageFileAtAsync(index, FileSortType.None, ct);
+                    }
+                    else
+                    {
+                        imageSource = new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager);
+                    }
                 }
+                else if (SupportedFileTypesHelper.IsSupportedEBookFile(file))
+                {
+                    imageSource = new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager);
+                }
+            }
+            else if (storageItem is StorageFolder folder)
+            {
+                imageSource = new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager);
             }
             
             if (imageSource == null)
@@ -113,46 +129,58 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
         {
-            return new(false);
+            return new(_albamRepository.IsExistAlbamItem(_albam._id, AlbamItemType.FolderOrArchive));
         }
 
         public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
         {
-            return new(_albamRepository.IsExistAlbamItem(_albam._id));
+            return new(_albamRepository.IsExistAlbamItem(_albam._id, AlbamItemType.Image));
         }
 
 
         public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
         {
-            return Observable.Empty<Unit>();
+            return Observable.Merge(
+                _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
+                _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
+                )
+                .Where(x => x.ItemType == AlbamItemType.FolderOrArchive)
+                .ToUnit()
+                ;
         }
 
         public IObservable<Unit> CreateImageFileChangedObserver()
         {
-
             return Observable.Merge(
-                new AlbamItemRemovedObservable(_messenger).ToUnit(),
-                new AlbamItemAddedObservable(_messenger).ToUnit()
-                );
+                _messenger.CreateObservable<AlbamItemAddedMessage, AlbamItemChangedMessageValue>(),
+                _messenger.CreateObservable<AlbamItemRemovedMessage, AlbamItemChangedMessageValue>()
+                )
+                .Where(x => x.ItemType == AlbamItemType.Image)
+                .ToUnit()
+                ;
         }
 
         public async IAsyncEnumerable<IImageSource> GetAllImageFilesAsync([EnumeratorCancellation] CancellationToken ct)
         {
-            var items = _albamRepository.GetAlbamItems(_albam._id);
+            var items = _albamRepository.GetAlbamImageItems(_albam._id);
             foreach (var item in items)
             {
                 yield return await GetAlbamItemImageSourceAsync(item, ct);
             }
         }
 
-        public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+        public async IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync([EnumeratorCancellation] CancellationToken ct)
         {
-            throw new NotSupportedException();
+            var items = _albamRepository.GetAlbamFolderOrArchiveItems(_albam._id).ToArray();
+            foreach (var item in items)
+            {
+                yield return await GetAlbamItemImageSourceAsync(item, ct);
+            }
         }
 
         public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
         {
-            var albamItem = _albamRepository.GetAlbamItems(_albam._id, sort, index, 1).FirstOrDefault();
+            var albamItem = _albamRepository.GetAlbamImageItems(_albam._id, sort, index, 1).FirstOrDefault();
             if (albamItem == null)
             {
                 throw new InvalidOperationException($"not found albam item from index [{index}] in {_albam.Name}");
@@ -163,7 +191,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
         {
-            return new (_albamRepository.GetAlbamItemsCount(_albam._id));
+            return new (_albamRepository.GetAlbamItemsCount(_albam._id, AlbamItemType.Image));
         }
 
         public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
@@ -173,7 +201,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
         {
-            var items = _albamRepository.GetAlbamItems(_albam._id, sort);
+            var items = _albamRepository.GetAlbamImageItems(_albam._id, sort);
             int index = 0;
             foreach (var item in items)
             {
@@ -190,89 +218,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
         {
-            throw new NotSupportedException();
-        }
-
-
-        sealed class AlbamItemRemovedObservable : IObservable<(Guid AlbamId, string Path)>
-        {
-            private readonly IMessenger _messenger;
-
-            public AlbamItemRemovedObservable(IMessenger messenger)
-            {
-                _messenger = messenger;
-            }
-
-            public IDisposable Subscribe(IObserver<(Guid AlbamId, string Path)> observer)
-            {
-                return new AlbamItemRemovedObserver(_messenger, observer);
-            }
-
-
-            public sealed class AlbamItemRemovedObserver : IDisposable
-            {
-                private readonly IMessenger _messenger;
-                private readonly IObserver<(Guid AlbamId, string Path)> _observer;
-
-                public AlbamItemRemovedObserver(IMessenger messenger, IObserver<(Guid AlbamId, string Path)> observer)
-                {
-                    _messenger = messenger;
-                    _observer = observer;
-
-                    _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-                    {
-                        _observer.OnNext(m.Value);
-                    });
-                }
-
-                public void Dispose()
-                {
-                    _messenger.Unregister<AlbamItemRemovedMessage>(this);
-                    _observer.OnCompleted();
-                    (_observer as IDisposable)?.Dispose();
-                }
-            }
-        }
-
-
-        sealed class AlbamItemAddedObservable : IObservable<(Guid AlbamId, string Path)>
-        {
-            private readonly IMessenger _messenger;
-
-            public AlbamItemAddedObservable(IMessenger messenger)
-            {
-                _messenger = messenger;
-            }
-
-            public IDisposable Subscribe(IObserver<(Guid AlbamId, string Path)> observer)
-            {
-                return new AlbamItemAddedObserver(_messenger, observer);
-            }
-
-
-            public sealed class AlbamItemAddedObserver : IDisposable
-            {
-                private readonly IMessenger _messenger;
-                private readonly IObserver<(Guid AlbamId, string Path)> _observer;
-
-                public AlbamItemAddedObserver(IMessenger messenger, IObserver<(Guid AlbamId, string Path)> observer)
-                {
-                    _messenger = messenger;
-                    _observer = observer;
-
-                    _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
-                    {
-                        _observer.OnNext(m.Value);
-                    });
-                }
-
-                public void Dispose()
-                {
-                    _messenger.Unregister<AlbamItemAddedMessage>(this);
-                    _observer.OnCompleted();
-                    (_observer as IDisposable)?.Dispose();
-                }
-            }
+            return AsyncEnumerable.Empty<IImageSource>();
         }
     }
 }

@@ -59,7 +59,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 {
                     var imageCollectionManager = Ioc.Default.GetService<ImageCollectionManager>();
                     CancellationToken ct = CancellationToken.None;
-                    var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
+                    var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
                     try
                     {
                         if (await collectionContext.IsExistImageFileAsync(ct))
@@ -105,7 +105,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 }
                 else if (type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);

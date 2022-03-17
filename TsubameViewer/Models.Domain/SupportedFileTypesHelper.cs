@@ -171,7 +171,12 @@ namespace TsubameViewer.Models.Domain
                 ArchiveEntryImageSource _ => StorageItemTypes.Image,
                 ArchiveDirectoryImageSource _ => StorageItemTypes.ArchiveFolder,
                 Albam.AlbamImageSource _ => StorageItemTypes.Albam,
-                Albam.AlbamItemImageSource _ => StorageItemTypes.AlbamImage,
+                Albam.AlbamItemImageSource source => source.GetAlbamItemType() switch
+                {
+                    AlbamItemType.Image => StorageItemTypes.AlbamImage,
+                    AlbamItemType.FolderOrArchive => StorageItemToStorageItemTypes(source.InnerImageSource),
+                    _ => StorageItemTypes.None
+                },
                 _ => StorageItemTypes.None
             };
         }

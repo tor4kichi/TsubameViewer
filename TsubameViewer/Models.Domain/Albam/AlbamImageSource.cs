@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -56,6 +57,10 @@ namespace TsubameViewer.Models.Domain.Albam
             {
                 _sampleImageSource = await _albamImageCollectionContext.GetImageFileAtAsync(0, FileSortType.None, ct);
             }
+            else if (_sampleImageSource is null && await _albamImageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
+            {
+                _sampleImageSource = await _albamImageCollectionContext.GetFolderOrArchiveFilesAsync(ct).FirstAsync(ct);
+            }
 
             return _sampleImageSource;
         }
@@ -74,6 +79,16 @@ namespace TsubameViewer.Models.Domain.Albam
         public override string ToString()
         {
             return Path;
+        }
+
+        public ValueTask<bool> IsExistImageFileAsync()
+        {
+            return _albamImageCollectionContext.IsExistImageFileAsync(CancellationToken.None);
+        }
+
+        public ValueTask<bool> IsExistFolderOrArchiveFileAsync()
+        {
+            return _albamImageCollectionContext.IsExistFolderOrArchiveFileAsync(CancellationToken.None);
         }
     }
 }

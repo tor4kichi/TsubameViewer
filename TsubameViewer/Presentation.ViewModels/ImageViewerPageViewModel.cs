@@ -694,7 +694,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     if (_currentDisplayImageSources[0] != null && _currentDisplayImageSources[0].Path == path)
@@ -710,7 +710,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) => 
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     if (_currentDisplayImageSources[0] != null && _currentDisplayImageSources[0].Path == path)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
@@ -390,7 +391,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 throw new Exception();
             }
 
-            DisplayCurrentPath = albam.Name;
+            DisplayCurrentPath = "Albam".Translate();
 
             var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albamId);
             if (settings != null)
@@ -515,7 +516,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _messenger.Register<AlbamItemAddedMessage>(this, (r, m) => 
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
@@ -525,7 +526,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
@@ -602,6 +603,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
                 CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 _IsFavoriteAlbam = albam._id == FavoriteAlbam.FavoriteAlbamId;
+                DisplayCurrentArchiveFolderName = albam.Name;
             }
             else
             {
