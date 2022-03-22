@@ -19,6 +19,7 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.Navigations;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Windows.UI.Xaml.Navigation;
+using TsubameViewer.Presentation.Services;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -40,7 +41,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _SearchText, value); }
         }
 
-        public SecondaryTileManager SecondaryTileManager { get; }
+        public ISecondaryTileManager SecondaryTileManager { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
@@ -57,7 +58,7 @@ namespace TsubameViewer.Presentation.ViewModels
             BookmarkManager bookmarkManager,
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
-            SecondaryTileManager secondaryTileManager,
+            ISecondaryTileManager secondaryTileManager,
 
             OpenFolderItemCommand openFolderItemCommand,
             OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,

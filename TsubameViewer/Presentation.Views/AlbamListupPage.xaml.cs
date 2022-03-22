@@ -8,6 +8,7 @@ using System.Threading;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
+using TsubameViewer.Presentation.Views.Helpers;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;

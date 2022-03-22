@@ -45,6 +45,7 @@ using Microsoft.Toolkit.Uwp.UI.Animations;
 using TsubameViewer.Presentation.ViewModels.Notification;
 using System.Collections.ObjectModel;
 using System.Numerics;
+using TsubameViewer.Presentation.Views.Helpers;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views

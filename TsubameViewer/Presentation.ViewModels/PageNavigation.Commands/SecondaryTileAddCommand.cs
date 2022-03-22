@@ -5,15 +5,16 @@ using System.Text;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
 {
     public sealed class SecondaryTileAddCommand : CommandBase
     {
-        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly ISecondaryTileManager _secondaryTileManager;
 
-        public SecondaryTileAddCommand(SecondaryTileManager secondaryTileManager)
+        public SecondaryTileAddCommand(ISecondaryTileManager secondaryTileManager)
         {
             _secondaryTileManager = secondaryTileManager;
         }

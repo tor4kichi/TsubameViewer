@@ -30,6 +30,7 @@ using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -87,7 +88,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowProcessing, value); }
         }
 
-        public SecondaryTileManager SecondaryTileManager { get; }
+        public ISecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
@@ -205,7 +206,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
-            SecondaryTileManager secondaryTileManager,
+            ISecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,

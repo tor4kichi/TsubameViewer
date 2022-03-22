@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
+using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
@@ -10,9 +11,9 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
     
     public sealed class SecondaryTileRemoveCommand : CommandBase
     {
-        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly ISecondaryTileManager _secondaryTileManager;
 
-        public SecondaryTileRemoveCommand(SecondaryTileManager secondaryTileManager)
+        public SecondaryTileRemoveCommand(ISecondaryTileManager secondaryTileManager)
         {
             _secondaryTileManager = secondaryTileManager;
         }

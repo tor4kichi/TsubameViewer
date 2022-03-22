@@ -24,6 +24,7 @@ using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Presentation.Services;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -53,11 +54,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
             SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
             OpenWithExternalAppMenuItem.Command = Ioc.Default.GetService<OpenWithExternalApplicationCommand>();
-            _secondaryTileManager = Ioc.Default.GetService<SecondaryTileManager>();
+            _secondaryTileManager = Ioc.Default.GetService<ISecondaryTileManager>();
             _favoriteAlbam = Ioc.Default.GetService<FavoriteAlbam>();
         }
 
-        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly ISecondaryTileManager _secondaryTileManager;
         private readonly FavoriteAlbam _favoriteAlbam;
 
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)

@@ -133,76 +133,9 @@
     <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="Locales\LocalizeConverter.cs" />
     <Compile Include="Locales\LocalizeExtension.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamImageCollectionContext.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamImageSource.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamItemExtensions.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamItemImageSource.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamItemMessage.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamMessage.cs" />
-    <Compile Include="Models.Domain\Albam\AlbamRepository.cs" />
-    <Compile Include="Models.Domain\ApplicationSettings.cs" />
-    <Compile Include="Models.Domain\EBook\EBookReaderSettings.cs" />
-    <Compile Include="Models.Domain\FolderHelper.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\DisplaySettingsByPathRepository.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\FileDisplayMode.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\FileSortType.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\FolderContainerTypeRepository.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\FolderItemsCacheRepository.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\FolderListingSettings.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\ListingImageConstants.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\RecentlyAccessManager.cs" />
-    <Compile Include="Models.Domain\FolderItemListing\ThumbnailManager.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ArchiveFileInnerStructureCache.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ArchiveTextEncodingRepository.cs" />
-    <Compile Include="Models.Domain\ImageViewer\DirectoryPathHelper.cs" />
-    <Compile Include="Models.Domain\ImageViewer\IImageSource.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageCollection.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageCollectionContext.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageCollectionManager.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageSource\ArchiveEntryImageSource.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageSource\PdfPageImageSource.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageSource\StorageItemImageSource.cs" />
-    <Compile Include="Models.Domain\ImageViewer\ImageViewerPageSettings.cs" />
-    <Compile Include="Models.Domain\ImageViewer\NotSupportedImageFormatException.cs" />
-    <Compile Include="Models.Domain\MessengerObservableExtensions.cs" />
-    <Compile Include="Models.Domain\ReadingFeature\BookmarkManager.cs" />
-    <Compile Include="Models.Domain\Navigation\FolderLastIntractItemManager.cs" />
-    <Compile Include="Models.Domain\Navigation\RestoreNavigationManager.cs" />
-    <Compile Include="Models.Domain\SourceFolders\FileControlSettings.cs" />
-    <Compile Include="Models.Domain\SourceFolders\IgnoreStorageItemRepository.cs" />
-    <Compile Include="Models.Domain\SourceFolders\NeighboringFilesQueryCache.cs" />
-    <Compile Include="Models.Domain\SourceFolders\SourceOriginConstants.cs" />
-    <Compile Include="Models.Domain\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
-    <Compile Include="Models.Domain\SourceFolders\SourceStorageItemsRepository.cs" />
-    <Compile Include="Models.Domain\StorageItemTypes.cs" />
-    <Compile Include="Models.Domain\SupportedFileTypesHelper.cs" />
-    <Compile Include="Models.Domain\TitleDigitCompletionComparer.cs" />
-    <Compile Include="Models.Infrastructure\AsyncLock.cs" />
-    <Compile Include="Models.Infrastructure\BinaryObjectSerializer.cs" />
-    <Compile Include="Models.Infrastructure\EnumerableTaskHelper.cs" />
-    <Compile Include="Models.Infrastructure\FlagsRepositoryBase.cs" />
-    <Compile Include="Models.Infrastructure\LiteDbService.cs" />
-    <Compile Include="Models.UseCase\FavoriteAlbam.cs" />
-    <Compile Include="Models.UseCase\FocusHelper.cs" />
-    <Compile Include="Models.UseCase\Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
-    <Compile Include="Models.UseCase\Maintenance\EnsureFavoriteAlbam.cs" />
-    <Compile Include="Models.UseCase\Maintenance\ILaunchTimeMaintenance.cs" />
-    <Compile Include="Models.UseCase\Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
-    <Compile Include="Models.UseCase\Maintenance\SecondaryTileMaintenance.cs" />
-    <Compile Include="Models.UseCase\Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
-    <Compile Include="Models.UseCase\Migrate\DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc.cs" />
-    <Compile Include="Models.UseCase\Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
-    <Compile Include="Models.UseCase\Migrate\DropPathReferenceCountDb.cs" />
-    <Compile Include="Models.UseCase\Migrate\DropSearchIndexDb.cs" />
-    <Compile Include="Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
-    <Compile Include="Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
-    <Compile Include="Models.UseCase\Migrate\PackageVersionHelper.cs" />
     <Compile Include="Presentation.Navigations\IViewLocator.cs" />
     <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
     <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
-    <Compile Include="Models.Domain\Navigation\PageNavigationConstants.cs" />
     <Compile Include="Presentation.Services\AlbamDialogService.cs" />
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
@@ -299,6 +232,7 @@
     <Compile Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Presentation.Views\Helpers\FocusHelper.cs" />
     <Compile Include="Presentation.Views\FolderListupPage.xaml.cs">
       <DependentUpon>FolderListupPage.xaml</DependentUpon>
     </Compile>
@@ -306,6 +240,7 @@
       <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
     </Compile>
     <Compile Include="Presentation.Views\Helpers\CodeBehindExtensions.cs" />
+    <Compile Include="Presentation.Views\Helpers\SystemThemeHelper.cs" />
     <Compile Include="Presentation.Views\Helpers\VisualTreeExtensions.cs" />
     <Compile Include="Presentation.Views\ImageListupPage.xaml.cs">
       <DependentUpon>ImageListupPage.xaml</DependentUpon>
@@ -556,7 +491,12 @@
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\TsubameViewer.Models\TsubameViewer.Models.csproj">
+      <Project>{4296664a-ed8c-4334-bea3-8c685345441f}</Project>
+      <Name>TsubameViewer.Models</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
