@@ -37,6 +37,11 @@ FolderDeleteFailed = 删除文件夹失败\n{0}
 ThumbnailImageChanged = 更改缩略图图像
 
 
+#### Dialog
+DoNotDisplayFromNextTime = 下次不再显示
+StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
+
+
 #### SettingsPage
 
 SettingsPageTitle = 组态

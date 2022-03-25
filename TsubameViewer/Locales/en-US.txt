@@ -37,6 +37,11 @@ FolderDeleteFailed = Failed to delete the folder \ n {0}
 ThumbnailImageChanged = Change thumbnail image
 
 
+#### Dialog
+DoNotDisplayFromNextTime = Do not display from next time
+StorageItemDeleteConfirmTitleWithName = Do you want to delete the following items? \ n {0}
+
+
 #### SettingsPage
 
 SettingsPageTitle = Setting

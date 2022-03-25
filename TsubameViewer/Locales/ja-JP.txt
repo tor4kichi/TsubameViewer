@@ -37,6 +37,11 @@ FolderDeleteFailed = フォルダ削除に失敗しました\n{0}
 ThumbnailImageChanged = サムネイル画像を変更
 
 
+#### Dialog
+DoNotDisplayFromNextTime = 次回から表示しない
+StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
+
+
 #### SettingsPage
 
 SettingsPageTitle = 設定
