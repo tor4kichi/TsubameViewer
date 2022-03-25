@@ -29,7 +29,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         {
             if (imageSource is AlbamItemImageSource albamItem)
             {
-                _albamRepository.DeleteAlbamItem(albamItem.AlbamId, albamItem.Path);
+                _albamRepository.DeleteAlbamItem(albamItem.AlbamId, albamItem.Path, imageSource.GetAlbamItemType());
             }            
         }
 

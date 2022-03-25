@@ -16,6 +16,7 @@
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
   xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
+  xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:uiNavigation="using:TsubameViewer.Presentation.Views.UINavigation"
   xmlns:fi="using:Fluent.Icons"
   mc:Ignorable="d"
@@ -218,6 +219,27 @@
       </StackPanel>
     </Grid>
 
+    <Border x:Name="NotificationContainer"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"    
+            Padding="16 4"
+            Background="{ThemeResource SystemChromeMediumLowColor}"
+            BorderBrush="{ThemeResource SystemBaseLowColor}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Margin="16 64 16 16"
+            IsHitTestVisible="False"
+            >
+      <ContentControl x:Name="NotificationContentControl"
+                      Foreground="{ThemeResource SystemColorButtonFaceBrush}"
+                      IsHitTestVisible="False"
+                      IsTabStop="False"                      
+                      FontSize="15"
+                      MaxWidth="320"
+                    >
+      </ContentControl>
+    </Border>
+    
     <!--
     <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
       <Button Content="Show BusyWall">

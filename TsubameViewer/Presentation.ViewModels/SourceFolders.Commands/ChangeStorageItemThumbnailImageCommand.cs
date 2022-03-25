@@ -1,4 +1,6 @@
-﻿using System;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -6,6 +8,7 @@ using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
+using TsubameViewer.Presentation.ViewModels.Notification;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using Windows.Storage.Streams;
 
@@ -13,6 +16,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 {
     public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
     {
+        private readonly IMessenger _messenger;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
 
@@ -20,10 +24,12 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
         public bool IsArchiveThumbnailSetToFile { get; set; }
 
         public ChangeStorageItemThumbnailImageCommand(
+            IMessenger messenger,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository
             ) 
         {
+            _messenger = messenger;
             _thumbnailManager = thumbnailManager;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
         }
@@ -97,6 +103,8 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                     {
                         throw new NotSupportedException();
                     }
+
+                    _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
                 }
             }
         }

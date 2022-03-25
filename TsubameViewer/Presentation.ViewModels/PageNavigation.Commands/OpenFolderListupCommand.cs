@@ -40,7 +40,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
             if (parameter is IImageSource imageSource)
             {
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-                if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder)
+                if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);

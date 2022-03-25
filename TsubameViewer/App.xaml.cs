@@ -1,4 +1,5 @@
 ﻿using DryIoc;
+using I18NPortable;
 using LiteDB;
 using Microsoft.Toolkit.Diagnostics;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
@@ -82,6 +83,8 @@ namespace TsubameViewer
 #endif
             // App.xamlで宣言してるコントロール内でローカライズ処理が走るため、それより先に初期化したい
             InitializeLocalization();
+
+            EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
         }
 
 
@@ -142,11 +145,15 @@ namespace TsubameViewer
             container.Register<FileControlSettings>(reuse: new SingletonReuse());
             container.Register<ApplicationSettings>(reuse: new SingletonReuse());
 
-            container.Register<Presentation.Services.UWP.SecondaryTileManager>(reuse: new SingletonReuse());
-
             container.Register<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
-            
-            container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
+
+            {
+                var instance = container.Resolve<SecondaryTileManager>();
+                container.RegisterInstance<ISecondaryTileManager>(instance);
+                container.RegisterInstance<SecondaryTileManager>(instance);
+            }
+
+                container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
             //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
             //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
             container.Register<ImageViewerPageViewModel>(reuse: new SingletonReuse());

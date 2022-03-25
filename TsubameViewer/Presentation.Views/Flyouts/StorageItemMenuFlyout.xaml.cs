@@ -23,6 +23,8 @@ using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using TsubameViewer.Models.Domain;
+using TsubameViewer.Presentation.Services;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -47,16 +49,17 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
+            TitleDigitCompletionItem.Command = Ioc.Default.GetService<ArchiveFileEntryTitleDigitCompletionCommand>();
             AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
             SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
             OpenWithExternalAppMenuItem.Command = Ioc.Default.GetService<OpenWithExternalApplicationCommand>();
-            _secondaryTileManager = Ioc.Default.GetService<SecondaryTileManager>();
+            _secondaryTileManager = Ioc.Default.GetService<ISecondaryTileManager>();
             _favoriteAlbam = Ioc.Default.GetService<FavoriteAlbam>();
         }
 
-        private readonly SecondaryTileManager _secondaryTileManager;
+        private readonly ISecondaryTileManager _secondaryTileManager;
         private readonly FavoriteAlbam _favoriteAlbam;
 
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
@@ -92,23 +95,14 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
-                if (itemVM.Type == Models.Domain.StorageItemTypes.Image)
-                {
-                    var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-                    AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
-                    AddFavariteImageMenuItem.CommandParameter = itemVM;
-                    RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
-                    RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-                    
-                    AlbamItemEditMenuItem.Visibility = Visibility.Visible;
-                    AlbamItemEditMenuItem.CommandParameter = itemVM;
-                }
-                else
-                {
-                    AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                    RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                    AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
-                }
+                var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                AddFavariteImageMenuItem.CommandParameter = itemVM;
+                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
 
                 AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
@@ -136,6 +130,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 StorageItemDeleteMenuItem.CommandParameter = itemVM;
                 StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
 
+                TitleDigitCompletionItem.CommandParameter = itemVM;
+                TitleDigitCompletionItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
+
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
 
@@ -147,13 +145,20 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;
 
-                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
-                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+                var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
+                AddFavariteImageMenuItem.CommandParameter = itemVM;
+                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
+                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
+
+                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
+                AlbamItemEditMenuItem.CommandParameter = itemVM;
+
+                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 AlbamEditMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
+                AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
@@ -162,6 +167,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
+                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -192,6 +199,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
+                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -203,8 +212,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             {
                 bool isFavAlbamItem = albamItem.AlbamId == FavoriteAlbam.FavoriteAlbamId;
 
+                AlbamItemType itemType = albamItem.GetAlbamItemType();
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(albamItem);
                 OpenListupItem.CommandParameter = itemVM;
-                OpenListupItem.Visibility = Visibility.Collapsed;
+                OpenListupItem.Visibility = (type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.ArchiveFolder or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
                 RemoveFavariteImageMenuItem.Visibility = isFavAlbamItem.TrueToVisible();
@@ -224,6 +235,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 StorageItemDeleteMenuItem.CommandParameter = itemVM;
                 StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
+
+                TitleDigitCompletionItem.CommandParameter = itemVM;
+                TitleDigitCompletionItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource && imageSource.ItemTypes is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
+
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Visible;
@@ -251,7 +267,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
 
             FileControlMenuSeparator.Visibility =
-                StorageItemDeleteMenuItem.Visibility
+                (StorageItemDeleteMenuItem.Visibility == Visibility.Visible
+                || TransformSubItem.Visibility == Visibility.Visible
+                )
+                .TrueToVisible()
                 ;
 
             FolderAndArchiveMenuSeparator1.Visibility = (

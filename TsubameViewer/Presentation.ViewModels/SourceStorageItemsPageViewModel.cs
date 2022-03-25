@@ -26,6 +26,7 @@ using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using System.Reactive.Disposables;
 using TsubameViewer.Models.Domain.Navigation;
 using Windows.UI.Xaml.Navigation;
+using TsubameViewer.Presentation.Services;
 #if WINDOWS_UWP
 using Windows.Storage.AccessCache;
 #endif
@@ -50,7 +51,7 @@ namespace TsubameViewer.Presentation.ViewModels
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
-        public SecondaryTileManager SecondaryTileManager { get; }
+        public ISecondaryTileManager SecondaryTileManager { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenImageListupCommand OpenImageListupCommand { get; }
@@ -75,7 +76,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderLastIntractItemManager folderLastIntractItemManager,
             RecentlyAccessManager recentlyAccessManager,
-            SecondaryTileManager secondaryTileManager,
+            ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
             OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
@@ -273,7 +274,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
             {
-                var (path, pageName, archiveName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
+                var (path, pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);
             }
 

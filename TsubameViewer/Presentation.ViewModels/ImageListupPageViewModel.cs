@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
@@ -29,6 +30,7 @@ using TsubameViewer.Models.Domain.RestoreNavigation;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.Navigations;
+using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
@@ -86,7 +88,7 @@ namespace TsubameViewer.Presentation.ViewModels
             set { SetProperty(ref _NowProcessing, value); }
         }
 
-        public SecondaryTileManager SecondaryTileManager { get; }
+        public ISecondaryTileManager SecondaryTileManager { get; }
         public OpenPageCommand OpenPageCommand { get; }
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
@@ -204,7 +206,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
-            SecondaryTileManager secondaryTileManager,
+            ISecondaryTileManager secondaryTileManager,
             FolderLastIntractItemManager folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
@@ -390,7 +392,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 throw new Exception();
             }
 
-            DisplayCurrentPath = albam.Name;
+            DisplayCurrentPath = "Albam".Translate();
 
             var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albamId);
             if (settings != null)
@@ -435,7 +437,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {                    
-                    (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                    (var itemPath, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                     var unescapedPath = itemPath;                    
                     if (unescapedPath != _currentPath
                         || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
@@ -456,7 +458,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
-                    (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
+                    (var albamIdString, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
                     if (Guid.TryParse(albamIdString, out var albamId) is true)
                     {
@@ -502,17 +504,20 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 // アプリ内部操作も含めて変更を検知する
                 _imageCollectionContext.CreateImageFileChangedObserver()
-                    .Subscribe(async _ =>
+                    .Subscribe(_ =>
                     {
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Images Update required. " + _currentPath);
+                        _scheduler.Schedule(async () => 
+                        {
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
+                            Debug.WriteLine("Images Update required. " + _currentPath);
+                        });
                     })
                     .AddTo(_navigationDisposables);
             }
 
             _messenger.Register<AlbamItemAddedMessage>(this, (r, m) => 
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
@@ -522,7 +527,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
             {
-                var (albamId, path) = m.Value;
+                var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
                     var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
@@ -599,6 +604,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
                 CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 _IsFavoriteAlbam = albam._id == FavoriteAlbam.FavoriteAlbamId;
+                DisplayCurrentArchiveFolderName = albam.Name;
             }
             else
             {

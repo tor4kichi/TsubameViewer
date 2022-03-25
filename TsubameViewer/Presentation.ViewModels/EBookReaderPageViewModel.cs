@@ -30,6 +30,7 @@ using Microsoft.Toolkit.Mvvm.Input;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Models.Domain.Navigation;
+using TsubameViewer.Presentation.Views.Helpers;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -240,7 +241,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
-                    (var itemPath, parsedPageName, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                    (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
                     var unescapedPath = itemPath;
                     if (_currentPath != unescapedPath)
@@ -349,7 +350,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     ApplicationTheme theme = _applicationSettings.Theme;
                     if (theme == ApplicationTheme.Default)
                     {
-                        theme = ApplicationSettings.GetSystemTheme();
+                        theme = SystemThemeHelper.GetSystemTheme();
                     }
 
                     PageHtml = await Task.Run(async () =>

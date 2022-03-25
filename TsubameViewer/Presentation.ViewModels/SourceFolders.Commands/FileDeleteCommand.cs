@@ -1,4 +1,6 @@
-﻿using System;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -6,20 +8,24 @@ using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Presentation.Services;
+using TsubameViewer.Presentation.ViewModels.Notification;
 using Windows.Storage;
 
 namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 {
     public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
+        private readonly IMessenger _messenger;
         private readonly FileControlDialogService _fileControlDialogService;
         private readonly FileControlSettings _fileControlSettings;
 
         public FileDeleteCommand(
+            IMessenger messenger,
             FileControlDialogService fileControlDialogService,
             FileControlSettings fileControlSettings
             )
         {
+            _messenger = messenger;
             _fileControlDialogService = fileControlDialogService;
             _fileControlSettings = fileControlSettings;
         }
@@ -52,12 +58,21 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                     try
                     {
                         await item.DeleteAsync(StorageDeleteOption.Default);
-
-                        //item.
                     }
                     catch (FileNotFoundException)
                     {
-
+                        
+                    }
+                    catch (Exception ex)
+                    {
+                        if (item is StorageFile)
+                        {
+                            _messenger.SendShowTextNotificationMessage("FileDeleteFailed".Translate(item.Name));
+                        }
+                        else if (item is StorageFolder)
+                        {
+                            _messenger.SendShowTextNotificationMessage("FolderDeleteFailed".Translate(item.Name));
+                        }
                     }
                 }
             }

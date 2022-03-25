@@ -7,11 +7,14 @@ using System.Linq;
 using System.Text;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.Domain.ImageViewer;
+using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.Services;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 
 namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 {
+    
+
     public class AlbamItemEditCommand : ImageSourceCommandBase
     {
         private readonly IMessenger _messenger;
@@ -34,6 +37,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
         {
             var albamSelectDialog = new Views.Dialogs.SelectItemDialog("ChoiceTargetAlbam".Translate(), "Apply".Translate());
 
+            var itemType = imageSource.GetAlbamItemType();
             var albams = _albamRepository.GetAlbams();
             var existed = albams.Where(x => _albamRepository.IsExistAlbamItem(x._id, imageSource.Path)).ToList();
             albamSelectDialog.OptionButtonText = "CreateAlbam".Translate();
@@ -71,7 +75,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                                 catch { }
                             }
 
-                            _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name);
+                            _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name, imageSource.GetAlbamItemType());
                         }
                         isCompleted = true;
                     }
@@ -88,14 +92,15 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     Debug.WriteLine($"prev selected albams : {string.Join(',', existed.Select(x => x.Name))}");
                     Debug.WriteLine($"selected albams : {string.Join(',', selectedAlbams.Select(x => (x as AlbamEntry).Name))}");
 
+                    
                     foreach (var albamId in removedAlbamIds)
                     {
-                        _albamRepository.DeleteAlbamItem(albamId, imageSource.Path);
+                        _albamRepository.DeleteAlbamItem(albamId, imageSource.Path, itemType);
                     }
 
                     foreach (var albamId in addedAlbamIds)
                     {
-                        _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name);
+                        _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name, itemType);
                     }
 
                     isCompleted = true;
@@ -150,7 +155,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
                             foreach (var imageSource in imageSources)
                             {
-                                _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name);
+                                _albamRepository.AddAlbamItem(createdAlbam._id, imageSource.Path, imageSource.Name, imageSource.GetAlbamItemType());
                             }
                         }
                         isCompleted = true;
@@ -172,7 +177,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     {
                         foreach (var imageSource in imageSources)
                         {
-                            _albamRepository.DeleteAlbamItem(albamId, imageSource.Path);
+                            _albamRepository.DeleteAlbamItem(albamId, imageSource.Path, imageSource.GetAlbamItemType());
                         }
                     }
 
@@ -180,7 +185,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
                     {
                         foreach (var imageSource in imageSources)
                         {
-                            _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name);
+                            _albamRepository.AddAlbamItem(albamId, imageSource.Path, imageSource.Name, imageSource.GetAlbamItemType());
                         }
                     }
 

@@ -17,7 +17,7 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace TsubameViewer.Presentation.Services.UWP
 {
-    public sealed class SecondaryTileManager
+    public sealed class SecondaryTileManager : ISecondaryTileManager
     {
         private readonly ThumbnailManager _thumbnailManager;
         private readonly SecondaryTileIdRepository _secondaryTileIdRepository;
@@ -79,7 +79,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             _secondaryTileIdRepository = secondaryTileIdRepository;
         }
 
-        Dictionary<string, SecondaryTile> Tiles { get; set; } 
+        Dictionary<string, SecondaryTile> Tiles { get; set; }
 
         public async Task InitializeAsync()
         {
@@ -101,7 +101,7 @@ namespace TsubameViewer.Presentation.Services.UWP
             return JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
         }
 
-        public async Task<bool> AddSecondaryTile(SecondaryTileArguments arguments, string displayName, IStorageItem storageItem)
+        public async Task<bool> AddSecondaryTile(ISecondaryTileArguments arguments, string displayName, IStorageItem storageItem)
         {
             static string AppLocalFolderUriConvertToMsAppDataSchema(string uri)
             {
@@ -113,9 +113,9 @@ namespace TsubameViewer.Presentation.Services.UWP
             var tileThubmnails = await Task.Run(async () => await _thumbnailManager.GenerateSecondaryThumbnailImageAsync(storageItem, tileId, CancellationToken.None));
             var json = JsonSerializer.Serialize(arguments);
             var tile = new SecondaryTile(
-                tileId, 
-                displayName, 
-                json, 
+                tileId,
+                displayName,
+                json,
                 new Uri(AppLocalFolderUriConvertToMsAppDataSchema(tileThubmnails.Square150x150Logo.Path)),
                 TileSize.Square150x150
                 );
@@ -160,7 +160,7 @@ namespace TsubameViewer.Presentation.Services.UWP
         }
     }
 
-    public sealed class SecondaryTileArguments
+    public sealed class SecondaryTileArguments : ISecondaryTileArguments
     {
         public string Path { get; set; }
 

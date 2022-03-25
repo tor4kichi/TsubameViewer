@@ -41,6 +41,11 @@ using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Presentation.ViewModels.SourceFolders;
 using I18NPortable;
+using Microsoft.Toolkit.Uwp.UI.Animations;
+using TsubameViewer.Presentation.ViewModels.Notification;
+using System.Collections.ObjectModel;
+using System.Numerics;
+using TsubameViewer.Presentation.Views.Helpers;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -80,9 +85,81 @@ namespace TsubameViewer.Presentation.Views
 
             _supportedImageCodec = Ioc.Default.GetService<ISupportedImageCodec>();
             InitializeImageCodecExtensions();
+
+
+            InitializeInAppNotification();
         }
 
+        #region InAppNotification
 
+        private void InitializeInAppNotification()
+        {
+            _messenger.Register<InAppNotificationRequestMessage>(this, (r, m) => 
+            {
+                ShowNotification(m.Value);
+            });
+
+            AnimationBuilder.Create()
+                .Opacity(0.0, duration: TimeSpan.FromMilliseconds(1))
+                .Start(NotificationContainer);
+
+            TimeSpan animationTuration = TimeSpan.FromSeconds(0.25);
+            TimeSpan showingTime = TimeSpan.FromSeconds(2);
+            TimeSpan hideTiming = animationTuration + showingTime + animationTuration;
+            _notificationAnimationBuilder = AnimationBuilder.Create()
+                .Opacity()
+                    .TimedKeyFrames(b => b
+                        .KeyFrame(TimeSpan.FromSeconds(0), 0.0)
+                        .KeyFrame(animationTuration, 1.0)
+                        .KeyFrame(showingTime, 1.0)
+                        .KeyFrame(hideTiming, 0.0)
+                        )
+                .Translation()
+                    .TimedKeyFrames(b => b
+                        .KeyFrame(TimeSpan.FromSeconds(0), new Vector3(16, 0, 0))
+                        .KeyFrame(animationTuration, new Vector3(0, 0, 0))
+                        .KeyFrame(showingTime, new Vector3(0, 0, 0))
+                        .KeyFrame(hideTiming, new Vector3(-16, 0, 0))                
+                        )
+                ;                
+        }
+
+        private AnimationBuilder _notificationAnimationBuilder;
+
+
+        private readonly Queue<object> _notificationRequestedItems = new Queue<object>();
+        private void ShowNotification(object content)
+        {
+            if (NotificationContentControl.Content == null)
+            {
+                PushShowingNotificationContent(content);
+            }
+            else
+            {
+                _notificationRequestedItems.Enqueue(content);
+            }
+        }
+
+        
+        private void PushShowingNotificationContent(object content)
+        {
+            NotificationContentControl.Content = content;
+            _notificationAnimationBuilder.Start(NotificationContainer, () => 
+            {
+                NotificationContentControl.Content = null;
+                ShowNextNotificationContent();
+            });
+        }
+
+        private void ShowNextNotificationContent()
+        {
+            if (_notificationRequestedItems.TryDequeue(out object content))
+            {
+                PushShowingNotificationContent(content);
+            }
+        }
+
+        #endregion InAppNotification
 
 
         #region Navigation
@@ -204,6 +281,10 @@ namespace TsubameViewer.Presentation.Views
                 if (e.SourcePageType == typeof(FolderListupPage))
                 {
                     sourcePageTypeName = nameof(Views.SourceStorageItemsPage);
+                }
+                if (GetCurrentNavigationParameter().TryGetValue(PageNavigationConstants.AlbamPathKey, out _))
+                {
+                    sourcePageTypeName = nameof(Views.AlbamListupPage);
                 }
                 var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
                 if (selectedMeuItemVM != null)
@@ -820,6 +901,7 @@ namespace TsubameViewer.Presentation.Views
         }
 
         bool _isInputIncomplete;
+
         private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
         {
             _isInputIncomplete = true;

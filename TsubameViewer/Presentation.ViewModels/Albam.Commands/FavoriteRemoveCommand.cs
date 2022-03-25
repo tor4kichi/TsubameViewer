@@ -20,7 +20,7 @@ namespace TsubameViewer.Presentation.ViewModels.Albam.Commands
 
         protected override void Execute(IImageSource imageSource)
         {
-            _favoriteAlbam.DeleteFavoriteItem(imageSource.Path);
+            _favoriteAlbam.DeleteFavoriteItem(imageSource);
         }
 
         protected override void Execute(IEnumerable<IImageSource> imageSources)

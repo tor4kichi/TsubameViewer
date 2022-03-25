@@ -30,6 +30,18 @@ CollectionPage = 采集
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要扩展才能显示图像格式。你想开店吗？
 
 
+#### Notification
+
+FileDeleteFailed = 文件删除失败 \n {0}
+FolderDeleteFailed = 删除文件夹失败\n{0}
+ThumbnailImageChanged = 更改缩略图图像
+
+
+#### Dialog
+DoNotDisplayFromNextTime = 下次不再显示
+StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
+
+
 #### SettingsPage
 
 SettingsPageTitle = 组态
@@ -65,6 +77,9 @@ ForceXboxAppearanceModeEnabled = 在窗口周围添加边距（对于大屏幕�
 PrivacyPolicy = 隐私政策
 ThirdPartyLibraryNotice = 第三方库许可证显示
 AskQuestionWithMashmarrow = 发送棉花糖（错误报告/问题/建议）
+
+ImageCodecExtensions = 图像编解码器扩展
+
 
 
 
@@ -105,6 +120,9 @@ AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始
 
 SetThumbnailImage = 设置为缩略图
+
+ArchiveOrFolderTransform = 转换
+TitleDigitCompletionTransform = 标题数字完成
 
 
 #### ImageListupPage

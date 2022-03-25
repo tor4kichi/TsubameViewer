@@ -89,14 +89,6 @@ namespace TsubameViewer.Presentation.Views
             _navigationCts.Cancel();
             _navigationCts.Dispose();
 
-            if (e.SourcePageType != typeof(ImageViewerPage))
-            {
-                if (_vm.DisplayCurrentPath is not null)
-                {
-                    _vm.ClearLastIntractItem();
-                }
-            }
-
             ClearSelection();
 
             base.OnNavigatingFrom(e);
@@ -478,7 +470,7 @@ namespace TsubameViewer.Presentation.Views
             {
                 _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) => 
                 {
-                    var (albamId, path) = m.Value;
+                    var (albamId, path, itemType) = m.Value;
                     List<StorageItemViewModel> removeTargets = new();
                     foreach (var itemVM in _vm.Selection.SelectedItems)
                     {

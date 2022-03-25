@@ -59,7 +59,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 {
                     var imageCollectionManager = Ioc.Default.GetService<ImageCollectionManager>();
                     CancellationToken ct = CancellationToken.None;
-                    var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
+                    var collectionContext = await _messenger.WorkWithBusyWallAsync(ct => imageCollectionManager.GetArchiveImageCollectionContextAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFile, null, ct), ct);
                     try
                     {
                         if (await collectionContext.IsExistImageFileAsync(ct))
@@ -78,16 +78,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                             else if (leaves.Count == 1)
                             {
                                 var leaf = leaves[0] as ArchiveDirectoryImageSource;
-                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(imageSource.Path, leaf.Path))));
+                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
                                 var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                             }
                             else
                             {
                                 // 圧縮フォルダにスキップ可能なルートフォルダを含んでいる場合
-                                var distinct = leaves.Select(x => new string(x.Path.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
+                                var distinct = leaves.Cast<IArchiveEntryImageSource>().Select(x => new string(x.EntryKey.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
                                 if (distinct.Count == 1)
                                 {
-                                    var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(imageSource.Path, distinct[0]))));
+                                    var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
                                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                                 }
                                 else
@@ -105,7 +105,7 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                 }
                 else if (type == StorageItemTypes.Folder)
                 {
-                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
+                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
                     if (containerType == FolderContainerType.Other)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
