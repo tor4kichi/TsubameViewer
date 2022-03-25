@@ -32,9 +32,9 @@ OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to d
 
 #### Notification
 
-
-
-
+FileDeleteFailed = File deletion failed \ n {0}
+FolderDeleteFailed = Failed to delete the folder \ n {0}
+ThumbnailImageChanged = Change thumbnail image
 
 
 #### SettingsPage
@@ -115,6 +115,9 @@ AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start
 
 SetThumbnailImage = Set as thumbnail image
+
+ArchiveOrFolderTransform = conversion
+TitleDigitCompletionTransform = Title digit completion
 
 
 #### ImageListupPage

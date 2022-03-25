@@ -44,7 +44,11 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
         public static NavigationParameters CreatePageParameter(IImageSource imageSource)
         {
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type == StorageItemTypes.Image)
+            if (imageSource is ArchiveEntryImageSource archiveEntyrImageSource)
+            {
+                return CreatePageParameter(archiveEntyrImageSource);
+            }
+            else if (type == StorageItemTypes.Image)
             {
                 return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(imageSource.StorageItem.Path, imageSource.Name))));
             }
@@ -75,7 +79,12 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation
 
         public static NavigationParameters CreatePageParameter(ArchiveDirectoryImageSource archiveFolderImageSource)
         {
-            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(archiveFolderImageSource.StorageItem.Path, archiveFolderImageSource.Path))));
+            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(archiveFolderImageSource.Path)));
+        }
+
+        public static NavigationParameters CreatePageParameter(ArchiveEntryImageSource archiveEntryImageSource)
+        {
+            return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(archiveEntryImageSource.Path)));
         }
 
         public static NavigationParameters CreatePageParameter(AlbamImageSource albam)

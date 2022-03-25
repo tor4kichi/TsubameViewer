@@ -186,6 +186,7 @@
     <Compile Include="Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="Presentation.ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\SettingsPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />

@@ -13,13 +13,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class ArchiveEntryImageSource : IImageSource
+    public interface IArchiveEntryImageSource
+    {
+        string EntryKey { get; }
+    }
+
+    public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSource
     {
         private readonly IArchiveEntry _entry;
         private readonly ArchiveDirectoryToken _archiveDirectoryToken;
@@ -27,7 +33,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         private readonly FolderListingSettings _folderListingSettings;
         private readonly ThumbnailManager _thumbnailManager;
 
-        public ArchiveEntryImageSource(string path, IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+        public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
         {
             _entry = entry;
             _archiveDirectoryToken = archiveDirectoryToken;
@@ -36,7 +42,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             StorageItem = _archiveImageCollection.File;
             _thumbnailManager = thumbnailManager;
             DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
-            Path = path;
+            Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, entry.Key);
         }
 
         public StorageFile StorageItem { get; }
@@ -55,6 +61,8 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         public string Path { get; }
 
         public DateTime DateCreated { get; }
+
+        public string EntryKey => _entry.Key;
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
         {
@@ -75,7 +83,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         }
 
 
-        internal static readonly Models.Infrastructure.AsyncLock _archiveEntryAccessLock = new ();
+        internal static readonly Infrastructure.AsyncLock _archiveEntryAccessLock = new ();
 
         public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
         {

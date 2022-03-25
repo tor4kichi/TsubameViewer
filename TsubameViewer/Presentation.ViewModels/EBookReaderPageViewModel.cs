@@ -241,7 +241,7 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {
-                    (var itemPath, parsedPageName, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                    (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
                     var unescapedPath = itemPath;
                     if (_currentPath != unescapedPath)

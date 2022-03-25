@@ -32,9 +32,9 @@ OpenImageCodecExtensionStorePageWithFileType = {0} 需要扩展才能显示图�
 
 #### Notification
 
-
-
-
+FileDeleteFailed = 文件删除失败 \n {0}
+FolderDeleteFailed = 删除文件夹失败\n{0}
+ThumbnailImageChanged = 更改缩略图图像
 
 
 #### SettingsPage
@@ -115,6 +115,9 @@ AddSecondaryTile = 固定即可开始
 RemoveSecondaryTile = 取消开始
 
 SetThumbnailImage = 设置为缩略图
+
+ArchiveOrFolderTransform = 转换
+TitleDigitCompletionTransform = 标题数字完成
 
 
 #### ImageListupPage

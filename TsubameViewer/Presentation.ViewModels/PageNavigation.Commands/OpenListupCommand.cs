@@ -78,16 +78,16 @@ namespace TsubameViewer.Presentation.ViewModels.PageNavigation.Commands
                             else if (leaves.Count == 1)
                             {
                                 var leaf = leaves[0] as ArchiveDirectoryImageSource;
-                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(imageSource.Path, leaf.Path))));
+                                var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
                                 var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                             }
                             else
                             {
                                 // 圧縮フォルダにスキップ可能なルートフォルダを含んでいる場合
-                                var distinct = leaves.Select(x => new string(x.Path.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
+                                var distinct = leaves.Cast<IArchiveEntryImageSource>().Select(x => new string(x.EntryKey.TakeWhile(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar).ToArray())).Distinct().ToList();
                                 if (distinct.Count == 1)
                                 {
-                                    var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithArchiveFolder(imageSource.Path, distinct[0]))));
+                                    var parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
                                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                                 }
                                 else

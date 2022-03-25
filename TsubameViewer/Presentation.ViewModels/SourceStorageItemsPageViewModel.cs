@@ -274,7 +274,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
             {
-                var (path, pageName, archiveName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
+                var (path, pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
                 _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);
             }
 

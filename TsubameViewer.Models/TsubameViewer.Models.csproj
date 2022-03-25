@@ -188,6 +188,7 @@
     <Compile Include="Models.UseCase\Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="Models.UseCase\Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
     <Compile Include="Models.UseCase\Migrate\PackageVersionHelper.cs" />
+    <Compile Include="Models.UseCase\Transform\TitleDigitCompletionTransform.cs" />
     <Compile Include="Presentation.Services\ISecondaryTileManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\TsubameViewer.Models.rd.xml" />

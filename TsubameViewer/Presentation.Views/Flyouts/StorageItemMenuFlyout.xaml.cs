@@ -49,6 +49,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
+            TitleDigitCompletionItem.Command = Ioc.Default.GetService<ArchiveFileEntryTitleDigitCompletionCommand>();
             AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
@@ -129,6 +130,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 StorageItemDeleteMenuItem.CommandParameter = itemVM;
                 StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
 
+                TitleDigitCompletionItem.CommandParameter = itemVM;
+                TitleDigitCompletionItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
+
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
 
@@ -162,6 +167,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
+                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -192,6 +199,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
+                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -227,6 +236,11 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 StorageItemDeleteMenuItem.CommandParameter = itemVM;
                 StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
 
+                TitleDigitCompletionItem.CommandParameter = itemVM;
+                TitleDigitCompletionItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource && imageSource.ItemTypes is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
+
+                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
+
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Visible;
 
@@ -253,7 +267,10 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
 
             FileControlMenuSeparator.Visibility =
-                StorageItemDeleteMenuItem.Visibility
+                (StorageItemDeleteMenuItem.Visibility == Visibility.Visible
+                || TransformSubItem.Visibility == Visibility.Visible
+                )
+                .TrueToVisible()
                 ;
 
             FolderAndArchiveMenuSeparator1.Visibility = (

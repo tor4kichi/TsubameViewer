@@ -17,13 +17,13 @@ namespace TsubameViewer.Models.Domain.Albam
             {
                 StorageItemImageSource storageItem => storageItem.ItemTypes switch
                 {
-                    Models.Domain.StorageItemTypes.None => throw new NotSupportedException(),
-                    Models.Domain.StorageItemTypes.Folder => AlbamItemType.FolderOrArchive,
-                    Models.Domain.StorageItemTypes.Image => AlbamItemType.Image,
-                    Models.Domain.StorageItemTypes.Archive => AlbamItemType.FolderOrArchive,
-                    Models.Domain.StorageItemTypes.ArchiveFolder => AlbamItemType.FolderOrArchive,
-                    Models.Domain.StorageItemTypes.EBook => AlbamItemType.FolderOrArchive,
-                    Models.Domain.StorageItemTypes.AddAlbam => throw new NotSupportedException(),
+                    StorageItemTypes.None => throw new NotSupportedException(),
+                    StorageItemTypes.Folder => AlbamItemType.FolderOrArchive,
+                    StorageItemTypes.Image => AlbamItemType.Image,
+                    StorageItemTypes.Archive => AlbamItemType.FolderOrArchive,
+                    StorageItemTypes.ArchiveFolder => AlbamItemType.FolderOrArchive,
+                    StorageItemTypes.EBook => AlbamItemType.FolderOrArchive,
+                    StorageItemTypes.AddAlbam => throw new NotSupportedException(),
                     _ => throw new NotSupportedException()
                 },
                 AlbamItemImageSource albamItem => albamItem.InnerImageSource.GetAlbamItemType(),

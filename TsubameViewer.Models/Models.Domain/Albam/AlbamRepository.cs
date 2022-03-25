@@ -125,6 +125,15 @@ namespace TsubameViewer.Models.Domain.Albam
                     _ => throw new NotSupportedException(sort.ToString()),
                 };
             }
+
+            public void PathChanged(string oldPath, string newPath)
+            {
+                var items = _collection.Find(x => x.Path == oldPath).ToList();
+                foreach (var item in items)
+                {
+                    _collection.Update(item with { Path = newPath });
+                }
+            }
         }
 
 
@@ -258,6 +267,12 @@ namespace TsubameViewer.Models.Domain.Albam
         public int DeleteAlbamItemsUnderPath(string path)
         {
             return _albamItemDatabase.DeleteUnderPath(path);
+        }
+
+
+        public void PathChanged(string oldPath, string newPath)
+        {
+            _albamItemDatabase.PathChanged(oldPath, newPath);
         }
 
     }

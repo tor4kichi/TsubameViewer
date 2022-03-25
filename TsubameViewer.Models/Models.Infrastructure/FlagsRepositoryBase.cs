@@ -33,7 +33,7 @@ namespace TsubameViewer.Models.Infrastructure
     public abstract class FlagsRepositoryBase : ObservableObject
     {
         private readonly static BytesApplicationDataStorageHelper _LocalStorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());
-        private static readonly Models.Infrastructure.AsyncLock _fileUpdateLock = new ();
+        private static readonly Infrastructure.AsyncLock _fileUpdateLock = new ();
         public FlagsRepositoryBase()
         {            
         }

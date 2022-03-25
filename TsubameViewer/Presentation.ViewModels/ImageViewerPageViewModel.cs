@@ -410,7 +410,6 @@ namespace TsubameViewer.Presentation.ViewModels
             GoPrevImageCommand.NotifyCanExecuteChanged();
 
             string parsedPageName = null;
-            string parsedArchiveFolderName = null;
 
             if (mode == NavigationMode.New
                 || mode == NavigationMode.Back
@@ -422,7 +421,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var unescapedPath = Uri.UnescapeDataString(path);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
 
-                    (var itemPath, parsedPageName, parsedArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
+                    (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
 
                     _currentPath = itemPath;
 
@@ -482,7 +481,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     var unescapedPath = Uri.UnescapeDataString(albamPath);
                     if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
 
-                    (var itemPath, parsedPageName, _) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
+                    (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
 
                     if (_currentPath != itemPath)
                     {
@@ -538,7 +537,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // 表示する画像を決める
             if (mode == NavigationMode.Forward 
                 || parameters.ContainsKey(PageNavigationConstants.Restored) 
-                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName) && string.IsNullOrEmpty(parsedArchiveFolderName)
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName)
                 )
                 )
             {
@@ -571,19 +570,6 @@ namespace TsubameViewer.Presentation.ViewModels
                     _CurrentImageIndex = 0;
                 }
             }
-            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedArchiveFolderName))
-            {
-                var unescapedFolderName = parsedArchiveFolderName;
-                try
-                {
-                    _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(parsedArchiveFolderName, SelectedFileSortType.Value, _navigationCts.Token);
-                }
-                catch
-                {
-                    _CurrentImageIndex = 0;
-                }
-            }
-
 
             _nowCurrenImageIndexChanging = true;
             OnPropertyChanged(nameof(CurrentImageIndex));
@@ -1943,7 +1929,8 @@ namespace TsubameViewer.Presentation.ViewModels
                     .FirstOrDefault(x => x.Name.TrimEnd(SeparateChars) == pageName);
                 if (string.IsNullOrEmpty(folder?.Path) is false)
                 {
-                    var index = await _imageCollectionContext.GetIndexFromKeyAsync(folder.Path, SelectedFileSortType.Value, ct);
+                    string key = folder is IArchiveEntryImageSource entry ? entry.EntryKey : folder.Path;
+                    var index = await _imageCollectionContext.GetIndexFromKeyAsync(key, SelectedFileSortType.Value, ct);
                     if (index >= 0)
                     {
                         await ResetImageIndex(index);

@@ -18,7 +18,7 @@
     <MenuFlyoutItem x:Name="SelectedItems_AlbamItemEditMenuItem" Text="{i18nExt:Localize Key=EditAlbamImage}" />
     <MenuFlyoutItem x:Name="SelectedItems_OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
   </MenuFlyoutSubItem>
-  
+
   <MenuFlyoutSeparator x:Name="AlbamMenuSeparator" />
   <MenuFlyoutItem x:Name="AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />
   <MenuFlyoutItem x:Name="RemoveFavariteImageMenuItem" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" />
@@ -31,8 +31,10 @@
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
 
   <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
+  <MenuFlyoutSubItem x:Name="TransformSubItem" Text="{i18nExt:Localize Key=ArchiveOrFolderTransform}">
+    <MenuFlyoutItem x:Name="TitleDigitCompletionItem" Text="{i18nExt:Localize Key=TitleDigitCompletionTransform}" />
+  </MenuFlyoutSubItem>
   <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
-
 
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
   <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
@@ -41,6 +43,5 @@
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
   <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
   <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
-
-
+  
 </MenuFlyout>

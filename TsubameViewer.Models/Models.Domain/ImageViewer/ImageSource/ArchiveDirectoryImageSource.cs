@@ -8,12 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Models.Domain.FolderItemListing;
+using TsubameViewer.Models.Domain.Navigation;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 {
-    public sealed class ArchiveDirectoryImageSource : IImageSource
+    public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IImageSource
     {
         private readonly ArchiveImageCollection _imageCollection;
         private readonly ArchiveDirectoryToken _directoryToken;
@@ -27,6 +28,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
             _folderListingSettings = folderListingSettings;
             _thumbnailManager = thumbnailManager;
             Name = _directoryToken.Label is not null ? new string(_directoryToken.Label.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
+            Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, directoryToken.Key);
         }
 
         public IArchiveEntry ArchiveEntry => _directoryToken?.Entry;
@@ -37,9 +39,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
 
         public string Name { get; }
 
-        public string Path => _directoryToken?.Key;
+        public string Path { get; }
 
         public DateTime DateCreated => _imageCollection.File.DateCreated.DateTime;
+
+        public string EntryKey => _directoryToken.Key;
 
         public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {

@@ -271,8 +271,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                         }
 
                         var dirToken = GetDirectoryTokenFromPath(Path.GetDirectoryName(x.Key));
-                        var itemPath = PageNavigationConstants.MakeStorageItemIdWithPage((dirToken ?? token).DirectoryPath, x.Key);
-                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(itemPath, x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
+                        return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
                     })
                     .ToList();
 
@@ -329,8 +328,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
 
             token ??= GetDirectoryTokenFromPath(Path.GetDirectoryName(imageEntry.Key));
-            var itemPath = PageNavigationConstants.MakeStorageItemIdWithPage(token.DirectoryPath, imageEntry.Key);
-            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(itemPath, imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
+            return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
         }
        
         // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない

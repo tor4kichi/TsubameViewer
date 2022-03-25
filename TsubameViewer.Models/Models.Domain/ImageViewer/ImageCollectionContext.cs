@@ -129,7 +129,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
 
         // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
-        static QueryOptions CreateDefaultImageFileSearchQueryOptions(FileSortType sort)
+        public static QueryOptions CreateDefaultImageFileSearchQueryOptions(FileSortType sort)
         {
             var query = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions)
             {

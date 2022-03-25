@@ -437,7 +437,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
                 {                    
-                    (var itemPath, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                    (var itemPath, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
                     var unescapedPath = itemPath;                    
                     if (unescapedPath != _currentPath
                         || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
@@ -458,7 +458,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
                 else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
                 {
-                    (var albamIdString, _, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
+                    (var albamIdString, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
                     if (Guid.TryParse(albamIdString, out var albamId) is true)
                     {

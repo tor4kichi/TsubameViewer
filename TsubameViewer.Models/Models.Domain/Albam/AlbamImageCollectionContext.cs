@@ -70,7 +70,7 @@ namespace TsubameViewer.Models.Domain.Albam
         {
             if (_imagesCache.TryGetValue(entry._id, out var image)) { return image; }
 
-            var (itemPath, pageName, _) = PageNavigationConstants.ParseStorageItemId(entry.Path);
+            var (itemPath, pageName) = PageNavigationConstants.ParseStorageItemId(entry.Path);
 
             var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(itemPath);
             ct.ThrowIfCancellationRequested();
