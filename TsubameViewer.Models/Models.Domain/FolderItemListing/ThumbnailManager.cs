@@ -505,9 +505,15 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         public async Task<IRandomAccessStream> GetArchiveEntryThumbnailImageStreamAsync(StorageFile sourceFile, IArchiveEntry archiveEntry, CancellationToken ct)
         {
+            var path = GetArchiveEntryPath(sourceFile, archiveEntry);
+            var itemId = ToId(path);
+            if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedFile)
+            {
+                return cachedFile;
+            }
+
             if (archiveEntry.IsDirectory) { return null; }
 
-            var path = GetArchiveEntryPath(sourceFile, archiveEntry);
             var outputStream = _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
             try
             {

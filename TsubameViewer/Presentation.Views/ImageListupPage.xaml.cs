@@ -89,14 +89,6 @@ namespace TsubameViewer.Presentation.Views
             _navigationCts.Cancel();
             _navigationCts.Dispose();
 
-            if (e.SourcePageType != typeof(ImageViewerPage))
-            {
-                if (_vm.DisplayCurrentPath is not null)
-                {
-                    _vm.ClearLastIntractItem();
-                }
-            }
-
             ClearSelection();
 
             base.OnNavigatingFrom(e);
