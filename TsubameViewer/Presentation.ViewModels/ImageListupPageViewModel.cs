@@ -563,6 +563,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 Debug.WriteLine(folder.Path);
                 imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
                 CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                DisplayCurrentArchiveFolderName = null;
             }
             else if (currentItem is StorageFile file)
             {
@@ -584,6 +585,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    DisplayCurrentArchiveFolderName = null;
                 }
                 else if (file.IsSupportedMangaFile())
                 {
