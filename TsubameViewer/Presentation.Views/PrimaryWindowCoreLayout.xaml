@@ -145,14 +145,14 @@
                     Width="240"
                     >
           <CommandBar.PrimaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}" AccessKey="O" KeyTipPlacementMode="Bottom">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="ImageAdd24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
             <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _vm.StartSelectionCommand}" AccessKey="M" KeyTipPlacementMode="Bottom">
               <AppBarButton.Icon>
                 <fi:FluentIconElement Symbol="Multiselect24" />
+              </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}" AccessKey="O" KeyTipPlacementMode="Bottom">
+              <AppBarButton.Icon>
+                <fi:FluentIconElement Symbol="ImageAdd24" />
               </AppBarButton.Icon>
             </AppBarButton>
           </CommandBar.PrimaryCommands>
