@@ -690,23 +690,10 @@
             </uwpControls:DockPanel>
 
             <muxc:DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem x:Name="Page1AddFavoriteButton" AccessKey="F" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="F" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="Page1RemoveFavoriteButton" AccessKey="F" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="F" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem AccessKey="L" Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="L" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator />
+              <MenuFlyout Opening="Page1MenuFlyout_Opening">
+                <MenuFlyoutSubItem x:Name="Page1AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}">
+                  
+                </MenuFlyoutSubItem>
                 <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="T" />
@@ -741,23 +728,10 @@
             </uwpControls:DockPanel>
 
             <muxc:DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem x:Name="Page2AddFavoriteButton" AccessKey="F" Text="{i18nExt:Localize Key=AddFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteAddCommand}" Visibility="Collapsed">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="F" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="Page2RemoveFavoriteButton"  AccessKey="F" Text="{i18nExt:Localize Key=RemoveFavoriteImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.FavoriteRemoveCommand}" Visibility="Collapsed">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="F" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem AccessKey="L" Text="{i18nExt:Localize Key=EditAlbamImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.AlbamItemEditCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="L" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator />
+              <MenuFlyout Opening="Page2MenuFlyout_Opening">
+                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}">
+
+                </MenuFlyoutSubItem>
                 <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="T" />
@@ -1155,45 +1129,6 @@
         </VisualState>
       </VisualStateGroup>
 
-      <!-- １ページ目のFav -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.Page1Favorite, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Page1RemoveFavoriteButton.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="True" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Page1AddFavoriteButton.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-
-      <!-- ２ページ目のFav -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.Page2Favorite, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Page2RemoveFavoriteButton.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="True" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="Page2AddFavoriteButton.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
 
       <!--見開き表示時の各ページ用アクションボタンの表示 -->
       <VisualStateGroup>

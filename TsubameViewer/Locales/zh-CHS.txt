@@ -194,7 +194,8 @@ AlbamDeleteConfirmDialogText = 您要删除相册“{0}”吗？ （此操作无
 
 EditAlbamImage = 选择要添加到的相册
 ChoiceTargetAlbam = 选择专辑
-AlbamItemRemove = 从相册中删除这张图片
+AlbamItemRemove = 从相册中删除
+AlbamItemAdd = 添加到相册
 
 FavoriteAlbam = 最喜欢的
 AddFavoriteImage = 加入“最喜欢的

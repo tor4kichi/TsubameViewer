@@ -19,8 +19,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Models.Domain.ImageViewer;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
 using TsubameViewer.Presentation.Views.UINavigation;
@@ -873,10 +876,31 @@ namespace TsubameViewer.Presentation.Views
         public static readonly DependencyProperty ZoomCenterProperty =
             DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
 
+
+
         #endregion
 
+        private void Page1MenuFlyout_Opening(object sender, object e)
+        {
+            Page1AlbamAddItemButton.Items.Clear();
+            var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
+            var imageSource = Page1AlbamAddItemButton.DataContext as IImageSource;
+            foreach (var albam in albamRepository.GetAlbams())
+            {
+                Page1AlbamAddItemButton.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = imageSource, IsChecked = albamRepository.IsExistAlbamItem(albam._id, imageSource.FlattenAlbamItemInnerImageSource().Path) });
+            }
+        }
 
-
+        private void Page2MenuFlyout_Opening(object sender, object e)
+        {
+            Page2AlbamAddItemButton.Items.Clear();
+            var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
+            var imageSource = Page2AlbamAddItemButton.DataContext as IImageSource;
+            foreach (var albam in albamRepository.GetAlbams())
+            {
+                Page2AlbamAddItemButton.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = imageSource, IsChecked = albamRepository.IsExistAlbamItem(albam._id, imageSource.FlattenAlbamItemInnerImageSource().Path) });
+            }
+        }
     }
 
     public class SelectorSelectedChangedToStringConverter : IValueConverter

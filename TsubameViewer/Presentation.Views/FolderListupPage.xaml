@@ -42,7 +42,14 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton" Label="{i18nExt:Localize Key=Delete}" Command="{x:Bind _vm.FileDeleteCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}" >
+            <AppBarButton x:Name="SelectAction_AlbamAddItem" Label="{i18nExt:Localize Key=AlbamItemAdd}" Icon="Add">
+              <AppBarButton.Flyout>
+                <MenuFlyout x:Name="AlbamItemManagementFlyout" Opening="AlbamItemManagementFlyout_Opening" Placement="Bottom">
+
+                </MenuFlyout>
+              </AppBarButton.Flyout>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton" Label="{i18nExt:Localize Key=Delete}" Command="{x:Bind _vm.FileDeleteCommand}" CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}" AccessKey="D">
               <AppBarButton.Icon>
                 <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>

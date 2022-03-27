@@ -32,7 +32,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
 
         protected override bool CanExecute(IImageSource imageSource)
         {
-            return imageSource is StorageItemImageSource;
+            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
         }
 
         protected override async void Execute(IImageSource imageSource)

@@ -194,7 +194,8 @@ AlbamDeleteConfirmDialogText = アルバム「{0}」を削除しますか？（�
 
 EditAlbamImage = 追加先のアルバムを選択
 ChoiceTargetAlbam = アルバムを選択
-AlbamItemRemove = この画像をアルバムから除去
+AlbamItemRemove = アルバムから除去
+AlbamItemAdd = アルバムに追加
 
 FavoriteAlbam = お気に入り
 AddFavoriteImage = お気に入りに追加

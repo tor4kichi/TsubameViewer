@@ -40,12 +40,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
             OpenListupItem.Command = Ioc.Default.GetService<OpenListupCommand>();
             SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
-            AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
-            SelectedItems_AddFavariteImageMenuItem.Command = AddFavariteImageMenuItem.Command;
-            RemoveFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteRemoveCommand>();
-            AlbamItemEditMenuItem.Command = Ioc.Default.GetService<AlbamItemEditCommand>();
-            SelectedItems_AlbamItemEditMenuItem.Command = AlbamItemEditMenuItem.Command;
-            AlbamItemRemoveMenuItem.Command = Ioc.Default.GetService<AlbamItemRemoveCommand>();
+            SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
+            SelectedItems_AlbamItemEditMenuItem.Command = Ioc.Default.GetService<AlbamItemEditCommand>();
             AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
@@ -57,11 +53,13 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             OpenWithExternalAppMenuItem.Command = Ioc.Default.GetService<OpenWithExternalApplicationCommand>();
             _secondaryTileManager = Ioc.Default.GetService<ISecondaryTileManager>();
             _favoriteAlbam = Ioc.Default.GetService<FavoriteAlbam>();
+            _albamRepository = Ioc.Default.GetService<AlbamRepository>();
         }
 
         private readonly ISecondaryTileManager _secondaryTileManager;
         private readonly FavoriteAlbam _favoriteAlbam;
-
+        private readonly AlbamRepository _albamRepository;
+        
         private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
         {
             var flyout = sender as FlyoutBase;
@@ -96,18 +94,16 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.Visibility = (itemVM.Type == Models.Domain.StorageItemTypes.Archive || itemVM.Type == Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
-                AddFavariteImageMenuItem.CommandParameter = itemVM;
-                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
-                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-
-                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
-                AlbamItemEditMenuItem.CommandParameter = itemVM;
-
-                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 AlbamEditMenuItem.Visibility = Visibility.Collapsed;
                 AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamMenuSubItem.Visibility = Visibility.Visible;
+                AlbamMenuSubItem.Items.Clear();
+                foreach (var albam in _albamRepository.GetAlbams())
+                {
+                    AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, itemVM.Path) });
+                }
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Models.Domain.StorageItemTypes.Image or Models.Domain.StorageItemTypes.Folder or Models.Domain.StorageItemTypes.Archive).TrueToVisible();
@@ -146,19 +142,16 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.Visibility = Visibility.Visible;
 
                 var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-                AddFavariteImageMenuItem.Visibility = isFav.FalseToVisible();
-                AddFavariteImageMenuItem.CommandParameter = itemVM;
-                RemoveFavariteImageMenuItem.Visibility = isFav.TrueToVisible();
-                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-
-                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
-                AlbamItemEditMenuItem.CommandParameter = itemVM;
-
-                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 AlbamEditMenuItem.Visibility = Visibility.Collapsed;
                 AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
 
+                AlbamMenuSubItem.Visibility= Visibility.Visible;
+                AlbamMenuSubItem.Items.Clear();
+                foreach (var albam in _albamRepository.GetAlbams())
+                {
+                    AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, itemVM.Path) });
+                }
 
                 SetThumbnailImageMenuItem.CommandParameter = itemVM;
                 SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
@@ -176,22 +169,19 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExternalAppMenuItem.CommandParameter = itemVM;
                 OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
             }
-            else if (itemVM.Item is AlbamImageSource albam)
+            else if (itemVM.Item is AlbamImageSource albamImageSource)
             {
-                bool isFavAlbamItem = albam.AlbamId == FavoriteAlbam.FavoriteAlbamId;
+                bool isFavAlbamItem = albamImageSource.AlbamId == FavoriteAlbam.FavoriteAlbamId;
 
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = Visibility.Visible;
-
-                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                RemoveFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemEditMenuItem.Visibility = Visibility.Collapsed;
-                AlbamItemRemoveMenuItem.Visibility = Visibility.Collapsed;
 
                 AlbamEditMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
                 AlbamEditMenuItem.CommandParameter = itemVM;
                 AlbamDeleteMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
                 AlbamDeleteMenuItem.CommandParameter = itemVM;
+
+                AlbamMenuSubItem.Visibility = Visibility.Collapsed;
 
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
 
@@ -217,16 +207,15 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenListupItem.CommandParameter = itemVM;
                 OpenListupItem.Visibility = (type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.ArchiveFolder or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
-                AddFavariteImageMenuItem.Visibility = Visibility.Collapsed;
-                RemoveFavariteImageMenuItem.Visibility = isFavAlbamItem.TrueToVisible();
-                RemoveFavariteImageMenuItem.CommandParameter = itemVM;
-                AlbamItemEditMenuItem.Visibility = Visibility.Visible;
-                AlbamItemEditMenuItem.CommandParameter = itemVM;
-                AlbamItemRemoveMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
-                AlbamItemRemoveMenuItem.CommandParameter = itemVM;
-
                 AlbamEditMenuItem.Visibility = Visibility.Collapsed;
                 AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
+
+                AlbamMenuSubItem.Visibility = Visibility.Visible;
+                AlbamMenuSubItem.Items.Clear();                
+                foreach (var albam in _albamRepository.GetAlbams())
+                {
+                    AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, albamItem.InnerImageSource.Path) });
+                }
 
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
 
@@ -255,12 +244,9 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
             AlbamMenuSeparator.Visibility = (
                 (OpenListupItem.Visibility == Visibility.Visible || SelectItemsSubItem.Visibility is Visibility.Visible)
-                && (AddFavariteImageMenuItem.Visibility == Visibility.Visible
-                    || RemoveFavariteImageMenuItem.Visibility == Visibility.Visible
-                    || AlbamItemEditMenuItem.Visibility == Visibility.Visible
-                    || AlbamItemRemoveMenuItem.Visibility == Visibility.Visible
-                    || AlbamEditMenuItem.Visibility == Visibility.Visible
+                && (AlbamEditMenuItem.Visibility == Visibility.Visible
                     || AlbamDeleteMenuItem.Visibility == Visibility.Visible
+                    || AlbamMenuSubItem.Visibility == Visibility.Visible
                     )
                 ).TrueToVisible();
 

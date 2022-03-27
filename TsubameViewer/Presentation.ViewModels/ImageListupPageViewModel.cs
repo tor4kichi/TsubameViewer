@@ -93,6 +93,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
+        public FileDeleteCommand FileDeleteCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
@@ -214,6 +215,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
+            FileDeleteCommand fileDeleteCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
             SecondaryTileRemoveCommand secondaryTileRemoveCommand,
@@ -240,6 +242,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
+            FileDeleteCommand = fileDeleteCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;

@@ -32,6 +32,9 @@ using System.Windows.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Models.UseCase;
+using TsubameViewer.Models.Domain.Albam;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
+using TsubameViewer.Models.Domain;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -224,6 +227,31 @@ namespace TsubameViewer.Presentation.Views
                 }
             }
         });
+
+
+        private void AlbamItemManagementFlyout_Opening(object sender, object e)
+        {
+            var menuFlyout = sender as MenuFlyout;
+            menuFlyout.Items.Clear();
+            var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
+            var expandImageSources = _vm.Selection.SelectedItems.Select(x => x.Item.FlattenAlbamItemInnerImageSource());
+            foreach (var albam in albamRepository.GetAlbams())
+            {
+                if (expandImageSources.Any(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)) is false)
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = false });
+                }
+                else if (expandImageSources.All(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)))
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = true });
+                }
+                else
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
+                }
+            }
+        }
+
 
         RelayCommand<StorageItemViewModel> _OpenItemCommand;
         public RelayCommand<StorageItemViewModel> OpenItemCommand => _OpenItemCommand ??= new RelayCommand<StorageItemViewModel>(itemVM => 
