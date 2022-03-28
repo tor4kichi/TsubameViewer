@@ -21,7 +21,7 @@
     <LangVersion>Preview</LangVersion>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x86|x64|arm|arm64</AppxBundlePlatforms>
@@ -144,6 +144,7 @@
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
+    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemAddCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
     <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteAddCommand.cs" />

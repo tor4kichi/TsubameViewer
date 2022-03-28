@@ -93,6 +93,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenImageViewerCommand OpenImageViewerCommand { get; }
         public OpenFolderListupCommand OpenFolderListupCommand { get; }
+        public FileDeleteCommand FileDeleteCommand { get; }
         public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
         public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
         public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
@@ -214,6 +215,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenFolderListupCommand openFolderListupCommand,
+            FileDeleteCommand fileDeleteCommand,
             OpenWithExplorerCommand openWithExplorerCommand,
             SecondaryTileAddCommand secondaryTileAddCommand,
             SecondaryTileRemoveCommand secondaryTileRemoveCommand,
@@ -240,6 +242,7 @@ namespace TsubameViewer.Presentation.ViewModels
             OpenFolderItemCommand = openFolderItemCommand;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenFolderListupCommand = openFolderListupCommand;
+            FileDeleteCommand = fileDeleteCommand;
             OpenWithExplorerCommand = openWithExplorerCommand;
             SecondaryTileAddCommand = secondaryTileAddCommand;
             SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
@@ -563,6 +566,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 Debug.WriteLine(folder.Path);
                 imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
                 CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                DisplayCurrentArchiveFolderName = null;
             }
             else if (currentItem is StorageFile file)
             {
@@ -584,6 +588,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
 
                     CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    DisplayCurrentArchiveFolderName = null;
                 }
                 else if (file.IsSupportedMangaFile())
                 {

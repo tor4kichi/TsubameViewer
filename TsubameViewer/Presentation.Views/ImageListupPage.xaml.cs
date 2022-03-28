@@ -17,6 +17,7 @@ using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.UseCase;
 using TsubameViewer.Presentation.ViewModels;
+using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
 using TsubameViewer.Presentation.Views.Helpers;
 using Windows.UI.Xaml;
@@ -99,7 +100,7 @@ namespace TsubameViewer.Presentation.Views
         {
             base.OnNavigatedTo(e);
 
-            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
+            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
             {
                 StartSelection();
             });
@@ -210,7 +211,7 @@ namespace TsubameViewer.Presentation.Views
             await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
 
             if (_vm.DisplayCurrentPath == null)
-            { 
+            {
                 return;
             }
 
@@ -222,7 +223,7 @@ namespace TsubameViewer.Presentation.Views
                     UIElement lastIntractItem = await WaitTargetIndexItemLoadingAsync(lastIntractItemIndex, ct);
                     if (lastIntractItem is Control control)
                     {
-                        if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset 
+                        if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset
                             || ItemsScrollViewer.VerticalOffset + ItemsScrollViewer.ViewportHeight < lastIntractItem.ActualOffset.Y)
                         {
                             var targetOffset = lastIntractItem.ActualOffset.Y - (float)ItemsScrollViewer.ViewportHeight * 0.5f;
@@ -246,7 +247,7 @@ namespace TsubameViewer.Presentation.Views
                 && fe.DataContext is StorageItemViewModel itemVM
                 )
             {
-                itemVM.Initialize(_ct);                
+                itemVM.Initialize(_ct);
             }
         }
 
@@ -321,18 +322,18 @@ namespace TsubameViewer.Presentation.Views
             }
         });
 
-        RelayCommand<UIElement> _OpenItemCommand;        
+        RelayCommand<UIElement> _OpenItemCommand;
         public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
         {
             SaveScrollStatus(item);
 
             var image = item.FindDescendantOrSelf<Image>();
             if (image?.Source != null)
-            {                
+            {
                 var anim = ConnectedAnimationService.GetForCurrentView()
                     .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
-                anim.Configuration = new BasicConnectedAnimationConfiguration();                
-            }            
+                anim.Configuration = new BasicConnectedAnimationConfiguration();
+            }
         });
 
         private int lastSelectedItemIndex = -1;
@@ -464,11 +465,11 @@ namespace TsubameViewer.Presentation.Views
                     ClearSelection();
                 });
             }
-            
+
             if (_vm.CurrentFolderItem?.Type == Models.Domain.StorageItemTypes.Albam
                 && _messenger.IsRegistered<Models.Domain.Albam.AlbamItemRemovedMessage>(this) is false)
             {
-                _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) => 
+                _messenger.Register<Models.Domain.Albam.AlbamItemRemovedMessage>(this, (r, m) =>
                 {
                     var (albamId, path, itemType) = m.Value;
                     List<StorageItemViewModel> removeTargets = new();
@@ -482,7 +483,7 @@ namespace TsubameViewer.Presentation.Views
                             }
                         }
                     }
-                    
+
                     foreach (var itemVM in removeTargets)
                     {
                         itemVM.IsSelected = false;
@@ -528,7 +529,28 @@ namespace TsubameViewer.Presentation.Views
         public static readonly DependencyProperty SelectedCountDisplayTextProperty =
             DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
 
-
+        private void AlbamItemManagementFlyout_Opening(object sender, object e)
+        {
+            var menuFlyout = sender as MenuFlyout;
+            menuFlyout.Items.Clear();
+            var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
+            var expandImageSources = _vm.Selection.SelectedItems.Select(x => x.Item.FlattenAlbamItemInnerImageSource());
+            foreach (var albam in albamRepository.GetAlbams())
+            {
+                if (expandImageSources.Any(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)) is false)
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = false });
+                }
+                else if (expandImageSources.All(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)))
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = true });
+                }
+                else 
+                {
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
+                }                
+            }
+        }    
     }
 
 

@@ -470,36 +470,19 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_FavoriteRemoveButton" Label="{i18nExt:Localize Key=RemoveFavoriteImage}" Command="{x:Bind _vm.FavoriteRemoveCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
-              <AppBarButton.Icon>
-                <SymbolIcon Symbol="UnFavorite" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="F" />
-              </AppBarButton.KeyboardAccelerators>
+            <AppBarButton x:Name="SelectAction_AlbamAddItem" Label="{i18nExt:Localize Key=AlbamItemAdd}" Icon="Add">
+              <AppBarButton.Flyout>
+                <MenuFlyout x:Name="AlbamItemManagementFlyout" Opening="AlbamItemManagementFlyout_Opening" Placement="Bottom">
+
+                </MenuFlyout>
+              </AppBarButton.Flyout>
             </AppBarButton>
-            <AppBarButton x:Name="SelectAction_AlbamRemoveButton" Label="{i18nExt:Localize Key=AlbamItemRemove}" Command="{x:Bind _vm.AlbamItemRemoveCommand }" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" Visibility="Collapsed" >
+            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton" Label="{i18nExt:Localize Key=Delete}" Command="{x:Bind _vm.FileDeleteCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}" >
               <AppBarButton.Icon>
-                <fluentIcon:FluentIconElement Symbol="Album24" />
+                <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>
               <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="A" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarButton x:Name="SelectAction_FavoriteAddButton" Label="{i18nExt:Localize Key=AddFavoriteImage}" Command="{x:Bind _vm.FavoriteAddCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
-              <AppBarButton.Icon>
-                <SymbolIcon Symbol="Favorite" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="F" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarButton x:Name="SelectAction_AlbamAddButton" Label="{i18nExt:Localize Key=EditAlbamImage}" Command="{x:Bind _vm.AlbamItemEditCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
-              <AppBarButton.Icon>
-                <fluentIcon:FluentIconElement Symbol="AlbumAdd24" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="A" />
+                <KeyboardAccelerator Key="Delete" />
               </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
             <AppBarButton x:Name="SelectAction_OpenWithExplorerButton" Label="{i18nExt:Localize Key=OpenWithExplorer}" Command="{x:Bind _vm.OpenWithExplorerCommand}" CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
@@ -876,18 +859,7 @@
       
       <!-- 表示元の種類による選択アクションの表示切り替え-->
       <VisualStateGroup>
-
         <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{Binding IsFavoriteAlbam}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="SelectAction_FavoriteRemoveButton.Visibility" Value="Visible" />
-            <Setter Target="SelectAction_FavoriteAddButton.Visibility" Value="Collapsed" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-
           <VisualState.StateTriggers>
             <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="Albam" />
           </VisualState.StateTriggers>

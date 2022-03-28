@@ -194,7 +194,8 @@ AlbamDeleteConfirmDialogText = Do you want to delete the album "{0}"? (This oper
 
 EditAlbamImage = Select the album to add to
 ChoiceTargetAlbam = Select an album
-AlbamItemRemove = Remove this image from the album
+AlbamItemRemove = Removed from album
+AlbamItemAdd = Add to album
 
 FavoriteAlbam = Favorite
 AddFavoriteImage = Add to Favourites
