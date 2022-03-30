@@ -279,7 +279,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Assets\EPub\app.css" />
     <Content Include="Assets\EPub\DarkTheme.css" />
     <Content Include="Assets\EPub\LightTheme.css" />
     <Content Include="Assets\ImageCodecExtensions.json" />

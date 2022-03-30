@@ -156,6 +156,7 @@ LineHeight = Line spacing
 RubyFontSize = Phonetic font size
 FontFamily = Character font
 RubyFontFamily = Phonetic font
+EBookReader_ColumnCount = Number of columns
 
 BackgroundColor = Background color
 ChangeBackgroundColor = Change background color

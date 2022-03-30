@@ -156,6 +156,7 @@ LineHeight = 行の間隔
 RubyFontSize = ふりがなの文字の大きさ
 FontFamily = 文字のフォント
 RubyFontFamily = ふりがなの文字のフォント
+EBookReader_ColumnCount = 段組み数
 
 BackgroundColor = 背景色
 ChangeBackgroundColor = 背景色を変更

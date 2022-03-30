@@ -27,6 +27,7 @@ namespace TsubameViewer.Models.Domain.EBook
             _BackgroundColor = Read<Color>(Colors.Transparent, nameof(BackgroundColor));
             _ForegroundColor = Read<Color>(Colors.Transparent, nameof(ForegroundColor));
             _OverrideWritingMode = Read(WritingMode.Inherit, nameof(OverrideWritingMode));
+            _ColumnCount = Read(MinColumnCount, nameof(ColumnCount));
         }
 
         private bool _IsReversePageFliping_Scroll;
@@ -107,6 +108,19 @@ namespace TsubameViewer.Models.Domain.EBook
         {
             get { return _OverrideWritingMode; }
             set { SetProperty(ref _OverrideWritingMode, value); }
+        }
+
+        public const int MaxColumnCount = 10;
+        public const int MinColumnCount = 1;
+
+        private int _ColumnCount;
+        public int ColumnCount
+        {
+            get { return _ColumnCount; }
+            set 
+            {
+                SetProperty(ref _ColumnCount, Math.Clamp(value, MinColumnCount, MaxColumnCount)); 
+            }
         }
     }
 
