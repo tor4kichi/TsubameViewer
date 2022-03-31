@@ -321,7 +321,21 @@
         <ColumnDefinition Width="3*" />
       </Grid.ColumnDefinitions>
 
-      <Grid x:Name="PageTitleLayout" VerticalAlignment="Bottom" Margin="0 0 0 24" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Center"  >
+      <Grid.RowDefinitions>
+        <RowDefinition Height="3*" />
+        <RowDefinition Height="4*" />
+        <RowDefinition Height="3*" />
+      </Grid.RowDefinitions>
+
+      <Grid x:Name="PageTitleLayout" 
+            VerticalAlignment="Bottom" 
+            Margin="0 0 0 24" 
+            Grid.Column="0" 
+            Grid.ColumnSpan="3" 
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            HorizontalAlignment="Center"              
+            >
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
                      ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}"
@@ -337,7 +351,10 @@
       <Button x:Name="LeftPageMoveButton"
         Command="{x:Bind _InnerGoNextImageCommand}"
               Grid.Column="0"
-              Opacity="0"
+              Grid.ColumnSpan="1"
+              Grid.Row="0"
+              Grid.RowSpan="3"
+              Opacity="0.0"
               HorizontalContentAlignment="Stretch"
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
@@ -347,7 +364,9 @@
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
           <KeyboardAccelerator Key="LeftButton" />
+          <KeyboardAccelerator Key="Down" />
           <KeyboardAccelerator Key="A" />
+          <KeyboardAccelerator Key="S" />
         </Button.KeyboardAccelerators>
 
         <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
@@ -360,7 +379,9 @@
               Command="{x:Bind _OpenTocPaneCommand}" 
               Grid.Column="1"
               Grid.ColumnSpan="1"
-              Opacity="0" 
+              Grid.Row="0"
+              Grid.RowSpan="3"
+              Opacity="0.0" 
               HorizontalContentAlignment="Stretch"
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
@@ -372,7 +393,10 @@
       <Button x:Name="RightPageMoveButton"
         Command="{x:Bind _InnerGoPrevImageCommand}"
               Grid.Column="2"
-              Opacity="0"
+              Grid.ColumnSpan="1"
+              Grid.Row="0"
+              Grid.RowSpan="3"
+              Opacity="0.0"
               HorizontalContentAlignment="Stretch"
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
@@ -383,6 +407,8 @@
           <KeyboardAccelerator Key="Right" />
           <KeyboardAccelerator Key="RightButton" />
           <KeyboardAccelerator Key="D" />
+          <KeyboardAccelerator Key="W" />
+          <KeyboardAccelerator Key="Up" />
         </Button.KeyboardAccelerators>
 
         <Border VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
@@ -708,11 +734,33 @@
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
-
-        
-
       </VisualStateGroup>
 
+      <!-- 横書きモード時のページ送りボタンの配置を縦に変更 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind EPubRenderer.IsVerticalLayout, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="LeftPageMoveButton.(Grid.Column)" Value="0" />
+            <Setter Target="LeftPageMoveButton.(Grid.ColumnSpan)" Value="3" />
+            <Setter Target="LeftPageMoveButton.(Grid.Row)" Value="2" />
+            <Setter Target="LeftPageMoveButton.(Grid.RowSpan)" Value="1" />
+
+            <Setter Target="RightPageMoveButton.(Grid.Column)" Value="0" />
+            <Setter Target="RightPageMoveButton.(Grid.ColumnSpan)" Value="3" />
+            <Setter Target="RightPageMoveButton.(Grid.Row)" Value="0" />
+            <Setter Target="RightPageMoveButton.(Grid.RowSpan)" Value="1" />
+
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.Column)" Value="0" />
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.ColumnSpan)" Value="3" />
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.Row)" Value="2" />
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.RowSpan)" Value="1" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
     </VisualStateManager.VisualStateGroups>
 
   </Grid>
