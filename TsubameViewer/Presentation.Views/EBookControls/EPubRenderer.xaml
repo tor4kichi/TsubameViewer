@@ -18,6 +18,7 @@
              AllowFocusOnInteraction="False"
              DefaultBackgroundColor="{x:Bind PageBackgroundColor, Mode=OneWay}"
              WebResourceRequested="WebView_WebResourceRequested"
+             GettingFocus="WebView_GettingFocus"
              >
     </WebView>
 

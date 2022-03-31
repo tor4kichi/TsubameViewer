@@ -488,7 +488,6 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .Skip(1)
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
             .AddTo(_compositeDisposable);
         }
@@ -839,6 +838,9 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             return double.TryParse(scrollTop, out var value) ? value : 0;
         }
 
-
+        private void WebView_GettingFocus(UIElement sender, GettingFocusEventArgs args)
+        {
+            args.TryCancel();
+        }
     }
 }
