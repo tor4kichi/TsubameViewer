@@ -51,8 +51,30 @@
                          SmallChange="1"
                          LargeChange="1"
                          SpinButtonPlacementMode="Inline"
-                         Header="{i18nExt:Localize Key=EBookReader_ColumnCount}"
+                         Header="{i18nExt:Localize Key=EBookReader_ColumnCount}"                         
                          />
+
+        <StackPanel Orientation="Horizontal">
+          <winUI:NumberBox Value="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=TwoWay}"
+                         Minimum="300"
+                         Maximum="10000"
+                         SmallChange="1"
+                         LargeChange="20"
+                         Header="{i18nExt:Localize Key=EBookReader_MaxWidth}"
+                         />
+          <TextBlock Text="px" VerticalAlignment="Bottom" Margin="4 0 0 8" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal">
+          <winUI:NumberBox Value="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=TwoWay}"
+                         Minimum="300"
+                         Maximum="10000"
+                         SmallChange="1"
+                         LargeChange="20"
+                         Header="{i18nExt:Localize Key=EBookReader_MaxHeight}"
+                         />
+          <TextBlock Text="px" VerticalAlignment="Bottom" Margin="4 0 0 8" />
+        </StackPanel>
 
         <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
                   Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
@@ -208,6 +230,7 @@
 
   <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
         ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
+        
         >
 
     <i:Interaction.Behaviors>
@@ -260,15 +283,18 @@
     </Button>
     
     <!-- 電子書籍ビューワー -->
-    <eBookControls:EPubRenderer 
+    <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}" MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"
+          Margin="48 27 48 72"
+          x:Name="EPubRendererContainer"
+          >
+      <eBookControls:EPubRenderer 
       x:Name="EPubRenderer"
       PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
       FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
       IsTapEnabled="False"
       IsHitTestVisible="False"
       IsAccessKeyScope="False"
-      AllowFocusOnInteraction="False"
-      Margin="48 27 48 72"
+      AllowFocusOnInteraction="False"      
       PageBackgroundColor="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay}"
       FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
       FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
@@ -280,9 +306,9 @@
       OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
       ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}"                                
       >
-      
-    </eBookControls:EPubRenderer>
 
+      </eBookControls:EPubRenderer>
+    </Grid>
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer"
           IsHitTestVisible="True" 
@@ -596,7 +622,7 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="EPubRenderer.Margin" Value="32 56 24 56" />
+            <Setter Target="EPubRendererContainer.Margin" Value="32 56 32 56" />
             <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
           </VisualState.Setters>
         </VisualState>

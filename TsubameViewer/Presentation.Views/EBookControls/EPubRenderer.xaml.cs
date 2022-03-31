@@ -439,9 +439,15 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             
             isFirstContent = true;
 
-            Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
-                h => Window.Current.SizeChanged += h,
-                h => Window.Current.SizeChanged -= h
+            Observable.Merge(
+                Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+                    h => Window.Current.SizeChanged += h,
+                    h => Window.Current.SizeChanged -= h
+                    ).ToUnit()
+                , Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                    h => SizeChanged += h,
+                    h => SizeChanged -= h
+                    ).ToUnit()
                 )
                 .Where(x => !isFirstContent)
                 .Throttle(TimeSpan.FromMilliseconds(100), CurrentThreadScheduler.Instance)

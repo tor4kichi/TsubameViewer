@@ -157,6 +157,8 @@ RubyFontSize = ふりがなの文字の大きさ
 FontFamily = 文字のフォント
 RubyFontFamily = ふりがなの文字のフォント
 EBookReader_ColumnCount = 段組み数
+EBookReader_MaxWidth = ページ横幅の最大値
+EBookReader_MaxHeight = ページ縦幅の最大値
 
 BackgroundColor = 背景色
 ChangeBackgroundColor = 背景色を変更

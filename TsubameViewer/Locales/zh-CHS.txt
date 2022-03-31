@@ -157,6 +157,8 @@ RubyFontSize = 语音字体大小
 FontFamily = 字符字体
 RubyFontFamily = 语音字体
 EBookReader_ColumnCount = 列数
+EBookReader_MaxWidth = 最大页面宽度
+EBookReader_MaxHeight = 最大页面高度
 
 BackgroundColor = 背景颜色
 ChangeBackgroundColor = 更改背景颜色

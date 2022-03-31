@@ -28,6 +28,8 @@ namespace TsubameViewer.Models.Domain.EBook
             _ForegroundColor = Read<Color>(Colors.Transparent, nameof(ForegroundColor));
             _OverrideWritingMode = Read(WritingMode.Inherit, nameof(OverrideWritingMode));
             _ColumnCount = Read(MinColumnCount, nameof(ColumnCount));
+            _MaxWidth = Read(1280.0d, nameof(MaxWidth));
+            _MaxHeight = Read(720.0d, nameof(MaxHeight));
         }
 
         private bool _IsReversePageFliping_Scroll;
@@ -116,11 +118,23 @@ namespace TsubameViewer.Models.Domain.EBook
         private int _ColumnCount;
         public int ColumnCount
         {
-            get { return _ColumnCount; }
-            set 
-            {
-                SetProperty(ref _ColumnCount, Math.Clamp(value, MinColumnCount, MaxColumnCount)); 
-            }
+            get => _ColumnCount;
+            set => SetProperty(ref _ColumnCount, Math.Clamp(value, MinColumnCount, MaxColumnCount));
+        }
+
+
+        private double _MaxWidth;
+        public double MaxWidth
+        {
+            get => _MaxWidth;
+            set => SetProperty(ref _MaxWidth, Math.Clamp(value, 0.0, 100000.0));
+        }
+
+        private double _MaxHeight;
+        public double MaxHeight
+        {
+            get => _MaxHeight;
+            set => SetProperty(ref _MaxHeight, double.IsNaN(value) ? value : Math.Clamp(value, 0.0, 100000.0));
         }
     }
 
