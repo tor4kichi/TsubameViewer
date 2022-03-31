@@ -46,6 +46,7 @@ using TsubameViewer.Presentation.ViewModels.Notification;
 using System.Collections.ObjectModel;
 using System.Numerics;
 using TsubameViewer.Presentation.Views.Helpers;
+using TsubameViewer.Models.Domain.FolderItemListing;
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
 namespace TsubameViewer.Presentation.Views
@@ -1044,23 +1045,25 @@ namespace TsubameViewer.Presentation.Views
                 var dropItems = await e.DataView.GetStorageItemsAsync();
                 foreach (var storageItem in dropItems)
                 {
-                    if (storageItem is StorageFolder)
-                    {
-                        token = await _vm.SourceStorageItemsRepository.AddItemPersistantAsync(storageItem, SourceOriginConstants.DragAndDrop);
-                    }
-                    else if (storageItem is StorageFile file)
-                    {
-                        token = await _vm.SourceStorageItemsRepository.AddFileTemporaryAsync(file, SourceOriginConstants.DragAndDrop);
-                    }
+                    token = await _vm.SourceStorageItemsRepository.AddFileTemporaryAsync(storageItem, SourceOriginConstants.DragAndDrop);
 
                     openStorageItem = storageItem;
                 }
                 
                 if (dropItems.Count == 1)
                 {
-                    if (openStorageItem is StorageFolder)
+                    if (openStorageItem is StorageFolder folder)
                     {
-                        await _messenger.NavigateAsync(nameof(Views.FolderListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        FolderContainerTypeManager folderContainerTypeManager = Ioc.Default.GetRequiredService<FolderContainerTypeManager>();
+                        var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync(folder, ct), CancellationToken.None);
+                        if (containerType == FolderContainerType.Other)
+                        {
+                            var result = await _messenger.NavigateAsync(nameof(FolderListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        }
+                        else
+                        {
+                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        }
                     }
                     else if (openStorageItem is StorageFile fileItem)
                     {

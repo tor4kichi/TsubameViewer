@@ -42,7 +42,6 @@ namespace TsubameViewer.Presentation.ViewModels
 
     public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
     {
-        string _AppCSS;
         string _LightThemeCss;
         string _DarkThemeCss;
 
@@ -226,7 +225,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 return;
             }
 
-            _AppCSS ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/app.css")));
             _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
             _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
 
@@ -369,7 +367,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                             if (node.Name == "head")
                             {
-                                var cssItems = new[] { _AppCSS, theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                                var cssItems = new[] { theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
                                 foreach (var css in cssItems)
                                 {
                                     var cssNode = xmlDoc.CreateElement("style");

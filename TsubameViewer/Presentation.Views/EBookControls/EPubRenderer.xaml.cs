@@ -62,15 +62,17 @@ namespace TsubameViewer.Presentation.Views.EBookControls
 
 
 
-        public bool WithSeparetePage
+
+
+        public int ColumnCount
         {
-            get { return (bool)GetValue(WithSeparetePageProperty); }
-            set { SetValue(WithSeparetePageProperty, value); }
+            get { return (int)GetValue(ColumnCountProperty); }
+            set { SetValue(ColumnCountProperty, value); }
         }
 
-        // Using a DependencyProperty as the backing store for WithSeparetePage.  This enables animation, styling, binding, etc...
-        public static readonly DependencyProperty WithSeparetePageProperty =
-            DependencyProperty.Register("WithSeparetePage", typeof(bool), typeof(EPubRenderer), new PropertyMetadata(false));
+        // Using a DependencyProperty as the backing store for ColumnCount.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty ColumnCountProperty =
+            DependencyProperty.Register("ColumnCount", typeof(int), typeof(EPubRenderer), new PropertyMetadata(1));
 
 
 
@@ -322,6 +324,41 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             }
 
             sb.Append("}");
+
+            if (ColumnCount > 1)
+            {
+                sb.Append(@"
+                   img, image {
+                    max-height: 100%!important;
+                    max-width: 100%!important;
+                    margin-left: 32px!important;
+                    margin-right: 32px!important;
+
+                    display: block!important;
+                    break-before: always!important;
+                    break-after: always!important;
+                    break-inside: avoid!important;
+                }
+                ");                
+            }
+            else // if (ColumnCount == 1)
+            {
+                sb.Append(@"
+                   img, image {
+                    max-height: 100vh!important;
+                    max-width: 100%!important;
+                    margin-left: 32px!important;
+                    margin-right: 32px!important;
+
+                    display: block!important;
+                    break-before: always!important;
+                    break-after: always!important;
+                    break-inside: avoid!important;
+                }
+                ");
+            }
+            
+
             sb.Append("rt {");
             sb.Append($"font-size: {RubyFontSizeInPixel}px !important;");
             if (RubyFontFamily != null)
@@ -402,9 +439,15 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             
             isFirstContent = true;
 
-            Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
-                h => Window.Current.SizeChanged += h,
-                h => Window.Current.SizeChanged -= h
+            Observable.Merge(
+                Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+                    h => Window.Current.SizeChanged += h,
+                    h => Window.Current.SizeChanged -= h
+                    ).ToUnit()
+                , Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                    h => SizeChanged += h,
+                    h => SizeChanged -= h
+                    ).ToUnit()
                 )
                 .Where(x => !isFirstContent)
                 .Throttle(TimeSpan.FromMilliseconds(100), CurrentThreadScheduler.Instance)
@@ -441,10 +484,10 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 this.ObserveDependencyProperty(RubyFontFamilyProperty),
                 this.ObserveDependencyProperty(FontColorProperty),
                 this.ObserveDependencyProperty(OverrideWritingModeProperty),
+                this.ObserveDependencyProperty(ColumnCountProperty),
             }
             .Merge()
             .Throttle(TimeSpan.FromMilliseconds(50))
-            .Skip(1)
             .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
             .AddTo(_compositeDisposable);
         }
@@ -602,19 +645,19 @@ namespace TsubameViewer.Presentation.Views.EBookControls
                 Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
             }
 
-            var columnCount = !WithSeparetePage ? 1 : 2;
+            var columnCount = ColumnCount;
             if (IsVerticalLayout)
             {
                 // heightを指定しないと overflow: hidden; が機能しない
                 // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
                 // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
                 // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; font-size:{FontSize}px; \";" });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
             }
             else
             {
                 // Note: -8は下側と右側の見切れ対策
-                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; font-size:{FontSize}px; \";" });
+                await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
             }
 
             //
@@ -795,6 +838,9 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             return double.TryParse(scrollTop, out var value) ? value : 0;
         }
 
-
+        private void WebView_GettingFocus(UIElement sender, GettingFocusEventArgs args)
+        {
+            args.TryCancel();
+        }
     }
 }

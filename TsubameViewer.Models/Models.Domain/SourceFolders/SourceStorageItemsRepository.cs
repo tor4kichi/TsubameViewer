@@ -264,7 +264,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             }
         }
 
-        public async Task<string> AddFileTemporaryAsync(StorageFile storageItem, string metadata)
+        public async Task<string> AddFileTemporaryAsync(IStorageItem storageItem, string metadata)
         {
 #if WINDOWS_UWP
             var list = StorageApplicationPermissions.MostRecentlyUsedList;
@@ -364,7 +364,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
 
             if (StorageApplicationPermissions.MostRecentlyUsedList.ContainsItem(token))
             {
-                item = await StorageApplicationPermissions.MostRecentlyUsedList.GetFileAsync(token);
+                item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(token);
             }
 
             if (StorageApplicationPermissions.FutureAccessList.ContainsItem(token))

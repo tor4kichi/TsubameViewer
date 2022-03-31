@@ -1,6 +1,7 @@
 ﻿using LiteDB;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -42,9 +43,9 @@ namespace TsubameViewer.Models.UseCase.Maintenance
                         StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
                     }
                 }
-                catch
+                catch (FileNotFoundException)
                 {
-
+                    StorageApplicationPermissions.MostRecentlyUsedList.Remove(entry.Token);
                 }
             }
         }
