@@ -203,3 +203,26 @@ AlbamItemAdd = 添加到相册
 FavoriteAlbam = 最喜欢的
 AddFavoriteImage = 加入“最喜欢的
 RemoveFavoriteImage = 从收藏夹中删除
+
+
+#### FolderOrArchiveResturcture
+
+FolderOrArchiveRestructure = 编辑内部结构
+Output = 输出
+Find = 搜索
+ReplaceAll = 全部替换
+ReplaceNext = 替换下一个
+Replace = 替换
+RestructurePage_SelectAllSearchTarget = 选择所有适用项目
+RestructurePage_OutputToArchiveFile = 输出到压缩包
+RestructurePage_OutputToFolder = 输出到文件夹
+RestructurePage_IsOutput = 输出目标
+RestructurePage_ToggleIsOutput = 开关量输出目标
+RestructurePage_EditPath = 路径字符串
+
+RestructurePage_Caution = 原始压缩文件或文件夹在输出之前不会更改。
+如果您担心，请备份自己
+zip 输出时文件项目以外的项目消失（不支持某些存档软件）
+RestructurePage_InvalidPath = 包含不能用作路径字符串的字符串：{0}
+RestructurePage_DupulicatePath = 路径字符串中有重复条目：{0}
+RestructurePage_InvalidFileType = 路径字符串包含应用程序不支持文件夹输出的扩展：{0}

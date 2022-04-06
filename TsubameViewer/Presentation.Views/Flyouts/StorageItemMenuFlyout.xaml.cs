@@ -46,6 +46,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
             TitleDigitCompletionItem.Command = Ioc.Default.GetService<ArchiveFileEntryTitleDigitCompletionCommand>();
+            FolderOrArchiveRestructureItem.Command = Ioc.Default.GetService<FolderOrArchiveResturctureCommand>();
             AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
@@ -128,7 +129,12 @@ namespace TsubameViewer.Presentation.Views.Flyouts
 
                 TitleDigitCompletionItem.CommandParameter = itemVM;
                 TitleDigitCompletionItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
-                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
+                FolderOrArchiveRestructureItem.CommandParameter = itemVM;
+                FolderOrArchiveRestructureItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
+                TransformSubItem.Visibility = (TitleDigitCompletionItem.Visibility == Visibility.Visible 
+                    && FolderOrArchiveRestructureItem.Visibility == Visibility.Visible
+                    )
+                    .TrueToVisible();
 
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();

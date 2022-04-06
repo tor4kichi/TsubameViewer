@@ -156,6 +156,7 @@
     <Compile Include="Presentation.ViewModels\CommandBase.cs" />
     <Compile Include="Presentation.ViewModels\EBookReaderPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\FolderListupPageViewModel.cs" />
+    <Compile Include="Presentation.ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
@@ -190,6 +191,7 @@
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FolderOrArchiveResturctureCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
     <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
@@ -233,6 +235,9 @@
     </Compile>
     <Compile Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation.Views\FolderOrArchiveRestructurePage.xaml.cs">
+      <DependentUpon>FolderOrArchiveRestructurePage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Presentation.Views\Helpers\FocusHelper.cs" />
     <Compile Include="Presentation.Views\FolderListupPage.xaml.cs">
@@ -466,6 +471,10 @@
     <Page Include="Presentation.Views\FolderListup\FolderListupItemTemplate.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\FolderOrArchiveRestructurePage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Presentation.Views\ImageListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>

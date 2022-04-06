@@ -135,6 +135,7 @@ namespace TsubameViewer
             container.Register<SettingsPage>();
             container.Register<SearchResultPage>();
             container.Register<AlbamListupPage>();
+            container.Register<FolderOrArchiveRestructurePage>();
         }
 
         private void RegisterTypes(Container container)
