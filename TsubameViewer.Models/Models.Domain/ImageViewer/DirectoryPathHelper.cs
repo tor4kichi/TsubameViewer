@@ -21,6 +21,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             else if (pathAEmpty && pathBEmpty) { return true; }
             else if (pathAEmpty ^ pathBEmpty) { return false; }
 
+            var pathASequence = pathA.Where(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar);
+            var pathBSequence = pathB.Where(c => c != Path.DirectorySeparatorChar && c != Path.AltDirectorySeparatorChar);
+            return Enumerable.SequenceEqual(pathASequence, pathBSequence);
+
+            /*
             bool isSkipALastChar = pathA.EndsWith(Path.DirectorySeparatorChar) || pathA.EndsWith(Path.AltDirectorySeparatorChar);
             bool isSkipBLastChar = pathB.EndsWith(Path.DirectorySeparatorChar) || pathB.EndsWith(Path.AltDirectorySeparatorChar);
             if (isSkipALastChar && isSkipBLastChar)
@@ -37,6 +42,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
 
             return false;
+            */
         }
 
 
@@ -140,11 +146,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             if (target.Entry.IsDirectory)
             {
-                return DirectoryPathHelper.IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(target.Key));
+                return DirectoryPathHelper.IsSameDirectoryPath(parent.DirectoryPath, Path.GetDirectoryName(target.DirectoryPath));
             }
             else
             {
-                return DirectoryPathHelper.IsSameDirectoryPath(parent.Key, Path.GetDirectoryName(Path.GetDirectoryName(target.Key)));
+                return DirectoryPathHelper.IsSameDirectoryPath(parent.DirectoryPath, Path.GetDirectoryName(target.DirectoryPath));
             }
         }
 

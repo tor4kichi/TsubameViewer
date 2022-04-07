@@ -216,6 +216,7 @@ Replace = Replace
 RestructurePage_SelectAllSearchTarget = Select all applicable items
 RestructurePage_OutputToArchiveFile = Output to zip
 RestructurePage_OutputToFolder = Output to folder
+RestructurePage_OutputToArchiveSplitWithPart = Output to zip (divided by volume)
 RestructurePage_IsOutput = Output target
 RestructurePage_ToggleIsOutput = Switch output target
 RestructurePage_EditPath = Path string

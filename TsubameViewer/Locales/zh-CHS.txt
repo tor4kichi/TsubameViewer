@@ -216,6 +216,7 @@ Replace = 替换
 RestructurePage_SelectAllSearchTarget = 选择所有适用项目
 RestructurePage_OutputToArchiveFile = 输出到压缩包
 RestructurePage_OutputToFolder = 输出到文件夹
+RestructurePage_OutputToArchiveSplitWithPart = 输出到 zip（除以体积）
 RestructurePage_IsOutput = 输出目标
 RestructurePage_ToggleIsOutput = 开关量输出目标
 RestructurePage_EditPath = 路径字符串

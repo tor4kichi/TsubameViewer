@@ -83,7 +83,10 @@ namespace TsubameViewer.Presentation.ViewModels
                     using var fileStream = await FileRandomAccessStream.OpenAsync(unescapedPath, FileAccessMode.Read);
                     using var archive = ArchiveFactory.Open(fileStream.AsStreamForRead());
                     var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(() => ToPathRestructureItems(archive).ToList()), CancellationToken.None);
-
+                    foreach (var pathRestructure in items)
+                    {
+                        pathRestructure.EditPath = pathRestructure.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    }
                     using (Items.DeferRefresh())
                     {
                         foreach (var itemVM in items)
@@ -95,6 +98,10 @@ namespace TsubameViewer.Presentation.ViewModels
                 else if (item is StorageFolder folder)
                 {
                     var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () => await ToPathRestructureItemsAsync(folder).ToListAsync()), CancellationToken.None);
+                    foreach (var pathRestructure in items)
+                    {
+                        pathRestructure.EditPath = pathRestructure.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                    }
                     using (Items.DeferRefresh())
                     {
                         foreach (var itemVM in items)
@@ -433,6 +440,11 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var items = Items.Cast<IPathRestructure>().Where(x => x.IsOutput).ToList();
 
+            foreach (var item in items)
+            {
+                item.EditPath = item.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            }
+
             if (ValidateNotDupulicateEditPath(items) is false) { throw new InvalidOperationException(); }
             if (ValidateNotContainsInvalidPathCharactersEditPath(items) is false) { throw new InvalidOperationException(); }
 
@@ -477,6 +489,132 @@ namespace TsubameViewer.Presentation.ViewModels
 
             // TODO: file.Pathに対するキャッシュ情報をクリアする
         }
+
+
+
+        [ICommand]
+        private async Task OutputToArchiveSplitWithPartAsync()
+        {
+            OutputErrorMessage = null;
+            NowProcessOutput = true;
+
+            var folderPicker = new FolderPicker()
+            {
+                ViewMode = PickerViewMode.List,
+            };
+
+            var outputFolder = await folderPicker.PickSingleFolderAsync();
+            if (outputFolder == null)
+            {
+                return;
+            }
+
+            var items = GetOutputTargetItems();
+            Dictionary<string, List<IPathRestructure>> itemsPerArchive = new();
+            {
+                Dictionary<int, HashSet<string>> dirNamesByFolderDepth = new();
+                foreach (var path in items.Select(x => x.EditPath))
+                {
+                    var names = path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < names.Length - 1; i++)
+                    {
+                        dirNamesByFolderDepth.TryGetValue(i, out var dirNames);
+                        if (dirNames == null)
+                        {
+                            dirNames = new HashSet<string>();
+                            dirNamesByFolderDepth.Add(i, dirNames);
+                        }
+
+                        dirNames.Add(names[i]);
+                    }
+                }
+
+                if (dirNamesByFolderDepth.Count == 0)
+                {
+                    OutputErrorMessage = "";
+                    return;
+                }
+
+                string baseDir = string.Empty;
+                var rootDepth = 0;
+                for (int i = 0; i < dirNamesByFolderDepth.Count; i++)
+                {
+                    if (dirNamesByFolderDepth[i].Count > 1)
+                    {
+                        rootDepth = i;
+                        break;
+                    }
+
+                    baseDir = Path.Combine(baseDir, dirNamesByFolderDepth[i].First());
+                }
+
+                dirNamesByFolderDepth.TryGetValue(rootDepth, out var targetDir);
+                foreach (var dir in targetDir)
+                {
+                    var fileName = Path.Combine(baseDir, dir);
+                    var dirItems = items.Where(x => x.EditPath.StartsWith(fileName)).ToList();
+                    itemsPerArchive.Add(fileName, dirItems);
+                }
+            }
+
+            try
+            {
+                await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
+                {
+                    foreach (var (fileName, items) in itemsPerArchive)
+                    {
+                        using var outputArchive = ZipArchive.Create();
+
+                        ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
+                        {
+                            outputArchive.AddEntry(path, contentStream, closeStream: true);
+                            return new ValueTask();
+                        }
+
+                        string outputFileName = null;
+                        if (SourceStorageItem is StorageFile file
+                            && file.IsSupportedMangaFile())
+                        {
+                            outputFileName = file.Name;
+                            await OutputArchiveFileAsync_Internal(items, file, ProcessOutput, ct);
+                        }
+                        else if (SourceStorageItem is StorageFolder folder)
+                        {
+                            outputFileName = folder.Name;
+                            await OutputFolderAsync_Internal(items, ProcessOutput, ct);
+                        }
+                        else { throw new InvalidOperationException(); }
+
+                        var tempFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Path.GetRandomFileName(), CreationCollisionOption.GenerateUniqueName);
+                        try
+                        {
+                            using (var writeStream = await tempFile.OpenStreamForWriteAsync())
+                            using (var bufferedStream = new BufferedStream(writeStream))
+                            {
+                                writeStream.SetLength(0);
+                                outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.Deflate));
+                                bufferedStream.Flush();
+                            }
+
+                            var outputFile = await DigStorageFileFromPathAsync(fileName + ".zip", outputFolder, CreationCollisionOption.ReplaceExisting, ct);
+                            await tempFile.MoveAndReplaceAsync(outputFile);
+                        }
+                        catch
+                        {
+                            // MoveAndReplaceAsyncするとtempFile == outputFileになる
+                            await tempFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                        }
+                    }
+                }), CancellationToken.None);
+
+                await Launcher.LaunchFolderAsync(outputFolder);
+            }
+            finally
+            {
+                NowProcessOutput = false;
+            }
+        }
+
     }
 
     public interface IPathRestructure

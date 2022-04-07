@@ -216,6 +216,7 @@ Replace = 置換
 RestructurePage_SelectAllSearchTarget = 該当項目を全て選択
 RestructurePage_OutputToArchiveFile = zipに出力
 RestructurePage_OutputToFolder = フォルダに出力
+RestructurePage_OutputToArchiveSplitWithPart = zipに出力（巻ごとに分割）
 RestructurePage_IsOutput = 出力対象
 RestructurePage_ToggleIsOutput = 出力対象を切替
 RestructurePage_EditPath = パス文字列

@@ -43,6 +43,7 @@
                   <MenuFlyout Placement="RightEdgeAlignedTop">
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToFolder}" Command="{x:Bind _vm.OutputToFolderCommand}"  />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveSplitWithPart}" Command="{x:Bind _vm.OutputToArchiveSplitWithPartCommand}"  />
                   </MenuFlyout>
                 </DropDownButton.Flyout>
               </DropDownButton>
