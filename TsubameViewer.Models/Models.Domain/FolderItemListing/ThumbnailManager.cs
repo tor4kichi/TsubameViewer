@@ -349,6 +349,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 #if WINDOWS_UWP
 
             var file = await GetCoverThumbnailImageAsync(folder, ct);
+            if (file == null) { return null; }
             return await GenerateThumbnailImageAsync(file, itemId, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
             return null;
@@ -397,12 +398,8 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
             if (file == null)
             {
                 var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
-                var count = await query.GetItemCountAsync();
-
-                if (count == 0) { return null; }
-
                 var files = await query.GetFilesAsync(0, 1);
-                file = files[0];
+                file = files.ElementAtOrDefault(0);
             }
             return file;
         }
