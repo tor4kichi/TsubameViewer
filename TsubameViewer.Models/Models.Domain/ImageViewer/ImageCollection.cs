@@ -261,7 +261,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             //else
             {
                 var imageSourceItems = (token.IsRoot
-                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry())
+                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry() || x.IsSameDirectoryPath(token.Entry))
                     : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
                     )
                     .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))

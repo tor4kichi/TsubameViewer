@@ -8,6 +8,8 @@ Create = 作成
 Apply = 適用する
 Open = 開く
 Close = 閉じる
+Confirm = 決定
+
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -229,3 +231,16 @@ zip出力時にファイル項目以外が消えます（一部非対応のア�
 RestructurePage_InvalidPath = パス文字列として使用できない文字列が含まれます : {0}
 RestructurePage_DupulicatePath = パス文字列に重複項目があります : {0}
 RestructurePage_InvalidFileType = パス文字列にアプリがフォルダ出力対応していない拡張子が含まれます : {0}
+
+
+#### SplitImageInput
+
+SplitImage = 画像分割
+BookBindingDirection.Left = 左綴じ
+BookBindingDirection.Right = 右綴じ
+SplitImageInput_NoSelected = 変更しない
+SplitImageInput_Title = 画像分割
+SplitImageInput_BindingDirectionHeader = ページを開く方向
+SplitImageInput_AspectRatioHeader = １ページの縦横比 (二分割の場合 0 を入力)
+SplitImageInput_AspectRatioPlaceholderText = 小数点数 または 幅 / 高さ
+SplitImageInput_EncoderTypeHeader = 画像エンコード

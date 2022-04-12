@@ -103,6 +103,17 @@ namespace TsubameViewer.Models.Domain
         }
 #endif
 
+        public static async Task<StorageFile> DigStorageFileFromPathAsync(this StorageFolder parentFolder, string relativePath, CreationCollisionOption fileCollitionOption, CancellationToken ct)
+        {
+            var pathItems = relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+            StorageFolder targetFolder = parentFolder;
+            foreach (var pathName in pathItems.SkipLast(1))
+            {
+                targetFolder = await targetFolder.CreateFolderAsync(pathName, CreationCollisionOption.OpenIfExists);
+            }
 
+            // Note: ここで System.UnauthorizedAccessException が出る
+            return await targetFolder.CreateFileAsync(pathItems.Last(), fileCollitionOption);
+        }
     }
 }

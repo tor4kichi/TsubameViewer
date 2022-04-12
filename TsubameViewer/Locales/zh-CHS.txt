@@ -8,6 +8,8 @@ Create = 创建
 Apply = 申请
 Open = 打开
 Close = 特写
+Confirm = 决定
+
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -227,3 +229,16 @@ zip 输出时文件项目以外的项目消失（不支持某些存档软件）
 RestructurePage_InvalidPath = 包含不能用作路径字符串的字符串：{0}
 RestructurePage_DupulicatePath = 路径字符串中有重复条目：{0}
 RestructurePage_InvalidFileType = 路径字符串包含应用程序不支持文件夹输出的扩展：{0}
+
+
+#### SplitImageInput
+
+SplitImage = 图像分割
+BookBindingDirection.Left = 左装订
+BookBindingDirection.Right = 右装订
+SplitImageInput_NoSelected = 它没有改变
+SplitImageInput_Title = 图像分割
+SplitImageInput_BindingDirectionHeader = 打开页面的方向
+SplitImageInput_AspectRatioHeader = 1 页的纵横比（输入 0 表示减半）
+SplitImageInput_AspectRatioPlaceholderText = 小数点或宽度/高度
+SplitImageInput_EncoderTypeHeader = 图像编码

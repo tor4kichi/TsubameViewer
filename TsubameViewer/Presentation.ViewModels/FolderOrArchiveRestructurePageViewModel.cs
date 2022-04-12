@@ -310,18 +310,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
         
-        static async Task<StorageFile> DigStorageFileFromPathAsync(string path, StorageFolder parentFolder, CreationCollisionOption fileCollitionOption, CancellationToken ct)
-        {
-            var pathItems = path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            StorageFolder targetFolder = parentFolder;
-            foreach (var pathName in pathItems.SkipLast(1))
-            {
-                targetFolder = await targetFolder.CreateFolderAsync(pathName, CreationCollisionOption.OpenIfExists);
-            }
-
-            // Note: ここで System.UnauthorizedAccessException が出る
-            return await targetFolder.CreateFileAsync(pathItems.Last(), fileCollitionOption);
-        }
+        
 
         [ICommand]
         private async Task OutputToFolderAsync()
@@ -352,7 +341,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         {
                             using (contentStream)
                             {
-                                var outputFile = await DigStorageFileFromPathAsync(path, outputFolder, CreationCollisionOption.ReplaceExisting, ct);
+                                var outputFile = await outputFolder.DigStorageFileFromPathAsync(path, CreationCollisionOption.ReplaceExisting, ct);
                                 using (var fileStream = await outputFile.OpenStreamForWriteAsync())
                                 {
                                     await contentStream.CopyToAsync(fileStream, 81920, ct);
@@ -596,7 +585,7 @@ namespace TsubameViewer.Presentation.ViewModels
                                 bufferedStream.Flush();
                             }
 
-                            var outputFile = await DigStorageFileFromPathAsync(fileName + ".zip", outputFolder, CreationCollisionOption.ReplaceExisting, ct);
+                            var outputFile = await outputFolder.DigStorageFileFromPathAsync(fileName + ".zip", CreationCollisionOption.ReplaceExisting, ct);
                             await tempFile.MoveAndReplaceAsync(outputFile);
                         }
                         catch

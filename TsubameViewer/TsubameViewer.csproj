@@ -138,6 +138,7 @@
     <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
     <Compile Include="Presentation.Services\AlbamDialogService.cs" />
     <Compile Include="Presentation.Services\FileControlDialogService.cs" />
+    <Compile Include="Presentation.Services\SplitImageInputDialogService.cs" />
     <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
     <Compile Include="Presentation.Services\UWP\SecondaryTileManager.cs" />
     <Compile Include="Presentation.Services\UWP\SupportedImageCodec.cs" />
@@ -193,6 +194,7 @@
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FolderOrArchiveResturctureCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
     <Compile Include="Presentation.ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
     <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
@@ -218,6 +220,9 @@
     <Compile Include="Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="Presentation.Views\Converters\SliderValueChangedEventArgsConverter.cs" />
     <Compile Include="Presentation.Views\Converters\ToKMGTPEZYConverter.cs" />
+    <Compile Include="Presentation.Views\Dialogs\SplitImageInputDialog.xaml.cs">
+      <DependentUpon>SplitImageInputDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Presentation.Views\Dialogs\SelectItemDialog.xaml.cs">
       <DependentUpon>SelectItemDialog.xaml</DependentUpon>
     </Compile>
@@ -439,6 +444,10 @@
     <Page Include="Presentation.Views\AlbamListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Presentation.Views\Dialogs\SplitImageInputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Presentation.Views\Dialogs\SelectItemDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
