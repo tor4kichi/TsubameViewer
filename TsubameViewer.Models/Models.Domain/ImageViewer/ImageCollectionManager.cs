@@ -143,6 +143,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
             catch
             {
+                _archiveFileInnerStructureCache.Delete(file.Path);
                 disposables.Dispose();
                 throw;
             }
@@ -171,6 +172,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
             catch
             {
+                _archiveFileInnerStructureCache.Delete(file.Path);
                 disposables.Dispose();
                 throw;
             }
@@ -194,6 +196,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
             catch
             {
+                _archiveFileInnerStructureCache.Delete(file.Path);
                 disposables.Dispose();
                 throw;
             }
@@ -215,6 +218,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             }
             catch
             {
+                _archiveFileInnerStructureCache.Delete(file.Path);
                 disposables.Dispose();
                 throw;
             }

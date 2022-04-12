@@ -175,6 +175,7 @@ namespace TsubameViewer.Presentation.Views
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SettingsPage),
+            typeof(FolderOrArchiveRestructurePage),
         }.ToImmutableHashSet();
 
         private readonly static ImmutableHashSet<Type> CanGoBackPageTypes = new Type[]
@@ -185,6 +186,7 @@ namespace TsubameViewer.Presentation.Views
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
             typeof(SettingsPage),
+            typeof(FolderOrArchiveRestructurePage),
         }.ToImmutableHashSet();
 
         private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
@@ -192,6 +194,7 @@ namespace TsubameViewer.Presentation.Views
             typeof(ImageViewerPage),
             typeof(EBookReaderPage),
             typeof(SearchResultPage),
+            typeof(FolderOrArchiveRestructurePage),
         }.ToImmutableHashSet();
 
 

@@ -8,6 +8,8 @@ Create = Create
 Apply = Apply
 Open = Open
 Close = Close
+Confirm = Confirm
+
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -203,3 +205,42 @@ AlbamItemAdd = Add to album
 FavoriteAlbam = Favorite
 AddFavoriteImage = Add to Favourites
 RemoveFavoriteImage = Remove from favorites
+
+
+#### FolderOrArchiveResturcture
+
+FolderOrArchiveRestructure = Edit internal structure
+Output = Output
+Find = Search
+ReplaceAll = Replace all
+ReplaceNext = Replace next
+Replace = Replace
+RestructurePage_SelectAllSearchTarget = Select all applicable items
+RestructurePage_OutputToArchiveFile = Output to zip
+RestructurePage_OutputToFolder = Output to folder
+RestructurePage_OutputToArchiveSplitWithPart = Output to zip (divided by volume)
+RestructurePage_IsOutput = Output target
+RestructurePage_ToggleIsOutput = Switch output target
+RestructurePage_EditPath = Path string
+RestructurePage_Description = You can edit the path strings one by one, or edit them all at once by searching and replacing.
+Uncheck the output target for unnecessary files
+
+RestructurePage_Caution = The original compressed file or folder will not be changed until it is output.
+If you are worried, please back up yourself
+Items other than file items disappear when zip is output (some archive software is not supported)
+RestructurePage_InvalidPath = Contains a string that cannot be used as a path string: {0}
+RestructurePage_DupulicatePath = There are duplicate entries in the path string: {0}
+RestructurePage_InvalidFileType = The path string contains an extension that the app does not support folder output: {0}
+
+
+#### SplitImageInput
+
+SplitImage = Image split
+BookBindingDirection.Left = Left binding
+BookBindingDirection.Right = Right binding
+SplitImageInput_NoSelected = No change
+SplitImageInput_Title = Image split
+SplitImageInput_BindingDirectionHeader = Direction to open page
+SplitImageInput_AspectRatioHeader = Aspect ratio of 1 page (Enter 0 for halving)
+SplitImageInput_AspectRatioPlaceholderText = Decimal point or width / height
+SplitImageInput_EncoderTypeHeader = Image encoding

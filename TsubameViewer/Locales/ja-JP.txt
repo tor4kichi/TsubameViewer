@@ -8,6 +8,8 @@ Create = 作成
 Apply = 適用する
 Open = 開く
 Close = 閉じる
+Confirm = 決定
+
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -203,3 +205,42 @@ AlbamItemAdd = アルバムに追加
 FavoriteAlbam = お気に入り
 AddFavoriteImage = お気に入りに追加
 RemoveFavoriteImage = お気に入りから除去
+
+
+#### FolderOrArchiveResturcture
+
+FolderOrArchiveRestructure = 内部構造を編集
+Output = 出力
+Find = 検索
+ReplaceAll = 全て置換
+ReplaceNext = 次を置換
+Replace = 置換
+RestructurePage_SelectAllSearchTarget = 該当項目を全て選択
+RestructurePage_OutputToArchiveFile = zipに出力
+RestructurePage_OutputToFolder = フォルダに出力
+RestructurePage_OutputToArchiveSplitWithPart = zipに出力（巻ごとに分割）
+RestructurePage_IsOutput = 出力対象
+RestructurePage_ToggleIsOutput = 出力対象を切替
+RestructurePage_EditPath = パス文字列
+RestructurePage_Description = パス文字列を一つずつ編集したり、検索と置換で一括編集できます
+不要なファイルは出力対象のチェックを外します
+
+RestructurePage_Caution = 出力するまで元の圧縮ファイルやフォルダは変更されません
+不安であれば自身でバックアップを取ってください
+zip出力時にファイル項目以外が消えます（一部非対応のアーカイブソフト有り）
+RestructurePage_InvalidPath = パス文字列として使用できない文字列が含まれます : {0}
+RestructurePage_DupulicatePath = パス文字列に重複項目があります : {0}
+RestructurePage_InvalidFileType = パス文字列にアプリがフォルダ出力対応していない拡張子が含まれます : {0}
+
+
+#### SplitImageInput
+
+SplitImage = 画像分割
+BookBindingDirection.Left = 左綴じ
+BookBindingDirection.Right = 右綴じ
+SplitImageInput_NoSelected = 変更しない
+SplitImageInput_Title = 画像分割
+SplitImageInput_BindingDirectionHeader = ページを開く方向
+SplitImageInput_AspectRatioHeader = １ページの縦横比 (二分割の場合 0 を入力)
+SplitImageInput_AspectRatioPlaceholderText = 小数点数 または 幅 / 高さ
+SplitImageInput_EncoderTypeHeader = 画像エンコード

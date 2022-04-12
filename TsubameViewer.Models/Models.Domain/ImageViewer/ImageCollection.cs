@@ -159,17 +159,20 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                     .SelectMany(x => 
                     {
                         var sepChar = structure.FolderPathSeparator;
-                        var dirNames = x.Split(sepChar, StringSplitOptions.RemoveEmptyEntries);
+                        var dirNames = _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(x).Split(sepChar, StringSplitOptions.RemoveEmptyEntries);
                         for (var i = 1; i < dirNames.Length; i++)
                         {                            
                             dirNames[i] = $"{dirNames[i - 1]}{sepChar}{dirNames[i]}";
                         }
 
                         return dirNames;
-                    })
-                    .Distinct()
+                    })                    
                     .Select(GetEntryFromKey)
-                    .Select(x => new ArchiveDirectoryToken(x.GetDirectoryPath(), Archive, x, false)).OrderBy(x => x.Key).ToImmutableList();
+                    .Select(x => new ArchiveDirectoryToken(
+                        _archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(x.GetDirectoryPath()), Archive, x, false)
+                        )
+                    .Distinct()
+                    .OrderBy(x => x.Key).ToImmutableList();
 
                 RootDirectoryToken ??= new ArchiveDirectoryToken(string.Empty, Archive, null, true);
             }
@@ -258,7 +261,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             //else
             {
                 var imageSourceItems = (token.IsRoot
-                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry())
+                    ? Archive.Entries.Where(x => x.IsRootDirectoryEntry() || x.IsSameDirectoryPath(token.Entry))
                     : Archive.Entries.Where(x => x.IsSameDirectoryPath(token.Entry))
                     )
                     .Where(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key))
@@ -270,7 +273,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                             return image;
                         }
 
-                        var dirToken = GetDirectoryTokenFromPath(Path.GetDirectoryName(x.Key));
+                        var dirToken = GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(x.Key)));
                         return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
                     })
                     .ToList();
@@ -327,7 +330,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
             Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
 
-            token ??= GetDirectoryTokenFromPath(Path.GetDirectoryName(imageEntry.Key));
+            token ??= GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(imageEntry.Key)));
             return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
         }
        

@@ -206,12 +206,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
         {
-            return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => FolderAndArchiveFileSearchQuery.ContentsChanged += h, h => FolderAndArchiveFileSearchQuery.ContentsChanged -= h).ToUnit();
+            return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => FolderAndArchiveFileSearchQuery.ContentsChanged += h, h => FolderAndArchiveFileSearchQuery.ContentsChanged -= h).Throttle(TimeSpan.FromSeconds(1)).ToUnit();
         }
 
         public IObservable<Unit> CreateImageFileChangedObserver()
         {
-            return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => ImageFileSearchQuery.ContentsChanged += h, h => ImageFileSearchQuery.ContentsChanged -= h).ToUnit();
+            return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => ImageFileSearchQuery.ContentsChanged += h, h => ImageFileSearchQuery.ContentsChanged -= h).Throttle(TimeSpan.FromSeconds(1)).ToUnit();
         }
 
     }
@@ -259,7 +259,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
         {
-            return ArchiveImageCollection.GetAllImages().ToAsyncEnumerable();
+            return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
         }
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)

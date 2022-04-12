@@ -35,6 +35,19 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             public Dictionary<string, int[]> FilesByFolder { get; set; }
             
             public char FolderPathSeparator { get; set; }
+
+
+            public string ReplaceSeparateCharIfAltPathSeparateChar(string path)
+            {
+                if (FolderPathSeparator == System.IO.Path.AltDirectorySeparatorChar)
+                {
+                    return path.Replace(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                }
+                else
+                {
+                    return path;
+                }
+            }
         }
 
         public sealed record ArchiveFileInnerSturctureItem(string Key, bool IsDirectory);
@@ -140,6 +153,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
                 }
 
                 ct.ThrowIfCancellationRequested();
+            }
+
+            // Path.GetDirectoryName が / を\\に変更するので
+            if (folderPathSepalator == Path.AltDirectorySeparatorChar)
+            {
+                filesByFolder = filesByFolder.Select(x => (Key: x.Key.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), Value: x.Value)).ToDictionary(x => x.Key, x => x.Value);
             }
 
             var fileIndexiesSortWithDateTime = fileIndexies
