@@ -259,7 +259,7 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
         {
-            return ArchiveImageCollection.GetAllImages().ToAsyncEnumerable();
+            return ArchiveImageCollection.GetImagesFromDirectory(ArchiveDirectoryToken).ToAsyncEnumerable();
         }
 
         public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
