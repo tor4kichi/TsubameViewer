@@ -653,7 +653,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                 SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                 SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                 SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
-
+                SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                 SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, ct),
                 _ => throw new NotSupportedException(file.FileType)
             });
@@ -1083,6 +1083,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
                     SupportedFileTypesHelper.SvgFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                     SupportedFileTypesHelper.WebpFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                     SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
+                    SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, ct),
                     SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, ct),
                     _ => throw new NotSupportedException(file.FileType)
                 });
