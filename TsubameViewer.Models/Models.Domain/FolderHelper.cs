@@ -22,9 +22,9 @@ namespace TsubameViewer.Models.Domain
                 return parent;
             }
 
-            var folderDescendantsNames = subtractPath.Split(Path.DirectorySeparatorChar);
+            var folderDescendantsNames = subtractPath.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
             StorageFolder currentFolder = parent;
-            foreach (var descendantName in folderDescendantsNames.Skip(1).SkipLast(1))
+            foreach (var descendantName in folderDescendantsNames.SkipLast(1))
             {
                 var child = await currentFolder.GetFolderAsync(descendantName);
                 if (child == null)

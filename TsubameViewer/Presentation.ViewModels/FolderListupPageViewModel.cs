@@ -483,7 +483,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // PathReferenceCountManagerへの登録が遅延する可能性がある
             foreach (var _ in Enumerable.Repeat(0, 10))
             {
-                _currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(path);
+                _currentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(path);
                 if (_currentItem != null)
                 {
                     break;
@@ -594,7 +594,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                         catch (UnauthorizedAccessException)
                         {
-                            var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(path));
+                            var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(path));
                             if (parentItem is StorageFolder parentFolder)
                             {
                                 imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
@@ -682,7 +682,7 @@ namespace TsubameViewer.Presentation.ViewModels
         private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
         {
             var oldItemPathMap = FolderItems.Select(x => x.Path).ToHashSet();
-            var newItems = await _messenger.WorkWithBusyWallAsync((ct) => imageCollectionContext.GetFolderOrArchiveFilesAsync(ct), ct).ToListAsync(ct);
+            var newItems = await _messenger.WorkWithBusyWallAsync((ct) => imageCollectionContext.GetFolderOrArchiveFilesAsync(ct).Where(x => x is not null), ct).ToListAsync(ct);
             var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
                 .Where(x => oldItemPathMap.Contains(x))
                 .ToHashSet();

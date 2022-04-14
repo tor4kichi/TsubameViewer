@@ -83,7 +83,7 @@ namespace TsubameViewer.Presentation.ViewModels.SourceFolders.Commands
                     }
                     else if (imageSource is StorageItemImageSource folderItem)
                     {
-                        var folder = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
+                        var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
                         if (folder == null) { throw new InvalidOperationException(); }
                         await _thumbnailManager.SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
                     }

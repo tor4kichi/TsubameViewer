@@ -22,6 +22,14 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default);
 
-        Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);
+        Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
+    }
+
+    public static class ImageSourceExtensions
+    {
+        public static bool IsStorageItemNotFound(this IImageSource imageSource)
+        {
+            return imageSource.StorageItem is null;
+        }
     }
 }

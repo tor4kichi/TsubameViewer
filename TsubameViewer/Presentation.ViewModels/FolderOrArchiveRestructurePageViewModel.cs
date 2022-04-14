@@ -73,7 +73,7 @@ namespace TsubameViewer.Presentation.ViewModels
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 var unescapedPath = Uri.UnescapeDataString(path);
-                var item = await _sourceStorageItemsRepository.GetStorageItemFromPath(unescapedPath);
+                var item = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(unescapedPath);
 
                 SourceStorageItem = item;
                 if (item is StorageFile file 

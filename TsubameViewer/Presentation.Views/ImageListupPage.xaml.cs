@@ -534,20 +534,23 @@ namespace TsubameViewer.Presentation.Views
             var menuFlyout = sender as MenuFlyout;
             menuFlyout.Items.Clear();
             var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
-            var expandImageSources = _vm.Selection.SelectedItems.Select(x => x.Item.FlattenAlbamItemInnerImageSource());
+            var expandImageSources = _vm.Selection.SelectedItems.Select(x => x.Item);
             foreach (var albam in albamRepository.GetAlbams())
-            {
+            {                
                 if (expandImageSources.Any(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)) is false)
                 {
-                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = false });
+                    // 一つも登録されていないなら全部を登録する
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => x.StorageItem is not null), IsChecked = false });
                 }
                 else if (expandImageSources.All(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)))
                 {
+                    // 全て登録済みなら全て削除
                     menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = true });
                 }
                 else 
                 {
-                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
+                    // いずれかが登録済みなら、未登録アイテムを登録
+                    menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => x.StorageItem is not null && !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
                 }                
             }
         }    

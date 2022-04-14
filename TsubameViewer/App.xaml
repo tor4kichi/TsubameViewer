@@ -83,7 +83,15 @@
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
-      
+
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToBooleanConverter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

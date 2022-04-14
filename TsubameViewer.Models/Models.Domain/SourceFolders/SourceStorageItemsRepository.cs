@@ -414,7 +414,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
             return token;
         }
 
-        public async Task<IStorageItem> GetStorageItemFromPath(string path)
+        public async Task<IStorageItem> TryGetStorageItemFromPath(string path)
         {            
             // .Where() は 例えば「_A_B」と「_A」というフォルダ名を分別するために必要
             var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
@@ -475,7 +475,7 @@ namespace TsubameViewer.Models.Domain.SourceFolders
                 if (await FindStorageItem(tokenEntry) is not null and IStorageItem result) { return result; }
             }
 
-            throw new ArgumentException($"not found StorageItem access permission to {path}");
+            return null;
         }
 
         #region Ignore Process

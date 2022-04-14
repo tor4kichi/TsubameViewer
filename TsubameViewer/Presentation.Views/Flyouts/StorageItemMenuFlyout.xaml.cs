@@ -222,7 +222,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 AlbamMenuSubItem.Items.Clear();                
                 foreach (var albam in _albamRepository.GetAlbams())
                 {
-                    AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, albamItem.InnerImageSource.Path) });
+                    var isExistInAlbam = _albamRepository.IsExistAlbamItem(albam._id, albamItem.Path);
+                    AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = isExistInAlbam, IsEnabled = albamItem.InnerImageSource != null || isExistInAlbam });
                 }
 
                 SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;

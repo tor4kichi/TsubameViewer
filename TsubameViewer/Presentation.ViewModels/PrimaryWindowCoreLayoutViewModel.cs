@@ -214,7 +214,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
             var path = entry.Path;
             var parameters = new NavigationParameters();
-            var storageItem = await SourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
+            var storageItem = await SourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
             parameters.Add(PageNavigationConstants.GeneralPathKey, entry.Path);
             if (storageItem is StorageFolder itemFolder)
             {

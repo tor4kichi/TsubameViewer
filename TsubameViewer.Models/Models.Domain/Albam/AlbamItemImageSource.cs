@@ -15,15 +15,21 @@ namespace TsubameViewer.Models.Domain.Albam
     public sealed class AlbamItemImageSource : IImageSource
     {
         private readonly AlbamItemEntry _albamItem;
+        private readonly ThumbnailManager _thumbnailManager;
+
         public IImageSource InnerImageSource { get; }
 
         // 画像ソースの遅延解決
-        public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource)
+        public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource, ThumbnailManager thumbnailManager)
         {
             _albamItem = albamItem;
             InnerImageSource = imageSource;
-
-            if (InnerImageSource.StorageItem is StorageFile file)
+            _thumbnailManager = thumbnailManager;
+            if (InnerImageSource == null)
+            {
+                Name = albamItem.Name;
+            }
+            else if (InnerImageSource.StorageItem is StorageFile file)
             {
                 if (file.FileType == SupportedFileTypesHelper.PdfFileType)
                 {
@@ -48,7 +54,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public Guid AlbamId => _albamItem.AlbamId;
 
-        public IStorageItem StorageItem => InnerImageSource.StorageItem;
+        public IStorageItem StorageItem => InnerImageSource?.StorageItem;
 
         public string Name { get; }
 
@@ -56,19 +62,26 @@ namespace TsubameViewer.Models.Domain.Albam
 
         public DateTime DateCreated => _albamItem.AddedAt.LocalDateTime;
 
-        public Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+        public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
         {
-            return InnerImageSource.GetImageStreamAsync(ct);
+            return await InnerImageSource?.GetImageStreamAsync(ct);
         }
 
-        public Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
+        public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
         {
-            return InnerImageSource.GetThumbnailImageStreamAsync(ct);
+            if (InnerImageSource != null)
+            {
+                return await InnerImageSource.GetThumbnailImageStreamAsync(ct);
+            }
+            else
+            {
+                return await _thumbnailManager.GetThumbnailImageFromPathAsync(_albamItem.Path, ct);
+            }            
         }
 
         public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
         {
-            return InnerImageSource.GetThumbnailSize();
+            return InnerImageSource?.GetThumbnailSize() ?? _thumbnailManager.GetThumbnailOriginalSize(_albamItem.Path);
         }
 
         public bool Equals(IImageSource other)

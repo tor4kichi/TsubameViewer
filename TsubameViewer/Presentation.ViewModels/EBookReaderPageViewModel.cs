@@ -248,7 +248,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         // PathReferenceCountManagerへの登録が遅延する可能性がある
                         foreach (var _ in Enumerable.Repeat(0, 100))
                         {
-                            _currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath) as StorageFile;
+                            _currentFolderItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath) as StorageFile;
                             if (_currentFolderItem != null)
                             {
                                 break;
