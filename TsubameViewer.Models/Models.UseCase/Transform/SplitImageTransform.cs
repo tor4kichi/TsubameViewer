@@ -94,7 +94,7 @@ namespace TsubameViewer.Models.Models.UseCase.Transform
                                 {
                                     var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);
                                     encoderStream.Seek(0, SeekOrigin.Begin);
-                                    outputArchive.AddEntry(Path.Combine(dir, Path.ChangeExtension($"{fileName}_{index}", ext)), encoderStream, closeStream: true);
+                                    outputArchive.AddEntry(Path.Combine(dir, $"{fileName}_{index}.{ext}"), encoderStream, closeStream: true);
                                 }
                                 catch
                                 {
