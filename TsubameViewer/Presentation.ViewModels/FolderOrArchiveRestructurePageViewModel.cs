@@ -25,6 +25,8 @@ using SharpCompress.Archives.Zip;
 using I18NPortable;
 using Windows.Storage.Pickers;
 using Windows.System;
+using TsubameViewer.Models.UseCase.Transform;
+using System.Text.RegularExpressions;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -185,6 +187,84 @@ namespace TsubameViewer.Presentation.ViewModels
             return Items.Cast<IPathRestructure>().Where(x => x.EditPath.Contains(searchText)).ToList();
         }
 
+        /// <summary>
+        /// ファイル名の最初に現れる数値に対して桁数補完をしてリネームする。
+        /// </summary>
+        [ICommand]
+        private void DigitCompletionAll()
+        {
+            ProcessDigitCompletion(Items.Cast<IPathRestructure>());
+        }
+
+
+        [ICommand]
+        private void DigitCompletionSelectedItems()
+        {
+            ProcessDigitCompletion(SelectedItems);
+        }
+
+
+
+        private void ProcessDigitCompletion(IEnumerable<IPathRestructure> sourceItems)
+        {
+            // フォルダ毎にアイテムを分ける
+            Dictionary<string, List<IPathRestructure>> itemPerFolder = new();
+            foreach (var item in sourceItems)
+            {
+                string folderName = Path.GetDirectoryName(item.EditPath);
+                if (itemPerFolder.TryGetValue(folderName, out var list) is false)
+                {
+                    list = new List<IPathRestructure>()
+                    {
+                        item
+                    };
+                    itemPerFolder.Add(folderName, list);
+                }
+                else
+                {
+                    list.Add(item);
+                }
+            }
+
+            Regex firstRegex = new Regex(@"(\d+(?=\.))");
+
+            // フォルダ毎のアイテムの必要な桁数を求めて、ファイル名のEditPathを置き換える
+            foreach (var (folderName, items) in itemPerFolder)
+            {
+                int maxDigit = items.Max(x =>
+                {
+                    string name = Path.GetFileName(x.EditPath);
+                    var match = firstRegex.Match(name);
+                    if (match.Success)
+                    {
+                        return TitleDigitCompletionTransform.GetDigitCount(int.Parse(match.Value));
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                });
+
+                if (maxDigit == 0)
+                {
+                    // 数字を含むファイル名が見つからない
+                    continue;
+                }
+
+                Regex secondRegex = new Regex($"0*(\\d{{{maxDigit},}})");
+
+                string digitCompletion = new string(Enumerable.Range(0, maxDigit).Select(_ => '0').ToArray());
+                string firstReplace = $"{digitCompletion}$1";
+                foreach (var item in items)
+                {
+                    if (firstRegex.IsMatch(item.EditPath))
+                    {
+                        var replaced = firstRegex.Replace(item.EditPath, firstReplace);
+                        item.EditPath = secondRegex.Replace(replaced, "$1");
+                    }
+                }
+            }
+        }
 
         [ICommand]
         private void ReplaceAll()

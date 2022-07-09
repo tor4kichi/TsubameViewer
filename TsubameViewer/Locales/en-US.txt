@@ -231,7 +231,7 @@ Items other than file items disappear when zip is output (some archive software 
 RestructurePage_InvalidPath = Contains a string that cannot be used as a path string: {0}
 RestructurePage_DupulicatePath = There are duplicate entries in the path string: {0}
 RestructurePage_InvalidFileType = The path string contains an extension that the app does not support folder output: {0}
-
+RestructurePage_DigitCompletion = Perform title digit completion
 
 #### SplitImageInput
 

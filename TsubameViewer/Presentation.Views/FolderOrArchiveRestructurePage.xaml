@@ -123,7 +123,12 @@
             <Border Padding="16 8" x:Name="OutputErrorMessageLayout" BorderBrush="OrangeRed" BorderThickness="1" CornerRadius="6" >
               <TextBlock Text="{x:Bind _vm.OutputErrorMessage, Mode=OneWay}" TextWrapping="Wrap" />
             </Border>
+
+            <Button Content="{i18nExt:Localize Key=TitleDigitCompletionTransform}" 
+                    Command="{x:Bind _vm.DigitCompletionAllCommand}"
+                    />
           </StackPanel>
+                   
         </uwpControls:DockPanel>
       </Grid>
 
@@ -144,9 +149,8 @@
 
         <uwpControls:DataGrid.ContextFlyout>
           <MenuFlyout>
-            <MenuFlyoutSubItem Text="選択中の項目を...">
-              <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsOutput}" Command="{x:Bind _vm.ToggleIsOutputSelectedItemsCommand}" />
-            </MenuFlyoutSubItem>
+            <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsOutput}" Command="{x:Bind _vm.ToggleIsOutputSelectedItemsCommand}" />
+            <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_DigitCompletion}" Command="{x:Bind _vm.DigitCompletionSelectedItemsCommand}" />
           </MenuFlyout>
         </uwpControls:DataGrid.ContextFlyout>
       </uwpControls:DataGrid>

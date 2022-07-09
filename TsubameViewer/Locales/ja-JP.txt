@@ -231,7 +231,7 @@ zip出力時にファイル項目以外が消えます（一部非対応のア�
 RestructurePage_InvalidPath = パス文字列として使用できない文字列が含まれます : {0}
 RestructurePage_DupulicatePath = パス文字列に重複項目があります : {0}
 RestructurePage_InvalidFileType = パス文字列にアプリがフォルダ出力対応していない拡張子が含まれます : {0}
-
+RestructurePage_DigitCompletion = タイトルの桁数補完を実行
 
 #### SplitImageInput
 

@@ -17,7 +17,7 @@ namespace TsubameViewer.Models.UseCase.Transform
     {
 
         // 桁数、必ず１以上を返す
-        static int GetDigitCount(int number)
+        public static int GetDigitCount(int number)
         {
             if (number == 0) { return 1; }
 
