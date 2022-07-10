@@ -359,9 +359,25 @@ namespace TsubameViewer.Presentation.ViewModels
                 OutputErrorMessage = null;
                 NowProcessOutput = true;
 
+                string fileName = outputFile.Name;
+                StorageFolder parentFolder = await outputFile.GetParentAsync();                
+
+                var newOutputFile = await parentFolder.CreateFileAsync(Path.GetRandomFileName());
                 try
                 {
-                    await OutputToArchiveAsync(outputFile);
+                    await OutputToArchiveAsync(newOutputFile);
+
+                    string ext = newOutputFile.FileType;
+                    await outputFile.DeleteAsync(StorageDeleteOption.Default);
+                    string newName = Path.ChangeExtension(fileName, ext);
+                    if (newOutputFile.Name != newName)
+                    {
+                        await newOutputFile.RenameAsync(newName);
+                    }
+                }
+                catch
+                {
+                    await newOutputFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
                 }
                 finally
                 {
@@ -472,7 +488,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     await tempFile.MoveAndReplaceAsync(outputFile);
                     if (outputFile.FileType != ".zip")
                     {
-                        await outputFile.RenameAsync(Path.ChangeExtension(outputFileName, "zip"));
+                        await outputFile.RenameAsync(Path.ChangeExtension(outputFileName, "zip"), NameCollisionOption.GenerateUniqueName);
                     }
                 }
                 catch
