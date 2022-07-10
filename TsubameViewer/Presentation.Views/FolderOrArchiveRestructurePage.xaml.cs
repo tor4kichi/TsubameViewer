@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
+﻿using I18NPortable;
+using Microsoft.Toolkit.Mvvm.DependencyInjection;
 using Microsoft.Toolkit.Uwp.UI.Controls;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using TsubameViewer.Presentation.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -48,17 +50,42 @@ namespace TsubameViewer.Presentation.Views
             {
                 _vm.SelectedItems.Add(added);
             }
-            
+
             if (e.AddedItems.Any())
             {
                 dataGrid.ScrollIntoView(e.AddedItems.First(), DataGridColumn_RelativePath);
             }
         }
 
+        private void ToggleSelectAll()
+        {
+            if (_vm.SelectedItems.Any())
+            {
+                PathsDataGrid.SelectedItems.Clear();
+                _vm.SelectedItems.Clear();
+            }
+            else
+            {
+                foreach (var item in _vm.Items)
+                {
+                    PathsDataGrid.SelectedItems.Add(item);
+                    _vm.SelectedItems.Add(item as IPathRestructure);
+                }
+            }
+        }
+
+
         bool _nowSelectAllWithSearch = false;
         private void SelectAllWithSearch()
         {
             _nowSelectAllWithSearch = true;
+
+            if (string.IsNullOrWhiteSpace(_vm.SearchText))
+            {
+                ToggleSelectAll();
+                return;
+            }
+
             try
             {
                 var searchItems = _vm.SearchAll(_vm.SearchText);
@@ -80,5 +107,32 @@ namespace TsubameViewer.Presentation.Views
                 _nowSelectAllWithSearch = false;
             }
         }
+
+
+        private async void SaveOverwrite()
+        {
+            var dialog = new MessageDialog("RestructurePage_OverwriteSave_Confirm".Translate(_vm.SourceStorageItem.Name));
+
+            dialog.Commands.Add(new UICommand("RestructurePage_OverwriteSave".Translate(), (s) => { _vm.OverwriteSaveCommand.Execute(null); }));
+            dialog.Commands.Add(new UICommand("Cancel".Translate(), (s) => { }));
+            dialog.DefaultCommandIndex = 1;
+            dialog.CancelCommandIndex = 1;
+            var result = await dialog.ShowAsync();
+
+        }
+    }
+
+    public sealed class EnumValueConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return value.ToString();
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return Enum.Parse(targetType, value as string);
+        }
+
     }
 }

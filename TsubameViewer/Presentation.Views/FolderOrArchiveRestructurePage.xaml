@@ -12,7 +12,15 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"  
   >
 
-  <Grid>
+  <Page.Resources>
+    <local:EnumValueConverter x:Key="EnumValueConverter" />
+  </Page.Resources>
+  <Grid KeyboardAcceleratorPlacementMode="Hidden">
+
+    <Grid.KeyboardAccelerators>
+      <KeyboardAccelerator Key="A" Modifiers="Control" Invoked="{x:Bind SelectAllWithSearch}" />
+      <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="{x:Bind SaveOverwrite}" />
+    </Grid.KeyboardAccelerators>
 
     <uwpControls:DockPanel MaxWidth="1080">
 
@@ -36,17 +44,25 @@
                 </Button.Flyout>
               </Button>
 
-              <DropDownButton Content="{i18nExt:Localize Key=Output}" Background="{ThemeResource SystemAccentColor}" CornerRadius="4" 
+
+              <StackPanel Orientation="Horizontal">
+
+                <Button Content="{i18nExt:Localize Key=RestructurePage_OverwriteSave}" Background="{ThemeResource SystemAccentColor}"                        
+                        Command="{x:Bind _vm.OverwriteSaveCommand}"
+                        CornerRadius="4 0 0 4"
+                        />
+                <DropDownButton Padding="0 0 8 0" Height="30" Background="{ThemeResource SystemAccentColor}" CornerRadius="0 4 4 0" 
                  uwpControls:DockPanel.Dock="Right"
                  >
-                <DropDownButton.Flyout>
-                  <MenuFlyout Placement="RightEdgeAlignedTop">
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToFolder}" Command="{x:Bind _vm.OutputToFolderCommand}"  />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveSplitWithPart}" Command="{x:Bind _vm.OutputToArchiveSplitWithPartCommand}"  />
-                  </MenuFlyout>
-                </DropDownButton.Flyout>
-              </DropDownButton>
+                  <DropDownButton.Flyout>
+                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
+                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToFolder}" Command="{x:Bind _vm.OutputToFolderCommand}"  />
+                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveSplitWithPart}" Command="{x:Bind _vm.OutputToArchiveSplitWithPartCommand}"  />
+                    </MenuFlyout>
+                  </DropDownButton.Flyout>
+                </DropDownButton>
+              </StackPanel>
 
 
             </StackPanel>
@@ -62,6 +78,56 @@
             </StackPanel>
           </uwpControls:DockPanel>
 
+          <Grid Padding="8" uwpControls:DockPanel.Dock="Right"  MaxWidth="200">
+
+            <Border BorderBrush="{ThemeResource SystemAccentColor}" BorderThickness="0" CornerRadius="4"
+                    Margin="0 12 0 0"
+                      Padding="8"
+                    >
+              <StackPanel Orientation="Vertical" Spacing="16" Margin="0 8 0 0">
+
+                <Button Content="{i18nExt:Localize Key=TitleDigitCompletionTransform}" 
+                    Command="{x:Bind _vm.DigitCompletionAllCommand}"
+                    />
+
+
+              </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource ApplicationHeaderBackgroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4 0" Padding="4 0">
+              <TextBlock Text="{i18nExt:Localize Key=RestructurePage_ProcessAllActions}" />
+            </Border>
+          </Grid>
+
+
+
+          <Grid Padding="8" uwpControls:DockPanel.Dock="Right" MaxWidth="200">
+
+            <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1" CornerRadius="4"
+                    Margin="0 12 0 0"
+                      Padding="8"
+                    >
+              <StackPanel Orientation="Vertical" Spacing="16" Margin="0 8 0 0">
+                <muxc:NumberBox Value="{x:Bind _vm.SplitImageAspectRatio, Mode=TwoWay}" 
+                            Maximum="2.0"
+                            Minimum="0.01"
+                            Header="{i18nExt:Localize Key=RestructurePage_SplitImage_AspectRatio}"
+                            />
+
+                <ToggleSwitch IsOn="{x:Bind _vm.IsSplitWithLeftBinding, Mode=TwoWay}"
+                          Header="{i18nExt:Localize Key=RestructurePage_SplitImage_IsLeftBinding}"
+                              
+                              />
+
+              </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource ApplicationHeaderBackgroundBrush}" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4 0" Padding="4 0">
+              <TextBlock Text="{i18nExt:Localize Key=RestructurePage_SplitImage}" />
+            </Border>
+          </Grid>
+
+         
           <StackPanel Spacing="8" MaxWidth="500">
             <uwpControls:DockPanel>
               <Button uwpControls:DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="0 0 0 0"
@@ -124,9 +190,7 @@
               <TextBlock Text="{x:Bind _vm.OutputErrorMessage, Mode=OneWay}" TextWrapping="Wrap" />
             </Border>
 
-            <Button Content="{i18nExt:Localize Key=TitleDigitCompletionTransform}" 
-                    Command="{x:Bind _vm.DigitCompletionAllCommand}"
-                    />
+            
           </StackPanel>
                    
         </uwpControls:DockPanel>
@@ -145,11 +209,14 @@
         <uwpControls:DataGrid.Columns>
           <uwpControls:DataGridCheckBoxColumn x:Name="DataGridColumn_IsOutput" Header="{i18nExt:Localize Key=RestructurePage_IsOutput}" IsReadOnly="False" Binding="{Binding IsOutput, Mode=TwoWay}" IsThreeState="False" />
           <uwpControls:DataGridTextColumn x:Name="DataGridColumn_RelativePath" Header="{i18nExt:Localize Key=RestructurePage_EditPath}" IsReadOnly="False" Binding="{Binding EditPath, Mode=TwoWay}" FontSize="12" />
+          <uwpControls:DataGridCheckBoxColumn x:Name="DataGridColumn_IsSplitImage" Header="{i18nExt:Localize Key=RestructurePage_IsSplitImage}" IsReadOnly="False" Binding="{Binding IsSplitImage, Mode=TwoWay}" IsThreeState="False" />
         </uwpControls:DataGrid.Columns>
 
         <uwpControls:DataGrid.ContextFlyout>
           <MenuFlyout>
             <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsOutput}" Command="{x:Bind _vm.ToggleIsOutputSelectedItemsCommand}" />
+            <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_ToggleIsSplitImage}" Command="{x:Bind _vm.ToggleIsSplitImageCommand}" />
+            <MenuFlyoutSeparator />
             <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_DigitCompletion}" Command="{x:Bind _vm.DigitCompletionSelectedItemsCommand}" />
           </MenuFlyout>
         </uwpControls:DataGrid.ContextFlyout>

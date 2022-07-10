@@ -232,6 +232,15 @@ RestructurePage_InvalidPath = パス文字列として使用できない文字�
 RestructurePage_DupulicatePath = パス文字列に重複項目があります : {0}
 RestructurePage_InvalidFileType = パス文字列にアプリがフォルダ出力対応していない拡張子が含まれます : {0}
 RestructurePage_DigitCompletion = タイトルの桁数補完を実行
+RestructurePage_SplitImage = 画像分割
+RestructurePage_SplitImage_AspectRatio = 縦横比
+RestructurePage_SplitImage_IsLeftBinding = 左開き
+RestructurePage_IsSplitImage = 画像分割
+RestructurePage_ToggleIsSplitImage = 画像分割の切替
+RestructurePage_OverwriteSave_Confirm = ファイルを上書きしてもいいですか？\n{0}
+RestructurePage_OverwriteSave = 上書き保存
+RestructurePage_ProcessAllActions = 一括処理
+
 
 #### SplitImageInput
 

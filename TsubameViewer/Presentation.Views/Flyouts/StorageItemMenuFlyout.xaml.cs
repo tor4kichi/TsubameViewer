@@ -45,9 +45,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
             AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
             StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
-            TitleDigitCompletionItem.Command = Ioc.Default.GetService<ArchiveFileEntryTitleDigitCompletionCommand>();
             FolderOrArchiveRestructureItem.Command = Ioc.Default.GetService<FolderOrArchiveResturctureCommand>();
-            SplitImageItem.Command = Ioc.Default.GetService<SplitImageCommand>();
             AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
             RemoveSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileRemoveCommand>();
             OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
@@ -128,12 +126,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 StorageItemDeleteMenuItem.CommandParameter = itemVM;
                 StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
 
-                TitleDigitCompletionItem.CommandParameter = itemVM;
-                TitleDigitCompletionItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
                 FolderOrArchiveRestructureItem.CommandParameter = itemVM;
                 FolderOrArchiveRestructureItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
-                SplitImageItem.CommandParameter = itemVM;
-                SplitImageItem.Visibility = (itemVM.Type is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
 
                 OpenWithExplorerItem.CommandParameter = itemVM;                
                 OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
@@ -165,9 +159,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
-                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
-                SplitImageItem.Visibility = Visibility.Collapsed;
-                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -195,10 +186,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
                 StorageItemDeleteMenuItem.Visibility = Visibility.Collapsed;
-                TitleDigitCompletionItem.Visibility = Visibility.Collapsed;
-                SplitImageItem.Visibility = Visibility.Collapsed;
-
-                TransformSubItem.Visibility = TitleDigitCompletionItem.Visibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Collapsed;
@@ -235,12 +222,8 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
 
                 var transformMenuItemVisibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource && imageSource.ItemTypes is Models.Domain.StorageItemTypes.Archive or Models.Domain.StorageItemTypes.Folder).TrueToVisible();
-                TitleDigitCompletionItem.CommandParameter = itemVM;
-                TitleDigitCompletionItem.Visibility = transformMenuItemVisibility;
                 FolderOrArchiveRestructureItem.CommandParameter = itemVM;
                 FolderOrArchiveRestructureItem.Visibility = transformMenuItemVisibility;
-                SplitImageItem.CommandParameter = itemVM;
-                SplitImageItem.Visibility = transformMenuItemVisibility;
 
                 OpenWithExplorerItem.CommandParameter = itemVM;
                 OpenWithExplorerItem.Visibility = Visibility.Visible;
@@ -265,8 +248,7 @@ namespace TsubameViewer.Presentation.Views.Flyouts
             ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
 
             FileControlMenuSeparator.Visibility =
-                (StorageItemDeleteMenuItem.Visibility == Visibility.Visible
-                || TransformSubItem.Visibility == Visibility.Visible
+                (StorageItemDeleteMenuItem.Visibility == Visibility.Visible                
                 )
                 .TrueToVisible()
                 ;
@@ -280,13 +262,6 @@ namespace TsubameViewer.Presentation.Views.Flyouts
                 OpenWithExplorerItem.Visibility == Visibility.Visible
                 || OpenWithExternalAppMenuItem.Visibility == Visibility.Visible
                 ).TrueToVisible();
-
-            TransformSubItem.Visibility = (
-                TitleDigitCompletionItem.Visibility == Visibility.Visible
-                || FolderOrArchiveRestructureItem.Visibility == Visibility.Visible
-                || SplitImageItem.Visibility == Visibility.Visible
-                )
-                .TrueToVisible();
 
             if (IsRootPage is true)
             {

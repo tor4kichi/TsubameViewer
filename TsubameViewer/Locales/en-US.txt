@@ -232,6 +232,15 @@ RestructurePage_InvalidPath = Contains a string that cannot be used as a path st
 RestructurePage_DupulicatePath = There are duplicate entries in the path string: {0}
 RestructurePage_InvalidFileType = The path string contains an extension that the app does not support folder output: {0}
 RestructurePage_DigitCompletion = Perform title digit completion
+RestructurePage_SplitImage = Image segmentation
+RestructurePage_SplitImage_AspectRatio = Aspect ratio
+RestructurePage_SplitImage_IsLeftBinding = Left open
+RestructurePage_IsSplitImage = Image segmentation
+RestructurePage_ToggleIsSplitImage = Switching image segmentation
+RestructurePage_OverwriteSave_Confirm = Can I overwrite the file? \ n {0}
+RestructurePage_OverwriteSave = Overwrite save
+RestructurePage_ProcessAllActions = Batch processing
+
 
 #### SplitImageInput
 
