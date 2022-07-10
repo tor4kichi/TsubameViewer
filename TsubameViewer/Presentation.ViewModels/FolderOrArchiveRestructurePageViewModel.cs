@@ -482,9 +482,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 }
 
             }), CancellationToken.None);
-
-            // コピー後すぐはダメっぽい
-            await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(outputFile.Path));
         }
 
 
@@ -568,8 +565,6 @@ namespace TsubameViewer.Presentation.ViewModels
                 else { throw new InvalidOperationException(); }
 
             }), CancellationToken.None);
-
-            await Launcher.LaunchFolderAsync(outputFolder);
         }
 
         private List<IPathRestructure> GetOutputTargetItems()
@@ -867,8 +862,6 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
                 }), CancellationToken.None);
-
-                await Launcher.LaunchFolderAsync(outputFolder);
             }
             finally
             {

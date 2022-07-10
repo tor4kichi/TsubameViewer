@@ -172,6 +172,7 @@ namespace TsubameViewer.Presentation.ViewModels
         CompositeDisposable _disposables = new CompositeDisposable();
         CompositeDisposable _navigationDisposables;
 
+        DateTimeOffset _sourceItemLastUpdatedTime;
 
         public FolderListupPageViewModel(
             IScheduler scheduler,
@@ -261,7 +262,8 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     _folderLastIntractItemManager.SetLastIntractItemName(_currentPath, Uri.UnescapeDataString(path));
                 }
-                
+
+                _messenger.Unregister<RefreshNavigationRequestMessage>(this);
                 _messenger.Unregister<BackNavigationRequestingMessage>(this);
                 _messenger.Unregister<StartMultiSelectionMessage>(this);
 
@@ -348,11 +350,19 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     else
                     {
-                        if (FolderItems != null)
+                        var prop = await _currentItem.GetBasicPropertiesAsync();
+                        if (_sourceItemLastUpdatedTime != prop.DateModified)
                         {
-                            foreach (var itemVM in FolderItems)
+                            await ResetContent(_currentPath, ct);
+                        }
+                        else
+                        {
+                            if (FolderItems != null)
                             {
-                                itemVM.RestoreThumbnailLoadingTask(ct);
+                                foreach (var itemVM in FolderItems)
+                                {
+                                    itemVM.RestoreThumbnailLoadingTask(ct);
+                                }
                             }
                         }
                     }
@@ -434,6 +444,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     })
                     .AddTo(_navigationDisposables);
             }
+
+            _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
+            {
+                if (string.IsNullOrEmpty(_currentPath)) { return; }
+
+                _ = ResetContent(_currentPath, _leavePageCancellationTokenSource?.Token ?? default);
+            });
 
             _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
             {
@@ -708,6 +725,9 @@ namespace TsubameViewer.Presentation.ViewModels
             }
 
             ct.ThrowIfCancellationRequested();
+
+            var prop = await _currentItem.GetBasicPropertiesAsync();
+            _sourceItemLastUpdatedTime = prop.DateModified;
 
             _ = Task.Run(async () =>
             {
