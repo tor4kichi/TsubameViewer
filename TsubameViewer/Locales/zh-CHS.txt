@@ -229,6 +229,15 @@ zip 输出时文件项目以外的项目消失（不支持某些存档软件）
 RestructurePage_InvalidPath = 包含不能用作路径字符串的字符串：{0}
 RestructurePage_DupulicatePath = 路径字符串中有重复条目：{0}
 RestructurePage_InvalidFileType = 路径字符串包含应用程序不支持文件夹输出的扩展：{0}
+RestructurePage_DigitCompletion = 执行标题数字完成
+RestructurePage_SplitImage = 图像分割
+RestructurePage_SplitImage_AspectRatio = 纵横比
+RestructurePage_SplitImage_IsLeftBinding = 左开
+RestructurePage_IsSplitImage = 图像分割
+RestructurePage_ToggleIsSplitImage = 切换图像分割
+RestructurePage_OverwriteSave_Confirm = 我可以覆盖文件吗？ \n{0}
+RestructurePage_OverwriteSave = 覆盖保存
+RestructurePage_ProcessAllActions = 批量处理
 
 
 #### SplitImageInput

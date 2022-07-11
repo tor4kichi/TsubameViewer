@@ -25,15 +25,28 @@ using SharpCompress.Archives.Zip;
 using I18NPortable;
 using Windows.Storage.Pickers;
 using Windows.System;
+using TsubameViewer.Models.UseCase.Transform;
+using System.Text.RegularExpressions;
+using TsubameViewer.Models.Models.UseCase.Transform;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
+
+    public enum SplitImageProcessKind
+    {
+        None,
+        Cover,
+        SplitTwo_LeftBinding,
+        SplitTwo_RightBinding,
+    }
+
+
     partial class FolderOrArchiveRestructurePageViewModel : NavigationAwareViewModelBase
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        private readonly SplitImageTransform _splitImageTransform;
 
-        
         public AdvancedCollectionView Items { get; }
 
         private ObservableCollection<IPathRestructure> _RawItems = new ();
@@ -45,12 +58,13 @@ namespace TsubameViewer.Presentation.ViewModels
 
         public FolderOrArchiveRestructurePageViewModel(
             IMessenger messenger,
-            SourceStorageItemsRepository sourceStorageItemsRepository
+            SourceStorageItemsRepository sourceStorageItemsRepository,
+            SplitImageTransform splitImageTransform
             )
         {
             _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-
+            _splitImageTransform = splitImageTransform;
             Items = new AdvancedCollectionView(_RawItems);
             //Items.Filter = x => string.IsNullOrEmpty(SearchText) ? true : (x as IPathRestructure).EditPath.Contains(SearchText);
             Items.SortDescriptions.Add(new SortDescription(nameof(IPathRestructure.SourcePath), SortDirection.Ascending));
@@ -73,7 +87,7 @@ namespace TsubameViewer.Presentation.ViewModels
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 var unescapedPath = Uri.UnescapeDataString(path);
-                var item = await _sourceStorageItemsRepository.GetStorageItemFromPath(unescapedPath);
+                var item = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(unescapedPath);
 
                 SourceStorageItem = item;
                 if (item is StorageFile file 
@@ -144,6 +158,21 @@ namespace TsubameViewer.Presentation.ViewModels
         public List<IPathRestructure> SelectedItems { get; } = new List<IPathRestructure>();
 
 
+        public SplitImageProcessKind[] SplitImageProcessKinds { get; } = new[] 
+        {
+            SplitImageProcessKind.None,
+            SplitImageProcessKind.Cover,
+            SplitImageProcessKind.SplitTwo_LeftBinding,
+            SplitImageProcessKind.SplitTwo_RightBinding,
+        };
+
+        [ObservableProperty]
+        private double _splitImageAspectRatio = 0.7;
+
+        [ObservableProperty]
+        private bool _isSplitWithLeftBinding = true;
+
+
         [ObservableProperty]
         private string _searchText;
 
@@ -184,6 +213,102 @@ namespace TsubameViewer.Presentation.ViewModels
 
             return Items.Cast<IPathRestructure>().Where(x => x.EditPath.Contains(searchText)).ToList();
         }
+
+        /// <summary>
+        /// ファイル名の最初に現れる数値に対して桁数補完をしてリネームする。
+        /// </summary>
+        [ICommand]
+        private void DigitCompletionAll()
+        {
+            ProcessDigitCompletion(Items.Cast<IPathRestructure>());
+        }
+
+
+        [ICommand]
+        private void DigitCompletionSelectedItems()
+        {
+            ProcessDigitCompletion(SelectedItems);
+        }
+
+
+
+        private void ProcessDigitCompletion(IEnumerable<IPathRestructure> sourceItems)
+        {
+            // フォルダ毎にアイテムを分ける
+            Dictionary<string, List<IPathRestructure>> itemPerFolder = new();
+            foreach (var item in sourceItems)
+            {
+                string folderName = Path.GetDirectoryName(item.EditPath);
+                if (itemPerFolder.TryGetValue(folderName, out var list) is false)
+                {
+                    list = new List<IPathRestructure>()
+                    {
+                        item
+                    };
+                    itemPerFolder.Add(folderName, list);
+                }
+                else
+                {
+                    list.Add(item);
+                }
+            }
+
+            Regex firstRegex = new Regex(@"(\d+(?=\.))");
+
+            // フォルダ毎のアイテムの必要な桁数を求めて、ファイル名のEditPathを置き換える
+            foreach (var (folderName, items) in itemPerFolder)
+            {
+                int maxDigit = items.Max(x =>
+                {
+                    string name = Path.GetFileName(x.EditPath);
+                    var match = firstRegex.Match(name);
+                    if (match.Success)
+                    {
+                        return TitleDigitCompletionTransform.GetDigitCount(int.Parse(match.Value));
+                    }
+                    else
+                    {
+                        return 0;
+                    }
+                });
+
+                if (maxDigit == 0)
+                {
+                    // 数字を含むファイル名が見つからない
+                    continue;
+                }
+
+                Regex secondRegex = new Regex($"0*(\\d{{{maxDigit},}})");
+
+                string digitCompletion = new string(Enumerable.Range(0, maxDigit).Select(_ => '0').ToArray());
+                string firstReplace = $"{digitCompletion}$1";
+                foreach (var item in items)
+                {
+                    if (firstRegex.IsMatch(item.EditPath))
+                    {
+                        var replaced = firstRegex.Replace(item.EditPath, firstReplace);
+                        item.EditPath = secondRegex.Replace(replaced, "$1");
+                    }
+                }
+            }
+        }
+
+
+
+        [ICommand]
+        private void ToggleIsSplitImage()
+        {
+            if (SelectedItems.All(x => x.IsSplitImage))
+            {
+                SelectedItems.ForEach(x => x.IsSplitImage = false);
+            }
+            else
+            {
+                SelectedItems.ForEach(x => x.IsSplitImage = true);
+            }
+        }
+
+
 
 
         [ICommand]
@@ -226,7 +351,70 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
+        [ICommand]
+        private async Task OverwriteSaveAsync()
+        {
+            if (_sourceStorageItem is StorageFile outputFile)
+            {
+                OutputErrorMessage = null;
+                NowProcessOutput = true;
 
+                string fileName = outputFile.Name;
+                StorageFolder parentFolder = await outputFile.GetParentAsync();                
+
+                var newOutputFile = await parentFolder.CreateFileAsync(Path.GetRandomFileName());
+                try
+                {
+                    await OutputToArchiveAsync(newOutputFile);
+
+                    string ext = newOutputFile.FileType;
+                    await outputFile.DeleteAsync(StorageDeleteOption.Default);
+                    string newName = Path.ChangeExtension(fileName, ext);
+                    if (newOutputFile.Name != newName)
+                    {
+                        await newOutputFile.RenameAsync(newName);
+                    }
+                }
+                catch
+                {
+                    await newOutputFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                }
+                finally
+                {
+                    NowProcessOutput = false;
+                }
+            }
+            else if (_sourceStorageItem is StorageFolder outputFolder)
+            {
+                OutputErrorMessage = null;
+                NowProcessOutput = true;
+
+                try
+                {
+                    await OutputToFolderAsync(outputFolder);
+                }
+                catch (OperationCanceledException)
+                {
+                    // 半端に残ったフォルダを消すかどうかはユーザーに任せる
+                    await Launcher.LaunchFolderAsync(outputFolder);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    var path = ex.Message;
+                    var fileType = Path.GetExtension(path);
+                    OutputErrorMessage = "RestructurePage_InvalidFileType".Translate(path);
+                    SelectedItem = _RawItems.FirstOrDefault(x => x.EditPath == path);
+                    foreach (var item in _RawItems.Where(x => x.EditPath.EndsWith(fileType)))
+                    {
+                        item.IsOutput = false;
+                    }
+                }
+                finally
+                {
+                    NowProcessOutput = false;
+                }
+            }
+        }
 
         [ICommand]
         private async Task OutputToArchiveFileAsync()
@@ -252,65 +440,66 @@ namespace TsubameViewer.Presentation.ViewModels
 
             try
             {
-                await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
-                {
-                    using var outputArchive = ZipArchive.Create();
-
-                    ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
-                    {
-                        outputArchive.AddEntry(path, contentStream, closeStream: true);
-                        return new ValueTask();
-                    }
-
-                    string outputFileName = null;
-                    if (SourceStorageItem is StorageFile file
-                        && file.IsSupportedMangaFile())
-                    {
-                        outputFileName = file.Name;
-                        await OutputArchiveFileAsync_Internal(GetOutputTargetItems(), file, ProcessOutput, ct);
-                    }
-                    else if (SourceStorageItem is StorageFolder folder)
-                    {
-                        outputFileName = folder.Name;
-                        await OutputFolderAsync_Internal(GetOutputTargetItems(), ProcessOutput, ct);
-                    }
-                    else { throw new InvalidOperationException(); }
-
-                    var tempFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Path.GetRandomFileName(), CreationCollisionOption.GenerateUniqueName);
-                    try
-                    {
-                        using (var writeStream = await tempFile.OpenStreamForWriteAsync())
-                        using (var bufferedStream = new BufferedStream(writeStream))
-                        {
-                            writeStream.SetLength(0);                            
-                            outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.Deflate));
-                            bufferedStream.Flush();
-                        }
-                        
-                        await tempFile.MoveAndReplaceAsync(outputFile);
-                        if (outputFile.FileType != ".zip")
-                        {
-                            await outputFile.RenameAsync(Path.ChangeExtension(outputFileName, "zip"));
-                        }
-                    }
-                    catch
-                    {
-                        // MoveAndReplaceAsyncするとtempFile == outputFileになる
-                        await tempFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
-                    }
-
-                }), CancellationToken.None);
-
-                // コピー後すぐはダメっぽい
-                await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(outputFile.Path));
+                await OutputToArchiveAsync(outputFile);
             }
             finally
             {
                 NowProcessOutput = false;
             }
         }
-        
-        
+
+        private async Task OutputToArchiveAsync(StorageFile outputFile)
+        {
+            await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
+            {
+                using var outputArchive = ZipArchive.Create();
+
+                ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
+                {
+                    outputArchive.AddEntry(path, contentStream, closeStream: true);
+                    return new ValueTask();
+                }
+
+                string outputFileName = null;
+                if (SourceStorageItem is StorageFile file
+                    && file.IsSupportedMangaFile())
+                {
+                    outputFileName = file.Name;
+                    await OutputArchiveFileAsync_Internal(GetOutputTargetItems(), file, ProcessOutput, ct);
+                }
+                else if (SourceStorageItem is StorageFolder folder)
+                {
+                    outputFileName = folder.Name;
+                    await OutputFolderAsync_Internal(GetOutputTargetItems(), ProcessOutput, ct);
+                }
+                else { throw new InvalidOperationException(); }
+
+                var tempFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Path.GetRandomFileName(), CreationCollisionOption.GenerateUniqueName);
+                try
+                {
+                    using (var writeStream = await tempFile.OpenStreamForWriteAsync())
+                    using (var bufferedStream = new BufferedStream(writeStream))
+                    {
+                        writeStream.SetLength(0);
+                        outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.Deflate));
+                        bufferedStream.Flush();
+                    }
+
+                    await tempFile.MoveAndReplaceAsync(outputFile);
+                    if (outputFile.FileType != ".zip")
+                    {
+                        await outputFile.RenameAsync(Path.ChangeExtension(outputFileName, "zip"), NameCollisionOption.GenerateUniqueName);
+                    }
+                }
+                catch
+                {
+                    // MoveAndReplaceAsyncするとtempFile == outputFileになる
+                    await tempFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                }
+
+            }), CancellationToken.None);
+        }
+
 
         [ICommand]
         private async Task OutputToFolderAsync()
@@ -331,43 +520,7 @@ namespace TsubameViewer.Presentation.ViewModels
             
             try
             {
-                var items = GetOutputTargetItems();
-
-                await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
-                {
-                    async ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
-                    {
-                        try
-                        {
-                            using (contentStream)
-                            {
-                                var outputFile = await outputFolder.DigStorageFileFromPathAsync(path, CreationCollisionOption.ReplaceExisting, ct);
-                                using (var fileStream = await outputFile.OpenStreamForWriteAsync())
-                                {
-                                    await contentStream.CopyToAsync(fileStream, 81920, ct);
-                                }
-                            }
-                        }
-                        catch (UnauthorizedAccessException ex)
-                        {
-                            throw new UnauthorizedAccessException(path, ex);
-                        }
-                    }
-
-                    if (SourceStorageItem is StorageFile file
-                            && file.IsSupportedMangaFile())
-                    {
-                        await OutputArchiveFileAsync_Internal(items, file, ProcessOutput, ct);
-                    }
-                    else if (SourceStorageItem is StorageFolder)
-                    {
-                        await OutputFolderAsync_Internal(items, ProcessOutput, ct);                        
-                    }
-                    else { throw new InvalidOperationException(); }
-
-                }), CancellationToken.None);
-
-                await Launcher.LaunchFolderAsync(outputFolder);
+                await OutputToFolderAsync(outputFolder);
             }
             catch (OperationCanceledException)
             {
@@ -389,6 +542,45 @@ namespace TsubameViewer.Presentation.ViewModels
             {
                 NowProcessOutput = false;
             }
+        }
+
+        private async Task OutputToFolderAsync(StorageFolder outputFolder)
+        {
+            var items = GetOutputTargetItems();
+
+            await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
+            {
+                async ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
+                {
+                    try
+                    {
+                        using (contentStream)
+                        {
+                            var outputFile = await outputFolder.DigStorageFileFromPathAsync(path, CreationCollisionOption.ReplaceExisting, ct);
+                            using (var fileStream = await outputFile.OpenStreamForWriteAsync())
+                            {
+                                await contentStream.CopyToAsync(fileStream, 81920, ct);
+                            }
+                        }
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        throw new UnauthorizedAccessException(path, ex);
+                    }
+                }
+
+                if (SourceStorageItem is StorageFile file
+                        && file.IsSupportedMangaFile())
+                {
+                    await OutputArchiveFileAsync_Internal(items, file, ProcessOutput, ct);
+                }
+                else if (SourceStorageItem is StorageFolder)
+                {
+                    await OutputFolderAsync_Internal(items, ProcessOutput, ct);
+                }
+                else { throw new InvalidOperationException(); }
+
+            }), CancellationToken.None);
         }
 
         private List<IPathRestructure> GetOutputTargetItems()
@@ -448,7 +640,62 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 if (item is PathRestructure_StorageFile fileItem)
                 {
-                    await processOutput(item.EditPath, await fileItem.File.OpenStreamForReadAsync(), ct);
+                    if (item.IsSplitImage is false)
+                    {
+                        await processOutput(item.EditPath, await fileItem.File.OpenStreamForReadAsync(), ct);
+                    }
+                    //else if ()
+                    //{
+                    //    var fileStream = await fileItem.File.OpenStreamForReadAsync();
+                    //    try
+                    //    {
+                    //        var (clipImage, ext) = await _splitImageTransform.ClipCoverImageAsync(_splitImageAspectRatio, null, fileStream, ct);
+                    //        await processOutput(Path.ChangeExtension(item.EditPath, ext), clipImage, ct);
+                    //    }
+                    //    finally
+                    //    {
+                    //        fileStream.Dispose();
+                    //    }
+                    //}
+                    else
+                    {
+                        if (IsSplitWithLeftBinding)
+                        {
+                            var fileStream = await fileItem.File.OpenStreamForReadAsync();
+
+                            try
+                            {
+                                var (leftImage, rightImage, ext) = await _splitImageTransform.SplitTwoImageAsync(_splitImageAspectRatio, null, fileStream, ct);
+
+                                var dir = Path.GetDirectoryName(item.EditPath);
+                                var nameWoExt = Path.GetFileNameWithoutExtension(item.EditPath);
+                                await processOutput(Path.Combine(dir, $"{nameWoExt}_0.{ext}"), rightImage, ct);
+                                await processOutput(Path.Combine(dir, $"{nameWoExt}_1.{ext}"), leftImage, ct);
+                            }
+                            finally
+                            {
+                                fileStream.Dispose();
+                            }
+                        }
+                        else
+                        {
+                            var fileStream = await fileItem.File.OpenStreamForReadAsync();
+
+                            try
+                            {
+                                var (leftImage, rightImage, ext) = await _splitImageTransform.SplitTwoImageAsync(_splitImageAspectRatio, null, fileStream, ct);
+
+                                var dir = Path.GetDirectoryName(item.EditPath);
+                                var nameWoExt = Path.GetFileNameWithoutExtension(item.EditPath);
+                                await processOutput(Path.Combine(dir, $"{nameWoExt}_0.{ext}"), leftImage, ct);
+                                await processOutput(Path.Combine(dir, $"{nameWoExt}_1.{ext}"), rightImage, ct);
+                            }
+                            finally
+                            {
+                                fileStream.Dispose();
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -472,14 +719,50 @@ namespace TsubameViewer.Presentation.ViewModels
                         memoryStream.Seek(0, SeekOrigin.Begin);
                     }
 
-                    await processOutput(item.EditPath, memoryStream, ct);
+                    if (item.IsSplitImage is false)
+                    {
+                        await processOutput(item.EditPath, memoryStream, ct);
+                    }
+                    else
+                    {
+                        if (IsSplitWithLeftBinding)
+                        {
+                            var (leftImage, rightImage, ext) = await _splitImageTransform.SplitTwoImageAsync(_splitImageAspectRatio, null, memoryStream, ct);
+
+                            var dir = Path.GetDirectoryName(item.EditPath);
+                            var nameWoExt = Path.GetFileNameWithoutExtension(item.EditPath);
+                            await processOutput(Path.Combine(dir, $"{nameWoExt}_0.{ext}"), rightImage, ct);
+                            await processOutput(Path.Combine(dir, $"{nameWoExt}_1.{ext}"), leftImage, ct);
+                        }
+                        else
+                        {
+                            var (leftImage, rightImage, ext) = await _splitImageTransform.SplitTwoImageAsync(_splitImageAspectRatio, null, memoryStream, ct);
+
+                            var dir = Path.GetDirectoryName(item.EditPath);
+                            var nameWoExt = Path.GetFileNameWithoutExtension(item.EditPath);
+                            await processOutput(Path.Combine(dir, $"{nameWoExt}_0.{ext}"), leftImage, ct);
+                            await processOutput(Path.Combine(dir, $"{nameWoExt}_1.{ext}"), rightImage, ct);
+                        }
+                    }
+                    /*
+                    else if (item.IsSplitImage == SplitImageProcessKind.Cover)
+                    {
+                        try
+                        {
+                            var (clipImage, ext) = await _splitImageTransform.ClipCoverImageAsync(_splitImageAspectRatio, null, memoryStream, ct);
+                            await processOutput(Path.ChangeExtension(item.EditPath, ext), clipImage, ct);
+                        }
+                        finally
+                        {
+                            memoryStream.Dispose();
+                        }
+                    }
+                    */                    
                 }
             }
 
             // TODO: file.Pathに対するキャッシュ情報をクリアする
         }
-
-
 
         [ICommand]
         private async Task OutputToArchiveSplitWithPartAsync()
@@ -595,15 +878,12 @@ namespace TsubameViewer.Presentation.ViewModels
                         }
                     }
                 }), CancellationToken.None);
-
-                await Launcher.LaunchFolderAsync(outputFolder);
             }
             finally
             {
                 NowProcessOutput = false;
             }
         }
-
     }
 
     public interface IPathRestructure
@@ -612,8 +892,12 @@ namespace TsubameViewer.Presentation.ViewModels
         string SourcePath { get; }
         string EditPath { get; set; }
 
+        bool IsSplitImage { get; set; }
+
         void Reset();
     }
+
+
 
     partial class PathRestructure_ArchiveEntry : ObservableObject, IPathRestructure
     {
@@ -633,6 +917,10 @@ namespace TsubameViewer.Presentation.ViewModels
         private bool _IsOutput = true;
 
         public bool IsEdited => _EditPath != SourcePath;
+
+        [ObservableProperty]
+        private bool _isSplitImage;
+
 
         public void Reset()
         {
@@ -661,6 +949,10 @@ namespace TsubameViewer.Presentation.ViewModels
         private bool _IsOutput = true;
 
         public bool IsEdited => _EditPath != SourcePath;
+
+        [ObservableProperty]
+        private bool _isSplitImage;
+
 
         public void Reset()
         {

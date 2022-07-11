@@ -52,58 +52,21 @@ namespace TsubameViewer.Models.Models.UseCase.Transform
                             memoryStream.Seek(0, SeekOrigin.Begin);
                         }
 
-                        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(memoryStream.AsRandomAccessStream());
-                        
-                        // 画像の縦横比がTargetVHRatioよりも小さい（＝より横長な）場合に分割を実行する
-                        double imageVHRatio = decoder.PixelHeight / (double)decoder.PixelWidth;
-                        if (imageVHRatio < thresholdAspectRatio)
+                        if (pageAspectRatio < thresholdAspectRatio)
                         {
-                            uint halfWidth = decoder.PixelWidth / 2;
-                            var dir = Path.GetDirectoryName(entry.Key);
-                            var ext = Path.GetExtension(entry.Key);
-                            var fileName = Path.GetFileNameWithoutExtension(entry.Key);
-                            BitmapBounds leftBounds;
-                            BitmapBounds rightBounds;
-                            if (pageAspectRatio is not null and double hvRatio)
-                            {
-                                uint pageWidth = (uint)Math.Round(decoder.PixelHeight * hvRatio);
-                                leftBounds = new BitmapBounds() { X = halfWidth - pageWidth, Y = 0, Width = pageWidth, Height = decoder.PixelHeight };
-                                rightBounds = new BitmapBounds() { X = halfWidth, Y = 0, Width = pageWidth, Height = decoder.PixelHeight };
-                            }
-                            else
-                            {
-                                leftBounds = new BitmapBounds() { X = halfWidth * 0, Y = 0, Width = halfWidth, Height = decoder.PixelHeight };
-                                rightBounds = new BitmapBounds() { X = halfWidth * 1, Y = 0, Width = halfWidth, Height = decoder.PixelHeight };
-                            }
-
+                            var (leftImage, rightImage, ext) = await SplitTwoImageAsync(pageAspectRatio, encoderId, memoryStream, ct);
+                            string dir = Path.GetDirectoryName(entry.Key);
+                            string fileName = Path.GetFileNameWithoutExtension(entry.Key);
                             if (isLeftBinding)
                             {
-                                await ClipAndEncode(2u, leftBounds);
-                                await ClipAndEncode(1u, rightBounds);
+                                outputArchive.AddEntry(Path.Combine(dir, $"{fileName}_0.{ext}"), rightImage, closeStream: true);
+                                outputArchive.AddEntry(Path.Combine(dir, $"{fileName}_1.{ext}"), leftImage, closeStream: true);
                             }
                             else
                             {
-                                await ClipAndEncode(1u, leftBounds);
-                                await ClipAndEncode(2u, rightBounds);
-                            }
-
-                            async Task ClipAndEncode(uint index, BitmapBounds bounds)
-                            {
-                                var encoderStream = _memoryStreamManager.GetStream();
-                                try
-                                {
-                                    var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);
-                                    encoderStream.Seek(0, SeekOrigin.Begin);
-                                    outputArchive.AddEntry(Path.Combine(dir, Path.ChangeExtension($"{fileName}_{index}", ext)), encoderStream, closeStream: true);
-                                }
-                                catch
-                                {
-                                    encoderStream.Dispose();
-                                    throw;
-                                }
-                            }
-
-                            memoryStream.Dispose();
+                                outputArchive.AddEntry(Path.Combine(dir, $"{fileName}_0.{ext}"), leftImage, closeStream: true);
+                                outputArchive.AddEntry(Path.Combine(dir, $"{fileName}_1.{ext}"), rightImage, closeStream: true);
+                            }                            
                         }
                         else
                         {
@@ -126,6 +89,103 @@ namespace TsubameViewer.Models.Models.UseCase.Transform
                 throw;
             }            
         }
+
+        public async Task<(Stream leftImage, Stream rightImage, string ext)> SplitTwoImageAsync(double? pageAspectRatio, Guid? encoderId, Stream memoryStream, CancellationToken ct)
+        {
+            BitmapDecoder decoder = await BitmapDecoder.CreateAsync(memoryStream.AsRandomAccessStream());
+
+            // 画像の縦横比がTargetVHRatioよりも小さい（＝より横長な）場合に分割を実行する
+            double imageVHRatio = decoder.PixelHeight / (double)decoder.PixelWidth;
+            
+            uint halfWidth = decoder.PixelWidth / 2;
+            BitmapBounds leftBounds;
+            BitmapBounds rightBounds;
+            if (pageAspectRatio is not null and double hvRatio)
+            {
+                uint pageWidth = (uint)Math.Round(decoder.PixelHeight * hvRatio);
+                leftBounds = new BitmapBounds() { X = halfWidth - pageWidth, Y = 0, Width = pageWidth, Height = decoder.PixelHeight };
+                rightBounds = new BitmapBounds() { X = halfWidth, Y = 0, Width = pageWidth, Height = decoder.PixelHeight };
+            }
+            else
+            {
+                leftBounds = new BitmapBounds() { X = halfWidth * 0, Y = 0, Width = halfWidth, Height = decoder.PixelHeight };
+                rightBounds = new BitmapBounds() { X = halfWidth * 1, Y = 0, Width = halfWidth, Height = decoder.PixelHeight };
+            }
+
+
+            async Task<(Stream outputStream, string ext)> ClipAndEncode(BitmapBounds bounds)
+            {
+                var encoderStream = _memoryStreamManager.GetStream();
+                try
+                {
+                    var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);
+                    encoderStream.Seek(0, SeekOrigin.Begin);
+                    return (encoderStream, ext);
+                }
+                catch
+                {
+                    encoderStream.Dispose();
+                    throw;
+                }
+            }
+
+            Stream leftImage = null;
+            Stream rightImage = null;
+            try
+            {
+                (leftImage, string ext) = await ClipAndEncode(leftBounds);
+                (rightImage, _) = await ClipAndEncode(rightBounds);
+
+                return (leftImage, rightImage, ext);
+            }
+            catch
+            {
+                leftImage?.Dispose();
+                throw;
+            }
+            finally
+            {
+                memoryStream.Dispose();
+            }
+        }
+
+        public async Task<(Stream image, string ext)> ClipCoverImageAsync(double hvRatio, Guid? encoderId, Stream memoryStream, CancellationToken ct)
+        {
+            BitmapDecoder decoder = await BitmapDecoder.CreateAsync(memoryStream.AsRandomAccessStream());
+
+            // 画像の縦横比がTargetVHRatioよりも小さい（＝より横長な）場合に分割を実行する
+            double imageVHRatio = decoder.PixelHeight / (double)decoder.PixelWidth;
+
+            uint halfWidth = decoder.PixelWidth / 2;
+            uint pageWidth = (uint)Math.Round(decoder.PixelHeight * hvRatio);
+            BitmapBounds bounds = new BitmapBounds() { X = halfWidth - pageWidth / 2, Y = 0, Width = pageWidth, Height = decoder.PixelHeight };
+
+            async Task<(Stream outputStream, string ext)> ClipAndEncode(BitmapBounds bounds)
+            {
+                var encoderStream = _memoryStreamManager.GetStream();
+                try
+                {
+                    var ext = await GetClipedImageStreamAsync(encoderStream.AsRandomAccessStream(), decoder, bounds, encoderId, ct);
+                    encoderStream.Seek(0, SeekOrigin.Begin);
+                    return (encoderStream, ext);
+                }
+                catch
+                {
+                    encoderStream.Dispose();
+                    throw;
+                }
+            }
+
+            try
+            {
+                return await ClipAndEncode(bounds);
+            }
+            finally
+            {
+                memoryStream.Dispose();
+            }
+        }
+
 
         /// <summary>
         /// 
@@ -216,7 +276,7 @@ namespace TsubameViewer.Models.Models.UseCase.Transform
             { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
         };
 
-        private static async Task<string> GetClipedImageStreamAsync(IRandomAccessStream outputStream, BitmapDecoder decoder, BitmapBounds bounds, Guid? encoderId, CancellationToken ct)
+        public static async Task<string> GetClipedImageStreamAsync(IRandomAccessStream outputStream, BitmapDecoder decoder, BitmapBounds bounds, Guid? encoderId, CancellationToken ct)
         {
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(encoderId ?? BitmapEncoder.JpegEncoderId, outputStream, _jpegPropertySet);
 

@@ -198,7 +198,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
                 async Task<StorageItemViewModel> ToStorageItemViewModel(RecentlyAccessManager.RecentlyAccessEntry entry)
                 {
-                    var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(entry.Path);
+                    var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
                     var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
                     return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
                 }

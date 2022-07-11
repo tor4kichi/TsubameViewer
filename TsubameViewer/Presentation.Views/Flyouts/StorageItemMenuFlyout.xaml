@@ -28,11 +28,7 @@
   <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
 
   <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
-  <MenuFlyoutSubItem x:Name="TransformSubItem" Text="{i18nExt:Localize Key=ArchiveOrFolderTransform}">
-    <MenuFlyoutItem x:Name="TitleDigitCompletionItem" Text="{i18nExt:Localize Key=TitleDigitCompletionTransform}" />
-    <MenuFlyoutItem x:Name="FolderOrArchiveRestructureItem" Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}" />
-    <MenuFlyoutItem x:Name="SplitImageItem" Text="{i18nExt:Localize Key=SplitImage}" />
-  </MenuFlyoutSubItem>
+  <MenuFlyoutItem x:Name="FolderOrArchiveRestructureItem" Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}" />
   <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
 
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />

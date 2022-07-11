@@ -487,7 +487,7 @@ namespace TsubameViewer
                 parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(info.Path));
             }
 
-            var item = await sourceFolderRepository.GetStorageItemFromPath(info.Path);
+            var item = await sourceFolderRepository.TryGetStorageItemFromPath(info.Path);
 
             if (item is StorageFolder itemFolder)
             {

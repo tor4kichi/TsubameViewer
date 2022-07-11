@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Mvvm.Messaging.Messages;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -72,7 +73,7 @@ namespace TsubameViewer.Models.Domain.Albam
 
             var (itemPath, pageName) = PageNavigationConstants.ParseStorageItemId(entry.Path);
 
-            var storageItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(itemPath);
+            var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(itemPath);
             ct.ThrowIfCancellationRequested();
 
             IImageSource imageSource = null;
@@ -110,13 +111,12 @@ namespace TsubameViewer.Models.Domain.Albam
                 imageSource = new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager);
             }
             
-            if (imageSource == null)
+            var albamImage = new AlbamItemImageSource(entry, imageSource, _thumbnailManager);
+            if (imageSource != null)
             {
-                throw new NotSupportedException(entry.Path);
+                _imagesCache.Add(entry._id, albamImage);
             }
 
-            var albamImage = new AlbamItemImageSource(entry, imageSource);
-            _imagesCache.Add(entry._id, albamImage);
             return albamImage;
         }        
 
@@ -162,7 +162,7 @@ namespace TsubameViewer.Models.Domain.Albam
         public async IAsyncEnumerable<IImageSource> GetAllImageFilesAsync([EnumeratorCancellation] CancellationToken ct)
         {
             var items = _albamRepository.GetAlbamImageItems(_albam._id);
-            foreach (var item in items)
+            foreach (var item in items.ToList())
             {
                 yield return await GetAlbamItemImageSourceAsync(item, ct);
             }

@@ -334,7 +334,7 @@ namespace TsubameViewer.Presentation.ViewModels
             IStorageItem currentItem = null;
             foreach (var _ in Enumerable.Repeat(0, 10))
             {
-                currentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                currentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath);
                 if (currentItem != null)
                 {
                     break;
@@ -580,7 +580,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                     catch (UnauthorizedAccessException)
                     {
-                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
+                        var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                         if (parentItem is StorageFolder parentFolder)
                         {
                             imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);

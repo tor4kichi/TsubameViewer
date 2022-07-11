@@ -684,8 +684,9 @@
             </muxc:DropDownButton.KeyboardAccelerators>
             <uwpControls:DockPanel>
               <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
-              <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
+              <TextBlock x:Name="Page1NameTextBlock" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis"                                                  
+                         >
+                <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
               </TextBlock>
             </uwpControls:DockPanel>
 
@@ -722,7 +723,7 @@
             
             <uwpControls:DockPanel>
               <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
+              <TextBlock x:Name="Page2NameTextBlock"  VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
               <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
               </TextBlock>
             </uwpControls:DockPanel>
@@ -1107,7 +1108,31 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
+      <!-- 表示アイテムのストレージアイテムが見つからない場合 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[0].StorageItem}" EqualTo="{x:Null}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1NameTextBlock.TextDecorations" Value="Strikethrough" />
+            <Setter Target="Page1ActionButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[1].StorageItem}" EqualTo="{x:Null}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2NameTextBlock.TextDecorations" Value="Strikethrough" />
+            <Setter Target="Page2ActionButton.IsEnabled" Value="False" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!--見開き補正 -->
       <VisualStateGroup>
         <VisualState>

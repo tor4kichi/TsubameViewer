@@ -429,7 +429,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     IStorageItem currentFolderItem = null;
                     foreach (var _ in Enumerable.Repeat(0, 10))
                     {
-                        currentFolderItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(_currentPath);
+                        currentFolderItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath);
                         if (currentFolderItem != null)
                         {
                             _currentPath = currentFolderItem.Path;
@@ -1248,8 +1248,17 @@ namespace TsubameViewer.Presentation.ViewModels
 
         private async ValueTask<ThumbnailManager.ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
         {
-            return _thumbnailManager.GetThumbnailOriginalSize(source.Path)
-                ?? _thumbnailManager.SetThumbnailSize(source.Path, await GetBitmapImageWithCacheAsync(source, ct));
+            if (_thumbnailManager.GetThumbnailOriginalSize(source.Path) is not null and ThumbnailManager.ThumbnailSize thumbSize) { return thumbSize; }
+
+            if (source.IsStorageItemNotFound())
+            {
+                return default;
+            }
+            else
+            {
+                return _thumbnailManager.SetThumbnailSize(source.Path, await GetBitmapImageWithCacheAsync(source, ct));
+            }
+                
         }
      
         private async ValueTask<BitmapImage> GetBitmapImageWithCacheAsync(IImageSource source, CancellationToken ct)
@@ -1425,8 +1434,8 @@ namespace TsubameViewer.Presentation.ViewModels
         private void SetDisplayImages(PrefetchIndexType type, IImageSource firstSource, BitmapImage firstImage)
         {
             static void SetDecodePixelSize(BitmapImage image, float canvasWidth, float canvasHeight)
-            {
-                if (image.DecodePixelWidth == 0 && image.DecodePixelHeight == 0)
+            {                
+                if (image is not null && image.DecodePixelWidth == 0 && image.DecodePixelHeight == 0)
                 {
                     if (image.PixelWidth > canvasWidth || image.PixelHeight > canvasHeight)
                     {
@@ -1772,7 +1781,7 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         _recentlyAccessManager.AddWatched(_currentPath);
 
-                        var parentItem = await _sourceStorageItemsRepository.GetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
+                        var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
                         if (parentItem is StorageFolder parentFolder)
                         {
                             imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
@@ -2069,21 +2078,29 @@ namespace TsubameViewer.Presentation.ViewModels
                 {
                     if (Image == null)
                     {
-                        var image = new BitmapImage();
-                        using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
+                        if (ImageSource.IsStorageItemNotFound() is false)
                         {
-                            try
+                            var image = new BitmapImage();
+                            using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
                             {
-                                await image.SetSourceAsync(stream).AsTask(linkedCt);
+                                try
+                                {
+                                    await image.SetSourceAsync(stream).AsTask(linkedCt);
+                                }
+                                catch (Exception ex) when (ex.HResult == -1072868846)
+                                {
+                                    throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
+                                }
                             }
-                            catch (Exception ex) when (ex.HResult == -1072868846)
-                            {
-                                throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
-                            }
-                        }
-                        Image = image;
 
-                        Debug.WriteLine("image load to memory : " + ImageSource.Name);
+                            Image = image;
+
+                            Debug.WriteLine("image load to memory : " + ImageSource.Name);
+                        }
+                        else
+                        {                            
+                            Debug.WriteLine("image load failed : " + ImageSource.Name);
+                        }
                     }
 
                     IsCompleted = true;
