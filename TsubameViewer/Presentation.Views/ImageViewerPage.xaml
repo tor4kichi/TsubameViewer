@@ -211,6 +211,8 @@
 
   </Page.Resources>
 
+  
+  
   <!-- Note: IsHitTestVisible="True" Background="Transparent" が無いと
              マウススクロールが反応しない問題が発生する 
   -->
@@ -506,7 +508,7 @@
     
     <!-- ボタン類 -->
     <StackPanel x:Name="ButtonsContainer" 
-                Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"  
+                Background="{ThemeResource SystemChromeMediumHighColor}"  
                 Grid.ColumnSpan="3"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
@@ -642,7 +644,7 @@
 
 
 
-    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}" 
+    <Border x:Name="ImageSelectorContainer" Background="{ThemeResource SystemChromeMediumHighColor}" 
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
@@ -823,7 +825,7 @@
     </Border>
 
     <Grid x:Name="ZoomingControlUI" Visibility="Collapsed"
-          Background="{ThemeResource SystemControlBaseHighAcrylicElementBrush}"
+          Background="{ThemeResource SystemChromeMediumHighColor}"
           Windows10version1903:Translation="0, 0, 16"
           VerticalAlignment="Top"
           HorizontalAlignment="Center"
