@@ -932,7 +932,7 @@
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>
-              <DoubleAnimation Duration="0:0:0.125"
+              <DoubleAnimation Duration="0:0:0.05"
                                To="0.25"
                                Storyboard.TargetName="ImageLoadingBarrier"
                                Storyboard.TargetProperty="Opacity"
