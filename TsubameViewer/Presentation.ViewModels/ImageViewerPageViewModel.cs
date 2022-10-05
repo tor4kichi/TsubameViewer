@@ -843,12 +843,27 @@ namespace TsubameViewer.Presentation.ViewModels
             try
             {
                 using (await _imageLoadingLock.LockAsync(ct))
-                {                  
+                {
                     // IndexMoveDirection.Backward 時は CurrentIndex - 1 の位置を起点に考える
                     // DoubleViewの場合は CurrentIndex - 1 -> CurrentIndex - 2 と表示可能かを試す流れ
 
-                    var currentIndex = request ?? CurrentImageIndex;
-                    var (movedIndex, displayImageCount, isJumpHeadTail) = await LoadImagesAsync(PrefetchIndexType.Current, direction, currentIndex, ct);
+                    int currentIndex = request ?? CurrentImageIndex;
+                    var (requestIndex, isJumpHeadTail, requestImageCount) = GetMovedIndex(direction, currentIndex);
+                    int movedIndex = requestIndex;
+                    int displayImageCount = requestImageCount;
+                    try
+                    {
+                        displayImageCount = await SetDisplayImagesAsync(PrefetchIndexType.Current, direction, requestIndex, requestImageCount == 2, ct);
+                        movedIndex = displayImageCount == 2 && direction == IndexMoveDirection.Backward ? requestIndex - 1 : requestIndex;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _nowCurrenImageIndexChanging = true;
+                        CurrentImageIndex = movedIndex;
+                        _nowCurrenImageIndexChanging = false;
+                        throw;
+                    }
+
 
                     // 最後尾から先頭にジャンプした場合に音を鳴らす
                     if (isJumpHeadTail)
@@ -884,7 +899,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
             catch (OperationCanceledException)
             {
-                NowImageLoadingLongRunning = true;
+                NowImageLoadingLongRunning = true;                
             }
             catch (NotSupportedImageFormatException ex)
             {
@@ -1143,7 +1158,8 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        async ValueTask<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
+
+        (int requestIndex, bool isJumpHeadTail, int requestImageCount) GetMovedIndex(IndexMoveDirection direction, int currentIndex)
         {
             int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
             int lastRequestImageCount = GetCurrentDisplayImageCount();
@@ -1167,6 +1183,13 @@ namespace TsubameViewer.Presentation.ViewModels
                     }
                 }
             }
+
+            return (requestIndex, isJumpHeadTail, requestImageCount);
+        }
+
+        async ValueTask<(int movedIndex, int DisplayImageCount, bool IsJumpHeadTail)> LoadImagesAsync(PrefetchIndexType prefetchIndexType, IndexMoveDirection direction, int currentIndex, CancellationToken ct)
+        {
+            var (requestIndex, isJumpHeadTail, requestImageCount) = GetMovedIndex(direction, currentIndex);
 
             var displayImageCount = await SetDisplayImagesAsync(prefetchIndexType, direction, requestIndex, requestImageCount == 2, ct);
 

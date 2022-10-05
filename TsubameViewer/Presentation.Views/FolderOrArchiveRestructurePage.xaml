@@ -112,6 +112,7 @@
                             Maximum="2.0"
                             Minimum="0.01"
                             Header="{i18nExt:Localize Key=RestructurePage_SplitImage_AspectRatio}"
+                            AcceptsExpression="True"                                
                             />
 
                 <ToggleSwitch IsOn="{x:Bind _vm.IsSplitWithLeftBinding, Mode=TwoWay}"
