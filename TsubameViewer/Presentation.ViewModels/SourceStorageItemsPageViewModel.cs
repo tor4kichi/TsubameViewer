@@ -19,7 +19,7 @@ using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.Services.UWP;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Models.Domain.RestoreNavigation;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.Navigations;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;

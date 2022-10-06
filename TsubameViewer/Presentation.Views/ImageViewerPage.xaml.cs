@@ -1,6 +1,7 @@
-﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Input;
-using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
 using Reactive.Bindings.Extensions;
@@ -343,6 +344,49 @@ namespace TsubameViewer.Presentation.Views
         #endregion Navigation
 
 
+        #region Page Next/Prev
+
+        [RelayCommand]
+        private void ReversableGoNext()
+        {
+            if (!_vm.IsLeftBindingEnabled.Value)
+            {
+                if (_vm.GoNextImageCommand.CanExecute(null))
+                {
+                    _vm.GoNextImageCommand.Execute(null);
+                }
+            }
+            else
+            {
+                if (_vm.GoPrevImageCommand.CanExecute(null))
+                {
+                    _vm.GoPrevImageCommand.Execute(null);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void ReversableGoPrev()
+        {
+            if (!_vm.IsLeftBindingEnabled.Value)
+            {
+                if (_vm.GoPrevImageCommand.CanExecute(null))
+                {
+                    _vm.GoPrevImageCommand.Execute(null);
+                }
+            }
+            else
+            {
+                if (_vm.GoNextImageCommand.CanExecute(null))
+                {
+                    _vm.GoNextImageCommand.Execute(null);
+                }
+            }
+        }
+
+        #endregion
+
+
         #region Touch and Controller UI
 
         private void IntaractionWall_Tapped(object sender, TappedRoutedEventArgs e)
@@ -572,28 +616,14 @@ namespace TsubameViewer.Presentation.Views
                     )
                 {
                     // 右スワイプ
-                    if (!_vm.IsLeftBindingEnabled.Value)
-                    {
-                        LeftPageMoveButton.Command.Execute(null);
-                    }
-                    else
-                    {
-                        ReverseLeftPageMoveButton.Command.Execute(null);
-                    }
+                    ReversableGoNext();
                 }
                 else if (e.Cumulative.Translation.X < -1
                     || e.Velocities.Linear.X < -0.01
                     )
                 {
                     // 左スワイプ
-                    if (!_vm.IsLeftBindingEnabled.Value)
-                    {
-                        RightPageMoveButton.Command.Execute(null);
-                    }
-                    else
-                    {
-                        ReverseRightPageMoveButton.Command.Execute(null);
-                    }
+                    ReversableGoPrev();
                 }
             }
         }

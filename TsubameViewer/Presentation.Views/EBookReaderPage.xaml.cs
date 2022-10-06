@@ -31,9 +31,9 @@ using Windows.Web.Http;
 using Xamarin.Essentials;
 using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
-using Microsoft.Toolkit.Mvvm.Messaging;
-using Microsoft.Toolkit.Mvvm.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 

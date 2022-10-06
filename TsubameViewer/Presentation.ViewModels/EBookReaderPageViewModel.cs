@@ -26,7 +26,7 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.Web.Http;
 using TsubameViewer.Presentation.Navigations;
-using Microsoft.Toolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Presentation.ViewModels.ViewManagement.Commands;
 using TsubameViewer.Models.Domain.Navigation;

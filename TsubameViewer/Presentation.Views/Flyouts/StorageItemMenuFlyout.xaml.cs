@@ -22,7 +22,7 @@ using Windows.Storage;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.ViewModels.Albam.Commands;
 using TsubameViewer.Models.UseCase;
-using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Models.Domain;
 using TsubameViewer.Presentation.Services;
 
