@@ -82,6 +82,11 @@ AskQuestionWithMashmarrow = 发送棉花糖（错误报告/问题/建议）
 
 ImageCodecExtensions = 图像编解码器扩展
 
+PdfImageSettings = PDF 图像设置
+PdfImageThresholdWidth = 替代宽度阈值
+PdfImageAlternateWidth = 替代宽度值
+PdfImageThresholdHeight = 替代高度阈值
+PdfImageAlternateHeight = 替代高度值
 
 
 

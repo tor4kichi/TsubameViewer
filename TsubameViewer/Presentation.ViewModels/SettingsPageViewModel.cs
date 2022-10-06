@@ -30,6 +30,7 @@ using Windows.Storage;
 using Windows.UI.Popups;
 using Windows.UI.Xaml.Controls;
 using Xamarin.Essentials;
+using Microsoft.UI.Xaml.Controls;
 
 namespace TsubameViewer.Presentation.ViewModels
 {
@@ -114,6 +115,17 @@ namespace TsubameViewer.Presentation.ViewModels
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnablePrefetch".Translate(), _imageViewerPageSettings, x => x.IsEnablePrefetch),
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, x => x.IsEnableDoubleView),
+                    }
+                },
+                new SettingsGroupViewModel
+                {
+                    Label = "PdfImageSettings".Translate(),
+                    Items =
+                    {
+                        new NumberBoxSettingItemViewModel("PdfImageThresholdWidth".Translate(), _imageViewerPageSettings.PdfImageThresholdWidth, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageThresholdWidth = (uint)value),
+                        new NumberBoxSettingItemViewModel("PdfImageAlternateWidth".Translate(), _imageViewerPageSettings.PdfImageAlternateWidth, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageAlternateWidth = (uint)value),
+                        new NumberBoxSettingItemViewModel("PdfImageThresholdHeight".Translate(), _imageViewerPageSettings.PdfImageThresholdHeight, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageThresholdHeight = (uint)value),
+                        new NumberBoxSettingItemViewModel("PdfImageAlternateHeight".Translate(), _imageViewerPageSettings.PdfImageAlternateHeight, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageAlternateHeight = (uint)value),
                     }
                 },
                 new SettingsGroupViewModel
@@ -382,6 +394,32 @@ namespace TsubameViewer.Presentation.ViewModels
         public void Dispose()
         {
             ((IDisposable)ValueContainer).Dispose();
+        }
+    }
+
+    public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
+    {
+        private readonly Action<double> _changedAction;
+        
+        public NumberBoxSettingItemViewModel(string label, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
+        {
+            Label = label;
+            FirstValue = firstValue;
+            MinValue = minValue;
+            MaxValue = maxValue;
+            ValueStep = valueStep;
+            _changedAction = changedAction;
+        }
+
+        public string Label { get; }
+        public double FirstValue { get; }
+        public double MinValue { get; }
+        public double MaxValue { get; }
+        public double ValueStep { get; }
+
+        public void OnValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+        {
+            _changedAction(args.NewValue);
         }
     }
 

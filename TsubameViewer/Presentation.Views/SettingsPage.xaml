@@ -9,7 +9,7 @@
   xmlns:tt="using:TsubameViewer.Presentation.Views.TemplateSelector" 
   xmlns:wst="using:WindowsStateTriggers"
   xmlns:viewModel="using:TsubameViewer.Presentation.ViewModels"
-  xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
+  xmlns:i18Ext="using:I18NPortable.Xaml.Extensions" xmlns:winui="using:Microsoft.UI.Xaml.Controls" xmlns:sss="using:Windows.Globalization.NumberFormatting"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
   
@@ -150,6 +150,28 @@
           </StackPanel>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
+      <tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
+        <DataTemplate x:DataType="viewModel:NumberBoxSettingItemViewModel">
+          <Grid>
+            <TextBlock Text="{x:Bind Label}" VerticalAlignment="Center" />
+
+            <winui:NumberBox Value="{x:Bind FirstValue}" ValueChanged="{x:Bind OnValueChanged}" Minimum="{x:Bind MinValue}" Maximum="{x:Bind MaxValue}"
+                             HorizontalAlignment="Right"
+                             HorizontalContentAlignment="Right"
+                             MinWidth="40"                                                  
+                             TextAlignment="Center"
+                             >
+              <winui:NumberBox.NumberFormatter>
+                <sss:DecimalFormatter FractionDigits="0">
+                  <sss:DecimalFormatter.NumberRounder>
+                    <sss:IncrementNumberRounder Increment="{x:Bind ValueStep}" RoundingAlgorithm="RoundDown" />
+                  </sss:DecimalFormatter.NumberRounder>
+                </sss:DecimalFormatter>
+              </winui:NumberBox.NumberFormatter>
+            </winui:NumberBox>
+          </Grid>
+        </DataTemplate>
+      </tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
     </tt:SettingsItemTemplateSelector>
 
 

@@ -59,15 +59,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer.ImageSource
         {
             var memoryStream = new InMemoryRandomAccessStream();
             {
-                if (_imageViewerSettings.PdfImageAlternateHeight is not null and ImageViewerSettings.AlternateSize altHeight
-                    && _pdfPage.Size.Height < altHeight.Threshold)
+                if (_pdfPage.Size.Height < _imageViewerSettings.PdfImageThresholdHeight)
                 {
-                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() { DestinationWidth = altHeight.Alternate }).AsTask(ct);
+                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() { DestinationHeight = _imageViewerSettings.PdfImageAlternateHeight }).AsTask(ct);
                 }
-                else if (_imageViewerSettings.PdfImageAlternateWidth is not null and ImageViewerSettings.AlternateSize altWidth 
-                    && _pdfPage.Size.Width < altWidth.Threshold)
+                else if (_pdfPage.Size.Width < _imageViewerSettings.PdfImageThresholdWidth)
                 {
-                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() {  DestinationWidth = altWidth.Alternate }).AsTask(ct);
+                    await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() {  DestinationWidth = _imageViewerSettings.PdfImageThresholdWidth }).AsTask(ct);
                 }
                 else
                 {

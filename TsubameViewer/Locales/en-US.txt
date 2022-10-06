@@ -76,12 +76,17 @@ GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
 ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
 
-PrivacyPolicy = privacy policy
+PrivacyPolicy = Privacy policy
 ThirdPartyLibraryNotice = Third-party library license display
 AskQuestionWithMashmarrow = Send marshmallow (bug report/question/suggestion)
 
 ImageCodecExtensions = Image codec extension
 
+PdfImageSettings = PDF image settings
+PdfImageThresholdWidth = Alternate width threshold
+PdfImageAlternateWidth = Alternate width value
+PdfImageThresholdHeight = Alternate height threshold
+PdfImageAlternateHeight = Alternate height value
 
 
 
