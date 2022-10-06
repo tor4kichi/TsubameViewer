@@ -96,7 +96,6 @@ namespace TsubameViewer.Presentation.Views
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             IntaractionWall.Tapped -= IntaractionWall_Tapped;
-            IntaractionWall.PointerReleased -= IntaractionWall_PointerPressed_NotDesktop;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
@@ -109,14 +108,7 @@ namespace TsubameViewer.Presentation.Views
             CloseBottomUI();
 
             IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-            if (Xamarin.Essentials.DeviceInfo.Idiom == DeviceIdiom.Desktop)
-            {
-                IntaractionWall.Tapped += IntaractionWall_Tapped;
-            }
-            else
-            {
-                IntaractionWall.PointerReleased += IntaractionWall_PointerPressed_NotDesktop;
-            }
+            IntaractionWall.Tapped += IntaractionWall_Tapped;
 
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
@@ -353,96 +345,6 @@ namespace TsubameViewer.Presentation.Views
 
         #region Touch and Controller UI
 
-        bool _isAfterSwipeAction = false;
-        private void IntaractionWall_PointerPressed_NotDesktop(object sender, PointerRoutedEventArgs e)
-        {
-            try
-            {
-                var pointer = e.GetCurrentPoint(null);
-                var pt = pointer.Position;
-                if (!IsOpenBottomMenu && !_nowZoomCenterMovingWithPointer && !_isAfterSwipeAction && !IsZoomingEnabled)
-                {
-                    var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-                    foreach (var item in uiItems)
-                    {
-                        if (item.Visibility == Visibility.Collapsed) { continue; }
-                        
-                        if (!_vm.IsLeftBindingEnabled.Value)
-                        {
-                            if (item == RightPageMoveButton)
-                            {
-                                if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
-                                {
-                                    RightPageMoveButton.Command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                            else if (item == LeftPageMoveButton)
-                            {
-                                if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                                {
-                                    LeftPageMoveButton.Command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                            else if (item == ToggleMenuButton)
-                            {
-                                if (ToggleBottomMenuCommand is ICommand command && command.CanExecute(null))
-                                {
-                                    command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (item == ReverseRightPageMoveButton)
-                            {
-                                if (ReverseRightPageMoveButton.Command?.CanExecute(null) ?? false)
-                                {
-                                    ReverseRightPageMoveButton.Command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                            else if (item == ReverseLeftPageMoveButton)
-                            {
-                                if (ReverseLeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                                {
-                                    ReverseLeftPageMoveButton.Command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                            else if (item == ToggleMenuButton)
-                            {
-                                if (ToggleBottomMenuCommand is ICommand command && command.CanExecute(null))
-                                {
-                                    command.Execute(null);
-                                    e.Handled = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                    }
-                }
-                else if (!_isAfterSwipeAction)
-                {
-                    ToggleOpenCloseBottomUI();
-                    e.Handled = true;
-                }
-            }
-            finally
-            {
-                _isAfterSwipeAction = false;
-            }
-        }
-
-
         private void IntaractionWall_Tapped(object sender, TappedRoutedEventArgs e)
         {
             if (!_nowZoomCenterMovingWithPointer && !IsZoomingEnabled)
@@ -452,7 +354,7 @@ namespace TsubameViewer.Presentation.Views
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
                 
-                if (!IsOpenBottomMenu )
+                if (!IsOpenBottomMenu)
                 {
                     var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
                     foreach (var item in uiItems)
@@ -494,8 +396,6 @@ namespace TsubameViewer.Presentation.Views
                     e.Handled = true;
                 }
             }
-
-            _isAfterSwipeAction = false;
         }
 
 
@@ -667,14 +567,7 @@ namespace TsubameViewer.Presentation.Views
             }
             else
             {
-                if (Math.Abs(e.Cumulative.Translation.Y) > 60
-                    || Math.Abs(e.Velocities.Linear.Y) > 0.75
-                    )
-                {
-                    //ToggleOpenCloseBottomUI();
-                    //e.Handled = true;
-                }
-                else if (e.Cumulative.Translation.X > 1
+                if (e.Cumulative.Translation.X > 1
                     || e.Velocities.Linear.X > 0.01
                     )
                 {
@@ -702,14 +595,7 @@ namespace TsubameViewer.Presentation.Views
                         ReverseRightPageMoveButton.Command.Execute(null);
                     }
                 }
-                else
-                {
-                    //ToggleOpenCloseBottomUI();
-                    //e.Handled = true;
-                }
             }
-
-            _isAfterSwipeAction = true;
         }
 
         bool _nowZoomCenterMovingWithPointer;
@@ -718,7 +604,6 @@ namespace TsubameViewer.Presentation.Views
         {
             _startZoomFactor = (float)ZoomFactor;
             _nowZoomCenterMovingWithPointer = true;
-            _isAfterSwipeAction = false;
         }
 
         float _startZoomFactor;
