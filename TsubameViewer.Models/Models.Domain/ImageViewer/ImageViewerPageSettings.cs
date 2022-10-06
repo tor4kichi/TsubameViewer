@@ -17,8 +17,11 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
             _IsEnableDoubleView = Read(true, nameof(IsEnableDoubleView));
             _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
-            _PdfImageAlternateHeight = Read(new AlternateSize(500, 1280), nameof(PdfImageAlternateHeight));
-            _PdfImageAlternateWidth = Read(default(AlternateSize?), nameof(PdfImageAlternateWidth));
+            _PdfImageThresholdWidth = Read(1200u, nameof(PdfImageThresholdWidth));
+            _PdfImageAlternateWidth = Read(1600u, nameof(PdfImageAlternateWidth));
+            _PdfImageThresholdHeight = Read(1200u, nameof(PdfImageThresholdHeight));
+            _PdfImageAlternateHeight = Read(2400u, nameof(PdfImageAlternateHeight));
+            
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -55,17 +58,31 @@ namespace TsubameViewer.Models.Domain.ImageViewer
 
         // 代替サイズ指定
         // PDFのメタデータ指定における高さが（800ptあるのに）350ptなどと設定されているケースに手動対応する
-        public record struct AlternateSize(uint Threshold, uint Alternate);
+        
+        private uint _PdfImageThresholdWidth;
+        public uint PdfImageThresholdWidth
+        {
+            get => _PdfImageThresholdWidth;
+            set => SetProperty(ref _PdfImageThresholdWidth, value);
+        }
 
-        private AlternateSize? _PdfImageAlternateWidth;
-        public AlternateSize? PdfImageAlternateWidth
+        private uint _PdfImageAlternateWidth;
+        public uint PdfImageAlternateWidth
         {
             get => _PdfImageAlternateWidth;
             set => SetProperty(ref _PdfImageAlternateWidth, value);
         }
 
-        private AlternateSize? _PdfImageAlternateHeight;
-        public AlternateSize? PdfImageAlternateHeight
+
+        private uint _PdfImageThresholdHeight;
+        public uint PdfImageThresholdHeight
+        {
+            get => _PdfImageThresholdHeight;
+            set => SetProperty(ref _PdfImageThresholdHeight, value);
+        }
+
+        private uint _PdfImageAlternateHeight;
+        public uint PdfImageAlternateHeight
         {
             get => _PdfImageAlternateHeight;
             set => SetProperty(ref _PdfImageAlternateHeight, value);

@@ -1,5 +1,5 @@
 ﻿using I18NPortable;
-using Microsoft.Toolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ using TsubameViewer.Models.Domain.SourceFolders;
 using TsubameViewer.Models.Domain.FolderItemListing;
 using TsubameViewer.Models.Domain.ReadingFeature;
 using TsubameViewer.Presentation.ViewModels.PageNavigation.Commands;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using System.Linq;
 using TsubameViewer.Presentation.Navigations;
 

@@ -17,7 +17,7 @@ using TsubameViewer.Presentation.Views;
 using Windows.Storage;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Presentation.Navigations;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Presentation.Services;
 

@@ -15,6 +15,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
         public DataTemplate ButtonSettingItem { get; set; }
         public DataTemplate ThemeSelectSettingItem { get; set; }
         public DataTemplate LocaleSelectSettingItem { get; set; }
+        public DataTemplate NumericTextBoxSettingItem { get; set; }
 
 
         protected override DataTemplate SelectTemplateCore(object item)
@@ -31,6 +32,7 @@ namespace TsubameViewer.Presentation.Views.TemplateSelector
                 ButtonSettingItemViewModel _ => ButtonSettingItem,
                 ThemeSelectSettingItemViewModel _ => ThemeSelectSettingItem,
                 LocaleSelectSettingItemViewModel _ => LocaleSelectSettingItem,
+                NumberBoxSettingItemViewModel _ => NumericTextBoxSettingItem,
                 _ => throw new NotSupportedException(),
             };
         }

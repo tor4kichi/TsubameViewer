@@ -1,6 +1,7 @@
-﻿using Microsoft.Toolkit.Mvvm.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Input;
-using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
 using Reactive.Bindings.Extensions;
@@ -14,6 +15,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,6 +47,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using Xamarin.Essentials;
 
 // 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
@@ -93,7 +96,7 @@ namespace TsubameViewer.Presentation.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
+            IntaractionWall.Tapped -= IntaractionWall_Tapped;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
@@ -106,7 +109,8 @@ namespace TsubameViewer.Presentation.Views
             CloseBottomUI();
 
             IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-            IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
+            IntaractionWall.Tapped += IntaractionWall_Tapped;
+
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
@@ -340,24 +344,67 @@ namespace TsubameViewer.Presentation.Views
         #endregion Navigation
 
 
+        #region Page Next/Prev
+
+        [RelayCommand]
+        private void ReversableGoNext()
+        {
+            if (!_vm.IsLeftBindingEnabled.Value)
+            {
+                if (_vm.GoNextImageCommand.CanExecute(null))
+                {
+                    _vm.GoNextImageCommand.Execute(null);
+                }
+            }
+            else
+            {
+                if (_vm.GoPrevImageCommand.CanExecute(null))
+                {
+                    _vm.GoPrevImageCommand.Execute(null);
+                }
+            }
+        }
+
+        [RelayCommand]
+        private void ReversableGoPrev()
+        {
+            if (!_vm.IsLeftBindingEnabled.Value)
+            {
+                if (_vm.GoPrevImageCommand.CanExecute(null))
+                {
+                    _vm.GoPrevImageCommand.Execute(null);
+                }
+            }
+            else
+            {
+                if (_vm.GoNextImageCommand.CanExecute(null))
+                {
+                    _vm.GoNextImageCommand.Execute(null);
+                }
+            }
+        }
+
+        #endregion
+
+
         #region Touch and Controller UI
 
-
-        private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+        private void IntaractionWall_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (!_nowZoomCenterMovingWithPointer)
-            {
-                var pointer = e.GetCurrentPoint(RootGrid);
-                var pt = pointer.Position;
+            if (!_nowZoomCenterMovingWithPointer && !IsZoomingEnabled)
+            {                
+                var pt = e.GetPosition(RootGrid);
+                
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
-                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }                
-                if (pointer.Properties.IsLeftButtonPressed is false) { return; }
-
-                if (!IsOpenBottomMenu && !IsZoomingEnabled)
+                if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
+                
+                if (!IsOpenBottomMenu)
                 {
                     var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
                     foreach (var item in uiItems)
                     {
+                        if (item.Visibility == Visibility.Collapsed) { continue; }
+
                         if (item == RightPageMoveButton)
                         {
                             if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
@@ -387,13 +434,14 @@ namespace TsubameViewer.Presentation.Views
                         }
                     }
                 }
-                else
+                else 
                 {
                     ToggleOpenCloseBottomUI();
                     e.Handled = true;
                 }
             }
         }
+
 
         private string ToPercentage(double val)
         {
@@ -418,7 +466,6 @@ namespace TsubameViewer.Presentation.Views
             ButtonsContainer.Visibility = Visibility.Collapsed;
             ImageSelectorContainer.Visibility = Visibility.Collapsed;
         }
-
 
 
         // コントローラー操作用
@@ -564,31 +611,19 @@ namespace TsubameViewer.Presentation.Views
             }
             else
             {
-                if (e.Cumulative.Translation.X > 60
-                    || e.Velocities.Linear.X > 0.75
+                if (e.Cumulative.Translation.X > 1
+                    || e.Velocities.Linear.X > 0.01
                     )
                 {
                     // 右スワイプ
-                    LeftPageMoveButton.Command.Execute(null);
+                    ReversableGoNext();
                 }
-                else if (e.Cumulative.Translation.X < -60
-                    || e.Velocities.Linear.X < -0.75
+                else if (e.Cumulative.Translation.X < -1
+                    || e.Velocities.Linear.X < -0.01
                     )
                 {
                     // 左スワイプ
-                    RightPageMoveButton.Command.Execute(null);
-                }
-                else if (e.Cumulative.Translation.Y < -60
-                    || e.Velocities.Linear.Y < -0.25
-                    )
-                {
-                    ToggleOpenCloseBottomUI();
-                    e.Handled = true;
-                }
-                else
-                {
-                    CloseBottomUI();
-                    e.Handled = true;
+                    ReversableGoPrev();
                 }
             }
         }

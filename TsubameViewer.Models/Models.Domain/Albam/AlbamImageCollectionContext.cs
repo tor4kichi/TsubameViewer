@@ -1,5 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using Microsoft.Toolkit.Mvvm.Messaging.Messages;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;

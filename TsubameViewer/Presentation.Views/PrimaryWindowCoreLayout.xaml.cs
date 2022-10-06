@@ -1,5 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Input;
-using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
 using Reactive.Bindings.Extensions;
 using System;
@@ -35,7 +35,7 @@ using Reactive.Bindings;
 using TsubameViewer.Models.Infrastructure;
 using System.Collections.Immutable;
 using TsubameViewer.Presentation.Navigations;
-using Microsoft.Toolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using TsubameViewer.Presentation.Services;
 using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Presentation.Services.UWP;

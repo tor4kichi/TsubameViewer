@@ -31,9 +31,9 @@ using Windows.Web.Http;
 using Xamarin.Essentials;
 using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Presentation.ViewModels.PageNavigation;
-using Microsoft.Toolkit.Mvvm.Messaging;
-using Microsoft.Toolkit.Mvvm.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -230,8 +230,12 @@ namespace TsubameViewer.Presentation.Views
 
         private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
         {
+            SwipeProcessScreen.Tapped -= SwipeProcessScreen_Tapped;
             SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
             SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
+            SwipeProcessScreen.ManipulationStarting -= SwipeProcessScreen_ManipulationStarting;
+            SwipeProcessScreen.ManipulationStarted -= SwipeProcessScreen_ManipulationStarted;
+            SwipeProcessScreen.ManipulationCompleted -= SwipeProcessScreen_ManipulationCompleted;
             SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
             SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted;
             SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
@@ -291,15 +295,15 @@ namespace TsubameViewer.Presentation.Views
 
         private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
-            if (e.Cumulative.Translation.X > 60
-                || e.Velocities.Linear.X > 0.75
+            if (e.Cumulative.Translation.X > 1
+                || e.Velocities.Linear.X > 0.01
                 )
             {
                 // 右スワイプ
                 LeftPageMoveButton.Command.Execute(null);
             }
-            else if (e.Cumulative.Translation.X < -60
-                || e.Velocities.Linear.X < -0.75
+            else if (e.Cumulative.Translation.X < -1
+                || e.Velocities.Linear.X < -0.01
                 )
             {
                 // 左スワイプ

@@ -16,8 +16,8 @@ using Windows.Storage.AccessCache;
 using Windows.UI.Xaml.Media.Imaging;
 using TsubameViewer.Models.Domain.Albam;
 using TsubameViewer.Models.UseCase;
-using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.Presentation.ViewModels.SourceFolders;
 
 namespace TsubameViewer.Presentation.ViewModels.PageNavigation

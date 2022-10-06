@@ -82,6 +82,11 @@ AskQuestionWithMashmarrow = マシュマロを送る（バグ報告・質問・�
 
 ImageCodecExtensions = 画像コーデック拡張機能
 
+PdfImageSettings = PDF画像の設定
+PdfImageThresholdWidth = 代替横幅のしきい値
+PdfImageAlternateWidth = 代替横幅の値
+PdfImageThresholdHeight = 代替縦幅のしきい値
+PdfImageAlternateHeight = 代替縦幅の値
 
 
 

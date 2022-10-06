@@ -30,7 +30,7 @@ using TsubameViewer.Models.Domain.ImageViewer.ImageSource;
 using TsubameViewer.Presentation.ViewModels.SourceFolders.Commands;
 using System.Collections;
 using System.Reactive.Concurrency;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using System.Windows.Input;
 using TsubameViewer.Models.Domain.Albam;
 using Windows.UI.Xaml;
@@ -38,7 +38,7 @@ using I18NPortable;
 using TsubameViewer.Presentation.Navigations;
 using System.Reactive.Disposables;
 using Windows.UI.Xaml.Navigation;
-using Microsoft.Toolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using TsubameViewer.Models.Domain.Navigation;
 using TsubameViewer.Presentation.Services.UWP;
 

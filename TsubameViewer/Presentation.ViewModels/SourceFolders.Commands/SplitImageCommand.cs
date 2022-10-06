@@ -1,7 +1,7 @@
 ﻿using I18NPortable;
 using Microsoft.IO;
 using Microsoft.Toolkit.Diagnostics;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;

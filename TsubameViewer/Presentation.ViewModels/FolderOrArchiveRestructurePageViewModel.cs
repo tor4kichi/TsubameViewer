@@ -1,6 +1,6 @@
-﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Microsoft.Toolkit.Mvvm.Messaging;
-using Microsoft.Toolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32.SafeHandles;
 using Reactive.Bindings;
 using SharpCompress.Archives;
@@ -185,7 +185,7 @@ namespace TsubameViewer.Presentation.ViewModels
         [ObservableProperty]
         private string _outputErrorMessage;
 
-        [ICommand]
+        [RelayCommand]
         private void SearchForward()
         {
             if (string.IsNullOrEmpty(_searchText))
@@ -217,14 +217,14 @@ namespace TsubameViewer.Presentation.ViewModels
         /// <summary>
         /// ファイル名の最初に現れる数値に対して桁数補完をしてリネームする。
         /// </summary>
-        [ICommand]
+        [RelayCommand]
         private void DigitCompletionAll()
         {
             ProcessDigitCompletion(Items.Cast<IPathRestructure>());
         }
 
 
-        [ICommand]
+        [RelayCommand]
         private void DigitCompletionSelectedItems()
         {
             ProcessDigitCompletion(SelectedItems);
@@ -295,7 +295,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
 
-        [ICommand]
+        [RelayCommand]
         private void ToggleIsSplitImage()
         {
             if (SelectedItems.All(x => x.IsSplitImage))
@@ -311,7 +311,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
 
 
-        [ICommand]
+        [RelayCommand]
         private void ReplaceAll()
         {
             if (string.IsNullOrEmpty(_searchText)) { return; }
@@ -323,7 +323,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        [ICommand]
+        [RelayCommand]
         private void ReplaceNext()
         {
             if (string.IsNullOrEmpty(_searchText)) { return; }
@@ -338,7 +338,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        [ICommand]
+        [RelayCommand]
         private void ToggleIsOutputSelectedItems()
         {
             if (SelectedItems.Any(x => x.IsOutput is false))
@@ -351,7 +351,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        [ICommand]
+        [RelayCommand]
         private async Task OverwriteSaveAsync()
         {
             if (_sourceStorageItem is StorageFile outputFile)
@@ -416,7 +416,7 @@ namespace TsubameViewer.Presentation.ViewModels
             }
         }
 
-        [ICommand]
+        [RelayCommand]
         private async Task OutputToArchiveFileAsync()
         {
             OutputErrorMessage = null;
@@ -501,7 +501,7 @@ namespace TsubameViewer.Presentation.ViewModels
         }
 
 
-        [ICommand]
+        [RelayCommand]
         private async Task OutputToFolderAsync()
         {
             OutputErrorMessage = null;
@@ -764,7 +764,7 @@ namespace TsubameViewer.Presentation.ViewModels
             // TODO: file.Pathに対するキャッシュ情報をクリアする
         }
 
-        [ICommand]
+        [RelayCommand]
         private async Task OutputToArchiveSplitWithPartAsync()
         {
             OutputErrorMessage = null;
@@ -910,7 +910,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public string SourcePath { get; }
 
         [ObservableProperty]
-        [AlsoNotifyChangeFor(nameof(IsEdited))]
+        [NotifyPropertyChangedFor(nameof(IsEdited))]
         private string _EditPath;
 
         [ObservableProperty]
@@ -942,7 +942,7 @@ namespace TsubameViewer.Presentation.ViewModels
         public string SourcePath { get; }
 
         [ObservableProperty]
-        [AlsoNotifyChangeFor(nameof(IsEdited))]
+        [NotifyPropertyChangedFor(nameof(IsEdited))]
         private string _EditPath;
 
         [ObservableProperty]
