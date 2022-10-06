@@ -316,9 +316,9 @@
           Margin="0 0 0 0" 
           >
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="3*" />
-        <ColumnDefinition Width="4*" />
-        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="1.5*" />
+        <ColumnDefinition Width="6*" />
+        <ColumnDefinition Width="1.5*" />
       </Grid.ColumnDefinitions>
 
       <Grid.RowDefinitions>
@@ -740,7 +740,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind EPubRenderer.IsVerticalLayout, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
+            <wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.(Grid.Column)" Value="0" />

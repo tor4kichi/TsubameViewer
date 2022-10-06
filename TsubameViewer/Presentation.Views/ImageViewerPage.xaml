@@ -374,9 +374,9 @@
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer" >
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="3*" />
-        <ColumnDefinition Width="4*" />
-        <ColumnDefinition Width="3*" />
+        <ColumnDefinition Width="1.5*" />
+        <ColumnDefinition Width="6*" />
+        <ColumnDefinition Width="1.5*" />
       </Grid.ColumnDefinitions>
       <Button x:Name="LeftPageMoveButton"
         Command="{StaticResource GoNextImageUICommand}" 
@@ -386,7 +386,7 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden"              
+              KeyboardAcceleratorPlacementMode="Hidden"                         
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
@@ -409,7 +409,7 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden"
-              IsEnabled="False"
+              IsEnabled="False"                       
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
@@ -427,11 +427,12 @@
               Grid.Column="1"
               Grid.ColumnSpan="1"
               Opacity="0" 
-              Background="Transparent"
               IsHitTestVisible="True"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden" />
+              KeyboardAcceleratorPlacementMode="Hidden"
+              Background="Transparent"
+              />
 
       <Button x:Name="RightPageMoveButton"
         Command="{StaticResource GoPrevImageUICommand}"
@@ -441,7 +442,7 @@
               VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
-              KeyboardAcceleratorPlacementMode="Hidden"
+              KeyboardAcceleratorPlacementMode="Hidden"              
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
@@ -461,7 +462,7 @@
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
               KeyboardAcceleratorPlacementMode="Hidden"
-              IsEnabled="False"
+              IsEnabled="False"              
               >
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
