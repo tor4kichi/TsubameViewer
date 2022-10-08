@@ -254,7 +254,7 @@ namespace TsubameViewer.Presentation.Views
             Window.Current.CoreWindow.PointerPressed += CoreWindow_PointerPressed;
 
             _messenger.Register<BackNavigationRequestMessage>(this, (r, m) => 
-            {
+            {                
                 if (CanHandleBackRequest())
                 {
                     _ = HandleBackRequestAsync();
@@ -721,44 +721,62 @@ namespace TsubameViewer.Presentation.Views
 
         async Task HandleBackRequestAsync()
         {
-            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
-
-            if (ContentFrame.CanGoBack)
+            bool isRequestReset = false;
             {
-                if (_isForgetNavigationRequested)
+                var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+                try
                 {
-                    _isForgetNavigationRequested = false;
-                }
-                var lastNavigationParameters = BackParametersStack.LastOrDefault();
-                
-                if (lastNavigationParameters != null)
-                {
-                    var lastNavigationParametersSet = GetNavigationParametersSet();
-                    var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
-
-                    _currentNavigationParameters = lastNavigationParameters;
-                    _prevNavigationParameters = BackParametersStack.Count >= 2 ? BackParametersStack.TakeLast(2).FirstOrDefault() : null;
-
-                    BackParametersStack.Remove(lastNavigationParameters);
-                    ForwardParametersStack.Add(parameters);
-                    var prevPage = ContentFrame.Content as Page;
-                    try
+                    if (ContentFrame.CanGoBack)
                     {
-                        ContentFrame.GoBack();
-                        lastNavigationParameters.SetNavigationMode(NavigationMode.Back);
-                        var currentPage = ContentFrame.Content as Page;                        
-                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
-                    }
-                    catch
-                    {
-                        _currentNavigationParameters = lastNavigationParametersSet.Current;
-                        _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                        if (_isForgetNavigationRequested)
+                        {
+                            _isForgetNavigationRequested = false;
+                        }
+                        var lastNavigationParameters = BackParametersStack.LastOrDefault();
+
+                        if (lastNavigationParameters != null)
+                        {
+                            var lastNavigationParametersSet = GetNavigationParametersSet();
+                            var parameters = GetCurrentNavigationParameter();    // GoBackAsyncを呼ぶとCurrentNavigationParametersが入れ替わる。呼び出し順に注意。
+
+                            _currentNavigationParameters = lastNavigationParameters;
+                            _prevNavigationParameters = BackParametersStack.Count >= 2 ? BackParametersStack.TakeLast(2).FirstOrDefault() : null;
+
+                            BackParametersStack.Remove(lastNavigationParameters);
+                            ForwardParametersStack.Add(parameters);
+                            var prevPage = ContentFrame.Content as Page;
+                            try
+                            {
+                                ContentFrame.GoBack();
+                                lastNavigationParameters.SetNavigationMode(NavigationMode.Back);
+                                var currentPage = ContentFrame.Content as Page;
+                                await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
+                            }
+                            catch
+                            {
+                                _currentNavigationParameters = lastNavigationParametersSet.Current;
+                                _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                            }
+                        }
+                        else
+                        {
+                            isRequestReset = true;
+                        }
                     }
                 }
-                else
+                catch
                 {
-                    await ResetNavigationAsync();
+                    isRequestReset = true;
                 }
+                finally
+                {
+                    lockReleaser.Dispose();
+                }
+            }
+            
+            if (isRequestReset)
+            {
+                await ResetNavigationAsync();
             }
         }
 
