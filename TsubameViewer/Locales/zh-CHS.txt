@@ -243,6 +243,7 @@ RestructurePage_ToggleIsSplitImage = 切换图像分割
 RestructurePage_OverwriteSave_Confirm = 我可以覆盖文件吗？ \n{0}
 RestructurePage_OverwriteSave = 覆盖保存
 RestructurePage_ProcessAllActions = 批量处理
+RestructurePage_UnavairableOverwriteFile = 当前文件是只读的，不能被覆盖
 
 
 #### SplitImageInput

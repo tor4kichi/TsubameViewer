@@ -245,6 +245,7 @@ RestructurePage_ToggleIsSplitImage = Switching image segmentation
 RestructurePage_OverwriteSave_Confirm = Can I overwrite the file? \ n {0}
 RestructurePage_OverwriteSave = Overwrite save
 RestructurePage_ProcessAllActions = Batch processing
+RestructurePage_UnavairableOverwriteFile = The current file is read-only and cannot be overwritten
 
 
 #### SplitImageInput

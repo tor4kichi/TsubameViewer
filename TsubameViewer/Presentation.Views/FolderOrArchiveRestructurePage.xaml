@@ -29,6 +29,12 @@
             >
         <uwpControls:DockPanel>
           <uwpControls:DockPanel uwpControls:DockPanel.Dock="Top" Margin="0 0 0 8">
+            <TextBlock Text="{i18nExt:Localize Key=RestructurePage_UnavairableOverwriteFile}" uwpControls:DockPanel.Dock="Bottom"
+                       HorizontalAlignment="Right"
+                       Foreground="{StaticResource SystemErrorTextColor}"
+                       x:Name="TextBlock_UnavairableOverwriteFileDescription"
+                       Visibility="Collapsed"
+                       />
             <StackPanel Spacing="8" uwpControls:DockPanel.Dock="Right" Orientation="Horizontal" >
               <Button uwpControls:DockPanel.Dock="Right">
                 <SymbolIcon Symbol="Help" />
@@ -47,18 +53,18 @@
 
               <StackPanel Orientation="Horizontal">
 
-                <Button Content="{i18nExt:Localize Key=RestructurePage_OverwriteSave}" Background="{ThemeResource SystemAccentColor}"                        
+                <Button x:Name="Button_OverwriteSave" Content="{i18nExt:Localize Key=RestructurePage_OverwriteSave}" Background="{ThemeResource SystemAccentColor}"                        
                         Command="{x:Bind _vm.OverwriteSaveCommand}"
-                        CornerRadius="4 0 0 4"
+                        CornerRadius="4 0 0 4"                                                
                         />
                 <DropDownButton Padding="0 0 8 0" Height="30" Background="{ThemeResource SystemAccentColor}" CornerRadius="0 4 4 0" 
                  uwpControls:DockPanel.Dock="Right"
                  >
                   <DropDownButton.Flyout>
                     <MenuFlyout Placement="BottomEdgeAlignedRight">
-                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
-                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToFolder}" Command="{x:Bind _vm.OutputToFolderCommand}"  />
-                      <MenuFlyoutItem Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveSplitWithPart}" Command="{x:Bind _vm.OutputToArchiveSplitWithPartCommand}"  />
+                      <MenuFlyoutItem x:Name="MenuFlyoutItem_OutputToArchiveFile" Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
+                      <MenuFlyoutItem x:Name="MenuFlyoutItem_OutputToFolder" Text="{i18nExt:Localize Key=RestructurePage_OutputToFolder}" Command="{x:Bind _vm.OutputToFolderCommand}"  />
+                      <MenuFlyoutItem x:Name="MenuFlyoutItem_OutputToArchiveFileSplitWithPart" Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveSplitWithPart}" Command="{x:Bind _vm.OutputToArchiveSplitWithPartCommand}"  />
                     </MenuFlyout>
                   </DropDownButton.Flyout>
                 </DropDownButton>
@@ -66,6 +72,7 @@
 
 
             </StackPanel>
+
 
             <StackPanel Spacing="4">
               <TextBlock Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}"
@@ -240,6 +247,18 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="OutputErrorMessageLayout.Visibility" Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState x:Name="VS_UnavairableOverrite">
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.IsUnavairableOverwrite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Button_OverwriteSave.IsEnabled" Value="False" />
+            <Setter Target="TextBlock_UnavairableOverwriteFileDescription.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

@@ -245,6 +245,7 @@ RestructurePage_ToggleIsSplitImage = 画像分割の切替
 RestructurePage_OverwriteSave_Confirm = ファイルを上書きしてもいいですか？\n{0}
 RestructurePage_OverwriteSave = 上書き保存
 RestructurePage_ProcessAllActions = 一括処理
+RestructurePage_UnavairableOverwriteFile = 現在のファイルは読み取り専用のため、上書き保存できません
 
 
 #### SplitImageInput
