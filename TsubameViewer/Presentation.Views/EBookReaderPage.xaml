@@ -166,8 +166,9 @@
             </Grid>
 
             <Button.Flyout>
-              <Flyout Placement="Left" Opening="BackgroundColorPickerFlyout_Opening">
-                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=TwoWay}"
+              <Flyout Placement="Left">
+                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=TwoWay}"   
+                             IsAlphaEnabled="True"
                                >
 
                 </ColorPicker>
@@ -183,8 +184,9 @@
               <TextBlock Text="{Binding Source=ChangeForegroundColor, Converter={StaticResource LocalizeConverter}}" />
             </Grid>
             <Button.Flyout>
-              <Flyout Placement="Left" Opening="ForegroundColorPickerFlyout_Opening">
-                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"
+              <Flyout Placement="Left">
+                <ColorPicker Color="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=TwoWay}"           
+                             IsAlphaEnabled="True"
                              >
 
                 </ColorPicker>
@@ -295,7 +297,6 @@
       IsHitTestVisible="False"
       IsAccessKeyScope="False"
       AllowFocusOnInteraction="False"      
-      PageBackgroundColor="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay}"
       FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
       FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
       LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"

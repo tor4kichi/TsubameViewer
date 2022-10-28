@@ -476,24 +476,5 @@ namespace TsubameViewer.Presentation.Views
         {
             EPubRenderer.Refresh();
         }
-
-        private void BackgroundColorPickerFlyout_Opening(object sender, object e)
-        {
-            var color = _vm.EBookReaderSettings.BackgroundColor;
-            if (color.A == 0)
-            {
-                color.A = 0xff;
-                _vm.EBookReaderSettings.BackgroundColor = color;
-            }
-        }
-
-        private void ForegroundColorPickerFlyout_Opening(object sender, object e)
-        {
-            var color = _vm.EBookReaderSettings.ForegroundColor;
-            if (color.A == 0)
-            {
-                _vm.EBookReaderSettings.ForegroundColor = new Color() { A = 0xff } ;
-            }
-        }
     }
 }
