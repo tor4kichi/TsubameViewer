@@ -1,3 +1,19 @@
 ﻿body, p, span, div {
     color: #ffe4d1 !important;
 }
+
+a:link {
+    color: #ffe4d1 !important;
+}
+
+a:visited {
+    color: #ffe4d1 !important;
+}
+
+a:hover {
+    color: #ffe4d1 !important;
+}
+
+a:active {
+    color: #ffe4d1 !important;
+}
