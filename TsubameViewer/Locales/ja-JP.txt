@@ -173,7 +173,7 @@ ChangeBackgroundColor = 背景色を変更
 ForegroundColor = 文字色
 ChangeForegroundColor = 文字色を変更
 
-OverrideWritingMode = フロー方向
+OverrideWritingMode = 縦書き・横書き
 WritingMode.Inherit = 変更しない
 WritingMode.Horizontal_TopToBottom = 横書き
 WritingMode.Vertical_RightToLeft = 縦書き（右から左）

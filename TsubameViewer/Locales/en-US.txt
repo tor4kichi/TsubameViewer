@@ -173,7 +173,7 @@ ChangeBackgroundColor = Change background color
 ForegroundColor = Text color
 ChangeForegroundColor = Change text color
 
-OverrideWritingMode = Flow direction
+OverrideWritingMode = Vertical/Horizontal writing
 WritingMode.Inherit = Not going to change
 WritingMode.Horizontal_TopToBottom = Horizontal writing
 WritingMode.Vertical_RightToLeft = Vertical writing (right to left)

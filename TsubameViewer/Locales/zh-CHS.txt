@@ -173,7 +173,7 @@ ChangeBackgroundColor = 更改背景颜色
 ForegroundColor = 字母颜色
 ChangeForegroundColor = 更改文字颜色
 
-OverrideWritingMode = 流动的方向
+OverrideWritingMode = 垂直/水平书写
 WritingMode.Inherit = 不会改变
 WritingMode.Horizontal_TopToBottom = 横向写作
 WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）
