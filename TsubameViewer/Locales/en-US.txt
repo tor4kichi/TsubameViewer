@@ -173,7 +173,7 @@ ChangeBackgroundColor = Change background color
 ForegroundColor = Text color
 ChangeForegroundColor = Change text color
 
-OverrideWritingMode = Flow direction
+OverrideWritingMode = Vertical/Horizontal writing
 WritingMode.Inherit = Not going to change
 WritingMode.Horizontal_TopToBottom = Horizontal writing
 WritingMode.Vertical_RightToLeft = Vertical writing (right to left)
@@ -245,6 +245,7 @@ RestructurePage_ToggleIsSplitImage = Switching image segmentation
 RestructurePage_OverwriteSave_Confirm = Can I overwrite the file? \ n {0}
 RestructurePage_OverwriteSave = Overwrite save
 RestructurePage_ProcessAllActions = Batch processing
+RestructurePage_UnavairableOverwriteFile = The current file is read-only and cannot be overwritten
 
 
 #### SplitImageInput

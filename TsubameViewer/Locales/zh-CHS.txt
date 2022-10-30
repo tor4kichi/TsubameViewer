@@ -173,7 +173,7 @@ ChangeBackgroundColor = 更改背景颜色
 ForegroundColor = 字母颜色
 ChangeForegroundColor = 更改文字颜色
 
-OverrideWritingMode = 流动的方向
+OverrideWritingMode = 垂直/水平书写
 WritingMode.Inherit = 不会改变
 WritingMode.Horizontal_TopToBottom = 横向写作
 WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）
@@ -243,6 +243,7 @@ RestructurePage_ToggleIsSplitImage = 切换图像分割
 RestructurePage_OverwriteSave_Confirm = 我可以覆盖文件吗？ \n{0}
 RestructurePage_OverwriteSave = 覆盖保存
 RestructurePage_ProcessAllActions = 批量处理
+RestructurePage_UnavairableOverwriteFile = 当前文件是只读的，不能被覆盖
 
 
 #### SplitImageInput

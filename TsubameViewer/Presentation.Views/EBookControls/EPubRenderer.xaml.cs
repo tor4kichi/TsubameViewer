@@ -320,10 +320,20 @@ namespace TsubameViewer.Presentation.Views.EBookControls
             {
                 var color = FontColor;
                 color.A = 0xff;
-                sb.Append($"color: rgba({color.R},{color.G},{color.B}, 1.0) !important;");
+                sb.Append($"color: rgba({color.R},{color.G},{color.B},{color.A}) !important;");
             }
 
             sb.Append("}");
+
+            if (FontColor != Colors.Transparent)
+            {
+                var color = FontColor;
+                color.A = 0xff;
+                sb.Append($"a:link {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+                sb.Append($"a:visited {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+                sb.Append($"a:hover {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+                sb.Append($"a:active {{ color: rgba({color.R},{color.G},{color.B},{color.A}) !important; }}");
+            }
 
             if (ColumnCount > 1)
             {

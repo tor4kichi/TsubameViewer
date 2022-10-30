@@ -76,6 +76,7 @@ namespace TsubameViewer.Presentation.ViewModels
             SourceStorageItem = null;
             _RawItems.Clear();
             DirectoryPaths.Clear();
+            IsUnavairableOverwrite = false;
 
             base.OnNavigatedFrom(parameters);
         }
@@ -83,13 +84,13 @@ namespace TsubameViewer.Presentation.ViewModels
         public override async Task OnNavigatedToAsync(INavigationParameters parameters)
         {
             await base.OnNavigatedToAsync(parameters);
-
+            
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
                 var unescapedPath = Uri.UnescapeDataString(path);
                 var item = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(unescapedPath);
 
-                SourceStorageItem = item;
+                SourceStorageItem = item;                
                 if (item is StorageFile file 
                     && file.IsSupportedMangaFile()
                     )
@@ -108,6 +109,8 @@ namespace TsubameViewer.Presentation.ViewModels
                             _RawItems.Add(itemVM);
                         }
                     }
+
+                    IsUnavairableOverwrite = await file.GetParentAsync() == null;
                 }
                 else if (item is StorageFolder folder)
                 {
@@ -184,6 +187,9 @@ namespace TsubameViewer.Presentation.ViewModels
 
         [ObservableProperty]
         private string _outputErrorMessage;
+
+        [ObservableProperty]
+        private bool _isUnavairableOverwrite;
 
         [RelayCommand]
         private void SearchForward()
@@ -702,7 +708,7 @@ namespace TsubameViewer.Presentation.ViewModels
 
         async Task OutputArchiveFileAsync_Internal(IEnumerable<IPathRestructure> items, StorageFile file, Func<string, Stream, CancellationToken, ValueTask> processOutput, CancellationToken ct)
         {
-            using (var fileStream = await file.OpenStreamForWriteAsync())
+            using (var fileStream = await file.OpenStreamForReadAsync())
             using (var archive = ArchiveFactory.Open(fileStream))
             {
                 var keyToEntry = archive.Entries.ToDictionary(x => x.Key);
