@@ -630,7 +630,7 @@ namespace TsubameViewer.Models.Domain.FolderItemListing
 
         private async Task<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            var (result, stream) = await (file.FileType switch
+            var (result, stream) = await (file.FileType.ToLowerInvariant() switch
             {
                 SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, ct),
                 SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, ct),
