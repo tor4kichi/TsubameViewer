@@ -149,6 +149,7 @@ IsLeftBindingView = 左開き表示
 
 SwitchFullScreen = 全画面切替
 DoubleViewCorrectPaging = 見開きのページズレを補正する
+IsKeepSingleViewOnFirstPage = 最初のページは見開き表示しない
 
 
 #### EBookReaderPage

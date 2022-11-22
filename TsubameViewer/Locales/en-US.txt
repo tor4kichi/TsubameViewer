@@ -149,6 +149,7 @@ IsLeftBindingView = Left open display
 
 SwitchFullScreen = Full screen switching
 DoubleViewCorrectPaging = Correct the page shift of the spread
+IsKeepSingleViewOnFirstPage = Do not spread the first page
 
 
 #### EBookReaderPage
