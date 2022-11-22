@@ -16,12 +16,12 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             _IsReverseImageFliping_MouseWheel = Read(false, nameof(IsReverseImageFliping_MouseWheel));
             _IsLeftBindingView = Read(false, nameof(IsLeftBindingView));
             _IsEnableDoubleView = Read(true, nameof(IsEnableDoubleView));
+            _IsKeepSingleViewOnFirstPage = Read(true, nameof(IsKeepSingleViewOnFirstPage));
             _IsEnablePrefetch = Read(true, nameof(IsEnablePrefetch));
             _PdfImageThresholdWidth = Read(1200u, nameof(PdfImageThresholdWidth));
             _PdfImageAlternateWidth = Read(1600u, nameof(PdfImageAlternateWidth));
             _PdfImageThresholdHeight = Read(1200u, nameof(PdfImageThresholdHeight));
-            _PdfImageAlternateHeight = Read(2400u, nameof(PdfImageAlternateHeight));
-            
+            _PdfImageAlternateHeight = Read(2400u, nameof(PdfImageAlternateHeight));            
         }
 
         private bool _IsReverseImageFliping_MouseWheel;
@@ -47,6 +47,13 @@ namespace TsubameViewer.Models.Domain.ImageViewer
             set { SetProperty(ref _IsEnableDoubleView, value); }
         }
 
+        // 最初のページは常に見開き表示をOFFにする
+        private bool _IsKeepSingleViewOnFirstPage;
+        public bool IsKeepSingleViewOnFirstPage
+        {
+            get { return _IsKeepSingleViewOnFirstPage; }
+            set { SetProperty(ref _IsKeepSingleViewOnFirstPage, value); }
+        }
 
         private bool _IsEnablePrefetch;
         public bool IsEnablePrefetch

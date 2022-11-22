@@ -115,6 +115,7 @@ namespace TsubameViewer.Presentation.ViewModels
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnablePrefetch".Translate(), _imageViewerPageSettings, x => x.IsEnablePrefetch),
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsReverseImageFliping_MouseWheel".Translate(), _imageViewerPageSettings, x => x.IsReverseImageFliping_MouseWheel),
                         new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsEnableDoubleView".Translate(), _imageViewerPageSettings, x => x.IsEnableDoubleView),
+                        new ToggleSwitchSettingItemViewModel<ImageViewerSettings>("IsKeepSingleViewOnFirstPage".Translate(), _imageViewerPageSettings, x => x.IsKeepSingleViewOnFirstPage),
                     }
                 },
                 new SettingsGroupViewModel

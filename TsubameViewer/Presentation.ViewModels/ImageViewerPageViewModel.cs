@@ -1170,7 +1170,7 @@ namespace TsubameViewer.Presentation.ViewModels
                 if (direction == IndexMoveDirection.Forward && !isJumpHeadTail)
                 {
                     (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, requestIndex, Images.Length);
-                }
+                }                
                 else if (direction == IndexMoveDirection.Backward && requestIndex == 0)
                 {
                     if (currentIndex == 1)
@@ -1181,6 +1181,18 @@ namespace TsubameViewer.Presentation.ViewModels
                     {
                         requestIndex = 1;
                     }
+                }
+            }
+
+            if (ImageViewerSettings.IsKeepSingleViewOnFirstPage)
+            {
+                if (requestIndex == 0)
+                {
+                    requestImageCount = 1;
+                }
+                else if (requestIndex == 1 && requestImageCount == 2 && direction == IndexMoveDirection.Backward)
+                {
+                    requestImageCount = 1;                    
                 }
             }
 
