@@ -133,159 +133,159 @@
     <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="Locales\LocalizeConverter.cs" />
     <Compile Include="Locales\LocalizeExtension.cs" />
-    <Compile Include="Presentation.Navigations\IViewLocator.cs" />
-    <Compile Include="Presentation.Navigations\NavigationAwareViewModelBase.cs" />
-    <Compile Include="Presentation.Navigations\NavigationParametersExtensions.cs" />
-    <Compile Include="Presentation.Services\AlbamDialogService.cs" />
-    <Compile Include="Presentation.Services\FileControlDialogService.cs" />
-    <Compile Include="Presentation.Services\SplitImageInputDialogService.cs" />
-    <Compile Include="Presentation.Services\UWP\ApplicationLifecycle.cs" />
-    <Compile Include="Presentation.Services\UWP\SecondaryTileManager.cs" />
-    <Compile Include="Presentation.Services\UWP\SupportedImageCodec.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamEditCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemAddCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteAddCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
-    <Compile Include="Presentation.ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
-    <Compile Include="Presentation.ViewModels\AlbamListupPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\Albam\AlbamNavigationConstants.cs" />
-    <Compile Include="Presentation.ViewModels\CommandBase.cs" />
-    <Compile Include="Presentation.ViewModels\EBookReaderPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\FolderListupPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\ImageListupPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\ImageSourceCommandBase.cs" />
-    <Compile Include="Presentation.ViewModels\ImageViewerPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\Notification\InAppNotificationRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\OpenWithExternalApplicationCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\SecondaryTileAddCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation.Commands\StartSelectionCommand.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\BackNavigationRequestingMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\BackNavigationRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\BusyWallRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\MenuDisplayMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\NavigationRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\PageTransitionHelper.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\StorageItemViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
-    <Compile Include="Presentation.ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\SearchResultPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\SettingsPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\FolderOrArchiveResturctureCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
-    <Compile Include="Presentation.ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
-    <Compile Include="Presentation.ViewModels\SourceStorageItemsPageViewModel.cs" />
-    <Compile Include="Presentation.ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
-    <Compile Include="Presentation.Views\AlbamListupPage.xaml.cs">
+    <Compile Include="Services\Navigation\IViewLocator.cs" />
+    <Compile Include="Services\Navigation\NavigationAwareViewModelBase.cs" />
+    <Compile Include="Services\Navigation\NavigationParametersExtensions.cs" />
+    <Compile Include="Services\AlbamDialogService.cs" />
+    <Compile Include="Services\FileControlDialogService.cs" />
+    <Compile Include="Services\SplitImageInputDialogService.cs" />
+    <Compile Include="Services\ApplicationLifecycle.cs" />
+    <Compile Include="Services\SecondaryTileManager.cs" />
+    <Compile Include="Services\SupportedImageCodec.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamEditCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamItemAddCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\FavoriteAddCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
+    <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
+    <Compile Include="ViewModels\AlbamListupPageViewModel.cs" />
+    <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
+    <Compile Include="ViewModels\CommandBase.cs" />
+    <Compile Include="ViewModels\EBookReaderPageViewModel.cs" />
+    <Compile Include="ViewModels\FolderListupPageViewModel.cs" />
+    <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
+    <Compile Include="ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
+    <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
+    <Compile Include="ViewModels\Notification\InAppNotificationRequestMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenWithExternalApplicationCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\RefreshNavigationCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\SecondaryTileAddCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\SecondaryTileRemoveCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\StartSelectionCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation\BackNavigationRequestingMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\BackNavigationRequestMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\BusyWallRequestMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\MenuDisplayMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\NavigationRequestMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\PageTransitionHelper.cs" />
+    <Compile Include="ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
+    <Compile Include="ViewModels\PageNavigation\StorageItemViewModel.cs" />
+    <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
+    <Compile Include="ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
+    <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
+    <Compile Include="ViewModels\SettingsPageViewModel.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\FolderOrArchiveResturctureCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
+    <Compile Include="ViewModels\SourceStorageItemsPageViewModel.cs" />
+    <Compile Include="ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
+    <Compile Include="Views\AlbamListupPage.xaml.cs">
       <DependentUpon>AlbamListupPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
-    <Compile Include="Presentation.Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
-    <Compile Include="Presentation.Views\Behaviors\MouseCenterClickTrigger.cs" />
-    <Compile Include="Presentation.Views\Behaviors\MouseWheelTrigger.cs" />
-    <Compile Include="Presentation.Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
-    <Compile Include="Presentation.Views\Behaviors\Swipe.cs" />
-    <Compile Include="Presentation.Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\ColorToBrush.cs" />
-    <Compile Include="Presentation.Views\Converters\DateTimetoStringConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\ItemClickEventArgsConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\NotTransparentColorToBooleanConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\NullableColorConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\NumberMinus1Converter.cs" />
-    <Compile Include="Presentation.Views\Converters\NumberStartFrom1Converter.cs" />
-    <Compile Include="Presentation.Views\Converters\PointToRectConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\RoutedEventOriginalSourceConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\SliderValueChangedEventArgsConverter.cs" />
-    <Compile Include="Presentation.Views\Converters\ToKMGTPEZYConverter.cs" />
-    <Compile Include="Presentation.Views\Dialogs\SplitImageInputDialog.xaml.cs">
+    <Compile Include="Views\Behaviors\DisposeWhenTargetUnloaded.cs" />
+    <Compile Include="Views\Behaviors\ListViewContainerChangeTriggerBehavior.cs" />
+    <Compile Include="Views\Behaviors\MouseCenterClickTrigger.cs" />
+    <Compile Include="Views\Behaviors\MouseWheelTrigger.cs" />
+    <Compile Include="Views\Behaviors\PointerCursolAutoHideBehavior.cs" />
+    <Compile Include="Views\Behaviors\Swipe.cs" />
+    <Compile Include="Views\Converters\AutoSuggestBoxQuerySubmittedEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\ColorToBrush.cs" />
+    <Compile Include="Views\Converters\DateTimetoStringConverter.cs" />
+    <Compile Include="Views\Converters\ItemClickEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\NavigationViewItemInvokedEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\NotTransparentColorToBooleanConverter.cs" />
+    <Compile Include="Views\Converters\NullableColorConverter.cs" />
+    <Compile Include="Views\Converters\NumberMinus1Converter.cs" />
+    <Compile Include="Views\Converters\NumberStartFrom1Converter.cs" />
+    <Compile Include="Views\Converters\PointToRectConverter.cs" />
+    <Compile Include="Views\Converters\RoutedEventOriginalSourceConverter.cs" />
+    <Compile Include="Views\Converters\SliderValueChangedEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\ToKMGTPEZYConverter.cs" />
+    <Compile Include="Views\Dialogs\SplitImageInputDialog.xaml.cs">
       <DependentUpon>SplitImageInputDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Dialogs\SelectItemDialog.xaml.cs">
+    <Compile Include="Views\Dialogs\SelectItemDialog.xaml.cs">
       <DependentUpon>SelectItemDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml.cs">
+    <Compile Include="Views\Dialogs\StorageItemDeleteConfirmDialog.xaml.cs">
       <DependentUpon>StorageItemDeleteConfirmDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Dialogs\TextInputDialog.xaml.cs">
+    <Compile Include="Views\Dialogs\TextInputDialog.xaml.cs">
       <DependentUpon>TextInputDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\EBookControls\EPubRenderer.xaml.cs">
+    <Compile Include="Views\EBookControls\EPubRenderer.xaml.cs">
       <DependentUpon>EPubRenderer.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\EBookReaderPage.xaml.cs">
+    <Compile Include="Views\EBookReaderPage.xaml.cs">
       <DependentUpon>EBookReaderPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
+    <Compile Include="Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\FolderOrArchiveRestructurePage.xaml.cs">
+    <Compile Include="Views\FolderOrArchiveRestructurePage.xaml.cs">
       <DependentUpon>FolderOrArchiveRestructurePage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Helpers\FocusHelper.cs" />
-    <Compile Include="Presentation.Views\FolderListupPage.xaml.cs">
+    <Compile Include="Views\Helpers\FocusHelper.cs" />
+    <Compile Include="Views\FolderListupPage.xaml.cs">
       <DependentUpon>FolderListupPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\FolderListup\FolderListupItemTemplate.xaml.cs">
+    <Compile Include="Views\FolderListup\FolderListupItemTemplate.xaml.cs">
       <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\Helpers\CodeBehindExtensions.cs" />
-    <Compile Include="Presentation.Views\Helpers\SystemThemeHelper.cs" />
-    <Compile Include="Presentation.Views\Helpers\VisualTreeExtensions.cs" />
-    <Compile Include="Presentation.Views\ImageListupPage.xaml.cs">
+    <Compile Include="Views\Helpers\CodeBehindExtensions.cs" />
+    <Compile Include="Views\Helpers\SystemThemeHelper.cs" />
+    <Compile Include="Views\Helpers\VisualTreeExtensions.cs" />
+    <Compile Include="Views\ImageListupPage.xaml.cs">
       <DependentUpon>ImageListupPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\ImageViewerPage.xaml.cs">
+    <Compile Include="Views\ImageViewerPage.xaml.cs">
       <DependentUpon>ImageViewerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\PrimaryWindowCoreLayout.xaml.cs">
+    <Compile Include="Views\PrimaryWindowCoreLayout.xaml.cs">
       <DependentUpon>PrimaryWindowCoreLayout.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\SearchResultPage.xaml.cs">
+    <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\SettingsPage.xaml.cs">
+    <Compile Include="Views\SettingsPage.xaml.cs">
       <DependentUpon>SettingsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\SourceStorageItemsPage.xaml.cs">
+    <Compile Include="Views\SourceStorageItemsPage.xaml.cs">
       <DependentUpon>SourceStorageItemsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Presentation.Views\StateTrigger\AspectRatioTrigger.cs" />
-    <Compile Include="Presentation.Views\StateTrigger\PointerCollisionTrigger.cs" />
-    <Compile Include="Presentation.Views\StateTrigger\PointerInsideTrigger.cs" />
-    <Compile Include="Presentation.Views\StateTrigger\VirualKeyPressingTrigger.cs" />
-    <Compile Include="Presentation.Views\StyleSelector\FolderItemStyleSelector.cs" />
-    <Compile Include="Presentation.Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
-    <Compile Include="Presentation.Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
-    <Compile Include="Presentation.Views\TemplateSelector\FolderItemTemplateSelector.cs" />
-    <Compile Include="Presentation.Views\TemplateSelector\MenuItemTemplateSelector.cs" />
-    <Compile Include="Presentation.Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
-    <Compile Include="Presentation.Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
-    <Compile Include="Presentation.Views\UINavigation\UINavigationButtons.cs" />
-    <Compile Include="Presentation.Views\UINavigation\UINavigationManager.cs" />
-    <Compile Include="Presentation.Views\UINavigation\UINavigationTrigger.cs" />
+    <Compile Include="Views\StateTrigger\AspectRatioTrigger.cs" />
+    <Compile Include="Views\StateTrigger\PointerCollisionTrigger.cs" />
+    <Compile Include="Views\StateTrigger\PointerInsideTrigger.cs" />
+    <Compile Include="Views\StateTrigger\VirualKeyPressingTrigger.cs" />
+    <Compile Include="Views\StyleSelector\FolderItemStyleSelector.cs" />
+    <Compile Include="Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
+    <Compile Include="Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
+    <Compile Include="Views\TemplateSelector\FolderItemTemplateSelector.cs" />
+    <Compile Include="Views\TemplateSelector\MenuItemTemplateSelector.cs" />
+    <Compile Include="Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
+    <Compile Include="Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
+    <Compile Include="Views\UINavigation\UINavigationButtons.cs" />
+    <Compile Include="Views\UINavigation\UINavigationManager.cs" />
+    <Compile Include="Views\UINavigation\UINavigationTrigger.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -437,85 +437,86 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="Presentation.Styles\SettingsControlStyles.xaml">
+    <Page Include="Styles\SettingsControlStyles.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\AlbamListupPage.xaml">
+    <Page Include="Views\AlbamListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\Dialogs\SplitImageInputDialog.xaml">
+    <Page Include="Views\Dialogs\SplitImageInputDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Presentation.Views\Dialogs\SelectItemDialog.xaml">
+    <Page Include="Views\Dialogs\SelectItemDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\Dialogs\StorageItemDeleteConfirmDialog.xaml">
+    <Page Include="Views\Dialogs\StorageItemDeleteConfirmDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\Dialogs\TextInputDialog.xaml">
+    <Page Include="Views\Dialogs\TextInputDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\EBookControls\EPubRenderer.xaml">
+    <Page Include="Views\EBookControls\EPubRenderer.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\EBookReaderPage.xaml">
+    <Page Include="Views\EBookReaderPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\Flyouts\StorageItemMenuFlyout.xaml">
+    <Page Include="Views\Flyouts\StorageItemMenuFlyout.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\FolderListupPage.xaml">
+    <Page Include="Views\FolderListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\FolderListup\FolderListupItemTemplate.xaml">
+    <Page Include="Views\FolderListup\FolderListupItemTemplate.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\FolderOrArchiveRestructurePage.xaml">
+    <Page Include="Views\FolderOrArchiveRestructurePage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Presentation.Views\ImageListupPage.xaml">
+    <Page Include="Views\ImageListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\ImageViewerPage.xaml">
+    <Page Include="Views\ImageViewerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\PrimaryWindowCoreLayout.xaml">
+    <Page Include="Views\PrimaryWindowCoreLayout.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\SearchResultPage.xaml">
+    <Page Include="Views\SearchResultPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\SettingsPage.xaml">
+    <Page Include="Views\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Presentation.Views\SourceStorageItemsPage.xaml">
+    <Page Include="Views\SourceStorageItemsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\TsubameViewer.Models\TsubameViewer.Models.csproj">
+    <ProjectReference Include="..\TsubameViewer.Core\TsubameViewer.Core.csproj">
       <Project>{4296664a-ed8c-4334-bea3-8c685345441f}</Project>
-      <Name>TsubameViewer.Models</Name>
+      <Name>TsubameViewer.Core</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

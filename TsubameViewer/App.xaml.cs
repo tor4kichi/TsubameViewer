@@ -14,20 +14,17 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Models.Domain;
-using TsubameViewer.Models.Domain.FolderItemListing;
-using TsubameViewer.Models.Domain.Navigation;
-using TsubameViewer.Models.Domain.SourceFolders;
-using TsubameViewer.Models.UseCase;
-using TsubameViewer.Models.UseCase.Maintenance;
-using TsubameViewer.Models.UseCase.Migrate;
-using TsubameViewer.Presentation.Navigations;
-using TsubameViewer.Presentation.Services;
-using TsubameViewer.Presentation.Services.UWP;
-using TsubameViewer.Presentation.ViewModels;
-using TsubameViewer.Presentation.ViewModels.PageNavigation;
-using TsubameViewer.Presentation.Views;
-using TsubameViewer.Presentation.Views.Dialogs;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.UseCases.Maintenance;
+using TsubameViewer.Core.UseCases.Migrate;
+using TsubameViewer.Navigations;
+using TsubameViewer.Services;
+using TsubameViewer.ViewModels;
+using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views;
+using TsubameViewer.Views.Dialogs;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -42,6 +39,10 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Maintenance;
+using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Services;
 
 namespace TsubameViewer
 {
@@ -54,7 +55,7 @@ namespace TsubameViewer
 
         public Container Container { get; }
 
-        Models.Infrastructure.AsyncLock _InitializeLock = new();
+        Core.AsyncLock _InitializeLock = new();
 
 
         /// <summary>
@@ -142,12 +143,12 @@ namespace TsubameViewer
         private void RegisterTypes(Container container)
         {
             container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
-            container.Register<Models.Domain.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
-            container.Register<Models.Domain.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
+            container.Register<Core.Models.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
+            container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
             container.Register<FileControlSettings>(reuse: new SingletonReuse());
             container.Register<ApplicationSettings>(reuse: new SingletonReuse());
 
-            container.Register<Models.UseCase.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
+            container.Register<Core.UseCases.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
 
             {
                 var instance = container.Resolve<SecondaryTileManager>();
@@ -197,7 +198,7 @@ namespace TsubameViewer
                 Debug.WriteLine(ex.ToString());
             }
 
-            var applicationSettings = Ioc.Default.GetService<Models.Domain.ApplicationSettings>();
+            var applicationSettings = Ioc.Default.GetService<Core.Models.ApplicationSettings>();
             try
             {
                 I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
@@ -439,7 +440,7 @@ namespace TsubameViewer
 
         public void UpdateFolderItemSizingResourceValues()
         {
-            var folderListingSettings = Ioc.Default.GetService<Models.Domain.FolderItemListing.FolderListingSettings>();
+            var folderListingSettings = Ioc.Default.GetService<Core.Models.FolderItemListing.FolderListingSettings>();
             Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
             Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
             Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
@@ -494,11 +495,11 @@ namespace TsubameViewer
                 var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
                 if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
+                    return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.FolderListupPage), parameters, isForgetNavigation: true);
+                    return await messenger.NavigateAsync(nameof(Views.FolderListupPage), parameters, isForgetNavigation: true);
                 }
             }
             else if  (item is StorageFile file)
@@ -508,11 +509,11 @@ namespace TsubameViewer
                     || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
                     )
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.ImageViewerPage), parameters, isForgetNavigation: true);
+                    return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {
-                    return await messenger.NavigateAsync(nameof(Presentation.Views.EBookReaderPage), parameters, isForgetNavigation: true);
+                    return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
                 }
             }
 
