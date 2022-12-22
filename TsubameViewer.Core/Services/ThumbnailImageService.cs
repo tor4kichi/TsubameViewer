@@ -24,25 +24,32 @@ using VersOne.Epub;
 using Windows.Data.Pdf;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
-using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.SourceFolders;
+using Windows.UI.Xaml.Media;
 
 namespace TsubameViewer.Core.Service;
 
-public sealed class ThumbnailImageService : IThumbnailImageService
+public sealed class ThumbnailImageService 
+    : IThumbnailImageService
+    , ISecondaryTileThumbnailImageService
+    , IThumbnailImageMaintenanceService
 {
     private readonly ILiteDatabase _temporaryDb;
     private readonly ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
     private readonly ILiteStorage<string> _thumbnailDb;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly static AsyncLock _fileReadWriteLock = new();
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+    
 
     private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
 
@@ -153,7 +160,8 @@ public sealed class ThumbnailImageService : IThumbnailImageService
     public ThumbnailImageService(
         ILiteDatabase temporaryDb,
         FolderListingSettings folderListingSettings,
-        ThumbnailImageInfoRepository thumbnailImageInfoRepository
+        ThumbnailImageInfoRepository thumbnailImageInfoRepository,
+        SourceStorageItemsRepository sourceStorageItemsRepository
         )
     {
         _temporaryDb = temporaryDb;
@@ -161,6 +169,7 @@ public sealed class ThumbnailImageService : IThumbnailImageService
         _thumbnailDb = _temporaryDb.FileStorage;
         _folderListingSettings = folderListingSettings;
         _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
         _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
@@ -181,6 +190,152 @@ public sealed class ThumbnailImageService : IThumbnailImageService
         stream.Seek(0, SeekOrigin.Begin);
     }
 
+    #region ImageSource Base
+    
+    private string GetId(IImageSource imageSource)
+    {
+        return imageSource.StorageItem != null ? ToId(imageSource.StorageItem) : ToId(imageSource.Path);
+    }
+
+    public async ValueTask<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default)
+    {
+        var itemId = GetId(imageSource);
+        if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
+        {
+            return cachedImageStream;
+        }
+
+        var outputStream = _recyclableMemoryStreamManager.GetStream();
+        var outputRas = outputStream.AsRandomAccessStream();
+        try
+        {
+            if (imageSource.StorageItem is StorageFolder folder)
+            {
+                var file = await GetCoverThumbnailImageAsync(folder, ct);
+                if (await GenerateThumbnailImageToStreamAsync(file, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                {
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputRas;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            else if (imageSource.StorageItem is StorageFile file && file.IsSupportedMangaOrEBookFile())
+            {
+                if (await GenerateThumbnailImageToStreamAsync(file, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                {
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputRas;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            else
+            {
+                using var imageStream = await imageSource.FlattenAlbamItemInnerImageSource().GetImageStreamAsync(ct);
+                using (await _fileReadWriteLock.LockAsync(ct))
+                {
+                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputRas;
+                }
+            }
+        }
+        catch
+        {
+            outputStream.Dispose();
+            throw;
+        }
+    }
+
+    public async Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default)
+    {
+        //var itemId = GetId(childImageSource);
+        //using var thumbnailImageStream = await GetThumbnailImageStreamAsync(childImageSource, ct);
+        //UploadWithRetry(itemId, childImageSource.Name, thumbnailImageStream.AsStreamForRead());
+        using (var imageMemoryStream = new InMemoryRandomAccessStream())
+        {
+            // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
+            // imageSource.GetThumbnailImageStreamAsync() は使用していない
+            using (var stream = await childImageSource.GetImageStreamAsync())
+            {
+                await RandomAccessStream.CopyAsync(stream, imageMemoryStream);
+                imageMemoryStream.Seek(0);
+            }
+
+            bool requireTranscode = true;
+
+            if (childImageSource is ArchiveEntryImageSource archiveEntry)
+            {
+                var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
+                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+                {
+                    await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+                else
+                {
+                    await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+            }
+            else if (childImageSource is PdfPageImageSource pdf)
+            {
+                await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+            else if (childImageSource is StorageItemImageSource folderItem)
+            {
+                var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
+                if (folder == null) { throw new InvalidOperationException(); }
+                await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+            else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
+            {
+                var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
+                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+                {
+                    await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+                else
+                {
+                    await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+
+        }
+
+    }
+
+    public ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource)
+    {
+        return _thumbnailImageInfoRepository.TryGetSize(imageSource.Path);        
+    }
+
+    public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
+    {
+        var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+        {
+            Path = imageSource.Path,
+            ImageWidth = pixelWidth,
+            ImageHeight = pixelHeight,            
+            RatioWH = pixelWidth / (float)pixelHeight
+        });
+
+        return new ThumbnailSize()
+        {
+            Height = item.ImageHeight,
+            Width = item.ImageWidth,
+            RatioWH = item.RatioWH,
+        };
+    }
+
+    #endregion
 
     public async Task SetThumbnailAsync(IStorageItem targetItem, IRandomAccessStream bitmapImage, bool requireTrancode, CancellationToken ct)
     {

@@ -30,6 +30,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IBookmarkService _bookmarkManager;
+        private readonly IThumbnailImageService _thumbnailImageService;
         private readonly AlbamRepository _albamRepository;
 
         public IImageSource Item { get; }
@@ -93,12 +94,14 @@ namespace TsubameViewer.ViewModels.PageNavigation
             IMessenger messenger, 
             SourceStorageItemsRepository sourceStorageItemsRepository, 
             IBookmarkService bookmarkManager, 
+            IThumbnailImageService thumbnailImageService,
             AlbamRepository albamRepository, 
             SelectionContext selectionContext = null
             )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
+            _thumbnailImageService = thumbnailImageService;
             _albamRepository = albamRepository;
             Selection = selectionContext;            
             Item = item;
@@ -109,7 +112,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
             Path = item.Path;
 
-            _ImageAspectRatioWH = Item.GetThumbnailSize()?.RatioWH;
+            _ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
             UpdateLastReadPosition();
             _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
@@ -142,7 +145,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
                 if (Item == null) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
-                using (var stream = await Task.Run(async () => await Item.GetThumbnailImageStreamAsync(ct)))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     
@@ -154,7 +157,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
                     Image = bitmapImage;
                 }
 
-                ImageAspectRatioWH ??= Item.GetThumbnailSize()?.RatioWH;
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
                 _isRequireLoadImageWhenRestored = false;
                 _isInitialized = true;

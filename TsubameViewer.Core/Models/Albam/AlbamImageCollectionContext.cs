@@ -81,7 +81,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         {
             if (SupportedFileTypesHelper.IsSupportedImageFile(file))
             {
-                imageSource = new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager);
+                imageSource = new StorageItemImageSource(file, _folderListingSettings);
             }
             else if (SupportedFileTypesHelper.IsSupportedMangaFile(file))
             {
@@ -98,20 +98,20 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
                 }
                 else
                 {
-                    imageSource = new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager);
+                    imageSource = new StorageItemImageSource(file, _folderListingSettings);
                 }
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFile(file))
             {
-                imageSource = new StorageItemImageSource(file, _folderListingSettings, _thumbnailManager);
+                imageSource = new StorageItemImageSource(file, _folderListingSettings);
             }
         }
         else if (storageItem is StorageFolder folder)
         {
-            imageSource = new StorageItemImageSource(folder, _folderListingSettings, _thumbnailManager);
+            imageSource = new StorageItemImageSource(folder, _folderListingSettings);
         }
         
-        var albamImage = new AlbamItemImageSource(entry, imageSource, _thumbnailManager);
+        var albamImage = new AlbamItemImageSource(entry, imageSource);
         if (imageSource != null)
         {
             _imagesCache.Add(entry._id, albamImage);

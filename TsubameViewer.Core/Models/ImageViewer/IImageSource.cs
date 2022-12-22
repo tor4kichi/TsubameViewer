@@ -18,10 +18,6 @@ public interface IImageSource : IEquatable<IImageSource>
     string Path { get; }
     DateTime DateCreated { get; }
 
-    ThumbnailSize? GetThumbnailSize();
-
-    Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default);
-
     Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
 }
 

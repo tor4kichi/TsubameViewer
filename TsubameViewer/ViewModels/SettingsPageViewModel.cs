@@ -39,8 +39,8 @@ namespace TsubameViewer.ViewModels
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
-        private readonly IThumbnailImageService _thumbnailManager;
-        
+        private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
+
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
@@ -65,7 +65,7 @@ namespace TsubameViewer.ViewModels
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
-            IThumbnailImageService thumbnailManager
+            IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
             )
         {
             _messenger = messenger;
@@ -73,7 +73,7 @@ namespace TsubameViewer.ViewModels
             _folderListingSettings = folderListingSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
-            _thumbnailManager = thumbnailManager;
+            _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
             
@@ -197,7 +197,7 @@ namespace TsubameViewer.ViewModels
             _ThumbnailImagesCacheSizeText.Value = string.Empty;
 
             _IsThumbnailDeleteButtonActive.Value = false;
-            await _thumbnailManager.DeleteAllThumbnailsAsync();
+            await _thumbnailImageMaintenanceService.DeleteAllThumbnailsAsync();
 
             _ = RefreshThumbnailFilesSizeAsync(_navigationCts?.Token ?? CancellationToken.None);
         }
@@ -231,7 +231,7 @@ namespace TsubameViewer.ViewModels
         {
             try
             {
-                var size = (ulong) await Task.Run(() => _thumbnailManager.ComputeUsingSize(), ct);
+                var size = (ulong) await Task.Run(() => _thumbnailImageMaintenanceService.ComputeUsingSize(), ct);
 
                 _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
             }

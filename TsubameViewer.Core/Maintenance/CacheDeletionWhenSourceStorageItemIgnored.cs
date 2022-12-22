@@ -31,6 +31,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly RecentlyAccessService _recentlyAccessManager;
     private readonly IBookmarkService _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
+    private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
     private readonly IThumbnailImageService _thumbnailManager;
     private readonly ISecondaryTileManager _secondaryTileManager;
     private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
@@ -43,7 +44,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         RecentlyAccessService recentlyAccessManager,
         IBookmarkService bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
-        IThumbnailImageService thumbnailManager,
+        IThumbnailImageMaintenanceService thumbnailImageMaintenanceService,
         ISecondaryTileManager secondaryTileManager,
         IFolderLastIntractItemService folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
@@ -55,7 +56,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _recentlyAccessManager = recentlyAccessManager;
         _bookmarkManager = bookmarkManager;
         _folderContainerTypeManager = folderContainerTypeManager;
-        _thumbnailManager = thumbnailManager;
+        _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
         _secondaryTileManager = secondaryTileManager;
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
@@ -75,7 +76,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         try
         {
             var tasks = new[] {
-                _thumbnailManager.FolderChangedAsync(oldPath, newPath),
+                _thumbnailImageMaintenanceService.FolderChangedAsync(oldPath, newPath),
                 _secondaryTileManager.RemoveSecondaryTile(newPath)
             };
 
@@ -210,7 +211,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     async Task DeleteCacheAllUnderPathAsync(string path)
     {
         var tasks = new[] {
-            _thumbnailManager.DeleteAllThumbnailUnderPathAsync(path),
+            _thumbnailImageMaintenanceService.DeleteAllThumbnailUnderPathAsync(path),
             _secondaryTileManager.RemoveSecondaryTile(path)
         };
 
@@ -227,7 +228,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     async Task DeleteCachePathAsync(string path)
     {
         var tasks = new[] {
-            _thumbnailManager.DeleteThumbnailFromPathAsync(path),
+            _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(path),
             _secondaryTileManager.RemoveSecondaryTile(path)
         };
 

@@ -30,14 +30,12 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
     private readonly ArchiveDirectoryToken _archiveDirectoryToken;
     private readonly ArchiveImageCollection _archiveImageCollection;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
 
     public ArchiveEntryImageSource(
         IArchiveEntry entry, 
         ArchiveDirectoryToken archiveDirectoryToken, 
         ArchiveImageCollection archiveImageCollection, 
-        FolderListingSettings folderListingSettings, 
-        IThumbnailImageService thumbnailManager
+        FolderListingSettings folderListingSettings
         )
     {
         _entry = entry;
@@ -45,7 +43,6 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
         _archiveImageCollection = archiveImageCollection;
         _folderListingSettings = folderListingSettings;
         StorageItem = _archiveImageCollection.File;
-        _thumbnailManager = thumbnailManager;
         DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
         Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, entry.Key);
     }
@@ -90,20 +87,20 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
 
     internal static readonly AsyncLock _archiveEntryAccessLock = new ();
 
-    public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
-    {
-        // 画像ビューアから読み込む時のためにロックが必要
-        using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
+    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
+    //{
+    //    // 画像ビューアから読み込む時のためにロックが必要
+    //    using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
 
-        if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
-        {
-            return await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
-        }
-        else
-        {
-            return await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, _entry, ct);
-        }
-    }
+    //    if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
+    //    {
+    //        return await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, _entry, ct);
+    //    }
+    //    else
+    //    {
+    //        return await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, _entry, ct);
+    //    }
+    //}
 
 
     public IArchiveEntry GetParentDirectoryEntry()
@@ -119,10 +116,10 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
         return _archiveDirectoryToken.Entry;
     }
 
-    public ThumbnailSize? GetThumbnailSize()
-    {
-        return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
-    }
+    //public ThumbnailSize? GetThumbnailSize()
+    //{
+    //    return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
+    //}
 
     public bool Equals(IImageSource other)
     {

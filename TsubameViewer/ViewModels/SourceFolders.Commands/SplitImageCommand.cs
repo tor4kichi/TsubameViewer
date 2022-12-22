@@ -26,19 +26,19 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
     private readonly IMessenger _messenger;
     private readonly SplitImageTransform _splitImageTransform;
     private readonly ISplitImageInputDialogService _numberInputDialogService;
-    private readonly IThumbnailImageService _thumbnailManager;
+    private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SplitImageCommand(
         IMessenger messenger,
         SplitImageTransform splitImageTransform,
         ISplitImageInputDialogService numberInputDialogService,
-        IThumbnailImageService thumbnailManager
+        IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
     {
         _messenger = messenger;
         _splitImageTransform = splitImageTransform;
         _numberInputDialogService = numberInputDialogService;
-        _thumbnailManager = thumbnailManager;
+        _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
     }
 
     protected override bool CanExecute(IImageSource imageSource)
@@ -97,7 +97,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
                                 outputArchive.SaveTo(fileStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.None));
                             }
 
-                            await _thumbnailManager.DeleteThumbnailFromPathAsync(outputFile.Path);
+                            await _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(outputFile.Path);
                             await tempOutputFile.MoveAndReplaceAsync(outputFile).AsTask(ct);
                         }, ct);
                     }, CancellationToken.None);
@@ -118,7 +118,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
                 {
                     await Task.Run(async () =>
                     {
-                        await _thumbnailManager.DeleteThumbnailFromPathAsync(outputFolder.Path);
+                        await _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(outputFolder.Path);
                         await _splitImageTransform.SplitImageOutputToFolderAsync(folder, outputFolder, TargetAspectRatio, pageAspectRatio: pageAspectRatio, isLeftBinding: bindingDirection is Views.Dialogs.BookBindingDirection.Left, encoderId, ct);
                     }, ct);
                 }, CancellationToken.None);

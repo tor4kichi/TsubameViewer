@@ -33,24 +33,26 @@ public sealed class AlbamImageSource : IImageSource
 
     public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;        
 
-    public Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {
-        return null;
+        var imageSource = await GetSampleImageSourceAsync(ct);
+        if (imageSource == null) { return null; }
+        return await imageSource.GetImageStreamAsync(ct);
     }
 
     private IImageSource _sampleImageSource;
-    public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
-    {
-        var sampleImageSource = await GetSampleImageSourceAsync(ct);
-        if (sampleImageSource is not null)
-        {
-            return await sampleImageSource.GetThumbnailImageStreamAsync(ct);
-        }
-        else
-        {
-            return null;
-        }
-    }
+    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
+    //{
+    //    var sampleImageSource = await GetSampleImageSourceAsync(ct);
+    //    if (sampleImageSource is not null)
+    //    {
+    //        return await sampleImageSource.GetThumbnailImageStreamAsync(ct);
+    //    }
+    //    else
+    //    {
+    //        return null;
+    //    }
+    //}
 
     private async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
     {
@@ -66,10 +68,10 @@ public sealed class AlbamImageSource : IImageSource
         return _sampleImageSource;
     }
 
-    public ThumbnailSize? GetThumbnailSize()
-    {
-        return null;
-    }
+    //public ThumbnailSize? GetThumbnailSize()
+    //{
+    //    return null;
+    //}
 
     public bool Equals(IImageSource other)
     {

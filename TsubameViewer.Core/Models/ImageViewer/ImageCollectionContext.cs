@@ -72,7 +72,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
         return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
-            .Select(x => new StorageItemImageSource(x, _folderListingSettings, _thumbnailManager) as IImageSource);
+            .Select(x => new StorageItemImageSource(x, _folderListingSettings) as IImageSource);
     }
 
     public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
@@ -88,7 +88,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {
         return ImageFileSearchQuery.ToAsyncEnumerable(ct)
-            .Select(x => new StorageItemImageSource(x, _folderListingSettings, _thumbnailManager) as IImageSource);
+            .Select(x => new StorageItemImageSource(x, _folderListingSettings) as IImageSource);
     }
 
     public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -120,7 +120,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is not null and var files 
             && files.ElementAtOrDefault(0) is not null and var imageSource)
         {
-            return new StorageItemImageSource(imageSource, _folderListingSettings, _thumbnailManager);
+            return new StorageItemImageSource(imageSource, _folderListingSettings);
         }
         else
         {
@@ -241,7 +241,7 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
         // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
         // アーカイブ内のアーカイブは対応しない
         return ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
-            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings, _thumbnailManager))
+            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings))
             .ToAsyncEnumerable()
             ;
     }
@@ -249,7 +249,7 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
     public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
     {
         return ArchiveImageCollection.GetLeafFolders()
-            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings, _thumbnailManager))
+            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings))
             .ToAsyncEnumerable();
     }
 

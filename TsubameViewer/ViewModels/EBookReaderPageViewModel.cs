@@ -553,13 +553,15 @@ namespace TsubameViewer.ViewModels
 
             SelectedTocItem = TocItems.FirstOrDefault();
 
-            var thumbnailFile = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageFileAsync(_currentFolderItem, ct));
-            if (thumbnailFile != null)
+            
+            var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(_currentFolderItem, ct));
+            if (thumbnailImageStream != null)
             {
-                using (thumbnailFile)
+                using (thumbnailImageStream)
                 {
+                    thumbnailImageStream.Seek(0);
                     var image = new BitmapImage();
-                    await image.SetSourceAsync(thumbnailFile).AsTask(ct);
+                    await image.SetSourceAsync(thumbnailImageStream).AsTask(ct);
                     CoverImage = image;
                 }
             }

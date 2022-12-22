@@ -79,13 +79,13 @@ namespace TsubameViewer.ViewModels
             Albams.Add(_createNewAlbamViewModel);
             foreach (var albam in _albamRepository.GetAlbams())
             {
-                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
             }
 
             _messenger.Register<AlbamCreatedMessage>(this, (r, m) => 
             {
                 var albam = m.Value;
-                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                Albams.Add(new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
             });
 
             _messenger.Register<AlbamDeletedMessage>(this, (r, m) =>
@@ -108,7 +108,7 @@ namespace TsubameViewer.ViewModels
                     var index = Albams.IndexOf(albamVM);
                     Albams.Remove(albamVM);
                     albamVM.Dispose();
-                    Albams.Insert(index, new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                    Albams.Insert(index, new StorageItemViewModel(new AlbamImageSource(albam, new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger)), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
                 }
             });
 

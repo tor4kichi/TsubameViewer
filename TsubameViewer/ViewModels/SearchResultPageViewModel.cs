@@ -123,8 +123,8 @@ namespace TsubameViewer.ViewModels
 
         private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
-            var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-            return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+            var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings);
+            return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
         }
 
         public override void OnNavigatedFrom(INavigationParameters parameters)

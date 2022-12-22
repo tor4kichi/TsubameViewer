@@ -585,7 +585,7 @@ namespace TsubameViewer.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -606,7 +606,7 @@ namespace TsubameViewer.ViewModels
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -615,11 +615,11 @@ namespace TsubameViewer.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings, _thumbnailManager), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                         }
                     }
                 }
@@ -667,7 +667,7 @@ namespace TsubameViewer.ViewModels
 
             _imageCollectionContext = null;
             AlbamImageCollectionContext imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
-            CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+            CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
             DisplayCurrentArchiveFolderName = imageCollectionContext.Name;
 
             _imageCollectionContext = imageCollectionContext;
@@ -706,7 +706,7 @@ namespace TsubameViewer.ViewModels
                 // 新規アイテム
                 foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
                 {
-                    FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                    FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
                     ct.ThrowIfCancellationRequested();
                 }
                 Debug.WriteLine($"after added : {FolderItems.Count}");

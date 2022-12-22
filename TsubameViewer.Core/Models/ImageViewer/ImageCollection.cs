@@ -274,7 +274,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
                     }
 
                     var dirToken = GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(x.Key)));
-                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings, _thumbnailManager);
+                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings);
                 })
                 .ToList();
 
@@ -331,7 +331,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
 
         token ??= GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(imageEntry.Key)));
-        return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings, _thumbnailManager);            
+        return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings);            
     }
    
     // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない
@@ -397,7 +397,7 @@ public sealed class PdfImageCollection : IImageCollection
     {
         return Enumerable.Range(0, (int)_pdfDocument.PageCount)
           .Select(x => _pdfDocument.GetPage((uint)x))
-          .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _imageViewerSettings, _thumbnailManager));
+          .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _imageViewerSettings));
     }
 
 
@@ -414,7 +414,7 @@ public sealed class PdfImageCollection : IImageCollection
     private IImageSource GetImageAt(int index)
     {
         var page = _pdfDocument.GetPage((uint)index);
-        return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _imageViewerSettings, _thumbnailManager);
+        return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _imageViewerSettings);
     }
 
     public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)

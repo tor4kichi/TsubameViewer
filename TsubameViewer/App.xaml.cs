@@ -133,8 +133,11 @@ namespace TsubameViewer
             container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
             container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
             container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
-            container.Register<IThumbnailImageService, ThumbnailImageService>(reuse: new SingletonReuse());
-
+            container.Register<ThumbnailImageService>(reuse: new SingletonReuse());
+            container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();
+            container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageService>();
+            container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageService>();
+            
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();
             container.Register<ImageListupPage>();

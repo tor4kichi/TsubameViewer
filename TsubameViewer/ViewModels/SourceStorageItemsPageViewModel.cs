@@ -143,10 +143,10 @@ namespace TsubameViewer.ViewModels
                             continue;
                         }
 
-                        var storageItemImageSource = new StorageItemImageSource(item.item, _folderListingSettings, _thumbnailManager);
+                        var storageItemImageSource = new StorageItemImageSource(item.item, _folderListingSettings);
                         if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
                         {
-                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
                         }
                         else
                         {
@@ -187,8 +187,8 @@ namespace TsubameViewer.ViewModels
                 async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
                 {
                     var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
-                    var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
-                    return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository);
+                    var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings);
+                    return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
 
                 var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
@@ -288,11 +288,11 @@ namespace TsubameViewer.ViewModels
                 var args = m.Value;
                 RemoveItem(args.StorageItem.Path);
 
-                var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _folderListingSettings, _thumbnailManager);
+                var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _folderListingSettings);
                 if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
                 {
                     // 追加用ボタンの次に配置するための 1
-                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _albamRepository));
+                    Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
                 }
                 else
                 {

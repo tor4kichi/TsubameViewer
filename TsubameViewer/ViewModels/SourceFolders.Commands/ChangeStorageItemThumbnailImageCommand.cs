@@ -53,58 +53,15 @@ namespace TsubameViewer.ViewModels.SourceFolders.Commands
 
             if (parameter is IImageSource imageSource)
             {
-                using (var imageMemoryStream = new InMemoryRandomAccessStream())
+                try
                 {
-                    // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
-                    // imageSource.GetThumbnailImageStreamAsync() は使用していない
-                    using (var stream = await imageSource.GetImageStreamAsync())
-                    {
-                        await RandomAccessStream.CopyAsync(stream, imageMemoryStream);
-                        imageMemoryStream.Seek(0);
-                    }
-
-                    bool requireTranscode = true;
-
-                    if (imageSource is ArchiveEntryImageSource archiveEntry)
-                    {
-                        var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
-                        if (IsArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-                        {
-                            await _thumbnailManager.SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                        }
-                        else
-                        {
-                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                        }
-                    }
-                    else if (imageSource is PdfPageImageSource pdf)
-                    {
-                        await _thumbnailManager.SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                    }
-                    else if (imageSource is StorageItemImageSource folderItem)
-                    {
-                        var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
-                        if (folder == null) { throw new InvalidOperationException(); }
-                        await _thumbnailManager.SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
-                    }
-                    else if (imageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
-                    {
-                        var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
-                        if (IsArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-                        {
-                            await _thumbnailManager.SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                        }
-                        else
-                        {
-                            await _thumbnailManager.SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                        }
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
-
+                    await _thumbnailManager.SetParentThumbnailImageAsync(imageSource, IsArchiveThumbnailSetToFile);
                     _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
+                }
+                catch
+                {
+                    //_messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
+                    throw;
                 }
             }
         }
