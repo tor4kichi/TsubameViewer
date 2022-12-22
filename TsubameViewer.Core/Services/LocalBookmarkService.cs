@@ -4,37 +4,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 
-namespace TsubameViewer.Core.Models.ReadingFeature;
+namespace TsubameViewer.Core.Services;
 
-public struct NormalizedPagePosition
-{
-    public float Value { get; set; }
 
-    // Note: デフォルトコンストラクタを定義していないとx86 リリースモード時にエラーが
-    public NormalizedPagePosition()
-    {
-        Value = 0f;
-    }
-
-    public NormalizedPagePosition(float normalized)
-    {
-        Value = Math.Clamp(normalized, 0.0f, 1.0f);
-    }
-
-    public NormalizedPagePosition(int pageCount, int currentPagePosition)
-    {
-        if (pageCount < currentPagePosition) { throw new ArgumentOutOfRangeException("pageCount < currentPagePosition"); }
-
-        Value = Math.Clamp(currentPagePosition / (float)pageCount, 0.0f, 1.0f);
-    }
-}
-public sealed class BookmarkManager
+public sealed class LocalBookmarkService : IBookmarkService
 {
     private readonly BookmarkRepository _bookmarkRepository;
 
-    public BookmarkManager(BookmarkRepository bookmarkRepository)
+    public LocalBookmarkService(BookmarkRepository bookmarkRepository)
     {
         _bookmarkRepository = bookmarkRepository;
     }
@@ -164,7 +144,7 @@ public sealed class BookmarkManager
 
         public void FolderChanged(string oldPath, string newPath)
         {
-            var bookmarkEntries =_collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+            var bookmarkEntries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
             foreach (var entry in bookmarkEntries)
             {
                 var prevPath = entry.Path;

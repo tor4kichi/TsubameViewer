@@ -13,7 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.ReadingFeature;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
@@ -144,7 +144,7 @@ namespace TsubameViewer.ViewModels
         
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ApplicationSettings _applicationSettings;
@@ -163,7 +163,7 @@ namespace TsubameViewer.ViewModels
 
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             ThumbnailManager thumbnailManager,
             RecentlyAccessManager recentlyAccessManager,
             ApplicationSettings applicationSettings,

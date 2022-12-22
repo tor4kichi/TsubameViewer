@@ -127,6 +127,7 @@ namespace TsubameViewer
 
             container.Register<ISupportedImageCodec, SupportedImageCodec>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
             container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
+            container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
 
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();

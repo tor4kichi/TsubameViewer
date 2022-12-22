@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Reactive.Disposables;
 using System.Text;
 using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.ReadingFeature;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Services;
 using TsubameViewer.Core.Models.SourceFolders;
@@ -28,7 +27,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
     private readonly RecentlyAccessManager _recentlyAccessManager;
-    private readonly BookmarkManager _bookmarkManager;
+    private readonly IBookmarkService _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly ThumbnailManager _thumbnailManager;
     private readonly ISecondaryTileManager _secondaryTileManager;
@@ -40,7 +39,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         IMessenger messenger,
         SourceStorageItemsRepository storageItemsRepository,
         RecentlyAccessManager recentlyAccessManager,
-        BookmarkManager bookmarkManager,
+        IBookmarkService bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
         ThumbnailManager thumbnailManager,
         ISecondaryTileManager secondaryTileManager,

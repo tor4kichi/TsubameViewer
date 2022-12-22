@@ -15,7 +15,6 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using Windows.Storage;
-using TsubameViewer.Core.Models.ReadingFeature;
 using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Navigations;
@@ -37,7 +36,7 @@ namespace TsubameViewer.ViewModels
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly IMessenger _messenger;
@@ -67,7 +66,7 @@ namespace TsubameViewer.ViewModels
         public SourceStorageItemsPageViewModel(
             IMessenger messenger,
             FolderListingSettings folderListingSettings,
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,

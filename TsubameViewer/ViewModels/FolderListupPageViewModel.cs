@@ -13,7 +13,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.ReadingFeature;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
@@ -76,7 +75,7 @@ namespace TsubameViewer.ViewModels
 
         private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -176,7 +175,7 @@ namespace TsubameViewer.ViewModels
         public FolderListupPageViewModel(
             IScheduler scheduler,
             IMessenger messenger,
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             AlbamRepository albamRepository,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,

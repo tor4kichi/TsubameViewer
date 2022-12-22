@@ -14,11 +14,11 @@ using TsubameViewer.ViewModels.Albam;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.ReadingFeature;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Linq;
 using TsubameViewer.Navigations;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
@@ -26,7 +26,7 @@ namespace TsubameViewer.ViewModels
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
@@ -41,13 +41,11 @@ namespace TsubameViewer.ViewModels
 
         public AlbamListupPageViewModel(
             IMessenger messenger,
-            AlbamRepository albamRepository,
-            
+            AlbamRepository albamRepository,            
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenImageListupCommand openImageListupCommand,
-
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,

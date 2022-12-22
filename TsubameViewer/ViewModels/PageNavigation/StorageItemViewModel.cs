@@ -6,7 +6,6 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.ReadingFeature;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
@@ -19,6 +18,7 @@ using TsubameViewer.Core.UseCases;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.PageNavigation
 {
@@ -30,7 +30,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
 
         public IImageSource Item { get; }
@@ -89,7 +89,14 @@ namespace TsubameViewer.ViewModels.PageNavigation
             Type = storageItemTypes;
         }
 
-        public StorageItemViewModel(IImageSource item, IMessenger messenger, SourceStorageItemsRepository sourceStorageItemsRepository, BookmarkManager bookmarkManager, AlbamRepository albamRepository, SelectionContext selectionContext = null)
+        public StorageItemViewModel(
+            IImageSource item, 
+            IMessenger messenger, 
+            SourceStorageItemsRepository sourceStorageItemsRepository, 
+            IBookmarkService bookmarkManager, 
+            AlbamRepository albamRepository, 
+            SelectionContext selectionContext = null
+            )
         {
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;

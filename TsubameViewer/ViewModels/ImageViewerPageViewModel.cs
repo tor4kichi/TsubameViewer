@@ -21,7 +21,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Models.ReadingFeature;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Services;
 using TsubameViewer.Core.UseCases;
@@ -204,7 +204,7 @@ namespace TsubameViewer.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly AlbamRepository _albamRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
@@ -220,7 +220,7 @@ namespace TsubameViewer.ViewModels
             AlbamRepository albamRepository,
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             RecentlyAccessManager recentlyAccessManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,

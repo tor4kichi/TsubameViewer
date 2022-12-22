@@ -9,7 +9,6 @@ using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Models.ReadingFeature;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -24,7 +23,7 @@ namespace TsubameViewer.ViewModels
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly BookmarkManager _bookmarkManager;
+        private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailManager _thumbnailManager;
 
@@ -51,7 +50,7 @@ namespace TsubameViewer.ViewModels
             IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,
-            BookmarkManager bookmarkManager,
+            IBookmarkService bookmarkManager,
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             ISecondaryTileManager secondaryTileManager,
