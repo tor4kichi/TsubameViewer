@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TsubameViewer.ViewModels.Notification
+namespace TsubameViewer.Contracts.Notification
 {
     public sealed class InAppNotificationRequestMessage : ValueChangedMessage<object>
     {

@@ -1,23 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using TsubameViewer.Contracts.Navigation;
 
+namespace TsubameViewer.Services;
 
-namespace TsubameViewer.Services
+public sealed class ViewLocator : IViewLocator
 {
-    public interface IViewLocator
+    public Type ResolveView(string viewName)
     {
-        Type ResolveView(string viewName);
+        return Type.GetType($"TsubameViewer.Views.{viewName}");
     }
-
-    public sealed class ViewLocator : IViewLocator
-    {
-        public Type ResolveView(string viewName)
-        {
-            return Type.GetType($"TsubameViewer.Views.{viewName}");
-        }
-    }
-
 }

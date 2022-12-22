@@ -10,7 +10,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Navigations;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;

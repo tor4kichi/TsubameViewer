@@ -129,17 +129,22 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Contracts\Navigation\IViewLocator.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="Locales\LocalizeConverter.cs" />
     <Compile Include="Locales\LocalizeExtension.cs" />
+    <Compile Include="Contracts\Services\IAlbamDialogService.cs" />
+    <Compile Include="Contracts\Services\IFileControlDialogService.cs" />
+    <Compile Include="Contracts\Services\ISplitImageInputDialogService.cs" />
+    <Compile Include="Contracts\Services\IImageCodecService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
     <Compile Include="Services\Navigation\NavigationAwareViewModelBase.cs" />
     <Compile Include="Services\Navigation\NavigationParametersExtensions.cs" />
     <Compile Include="Services\AlbamDialogService.cs" />
     <Compile Include="Services\FileControlDialogService.cs" />
     <Compile Include="Services\SplitImageInputDialogService.cs" />
-    <Compile Include="Services\ApplicationLifecycle.cs" />
+    <Compile Include="Helpers\ApplicationLifecycleObservableExtensions.cs" />
     <Compile Include="Services\SecondaryTileManager.cs" />
     <Compile Include="Services\SupportedImageCodec.cs" />
     <Compile Include="ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
@@ -161,7 +166,7 @@
     <Compile Include="ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
-    <Compile Include="ViewModels\Notification\InAppNotificationRequestMessage.cs" />
+    <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />

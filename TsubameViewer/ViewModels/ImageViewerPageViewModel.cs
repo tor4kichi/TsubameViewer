@@ -24,14 +24,14 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.UseCases;
-using TsubameViewer.Navigations;
-using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Helpers;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI.ViewManagement;
@@ -40,7 +40,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-using Windows.UI.Xaml.Media;
+
 
 namespace TsubameViewer.ViewModels;
 
@@ -711,7 +711,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                 })
                 .AddTo(_navigationDisposables);
 
-            ApplicationLifecycleObservable.WindowActivationStateChanged()
+            Window.Current.WindowActivationStateChanged()
                 .Subscribe(async visible =>
                 {
                     if (visible && requireRefresh && _imageCollectionContext is not null)

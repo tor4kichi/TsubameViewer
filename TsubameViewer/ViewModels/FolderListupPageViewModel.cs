@@ -17,14 +17,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Navigations;
+using TsubameViewer.Helpers;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.Services;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -420,7 +420,7 @@ namespace TsubameViewer.ViewModels
                     })
                     .AddTo(_navigationDisposables);
 
-                ApplicationLifecycleObservable.WindowActivationStateChanged()
+                Window.Current.WindowActivationStateChanged()
                     .Subscribe(async visible =>
                     {
                         if (visible && requireRefresh && _imageCollectionContext is not null)

@@ -17,7 +17,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Linq;
-using TsubameViewer.Navigations;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels

@@ -5,33 +5,32 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Navigation;
 
-namespace TsubameViewer.Navigations
+namespace TsubameViewer.Services.Navigation;
+
+public static class NavigationParametersExtensions
 {
-    public static class NavigationParametersExtensions
+    public static bool TryGetValue<T>(this INavigationParameters parameters, string key, out T outValue)
     {
-        public static bool TryGetValue<T>(this INavigationParameters parameters, string key, out T outValue)
+        if (!parameters.ContainsKey(key))
         {
-            if (!parameters.ContainsKey(key))
-            {
-                outValue = default(T);
-                return false;
-            }
-            else
-            {
-                return parameters.TryGetValue(key, out outValue);
-            }
+            outValue = default(T);
+            return false;
         }
+        else
+        {
+            return parameters.TryGetValue(key, out outValue);
+        }
+    }
 
-        public const string NavigationModeKey = "__nm";
-        public static NavigationMode GetNavigationMode(this INavigationParameters parameters)
-        {
-            return parameters.TryGetValue<NavigationMode>(NavigationModeKey, out var mode) ? mode : throw new InvalidOperationException();
-        }
+    public const string NavigationModeKey = "__nm";
+    public static NavigationMode GetNavigationMode(this INavigationParameters parameters)
+    {
+        return parameters.TryGetValue<NavigationMode>(NavigationModeKey, out var mode) ? mode : throw new InvalidOperationException();
+    }
 
-        public static void SetNavigationMode(this INavigationParameters parameters, NavigationMode mode)
-        {
-            parameters.Remove(NavigationModeKey);
-            parameters.Add(NavigationModeKey, mode);
-        }
+    public static void SetNavigationMode(this INavigationParameters parameters, NavigationMode mode)
+    {
+        parameters.Remove(NavigationModeKey);
+        parameters.Add(NavigationModeKey, mode);
     }
 }

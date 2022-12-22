@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Navigations;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
 using TsubameViewer.Core.Contracts.Services;

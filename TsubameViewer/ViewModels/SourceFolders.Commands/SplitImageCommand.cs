@@ -1,23 +1,21 @@
-﻿using Microsoft.Toolkit.Diagnostics;
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Diagnostics;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Services;
+using TsubameViewer.Core.UseCase.Transform;
 using TsubameViewer.ViewModels.PageNavigation;
-using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-using TsubameViewer.Core.UseCase.Transform;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
@@ -90,7 +88,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
                         await Task.Run(async () => 
                         {
                             var tempOutputFile = await ApplicationData.Current.TemporaryFolder.CreateFileAsync(Path.GetRandomFileName(), CreationCollisionOption.GenerateUniqueName).AsTask(ct);
-                            var outputArchive = await _splitImageTransform.SplitImageOutputToArchiveFileAsync(archive, TargetAspectRatio, pageAspectRatio: pageAspectRatio, isLeftBinding: bindingDirection is Views.Dialogs.BookBindingDirection.Left, encoderId,  ct);
+                            var outputArchive = await _splitImageTransform.SplitImageOutputToArchiveFileAsync(archive, TargetAspectRatio, pageAspectRatio: pageAspectRatio, isLeftBinding: bindingDirection is BookBindingDirection.Left, encoderId,  ct);
 
                             using (var fileStream = await tempOutputFile.OpenStreamForWriteAsync())
                             {
@@ -119,7 +117,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
                     await Task.Run(async () =>
                     {
                         await _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(outputFolder.Path);
-                        await _splitImageTransform.SplitImageOutputToFolderAsync(folder, outputFolder, TargetAspectRatio, pageAspectRatio: pageAspectRatio, isLeftBinding: bindingDirection is Views.Dialogs.BookBindingDirection.Left, encoderId, ct);
+                        await _splitImageTransform.SplitImageOutputToFolderAsync(folder, outputFolder, TargetAspectRatio, pageAspectRatio: pageAspectRatio, isLeftBinding: bindingDirection is BookBindingDirection.Left, encoderId, ct);
                     }, ct);
                 }, CancellationToken.None);
             }

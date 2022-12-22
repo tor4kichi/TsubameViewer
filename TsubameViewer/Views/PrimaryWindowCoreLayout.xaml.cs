@@ -14,15 +14,15 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Navigation;
+using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Navigations;
-using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
-using TsubameViewer.ViewModels.Notification;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Helpers;
@@ -71,7 +71,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
         InitializeBusyWorkUI();                    
 
-        _supportedImageCodec = Ioc.Default.GetService<ISupportedImageCodec>();
+        _imageCodecService = Ioc.Default.GetService<IImageCodecService>();
         InitializeImageCodecExtensions();
 
 
@@ -395,7 +395,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
                         foreach (var pair in prevNavParam)
                         {
                             if (pair.Key == PageNavigationConstants.Restored) { continue; }
-                            if (pair.Key == TsubameViewer.Navigations.NavigationParametersExtensions.NavigationModeKey) { continue; }
+                            if (pair.Key == TsubameViewer.Services.Navigation.NavigationParametersExtensions.NavigationModeKey) { continue; }
 
                             prevParameters.Add(pair.Key, pair.Value);
                         }
@@ -1117,7 +1117,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
     #region Image codec Extension
 
 
-    private readonly ISupportedImageCodec _supportedImageCodec;
+    private readonly IImageCodecService _imageCodecService;
 
     void InitializeImageCodecExtensions()
     {
@@ -1132,7 +1132,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
             void TeachTooltip_ActionButtonClick(Microsoft.UI.Xaml.Controls.TeachingTip sender, object args)
             {
-                _ = _supportedImageCodec.OpenImageCodecExtensionStorePageAsync(m.Value);
+                _ = _imageCodecService.OpenImageCodecExtensionStorePageAsync(m.Value);
 
                 sender.IsOpen = false;
                 MenuRightCommandBar.IsOpen = true;

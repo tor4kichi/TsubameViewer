@@ -20,7 +20,7 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.UseCase.Transform;
 using TsubameViewer.Core.UseCases.Transform;
-using TsubameViewer.Navigations;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Storage;
 using Windows.Storage.Pickers;

@@ -8,7 +8,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services;
-using TsubameViewer.ViewModels.Notification;
+using TsubameViewer.Contracts.Notification;
 using Windows.Storage;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands

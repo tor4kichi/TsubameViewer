@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Models;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -22,14 +23,6 @@ using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.Views.Dialogs
 {
-    public enum BookBindingDirection
-    {
-        Right,
-        Left,
-    }
-
-    public record struct SplitImageInputDialogResult(bool IsConfirm, double? AspectRatio, BookBindingDirection BindingDirection, Guid? encoderId);
-
     public sealed partial class SplitImageInputDialog : ContentDialog
     {
         public SplitImageInputDialog()

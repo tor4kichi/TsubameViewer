@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using TsubameViewer.Navigations;
+using TsubameViewer.Services.Navigation;
 using Windows.UI.Xaml.Media.Animation;
 
 namespace TsubameViewer.ViewModels.PageNavigation

@@ -3,29 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.Views.Dialogs;
 
-namespace TsubameViewer.Services
+namespace TsubameViewer.Services;
+
+public sealed class SplitImageInputDialogService : ISplitImageInputDialogService
 {
-    public interface ISplitImageInputDialogService
+    public async Task<SplitImageInputDialogResult> GetSplitImageInputAsync()
     {
-        Task<SplitImageInputDialogResult> GetSplitImageInputAsync();
+        var dialog = new SplitImageInputDialog();
+
+        return await dialog.GetSplitImageInputAsync();
     }
-
-    public sealed class SplitImageInputDialogService : ISplitImageInputDialogService
-    {
-        public SplitImageInputDialogService()
-        {
-
-        }
-
-        public async Task<SplitImageInputDialogResult> GetSplitImageInputAsync()
-        {
-            var dialog = new SplitImageInputDialog();
-
-            return await dialog.GetSplitImageInputAsync();
-        }
-    }
-
-
 }
