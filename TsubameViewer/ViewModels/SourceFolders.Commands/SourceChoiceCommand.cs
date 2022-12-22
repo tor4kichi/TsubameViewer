@@ -8,7 +8,7 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 

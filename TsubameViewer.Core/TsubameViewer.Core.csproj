@@ -157,8 +157,9 @@
     <Compile Include="Helpers\MessengerObservableExtensions.cs" />
     <Compile Include="Services\FolderLastIntractItemManager.cs" />
     <Compile Include="Contracts\Services\IBookmarkService.cs" />
-    <Compile Include="Services\PageNavigationConstants.cs" />
-    <Compile Include="Services\RestoreNavigationManager.cs" />
+    <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
+    <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
+    <Compile Include="Services\RestoreNavigationService.cs" />
     <Compile Include="Services\LocalBookmarkService.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />

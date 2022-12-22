@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Infrastructure;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
-using static TsubameViewer.Core.Services.RestoreNavigationManager;
+using static TsubameViewer.Core.Services.RestoreNavigationService;
 
 namespace TsubameViewer.Core.UseCases.Migrate
 {

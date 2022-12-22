@@ -28,7 +28,7 @@ using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
 using Xamarin.Essentials;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
@@ -46,7 +46,7 @@ namespace TsubameViewer.ViewModels
             IScheduler scheduler,
             IMessenger messenger,
             ApplicationSettings applicationSettings,
-            RestoreNavigationManager restoreNavigationManager,
+            IRestoreNavigationService restoreNavigationManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderContainerTypeManager folderContainerTypeManager,
             SourceChoiceCommand sourceChoiceCommand,
@@ -108,7 +108,7 @@ namespace TsubameViewer.ViewModels
             });
 
         public ApplicationSettings ApplicationSettings { get; }
-        public RestoreNavigationManager RestoreNavigationManager { get; }
+        public IRestoreNavigationService RestoreNavigationManager { get; }
         public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
         public SourceChoiceCommand SourceChoiceCommand { get; }
         public RefreshNavigationCommand RefreshNavigationCommand { get; }

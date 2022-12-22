@@ -1,31 +1,24 @@
-﻿using I18NPortable;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
 using System.Linq;
+using System.Reactive.Disposables;
+using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Services;
+using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
-using Windows.Storage;
-using CommunityToolkit.Mvvm.Messaging;
-using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
-using System.Reactive.Disposables;
 using Windows.UI.Xaml.Navigation;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Contracts.Services;
-#if WINDOWS_UWP
-using Windows.Storage.AccessCache;
-#endif
 
 namespace TsubameViewer.ViewModels
 {

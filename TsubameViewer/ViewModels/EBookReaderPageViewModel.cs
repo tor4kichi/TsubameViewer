@@ -1,4 +1,5 @@
-﻿using Reactive.Bindings;
+﻿using CommunityToolkit.Mvvm.Input;
+using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -8,29 +9,24 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
+using TsubameViewer.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Views.Helpers;
 using VersOne.Epub;
 using Windows.Storage;
 using Windows.UI;
-using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.Web.Http;
-using TsubameViewer.Navigations;
-using CommunityToolkit.Mvvm.Input;
 using Windows.UI.Xaml.Navigation;
-using TsubameViewer.ViewModels.ViewManagement.Commands;
-using TsubameViewer.Views.Helpers;
-using TsubameViewer.Core.Services;
 
 namespace TsubameViewer.ViewModels
 {

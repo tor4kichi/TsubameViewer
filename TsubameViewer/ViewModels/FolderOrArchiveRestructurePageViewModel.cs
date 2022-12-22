@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.UseCase.Transform;
 using TsubameViewer.Core.UseCases.Transform;
 using TsubameViewer.Navigations;

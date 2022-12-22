@@ -10,7 +10,7 @@ using TsubameViewer.Core.UseCases.Transform;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Storage;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands
 {

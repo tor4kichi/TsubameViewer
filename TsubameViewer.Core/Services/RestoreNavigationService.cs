@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Services;
 
-public sealed class RestoreNavigationManager
+public sealed class RestoreNavigationService : IRestoreNavigationService
 {
     private readonly NavigationStackRepository _navigationStackRepository;
 
-    public RestoreNavigationManager()
+    public RestoreNavigationService()
     {
         _navigationStackRepository = new NavigationStackRepository();
     }
@@ -91,22 +92,3 @@ public sealed class RestoreNavigationManager
     }
 }
 
-public class PageEntry
-{
-    public PageEntry() { }
-
-    public PageEntry(string pageName)
-    {
-        PageName = pageName;
-        Parameters = new List<KeyValuePair<string, string>>();
-    }
-
-    public PageEntry(string pageName, IEnumerable<KeyValuePair<string, object>> parameters)
-    {
-        PageName = pageName;
-        Parameters = parameters?.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())).ToList();
-    }
-
-    public string PageName { get; set; }
-    public List<KeyValuePair<string, string>> Parameters { get; set; }
-}

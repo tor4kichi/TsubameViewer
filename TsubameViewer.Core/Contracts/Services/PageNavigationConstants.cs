@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Web;
 
-namespace TsubameViewer.Core.Services;
+namespace TsubameViewer.Core.Contracts.Services;
 
 public static class PageNavigationConstants
 {

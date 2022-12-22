@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
