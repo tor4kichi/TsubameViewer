@@ -3,16 +3,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Services;
 
-public sealed class FolderLastIntractItemManager 
+public sealed class FolderLastIntractItemService : IFolderLastIntractItemService
 {
     private readonly FolderLastIntractItemRepository _folderLastIntractItemRepository;
     private readonly AlbamLastIntractItemRepository _albamLastIntractItemRepository;
 
-    public FolderLastIntractItemManager(
+    public FolderLastIntractItemService(
         FolderLastIntractItemRepository folderLastIntractItemRepository,
         AlbamLastIntractItemRepository albamLastIntractItemRepository
         )

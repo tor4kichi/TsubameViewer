@@ -129,6 +129,7 @@ namespace TsubameViewer
             container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
             container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
             container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
+            container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
 
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();

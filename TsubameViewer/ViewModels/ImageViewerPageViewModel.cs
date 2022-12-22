@@ -23,7 +23,6 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Services;
 using TsubameViewer.Core.UseCases;
 using TsubameViewer.Navigations;
 using TsubameViewer.Services;
@@ -208,7 +207,7 @@ namespace TsubameViewer.ViewModels
         private readonly RecentlyAccessManager _recentlyAccessManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         CompositeDisposable _disposables = new CompositeDisposable();
 
@@ -224,7 +223,7 @@ namespace TsubameViewer.ViewModels
             RecentlyAccessManager recentlyAccessManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
-            FolderLastIntractItemManager folderLastIntractItemManager,
+            IFolderLastIntractItemService folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             ToggleFullScreenCommand toggleFullScreenCommand,
             BackNavigationCommand backNavigationCommand,

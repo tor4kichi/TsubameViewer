@@ -26,6 +26,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.UseCases;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -36,8 +37,6 @@ using Windows.Storage;
 using Windows.UI.Xaml.Navigation;
 using static TsubameViewer.Core.Models.ImageViewer.ImageCollectionManager;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
@@ -75,7 +74,7 @@ namespace TsubameViewer.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private bool _NowProcessing;
@@ -205,7 +204,7 @@ namespace TsubameViewer.ViewModels
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             ISecondaryTileManager secondaryTileManager,
-            FolderLastIntractItemManager folderLastIntractItemManager,
+            IFolderLastIntractItemService folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             OpenPageCommand openPageCommand,

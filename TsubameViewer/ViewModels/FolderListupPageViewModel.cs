@@ -1,4 +1,7 @@
-﻿using Microsoft.Toolkit.Uwp.UI;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
+using Microsoft.Toolkit.Uwp.UI;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -7,45 +10,31 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Navigations;
 using TsubameViewer.Services;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
+using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
-using Windows.Storage.AccessCache;
-using Windows.Storage.Search;
-using Windows.UI.Xaml.Media.Animation;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.ViewModels.SourceFolders.Commands;
-using System.Collections;
-using System.Reactive.Concurrency;
-using CommunityToolkit.Mvvm.Messaging;
-using System.Windows.Input;
-using TsubameViewer.Core.Models.Albam;
 using Windows.UI.Xaml;
-using I18NPortable;
-using TsubameViewer.Navigations;
-using System.Reactive.Disposables;
 using Windows.UI.Xaml.Navigation;
-using CommunityToolkit.Mvvm.Input;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
-    using static TsubameViewer.Core.Models.ImageViewer.ImageCollectionManager;
-    using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-
-
     public class CachedFolderListupItems
     {
         public ObservableCollection<StorageItemViewModel> FolderItems { get; set; }
@@ -79,7 +68,7 @@ namespace TsubameViewer.ViewModels
         private readonly AlbamRepository _albamRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -180,7 +169,7 @@ namespace TsubameViewer.ViewModels
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ISecondaryTileManager secondaryTileManager,
-            FolderLastIntractItemManager folderLastIntractItemManager,
+            IFolderLastIntractItemService folderLastIntractItemManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,

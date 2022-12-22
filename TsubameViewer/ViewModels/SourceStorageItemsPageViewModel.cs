@@ -13,7 +13,6 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Services;
 using TsubameViewer.Navigations;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -35,7 +34,7 @@ namespace TsubameViewer.ViewModels
         private readonly IMessenger _messenger;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly RecentlyAccessManager _recentlyAccessManager;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -63,7 +62,7 @@ namespace TsubameViewer.ViewModels
             AlbamRepository albamRepository,
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            FolderLastIntractItemManager folderLastIntractItemManager,
+            IFolderLastIntractItemService folderLastIntractItemManager,
             RecentlyAccessManager recentlyAccessManager,
             ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,

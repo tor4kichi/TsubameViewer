@@ -1,21 +1,17 @@
-﻿using Reactive.Bindings.Extensions;
+﻿using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
-using System.Reactive.Disposables;
-using System.Text;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Models.SourceFolders;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Messaging;
-using System.Diagnostics;
-using Windows.Storage;
-using System.Linq;
-using System.IO;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Models.SourceFolders;
+using Windows.Storage;
 
 namespace TsubameViewer.Core.UseCases.Maintenance;
 
@@ -31,7 +27,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly ThumbnailManager _thumbnailManager;
     private readonly ISecondaryTileManager _secondaryTileManager;
-    private readonly FolderLastIntractItemManager _folderLastIntractItemManager;
+    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
@@ -43,7 +39,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         FolderContainerTypeManager folderContainerTypeManager,
         ThumbnailManager thumbnailManager,
         ISecondaryTileManager secondaryTileManager,
-        FolderLastIntractItemManager folderLastIntractItemManager,
+        IFolderLastIntractItemService folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ArchiveFileInnerStructureCache archiveFileInnerStructureCache
         )

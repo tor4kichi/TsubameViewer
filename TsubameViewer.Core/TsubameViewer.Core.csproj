@@ -155,10 +155,11 @@
     <Compile Include="Models\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="Models\ImageViewer\NotSupportedImageFormatException.cs" />
     <Compile Include="Helpers\MessengerObservableExtensions.cs" />
-    <Compile Include="Services\FolderLastIntractItemManager.cs" />
+    <Compile Include="Services\FolderLastIntractItemService.cs" />
     <Compile Include="Contracts\Services\IBookmarkService.cs" />
     <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
     <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
+    <Compile Include="Contracts\Services\IFolderLastIntractItemManager.cs" />
     <Compile Include="Services\RestoreNavigationService.cs" />
     <Compile Include="Services\LocalBookmarkService.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
