@@ -205,7 +205,7 @@ namespace TsubameViewer.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly IBookmarkService _bookmarkManager;
         private readonly RecentlyAccessService _recentlyAccessManager;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -221,7 +221,7 @@ namespace TsubameViewer.ViewModels
             ImageViewerSettings imageCollectionSettings,
             IBookmarkService bookmarkManager,
             RecentlyAccessService recentlyAccessManager,
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             FolderListingSettings folderListingSettings,
             IFolderLastIntractItemService folderLastIntractItemManager,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
@@ -1226,21 +1226,21 @@ namespace TsubameViewer.ViewModels
 
                     Debug.WriteLine(canvasSize);
                     var firstImage = candidateImages.ElementAt(0);
-                    ThumbnailManager.ThumbnailSize? firstImageSize = firstImage.GetThumbnailSize();
+                    ThumbnailSize? firstImageSize = firstImage.GetThumbnailSize();
                     var secondImage = candidateImages.ElementAt(1);
-                    ThumbnailManager.ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
+                    ThumbnailSize? secondImageSize = secondImage.GetThumbnailSize();
 
                     bool canDoubleView;
-                    if (firstImageSize is not null and ThumbnailManager.ThumbnailSize fistImageSizeReal 
-                        && secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal)
+                    if (firstImageSize is not null and ThumbnailSize fistImageSizeReal 
+                        && secondImageSize is not null and ThumbnailSize secondImageSizeReal)
                     {
                         canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, in fistImageSizeReal, in secondImageSizeReal);
                     }
-                    else if (firstImageSize is not null and ThumbnailManager.ThumbnailSize firstImageSizeReal2)
+                    else if (firstImageSize is not null and ThumbnailSize firstImageSizeReal2)
                     {
                         canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, in firstImageSizeReal2, await GetThumbnailSizeAsync(secondImage, ct));
                     }
-                    else if (secondImageSize is not null and ThumbnailManager.ThumbnailSize secondImageSizeReal2)
+                    else if (secondImageSize is not null and ThumbnailSize secondImageSizeReal2)
                     {
                         canDoubleView = CanInsideSameHeightAsLarger(in canvasSize, await GetThumbnailSizeAsync(firstImage, ct), in secondImageSizeReal2);
                     }
@@ -1261,7 +1261,7 @@ namespace TsubameViewer.ViewModels
             }
         }
 
-        private static bool CanInsideSameHeightAsLarger(in Vector2 canvasSize, in ThumbnailManager.ThumbnailSize firstImageSize, in ThumbnailManager.ThumbnailSize secondImageSize)
+        private static bool CanInsideSameHeightAsLarger(in Vector2 canvasSize, in ThumbnailSize firstImageSize, in ThumbnailSize secondImageSize)
         {
             float firstImageScaledWidth = (canvasSize.Y / firstImageSize.Height) * firstImageSize.Width;
             float secondImageScaledWidth = (canvasSize.Y / secondImageSize.Height) * secondImageSize.Width;
@@ -1269,9 +1269,9 @@ namespace TsubameViewer.ViewModels
         }
 
 
-        private async ValueTask<ThumbnailManager.ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
+        private async ValueTask<ThumbnailSize> GetThumbnailSizeAsync(IImageSource source, CancellationToken ct)
         {
-            if (_thumbnailManager.GetThumbnailOriginalSize(source.Path) is not null and ThumbnailManager.ThumbnailSize thumbSize) { return thumbSize; }
+            if (_thumbnailManager.GetThumbnailOriginalSize(source.Path) is not null and ThumbnailSize thumbSize) { return thumbSize; }
 
             if (source.IsStorageItemNotFound())
             {

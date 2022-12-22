@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Contracts.Services;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using static TsubameViewer.Core.Models.ImageViewer.ArchiveFileInnerStructureCache;
@@ -58,7 +58,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
     private readonly ArchiveFileInnerSturcture _archiveFileInnerStructure;
     private readonly CompositeDisposable _disposables;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
     private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
     private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
@@ -75,7 +75,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         ArchiveFileInnerSturcture archiveFileInnerStructure,
         CompositeDisposable disposables, 
         FolderListingSettings folderListingSettings, 
-        ThumbnailManager thumbnailManager            
+        IThumbnailImageService thumbnailManager            
         )
     {
         File = file;
@@ -370,10 +370,16 @@ public sealed class PdfImageCollection : IImageCollection
     private readonly PdfDocument _pdfDocument;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
     private readonly IImageSource[] _imageSourcesCache;
-    public PdfImageCollection(StorageFile file, PdfDocument pdfDocument, FolderListingSettings folderListingSettings, ImageViewerSettings imageViewerSettings, ThumbnailManager thumbnailManager)
+    public PdfImageCollection(
+        StorageFile file, 
+        PdfDocument pdfDocument, 
+        FolderListingSettings folderListingSettings, 
+        ImageViewerSettings imageViewerSettings, 
+        IThumbnailImageService thumbnailManager
+        )
     {
         _pdfDocument = pdfDocument;
         _folderListingSettings = folderListingSettings;

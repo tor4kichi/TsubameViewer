@@ -11,13 +11,14 @@ using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.Core.Models.ImageViewer.ImageSource;
 
 public sealed class StorageItemImageSource : IImageSource
 {
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
     public IStorageItem StorageItem { get; }
 
@@ -34,7 +35,7 @@ public sealed class StorageItemImageSource : IImageSource
     /// </summary>
     /// <param name="storageItem"></param>
     /// <param name="thumbnailManager"></param>
-    public StorageItemImageSource(IStorageItem storageItem, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+    public StorageItemImageSource(IStorageItem storageItem, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
     {
         StorageItem = storageItem;
         _folderListingSettings = folderListingSettings;
@@ -109,7 +110,7 @@ public sealed class StorageItemImageSource : IImageSource
         }
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return _thumbnailManager.GetThumbnailOriginalSize(StorageItem);
     }

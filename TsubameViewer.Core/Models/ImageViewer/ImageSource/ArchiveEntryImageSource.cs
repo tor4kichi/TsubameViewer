@@ -30,9 +30,15 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
     private readonly ArchiveDirectoryToken _archiveDirectoryToken;
     private readonly ArchiveImageCollection _archiveImageCollection;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
-    public ArchiveEntryImageSource(IArchiveEntry entry, ArchiveDirectoryToken archiveDirectoryToken, ArchiveImageCollection archiveImageCollection, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+    public ArchiveEntryImageSource(
+        IArchiveEntry entry, 
+        ArchiveDirectoryToken archiveDirectoryToken, 
+        ArchiveImageCollection archiveImageCollection, 
+        FolderListingSettings folderListingSettings, 
+        IThumbnailImageService thumbnailManager
+        )
     {
         _entry = entry;
         _archiveDirectoryToken = archiveDirectoryToken;
@@ -113,7 +119,7 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
         return _archiveDirectoryToken.Entry;
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _entry);
     }

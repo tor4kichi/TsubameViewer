@@ -1,6 +1,5 @@
 ﻿using LiteDB;
 using Microsoft.IO;
-using Microsoft.Toolkit.Uwp.Helpers;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
@@ -23,24 +22,26 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Infrastructure;
 using VersOne.Epub;
 using Windows.Data.Pdf;
-using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Contracts.Services;
 
-namespace TsubameViewer.Core.Models.FolderItemListing;
+namespace TsubameViewer.Core.Service;
 
-public sealed class ThumbnailManager
+public sealed class ThumbnailImageService : IThumbnailImageService
 {
     private readonly ILiteDatabase _temporaryDb;
     private readonly ILiteCollection<ThumbnailItemIdEntry> _thumbnailIdDb;
     private readonly ILiteStorage<string> _thumbnailDb;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
-    private readonly static AsyncLock _fileReadWriteLock = new ();
+    private readonly static AsyncLock _fileReadWriteLock = new();
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
     private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
@@ -93,7 +94,7 @@ public sealed class ThumbnailManager
         _thumbnailIdDb.Upsert(new ThumbnailItemIdEntry() { Id = itemId, InsideId = itemIdWithRndPostfix });
         return itemIdWithRndPostfix;
     }
-   
+
     private bool TryGetThumbnailInsideId(string itemId, out string outInsideId)
     {
         if (_thumbnailIdDb.FindById(itemId) is not null and var idEntry)
@@ -148,8 +149,8 @@ public sealed class ThumbnailManager
 
         public string InsideId { get; set; }
     }
-    
-    public ThumbnailManager(
+
+    public ThumbnailImageService(
         ILiteDatabase temporaryDb,
         FolderListingSettings folderListingSettings,
         ThumbnailImageInfoRepository thumbnailImageInfoRepository
@@ -164,7 +165,7 @@ public sealed class ThumbnailManager
 
         _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
             .Select(x => string.IsNullOrWhiteSpace(x) is false ? new Regex(x) : null)
-            .ToReadOnlyReactivePropertySlim();            
+            .ToReadOnlyReactivePropertySlim();
     }
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
@@ -177,7 +178,7 @@ public sealed class ThumbnailManager
 
         stream.Seek(0, SeekOrigin.Begin);
         _thumbnailDb.Upload(CreateThumbnailInsideId(itemId), filename, stream);
-        stream.Seek(0, SeekOrigin.Begin);            
+        stream.Seek(0, SeekOrigin.Begin);
     }
 
 
@@ -192,7 +193,7 @@ public sealed class ThumbnailManager
                 {
                     using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                     {
-                        await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);                            
+                        await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                         UploadWithRetry(itemId, targetItem.Name, memoryStream);
                     }
                 }
@@ -208,7 +209,7 @@ public sealed class ThumbnailManager
     public async Task SetArchiveEntryThumbnailAsync(StorageFile targetItem, IArchiveEntry entry, IRandomAccessStream bitmapImage, bool requireTrancode, CancellationToken ct)
     {
         await Task.Run(async () =>
-        { 
+        {
             var path = GetArchiveEntryPath(targetItem, entry);
             var itemId = ToId(path);
             using (await _fileReadWriteLock.LockAsync(ct))
@@ -233,15 +234,15 @@ public sealed class ThumbnailManager
         });
     }
 
-    public async Task DeleteAllThumnnailsAsync()
+    public async Task DeleteAllThumbnailsAsync()
     {
         _thumbnailImageInfoRepository.DeleteAll();
 
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-        foreach (var id in _thumbnailDb.FindAll().ToArray())
-        {
-            _thumbnailDb.Delete(id.Id);
-        }
+            foreach (var id in _thumbnailDb.FindAll().ToArray())
+            {
+                _thumbnailDb.Delete(id.Id);
+            }
     }
 
     public async Task DeleteThumbnailFromPathAsync(string path)
@@ -250,10 +251,10 @@ public sealed class ThumbnailManager
         var id = ToId(path);
         if (TryGetThumbnailInsideId(id, out var insideId) is false) { return; }
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
-        if (_thumbnailDb.Exists(insideId))
-        {
-            _thumbnailDb.Delete(insideId);
-        }
+            if (_thumbnailDb.Exists(insideId))
+            {
+                _thumbnailDb.Delete(insideId);
+            }
     }
 
     public async Task DeleteAllThumbnailUnderPathAsync(string path)
@@ -269,7 +270,7 @@ public sealed class ThumbnailManager
         }
     }
 
-    
+
     public async Task FolderChangedAsync(string oldPath, string newPath)
     {
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
@@ -280,7 +281,7 @@ public sealed class ThumbnailManager
             {
                 using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
-                    oldPathItem.CopyTo(memoryStream);                        
+                    oldPathItem.CopyTo(memoryStream);
                     _thumbnailDb.Delete(oldPathItem.Id);
 
                     var newPathId = oldPathItem.Id.Replace(oldPath, newPath);
@@ -709,7 +710,7 @@ public sealed class ThumbnailManager
             await encoder.FlushAsync().AsTask(ct);
             await outputStream.FlushAsync().AsTask(ct);
         }
-        catch (Exception ex) when(ex.HResult == -1072868846)
+        catch (Exception ex) when (ex.HResult == -1072868846)
         {
             throw new NotSupportedImageFormatException(Path.GetExtension(path));
         }
@@ -926,8 +927,8 @@ public sealed class ThumbnailManager
         public uint ImageWidth { get; set; }
 
         [BsonField]
-        public uint ImageHeight { get; set; }           
-        
+        public uint ImageHeight { get; set; }
+
         [BsonField]
         public float RatioWH { get; set; }
     }
@@ -982,12 +983,6 @@ public sealed class ThumbnailManager
         }
     }
 
-    public struct ThumbnailSize
-    {
-        public uint Width { get; set; }
-        public uint Height { get; set; }
-        public float RatioWH { get; set; }
-    }
 
     #endregion
 
@@ -1002,17 +997,9 @@ public sealed class ThumbnailManager
     }
 
 
-
-    public sealed class GenerateSecondaryTileThumbnailResult
-    {
-        public StorageFile Wide310x150Logo { get; set; }
-        public StorageFile Square310x310Logo { get; set; }
-        public StorageFile Square150x150Logo { get; set; }
-    }
-   
     public async Task SecondaryThumbnailDeleteNotExist(IEnumerable<string> tileIdList)
     {
-        await Task.Run(async () => 
+        await Task.Run(async () =>
         {
             var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
             var existTileIdHashSet = tileIdList.ToHashSet();
@@ -1039,7 +1026,7 @@ public sealed class ThumbnailManager
         }
         else
         {
-            throw new NotSupportedException(); 
+            throw new NotSupportedException();
         }
     }
 
@@ -1057,8 +1044,8 @@ public sealed class ThumbnailManager
     }
 
     private async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, CancellationToken ct)
-    {            
-        var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();            
+    {
+        var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
         var itemFolder = await thumbnailFolder.CreateFolderAsync(tileId, CreationCollisionOption.ReplaceExisting);
         var wideThumbFile = await itemFolder.CreateFileAsync("thumb310x150.png", CreationCollisionOption.ReplaceExisting);
         var square310ThumbFile = await itemFolder.CreateFileAsync("thumb310x310.png", CreationCollisionOption.ReplaceExisting);
@@ -1067,7 +1054,7 @@ public sealed class ThumbnailManager
         try
         {
             //                
-            var (result, stream) = await(file.FileType switch
+            var (result, stream) = await (file.FileType switch
             {
                 SupportedFileTypesHelper.ZipFileType => ZipFileThumbnailImageWriteToStreamAsync(file, ct),
                 SupportedFileTypesHelper.RarFileType => RarFileThumbnailImageWriteToStreamAsync(file, ct),
@@ -1087,7 +1074,7 @@ public sealed class ThumbnailManager
                 SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, ct),
                 _ => throw new NotSupportedException(file.FileType)
             });
-                
+
             if (!result) { return null; }
             using (stream)
             {
@@ -1141,7 +1128,7 @@ public sealed class ThumbnailManager
                     Square310x310Logo = square310ThumbFile,
                     Square150x150Logo = square150ThumbFile,
                 };
-            }                
+            }
         }
         catch
         {

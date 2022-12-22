@@ -13,11 +13,10 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
@@ -26,13 +25,13 @@ namespace TsubameViewer.Core.Models.ImageViewer;
 
 public sealed class ImageCollectionManager
 {
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
     public ImageCollectionManager(
-        ThumbnailManager thumbnailManager, 
+        IThumbnailImageService thumbnailManager, 
         FolderListingSettings folderListingSettings,
         ImageViewerSettings imageViewerSettings,
         ArchiveFileInnerStructureCache archiveFileInnerStructureCache            

@@ -4,12 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.Notification;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage.Streams;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands
@@ -17,7 +17,7 @@ namespace TsubameViewer.ViewModels.SourceFolders.Commands
     public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
     {
         private readonly IMessenger _messenger;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
 
 
@@ -25,7 +25,7 @@ namespace TsubameViewer.ViewModels.SourceFolders.Commands
 
         public ChangeStorageItemThumbnailImageCommand(
             IMessenger messenger,
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository
             ) 
         {

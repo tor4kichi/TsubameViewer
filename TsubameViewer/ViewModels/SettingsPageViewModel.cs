@@ -23,14 +23,12 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Navigations;
-using TsubameViewer.Services;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using Windows.Storage;
-using Windows.UI.Popups;
-using Windows.UI.Xaml.Controls;
 using Xamarin.Essentials;
 using Microsoft.UI.Xaml.Controls;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
@@ -41,7 +39,7 @@ namespace TsubameViewer.ViewModels
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         
         public SettingsGroupViewModel[] SettingGroups { get; }
         public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
@@ -67,7 +65,7 @@ namespace TsubameViewer.ViewModels
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
-            ThumbnailManager thumbnailManager
+            IThumbnailImageService thumbnailManager
             )
         {
             _messenger = messenger;
@@ -104,7 +102,7 @@ namespace TsubameViewer.ViewModels
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
                         new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                         new UpdatableTextSettingItemViewModel("ThumbnailCacheSize".Translate(), _ThumbnailImagesCacheSizeText),
-                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => DeleteThumnnailsAsync()),
+                        new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => DeleteAllThumbnailsAsync()),
                     }
                 },
                 new SettingsGroupViewModel
@@ -194,12 +192,12 @@ namespace TsubameViewer.ViewModels
             }
         }
 
-        private async Task DeleteThumnnailsAsync()
+        private async Task DeleteAllThumbnailsAsync()
         {
             _ThumbnailImagesCacheSizeText.Value = string.Empty;
 
             _IsThumbnailDeleteButtonActive.Value = false;
-            await _thumbnailManager.DeleteAllThumnnailsAsync();
+            await _thumbnailManager.DeleteAllThumbnailsAsync();
 
             _ = RefreshThumbnailFilesSizeAsync(_navigationCts?.Token ?? CancellationToken.None);
         }

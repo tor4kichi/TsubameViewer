@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -69,7 +70,7 @@ namespace TsubameViewer.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private readonly BackNavigationCommand _backNavigationCommand;
@@ -170,7 +171,7 @@ namespace TsubameViewer.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ISecondaryTileManager secondaryTileManager,
             IFolderLastIntractItemService folderLastIntractItemManager,
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             FolderListingSettings folderListingSettings,
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             BackNavigationCommand backNavigationCommand,

@@ -4,8 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.ImageViewer;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -15,12 +14,12 @@ namespace TsubameViewer.Core.Models.Albam;
 public sealed class AlbamItemImageSource : IImageSource
 {
     private readonly AlbamItemEntry _albamItem;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
     public IImageSource InnerImageSource { get; }
 
     // 画像ソースの遅延解決
-    public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource, ThumbnailManager thumbnailManager)
+    public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource, IThumbnailImageService thumbnailManager)
     {
         _albamItem = albamItem;
         InnerImageSource = imageSource;
@@ -79,7 +78,7 @@ public sealed class AlbamItemImageSource : IImageSource
         }            
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return InnerImageSource?.GetThumbnailSize() ?? _thumbnailManager.GetThumbnailOriginalSize(_albamItem.Path);
     }

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
-using static TsubameViewer.Core.Models.FolderItemListing.ThumbnailManager;
 
 namespace TsubameViewer.Core.Models.ImageViewer;
 

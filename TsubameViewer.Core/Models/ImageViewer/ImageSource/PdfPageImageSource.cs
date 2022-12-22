@@ -19,9 +19,15 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     private readonly PdfPage _pdfPage;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
-    public PdfPageImageSource(PdfPage pdfPage, StorageFile storageItem, FolderListingSettings folderListingSettings, ImageViewerSettings imageViewerSettings, ThumbnailManager thumbnailManager)
+    public PdfPageImageSource(
+        PdfPage pdfPage, 
+        StorageFile storageItem, 
+        FolderListingSettings folderListingSettings, 
+        ImageViewerSettings imageViewerSettings, 
+        IThumbnailImageService thumbnailManager
+        )
     {
         _pdfPage = pdfPage;
         Name = (_pdfPage.Index + 1).ToString();
@@ -88,7 +94,7 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
         ((IDisposable)_pdfPage).Dispose();
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _pdfPage);
     }

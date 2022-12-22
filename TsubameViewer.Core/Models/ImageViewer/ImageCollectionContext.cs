@@ -10,6 +10,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using Windows.Storage;
@@ -47,7 +48,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)) { FolderDepth = FolderDepth.Shallow };
 
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
     private StorageItemQueryResult _folderAndArchiveFileSearchQuery;
     private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
@@ -58,7 +59,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     private readonly Dictionary<FileSortType, QueryOptions> _sortTypetoQueryOptions = new ();
 
-    public FolderImageCollectionContext(StorageFolder storageFolder, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+    public FolderImageCollectionContext(StorageFolder storageFolder, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
     {
         Folder = storageFolder;
         _folderListingSettings = folderListingSettings;
@@ -222,12 +223,12 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
     public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
 
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
     public string Name => ArchiveImageCollection.Name;
 
 
-    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
     {
         ArchiveImageCollection = archiveImageCollection;
         ArchiveDirectoryToken = archiveDirectoryToken;

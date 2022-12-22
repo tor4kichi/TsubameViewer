@@ -73,7 +73,7 @@ namespace TsubameViewer.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly AlbamRepository _albamRepository;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -202,7 +202,7 @@ namespace TsubameViewer.ViewModels
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             AlbamRepository albamRepository,
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             ISecondaryTileManager secondaryTileManager,
             IFolderLastIntractItemService folderLastIntractItemManager,
             FolderListingSettings folderListingSettings,

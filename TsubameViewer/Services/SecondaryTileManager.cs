@@ -20,7 +20,7 @@ namespace TsubameViewer.Services
 {
     public sealed class SecondaryTileManager : ISecondaryTileManager
     {
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly SecondaryTileIdRepository _secondaryTileIdRepository;
 
         public sealed class SecondaryTileIdRepository : LiteDBServiceBase<SecondaryTileId>
@@ -72,7 +72,7 @@ namespace TsubameViewer.Services
 
 
         public SecondaryTileManager(
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             SecondaryTileIdRepository secondaryTileIdRepository
             )
         {

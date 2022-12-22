@@ -22,7 +22,6 @@ using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.PageNavigation
 {
-    using static TsubameViewer.Core.Models.FolderItemListing.ThumbnailManager;
     using static TsubameViewer.ViewModels.ImageListupPageViewModel;
     using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 

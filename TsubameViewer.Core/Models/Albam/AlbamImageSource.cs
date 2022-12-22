@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using Windows.Storage;
@@ -65,7 +66,7 @@ public sealed class AlbamImageSource : IImageSource
         return _sampleImageSource;
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return null;
     }

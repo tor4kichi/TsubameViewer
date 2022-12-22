@@ -30,7 +30,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
     private readonly ImageCollectionManager _imageCollectionManager;
 
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
     private readonly IMessenger _messenger;
 
     public AlbamImageCollectionContext(
@@ -40,7 +40,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         ImageCollectionManager imageCollectionManager,
 
         FolderListingSettings folderListingSettings,
-        ThumbnailManager thumbnailManager,
+        IThumbnailImageService thumbnailManager,
 
         IMessenger messenger
         )

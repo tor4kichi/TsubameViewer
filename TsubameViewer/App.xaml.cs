@@ -43,6 +43,7 @@ using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Maintenance;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Services;
+using TsubameViewer.Core.Service;
 
 namespace TsubameViewer
 {
@@ -121,7 +122,7 @@ namespace TsubameViewer
             container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
 
             container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
-            container.Register<ThumbnailManager>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+            container.Register<ThumbnailImageService>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
 
             container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
             container.Register<IViewLocator, ViewLocator>();
@@ -132,6 +133,7 @@ namespace TsubameViewer
             container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
             container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
             container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
+            container.Register<IThumbnailImageService, ThumbnailImageService>(reuse: new SingletonReuse());
 
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();

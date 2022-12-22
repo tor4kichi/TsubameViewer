@@ -30,7 +30,7 @@ namespace TsubameViewer.ViewModels
 
         private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
         private readonly IMessenger _messenger;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -60,7 +60,7 @@ namespace TsubameViewer.ViewModels
             FolderListingSettings folderListingSettings,
             IBookmarkService bookmarkManager,
             AlbamRepository albamRepository,
-            ThumbnailManager thumbnailManager,
+            IThumbnailImageService thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             IFolderLastIntractItemService folderLastIntractItemManager,
             RecentlyAccessService recentlyAccessManager,

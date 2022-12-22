@@ -30,7 +30,7 @@ namespace TsubameViewer.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly FolderListingSettings _folderListingSettings;
-        private readonly ThumbnailManager _thumbnailManager;
+        private readonly IThumbnailImageService _thumbnailManager;
 
         public ObservableCollection<StorageItemViewModel> Albams { get; } = new ();
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -49,7 +49,7 @@ namespace TsubameViewer.ViewModels
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             FolderListingSettings folderListingSettings,
-            ThumbnailManager thumbnailManager
+            IThumbnailImageService thumbnailManager
             )
         {
             _messenger = messenger;

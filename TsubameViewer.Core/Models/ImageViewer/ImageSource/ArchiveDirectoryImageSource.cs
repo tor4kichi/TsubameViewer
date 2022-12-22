@@ -11,6 +11,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.Core.Models.ImageViewer.ImageSource;
 
@@ -19,9 +20,9 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
     private readonly ArchiveImageCollection _imageCollection;
     private readonly ArchiveDirectoryToken _directoryToken;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly ThumbnailManager _thumbnailManager;
+    private readonly IThumbnailImageService _thumbnailManager;
 
-    public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings, ThumbnailManager thumbnailManager)
+    public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
     {
         _imageCollection = archiveImageCollection;
         _directoryToken = directoryToken;
@@ -126,7 +127,7 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
         else { return entry; }
     }
 
-    public ThumbnailManager.ThumbnailSize? GetThumbnailSize()
+    public ThumbnailSize? GetThumbnailSize()
     {
         return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, ArchiveEntry);
     }

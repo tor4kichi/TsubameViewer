@@ -140,8 +140,9 @@
     <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
     <Compile Include="Contracts\Services\IRecentlyAccessService.cs" />
+    <Compile Include="Contracts\Services\IThumbnailImageService.cs" />
     <Compile Include="Services\RecentlyAccessService.cs" />
-    <Compile Include="Models\FolderItemListing\ThumbnailManager.cs" />
+    <Compile Include="Services\ThumbnailImageService.cs" />
     <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
     <Compile Include="Models\ImageViewer\DirectoryPathHelper.cs" />
