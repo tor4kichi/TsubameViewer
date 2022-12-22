@@ -3,18 +3,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
-public sealed class RecentlyAccessManager 
+public sealed class RecentlyAccessService 
+    : IRecentlyAccessService
+    , ILaunchTimeMaintenance
 {
-    public const int RecordCount = 100;
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    public static int MaxRecordCount { get; set; } = 100;
 
-    public RecentlyAccessManager(RecentlyAccessRepository recentlyAccessRepository)
+    public RecentlyAccessService(RecentlyAccessRepository recentlyAccessRepository)
     {
-        _recentlyAccessRepository = recentlyAccessRepository;
+        _recentlyAccessRepository = recentlyAccessRepository;        
     }
 
     public void AddWatched(string path)
@@ -27,9 +30,9 @@ public sealed class RecentlyAccessManager
         _recentlyAccessRepository.Upsert(path, lastAccess);
     }
 
-    public List<RecentlyAccessEntry> GetItemsSortWithRecently(int take)
+    public List<(string Path, DateTimeOffset LastAccessTime)> GetItemsSortWithRecently(int take)
     {
-        return _recentlyAccessRepository.GetItemsSortWithRecently(take);
+        return _recentlyAccessRepository.GetItemsSortWithRecently(take).Select(x => (x.Path, x.LastAccess)).ToList();
     }
 
     public void Delete(RecentlyAccessEntry entry)
@@ -45,6 +48,11 @@ public sealed class RecentlyAccessManager
     public void DeleteAllUnderPath(string path)
     {
         _recentlyAccessRepository.DeleteAllUnderPath(path);
+    }    
+
+    void ILaunchTimeMaintenance.Maintenance()
+    {
+        _recentlyAccessRepository.MaintenanceRecordLimit(MaxRecordCount);
     }
 
     public sealed class RecentlyAccessRepository : LiteDBServiceBase<RecentlyAccessEntry>
@@ -66,20 +74,32 @@ public sealed class RecentlyAccessManager
             }
             else
             {
-                var count = _collection.Count();
-                if (count > RecordCount)
-                {
-                    var first = _collection.Query().OrderBy(x => x.LastAccess).First();
-                    _collection.Delete(first.Path);
-                }
-
                 _collection.Insert(new RecentlyAccessEntry() { Path = path, LastAccess = lastAccess });
             }
         }
 
-        public List<RecentlyAccessEntry> GetItemsSortWithRecently(int take)
+        public int MaintenanceRecordLimit(int limit)
         {
-            return _collection.Query().OrderByDescending(x => x.LastAccess).Limit(take).ToList();
+            var count = _collection.Count();
+            if (count > limit)
+            {
+                int deleteCount = limit - count;
+                foreach (var deleteItem in _collection.Query().OrderBy(x => x.LastAccess).Limit(deleteCount).ToArray())
+                {
+                    _collection.Delete(deleteItem.Path);
+                }
+
+                return deleteCount;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public IEnumerable<RecentlyAccessEntry> GetItemsSortWithRecently(int take)
+        {
+            return _collection.Query().OrderByDescending(x => x.LastAccess).Limit(take).ToEnumerable();
         }
 
         public void Delete(string path)

@@ -15,6 +15,12 @@ using Windows.Storage;
 
 namespace TsubameViewer.Core.UseCases.Maintenance;
 
+/// <summary>
+/// ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
+/// ローカルDBや画像サムネイルの破棄などを行う
+/// 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
+/// 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
+/// </summary>
 public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     ILaunchTimeMaintenance,
     IRecipient<SourceStorageItemIgnoringRequestMessage>,
@@ -22,7 +28,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
 {
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
-    private readonly RecentlyAccessManager _recentlyAccessManager;
+    private readonly RecentlyAccessService _recentlyAccessManager;
     private readonly IBookmarkService _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly ThumbnailManager _thumbnailManager;
@@ -34,7 +40,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     public CacheDeletionWhenSourceStorageItemIgnored(
         IMessenger messenger,
         SourceStorageItemsRepository storageItemsRepository,
-        RecentlyAccessManager recentlyAccessManager,
+        RecentlyAccessService recentlyAccessManager,
         IBookmarkService bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
         ThumbnailManager thumbnailManager,

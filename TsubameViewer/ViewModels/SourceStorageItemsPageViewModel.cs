@@ -35,7 +35,7 @@ namespace TsubameViewer.ViewModels
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-        private readonly RecentlyAccessManager _recentlyAccessManager;
+        private readonly RecentlyAccessService _recentlyAccessManager;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
@@ -63,7 +63,7 @@ namespace TsubameViewer.ViewModels
             ThumbnailManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             IFolderLastIntractItemService folderLastIntractItemManager,
-            RecentlyAccessManager recentlyAccessManager,
+            RecentlyAccessService recentlyAccessManager,
             ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -184,7 +184,7 @@ namespace TsubameViewer.ViewModels
                     ct.ThrowIfCancellationRequested();
                 }
 
-                async Task<StorageItemViewModel> ToStorageItemViewModel(RecentlyAccessManager.RecentlyAccessEntry entry)
+                async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
                 {
                     var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
                     var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings, _thumbnailManager);
@@ -214,7 +214,7 @@ namespace TsubameViewer.ViewModels
                         }
                         catch
                         {
-                            _recentlyAccessManager.Delete(item);
+                            _recentlyAccessManager.Delete(item.Path);
                         }
 
                         ct.ThrowIfCancellationRequested();
@@ -245,7 +245,7 @@ namespace TsubameViewer.ViewModels
 
 
 
-        List<RecentlyAccessManager.RecentlyAccessEntry> _LastUpdatedRecentlyAccessEnties;
+        List<(string Path, DateTimeOffset LastAccessTime)> _LastUpdatedRecentlyAccessEnties;
 
         public override void OnNavigatedFrom(INavigationParameters parameters)
         {

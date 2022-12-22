@@ -7,6 +7,10 @@ using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.Core.UseCases.Maintenance
 {
+    /// <summary>
+    /// v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、 <br />
+    /// StorageItem.Path == string.Empty となるためアプリの挙動が壊れてしまっていた問題に対処する
+    /// </summary>
     public sealed class SecondaryTileMaintenance : ILaunchTimeMaintenanceAsync
     {
         private readonly ISecondaryTileManager _secondaryTileManager;

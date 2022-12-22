@@ -204,7 +204,7 @@ namespace TsubameViewer.ViewModels
         private readonly AlbamRepository _albamRepository;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly IBookmarkService _bookmarkManager;
-        private readonly RecentlyAccessManager _recentlyAccessManager;
+        private readonly RecentlyAccessService _recentlyAccessManager;
         private readonly ThumbnailManager _thumbnailManager;
         private readonly FolderListingSettings _folderListingSettings;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
@@ -220,7 +220,7 @@ namespace TsubameViewer.ViewModels
             ImageCollectionManager imageCollectionManager,
             ImageViewerSettings imageCollectionSettings,
             IBookmarkService bookmarkManager,
-            RecentlyAccessManager recentlyAccessManager,
+            RecentlyAccessService recentlyAccessManager,
             ThumbnailManager thumbnailManager,
             FolderListingSettings folderListingSettings,
             IFolderLastIntractItemService folderLastIntractItemManager,

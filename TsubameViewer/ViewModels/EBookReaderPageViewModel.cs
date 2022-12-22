@@ -142,7 +142,7 @@ namespace TsubameViewer.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IBookmarkService _bookmarkManager;
         private readonly ThumbnailManager _thumbnailManager;
-        private readonly RecentlyAccessManager _recentlyAccessManager;
+        private readonly RecentlyAccessService _recentlyAccessManager;
         private readonly ApplicationSettings _applicationSettings;
         private readonly IScheduler _scheduler;
 
@@ -161,7 +161,7 @@ namespace TsubameViewer.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             IBookmarkService bookmarkManager,
             ThumbnailManager thumbnailManager,
-            RecentlyAccessManager recentlyAccessManager,
+            RecentlyAccessService recentlyAccessManager,
             ApplicationSettings applicationSettings,
             EBookReaderSettings themeSettings,
             IScheduler scheduler,

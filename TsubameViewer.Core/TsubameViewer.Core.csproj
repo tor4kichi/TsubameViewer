@@ -139,7 +139,8 @@
     <Compile Include="Models\FolderItemListing\FolderItemsCacheRepository.cs" />
     <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
-    <Compile Include="Models\FolderItemListing\RecentlyAccessManager.cs" />
+    <Compile Include="Contracts\Services\IRecentlyAccessService.cs" />
+    <Compile Include="Services\RecentlyAccessService.cs" />
     <Compile Include="Models\FolderItemListing\ThumbnailManager.cs" />
     <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
@@ -234,7 +235,9 @@
       <Version>3.0.3.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Contracts\Models\" />
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

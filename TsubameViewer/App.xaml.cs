@@ -86,6 +86,7 @@ namespace TsubameViewer
             InitializeLocalization();
 
             EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
+            RecentlyAccessService.MaxRecordCount = 100;
         }
 
 
@@ -130,6 +131,7 @@ namespace TsubameViewer
             container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
             container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
             container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
+            container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
 
             container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
             container.Register<SourceStorageItemsPage>();
@@ -151,7 +153,7 @@ namespace TsubameViewer
             container.Register<FileControlSettings>(reuse: new SingletonReuse());
             container.Register<ApplicationSettings>(reuse: new SingletonReuse());
 
-            container.Register<Core.UseCases.Maintenance.CacheDeletionWhenSourceStorageItemIgnored>(reuse: new SingletonReuse());
+            
 
             {
                 var instance = container.Resolve<SecondaryTileManager>();
@@ -159,7 +161,18 @@ namespace TsubameViewer
                 container.RegisterInstance<SecondaryTileManager>(instance);
             }
 
-                container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
+            container.Register<SecondaryTileMaintenance>();
+            container.Register<RemoveSourceStorageItemWhenPathIsEmpty>();
+            container.Register<CacheDeletionWhenSourceStorageItemIgnored>();
+            container.Register<EnsureFavoriteAlbam>();
+            container.RegisterMapping<ILaunchTimeMaintenanceAsync, SecondaryTileMaintenance>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+            container.RegisterMapping<ILaunchTimeMaintenanceAsync, RemoveSourceStorageItemWhenPathIsEmpty>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+            container.RegisterMapping<ILaunchTimeMaintenance, CacheDeletionWhenSourceStorageItemIgnored>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+            container.RegisterMapping<ILaunchTimeMaintenance, EnsureFavoriteAlbam>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+            
+            container.Register<ILaunchTimeMaintenance, RecentlyAccessService>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+
+            container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
             //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
             //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
             container.Register<ImageViewerPageViewModel>(reuse: new SingletonReuse());
@@ -328,69 +341,43 @@ namespace TsubameViewer
                     }
                 });
             }
-
-
         }
 
         public async Task MaintenanceAsync()
         {
-
-            Type[] launchTimeMaintenanceTypes = new[]
+            foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenance>())
             {
-                typeof(SecondaryTileMaintenance),
+                var maintenanceType = maintenanceInst.GetType();
+                Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
-                // v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、
-                // StorageItem.Path == string.Empty となるためアプリの挙動が壊れてしまっていた問題に対処する
-                typeof(RemoveSourceStorageItemWhenPathIsEmpty),
-
-                // ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
-                // ローカルDBや画像サムネイルの破棄などを行う
-                // 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
-                // 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
-                typeof(CacheDeletionWhenSourceStorageItemIgnored),
-
-                // 1.5.1以降に追加したお気に入り用のDB項目の存在を確実化
-                typeof(EnsureFavoriteAlbam),                
-            };
+                try
+                {
+                    maintenanceInst.Maintenance();
+                    Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
+                }
+                catch
+                {
+                    Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
+                } 
+            }
 
             await Task.Run(async () =>
             {
-                foreach (var maintenanceType in launchTimeMaintenanceTypes)
+                foreach (var maintenanceInst in Container.ResolveMany<ILaunchTimeMaintenanceAsync>())
                 {
-                    var instance = Ioc.Default.GetService(maintenanceType);
-                    if (instance is ILaunchTimeMaintenance restorable)
-                    {
-                        Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
+                    var maintenanceType = maintenanceInst.GetType();
+                    Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
 
-                        try
-                        {
-                            restorable.Maintenance();
-                            Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
-                        }
-                        catch
-                        {
-                            Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
-                        }
-                    }
-                    else if (instance is ILaunchTimeMaintenanceAsync restorableAsync)
+                    try
                     {
-                        Debug.WriteLine($"Start maintenance: {maintenanceType.Name}");
-
-                        try
-                        {
-                            await restorableAsync.MaintenanceAsync();
-                            Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
-                        }
-                        catch
-                        {
-                            Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
-                        }
+                        await maintenanceInst.MaintenanceAsync();
+                        Debug.WriteLine($"Done maintenance: {maintenanceType.Name}");
                     }
-                    else
+                    catch
                     {
-                        Debug.WriteLine($"Skip maintenance: {maintenanceType.Name}");
+                        Debug.WriteLine($"Failed maintenance: {maintenanceType.Name}");
                     }
-                }
+                }               
             });
         }
 

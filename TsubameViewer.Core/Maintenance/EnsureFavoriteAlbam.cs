@@ -6,6 +6,9 @@ using TsubameViewer.Core.Models.Albam;
 
 namespace TsubameViewer.Core.UseCases.Maintenance;
 
+/// <summary>
+/// 1.5.1以降に追加したお気に入り用のDB項目の存在を確実化
+/// </summary>
 public sealed class EnsureFavoriteAlbam : ILaunchTimeMaintenance
 {
     public static string FavoriteAlbamTitle { get; set; }
