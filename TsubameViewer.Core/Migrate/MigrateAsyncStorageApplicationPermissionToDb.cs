@@ -1,35 +1,25 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.SourceFolders;
-using Windows.ApplicationModel;
 
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.UseCases.Migrate;
+
+
+public class MigrateAsyncStorageApplicationPermissionToDb : IAsyncMigrater
 {
-    public interface IAsyncMigrater
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+
+    public MigrateAsyncStorageApplicationPermissionToDb(SourceStorageItemsRepository sourceStorageItemsRepository)
     {
-        bool IsRequireMigrate { get; }
-        Task MigrateAsync();
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
     }
 
-    public class MigrateAsyncStorageApplicationPermissionToDb : IAsyncMigrater
+    public Version TargetVersion { get; } = new Version(1, 2, 5);
+
+    public Task MigrateAsync()
     {
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-
-        public MigrateAsyncStorageApplicationPermissionToDb(SourceStorageItemsRepository sourceStorageItemsRepository)
-        {
-            _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        }
-
-        PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 2, Build = 5 };
-
-        public bool IsRequireMigrate => SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion);
-
-        public Task MigrateAsync()
-        {
-            return _sourceStorageItemsRepository.RefreshTokenToPathDbAsync();
-        }
+        return _sourceStorageItemsRepository.RefreshTokenToPathDbAsync();
     }
 }

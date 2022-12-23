@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Toolkit.Helpers;
+using TsubameViewer.Core.Contracts.Services;
 using Windows.Storage;
 using Windows.System;
 
@@ -24,13 +24,21 @@ public interface IBytesObjectSerializer
 {
     byte[]? Serialize<T>(T value);
 
-    T Deserialize<T>(byte[] value);
+    T? Deserialize<T>(byte[] value);
+}
+
+
+public class BinaryJsonObjectSerializer : IBytesObjectSerializer
+{
+    public byte[] Serialize<T>(T value) => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
+
+    public T? Deserialize<T>(byte[] value) => value == null || value.Length == 0 ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
 }
 
 /// <summary>
 /// Storage helper for files and folders living in Windows.Storage.ApplicationData storage endpoints.
 /// </summary>
-public partial class BytesApplicationDataStorageHelper : IFileStorageHelper, ISettingsStorageHelper<string>
+public partial class BytesApplicationDataStorageHelper : IStorageHelper
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ApplicationDataStorageHelper"/> class.

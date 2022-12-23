@@ -1,11 +1,7 @@
 ﻿using LiteDB;
-using Microsoft.Toolkit.Uwp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using TsubameViewer.Core.Models.FolderItemListing;
-using Windows.ApplicationModel;
-using static TsubameViewer.Core.Models.FolderItemListing.DisplaySettingsByPathRepository;
 
 namespace TsubameViewer.Core.UseCases.Migrate
 {
@@ -21,22 +17,19 @@ namespace TsubameViewer.Core.UseCases.Migrate
         }
 
 
-        PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 5, Build = ushort.MaxValue };
-
-        public bool IsRequireMigrate => SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion)
-            ;
+        public Version TargetVersion { get; } = new Version(1, 5, ushort.MaxValue);
 
         public void Migrate()
         {
-            if (_liteDatabase.CollectionExists(nameof(FolderAndArchiveDisplaySettingEntry)))
+            if (_liteDatabase.CollectionExists("FolderAndArchiveDisplaySettingEntry"))
             {
-                var deleteCount = _liteDatabase.GetCollection<FolderAndArchiveDisplaySettingEntry>()
+                var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveDisplaySettingEntry")
                     .DeleteMany("$.Sort = 'UpdateTimeDescThenTitleAsc'");
             }
 
-            if (_liteDatabase.CollectionExists(nameof(FolderAndArchiveChildFileDisplaySettingEntry)))
+            if (_liteDatabase.CollectionExists("FolderAndArchiveChildFileDisplaySettingEntry"))
             {
-                var deleteCount = _liteDatabase.GetCollection<FolderAndArchiveChildFileDisplaySettingEntry>()
+                var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveChildFileDisplaySettingEntry")
                     .DeleteMany("$.ChildItemDefaultSort = 'UpdateTimeDescThenTitleAsc'");
             }
         }

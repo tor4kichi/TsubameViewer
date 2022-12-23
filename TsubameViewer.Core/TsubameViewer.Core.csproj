@@ -121,7 +121,10 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Contracts\Services\IStorageHelper.cs" />
     <Compile Include="IsExternalInit.cs" />
+    <Compile Include="Migrate\IAsyncMigrater.cs" />
+    <Compile Include="Migrate\IMigrater.cs" />
     <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />
     <Compile Include="Models\Albam\AlbamImageSource.cs" />
     <Compile Include="Models\Albam\AlbamItemExtensions.cs" />
@@ -174,7 +177,6 @@
     <Compile Include="Models\SupportedFileTypesHelper.cs" />
     <Compile Include="Models\TitleDigitCompletionComparer.cs" />
     <Compile Include="Helpers\AsyncLock.cs" />
-    <Compile Include="Infrastructure\BinaryObjectSerializer.cs" />
     <Compile Include="Helpers\EnumerableTaskHelper.cs" />
     <Compile Include="Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="Infrastructure\LiteDbService.cs" />
@@ -191,7 +193,6 @@
     <Compile Include="Migrate\DropSearchIndexDb.cs" />
     <Compile Include="Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
-    <Compile Include="Migrate\PackageVersionHelper.cs" />
     <Compile Include="UseCases\Transform\SplitImageTransform.cs" />
     <Compile Include="UseCases\Transform\TitleDigitCompletionTransform.cs" />
     <Compile Include="Contracts\Services\ISecondaryTileManager.cs" />
@@ -217,11 +218,8 @@
     <PackageReference Include="Microsoft.Toolkit.Diagnostics">
       <Version>7.1.2</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.Toolkit.Uwp">
-      <Version>7.1.2</Version>
-    </PackageReference>
-    <PackageReference Include="ReactiveProperty.UWP">
-      <Version>7.2.0</Version>
+    <PackageReference Include="ReactiveProperty">
+      <Version>7.12.0</Version>
     </PackageReference>
     <PackageReference Include="SharpCompress">
       <Version>0.30.0</Version>

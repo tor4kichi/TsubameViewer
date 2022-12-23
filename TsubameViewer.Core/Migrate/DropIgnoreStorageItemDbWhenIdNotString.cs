@@ -1,37 +1,33 @@
 ﻿using LiteDB;
-using Microsoft.Toolkit.Uwp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using TsubameViewer.Core.Models.SourceFolders;
-using Windows.ApplicationModel;
 
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.UseCases.Migrate;
+
+public sealed class DropIgnoreStorageItemDbWhenIdNotString : IMigrater
 {
-    public sealed class DropIgnoreStorageItemDbWhenIdNotString : IMigrater
+    private readonly ILiteDatabase _liteDatabase;
+
+    public DropIgnoreStorageItemDbWhenIdNotString(ILiteDatabase liteDatabase)
     {
-        private readonly ILiteDatabase _liteDatabase;
+        _liteDatabase = liteDatabase;
+    }
 
-        public DropIgnoreStorageItemDbWhenIdNotString(ILiteDatabase liteDatabase)
+
+    public Version TargetVersion { get; } = new Version(1, 4, 0);
+
+    void IMigrater.Migrate()
+    {
+        try
         {
-            _liteDatabase = liteDatabase;
+            if (_liteDatabase.CollectionExists("IgnoreStorageItemEntry"))
+            {
+                _liteDatabase.DropCollection("IgnoreStorageItemEntry");
+            }
         }
-
-        PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 4, Build = 0 };
-
-        public bool IsRequireMigrate => SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion)
-            && _liteDatabase.CollectionExists(nameof(IgnoreStorageItemEntry))            
-            ;
-
-        void IMigrater.Migrate()
+        catch
         {
-            try
-            {
-                _liteDatabase.DropCollection(nameof(IgnoreStorageItemEntry));
-            }
-            catch
-            {
-            }
         }
     }
 }

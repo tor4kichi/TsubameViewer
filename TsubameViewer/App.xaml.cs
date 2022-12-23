@@ -122,20 +122,18 @@ sealed partial class App : Application
     private void RegisterRequiredTypes(Container container)
     {
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
-
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
-        container.Register<ThumbnailImageService>(made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
 
+        container.RegisterInstance<IStorageHelper>(new BytesApplicationDataStorageHelper(ApplicationData.Current, new BinaryJsonObjectSerializer()));
         container.RegisterInstance<IScheduler>(new SynchronizationContextScheduler(System.Threading.SynchronizationContext.Current));
         container.Register<IViewLocator, ViewLocator>();
-
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
         container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
         container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
         container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
         container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
-        container.Register<ThumbnailImageService>(reuse: new SingletonReuse());
+        container.Register<ThumbnailImageService>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
         container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageService>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageService>();
@@ -159,12 +157,8 @@ sealed partial class App : Application
         container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
         container.Register<FileControlSettings>(reuse: new SingletonReuse());
         container.Register<ApplicationSettings>(reuse: new SingletonReuse());
-       
-        {
-            var instance = container.Resolve<SecondaryTileManager>();
-            container.RegisterInstance<ISecondaryTileManager>(instance);
-            container.RegisterInstance<SecondaryTileManager>(instance);
-        }
+
+        container.Register<ISecondaryTileManager, SecondaryTileManager>(reuse: new SingletonReuse());
 
         container.Register<SecondaryTileMaintenance>();
         container.Register<RemoveSourceStorageItemWhenPathIsEmpty>();
@@ -310,12 +304,15 @@ sealed partial class App : Application
             List<Exception> exceptions = new List<Exception>();
             await Task.Run(async () =>
             {
+                Version prevVersion = new Version(SystemInformation.Instance.PreviousVersionInstalled.ToFormattedString());
                 foreach (var migratorType in migraterTypes)
                 {
                     try
                     {
                         var migratorInstance = Ioc.Default.GetService(migratorType);
-                        if (migratorInstance is IMigrater migrater && migrater.IsRequireMigrate)
+                        if (migratorInstance is IMigrater migrater
+                        && (migrater.TargetVersion == null || migrater.TargetVersion >= prevVersion)
+                        )
                         {
                             Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
@@ -323,8 +320,10 @@ sealed partial class App : Application
 
                             Debug.WriteLine($"Done migrate: {migratorType.Name}");
                         }
-                        else if (migratorInstance is IAsyncMigrater asyncMigrater && asyncMigrater.IsRequireMigrate)
-                        {
+                        else if (migratorInstance is IAsyncMigrater asyncMigrater
+                        && (asyncMigrater.TargetVersion == null || asyncMigrater.TargetVersion >= prevVersion) 
+                        )
+                        {                             
                             Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
                             await asyncMigrater.MigrateAsync();

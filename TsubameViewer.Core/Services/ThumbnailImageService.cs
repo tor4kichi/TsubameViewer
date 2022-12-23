@@ -1,7 +1,6 @@
 ﻿using LiteDB;
 using Microsoft.IO;
 using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
@@ -12,14 +11,16 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.SourceFolders;
 using VersOne.Epub;
 using Windows.Data.Pdf;
 using Windows.Graphics.Imaging;
@@ -27,12 +28,6 @@ using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
-using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Models.SourceFolders;
-using Windows.UI.Xaml.Media;
 
 namespace TsubameViewer.Core.Service;
 
@@ -50,9 +45,6 @@ public sealed class ThumbnailImageService
     private readonly static AsyncLock _fileReadWriteLock = new();
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
     
-
-    private ReadOnlyReactivePropertySlim<Regex> _TitlePriorityRegex;
-
     private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
     {
         return Path.Combine(file.Path, entry?.Key ?? "_");
@@ -62,6 +54,26 @@ public sealed class ThumbnailImageService
         return Path.Combine(file.Path, pdfPage.Index.ToString());
     }
 
+    Regex _titlePriorityRegex;
+    string _lasttitlePriorityRegexText;
+    Regex GetTitlePriorityRegex()
+    {
+        if (_titlePriorityRegex != null)
+        {
+            if (_lasttitlePriorityRegexText != _folderListingSettings.ThumbnailPriorityTitleRegex)
+            {
+                _titlePriorityRegex = null;
+            }
+
+            try
+            {
+                _titlePriorityRegex ??= new Regex(_folderListingSettings.ThumbnailPriorityTitleRegex);
+            }
+            catch { }
+        }
+
+        return _titlePriorityRegex;
+    }
 
     private string ToId(string path)
     {
@@ -170,11 +182,7 @@ public sealed class ThumbnailImageService
         _folderListingSettings = folderListingSettings;
         _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-
-        _TitlePriorityRegex = _folderListingSettings.ObserveProperty(x => x.ThumbnailPriorityTitleRegex)
-            .Select(x => string.IsNullOrWhiteSpace(x) is false ? new Regex(x) : null)
-            .ToReadOnlyReactivePropertySlim();
+        _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();        
     }
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
@@ -898,7 +906,7 @@ public sealed class ThumbnailImageService
             ct.ThrowIfCancellationRequested();
 
             ZipArchiveEntry entry = null;
-            if (_TitlePriorityRegex.Value is not null and Regex regex)
+            if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
             }
@@ -924,7 +932,7 @@ public sealed class ThumbnailImageService
         using (var rarArchive = RarArchive.Open(archiveStream))
         {
             RarArchiveEntry entry = null;
-            if (_TitlePriorityRegex.Value is not null and Regex regex)
+            if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }
@@ -950,7 +958,7 @@ public sealed class ThumbnailImageService
         using (var archive = SevenZipArchive.Open(archiveStream))
         {
             SevenZipArchiveEntry entry = null;
-            if (_TitlePriorityRegex.Value is not null and Regex regex)
+            if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }
@@ -976,7 +984,7 @@ public sealed class ThumbnailImageService
         using (var archive = TarArchive.Open(archiveStream))
         {
             TarArchiveEntry entry = null;
-            if (_TitlePriorityRegex.Value is not null and Regex regex)
+            if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }

@@ -1,24 +1,26 @@
 ﻿using LiteDB;
-using Microsoft.Toolkit.Uwp.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.UseCases.Migrate;
+
+public sealed class DropSearchIndexDb : IMigrater
 {
-    public sealed class DropSearchIndexDb : IMigrater
+    private readonly ILiteDatabase _liteDatabase;
+
+    const string RemovedSearchIndexCollectionName = "StorageItemSearchEntry";
+
+    public DropSearchIndexDb(ILiteDatabase liteDatabase)
     {
-        private readonly ILiteDatabase _liteDatabase;
+        _liteDatabase = liteDatabase;
+    }
 
-        const string RemovedSearchIndexCollectionName = "StorageItemSearchEntry";
-
-        public DropSearchIndexDb(ILiteDatabase liteDatabase)
-        {
-            _liteDatabase = liteDatabase;
-        }
-        public bool IsRequireMigrate => _liteDatabase.CollectionExists(RemovedSearchIndexCollectionName);
-
-        public void Migrate()
+    public Version TargetVersion { get; } = new Version(1, 5, 0);
+    
+    public void Migrate()
+    {
+        if (_liteDatabase.CollectionExists(RemovedSearchIndexCollectionName))
         {
             _liteDatabase.DropCollection(RemovedSearchIndexCollectionName);
         }

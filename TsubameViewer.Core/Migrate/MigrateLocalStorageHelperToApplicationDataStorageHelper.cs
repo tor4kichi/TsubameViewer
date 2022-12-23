@@ -1,35 +1,29 @@
-﻿using Microsoft.Toolkit.Uwp.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Infrastructure;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
+using TsubameViewer.Core.Contracts.Services;
+
 using static TsubameViewer.Core.Services.RestoreNavigationService;
 
 namespace TsubameViewer.Core.UseCases.Migrate
 {
-    public interface IMigrater 
-    {
-        bool IsRequireMigrate { get; }
-        void Migrate();
-    }
     public sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
     {
-        private readonly PackageVersion _targetVersion = new PackageVersion() { Major = 1, Minor = 3, Build = 5 };
+        public MigrateLocalStorageHelperToApplicationDataStorageHelper(IStorageHelper storageHelper)
+        {
+            _storageHelper = storageHelper;
+        }
 
-        bool IAsyncMigrater.IsRequireMigrate =>
-            SystemInformation.Instance.IsAppUpdated
-            && SystemInformation.Instance.PreviousVersionInstalled.IsSmallerThen(_targetVersion)    
-            ;
+        public  Version TargetVersion { get; } = new Version(1, 3, 5);
+        private readonly IStorageHelper _storageHelper;
+
         async Task IAsyncMigrater.MigrateAsync()
         {
-            var strorageHelper = BytesApplicationDataStorageHelper.GetCurrent(objectSerializer: new BinaryJsonObjectSerializer());
-            strorageHelper.Clear();
+            _storageHelper.Clear();
 
-            await strorageHelper.TryDeleteItemAsync(NavigationStackRepository.BackNavigationEntriesName);
-            await strorageHelper.TryDeleteItemAsync(NavigationStackRepository.ForwardNavigationEntriesName);
+            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.BackNavigationEntriesName);
+            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.ForwardNavigationEntriesName);
         }
     }
 }
