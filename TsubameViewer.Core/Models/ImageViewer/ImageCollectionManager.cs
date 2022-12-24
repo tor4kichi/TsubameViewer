@@ -1,4 +1,4 @@
-﻿using Microsoft.Toolkit.Diagnostics;
+﻿using CommunityToolkit.Diagnostics;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;

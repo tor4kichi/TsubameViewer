@@ -1,5 +1,5 @@
 ﻿using LiteDB;
-using Microsoft.Toolkit.Diagnostics;
+using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;

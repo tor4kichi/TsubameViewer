@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Diagnostics;
-using Reactive.Bindings;
+﻿using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
