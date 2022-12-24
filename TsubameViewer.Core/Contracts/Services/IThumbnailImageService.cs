@@ -12,7 +12,7 @@ namespace TsubameViewer.Core.Contracts.Services;
 public interface IThumbnailImageService
 {
     Task<IRandomAccessStream> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct);
-    ValueTask<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default);
+    Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default);
     Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default);
     ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource);
     ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight);

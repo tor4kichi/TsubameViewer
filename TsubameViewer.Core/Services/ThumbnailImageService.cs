@@ -205,7 +205,8 @@ public sealed class ThumbnailImageService
         return imageSource.StorageItem != null ? ToId(imageSource.StorageItem) : ToId(imageSource.Path);
     }
 
-    public async ValueTask<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default)
+    // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
+    public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default)
     {
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)

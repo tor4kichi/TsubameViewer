@@ -19,6 +19,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Core.Contracts.Services;
+using Windows.Storage.Streams;
 
 namespace TsubameViewer.ViewModels.PageNavigation
 {
@@ -145,14 +146,13 @@ namespace TsubameViewer.ViewModels.PageNavigation
                 if (Item == null) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
-                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct)))
+                using (var stream = await Task.Run(() => _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct), ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     
                     stream.Seek(0);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    //bitmapImage.DecodePixelHeight = Models.Domain.FolderItemListing.ListingImageConstants.LargeFileThumbnailImageHeight;
                     await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                     Image = bitmapImage;
                 }
