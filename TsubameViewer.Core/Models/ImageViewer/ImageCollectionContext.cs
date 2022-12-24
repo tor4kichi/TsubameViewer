@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.Search;
 
@@ -200,18 +201,41 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public bool IsSupportedFolderContentsChanged => true;
 
-
+   
     public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
     {
-        return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => FolderAndArchiveFileSearchQuery.ContentsChanged += h, h => FolderAndArchiveFileSearchQuery.ContentsChanged -= h).Throttle(TimeSpan.FromSeconds(1)).ToUnit();
+        return Observable.Create<Unit>(observer =>
+        {
+            void FolderAndArchiveFileSearchQuery_ContentsChanged(IStorageQueryResultBase sender, object args)
+            {
+                observer.OnNext(Unit.Default);
+            }
+            FolderAndArchiveFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => FolderAndArchiveFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+        })
+            .Throttle(TimeSpan.FromSeconds(1));
     }
+
+    
 
     public IObservable<Unit> CreateImageFileChangedObserver()
     {
-        return WindowsObservable.FromEventPattern<IStorageQueryResultBase, object>(h => ImageFileSearchQuery.ContentsChanged += h, h => ImageFileSearchQuery.ContentsChanged -= h).Throttle(TimeSpan.FromSeconds(1)).ToUnit();
+        return Observable.Create<Unit>(observer =>
+        {
+            void FolderAndArchiveFileSearchQuery_ContentsChanged(IStorageQueryResultBase sender, object args)
+            {
+                observer.OnNext(Unit.Default);
+            }
+            ImageFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
+            return Disposable.Create(() => ImageFileSearchQuery.ContentsChanged -= FolderAndArchiveFileSearchQuery_ContentsChanged);
+        })
+            .Throttle(TimeSpan.FromSeconds(1));
     }
 
 }
+
+
+
 
 public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDisposable
 {
