@@ -1,8 +1,9 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.Toolkit.Uwp.Helpers;
+using Microsoft.UI.Xaml.Controls;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -12,12 +13,11 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reactive;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -25,10 +25,8 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
-using Xamarin.Essentials;
-using Microsoft.UI.Xaml.Controls;
-using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels
 {
@@ -77,9 +75,11 @@ namespace TsubameViewer.ViewModels
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
             
-            AppInfoCopyToClipboard = new RelayCommand(async () =>
+            AppInfoCopyToClipboard = new RelayCommand(() =>
             {
-                await Clipboard.SetTextAsync(ReportUserEnvString);
+                var data = new DataPackage();
+                data.SetText(ReportUserEnvString);
+                Clipboard.SetContent(data);
             });
 
             SettingGroups = new[]
@@ -132,9 +132,9 @@ namespace TsubameViewer.ViewModels
                     Label = "GeneralUISettings".Translate(),
                     Items =
                     {
-                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #if DEBUG
-                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+                        new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #endif
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
@@ -163,7 +163,7 @@ namespace TsubameViewer.ViewModels
                 .AppendLine();
             sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
                 .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
-                .Append(" ").Append(DeviceInfo.Idiom)
+                .Append(" ").Append(SystemInformation.Instance.DeviceFamily)
                 ;
             ReportUserEnvString = sb.ToString();
         }

@@ -19,8 +19,7 @@ namespace TsubameViewer.Views.Helpers
 
         public bool IsRequireSetFocus()
         {
-            return (Xamarin.Essentials.DeviceInfo.Idiom == Xamarin.Essentials.DeviceIdiom.TV
-                || Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
+            return (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox"
                 || _applicationSettings.IsUINavigationFocusAssistanceEnabled)
                 && UINavigationManager.NowControllerConnected
                 ;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using Windows.UI.ViewManagement;
-using Xamarin.Essentials;
 
 namespace TsubameViewer.ViewModels.ViewManagement.Commands
 {

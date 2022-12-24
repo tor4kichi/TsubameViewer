@@ -27,8 +27,8 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
-using Xamarin.Essentials;
 using TsubameViewer.Core.Contracts.Services;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace TsubameViewer.ViewModels
 {
@@ -126,9 +126,11 @@ namespace TsubameViewer.ViewModels
                     .AppendLine();
                 sb.Append(SystemInformation.Instance.OperatingSystem).Append(" ").Append(SystemInformation.Instance.OperatingSystemArchitecture)
                     .Append("(").Append(SystemInformation.Instance.OperatingSystemVersion).Append(")")
-                    .Append(" ").Append(DeviceInfo.Idiom)
+                    .Append(" ").Append(SystemInformation.Instance.DeviceFamily)
                     ;
-                await Clipboard.SetTextAsync(sb.ToString());
+                var data = new DataPackage();
+                data.SetText(sb.ToString());
+                Clipboard.SetContent(data);
                 await Windows.System.Launcher.LaunchUriAsync(new Uri("https://marshmallow-qa.com/tor4kichi"));
             });
 

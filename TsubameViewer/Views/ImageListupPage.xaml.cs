@@ -1,7 +1,7 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
@@ -13,9 +13,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.UseCases;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -27,8 +25,6 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
-
-// 空白ページの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234238 を参照してください
 
 namespace TsubameViewer.Views
 {

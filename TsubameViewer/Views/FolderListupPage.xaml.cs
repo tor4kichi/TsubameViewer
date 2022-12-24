@@ -1,42 +1,25 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Toolkit.Uwp.UI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Reactive;
+using System.Reactive.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.ViewModels;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using Xamarin.Essentials;
-using System.Reactive;
-using System.Reactive.Subjects;
-using System.Reactive.Linq;
-using Reactive.Bindings.Extensions;
-using System.Threading.Tasks;
-using TsubameViewer.ViewModels;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using Windows.Storage;
-using TsubameViewer.Views.Helpers;
-using Microsoft.Toolkit.Uwp.UI;
-using CommunityToolkit.Mvvm.Input;
-using System.Windows.Input;
 using Windows.UI.Xaml.Media.Animation;
-using CommunityToolkit.Mvvm.DependencyInjection;
-using TsubameViewer.Core.UseCases;
-using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.ViewModels.Albam.Commands;
-using TsubameViewer.Core.Models;
-
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
+using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.Views
 {
