@@ -124,7 +124,6 @@
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Migrate\IAsyncMigrater.cs" />
-    <Compile Include="Migrate\IMigrater.cs" />
     <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />
     <Compile Include="Models\Albam\AlbamImageSource.cs" />
     <Compile Include="Models\Albam\AlbamItemExtensions.cs" />

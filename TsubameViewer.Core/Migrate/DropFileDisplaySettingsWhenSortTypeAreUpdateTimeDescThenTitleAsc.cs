@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TsubameViewer.Core.UseCases.Migrate
 {
-    public sealed class DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc : IMigrater
+    public sealed class DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc : IAsyncMigrater
     {
         private readonly ILiteDatabase _liteDatabase;
 
@@ -17,9 +18,9 @@ namespace TsubameViewer.Core.UseCases.Migrate
         }
 
 
-        public Version TargetVersion { get; } = new Version(1, 5, ushort.MaxValue);
+        public Version? TargetVersion { get; } = new Version(1, 5, ushort.MaxValue);
 
-        public void Migrate()
+        public ValueTask MigrateAsync()
         {
             if (_liteDatabase.CollectionExists("FolderAndArchiveDisplaySettingEntry"))
             {
@@ -32,6 +33,8 @@ namespace TsubameViewer.Core.UseCases.Migrate
                 var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveChildFileDisplaySettingEntry")
                     .DeleteMany("$.ChildItemDefaultSort = 'UpdateTimeDescThenTitleAsc'");
             }
+
+            return new();
         }
     }
 }

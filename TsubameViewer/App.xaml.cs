@@ -171,6 +171,16 @@ sealed partial class App : Application
         
         container.Register<ILaunchTimeMaintenance, RecentlyAccessService>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
 
+        container.Register<IAsyncMigrater, DropSearchIndexDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, DropPathReferenceCountDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, DropIgnoreStorageItemDbWhenIdNotString>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, MigrateAsyncStorageApplicationPermissionToDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, MigrateLocalStorageHelperToApplicationDataStorageHelper>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, DeleteThumbnailImagesOnTemporaryFolder>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<IAsyncMigrater, DummyMigrator>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        
+
         container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
         //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
         //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
@@ -183,6 +193,16 @@ sealed partial class App : Application
         container.Register<IAlbamDialogService, AlbamDialogService>();
         container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
+    }
+
+    class DummyMigrator : IAsyncMigrater
+    {
+        Version IAsyncMigrater.TargetVersion { get; } = new Version(1, 8, 6);
+
+        ValueTask IAsyncMigrater.MigrateAsync()
+        {
+            return new ValueTask();
+        }
     }
 
     protected override async void OnFileActivated(FileActivatedEventArgs args)
@@ -290,46 +310,23 @@ sealed partial class App : Application
         {
             // Note: IsFirstRunを条件とした場合、設定をクリアされた結果として次回起動時が必ずIsFirstRunに引っかかってしまうことに注意
 
-            Type[] migraterTypes = new[]
-            {
-                typeof(DropSearchIndexDb),
-                typeof(DropPathReferenceCountDb),
-                typeof(DropIgnoreStorageItemDbWhenIdNotString),
-                typeof(MigrateAsyncStorageApplicationPermissionToDb),
-                typeof(MigrateLocalStorageHelperToApplicationDataStorageHelper),
-                typeof(DeleteThumbnailImagesOnTemporaryFolder),
-                typeof(DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc),
-            };
-
             List<Exception> exceptions = new List<Exception>();
             await Task.Run(async () =>
             {
-                Version prevVersion = new Version(SystemInformation.Instance.PreviousVersionInstalled.ToFormattedString());
-                foreach (var migratorType in migraterTypes)
+                Version prevVersion = new Version(SystemInformation.Instance.PreviousVersionInstalled.ToFormattedString(3));
+                foreach (var migrater in Container.ResolveMany<IAsyncMigrater>())
                 {
                     try
                     {
-                        var migratorInstance = Ioc.Default.GetService(migratorType);
-                        if (migratorInstance is IMigrater migrater
-                        && (migrater.TargetVersion == null || migrater.TargetVersion >= prevVersion)
-                        )
+                        var migratorType = migrater.GetType();
+                        if (migrater.TargetVersion == null || migrater.TargetVersion >= prevVersion)
                         {
                             Debug.WriteLine($"Start migrate: {migratorType.Name}");
 
-                            migrater.Migrate();
+                            await migrater.MigrateAsync();
 
                             Debug.WriteLine($"Done migrate: {migratorType.Name}");
-                        }
-                        else if (migratorInstance is IAsyncMigrater asyncMigrater
-                        && (asyncMigrater.TargetVersion == null || asyncMigrater.TargetVersion >= prevVersion) 
-                        )
-                        {                             
-                            Debug.WriteLine($"Start migrate: {migratorType.Name}");
-
-                            await asyncMigrater.MigrateAsync();
-
-                            Debug.WriteLine($"Done migrate: {migratorType.Name}");
-                        }
+                        }                        
                         else
                         {
                             Debug.WriteLine($"Skip migrate: {migratorType.Name}");

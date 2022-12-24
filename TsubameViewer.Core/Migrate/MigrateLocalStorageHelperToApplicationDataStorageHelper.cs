@@ -15,10 +15,10 @@ namespace TsubameViewer.Core.UseCases.Migrate
             _storageHelper = storageHelper;
         }
 
-        public  Version TargetVersion { get; } = new Version(1, 3, 5);
+        public  Version? TargetVersion { get; } = new Version(1, 3, 5);
         private readonly IStorageHelper _storageHelper;
 
-        async Task IAsyncMigrater.MigrateAsync()
+        public async ValueTask MigrateAsync()
         {
             _storageHelper.Clear();
 

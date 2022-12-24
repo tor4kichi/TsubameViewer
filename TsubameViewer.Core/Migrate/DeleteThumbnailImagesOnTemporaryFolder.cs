@@ -9,9 +9,9 @@ namespace TsubameViewer.Core.UseCases.Migrate;
 
 public class DeleteThumbnailImagesOnTemporaryFolder : IAsyncMigrater
 {
-    public Version TargetVersion { get; } = new Version(1, 5, 1);
+    public Version? TargetVersion { get; } = new Version(1, 5, 1);
 
-    public async Task MigrateAsync()
+    public async ValueTask MigrateAsync()
     {
         var query = ApplicationData.Current.TemporaryFolder.CreateFileQuery();
 

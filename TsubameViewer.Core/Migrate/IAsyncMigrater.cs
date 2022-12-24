@@ -6,6 +6,6 @@ namespace TsubameViewer.Core.UseCases.Migrate
     public interface IAsyncMigrater
     {
         Version? TargetVersion { get; }
-        Task MigrateAsync();
+        ValueTask MigrateAsync();
     }
 }

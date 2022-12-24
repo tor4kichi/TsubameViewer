@@ -16,10 +16,10 @@ public class MigrateAsyncStorageApplicationPermissionToDb : IAsyncMigrater
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
     }
 
-    public Version TargetVersion { get; } = new Version(1, 2, 5);
+    public Version? TargetVersion { get; } = new Version(1, 2, 5);
 
-    public Task MigrateAsync()
+    public async ValueTask MigrateAsync()
     {
-        return _sourceStorageItemsRepository.RefreshTokenToPathDbAsync();
+        await _sourceStorageItemsRepository.RefreshTokenToPathDbAsync();
     }
 }

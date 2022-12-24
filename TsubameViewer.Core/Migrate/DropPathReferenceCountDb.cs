@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace TsubameViewer.Core.UseCases.Migrate;
 
-public sealed class DropPathReferenceCountDb : IMigrater
+public sealed class DropPathReferenceCountDb : IAsyncMigrater
 {
     private readonly ILiteDatabase _liteDatabase;
 
@@ -16,13 +17,15 @@ public sealed class DropPathReferenceCountDb : IMigrater
         _liteDatabase = liteDatabase;
     }
 
-    public Version TargetVersion { get; } = new Version(1, 5, 0);
+    public Version? TargetVersion { get; } = new Version(1, 5, 0);
 
-    public void Migrate()
+    public ValueTask MigrateAsync()
     {        
         if (_liteDatabase.CollectionExists(RemovedSearchIndexCollectionName))
         {
             _liteDatabase.DropCollection(RemovedSearchIndexCollectionName);
         }
+
+        return new();
     }
 }
