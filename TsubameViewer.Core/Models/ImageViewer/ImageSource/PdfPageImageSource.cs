@@ -17,13 +17,11 @@ namespace TsubameViewer.Core.Models.ImageViewer.ImageSource;
 public sealed class PdfPageImageSource : IImageSource, IDisposable
 {
     private readonly PdfPage _pdfPage;
-    private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
 
     public PdfPageImageSource(
         PdfPage pdfPage, 
         StorageFile storageItem, 
-        FolderListingSettings folderListingSettings, 
         ImageViewerSettings imageViewerSettings
         )
     {
@@ -31,7 +29,6 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
         Name = (_pdfPage.Index + 1).ToString();
         DateCreated = storageItem.DateCreated.DateTime;
         StorageItem = storageItem;
-        _folderListingSettings = folderListingSettings;
         _imageViewerSettings = imageViewerSettings;        
 
         Path = PageNavigationConstants.MakeStorageItemIdWithPage(storageItem.Path, _pdfPage.Index.ToString());
@@ -44,18 +41,6 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     public StorageFile StorageItem { get; }
 
     IStorageItem IImageSource.StorageItem => StorageItem;
-
-    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct)
-    //{
-    //    if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
-    //    {
-    //        return await _thumbnailManager.GetPdfPageThumbnailImageFileAsync(StorageItem, _pdfPage, ct);
-    //    }
-    //    else
-    //    {
-    //        return await _thumbnailManager.GetPdfPageThumbnailImageStreamAsync(StorageItem, _pdfPage, ct);
-    //    }
-    //}
 
     public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
     {
@@ -89,12 +74,7 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     public void Dispose()
     {
         ((IDisposable)_pdfPage).Dispose();
-    }
-
-    //public ThumbnailSize? GetThumbnailSize()
-    //{
-    //    return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, _pdfPage);
-    //}
+    }    
 
     public bool Equals(IImageSource other)
     {

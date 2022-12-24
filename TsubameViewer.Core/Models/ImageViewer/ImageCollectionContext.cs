@@ -47,8 +47,6 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = new QueryOptions(CommonFileQuery.DefaultQuery, Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)) { FolderDepth = FolderDepth.Shallow };
 
-    private readonly FolderListingSettings _folderListingSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
     private StorageItemQueryResult _folderAndArchiveFileSearchQuery;
     private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
@@ -59,11 +57,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     private readonly Dictionary<FileSortType, QueryOptions> _sortTypetoQueryOptions = new ();
 
-    public FolderImageCollectionContext(StorageFolder storageFolder, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
+    public FolderImageCollectionContext(StorageFolder storageFolder)
     {
         Folder = storageFolder;
-        _folderListingSettings = folderListingSettings;
-        _thumbnailManager = thumbnailManager;
         _sortTypetoQueryOptions.Add(FileSortType.None, DefaultImageFileSearchQueryOptions);
     }
 
@@ -72,7 +68,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {
         return FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct)
-            .Select(x => new StorageItemImageSource(x, _folderListingSettings) as IImageSource);
+            .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
     public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
@@ -88,7 +84,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
     {
         return ImageFileSearchQuery.ToAsyncEnumerable(ct)
-            .Select(x => new StorageItemImageSource(x, _folderListingSettings) as IImageSource);
+            .Select(x => new StorageItemImageSource(x) as IImageSource);
     }
 
     public async ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
@@ -120,7 +116,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is not null and var files 
             && files.ElementAtOrDefault(0) is not null and var imageSource)
         {
-            return new StorageItemImageSource(imageSource, _folderListingSettings);
+            return new StorageItemImageSource(imageSource);
         }
         else
         {
@@ -222,18 +218,13 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
     public ArchiveImageCollection ArchiveImageCollection { get; }
     public ArchiveDirectoryToken ArchiveDirectoryToken { get; }
 
-    private readonly FolderListingSettings _folderListingSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
-
     public string Name => ArchiveImageCollection.Name;
 
 
-    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken, FolderListingSettings folderListingSettings, IThumbnailImageService thumbnailManager)
+    public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken)
     {
         ArchiveImageCollection = archiveImageCollection;
         ArchiveDirectoryToken = archiveDirectoryToken;
-        _folderListingSettings = folderListingSettings;
-        _thumbnailManager = thumbnailManager;
     }
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
@@ -241,7 +232,7 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
         // アーカイブファイルは内部にフォルダ構造を持っている可能性がある
         // アーカイブ内のアーカイブは対応しない
         return ArchiveImageCollection.GetSubDirectories(ArchiveDirectoryToken)
-            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings))
+            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x))
             .ToAsyncEnumerable()
             ;
     }
@@ -249,7 +240,7 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
     public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
     {
         return ArchiveImageCollection.GetLeafFolders()
-            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x, _folderListingSettings))
+            .Select(x => (IImageSource)new ArchiveDirectoryImageSource(ArchiveImageCollection, x))
             .ToAsyncEnumerable();
     }
 

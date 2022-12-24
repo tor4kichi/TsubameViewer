@@ -22,7 +22,6 @@ namespace TsubameViewer.ViewModels
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly FolderListingSettings _folderListingSettings;
         private readonly IBookmarkService _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly IThumbnailImageService _thumbnailManager;
@@ -67,7 +66,6 @@ namespace TsubameViewer.ViewModels
         {
             _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _folderListingSettings = folderListingSettings;
             _bookmarkManager = bookmarkManager;
             _albamRepository = albamRepository;
             _thumbnailManager = thumbnailManager;
@@ -123,7 +121,7 @@ namespace TsubameViewer.ViewModels
 
         private StorageItemViewModel ConvertStorageItemViewModel(IStorageItem storageItem)
         {
-            var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings);
+            var storageItemImageSource = new StorageItemImageSource(storageItem);
             return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
         }
 

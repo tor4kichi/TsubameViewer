@@ -41,19 +41,6 @@ public sealed class AlbamImageSource : IImageSource
     }
 
     private IImageSource _sampleImageSource;
-    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
-    //{
-    //    var sampleImageSource = await GetSampleImageSourceAsync(ct);
-    //    if (sampleImageSource is not null)
-    //    {
-    //        return await sampleImageSource.GetThumbnailImageStreamAsync(ct);
-    //    }
-    //    else
-    //    {
-    //        return null;
-    //    }
-    //}
-
     private async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
     {
         if (_sampleImageSource is null && await _albamImageCollectionContext.IsExistImageFileAsync(ct))
@@ -67,11 +54,6 @@ public sealed class AlbamImageSource : IImageSource
 
         return _sampleImageSource;
     }
-
-    //public ThumbnailSize? GetThumbnailSize()
-    //{
-    //    return null;
-    //}
 
     public bool Equals(IImageSource other)
     {

@@ -29,8 +29,6 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
 
-    private readonly FolderListingSettings _folderListingSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
     private readonly IMessenger _messenger;
 
     public AlbamImageCollectionContext(
@@ -38,10 +36,6 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         AlbamRepository albamRepository,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ImageCollectionManager imageCollectionManager,
-
-        FolderListingSettings folderListingSettings,
-        IThumbnailImageService thumbnailManager,
-
         IMessenger messenger
         )
     {
@@ -49,8 +43,6 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         _albamRepository = albamRepository;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _imageCollectionManager = imageCollectionManager;
-        _folderListingSettings = folderListingSettings;
-        _thumbnailManager = thumbnailManager;
         _messenger = messenger;
     }
 
@@ -81,7 +73,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         {
             if (SupportedFileTypesHelper.IsSupportedImageFile(file))
             {
-                imageSource = new StorageItemImageSource(file, _folderListingSettings);
+                imageSource = new StorageItemImageSource(file);
             }
             else if (SupportedFileTypesHelper.IsSupportedMangaFile(file))
             {
@@ -98,17 +90,17 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
                 }
                 else
                 {
-                    imageSource = new StorageItemImageSource(file, _folderListingSettings);
+                    imageSource = new StorageItemImageSource(file);
                 }
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFile(file))
             {
-                imageSource = new StorageItemImageSource(file, _folderListingSettings);
+                imageSource = new StorageItemImageSource(file);
             }
         }
         else if (storageItem is StorageFolder folder)
         {
-            imageSource = new StorageItemImageSource(folder, _folderListingSettings);
+            imageSource = new StorageItemImageSource(folder);
         }
         
         var albamImage = new AlbamItemImageSource(entry, imageSource);

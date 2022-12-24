@@ -1820,7 +1820,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         }
         else if (_currentFolderItem is AlbamEntry albam)
         {
-            imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
+            imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
         }
         else
         {

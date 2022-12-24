@@ -15,8 +15,6 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Models.FolderItemListing;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
@@ -25,20 +23,14 @@ namespace TsubameViewer.Core.Models.ImageViewer;
 
 public sealed class ImageCollectionManager
 {
-    private readonly IThumbnailImageService _thumbnailManager;
-    private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
     public ImageCollectionManager(
-        IThumbnailImageService thumbnailManager, 
-        FolderListingSettings folderListingSettings,
         ImageViewerSettings imageViewerSettings,
         ArchiveFileInnerStructureCache archiveFileInnerStructureCache            
         )
     {
-        _thumbnailManager = thumbnailManager;
-        _folderListingSettings = folderListingSettings;
         _imageViewerSettings = imageViewerSettings;
         _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
     }
@@ -84,7 +76,7 @@ public sealed class ImageCollectionManager
             {
                 throw new ArgumentException("not found directory in Archive file : " + archiveDirectoryPath);
             }
-            return new ArchiveImageCollectionContext(aic, directoryToken, _folderListingSettings, _thumbnailManager);
+            return new ArchiveImageCollectionContext(aic, directoryToken);
         }
         else if (imageCollection is PdfImageCollection pdfImageCollection)
         {
@@ -98,7 +90,7 @@ public sealed class ImageCollectionManager
 
     public FolderImageCollectionContext GetFolderImageCollectionContext(StorageFolder folder, CancellationToken ct)
     {
-        return new FolderImageCollectionContext(folder, _folderListingSettings, _thumbnailManager);
+        return new FolderImageCollectionContext(folder);
     }
 
 
@@ -138,7 +130,7 @@ public sealed class ImageCollectionManager
 
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, zipArchive, ct);
 
-            return new ArchiveImageCollection(file, zipArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
+            return new ArchiveImageCollection(file, zipArchive, sturecture, disposables);
         }
         catch
         {
@@ -151,7 +143,7 @@ public sealed class ImageCollectionManager
     private async Task<IImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
     {
         var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
-        return new PdfImageCollection(file, pdfDocument, _folderListingSettings, _imageViewerSettings, _thumbnailManager);
+        return new PdfImageCollection(file, pdfDocument, _imageViewerSettings);
     }
 
 
@@ -167,7 +159,7 @@ public sealed class ImageCollectionManager
             var rarArchive = RarArchive.Open(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, rarArchive, ct);
-            return new ArchiveImageCollection(file, rarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
+            return new ArchiveImageCollection(file, rarArchive, sturecture, disposables);
         }
         catch
         {
@@ -191,7 +183,7 @@ public sealed class ImageCollectionManager
             var szArchive = SevenZipArchive.Open(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, szArchive, ct);
-            return new ArchiveImageCollection(file, szArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
+            return new ArchiveImageCollection(file, szArchive, sturecture, disposables);
         }
         catch
         {
@@ -213,7 +205,7 @@ public sealed class ImageCollectionManager
             var tarArchive = TarArchive.Open(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, tarArchive, ct);
-            return new ArchiveImageCollection(file, tarArchive, sturecture, disposables, _folderListingSettings, _thumbnailManager);
+            return new ArchiveImageCollection(file, tarArchive, sturecture, disposables);
         }
         catch
         {

@@ -70,8 +70,7 @@ namespace TsubameViewer.ViewModels
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-        private readonly IThumbnailImageService _thumbnailManager;
-        private readonly FolderListingSettings _folderListingSettings;
+        private readonly IThumbnailImageService _thumbnailManager;        
         private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private readonly BackNavigationCommand _backNavigationCommand;
 
@@ -171,8 +170,7 @@ namespace TsubameViewer.ViewModels
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ISecondaryTileManager secondaryTileManager,
             IFolderLastIntractItemService folderLastIntractItemManager,
-            IThumbnailImageService thumbnailManager,
-            FolderListingSettings folderListingSettings,
+            IThumbnailImageService thumbnailManager,            
             DisplaySettingsByPathRepository displaySettingsByPathRepository,
             BackNavigationCommand backNavigationCommand,
             OpenPageCommand openPageCommand,
@@ -198,8 +196,7 @@ namespace TsubameViewer.ViewModels
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             SecondaryTileManager = secondaryTileManager;
             _folderLastIntractItemManager = folderLastIntractItemManager;
-            _thumbnailManager = thumbnailManager;
-            _folderListingSettings = folderListingSettings;
+            _thumbnailManager = thumbnailManager;            
             _displaySettingsByPathRepository = displaySettingsByPathRepository;
             _backNavigationCommand = backNavigationCommand;
             OpenPageCommand = openPageCommand;
@@ -585,7 +582,7 @@ namespace TsubameViewer.ViewModels
                 {
                     Debug.WriteLine(folder.Path);
                     imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
                 else if (_currentItem is StorageFile file)
                 {
@@ -606,7 +603,7 @@ namespace TsubameViewer.ViewModels
                             }
                         }
 
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                     }
                     else if (file.IsSupportedMangaFile())
                     {
@@ -615,11 +612,11 @@ namespace TsubameViewer.ViewModels
                         DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
                         if (_currentArchiveFolderName == null)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(_currentItem), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                         }
                         else if (imageCollectionContext is ArchiveImageCollectionContext aic)
                         {
-                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken, _folderListingSettings), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+                            CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                         }
                     }
                 }
@@ -666,7 +663,7 @@ namespace TsubameViewer.ViewModels
             CurrentFolderItem = null;
 
             _imageCollectionContext = null;
-            AlbamImageCollectionContext imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _folderListingSettings, _thumbnailManager, _messenger);
+            AlbamImageCollectionContext imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
             CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
             DisplayCurrentArchiveFolderName = imageCollectionContext.Name;
 

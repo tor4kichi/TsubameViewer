@@ -33,7 +33,6 @@ namespace TsubameViewer.ViewModels
         private readonly AlbamRepository _albamRepository;
         private readonly IThumbnailImageService _thumbnailManager;
         private readonly IMessenger _messenger;
-        private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
         private readonly RecentlyAccessService _recentlyAccessManager;
@@ -96,7 +95,6 @@ namespace TsubameViewer.ViewModels
             _albamRepository = albamRepository;
             _thumbnailManager = thumbnailManager;
             _messenger = messenger;
-            _folderListingSettings = folderListingSettings;
 
             Groups = new[]
             {
@@ -144,7 +142,7 @@ namespace TsubameViewer.ViewModels
                             continue;
                         }
 
-                        var storageItemImageSource = new StorageItemImageSource(item.item, _folderListingSettings);
+                        var storageItemImageSource = new StorageItemImageSource(item.item);
                         if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
                         {
                             Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
@@ -190,7 +188,7 @@ namespace TsubameViewer.ViewModels
                     var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
                     if (storageItem == null) { throw new FileNotFoundException(entry.Path); }
 
-                    var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings);
+                    var storageItemImageSource = new StorageItemImageSource(storageItem);
                     return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
 
@@ -291,7 +289,7 @@ namespace TsubameViewer.ViewModels
                 var args = m.Value;
                 RemoveItem(args.StorageItem.Path);
 
-                var storageItemImageSource = new StorageItemImageSource(args.StorageItem, _folderListingSettings);
+                var storageItemImageSource = new StorageItemImageSource(args.StorageItem);
                 if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
                 {
                     // 追加用ボタンの次に配置するための 1

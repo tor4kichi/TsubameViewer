@@ -14,10 +14,8 @@ namespace TsubameViewer.Core.Models.Albam;
 public sealed class AlbamItemImageSource : IImageSource
 {
     private readonly AlbamItemEntry _albamItem;
-
     public IImageSource InnerImageSource { get; }
 
-    // 画像ソースの遅延解決
     public AlbamItemImageSource(AlbamItemEntry albamItem, IImageSource imageSource)
     {
         _albamItem = albamItem;
@@ -63,23 +61,6 @@ public sealed class AlbamItemImageSource : IImageSource
     {
         return await InnerImageSource?.GetImageStreamAsync(ct);
     }
-
-    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
-    //{
-    //    if (InnerImageSource != null)
-    //    {
-    //        return await InnerImageSource.GetThumbnailImageStreamAsync(ct);
-    //    }
-    //    else
-    //    {
-    //        return await _thumbnailManager.GetThumbnailImageFromPathAsync(_albamItem.Path, ct);
-    //    }            
-    //}
-
-    //public ThumbnailSize? GetThumbnailSize()
-    //{
-    //    return InnerImageSource?.GetThumbnailSize() ?? _thumbnailManager.GetThumbnailOriginalSize(_albamItem.Path);
-    //}
 
     public bool Equals(IImageSource other)
     {

@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Diagnostics;
-using SharpCompress.Archives;
+﻿using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,13 +17,11 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 {
     private readonly ArchiveImageCollection _imageCollection;
     private readonly ArchiveDirectoryToken _directoryToken;
-    private readonly FolderListingSettings _folderListingSettings;
 
-    public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken, FolderListingSettings folderListingSettings)
+    public ArchiveDirectoryImageSource(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken directoryToken)
     {
         _imageCollection = archiveImageCollection;
         _directoryToken = directoryToken;
-        _folderListingSettings = folderListingSettings;
         Name = _directoryToken.Label is not null ? new string(_directoryToken.Label.Reverse().TakeWhile(c => c != System.IO.Path.DirectorySeparatorChar && c != System.IO.Path.AltDirectorySeparatorChar).Reverse().ToArray()) : _imageCollection.Name;
         Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, directoryToken.Key);
     }
@@ -50,36 +47,6 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
         return await imageSource.GetImageStreamAsync(ct);
     }
-
-    //public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(CancellationToken ct = default)
-    //{
-    //    if (_folderListingSettings.IsArchiveEntryGenerateThumbnailEnabled)
-    //    {
-    //        var file = await _thumbnailManager.GetArchiveEntryThumbnailImageFileAsync(StorageItem, ArchiveEntry, ct);
-    //        if (file is null)
-    //        {
-    //            var imageSource = GetNearestImageFromDirectory(_directoryToken);
-    //            if (imageSource == null) { return null; }
-
-    //            return await imageSource.GetThumbnailImageStreamAsync(ct);
-    //        }
-    //        else
-    //        {
-    //            return file;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        var stream =  await _thumbnailManager.GetArchiveEntryThumbnailImageStreamAsync(StorageItem, ArchiveEntry, ct);
-    //        if (stream != null) { return stream; }
-
-    //        var imageSource = GetNearestImageFromDirectory(_directoryToken);
-    //        if (imageSource == null) { return null; }
-
-    //        return await imageSource.GetThumbnailImageStreamAsync(ct);
-
-    //    }
-    //}
 
     private IImageSource GetNearestImageFromDirectory(ArchiveDirectoryToken firstToken)
     {
@@ -123,11 +90,6 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
         }
         else { return entry; }
     }
-
-    //public ThumbnailSize? GetThumbnailSize()
-    //{
-    //    return _thumbnailManager.GetThumbnailOriginalSize(StorageItem, ArchiveEntry);
-    //}
 
     public bool Equals(IImageSource other)
     {

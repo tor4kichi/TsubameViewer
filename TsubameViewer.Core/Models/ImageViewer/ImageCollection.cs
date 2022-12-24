@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Contracts.Services;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using static TsubameViewer.Core.Models.ImageViewer.ArchiveFileInnerStructureCache;
@@ -57,8 +56,6 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
     private readonly ArchiveFileInnerSturcture _archiveFileInnerStructure;
     private readonly CompositeDisposable _disposables;
-    private readonly FolderListingSettings _folderListingSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
     private readonly ImmutableList<ArchiveDirectoryToken> _directories;
 
     private readonly Dictionary<IImageCollectionDirectoryToken, List<IImageSource>> _entriesCacheByDirectory = new();
@@ -73,17 +70,13 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         StorageFile file, 
         IArchive archive,
         ArchiveFileInnerSturcture archiveFileInnerStructure,
-        CompositeDisposable disposables, 
-        FolderListingSettings folderListingSettings, 
-        IThumbnailImageService thumbnailManager            
+        CompositeDisposable disposables
         )
     {
         File = file;
         Archive = archive;
         _archiveFileInnerStructure = archiveFileInnerStructure;
         _disposables = disposables;
-        _folderListingSettings = folderListingSettings;
-        _thumbnailManager = thumbnailManager;
         
         // アーカイブのフォルダ構造を見つける
         var structure = _archiveFileInnerStructure;
@@ -274,7 +267,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
                     }
 
                     var dirToken = GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(x.Key)));
-                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this, _folderListingSettings);
+                    return _imageSourcesCache[index] = new ArchiveEntryImageSource(x, dirToken ?? token, this);
                 })
                 .ToList();
 
@@ -331,7 +324,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         Guard.IsFalse(imageEntry.IsDirectory, nameof(imageEntry.IsDirectory));
 
         token ??= GetDirectoryTokenFromPath(_archiveFileInnerStructure.ReplaceSeparateCharIfAltPathSeparateChar(Path.GetDirectoryName(imageEntry.Key)));
-        return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this, _folderListingSettings);            
+        return _imageSourcesCache[sortedIndex] = new ArchiveEntryImageSource(imageEntry, token, this);            
     }
    
     // Note: FileImagesに対するIndexであってArchive.Entries全体に対するIndexではない
@@ -368,24 +361,18 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 public sealed class PdfImageCollection : IImageCollection
 {
     private readonly PdfDocument _pdfDocument;
-    private readonly FolderListingSettings _folderListingSettings;
     private readonly ImageViewerSettings _imageViewerSettings;
-    private readonly IThumbnailImageService _thumbnailManager;
 
     private readonly IImageSource[] _imageSourcesCache;
     public PdfImageCollection(
         StorageFile file, 
         PdfDocument pdfDocument, 
-        FolderListingSettings folderListingSettings, 
-        ImageViewerSettings imageViewerSettings, 
-        IThumbnailImageService thumbnailManager
+        ImageViewerSettings imageViewerSettings 
         )
     {
-        _pdfDocument = pdfDocument;
-        _folderListingSettings = folderListingSettings;
-        _imageViewerSettings = imageViewerSettings;
         File = file;
-        _thumbnailManager = thumbnailManager;
+        _pdfDocument = pdfDocument;
+        _imageViewerSettings = imageViewerSettings;
 
         _imageSourcesCache = new IImageSource[_pdfDocument.PageCount];
     }
@@ -397,7 +384,7 @@ public sealed class PdfImageCollection : IImageCollection
     {
         return Enumerable.Range(0, (int)_pdfDocument.PageCount)
           .Select(x => _pdfDocument.GetPage((uint)x))
-          .Select(x => (IImageSource)new PdfPageImageSource(x, File, _folderListingSettings, _imageViewerSettings));
+          .Select(x => (IImageSource)new PdfPageImageSource(x, File, _imageViewerSettings));
     }
 
 
@@ -414,7 +401,7 @@ public sealed class PdfImageCollection : IImageCollection
     private IImageSource GetImageAt(int index)
     {
         var page = _pdfDocument.GetPage((uint)index);
-        return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _folderListingSettings, _imageViewerSettings);
+        return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _imageViewerSettings);
     }
 
     public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
