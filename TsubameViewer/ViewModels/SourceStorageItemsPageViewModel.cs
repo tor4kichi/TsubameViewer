@@ -4,6 +4,7 @@ using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading;
@@ -187,6 +188,8 @@ namespace TsubameViewer.ViewModels
                 async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
                 {
                     var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
+                    if (storageItem == null) { throw new FileNotFoundException(entry.Path); }
+
                     var storageItemImageSource = new StorageItemImageSource(storageItem, _folderListingSettings);
                     return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }

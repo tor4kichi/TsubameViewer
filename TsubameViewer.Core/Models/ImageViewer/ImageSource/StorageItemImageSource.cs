@@ -24,7 +24,7 @@ public sealed class StorageItemImageSource : IImageSource
 
     public string Path => StorageItem.Path;
 
-    public DateTime DateCreated => StorageItem.DateCreated.DateTime;
+    public DateTime DateCreated => StorageItem?.DateCreated.DateTime ?? DateTime.MinValue;
 
     /// <summary>
     /// Tokenで取得されたファイルやフォルダ

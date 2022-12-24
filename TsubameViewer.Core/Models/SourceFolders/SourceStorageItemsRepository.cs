@@ -401,6 +401,7 @@ public sealed class SourceStorageItemsRepository
         // 改めてtargetPathと組になっているトークンを取り出す
         // ここで取れなかった場合や、意図しないフォルダが取れてしまった場合はユーザーにフォルダの再登録を要求する必要がある
         var token = _tokenToPathRepository.GetTokenFromPath(targetPath);
+        if (token == null) { return null; }
 
         // トークンと一致するバッファした組におけるパスが旧パスである
         var oldPath = oldTokenToPathMap[token.Token];
@@ -424,6 +425,10 @@ public sealed class SourceStorageItemsRepository
         if (tokenEntries.Any() is false)
         {
             var token = await CheckAndGetTokenToPathAfterRefreshDb(path);
+            if (token == null)
+            {
+                return null;
+            }
             tokenEntries = new[] { token };
         }
 
