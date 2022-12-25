@@ -8,7 +8,7 @@ using System.Text;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Services;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
@@ -19,12 +19,12 @@ namespace TsubameViewer.ViewModels.Albam.Commands
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;
-        private readonly AlbamDialogService _albamDialogService;
+        private readonly IAlbamDialogService _albamDialogService;
 
         public AlbamItemEditCommand(
             IMessenger messenger,
             AlbamRepository albamRepository,
-            AlbamDialogService albamDialogService
+            IAlbamDialogService albamDialogService
             )
         {
             _albamRepository = albamRepository;

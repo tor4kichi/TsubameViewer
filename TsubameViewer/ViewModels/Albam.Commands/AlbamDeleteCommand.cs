@@ -8,6 +8,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.UseCases;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.UI.Popups;
+using TsubameViewer.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
 {
@@ -15,14 +16,17 @@ namespace TsubameViewer.ViewModels.Albam.Commands
     {
         private readonly AlbamRepository _albamRepository;
         private readonly IMessenger _messenger;
+        private readonly IMessageDialogService _messageDialogService;
 
         public AlbamDeleteCommand(
             AlbamRepository albamRepository,
-            IMessenger messenger
+            IMessenger messenger,
+            IMessageDialogService messageDialogService 
             )
         {
             _albamRepository = albamRepository;
             _messenger = messenger;
+            _messageDialogService = messageDialogService;
         }
         protected override bool CanExecute(object parameter)
         {
@@ -47,20 +51,14 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             {
                 if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
                 {
-                    var dialog = new MessageDialog("AlbamDeleteConfirmDialogText".Translate(albam.Name))
-                    {
-                        Commands =
-                        {
-                            new UICommand("Delete".Translate()),
-                            new UICommand("Cancel".Translate()),
-                        },
-                        CancelCommandIndex = 1,
-                        DefaultCommandIndex = 1,
-                    };
+                    var result = await _messageDialogService.ShowMessageDialogAsync(
+                        message: "AlbamDeleteConfirmDialogText".Translate(albam.Name),
+                        CommandLabels: new[] { "Delete".Translate(), "Cancel".Translate() },
+                        cancelCommandIndex: 1,
+                        defaultCommandIndex: 1
+                        );
 
-                    if (await dialog.ShowAsync() is IUICommand command 
-                        && dialog.Commands.IndexOf(command) != 0
-                        )
+                    if (result.IsConfirm == false || result.ResultCommandIndex == 1)
                     {
                         return;
                     }

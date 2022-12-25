@@ -348,25 +348,6 @@ namespace TsubameViewer.ViewModels
             {
                 _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
                 _parentVM.RemoveItem(this);
-
-                /*
-                var dialog = new MessageDialog(
-                    "ConfirmRemoveSourceFolderFromAppDescription".Translate(),
-                    $"ConfirmRemoveSourceFolderFromAppWithFolderName".Translate(FolderName)
-                    );
-
-                dialog.Commands.Add(new UICommand("RemoveSourceFolderFromApp".Translate(), _ => 
-                {
-                    _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
-                    _parentVM.RemoveItem(this);
-                }));
-
-                dialog.Commands.Add(new UICommand("Cancel".Translate()));
-                dialog.CancelCommandIndex = 1;
-                dialog.DefaultCommandIndex = 0;
-
-                var result = await dialog.ShowAsync();
-                */
             });
     }
 

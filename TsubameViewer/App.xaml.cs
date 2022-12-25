@@ -189,6 +189,7 @@ sealed partial class App : Application
         //container.Register<SearchResultPageViewModel>(reuse: new SingletonReuse());
 
         // Services
+        container.Register<IMessageDialogService, MessageDialogService>();
         container.Register<IFileControlDialogService, FileControlDialogService>();
         container.Register<IAlbamDialogService, AlbamDialogService>();
         container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();

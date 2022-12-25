@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Services;
+using TsubameViewer.Contracts.Services;
+
 using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
@@ -10,11 +11,11 @@ namespace TsubameViewer.ViewModels.Albam.Commands
     public sealed class AlbamEditCommand : CommandBase
     {
         private readonly AlbamRepository _albamRepository;
-        private readonly AlbamDialogService _albamDialogService;
+        private readonly IAlbamDialogService _albamDialogService;
 
         public AlbamEditCommand(
             AlbamRepository albamRepository,
-            AlbamDialogService albamDialogService
+            IAlbamDialogService albamDialogService
             )
         {
             _albamRepository = albamRepository;

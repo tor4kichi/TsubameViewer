@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Services;
+using TsubameViewer.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
 {
@@ -12,12 +12,12 @@ namespace TsubameViewer.ViewModels.Albam.Commands
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;
-        private readonly AlbamDialogService _albamDialogService;
+        private readonly IAlbamDialogService _albamDialogService;
 
         public AlbamCreateCommand(
             IMessenger messenger,
             AlbamRepository albamRepository,
-            AlbamDialogService albamDialogService
+            IAlbamDialogService albamDialogService
             )
         {
             _messenger = messenger;

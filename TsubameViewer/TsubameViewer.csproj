@@ -139,6 +139,8 @@
     <Compile Include="Contracts\Services\ISplitImageInputDialogService.cs" />
     <Compile Include="Contracts\Services\IImageCodecService.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
+    <Compile Include="Contracts\Services\IMessageDialogService.cs" />
+    <Compile Include="Services\MessageDialogService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
     <Compile Include="Services\Navigation\NavigationAwareViewModelBase.cs" />
     <Compile Include="Services\Navigation\NavigationParametersExtensions.cs" />

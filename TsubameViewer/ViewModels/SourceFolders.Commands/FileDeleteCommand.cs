@@ -7,7 +7,7 @@ using System.Text;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Services;
+using TsubameViewer.Contracts.Services;
 using TsubameViewer.Contracts.Notification;
 using Windows.Storage;
 
@@ -16,12 +16,12 @@ namespace TsubameViewer.ViewModels.SourceFolders.Commands
     public sealed class FileDeleteCommand : ImageSourceCommandBase
     {
         private readonly IMessenger _messenger;
-        private readonly FileControlDialogService _fileControlDialogService;
+        private readonly IFileControlDialogService _fileControlDialogService;
         private readonly FileControlSettings _fileControlSettings;
 
         public FileDeleteCommand(
             IMessenger messenger,
-            FileControlDialogService fileControlDialogService,
+            IFileControlDialogService fileControlDialogService,
             FileControlSettings fileControlSettings
             )
         {
