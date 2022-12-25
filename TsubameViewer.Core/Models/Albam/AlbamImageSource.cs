@@ -41,7 +41,7 @@ public sealed class AlbamImageSource : IImageSource
     }
 
     private IImageSource _sampleImageSource;
-    private async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
+    public async ValueTask<IImageSource> GetSampleImageSourceAsync(CancellationToken ct)
     {
         if (_sampleImageSource is null && await _albamImageCollectionContext.IsExistImageFileAsync(ct))
         {

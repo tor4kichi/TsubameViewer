@@ -334,9 +334,11 @@ namespace TsubameViewer.ViewModels
                         await ResetContent(unescapedPath, ct);
                     }
                     else
-                    {
-                        var prop = await _currentItem.GetBasicPropertiesAsync();
-                        if (_sourceItemLastUpdatedTime != prop.DateModified)
+                    {                        
+                        if (_currentItem != null 
+                            && await _currentItem.GetBasicPropertiesAsync() is not null and var prop
+                            && _sourceItemLastUpdatedTime != prop.DateModified
+                            )
                         {
                             await ResetContent(_currentPath, ct);
                         }
@@ -711,8 +713,11 @@ namespace TsubameViewer.ViewModels
 
             ct.ThrowIfCancellationRequested();
 
-            var prop = await _currentItem.GetBasicPropertiesAsync();
-            _sourceItemLastUpdatedTime = prop.DateModified;
+            if (_currentItem != null)
+            {
+                var prop = await _currentItem.GetBasicPropertiesAsync();
+                _sourceItemLastUpdatedTime = prop.DateModified;
+            }
 
             _ = Task.Run(async () =>
             {

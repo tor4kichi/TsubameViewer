@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
@@ -243,9 +244,21 @@ public sealed class ThumbnailImageService
                     throw new NotSupportedException();
                 }
             }
+            else if (imageSource is AlbamItemImageSource albamItemImageSource)
+            {
+                outputStream.Dispose();
+                return await GetThumbnailImageStreamAsync(albamItemImageSource.InnerImageSource, ct);
+            }     
+            else if (imageSource is AlbamImageSource albamImageSource)
+            {
+                outputStream.Dispose();
+                var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
+                if (sampleImageSource == null) { return null; }
+                return await GetThumbnailImageStreamAsync(sampleImageSource, ct);
+            }
             else
             {
-                using var imageStream = await imageSource.FlattenAlbamItemInnerImageSource().GetImageStreamAsync(ct);
+                using var imageStream = await imageSource.GetImageStreamAsync(ct);
                 using (await _fileReadWriteLock.LockAsync(ct))
                 {
                     await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
