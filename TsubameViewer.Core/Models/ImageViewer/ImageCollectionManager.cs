@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.Messaging;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Archives.Rar;
@@ -8,6 +9,7 @@ using SharpCompress.Archives.Zip;
 using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -15,6 +17,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
@@ -23,14 +28,17 @@ namespace TsubameViewer.Core.Models.ImageViewer;
 
 public sealed class ImageCollectionManager
 {
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly ImageViewerSettings _imageViewerSettings;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
     public ImageCollectionManager(
+        SourceStorageItemsRepository sourceStorageItemsRepository,
         ImageViewerSettings imageViewerSettings,
         ArchiveFileInnerStructureCache archiveFileInnerStructureCache            
         )
     {
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _imageViewerSettings = imageViewerSettings;
         _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
     }
@@ -59,6 +67,82 @@ public sealed class ImageCollectionManager
         }
         else
         {
+            throw new NotSupportedException();
+        }
+    }
+
+    public async Task<(IImageSource ImageSource, IImageCollectionContext ImageCollectionContext)> GetImageSourceAndContextAsync(string path, string? pageName, CancellationToken ct)
+    {
+        IStorageItem storageItem = null;
+        foreach (var _ in Enumerable.Repeat(0, 10))
+        {
+            storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(path);
+            if (storageItem != null)
+            {
+                break;
+            }
+            await Task.Delay(100, ct);
+        }
+
+        if (storageItem == null) { throw new FileNotFoundException(path); }
+
+        if (storageItem is StorageFolder folder)
+        {
+            Debug.WriteLine(folder.Path);
+            return (new StorageItemImageSource(storageItem), GetFolderImageCollectionContext(folder, ct));
+        }
+        else if (storageItem is StorageFile file)
+        {
+            Debug.WriteLine(file.Path);
+            if (file.IsSupportedImageFile())
+            {
+                try
+                {
+                    var parentFolder = await file.GetParentAsync();
+                    return (new StorageItemImageSource(storageItem), GetFolderImageCollectionContext(parentFolder, ct));
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(path));
+                    if (parentItem is StorageFolder parentFolder)
+                    {
+                        return (new StorageItemImageSource(storageItem), GetFolderImageCollectionContext(parentFolder, ct));
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+            }
+            else if (file.IsSupportedMangaFile())
+            {
+                // string.Emptyを渡すことでルートフォルダのフォルダ取得を行える
+                var imageCollectionContext = await GetArchiveImageCollectionContextAsync(file, pageName ?? string.Empty, ct);
+                if (pageName == null)
+                {
+                    // Mangaファイルが指定された場合
+                    return (new StorageItemImageSource(storageItem), imageCollectionContext);
+                }
+                else if (imageCollectionContext is ArchiveImageCollectionContext aic)
+                {
+                    // Managaファイル内のEntryが指定された場合
+                    return (new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken), imageCollectionContext);
+                }
+                else
+                {
+                    (imageCollectionContext as IDisposable)?.Dispose();
+                    throw new NotImplementedException();
+                }
+            }
+            else
+            {
+                // 非対応なファイル
+                throw new NotSupportedException();
+            }
+        }
+        else
+        {
+            // 非対応なストレージコンテンツ
             throw new NotSupportedException();
         }
     }

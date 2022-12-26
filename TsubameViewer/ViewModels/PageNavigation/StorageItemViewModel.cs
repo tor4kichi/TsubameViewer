@@ -146,7 +146,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
                 if (Item == null) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
-                using (var stream = await Task.Run(() => _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct), ct))
+                using (var stream = await Task.Run(() => _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     

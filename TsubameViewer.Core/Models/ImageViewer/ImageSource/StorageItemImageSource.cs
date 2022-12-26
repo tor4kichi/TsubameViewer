@@ -39,7 +39,7 @@ public sealed class StorageItemImageSource : IImageSource
         {
             if (file.IsSupportedImageFile())
             {
-                return await file.OpenReadAsync().AsTask(ct);
+                return await FileRandomAccessStream.OpenAsync(file.Path, FileAccessMode.Read);
             }
             else
             {

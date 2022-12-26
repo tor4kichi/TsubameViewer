@@ -5,6 +5,7 @@ using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
+using SharpCompress.Compressors.Xz;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -28,7 +29,9 @@ using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
+using Windows.System;
 using Windows.UI.Xaml.Media.Imaging;
+
 
 namespace TsubameViewer.Core.Service;
 
@@ -44,8 +47,8 @@ public sealed class ThumbnailImageService
     private readonly ThumbnailImageInfoRepository _thumbnailImageInfoRepository;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly static AsyncLock _fileReadWriteLock = new();
-    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
-    
+    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;    
+
     private string GetArchiveEntryPath(StorageFile file, IArchiveEntry entry)
     {
         return Path.Combine(file.Path, entry?.Key ?? "_");
@@ -183,7 +186,7 @@ public sealed class ThumbnailImageService
         _folderListingSettings = folderListingSettings;
         _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
-        _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();        
+        _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
     }
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
@@ -203,11 +206,11 @@ public sealed class ThumbnailImageService
     
     private string GetId(IImageSource imageSource)
     {
-        return imageSource.StorageItem != null ? ToId(imageSource.StorageItem) : ToId(imageSource.Path);
+        return imageSource.StorageItem is StorageFolder folder ? ToId(folder) : ToId(imageSource.Path);
     }
 
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default)
+    public async Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, IRandomAccessStream outputStream = null, CancellationToken ct = default)
     {
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
@@ -215,123 +218,129 @@ public sealed class ThumbnailImageService
             return cachedImageStream;
         }
 
-        var outputStream = _recyclableMemoryStreamManager.GetStream();
-        var outputRas = outputStream.AsRandomAccessStream();
-        try
+        if (imageSource.StorageItem is StorageFolder folder)
         {
-            if (imageSource.StorageItem is StorageFolder folder)
+            outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+            try
             {
                 var file = await GetCoverThumbnailImageAsync(folder, ct);
-                if (await GenerateThumbnailImageToStreamAsync(file, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputRas;
+                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                    return outputStream;
                 }
                 else
                 {
                     throw new NotSupportedException();
                 }
             }
-            else if (imageSource.StorageItem is StorageFile file && file.IsSupportedMangaOrEBookFile())
-            {
-                if (await GenerateThumbnailImageToStreamAsync(file, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
-                {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputRas;
-                }
-                else
-                {
-                    throw new NotSupportedException();
-                }
-            }
-            else if (imageSource is AlbamItemImageSource albamItemImageSource)
+            catch 
             {
                 outputStream.Dispose();
-                return await GetThumbnailImageStreamAsync(albamItemImageSource.InnerImageSource, ct);
-            }     
-            else if (imageSource is AlbamImageSource albamImageSource)
-            {
-                outputStream.Dispose();
-                var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
-                if (sampleImageSource == null) { return null; }
-                return await GetThumbnailImageStreamAsync(sampleImageSource, ct);
-            }
-            else
-            {
-                using var imageStream = await imageSource.GetImageStreamAsync(ct);
-                using (await _fileReadWriteLock.LockAsync(ct))
-                {
-                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputRas, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    return outputRas;
-                }
+                throw;
             }
         }
-        catch
+        else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file && file.IsSupportedMangaOrEBookFile())
         {
-            outputStream.Dispose();
-            throw;
+            outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+            try
+            {
+                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                {
+                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                    return outputStream;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            catch 
+            {
+                outputStream.Dispose();
+                throw;
+            }
+        }
+        else if (imageSource is AlbamItemImageSource albamItemImageSource)
+        {
+            return await GetThumbnailImageStreamAsync(albamItemImageSource.InnerImageSource, outputStream, ct);
+        }
+        else if (imageSource is AlbamImageSource albamImageSource)
+        {
+            var sampleImageSource = await albamImageSource.GetSampleImageSourceAsync(ct);
+            if (sampleImageSource == null) { return null; }
+            return await GetThumbnailImageStreamAsync(sampleImageSource, outputStream, ct);
+        }
+        else
+        {
+            using var imageStream = await imageSource.GetImageStreamAsync(ct);
+            using (await _fileReadWriteLock.LockAsync(ct))
+            {
+                // Note: ImageViewer画面から _recyclableMemoryStreamManager.GetStream(); を使うと
+                // BitmapEncoder.CreateAsync() でハングアップしてしまう
+                outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+                try
+                {
+                    await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                    return outputStream;
+                }
+                catch
+                {
+                    outputStream.Dispose();
+                    throw;
+                }
+            }
         }
     }
 
     public async Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default)
     {
-        //var itemId = GetId(childImageSource);
-        //using var thumbnailImageStream = await GetThumbnailImageStreamAsync(childImageSource, ct);
-        //UploadWithRetry(itemId, childImageSource.Name, thumbnailImageStream.AsStreamForRead());
-        using (var imageMemoryStream = new InMemoryRandomAccessStream())
+        // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
+        // InMemoryRandomAccessStreamを使用している
+        var inMemoryRas = new InMemoryRandomAccessStream();
+        using var imageMemoryStream = await GetThumbnailImageStreamAsync(childImageSource, inMemoryRas, ct);
+
+        bool requireTranscode = false;
+
+        if (childImageSource is ArchiveEntryImageSource archiveEntry)
         {
-            // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
-            // imageSource.GetThumbnailImageStreamAsync() は使用していない
-            using (var stream = await childImageSource.GetImageStreamAsync())
+            var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
+            if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
             {
-                await RandomAccessStream.CopyAsync(stream, imageMemoryStream);
-                imageMemoryStream.Seek(0);
-            }
-
-            bool requireTranscode = true;
-
-            if (childImageSource is ArchiveEntryImageSource archiveEntry)
-            {
-                var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
-                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-                {
-                    await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-                else
-                {
-                    await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-            }
-            else if (childImageSource is PdfPageImageSource pdf)
-            {
-                await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-            else if (childImageSource is StorageItemImageSource folderItem)
-            {
-                var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
-                if (folder == null) { throw new InvalidOperationException(); }
-                await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-            else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
-            {
-                var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
-                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-                {
-                    await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
-                else
-                {
-                    await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-                }
+                await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
             }
             else
             {
-                throw new NotSupportedException();
+                await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
             }
-
         }
-
+        else if (childImageSource is PdfPageImageSource pdf)
+        {
+            await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+        }
+        else if (childImageSource is StorageItemImageSource folderItem)
+        {
+            var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
+            if (folder == null) { throw new InvalidOperationException(); }
+            await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
+        }
+        else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
+        {
+            var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
+            if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+            {
+                await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+            else
+            {
+                await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }       
     }
 
     public ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource)
@@ -859,7 +868,7 @@ public sealed class ThumbnailImageService
     private async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
-
+                
         try
         {
             var decoder = await BitmapDecoder.CreateAsync(stream);
@@ -877,6 +886,9 @@ public sealed class ThumbnailImageService
             var detachedPixelData = pixelData.DetachPixelData();
             pixelData = null;
 
+            outputStream.Size = 0;
+
+            // Note: outputStreamが AsRandomAccessStream() を通しているとハングアップする？
             var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
 
             setupEncoder(decoder, encoder);

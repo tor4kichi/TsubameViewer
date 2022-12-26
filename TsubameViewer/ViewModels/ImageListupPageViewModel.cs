@@ -37,741 +37,695 @@ using Windows.Storage;
 using Windows.UI.Xaml.Navigation;
 using static TsubameViewer.Core.Models.ImageViewer.ImageCollectionManager;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
+using CommunityToolkit.Diagnostics;
 
-namespace TsubameViewer.ViewModels
+namespace TsubameViewer.ViewModels;
+
+
+public sealed class SelectionContext : ObservableObject
 {
-
-    public sealed class SelectionContext : ObservableObject
+    private bool _isSelectionModeEnabled;
+    public bool IsSelectionModeEnabled
     {
-        private bool _isSelectionModeEnabled;
-        public bool IsSelectionModeEnabled
-        {
-            get => _isSelectionModeEnabled;
-            private set => SetProperty(ref _isSelectionModeEnabled, value);
-        }
-
-        public ObservableCollection<StorageItemViewModel> SelectedItems { get; } = new ();
-
-        public void StartSelection()
-        {
-            IsSelectionModeEnabled = true;
-        }
-
-        public void EndSelection()
-        {
-            IsSelectionModeEnabled = false;
-            SelectedItems.Clear();
-        }
+        get => _isSelectionModeEnabled;
+        private set => SetProperty(ref _isSelectionModeEnabled, value);
     }
 
-    public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
+    public ObservableCollection<StorageItemViewModel> SelectedItems { get; } = new ();
+
+    public void StartSelection()
     {
+        IsSelectionModeEnabled = true;
+    }
 
-        private readonly IMessenger _messenger;
-        private readonly IScheduler _scheduler;
-        private readonly IBookmarkService _bookmarkManager;
-        private readonly ImageCollectionManager _imageCollectionManager;
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly AlbamRepository _albamRepository;
-        private readonly IThumbnailImageService _thumbnailManager;
-        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-        private readonly FolderListingSettings _folderListingSettings;
-        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-        private bool _NowProcessing;
-        public bool NowProcessing
+    public void EndSelection()
+    {
+        IsSelectionModeEnabled = false;
+        SelectedItems.Clear();
+    }
+}
+
+public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
+{
+
+    private readonly IMessenger _messenger;
+    private readonly IScheduler _scheduler;
+    private readonly IBookmarkService _bookmarkManager;
+    private readonly ImageCollectionManager _imageCollectionManager;
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    private readonly AlbamRepository _albamRepository;
+    private readonly IThumbnailImageService _thumbnailManager;
+    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+    private readonly FolderListingSettings _folderListingSettings;
+    private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    private bool _NowProcessing;
+    public bool NowProcessing
+    {
+        get { return _NowProcessing; }
+        set { SetProperty(ref _NowProcessing, value); }
+    }
+
+    public ISecondaryTileManager SecondaryTileManager { get; }
+    public OpenPageCommand OpenPageCommand { get; }
+    public OpenFolderItemCommand OpenFolderItemCommand { get; }
+    public OpenImageViewerCommand OpenImageViewerCommand { get; }
+    public OpenFolderListupCommand OpenFolderListupCommand { get; }
+    public FileDeleteCommand FileDeleteCommand { get; }
+    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
+    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
+    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
+    public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
+    public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
+    public AlbamItemEditCommand AlbamItemEditCommand { get; }
+    public FavoriteAddCommand FavoriteAddCommand { get; }
+    public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
+    public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
+    public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
+
+
+
+    private AdvancedCollectionView _FileItemsView;
+    public AdvancedCollectionView FileItemsView
+    {
+        get { return _FileItemsView; }
+        set { SetProperty(ref _FileItemsView, value); }
+    }
+
+    private bool _HasFileItem;
+    public bool HasFileItem
+    {
+        get { return _HasFileItem; }
+        set { SetProperty(ref _HasFileItem, value); }
+    }
+
+    private bool _HasFolderOrBookItem;
+    public bool HasFolderOrBookItem
+    {
+        get { return _HasFolderOrBookItem; }
+        set { SetProperty(ref _HasFolderOrBookItem, value); }
+    }
+
+
+    public SelectionContext Selection { get; } = new SelectionContext();
+
+    public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+
+    private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+
+    private string _DisplaySortTypeInheritancePath;
+    public string DisplaySortTypeInheritancePath
+    {
+        get { return _DisplaySortTypeInheritancePath; }
+        private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
+    }
+
+
+    public ReactivePropertySlim<int> ImageLastIntractItem { get; }
+
+    private static readonly Core.AsyncLock _NavigationLock = new ();
+
+    private IImageSource? _currentImageSource;
+    IImageCollectionContext _imageCollectionContext;
+    private static readonly Core.AsyncLock _RefreshLock = new();
+
+    private CancellationTokenSource _navigationCts;
+
+    private string _DisplayCurrentPath;
+    public string DisplayCurrentPath
+    {
+        get { return _DisplayCurrentPath; }
+        set { SetProperty(ref _DisplayCurrentPath, value); }
+    }
+
+    private StorageItemViewModel _CurrentFolderItem;
+    public StorageItemViewModel CurrentFolderItem
+    {
+        get { return _CurrentFolderItem; }
+        set { SetProperty(ref _CurrentFolderItem, value); }
+    }
+
+    private bool _IsFavoriteAlbam;
+    public bool IsFavoriteAlbam
+    {
+        get => _IsFavoriteAlbam;
+        set => SetProperty(ref _IsFavoriteAlbam, value);
+    }
+
+    private string _DisplayCurrentArchiveFolderName;
+    public string DisplayCurrentArchiveFolderName
+    {
+        get { return _DisplayCurrentArchiveFolderName; }
+        private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
+    }
+    
+    public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
+    public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
+    {
+        Core.Models.FolderItemListing.FileDisplayMode.Large,
+        Core.Models.FolderItemListing.FileDisplayMode.Midium,
+        Core.Models.FolderItemListing.FileDisplayMode.Small,
+        Core.Models.FolderItemListing.FileDisplayMode.Line,
+    };
+
+
+    public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
+
+    CompositeDisposable _disposables = new CompositeDisposable();
+    CompositeDisposable _navigationDisposables;
+
+    public ImageListupPageViewModel(
+        IMessenger messenger,
+        IScheduler scheduler,
+        IBookmarkService bookmarkManager,
+        ImageCollectionManager imageCollectionManager,
+        SourceStorageItemsRepository sourceStorageItemsRepository,
+        AlbamRepository albamRepository,
+        IThumbnailImageService thumbnailManager,
+        ISecondaryTileManager secondaryTileManager,
+        IFolderLastIntractItemService folderLastIntractItemManager,
+        FolderListingSettings folderListingSettings,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        OpenPageCommand openPageCommand,
+        OpenFolderItemCommand openFolderItemCommand,
+        OpenImageViewerCommand openImageViewerCommand,
+        OpenFolderListupCommand openFolderListupCommand,
+        FileDeleteCommand fileDeleteCommand,
+        OpenWithExplorerCommand openWithExplorerCommand,
+        SecondaryTileAddCommand secondaryTileAddCommand,
+        SecondaryTileRemoveCommand secondaryTileRemoveCommand,
+        ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
+        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
+        AlbamItemEditCommand albamItemEditCommand,
+        AlbamItemRemoveCommand albamItemRemoveCommand,
+        FavoriteAddCommand favoriteAddCommand,
+        FavoriteRemoveCommand favoriteRemoveCommand
+        )
+    {
+        _messenger = messenger;
+        _scheduler = scheduler;
+        _bookmarkManager = bookmarkManager;
+        _imageCollectionManager = imageCollectionManager;
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
+        _albamRepository = albamRepository;
+        _thumbnailManager = thumbnailManager;
+        SecondaryTileManager = secondaryTileManager;
+        _folderLastIntractItemManager = folderLastIntractItemManager;
+        _folderListingSettings = folderListingSettings;
+        _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        OpenPageCommand = openPageCommand;
+        OpenFolderItemCommand = openFolderItemCommand;
+        OpenImageViewerCommand = openImageViewerCommand;
+        OpenFolderListupCommand = openFolderListupCommand;
+        FileDeleteCommand = fileDeleteCommand;
+        OpenWithExplorerCommand = openWithExplorerCommand;
+        SecondaryTileAddCommand = secondaryTileAddCommand;
+        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
+        ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
+        OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
+        AlbamItemEditCommand = albamItemEditCommand;
+        AlbamItemRemoveCommand = albamItemRemoveCommand;
+        FavoriteAddCommand = favoriteAddCommand;
+        FavoriteRemoveCommand = favoriteRemoveCommand;
+        ImageFileItems = new ObservableCollection<StorageItemViewModel>();
+
+        FileItemsView = new AdvancedCollectionView(ImageFileItems);
+        SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
+            .AddTo(_disposables);
+
+        FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
+            .AddTo(_disposables);
+        ImageLastIntractItem = new ReactivePropertySlim<int>()
+            .AddTo(_disposables);
+
+               
+    }
+
+    public StorageItemViewModel GetLastIntractItem()
+    {
+        string lastIntaractItem = null;
+        if (_currentImageSource.StorageItem is IStorageItem storageItem)
         {
-            get { return _NowProcessing; }
-            set { SetProperty(ref _NowProcessing, value); }
+            lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);
+        }
+        else if (_currentImageSource is AlbamImageSource albamImageSource)
+        {
+            lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(albamImageSource.AlbamId);
+        }        
+
+        if (lastIntaractItem == null) { return null; }
+
+        //Debug.WriteLine($"last intaraction item restore, folderPath: {storageItem.Path}, itemPath: {lastIntaractItem}");
+
+        foreach (var item in ImageFileItems)
+        {
+            if (item.Name == lastIntaractItem)
+            {
+                return item;
+            }
         }
 
-        public ISecondaryTileManager SecondaryTileManager { get; }
-        public OpenPageCommand OpenPageCommand { get; }
-        public OpenFolderItemCommand OpenFolderItemCommand { get; }
-        public OpenImageViewerCommand OpenImageViewerCommand { get; }
-        public OpenFolderListupCommand OpenFolderListupCommand { get; }
-        public FileDeleteCommand FileDeleteCommand { get; }
-        public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-        public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-        public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-        public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
-        public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
-        public AlbamItemEditCommand AlbamItemEditCommand { get; }
-        public FavoriteAddCommand FavoriteAddCommand { get; }
-        public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
-        public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
-        public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
+        return null;
+    }
 
+    public void SetLastIntractItem(StorageItemViewModel itemVM)
+    {
+        Debug.WriteLine($"last intaraction item saved, folderPath: {DisplayCurrentPath}, itemPath: {itemVM.Path}");
 
+        _folderLastIntractItemManager.SetLastIntractItemName(DisplayCurrentPath, itemVM.Path);
+    }
 
-        private AdvancedCollectionView _FileItemsView;
-        public AdvancedCollectionView FileItemsView
+    public void ClearLastIntractItem()
+    {
+        _folderLastIntractItemManager.Remove(DisplayCurrentPath);
+    }
+
+    public override void OnNavigatedFrom(INavigationParameters parameters)
+    {
+        _messenger.Unregister<AlbamItemAddedMessage>(this);
+        _messenger.Unregister<AlbamItemRemovedMessage>(this);
+
+        _navigationDisposables?.Dispose();
+
+        foreach (var itemVM in ImageFileItems.Reverse())
         {
-            get { return _FileItemsView; }
-            set { SetProperty(ref _FileItemsView, value); }
+            itemVM.StopImageLoading();
         }
 
-        private bool _HasFileItem;
-        public bool HasFileItem
+        base.OnNavigatedFrom(parameters);
+    }
+    
+
+    private async ValueTask<bool> IsRequireUpdateAsync(string newPath, string pageName, CancellationToken ct)
+    {
+        if (newPath != _currentImageSource?.Path)
         {
-            get { return _HasFileItem; }
-            set { SetProperty(ref _HasFileItem, value); }
+            return true;
         }
 
-        private bool _HasFolderOrBookItem;
-        public bool HasFolderOrBookItem
-        {
-            get { return _HasFolderOrBookItem; }
-            set { SetProperty(ref _HasFolderOrBookItem, value); }
-        }
-
-
-        public SelectionContext Selection { get; } = new SelectionContext();
-
-        public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
-
-        private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
-
-        private string _DisplaySortTypeInheritancePath;
-        public string DisplaySortTypeInheritancePath
-        {
-            get { return _DisplaySortTypeInheritancePath; }
-            private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
-        }
-
-
-        public ReactivePropertySlim<int> ImageLastIntractItem { get; }
-
-        private static readonly Core.AsyncLock _NavigationLock = new ();
-
-        private string _currentPath;
-        private object _currentItem;
-
-        private CancellationTokenSource _navigationCts;
-
-        private string _DisplayCurrentPath;
-        public string DisplayCurrentPath
-        {
-            get { return _DisplayCurrentPath; }
-            set { SetProperty(ref _DisplayCurrentPath, value); }
-        }
-
-        private StorageItemViewModel _CurrentFolderItem;
-        public StorageItemViewModel CurrentFolderItem
-        {
-            get { return _CurrentFolderItem; }
-            set { SetProperty(ref _CurrentFolderItem, value); }
-        }
-
-        private bool _IsFavoriteAlbam;
-        public bool IsFavoriteAlbam
-        {
-            get => _IsFavoriteAlbam;
-            set => SetProperty(ref _IsFavoriteAlbam, value);
-        }
-
-        private string _currentArchiveFolderName;
-
-        private string _DisplayCurrentArchiveFolderName;
-        public string DisplayCurrentArchiveFolderName
-        {
-            get { return _DisplayCurrentArchiveFolderName; }
-            private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
-        }
-        
-        public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
-        public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
-        {
-            Core.Models.FolderItemListing.FileDisplayMode.Large,
-            Core.Models.FolderItemListing.FileDisplayMode.Midium,
-            Core.Models.FolderItemListing.FileDisplayMode.Small,
-            Core.Models.FolderItemListing.FileDisplayMode.Line,
-        };
-
-
-        public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
-
-        IDisposable _ImageCollectionDisposer;
-
-        CompositeDisposable _disposables = new CompositeDisposable();
-        CompositeDisposable _navigationDisposables;
-
-        public ImageListupPageViewModel(
-            IMessenger messenger,
-            IScheduler scheduler,
-            IBookmarkService bookmarkManager,
-            ImageCollectionManager imageCollectionManager,
-            SourceStorageItemsRepository sourceStorageItemsRepository,
-            AlbamRepository albamRepository,
-            IThumbnailImageService thumbnailManager,
-            ISecondaryTileManager secondaryTileManager,
-            IFolderLastIntractItemService folderLastIntractItemManager,
-            FolderListingSettings folderListingSettings,
-            DisplaySettingsByPathRepository displaySettingsByPathRepository,
-            OpenPageCommand openPageCommand,
-            OpenFolderItemCommand openFolderItemCommand,
-            OpenImageViewerCommand openImageViewerCommand,
-            OpenFolderListupCommand openFolderListupCommand,
-            FileDeleteCommand fileDeleteCommand,
-            OpenWithExplorerCommand openWithExplorerCommand,
-            SecondaryTileAddCommand secondaryTileAddCommand,
-            SecondaryTileRemoveCommand secondaryTileRemoveCommand,
-            ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-            OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-            AlbamItemEditCommand albamItemEditCommand,
-            AlbamItemRemoveCommand albamItemRemoveCommand,
-            FavoriteAddCommand favoriteAddCommand,
-            FavoriteRemoveCommand favoriteRemoveCommand
+        if(string.IsNullOrEmpty(pageName) is false
+            && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
+            && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != pageName
             )
         {
-            _messenger = messenger;
-            _scheduler = scheduler;
-            _bookmarkManager = bookmarkManager;
-            _imageCollectionManager = imageCollectionManager;
-            _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _albamRepository = albamRepository;
-            _thumbnailManager = thumbnailManager;
-            SecondaryTileManager = secondaryTileManager;
-            _folderLastIntractItemManager = folderLastIntractItemManager;
-            _folderListingSettings = folderListingSettings;
-            _displaySettingsByPathRepository = displaySettingsByPathRepository;
-            OpenPageCommand = openPageCommand;
-            OpenFolderItemCommand = openFolderItemCommand;
-            OpenImageViewerCommand = openImageViewerCommand;
-            OpenFolderListupCommand = openFolderListupCommand;
-            FileDeleteCommand = fileDeleteCommand;
-            OpenWithExplorerCommand = openWithExplorerCommand;
-            SecondaryTileAddCommand = secondaryTileAddCommand;
-            SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
-            ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
-            OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
-            AlbamItemEditCommand = albamItemEditCommand;
-            AlbamItemRemoveCommand = albamItemRemoveCommand;
-            FavoriteAddCommand = favoriteAddCommand;
-            FavoriteRemoveCommand = favoriteRemoveCommand;
-            ImageFileItems = new ObservableCollection<StorageItemViewModel>();
-
-            FileItemsView = new AdvancedCollectionView(ImageFileItems);
-            SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
-                .AddTo(_disposables);
-
-            FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
-                .AddTo(_disposables);
-            ImageLastIntractItem = new ReactivePropertySlim<int>()
-                .AddTo(_disposables);
-
-                   
+            return true;
         }
 
-        public StorageItemViewModel GetLastIntractItem()
+
+        return false;
+    }
+
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    {
+        var mode = parameters.GetNavigationMode();
+        if (mode == NavigationMode.Refresh)
         {
-            string lastIntaractItem = null;
-            if (_currentItem is IStorageItem storageItem)
-            {
-                lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);
-            }
-            else if (_currentItem is AlbamEntry albamEntry)
-            {
-                lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(albamEntry._id);
-            }
+            await ReloadItemsAsync(_imageCollectionContext, _navigationCts.Token);
+            return;
+        }
 
-            if (lastIntaractItem == null) { return null; }
+        _navigationDisposables = new CompositeDisposable();
+        _navigationCts = new CancellationTokenSource();
+        _navigationDisposables.Add(_navigationCts);
 
-            //Debug.WriteLine($"last intaraction item restore, folderPath: {storageItem.Path}, itemPath: {lastIntaractItem}");
+        var ct = _navigationCts.Token;
 
-            foreach (var item in ImageFileItems)
-            {
-                if (item.Name == lastIntaractItem)
+        NowProcessing = true;
+        try
+        {
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+            {                    
+                (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
-                    return item;
+                    await ResetContentWithStorageItem(newPath, pageName, ct);
                 }
-            }
-
-            return null;
-        }
-
-        public void SetLastIntractItem(StorageItemViewModel itemVM)
-        {
-            Debug.WriteLine($"last intaraction item saved, folderPath: {DisplayCurrentPath}, itemPath: {itemVM.Path}");
-
-            _folderLastIntractItemManager.SetLastIntractItemName(DisplayCurrentPath, itemVM.Path);
-        }
-
-        public void ClearLastIntractItem()
-        {
-            _folderLastIntractItemManager.Remove(DisplayCurrentPath);
-        }
-
-        public override void OnNavigatedFrom(INavigationParameters parameters)
-        {
-            _messenger.Unregister<AlbamItemAddedMessage>(this);
-            _messenger.Unregister<AlbamItemRemovedMessage>(this);
-
-            _navigationDisposables?.Dispose();
-
-            foreach (var itemVM in ImageFileItems.Reverse())
-            {
-                itemVM.StopImageLoading();
-            }
-
-            base.OnNavigatedFrom(parameters);
-        }
-        
-
-        async Task ResetContentWithStorageItem(string path, CancellationToken ct)
-        {
-            using var lockReleaser = await _NavigationLock.LockAsync(ct);
-
-            HasFileItem = false;
-           
-            _currentPath = path;
-            _currentItem = null;
-
-            // SourceStorageItemsRepositoryへの登録が遅延する可能性がある
-            IStorageItem currentItem = null;
-            foreach (var _ in Enumerable.Repeat(0, 10))
-            {
-                currentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath);
-                if (currentItem != null)
+                else
                 {
-                    break;
-                }
-                await Task.Delay(100);
-            }
-
-            if (currentItem == null)
-            {
-                throw new Exception();
-            }
-
-            DisplayCurrentPath = currentItem.Path;
-
-
-            var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentPath);
-            if (settings != null)
-            {
-                DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = settings.Sort;
-            }
-            else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
-                && parentSort.ChildItemDefaultSort != null
-                )
-            {
-                DisplaySortTypeInheritancePath = parentSort.Path;
-                SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-            }
-            else
-            {
-                DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = DefaultFileSortType;
-            }
-
-            
-            await SetSort(SelectedFileSortType.Value, ct);
-            await RefreshFolderItems(currentItem, _navigationCts.Token);
-
-            HasFileItem = ImageFileItems.Any();
-
-            OnPropertyChanged(nameof(ImageFileItems));
-        }
-
-        async Task ResetContentWithAlbam(Guid albamId, CancellationToken ct)
-        {
-            using var lockReleaser = await _NavigationLock.LockAsync(ct);
-
-            HasFileItem = false;
-
-            _currentPath = null;
-            _currentItem = null;
-
-            // SourceStorageItemsRepositoryへの登録が遅延する可能性がある
-            var albam = _albamRepository.GetAlbam(albamId);
-
-            if (albam == null)
-            {
-                throw new Exception();
-            }
-
-            DisplayCurrentPath = "Albam".Translate();
-
-            var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albamId);
-            if (settings != null)
-            {
-                DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = settings.Sort;
-            }
-            else
-            {
-                DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = DefaultFileSortType;
-            }
-
-
-            await SetSort(SelectedFileSortType.Value, ct);
-            await RefreshFolderItems(albam, _navigationCts.Token);
-
-            HasFileItem = ImageFileItems.Any();
-
-            OnPropertyChanged(nameof(ImageFileItems));
-        }
-
-        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
-        {
-            var mode = parameters.GetNavigationMode();
-            if (mode == NavigationMode.Refresh)
-            {
-                await ReloadItemsAsync(_imageCollectionContext, _navigationCts.Token);
-                return;
-            }
-
-            _navigationDisposables = new CompositeDisposable();
-            _navigationCts = new CancellationTokenSource();
-            _navigationDisposables.Add(_navigationCts);
-
-            var ct = _navigationCts.Token;
-
-            NowProcessing = true;
-            try
-            {
-                _currentArchiveFolderName = null;
-
-                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
-                {                    
-                    (var itemPath, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
-                    var unescapedPath = itemPath;                    
-                    if (unescapedPath != _currentPath
-                        || (string.IsNullOrEmpty(_currentArchiveFolderName) is false
-                            && _imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext
-                            && archiveImageCollectionContext.ArchiveDirectoryToken?.Key != _currentArchiveFolderName
-                            )
-                        )
+                    foreach (var itemVM in ImageFileItems)
                     {
-                        await ResetContentWithStorageItem(unescapedPath, ct);
-                    }
-                    else
-                    {
-                        foreach (var itemVM in ImageFileItems)
-                        {
-                            itemVM.RestoreThumbnailLoadingTask(ct);
-                        }
-                    }
-                }
-                else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
-                {
-                    (var albamIdString, _currentArchiveFolderName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
-
-                    if (Guid.TryParse(albamIdString, out var albamId) is true)
-                    {
-                        await ResetContentWithAlbam(albamId, ct);
-                    }
-                }
-                if (mode != NavigationMode.New)
-                {
-                    string lastIntaractItem = null;
-                    if (_currentItem is IStorageItem storageItem)
-                    {
-                        lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);                        
-                    }    
-                    else if (_currentItem is AlbamEntry albam)
-                    {
-                        lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(albam._id);
-                    }
-
-                    if (lastIntaractItem != null)
-                    {
-                        var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
-                        ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
-                    }
-                    else
-                    {
-                        ImageLastIntractItem.Value = 0;
+                        itemVM.RestoreThumbnailLoadingTask(ct);
                     }
                 }
             }
-            finally
+            else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
             {
-                NowProcessing = false;
-            }
+                (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
-            SelectedFileSortType
-                .Subscribe(async _ =>
+                await ResetContentWithAlbam(albamIdString, ct);
+            }
+            if (mode != NavigationMode.New)
+            {
+                string lastIntaractItem = null;
+                if (_currentImageSource?.StorageItem is IStorageItem storageItem)
                 {
-                    await SetSort(SelectedFileSortType.Value, ct);
+                    lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(storageItem.Path);                        
+                }    
+                else if (_currentImageSource is AlbamImageSource albamImageSource)
+                {
+                    lastIntaractItem = _folderLastIntractItemManager.GetLastIntractItemName(albamImageSource.AlbamId);
+                }
+
+                if (lastIntaractItem != null)
+                {
+                    var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
+                    ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
+                }
+                else
+                {
+                    ImageLastIntractItem.Value = 0;
+                }
+            }
+        }
+        finally
+        {
+            NowProcessing = false;
+        }
+
+        SelectedFileSortType
+            .Subscribe(async _ =>
+            {
+                await SetSort(SelectedFileSortType.Value, ct);
+            })
+            .AddTo(_navigationDisposables);
+
+        if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+        {
+            // アプリ内部操作も含めて変更を検知する
+            _imageCollectionContext.CreateImageFileChangedObserver()
+                .Subscribe(_ =>
+                {
+                    _scheduler.Schedule(async () => 
+                    {
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
+                        Debug.WriteLine("Images Update required. " + _currentImageSource);
+                    });
                 })
                 .AddTo(_navigationDisposables);
-
-            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
-            {
-                // アプリ内部操作も含めて変更を検知する
-                _imageCollectionContext.CreateImageFileChangedObserver()
-                    .Subscribe(_ =>
-                    {
-                        _scheduler.Schedule(async () => 
-                        {
-                            await ReloadItemsAsync(_imageCollectionContext, ct);
-                            Debug.WriteLine("Images Update required. " + _currentPath);
-                        });
-                    })
-                    .AddTo(_navigationDisposables);
-            }
-
-            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) => 
-            {
-                var (albamId, path, itemType) = m.Value;
-                if (albamId == FavoriteAlbam.FavoriteAlbamId)
-                {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = true;
-                }
-            });
-
-            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-            {
-                var (albamId, path, itemType) = m.Value;
-                if (albamId == FavoriteAlbam.FavoriteAlbamId)
-                {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = false;
-                }
-            });
-
-            await base.OnNavigatedToAsync(parameters);
         }
 
-        #region Refresh Item
-
-        IImageCollectionContext _imageCollectionContext;
-        private static readonly Core.AsyncLock _RefreshLock = new ();
-        private async Task RefreshFolderItems(object currentItem, CancellationToken ct)
+        _messenger.Register<AlbamItemAddedMessage>(this, (r, m) => 
         {
-            using var lockObject = await _RefreshLock.LockAsync(ct);
-
-            _currentItem = currentItem;
-            _ImageCollectionDisposer?.Dispose();
-            _ImageCollectionDisposer = null;
-            foreach (var item in ImageFileItems)
+            var (albamId, path, itemType) = m.Value;
+            if (albamId == FavoriteAlbam.FavoriteAlbamId)
             {
-                item.Dispose();
+                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                itemVM.IsFavorite = true;
             }
-            ImageFileItems.Clear();
+        });
 
-            _IsFavoriteAlbam = false;
-            _imageCollectionContext = null;
-            IImageCollectionContext imageCollectionContext = null;
-            if (currentItem is StorageFolder folder)
-            {
-                Debug.WriteLine(folder.Path);
-                imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-                CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(folder), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-                DisplayCurrentArchiveFolderName = null;
-            }
-            else if (currentItem is StorageFile file)
-            {
-                Debug.WriteLine(file.Path);
-                if (file.IsSupportedImageFile())
-                {
-                    try
-                    {
-                        var parentFolder = await file.GetParentAsync();
-                        imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
-                        if (parentItem is StorageFolder parentFolder)
-                        {
-                            imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
-                        }
-                    }
-
-                    CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-                    DisplayCurrentArchiveFolderName = null;
-                }
-                else if (file.IsSupportedMangaFile())
-                {
-                    imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, _currentArchiveFolderName ?? String.Empty, ct);
-                    DisplayCurrentArchiveFolderName = _currentArchiveFolderName;
-                    if (_currentArchiveFolderName == null)
-                    {
-                        CurrentFolderItem = new StorageItemViewModel(new StorageItemImageSource(file), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-                    }
-                    else if (imageCollectionContext is ArchiveImageCollectionContext aic)
-                    {
-                        CurrentFolderItem = new StorageItemViewModel(new ArchiveDirectoryImageSource(aic.ArchiveImageCollection, aic.ArchiveDirectoryToken), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-                    }
-                }
-            }
-            else if (currentItem is AlbamEntry albam)
-            {
-                imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
-                CurrentFolderItem = new StorageItemViewModel(new AlbamImageSource(albam, imageCollectionContext as AlbamImageCollectionContext), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-                _IsFavoriteAlbam = albam._id == FavoriteAlbam.FavoriteAlbamId;
-                DisplayCurrentArchiveFolderName = albam.Name;
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
-
-            OnPropertyChanged(nameof(IsFavoriteAlbam));
-
-            if (imageCollectionContext == null) { return; }
-
-            _imageCollectionContext = imageCollectionContext;
-            _ImageCollectionDisposer = imageCollectionContext as IDisposable;
-
-            await ReloadItemsAsync(_imageCollectionContext, ct);
-        }
-
-        private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+        _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
         {
-            var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
-            var newItems = await imageCollectionContext.GetImageFilesAsync(ct).ToListAsync(ct);
-            var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
-                .Where(x => oldItemPathMap.Contains(x))
-                .ToHashSet();
-
-            using (FileItemsView.DeferRefresh())
+            var (albamId, path, itemType) = m.Value;
+            if (albamId == FavoriteAlbam.FavoriteAlbamId)
             {
-                // 削除アイテム
-                Debug.WriteLine($"items count : {ImageFileItems.Count}");
-                foreach (var itemVM in ImageFileItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
-                {
-                    itemVM.Dispose();
-                    ImageFileItems.Remove(itemVM);
-                }
-                Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
-                // 新規アイテム
-                foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
-                {
-                    ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
-                }
-                Debug.WriteLine($"after added : {ImageFileItems.Count}");
+                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                itemVM.IsFavorite = false;
             }
+        });
 
-            ct.ThrowIfCancellationRequested();
+        await base.OnNavigatedToAsync(parameters);
+    }
 
-            HasFileItem = ImageFileItems.Any();
-            _ = Task.Run(async () =>
-            {
-                bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
-                _scheduler.Schedule(() => HasFolderOrBookItem = exist);
-            }, ct);
+    #region Refresh Item
+
+    private void ClearContent()
+    {
+        foreach (var item in ImageFileItems)
+        {
+            item.Dispose();
         }
+        ImageFileItems.Clear();
+
+        IsFavoriteAlbam = false;
+        (_imageCollectionContext as IDisposable)?.Dispose();
+        _imageCollectionContext = null;
+        (CurrentFolderItem as IDisposable)?.Dispose();
+        CurrentFolderItem = null;
+        DisplayCurrentArchiveFolderName = null;
+    }
+
+
+    async Task ResetContentWithStorageItem(string path, string pageName, CancellationToken ct)
+    {
+        using var lockReleaser = await _NavigationLock.LockAsync(ct);
+
+        HasFileItem = false;
+
+        // 表示情報の解決
+        ClearContent();
+        
+        try
+        {
+            (_currentImageSource, _imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(path, pageName, ct);
+
+            Guard.IsNotNull(_currentImageSource);
+            Guard.IsNotNull(_imageCollectionContext);
+
+            CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+        }
+        catch
+        {
+            ClearContent();
+            throw;
+        }
+
+        DisplayCurrentPath = _currentImageSource.Path;
+        if (_currentImageSource is ArchiveEntryImageSource or ArchiveDirectoryImageSource)
+        {
+            DisplayCurrentArchiveFolderName = _imageCollectionContext.Name;
+        }        
+
+        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentImageSource.Path);
+        if (settings != null)
+        {
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType.Value = settings.Sort;
+        }
+        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+            && parentSort.ChildItemDefaultSort != null
+            )
+        {
+            DisplaySortTypeInheritancePath = parentSort.Path;
+            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+        }
+        else
+        {
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType.Value = DefaultFileSortType;
+        }
+               
+        await SetSort(SelectedFileSortType.Value, ct);        
+        await ReloadItemsAsync(_imageCollectionContext, ct);
+
+        HasFileItem = ImageFileItems.Any();
+
+        OnPropertyChanged(nameof(ImageFileItems));
+    }
+
+    async Task ResetContentWithAlbam(string albamIdString, CancellationToken ct)
+    {
+        using var lockReleaser = await _NavigationLock.LockAsync(ct);
+
+        HasFileItem = false;
+        ClearContent();
+        if (Guid.TryParse(albamIdString, out Guid albamId) is false)
+        {
+            throw new InvalidOperationException();
+        }
+        
+        // SourceStorageItemsRepositoryへの登録が遅延する可能性がある
+        var albam = _albamRepository.GetAlbam(albamId);
+        if (albam == null)
+        {
+            throw new InvalidOperationException();
+        }
+
+        AlbamImageCollectionContext imageCollectionContext = new (albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
+        AlbamImageSource albamImageSource = new (albam, imageCollectionContext);
+        CurrentFolderItem = new StorageItemViewModel(albamImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+
+        _imageCollectionContext = imageCollectionContext;
+        _currentImageSource = albamImageSource;
+        DisplayCurrentPath = "Albam".Translate();
+        IsFavoriteAlbam = albamId == FavoriteAlbam.FavoriteAlbamId;
+        DisplayCurrentArchiveFolderName = albam.Name;
+        HasFileItem = ImageFileItems.Any();
+
+        var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albamId);
+        if (settings != null)
+        {
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType.Value = settings.Sort;
+        }
+        else
+        {
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType.Value = DefaultFileSortType;
+        }
+
+        await SetSort(SelectedFileSortType.Value, ct);
+        await ReloadItemsAsync(_imageCollectionContext, ct);
+
+        OnPropertyChanged(nameof(ImageFileItems));
+    }
+
+    private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+    {
+        var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
+        var newItems = await imageCollectionContext.GetImageFilesAsync(ct).ToListAsync(ct);
+        var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
+            .Where(x => oldItemPathMap.Contains(x))
+            .ToHashSet();
+
+        using (FileItemsView.DeferRefresh())
+        {
+            // 削除アイテム
+            Debug.WriteLine($"items count : {ImageFileItems.Count}");
+            foreach (var itemVM in ImageFileItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
+            {
+                itemVM.Dispose();
+                ImageFileItems.Remove(itemVM);
+            }
+            Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+            // 新規アイテム
+            foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
+            {
+                ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+            }
+            Debug.WriteLine($"after added : {ImageFileItems.Count}");
+        }
+
+        ct.ThrowIfCancellationRequested();
+
+        HasFileItem = ImageFileItems.Any();
+        _ = Task.Run(async () =>
+        {
+            bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
+            _scheduler.Schedule(() => HasFolderOrBookItem = exist);
+        }, ct);
+    }
 
 #endregion
 
 #region FileSortType
 
 
-        public IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
+    public IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
+    {
+        IComparer comparer = null;
+        if (_currentImageSource?.StorageItem is StorageFile file
+            && SupportedFileTypesHelper.PdfFileType == file.FileType
+            )
         {
-            IComparer comparer = null;
-            if (_currentItem is StorageFile file
-                && SupportedFileTypesHelper.PdfFileType == file.FileType
-                )
-            {
-                comparer = TitleDigitCompletionComparer.Default;
-            }
-
-            return fileSortType switch
-            {
-                FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, comparer) },
-                FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, comparer) },
-                FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
-                FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
-                _ => throw new NotSupportedException(),
-            };
+            comparer = TitleDigitCompletionComparer.Default;
         }
 
-        private RelayCommand<object> _ChangeFileSortCommand;
-        public RelayCommand<object> ChangeFileSortCommand =>
-            _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
-            {
-                FileSortType? sortType = null;
-                if (sort is int num)
-                {
-                    sortType = (FileSortType)num;
-                }
-                else if (sort is FileSortType sortTypeExact)
-                {
-                    sortType = sortTypeExact;
-                }
+        return fileSortType switch
+        {
+            FileSortType.TitleAscending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Ascending, comparer) },
+            FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, comparer) },
+            FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
+            FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
+            _ => throw new NotSupportedException(),
+        };
+    }
 
-                if (sortType.HasValue)
+    private RelayCommand<object> _ChangeFileSortCommand;
+    public RelayCommand<object> ChangeFileSortCommand =>
+        _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
+        {
+            Guard.IsNotNull(_currentImageSource);
+
+            FileSortType? sortType = null;
+            if (sort is int num)
+            {
+                sortType = (FileSortType)num;
+            }
+            else if (sort is FileSortType sortTypeExact)
+            {
+                sortType = sortTypeExact;
+            }
+
+            if (sortType.HasValue)
+            {
+                DisplaySortTypeInheritancePath = null;
+                SelectedFileSortType.Value = sortType.Value;
+                if (_currentImageSource.StorageItem is IStorageItem)
                 {
-                    DisplaySortTypeInheritancePath = null;
-                    SelectedFileSortType.Value = sortType.Value;
-                    if (_currentItem is IStorageItem)
-                    {
-                        _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentPath, SelectedFileSortType.Value);
-                    }
-                    else if (_currentItem is AlbamEntry albam)
-                    {
-                        _displaySettingsByPathRepository.SetAlbamSettings(albam._id, SelectedFileSortType.Value);
-                    }
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, SelectedFileSortType.Value);
                 }
-                else
+                else if (_currentImageSource is AlbamImageSource albamImageSource)
                 {
-                    if (_currentItem is IStorageItem)
+                    _displaySettingsByPathRepository.SetAlbamSettings(albamImageSource.AlbamId, SelectedFileSortType.Value);
+                }
+                else if (_currentImageSource is AlbamItemImageSource albamItemImageSource)
+                {
+                    _displaySettingsByPathRepository.SetAlbamSettings(albamItemImageSource.AlbamId, SelectedFileSortType.Value);
+                }
+            }
+            else
+            {
+                if (_currentImageSource.StorageItem is IStorageItem)
+                {
+                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentImageSource.Path);
+                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+                    && parentSort.ChildItemDefaultSort != null
+                    )
                     {
-                        _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentPath);
-                        if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentPath) is not null and var parentSort
-                        && parentSort.ChildItemDefaultSort != null
-                        )
-                        {
-                            DisplaySortTypeInheritancePath = parentSort.Path;
-                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                        }
-                        else
-                        {
-                            DisplaySortTypeInheritancePath = null;
-                            SelectedFileSortType.Value = DefaultFileSortType;
-                        }
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
                     }
-                    else if (_currentItem is AlbamEntry albam)
+                    else
                     {
-                        _displaySettingsByPathRepository.ClearAlbamSettings(albam._id);
+                        DisplaySortTypeInheritancePath = null;
                         SelectedFileSortType.Value = DefaultFileSortType;
                     }
                 }
-            });
-
-        private async Task SetSort(FileSortType fileSort, CancellationToken ct)
-        {
-            using (await _RefreshLock.LockAsync(ct))
-            {
-                SetSortAsyncUnsafe(fileSort);
-            }
-        }
-
-        private void SetSortAsyncUnsafe(FileSortType fileSort)
-        {
-            try
-            {
-                var sortDescriptions = ToSortDescription(fileSort);
-                if (FileItemsView.SortDescriptions.Any())
+                else if (_currentImageSource is AlbamImageSource albamImageSource)
                 {
-                    FileItemsView.SortDescriptions.Clear();
+                    _displaySettingsByPathRepository.ClearAlbamSettings(albamImageSource.AlbamId);
+                    SelectedFileSortType.Value = DefaultFileSortType;
                 }
-                foreach (var sort in sortDescriptions)
-                {
-                    FileItemsView.SortDescriptions.Add(sort);
-                }
-
-                FileItemsView.RefreshSorting();
             }
-            catch (COMException) { }
-        }
+        });
 
-        private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
-        public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
-            _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
+    private async Task SetSort(FileSortType fileSort, CancellationToken ct)
+    {
+        using (await _RefreshLock.LockAsync(ct))
+        {
+            SetSortAsyncUnsafe(fileSort);
+        }
+    }
+
+    private void SetSortAsyncUnsafe(FileSortType fileSort)
+    {
+        try
+        {
+            var sortDescriptions = ToSortDescription(fileSort);
+            if (FileItemsView.SortDescriptions.Any())
             {
-                _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentPath), SelectedFileSortType.Value);
-            });
+                FileItemsView.SortDescriptions.Clear();
+            }
+            foreach (var sort in sortDescriptions)
+            {
+                FileItemsView.SortDescriptions.Add(sort);
+            }
+
+            FileItemsView.RefreshSorting();
+        }
+        catch (COMException) { }
+    }
+
+    private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
+    public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
+        _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
+        {
+            Guard.IsNotNull(_currentImageSource);
+
+            _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentImageSource.Path), SelectedFileSortType.Value);
+        });
 
 
 
 #endregion
-    }
 }

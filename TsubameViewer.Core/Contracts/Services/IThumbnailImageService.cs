@@ -1,5 +1,5 @@
-﻿using SharpCompress.Archives;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -12,7 +12,7 @@ namespace TsubameViewer.Core.Contracts.Services;
 public interface IThumbnailImageService
 {
     Task<IRandomAccessStream> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct);
-    Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, CancellationToken ct = default);
+    Task<IRandomAccessStream> GetThumbnailImageStreamAsync(IImageSource imageSource, IRandomAccessStream? outputStream = null, CancellationToken ct = default);
     Task SetParentThumbnailImageAsync(IImageSource childImageSource, bool isArchiveThumbnailSetToFile = false, CancellationToken ct = default);
     ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource);
     ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight);
