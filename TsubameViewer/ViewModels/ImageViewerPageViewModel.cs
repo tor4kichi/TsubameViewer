@@ -742,6 +742,64 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         await base.OnNavigatedToAsync(parameters);
     }
 
+
+    #region ImageCollection 
+
+    private async Task RefreshItems(IImageSource imageSource, IImageCollectionContext imageCollectionContext, CancellationToken ct)
+    {
+        ParentFolderOrArchiveName = imageCollectionContext.Name;
+        ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+
+        await ReloadItemsAsync(imageCollectionContext, ct);
+
+        if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
+        {
+            var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
+            if (folders.Count <= 1)
+            {
+                PageFolderNames = new string[0];
+            }
+            else
+            {
+                PageFolderNames = folders.Select(x =>
+                {
+                    if (x is ArchiveDirectoryImageSource archiveDirectory)
+                    {
+                        return archiveDirectory.Name.TrimEnd(SeparateChars);
+                    }
+                    else
+                    {
+                        return x.Name.TrimEnd(SeparateChars);
+                    }
+                }).ToArray();
+            }
+        }
+        else
+        {
+            PageFolderNames = new string[0];
+        }
+
+        GoNextImageCommand.NotifyCanExecuteChanged();
+        GoPrevImageCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
+    {
+        Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
+
+        var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+        _nowCurrenImageIndexChanging = true;
+        _nowImagesChanging = true;
+        Images = new IImageSource[imageCount];
+        _nowImagesChanging = false;
+        _nowCurrenImageIndexChanging = false;
+    }
+
+    #endregion
+
+
+    #region Image Display with Cache
+
     bool _nowPageFolderNameChanging = false;
     void UpdateDisplayName(IImageSource[] imageSources)
     {
@@ -808,6 +866,16 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
 
 
     BitmapImage _emptyImage = new BitmapImage();
+
+
+    private bool _NowDoubleImageView;
+    public bool NowDoubleImageView
+    {
+        get { return _NowDoubleImageView; }
+        set { SetProperty(ref _NowDoubleImageView, value); }
+    }
+
+
 
     async Task ResetImageIndex(int requestIndex)
     {
@@ -1771,60 +1839,9 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     }
 
 
+    #endregion
 
-    private async Task RefreshItems(IImageSource imageSource, IImageCollectionContext imageCollectionContext, CancellationToken ct)
-    {
-        ParentFolderOrArchiveName = imageCollectionContext.Name;
-        ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-        
-        await ReloadItemsAsync(imageCollectionContext, ct);
-
-        if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
-        {
-            var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
-            if (folders.Count <= 1)
-            {
-                PageFolderNames = new string[0];
-            }
-            else
-            {
-                PageFolderNames = folders.Select(x =>
-                {
-                    if (x is ArchiveDirectoryImageSource archiveDirectory)
-                    {
-                        return archiveDirectory.Name.TrimEnd(SeparateChars);
-                    }
-                    else
-                    {
-                        return x.Name.TrimEnd(SeparateChars);
-                    }
-                }).ToArray();
-            }
-        }
-        else
-        {
-            PageFolderNames = new string[0];
-        }
-
-        GoNextImageCommand.NotifyCanExecuteChanged();
-        GoPrevImageCommand.NotifyCanExecuteChanged();            
-    }
-
-
-    private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
-    {
-        Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
-
-        var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
-        _nowCurrenImageIndexChanging = true;
-        _nowImagesChanging = true;
-        Images = new IImageSource[imageCount];
-        _nowImagesChanging = false;
-        _nowCurrenImageIndexChanging = false;
-    }
-
-
-#region Commands
+    #region Commands
 
     public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
     public BackNavigationCommand BackNavigationCommand { get; }
@@ -1982,18 +1999,8 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             }
         });
 
-#endregion
+    #endregion
 
-#region Single/Double View
-
-    private bool _NowDoubleImageView;
-    public bool NowDoubleImageView
-    {
-        get { return _NowDoubleImageView; }
-        set { SetProperty(ref _NowDoubleImageView, value); }
-    }
-
-#endregion
 
 
 }
