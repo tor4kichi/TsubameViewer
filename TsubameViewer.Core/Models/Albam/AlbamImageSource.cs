@@ -12,7 +12,7 @@ using Windows.Storage.Streams;
 
 namespace TsubameViewer.Core.Models.Albam;
 
-public sealed class AlbamImageSource : IImageSource
+public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
 {
     public AlbamEntry AlbamEntry { get; }
     private readonly AlbamImageCollectionContext _albamImageCollectionContext;

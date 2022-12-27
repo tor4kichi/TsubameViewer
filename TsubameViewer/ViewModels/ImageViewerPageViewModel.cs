@@ -40,7 +40,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-
+using CommunityToolkit.Diagnostics;
 
 namespace TsubameViewer.ViewModels;
 
@@ -51,13 +51,14 @@ public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 
 
 public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDisposable
-{
-    private string _currentPath;
-    private object _currentFolderItem;
+{    
+    private IImageSource _currentImageSource;
+    private IImageCollectionContext _imageCollectionContext;
 
     private CancellationTokenSource _navigationCts;
 
-    IDisposable _ImageEnumerationDisposer;
+    CancellationTokenSource _imageLoadingCts;
+    Core.AsyncLock _imageLoadingLock = new();
 
     private IImageSource[] _Images;
     public IImageSource[] Images
@@ -301,7 +302,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             }
 
             IsLeftBindingEnabled.Value = !IsLeftBindingEnabled.Value;                
-            ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
+            ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
 
             if (SwapIfDoubleView(DisplayImages_0))
             {
@@ -323,7 +324,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         ToggleDoubleViewCommand.Subscribe(async () => 
         {
             IsDoubleViewEnabled.Value = !IsDoubleViewEnabled.Value;
-            ImageViewerSettings.SetViewerSettingsPerPath(_currentPath, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
+            ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
             Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
             await ResetImageIndex(CurrentImageIndex);
         })
@@ -336,7 +337,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     public void Dispose()
     {
         _disposables.Dispose();
-        _ImageEnumerationDisposer?.Dispose();
+        (_imageCollectionContext as IDisposable)?.Dispose();
     }
 
 
@@ -363,8 +364,10 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         _navigationCts.Cancel();
         _navigationCts.Dispose();
         _navigationDisposables.Dispose();
-        _ImageEnumerationDisposer?.Dispose();
-        _ImageEnumerationDisposer = null;
+        (_currentImageSource as IDisposable)?.Dispose();
+        _currentImageSource = null;
+        (_imageCollectionContext as IDisposable)?.Dispose();
+        _imageCollectionContext = null;
         _imageLoadingCts?.Cancel();
         _imageLoadingCts?.Dispose();
 
@@ -398,136 +401,132 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         GoNextImageCommand.NotifyCanExecuteChanged();
         GoPrevImageCommand.NotifyCanExecuteChanged();
 
-        string parsedPageName = null;
+        var ct = _navigationCts.Token;
+        string firstDisplayPageName = null;
 
-        if (mode == NavigationMode.New
-            || mode == NavigationMode.Back
-            || mode == NavigationMode.Forward
-            )
+        if (mode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
         {
-            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
             {
-                var unescapedPath = Uri.UnescapeDataString(path);
-                if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
+                (string newPath, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedPath));
 
-                (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
-
-                _currentPath = itemPath;
-
-                // PathReferenceCountManagerへの登録が遅延する可能性がある
-                IStorageItem currentFolderItem = null;
-                foreach (var _ in Enumerable.Repeat(0, 10))
+                try
                 {
-                    currentFolderItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath);
-                    if (currentFolderItem != null)
+#if DEBUG
+                    //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
+#endif
+                    await _messenger.WorkWithBusyWallAsync(async (ct) =>
                     {
-                        _currentPath = currentFolderItem.Path;
-                        break;
-                    }
+                        var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
 
-                    await Task.Delay(100);
+                        _recentlyAccessManager.AddWatched(imageSource.Path);
+
+                        Images = default;
+
+                        _appView.Title = Title  = imageSource.StorageItem?.Name ?? imageSource.Name;
+
+                        _currentImageSource = imageSource;
+                        _imageCollectionContext = imageCollectionContext;
+
+                        DisplaySortTypeInheritancePath = null;
+                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentImageSource.Path)
+                            ? Path.GetDirectoryName(_currentImageSource.Path)
+                            : _currentImageSource.Path;
+
+                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
+                        if (settings != null)
+                        {
+                            SelectedFileSortType.Value = settings.Sort;
+                        }
+                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                        {
+                            DisplaySortTypeInheritancePath = parentSort.Path;
+                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        }
+                        else
+                        {
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                        }
+
+                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
+
+                        _CurrentImageIndex = 0;
+
+                        if (string.IsNullOrEmpty(firstDisplayPageName)
+                            && SupportedFileTypesHelper.IsSupportedImageFileExtension(newPath)
+                            )
+                        {
+                            firstDisplayPageName = Path.GetFileName(newPath);
+                        }
+
+                        await RefreshItems(imageSource, imageCollectionContext, ct);
+
+                    }, ct);
                 }
-
-                if (currentFolderItem is StorageFile file && file.IsSupportedImageFile() && string.IsNullOrEmpty(parsedPageName))
+                catch (OperationCanceledException)
                 {
-                    parsedPageName = Path.GetFileName(itemPath);
+                    (BackNavigationCommand as ICommand).Execute(null);
+                    return;
                 }
-
-                Images = default;
-
-                _appView.Title = currentFolderItem.Name;
-                Title = currentFolderItem.Name;
-
-                _currentFolderItem = currentFolderItem;
-
-                DisplaySortTypeInheritancePath = null;
-                _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentPath)
-                    ? Path.GetDirectoryName(_currentPath)
-                    : _currentPath;
-
-                var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                if (settings != null)
-                {
-                    SelectedFileSortType.Value = settings.Sort;
-                }
-                else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
-                {
-                    DisplaySortTypeInheritancePath = parentSort.Path;
-                    SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                }
-                else
-                {
-                    SelectedFileSortType.Value = DefaultFileSortType;
-                }
-
-                (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
-                    = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
-
-                _CurrentImageIndex = 0;
             }
-            else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
+            else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
             {
-                var unescapedPath = Uri.UnescapeDataString(albamPath);
-                if (string.IsNullOrEmpty(unescapedPath)) { throw new InvalidOperationException(); }
+                (string albamIdString, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedAlbamPath));
 
-                (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(unescapedPath);
-
-                if (_currentPath != itemPath)
+                if (_currentImageSource.Path != albamIdString)
                 {
-                    _currentPath = itemPath;
+                    var albam = _albamRepository.GetAlbam(Guid.Parse(albamIdString));
 
-                    var albam = _albamRepository.GetAlbam(Guid.Parse(itemPath));
+                    Guard.IsNotNull(albam);
 
-                    Images = default;
-                    _CurrentImageIndex = 0;
-
-                    _appView.Title = albam.Name;
-                    Title = albam.Name;
-
-                    _currentFolderItem = albam;
-                    DisplaySortTypeInheritancePath = null;
-                    _pathForSettings = null;
-
-                    var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albam._id);
-                    if (settings != null)
+                    await _messenger.WorkWithBusyWallAsync(async (ct) =>
                     {
-                        SelectedFileSortType.Value = settings.Sort;
-                    }
-                    else
-                    {
-                        SelectedFileSortType.Value = DefaultFileSortType;
-                    }
+                        AlbamImageCollectionContext albamImageCollectionContext = new(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
+                        AlbamImageSource albamImageSource = new(albam, albamImageCollectionContext);
 
-                    (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
-                        = ImageViewerSettings.GetViewerSettingsPerPath(_currentPath);
+                        _currentImageSource = albamImageSource;
+                        _imageCollectionContext = albamImageCollectionContext;
+                        Images = default;
+                        _CurrentImageIndex = 0;
+
+                        _appView.Title = albam.Name;
+                        Title = albam.Name;
+
+                        DisplaySortTypeInheritancePath = null;
+                        _pathForSettings = null;
+
+                        var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albam._id);
+                        if (settings != null)
+                        {
+                            SelectedFileSortType.Value = settings.Sort;
+                        }
+                        else
+                        {
+                            SelectedFileSortType.Value = DefaultFileSortType;
+                        }
+
+                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
+
+                        await RefreshItems(albamImageSource, albamImageCollectionContext, ct);
+                    }, ct);
                 }
+            }
+            else
+            {
+                throw new NotSupportedException();
             }
         }
 
         // 以下の場合に表示内容を更新する
         //    1. 表示フォルダが変更された場合
         //    2. 前回の更新が未完了だった場合
-        if (_currentFolderItem != null)
-        {
-            try
-            {
-#if DEBUG
-                //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
-#endif
-                await _messenger.WorkWithBusyWallAsync(RefreshItems, _navigationCts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                (BackNavigationCommand as ICommand).Execute(null);
-                return;
-            }
-        }
 
         // 表示する画像を決める
         if (mode == NavigationMode.Forward 
             || parameters.ContainsKey(PageNavigationConstants.Restored) 
-            || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName)
-            )
+            || (mode == NavigationMode.New && string.IsNullOrEmpty(firstDisplayPageName))
             )
         {
             
@@ -547,12 +546,11 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                 }
             }
         }
-        else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
+        else if (mode == NavigationMode.New && !string.IsNullOrEmpty(firstDisplayPageName))
         {
-            var unescapedPageName = parsedPageName;
             try
             {
-                _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(parsedPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, _navigationCts.Token);
             }
             catch
             {
@@ -611,14 +609,14 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
 
                     var imageSource = imageSources[0];
-                    if (_currentFolderItem is IStorageItem)
+                    if (_currentImageSource is IStorageItem)
                     {
                         _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
                         _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
                     }
-                    else if (_currentFolderItem is AlbamEntry albam)
+                    else if (_currentImageSource is AlbamImageSource albam)
                     {
-                        _folderLastIntractItemManager.SetLastIntractItemName(albam._id, imageSource.Path);
+                        _folderLastIntractItemManager.SetLastIntractItemName(albam.AlbamId, imageSource.Path);
                     }
                 }
             }).AddTo(_navigationDisposables);
@@ -707,7 +705,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                 .Subscribe(_ =>
                 {
                     requireRefresh = true;
-                    Debug.WriteLine("Images Update required. " + _currentPath);
+                    Debug.WriteLine("Images Update required. " + _currentImageSource.Path);
                 })
                 .AddTo(_navigationDisposables);
 
@@ -735,7 +733,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                         }
 
 
-                        Debug.WriteLine("Images Updated. " + _currentPath);
+                        Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
                     }
                 })
                 .AddTo(_navigationDisposables);
@@ -1773,77 +1771,12 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     }
 
 
-    IImageCollectionContext _imageCollectionContext;
-    CancellationTokenSource _imageLoadingCts;
-    Core.AsyncLock _imageLoadingLock = new ();
 
-    private async Task RefreshItems(CancellationToken ct)
+    private async Task RefreshItems(IImageSource imageSource, IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
-        _ImageEnumerationDisposer?.Dispose();
-        _ImageEnumerationDisposer = null;
-
-        IImageCollectionContext imageCollectionContext = null;
-        if (_currentFolderItem is StorageFolder folder)
-        {
-            Debug.WriteLine(folder.Path);
-            imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(folder, ct);
-
-            _recentlyAccessManager.AddWatched(_currentPath);
-        }
-        else if (_currentFolderItem is StorageFile file)
-        {
-            Debug.WriteLine(file.Path);
-            if (file.IsSupportedImageFile())
-            {
-                try
-                {
-                    var parentFolder = await file.GetParentAsync();
-                    imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
-                    _recentlyAccessManager.AddWatched(parentFolder.Path);
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    _recentlyAccessManager.AddWatched(_currentPath);
-
-                    var parentItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(_currentPath));
-                    if (parentItem is StorageFolder parentFolder)
-                    {
-                        imageCollectionContext = _imageCollectionManager.GetFolderImageCollectionContext(parentFolder, ct);
-                    }
-                }
-            }
-            else if (file.IsSupportedMangaFile())
-            {
-                imageCollectionContext = await _imageCollectionManager.GetArchiveImageCollectionContextAsync(file, null, ct);
-                _recentlyAccessManager.AddWatched(file.Path);
-            }
-        }
-        else if (_currentFolderItem is AlbamEntry albam)
-        {
-            imageCollectionContext = new AlbamImageCollectionContext(albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }
-
-        if (imageCollectionContext == null) { return; }
-
-        _ImageEnumerationDisposer = imageCollectionContext as IDisposable;
-        _imageCollectionContext = imageCollectionContext;
-
         ParentFolderOrArchiveName = imageCollectionContext.Name;
-        ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_currentFolderItem);
-
-        var name = _currentFolderItem switch
-        {
-            IStorageItem storageItem => storageItem.Name,
-            AlbamEntry albam => albam.Name,
-            _ => throw new NotSupportedException(),
-        };
-        _appView.Title = name;
-        Title = ItemType == StorageItemTypes.Image ? ParentFolderOrArchiveName : name;
-
+        ItemType = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+        
         await ReloadItemsAsync(imageCollectionContext, ct);
 
         if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
@@ -2013,18 +1946,18 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             {
                 DisplaySortTypeInheritancePath = null;
                 SelectedFileSortType.Value = sortType.Value;
-                if (_currentFolderItem is IStorageItem)
+                if (_currentImageSource is IStorageItem)
                 {
                     _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType.Value);
                 }
-                else if (_currentFolderItem is AlbamEntry albam)
+                else if (_currentImageSource is AlbamImageSource albam)
                 {
-                    _displaySettingsByPathRepository.SetAlbamSettings(albam._id, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetAlbamSettings(albam.AlbamId, SelectedFileSortType.Value);
                 }
             }
             else
             {
-                if (_currentFolderItem is IStorageItem)
+                if (_currentImageSource is IStorageItem)
                 {
                     _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_pathForSettings);
                     if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort
@@ -2040,9 +1973,9 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                         SelectedFileSortType.Value = DefaultFileSortType;
                     }
                 }
-                else if (_currentFolderItem is AlbamEntry albam)
+                else if (_currentImageSource is AlbamImageSource albam)
                 {
-                    _displaySettingsByPathRepository.ClearAlbamSettings(albam._id);
+                    _displaySettingsByPathRepository.ClearAlbamSettings(albam.AlbamId);
                     DisplaySortTypeInheritancePath = null;
                     SelectedFileSortType.Value = DefaultFileSortType;
                 }

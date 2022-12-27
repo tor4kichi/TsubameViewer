@@ -41,7 +41,7 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
         _archiveImageCollection = archiveImageCollection;
         StorageItem = _archiveImageCollection.File;
         DateCreated = entry.CreatedTime ?? entry.LastModifiedTime ?? entry.ArchivedTime ?? DateTime.Now;
-        Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, entry.Key);
+        Path = PageNavigationConstants.MakeStorageItemIdWithPage(archiveImageCollection.File.Path, entry.Key);        
     }
 
     public StorageFile StorageItem { get; }

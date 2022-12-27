@@ -137,7 +137,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
                         throw new NotSupportedException();
                     }                    
                 }
-                else if (imageSource is AlbamImageSource albam)
+                else if (imageSource is IAlbamImageSource albam)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(albam);
                     var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
