@@ -5,9 +5,9 @@ VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer", "TsubameViewer\TsubameViewer.csproj", "{DC398F89-BA75-4E03-B549-BDDFC0B00833}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Models", "TsubameViewer.Models\TsubameViewer.Models.csproj", "{4296664A-ED8C-4334-BEA3-8C685345441F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Core", "TsubameViewer.Core\TsubameViewer.Core.csproj", "{4296664A-ED8C-4334-BEA3-8C685345441F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Models.Test", "TsubameViewer.Models.Test\TsubameViewer.Models.Test.csproj", "{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TsubameViewer.Core.Test", "TsubameViewer.Core.Test\TsubameViewer.Core.Test.csproj", "{74C18F6A-108D-4C7D-AE44-1E8738FA0FAB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

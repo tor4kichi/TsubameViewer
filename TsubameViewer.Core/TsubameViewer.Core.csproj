@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{4296664A-ED8C-4334-BEA3-8C685345441F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TsubameViewer.Core</RootNamespace>
+    <AssemblyName>TsubameViewer.Core</AssemblyName>
+    <DefaultLanguage>ja-JP</DefaultLanguage>
+    <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.22000.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
+    <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <LangVersion>10</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <PlatformTarget>x86</PlatformTarget>
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM'">
+    <PlatformTarget>ARM</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\ARM\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM'">
+    <PlatformTarget>ARM</PlatformTarget>
+    <OutputPath>bin\ARM\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|ARM64'">
+    <PlatformTarget>ARM64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\ARM64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|ARM64'">
+    <PlatformTarget>ARM64</PlatformTarget>
+    <OutputPath>bin\ARM64\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>full</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <PlatformTarget>x64</PlatformTarget>
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants>
+    <Optimize>true</Optimize>
+    <NoWarn>;2008</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Contracts\Services\IStorageHelper.cs" />
+    <Compile Include="IsExternalInit.cs" />
+    <Compile Include="Migrate\IAsyncMigrater.cs" />
+    <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />
+    <Compile Include="Models\Albam\AlbamImageSource.cs" />
+    <Compile Include="Models\Albam\AlbamItemExtensions.cs" />
+    <Compile Include="Models\Albam\AlbamItemImageSource.cs" />
+    <Compile Include="Models\Albam\AlbamItemMessage.cs" />
+    <Compile Include="Models\Albam\AlbamMessage.cs" />
+    <Compile Include="Models\Albam\AlbamRepository.cs" />
+    <Compile Include="Models\Albam\IAlbamImageSource.cs" />
+    <Compile Include="Models\ApplicationSettings.cs" />
+    <Compile Include="Models\EBook\EBookReaderSettings.cs" />
+    <Compile Include="Helpers\FolderHelper.cs" />
+    <Compile Include="Models\FolderItemListing\DisplaySettingsByPathRepository.cs" />
+    <Compile Include="Models\FolderItemListing\FileDisplayMode.cs" />
+    <Compile Include="Models\FolderItemListing\FileSortType.cs" />
+    <Compile Include="Models\FolderItemListing\FolderContainerTypeRepository.cs" />
+    <Compile Include="Models\FolderItemListing\FolderItemsCacheRepository.cs" />
+    <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
+    <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
+    <Compile Include="Contracts\Services\IRecentlyAccessService.cs" />
+    <Compile Include="Contracts\Services\IThumbnailImageService.cs" />
+    <Compile Include="Services\RecentlyAccessService.cs" />
+    <Compile Include="Services\ThumbnailImageService.cs" />
+    <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
+    <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
+    <Compile Include="Models\ImageViewer\DirectoryPathHelper.cs" />
+    <Compile Include="Models\ImageViewer\IImageSource.cs" />
+    <Compile Include="Models\ImageViewer\ImageCollection.cs" />
+    <Compile Include="Models\ImageViewer\ImageCollectionContext.cs" />
+    <Compile Include="Models\ImageViewer\ImageCollectionManager.cs" />
+    <Compile Include="Models\ImageViewer\ImageSource\ArchiveDirectoryImageSource.cs" />
+    <Compile Include="Models\ImageViewer\ImageSource\ArchiveEntryImageSource.cs" />
+    <Compile Include="Models\ImageViewer\ImageSource\PdfPageImageSource.cs" />
+    <Compile Include="Models\ImageViewer\ImageSource\StorageItemImageSource.cs" />
+    <Compile Include="Models\ImageViewer\ImageViewerPageSettings.cs" />
+    <Compile Include="Models\ImageViewer\NotSupportedImageFormatException.cs" />
+    <Compile Include="Helpers\MessengerObservableExtensions.cs" />
+    <Compile Include="Services\FolderLastIntractItemService.cs" />
+    <Compile Include="Contracts\Services\IBookmarkService.cs" />
+    <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
+    <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
+    <Compile Include="Contracts\Services\IFolderLastIntractItemManager.cs" />
+    <Compile Include="Services\RestoreNavigationService.cs" />
+    <Compile Include="Services\LocalBookmarkService.cs" />
+    <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
+    <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />
+    <Compile Include="Models\SourceFolders\NeighboringFilesQueryCache.cs" />
+    <Compile Include="Models\SourceFolders\SourceOriginConstants.cs" />
+    <Compile Include="Models\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
+    <Compile Include="Models\SourceFolders\SourceStorageItemsRepository.cs" />
+    <Compile Include="Models\StorageItemTypes.cs" />
+    <Compile Include="Models\SupportedFileTypesHelper.cs" />
+    <Compile Include="Models\TitleDigitCompletionComparer.cs" />
+    <Compile Include="Helpers\AsyncLock.cs" />
+    <Compile Include="Helpers\EnumerableTaskHelper.cs" />
+    <Compile Include="Infrastructure\FlagsRepositoryBase.cs" />
+    <Compile Include="Infrastructure\LiteDbService.cs" />
+    <Compile Include="UseCases\FavoriteAlbam.cs" />
+    <Compile Include="Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
+    <Compile Include="Maintenance\EnsureFavoriteAlbam.cs" />
+    <Compile Include="Contracts\Maintenance\ILaunchTimeMaintenance.cs" />
+    <Compile Include="Maintenance\RemoveSourceStorageItemWhenPathIsEmpty.cs" />
+    <Compile Include="Maintenance\SecondaryTileMaintenance.cs" />
+    <Compile Include="Migrate\DeleteThumbnailImagesOnTemporaryFolder.cs" />
+    <Compile Include="Migrate\DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc.cs" />
+    <Compile Include="Migrate\DropIgnoreStorageItemDbWhenIdNotString.cs" />
+    <Compile Include="Migrate\DropPathReferenceCountDb.cs" />
+    <Compile Include="Migrate\DropSearchIndexDb.cs" />
+    <Compile Include="Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
+    <Compile Include="Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
+    <Compile Include="UseCases\Transform\SplitImageTransform.cs" />
+    <Compile Include="UseCases\Transform\TitleDigitCompletionTransform.cs" />
+    <Compile Include="Contracts\Services\ISecondaryTileManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Properties\TsubameViewer.Models.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Diagnostics">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm">
+      <Version>8.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="LiteDB">
+      <Version>5.0.11</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+      <Version>6.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream">
+      <Version>2.2.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
+      <Version>6.2.13</Version>
+    </PackageReference>
+    <PackageReference Include="ReactiveProperty">
+      <Version>8.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="SharpCompress">
+      <Version>0.32.2</Version>
+    </PackageReference>
+    <PackageReference Include="System.Linq.Async">
+      <Version>6.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>5.0.2</Version>
+    </PackageReference>
+    <PackageReference Include="VersOne.Epub">
+      <Version>3.0.3.1</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Contracts\Models\" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
+    <VisualStudioVersion>14.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
