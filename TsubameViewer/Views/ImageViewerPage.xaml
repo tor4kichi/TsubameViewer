@@ -26,14 +26,6 @@
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
-
-  
-  <i:Interaction.Behaviors>
-    <core:EventTriggerBehavior EventName="Unloaded">
-      
-    </core:EventTriggerBehavior>
-  </i:Interaction.Behaviors>
-  
   
   <Page.Resources>
 

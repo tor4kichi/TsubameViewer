@@ -14,7 +14,8 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:myBehaior="using:TsubameViewer.Views.Behaviors" 
   xmlns:wst="using:WindowsStateTriggers" 
-  xmlns:models ="using:TsubameViewer.Core.Models.FolderItemListing" 
+  xmlns:models="using:TsubameViewer.Core.Models"
+  xmlns:modelListing ="using:TsubameViewer.Core.Models.FolderItemListing" 
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
@@ -24,7 +25,7 @@
   xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)"
   xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations" 
   xmlns:myTrigger="using:TsubameViewer.Views.StateTrigger"
-  xmlns:fluentIcon="using:Fluent.Icons"
+  xmlns:fluentIcon="using:Fluent.Icons"   
   NavigationCacheMode="Enabled"
   x:Name="PageRoot"
   >
@@ -569,22 +570,22 @@
 
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
-                    <models:FileSortType>UpdateTimeDecending</models:FileSortType>
+                    <modelListing:FileSortType>UpdateTimeDecending</modelListing:FileSortType>
                   </MenuFlyoutItem.CommandParameter>
                 </MenuFlyoutItem>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
-                    <models:FileSortType>UpdateTimeAscending</models:FileSortType>
+                    <modelListing:FileSortType>UpdateTimeAscending</modelListing:FileSortType>
                   </MenuFlyoutItem.CommandParameter>
                 </MenuFlyoutItem>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
-                    <models:FileSortType>TitleAscending</models:FileSortType>
+                    <modelListing:FileSortType>TitleAscending</modelListing:FileSortType>
                   </MenuFlyoutItem.CommandParameter>
                 </MenuFlyoutItem>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
                   <MenuFlyoutItem.CommandParameter>
-                    <models:FileSortType>TitleDecending</models:FileSortType>
+                    <modelListing:FileSortType>TitleDecending</modelListing:FileSortType>
                   </MenuFlyoutItem.CommandParameter>
                 </MenuFlyoutItem>
               </MenuFlyout>
@@ -733,11 +734,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <models:FileDisplayMode>Line</models:FileDisplayMode>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Line}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FileItemsRepeater_Line.Visibility" Value="Visible" />
@@ -745,11 +742,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <models:FileDisplayMode>Small</models:FileDisplayMode>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Small}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FileItemsRepeater_Small.Visibility" Value="Visible" />
@@ -757,11 +750,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <models:FileDisplayMode>Midium</models:FileDisplayMode>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Midium}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FileItemsRepeater_Midium.Visibility" Value="Visible" />
@@ -769,11 +758,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}">
-              <wst:EqualsStateTrigger.EqualTo>
-                <models:FileDisplayMode>Large</models:FileDisplayMode>
-              </wst:EqualsStateTrigger.EqualTo>
-            </wst:EqualsStateTrigger>
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Large}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
@@ -861,7 +846,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="Albam" />
+            <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="{x:Bind models:StorageItemTypes.Albam}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SelectAction_AlbamRemoveButton.Visibility" Value="Visible" />
