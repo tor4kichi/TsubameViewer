@@ -423,7 +423,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
 
                         Images = default;
 
-                        _appView.Title = Title  = imageSource.StorageItem?.Name ?? imageSource.Name;
+                        _appView.Title = Title  = imageCollectionContext.Name;
 
                         _currentImageSource = imageSource;
                         _imageCollectionContext = imageCollectionContext;

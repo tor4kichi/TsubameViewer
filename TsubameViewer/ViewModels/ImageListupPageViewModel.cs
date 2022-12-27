@@ -480,14 +480,14 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
             Guard.IsNotNull(_currentImageSource);
             Guard.IsNotNull(_imageCollectionContext);
-
-            CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
         }
         catch
         {
             ClearContent();
             throw;
         }
+
+        CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
 
         DisplayCurrentPath = _currentImageSource.Path;
         if (_currentImageSource is ArchiveEntryImageSource or ArchiveDirectoryImageSource)
