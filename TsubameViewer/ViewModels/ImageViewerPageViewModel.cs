@@ -419,7 +419,12 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                     {
                         var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
 
-                        _recentlyAccessManager.AddWatched(imageSource.Path);
+                        _recentlyAccessManager.AddWatched(imageCollectionContext switch
+                        {
+                            FolderImageCollectionContext folderICC => folderICC.Folder.Path,
+                            ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
+                            _ => imageSource.Path,
+                        });
 
                         Images = default;
 

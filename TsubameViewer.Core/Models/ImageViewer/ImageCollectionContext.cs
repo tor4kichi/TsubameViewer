@@ -243,6 +243,7 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 
     public string Name => ArchiveImageCollection.Name;
 
+    public StorageFile File => ArchiveImageCollection.File;
 
     public ArchiveImageCollectionContext(ArchiveImageCollection archiveImageCollection, ArchiveDirectoryToken archiveDirectoryToken)
     {
