@@ -93,10 +93,18 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
         return SecondaryTile.Exists(_secondaryTileIdRepository.GetTileId(path));
     }
 
-    public static SecondaryTileArguments DeserializeSecondaryTileArguments(string arguments)
+    public static bool DeserializeSecondaryTileArguments(string arguments, out SecondaryTileArguments? args)
     {
-
-        return JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
+        try
+        {
+            args = JsonSerializer.Deserialize<SecondaryTileArguments>(arguments);
+            return true;
+        }
+        catch
+        {
+            args = null;
+            return false;
+        }
     }
 
     public async Task<bool> AddSecondaryTile(ISecondaryTileArguments arguments, string displayName, IStorageItem storageItem)

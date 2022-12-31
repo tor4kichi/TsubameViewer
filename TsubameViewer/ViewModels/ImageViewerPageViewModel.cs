@@ -396,6 +396,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         Page1Name = null;
         Title = null;
         PageFolderName = null;
+        ClearDisplayImages();
 
         // 一旦ボタン類を押せないように変更通知
         GoNextImageCommand.NotifyCanExecuteChanged();

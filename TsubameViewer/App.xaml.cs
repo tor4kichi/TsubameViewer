@@ -256,46 +256,46 @@ sealed partial class App : Application
         {
             SystemInformation.Instance.TrackAppUse(activated);
         }
-
-        PageNavigationInfo pageNavigationInfo = null;
-        if (args is LaunchActivatedEventArgs launchActivatedEvent)
+        
+        if (args is LaunchActivatedEventArgs launchActivatedEvent
+            && launchActivatedEvent.PrelaunchActivated == false
+            && !string.IsNullOrEmpty(launchActivatedEvent.Arguments)
+            )
         {
-            if (launchActivatedEvent.PrelaunchActivated == false)
+            // Ensure the current window is active
+            Windows.UI.Xaml.Window.Current.Activate();
+
+            try
             {
-                // Ensure the current window is active
-                Windows.UI.Xaml.Window.Current.Activate();
-
-                if (!string.IsNullOrEmpty(launchActivatedEvent.Arguments))
+                if (!SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments, out var tileArgs))
                 {
-
-                    try
-                    {
-                        var tileArgs = SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments);
-                        pageNavigationInfo = SecondatyTileArgumentToNavigationInfo(tileArgs);
-                    }
-                    catch { }
+                    return;
                 }
+
+                if (await SecondatyTileArgumentNavigationAsync(tileArgs) is not null and var result && result.IsSuccess)
+                {
+                    _isRestored = true;
+                }
+            }
+            catch
+            {
+                return;
             }
         }
         else if (args is FileActivatedEventArgs fileActivatedEventArgs)
         {
             try
             {
-                pageNavigationInfo = await FileActivatedArgumentToNavigationInfo(fileActivatedEventArgs);
+                if (await FileActivatedNavigationAsync(fileActivatedEventArgs) is not null and var result && result.IsSuccess)
+                {
+                    _isRestored = true;
+                }
             }
-            catch { }
-        }
-
-        if (pageNavigationInfo != null)
-        {
-            IMessenger messenger = Ioc.Default.GetService<IMessenger>();
-            var result = await NavigateAsync(pageNavigationInfo, messenger);
-            if (result.IsSuccess)
+            catch 
             {
-                _isRestored = true;
-                
+                return;
             }
-        }
+        }       
 
         if (_isRestored is false)
         {
@@ -456,34 +456,25 @@ sealed partial class App : Application
     }
 
 
-    public class PageNavigationInfo
+    static async Task<INavigationResult> NavigateAsync(string path, string pageName, IMessenger messenger = null)
     {
-        public string Path { get; set; }
+        Guard.IsNotNullOrEmpty(path, nameof(path));
 
-        public string PageName { get; set; }
-    }
-
-    async Task<INavigationResult> NavigateAsync(PageNavigationInfo info, IMessenger messenger = null)
-    {
         messenger ??= Ioc.Default.GetService<IMessenger>();
         var sourceFolderRepository = Ioc.Default.GetService<SourceStorageItemsRepository>();
 
         NavigationParameters parameters = new NavigationParameters();
-
-
-        Guard.IsNotNullOrEmpty(info.Path, nameof(info.Path));
-
-        if (!string.IsNullOrEmpty(info.PageName))
+        
+        if (!string.IsNullOrEmpty(pageName))
         {
-            parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(info.Path, info.PageName)));
+            parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(PageNavigationConstants.MakeStorageItemIdWithPage(path, pageName)));
         }
         else
         {
-            parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(info.Path));
+            parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(path));
         }
 
-        var item = await sourceFolderRepository.TryGetStorageItemFromPath(info.Path);
-
+        var item = await sourceFolderRepository.TryGetStorageItemFromPath(path);
         if (item is StorageFolder itemFolder)
         {
             var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
@@ -514,22 +505,55 @@ sealed partial class App : Application
         return null;
     }
 
-    private PageNavigationInfo SecondatyTileArgumentToNavigationInfo(SecondaryTileArguments args)
+    static async Task<INavigationResult> NavigateAsync(IStorageItem storageItem, IMessenger messenger = null)
     {
-        var info = new PageNavigationInfo();
-        info.Path = args.Path;
-        info.PageName = args.PageName;
+        messenger ??= Ioc.Default.GetService<IMessenger>();
+        var sourceFolderRepository = Ioc.Default.GetService<SourceStorageItemsRepository>();
 
-        return info;
+        NavigationParameters parameters = new NavigationParameters();
+        parameters.Add(PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(storageItem.Path));
+
+        if (storageItem is StorageFolder folder)
+        {
+            var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
+            if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(folder, CancellationToken.None) == FolderContainerType.OnlyImages)
+            {
+                return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
+            }
+            else
+            {
+                return await messenger.NavigateAsync(nameof(Views.FolderListupPage), parameters, isForgetNavigation: true);
+            }
+        }
+        else if (storageItem is StorageFile file)
+        {
+            if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType)
+                || SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType)
+                )
+            {
+                return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
+            }
+            else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
+            {
+                return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
+            }
+        }
+        
+        return null;
+    }
+
+    static async Task<INavigationResult> SecondatyTileArgumentNavigationAsync(SecondaryTileArguments args)
+    {
+        return await NavigateAsync(args.Path, args.PageName);
     }
 
 
 
-    async Task<PageNavigationInfo> FileActivatedArgumentToNavigationInfo(FileActivatedEventArgs args)
+    static async Task<INavigationResult> FileActivatedNavigationAsync(FileActivatedEventArgs args)
     {
         // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
         var sourceStroageItemsRepo = Ioc.Default.GetService<SourceStorageItemsRepository>();
-        string path = null;
+        IStorageItem? firstItem = null;
         foreach (var item in args.Files)
         {
             if (item is StorageFile file)
@@ -551,20 +575,19 @@ sealed partial class App : Application
                 else { continue; }
 
                 await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
-                path = file.Path;
+                firstItem ??= file;
                 break;
-            }
+            }           
         }
 
         // 渡された先頭のストレージアイテムのみを画像ビューワーページで開く
-        if (path != null)
+        if (firstItem != null)
         {
-            return new PageNavigationInfo()
-            {
-                Path = path,
-            };
+            return await NavigateAsync(firstItem);
         }
-
-        return null;
+        else
+        {
+            return new NavigationResult() { IsSuccess = true };
+        }
     }
 }
