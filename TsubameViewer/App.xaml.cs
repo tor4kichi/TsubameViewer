@@ -178,8 +178,10 @@ sealed partial class App : Application
         container.Register<IAsyncMigrater, MigrateLocalStorageHelperToApplicationDataStorageHelper>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.Register<IAsyncMigrater, DeleteThumbnailImagesOnTemporaryFolder>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.Register<IAsyncMigrater, DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+#if DEBUG
         container.Register<IAsyncMigrater, DummyMigrator>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
-        
+#endif
+
 
         container.Register<SourceStorageItemsPageViewModel>(reuse: new SingletonReuse());
         //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
@@ -195,7 +197,7 @@ sealed partial class App : Application
         container.Register<IStorageItemDeleteConfirmation, StorageItemDeleteConfirmDialog>();
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
     }
-
+#if DEBUG
     class DummyMigrator : IAsyncMigrater
     {
         Version IAsyncMigrater.TargetVersion { get; } = new Version(1, 8, 6);
@@ -205,6 +207,7 @@ sealed partial class App : Application
             return new ValueTask();
         }
     }
+#endif
 
     protected override async void OnFileActivated(FileActivatedEventArgs args)
     {
