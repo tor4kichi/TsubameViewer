@@ -25,10 +25,8 @@ RefreshLatest = Update to the latest information
 Settings = Setting
 SendFeedbackWithMashmallow = Send feedback
 SendFeedbackWithStoreReview = Send a store review
-
-SourceStorageItemsPage = Folder
+SourceStorageItemsPage = My folder
 CollectionPage = Collection
-
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
 
 

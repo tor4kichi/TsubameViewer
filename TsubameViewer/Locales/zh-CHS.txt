@@ -4,39 +4,37 @@ Copy = 复制
 CopyToClipboard = 复制到剪贴板
 Cancel = 取消
 Delete = 删除
-Create = 创建 -> 新建
-Apply = 申请 -> 应用
+Create = 新建
+Apply = 应用
 Open = 打开
-Close = 特写 -> 关闭
-Confirm = 决定 -> 确定
+Close = 关闭
+Confirm = 确定
 
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
-ApplicationTheme.Light = 明亮的主题 -> 浅色主题
-ApplicationTheme.Dark = 黑暗主题 -> 深色主题
+ApplicationTheme.Light = 浅色主题
+ApplicationTheme.Dark = 深色主题
 
 
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = 新增文件夹
-Import = 进口 -> 导入
-RefreshLatest = 更新到最新信息 -> 刷新
-Settings = 组态 -> 设置
+Import = 导入
+RefreshLatest = 刷新
+Settings = 设置
 SendFeedbackWithMashmallow = 发送反馈
-SendFeedbackWithStoreReview = 发送商店评论 -> 评价此应用
-
-SourceStorageItemsPage = 夹 -> 文件夹
-CollectionPage = 采集 -> 库
-
-OpenImageCodecExtensionStorePageWithFileType = {0} 需要扩展才能显示图像格式。你想开店吗？ -> {0} 需要安装扩展以显示图像格式。打开应用商店？
+SendFeedbackWithStoreReview = 评价此应用
+SourceStorageItemsPage = 我的文件夹
+CollectionPage = 库
+OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？
 
 
 #### Notification
 
 FileDeleteFailed = 文件删除失败 \n {0}
-FolderDeleteFailed = 删除文件夹失败\n{0} -> 文件夹删除失败\n{0}
-ThumbnailImageChanged = 更改缩略图图像 -> 更改封面
+FolderDeleteFailed = 文件夹删除失败\n{0}
+ThumbnailImageChanged = 更改封面
 
 
 #### Dialog
@@ -46,25 +44,25 @@ StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
 
 #### SettingsPage
 
-SettingsPageTitle = 组态 -> 设置
+SettingsPageTitle = 设置
 AdvancedSettings = 高级设置
 
 OverrideLocale = 🌏表示言語/显示语言/Display language
-RequireRestartApplicationToRefrectSettings = 重新启动应用程序以反映设置 -> 重启应用以完成设置
+RequireRestartApplicationToRefrectSettings = 重启应用以完成设置
 
-SourceFoldersSettings = 文件夹导入到应用程序 -> 已导入的文件夹
-RemoveSourceFolderFromApp = 从应用中删除 -> 从应用中移除
-ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用程序中删除{0}吗？ -> 您确定要从应用中移除{0}吗？
-ConfirmRemoveSourceFolderFromAppDescription = 此删除操作不会删除指定的文件夹或文件夹中的项目。 \ n从应用程序中删除的文件夹可以随时在应用程序中重新注册。 -> 此操作不会删除在硬盘上的文件。 \ n从应用中移除的文件夹可以再次被导入。
+SourceFoldersSettings = 已导入的文件夹
+RemoveSourceFolderFromApp = 从应用中移除
+ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{0}吗？
+ConfirmRemoveSourceFolderFromAppDescription = 此操作不会删除在硬盘上的文件。 \ n从应用中移除的文件夹可以再次被导入。
 
 ThumbnailImageSettings = 封面显示设置
-IsGenerateImageFileThumbnail = 生成图像文件的缩略图 -> 生成文件封面
-IsGenerateFolderThumbnail = 为文件夹生成缩略图 -> 生成文件夹封面
-IsGenerateArchiveFileThumbnail = 生成压缩文件的缩略图 -> 生成压缩包封面
-IsGenerateArchiveEntryThumbnail = 生成压缩文件中项目的缩略图 -> 生成压缩包中文件的封面
-DeleteThumbnailCache = 删除所有缩略图缓存 -> 删除所有封面文件缓存
-ThumbnailCacheSize = 图像缓存存储容量 -> 封面文件缓存容量
-ProcessingThumbnailCache = 处理删除操作 -> 正在删除
+IsGenerateImageFileThumbnail = 生成文件封面
+IsGenerateFolderThumbnail = 生成文件夹封面
+IsGenerateArchiveFileThumbnail = 生成压缩包封面
+IsGenerateArchiveEntryThumbnail = 生成压缩包中文件的封面
+DeleteThumbnailCache = 删除所有封面文件缓存
+ThumbnailCacheSize = 封面文件缓存容量
+ProcessingThumbnailCache = 正在删除
 
 
 
@@ -80,13 +78,13 @@ PrivacyPolicy = 隐私政策
 ThirdPartyLibraryNotice = 第三方库许可证显示
 AskQuestionWithMashmarrow = 发送棉花糖（错误报告/问题/建议）
 
-ImageCodecExtensions = 图像编解码器扩展 -> 图像支持格式扩展
+ImageCodecExtensions = 图像支持格式扩展
 
 PdfImageSettings = PDF 图像设置
-PdfImageThresholdWidth = 替代宽度阈值 -> 自定义宽度阈值
-PdfImageAlternateWidth = 替代宽度值
-PdfImageThresholdHeight = 替代高度阈值
-PdfImageAlternateHeight = 替代高度值
+PdfImageThresholdWidth = 自定义宽度阈值
+PdfImageAlternateWidth = 自定义宽度值
+PdfImageThresholdHeight = 自定义高度阈值
+PdfImageAlternateHeight = 自定义高度值
 
 
 

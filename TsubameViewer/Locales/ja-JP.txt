@@ -25,10 +25,8 @@ RefreshLatest = 最新の情報に更新
 Settings = 設定
 SendFeedbackWithMashmallow = フィードバックを送る
 SendFeedbackWithStoreReview = ストアレビューを送る
-
-SourceStorageItemsPage = フォルダ
+SourceStorageItemsPage = Myフォルダ
 CollectionPage = コレクション
-
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
 
 
@@ -95,7 +93,7 @@ PdfImageAlternateHeight = 代替縦幅の値
 Folders = フォルダ
 RecentlyUsedFiles = 最近見たファイル
 
-SelectSourceFolder = TsubameViewerにフォルダを追加
+SelectSourceFolder = ツバメビューアにフォルダを追加
 
 
 #### FolderListupPage
