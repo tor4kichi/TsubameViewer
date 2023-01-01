@@ -490,9 +490,16 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
 
         DisplayCurrentPath = _currentImageSource.Path;
-        if (_currentImageSource is ArchiveEntryImageSource or ArchiveDirectoryImageSource)
+        if (_imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext)
         {
-            DisplayCurrentArchiveFolderName = _imageCollectionContext.Name;
+            if (archiveImageCollectionContext.ArchiveDirectoryToken.IsRoot)
+            {
+                DisplayCurrentPath = archiveImageCollectionContext.File.Path;
+            }
+            else
+            {
+                DisplayCurrentPath = Path.Combine(archiveImageCollectionContext.File.Path, archiveImageCollectionContext.ArchiveDirectoryToken.DirectoryPath);
+            }
         }        
 
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_currentImageSource.Path);
