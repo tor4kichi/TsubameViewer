@@ -346,8 +346,8 @@ namespace TsubameViewer.ViewModels
         public RelayCommand DeleteStoredFolderCommand =>
             _DeleteStoredFolderCommand ??= new RelayCommand(() => 
             {
-                _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
                 _parentVM.RemoveItem(this);
+                _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
             });
     }
 

@@ -612,6 +612,12 @@ public sealed class SourceStorageItemsRepository
     }
 
 
+    public IEnumerable<string> GetParsistantItemsFromCache()
+    {
+        return _tokenToPathRepository.ReadAllItems()
+            .Where(x => x.TokenListType == TokenListType.FutureAccessList && !IsIgnoredPathExact(x.Path)).Select(x => x.Path);
+    }
+
     public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)
     {
         static IAsyncEnumerable<IStorageItem> SearchInFolder(StorageFolder folder, QueryOptions queryOptions, CancellationToken ct)

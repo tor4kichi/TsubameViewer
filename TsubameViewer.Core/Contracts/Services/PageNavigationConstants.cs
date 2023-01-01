@@ -13,9 +13,16 @@ public static class PageNavigationConstants
     private const string PageName = "p"; // pageName
     public const string Restored = "re"; // restored
 
-    public static string MakeStorageItemIdWithPage(string path, string pageName)
+    public static string MakeStorageItemIdWithPage(string path, string? pageName = null)
     {
-        return $"{path}?{PageName}={pageName}";
+        if (!string.IsNullOrWhiteSpace(pageName))
+        {
+            return $"{path}?{PageName}={pageName}";
+        }
+        else
+        {
+            return path;
+        }
     }
 
     public static (string Path, string PageName) ParseStorageItemId(string id)
@@ -42,6 +49,8 @@ public static class PageNavigationConstants
             throw new NotSupportedException(id);
         }                
     }
+
+
 
     public readonly static TimeSpan BusyWallDisplayDelayTime = TimeSpan.FromMilliseconds(750);
 }

@@ -23,9 +23,7 @@
   Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
   <Page.Resources>
-
     <ResourceDictionary>
-      
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource SystemChromeMediumColor}" />
@@ -61,8 +59,28 @@
 
       <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
       <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
-         
-      
+
+
+      <local:MenuItemDateTemplateSelector x:Key="MenuItemDateTemplateSelector">
+        <local:MenuItemDateTemplateSelector.Item>
+          <DataTemplate x:DataType="viewModel:MenuItemViewModel">
+            <muxc:NavigationViewItem Content="{x:Bind Title}" AccessKey="{x:Bind AccessKey}" DataContext="{x:Bind}" Tag="{x:Bind}" Tapped="NavigationViewItem_Tapped">
+              <muxc:NavigationViewItem.KeyboardAccelerators>
+                <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}" Modifiers="Control" />
+              </muxc:NavigationViewItem.KeyboardAccelerators>
+            </muxc:NavigationViewItem>
+          </DataTemplate>
+        </local:MenuItemDateTemplateSelector.Item>
+        <local:MenuItemDateTemplateSelector.SubItem>
+          <DataTemplate x:DataType="viewModel:MenuSubItemViewModel">
+            <muxc:NavigationViewItem Content="{x:Bind Title}"
+                                     MenuItemsSource="{x:Bind Items}"
+                                     AccessKey="{x:Bind AccessKey}" DataContext="{x:Bind}" Tag="{x:Bind}" Tapped="NavigationViewItem_Tapped"
+                                     >
+            </muxc:NavigationViewItem>
+          </DataTemplate>
+        </local:MenuItemDateTemplateSelector.SubItem>
+      </local:MenuItemDateTemplateSelector>
 
     </ResourceDictionary>
   </Page.Resources>
@@ -70,13 +88,17 @@
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
         x:Name="RootGrid"
         >
-    <muxc:NavigationView uwpControls:DockPanel.Dock="Top" MenuItemsSource="{Binding MenuItems}" PaneDisplayMode="Top"
-                    IsBackButtonVisible="Collapsed"
-                    IsSettingsVisible="False"
-                    x:Name="MyNavigtionView"
-                    XYFocusDownNavigationStrategy="Projection"
-                         SelectionFollowsFocus="Disabled"
-                      >
+    <muxc:NavigationView 
+      x:Name="MyNavigtionView"     
+      uwpControls:DockPanel.Dock="Top" 
+      MenuItemsSource="{Binding MenuItems}" 
+      MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
+      PaneDisplayMode="Top"
+      IsBackButtonVisible="Collapsed"
+      IsSettingsVisible="False"
+      XYFocusDownNavigationStrategy="Projection"
+      SelectionFollowsFocus="Disabled"
+      >
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
       </muxc:NavigationView.PaneHeader>
@@ -88,15 +110,6 @@
         </core:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
-      <muxc:NavigationView.MenuItemTemplate>
-        <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-          <muxc:NavigationViewItem Content="{x:Bind Title}" DataContext="{x:Bind}" AccessKey="{x:Bind AccessKey}">
-            <muxc:NavigationViewItem.KeyboardAccelerators>
-              <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}" Modifiers="Control" />
-            </muxc:NavigationViewItem.KeyboardAccelerators>
-          </muxc:NavigationViewItem>
-        </DataTemplate>
-      </muxc:NavigationView.MenuItemTemplate>
 
       <muxc:NavigationView.AutoSuggestBox>
         <AutoSuggestBox PlaceholderText="{i18Ext:Localize Key=SearchPlaceholder}" 

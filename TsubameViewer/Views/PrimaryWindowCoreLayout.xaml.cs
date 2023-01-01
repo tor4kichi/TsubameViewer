@@ -1,9 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using DryIoc;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using Microsoft.Toolkit.Uwp.UI.Controls;
+using Microsoft.UI.Xaml.Controls;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -27,6 +30,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.Payments;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI.Core;
@@ -35,6 +39,8 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using NavigationViewItem = Microsoft.UI.Xaml.Controls.NavigationViewItem;
+using NavigationViewItemBase = Microsoft.UI.Xaml.Controls.NavigationViewItemBase;
 
 namespace TsubameViewer.Views;
 
@@ -251,10 +257,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
         {
             RefreshCommand.Execute(null);
-        });
-
-        // ItemInvoke が動作しないことのワークアラウンドとして選択変更を使用
-        MyNavigtionView.SelectionChanged += MyNavigtionView_SelectionChanged;
+        });        
     }
 
     private void Frame_Navigated(object sender, NavigationEventArgs e)
@@ -269,29 +272,63 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         if (MyNavigtionView.IsPaneVisible)
         {
             var sourcePageTypeName = e.SourcePageType.Name;
-            if (e.SourcePageType == typeof(FolderListupPage))
+            var currentParameters = GetCurrentNavigationParameter();
+
+            static bool IsCurrentPageMatchMenuItem(MenuItemViewModel menuItemVM, string parametersPath)
             {
-                sourcePageTypeName = nameof(Views.SourceStorageItemsPage);
-            }
-            if (GetCurrentNavigationParameter().TryGetValue(PageNavigationConstants.AlbamPathKey, out _))
-            {
-                sourcePageTypeName = nameof(Views.AlbamListupPage);
-            }
-            var selectedMeuItemVM = ((List<object>)MyNavigtionView.MenuItemsSource).FirstOrDefault(x => (x as MenuItemViewModel)?.PageType == sourcePageTypeName);
-            if (selectedMeuItemVM != null)
-            {
-                // 選択位置を変える際に選択時のコマンドが実行されないようにする
-                _nowChangingMenuItem = true;
-                try
+                if (menuItemVM.Parameters == null && parametersPath == null)
                 {
-                    // 選択変更時にフォーカスがページコンテンツからメニュー項目に奪われないようにする
-                    MyNavigtionView.IsEnabled = false;
-                    MyNavigtionView.SelectedItem = selectedMeuItemVM;
-                    MyNavigtionView.IsEnabled = true;
+                    return true;
                 }
-                catch { }
-                _nowChangingMenuItem = false;
+
+                if ((menuItemVM.Parameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out string menuItemEscapedPath) ?? false))
+                {
+                    var (menuItemPath, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(menuItemEscapedPath));
+
+                    return parametersPath.StartsWith(menuItemPath);
+                }           
+                else
+                {
+                    return false;
+                }
             }
+
+
+            // 幅優先探索でMenuItemsを走査する
+            // 
+            Queue<MenuItemViewModel> queue = new((MyNavigtionView.MenuItemsSource as IList<object>).Cast<MenuItemViewModel>());
+            string? parameterPathEscaped = null;
+            bool hasParameters = currentParameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out parameterPathEscaped) ?? false;
+            (string? parametersPath, _) = hasParameters ? PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(parameterPathEscaped)) : (null, null);
+            while (queue.TryDequeue(out var menuItemVM))
+            {
+                if (menuItemVM.PageType == sourcePageTypeName
+                    && (!hasParameters || IsCurrentPageMatchMenuItem(menuItemVM, parametersPath))
+                    )
+                {
+                    MyNavigtionView.SelectedItem = menuItemVM;
+                    break;
+                }
+                
+                if (sourcePageTypeName == nameof(ImageListupPage)
+                    && hasParameters 
+                    && IsCurrentPageMatchMenuItem(menuItemVM, parametersPath)
+                    )
+                {
+                    MyNavigtionView.SelectedItem = menuItemVM;
+                    break;
+                }
+
+                if (menuItemVM is MenuSubItemViewModel subItemVM
+                    && subItemVM.Items.Any()
+                    )
+                {
+                    foreach (var childMenuItem in subItemVM.Items)
+                    {
+                        queue.Enqueue(childMenuItem);
+                    }
+                }
+            }            
         }
 
         // 選択中として表示するメニュー項目
@@ -480,17 +517,6 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         }
 
         return new NavigationResult() { IsSuccess = true };
-    }
-
-
-    private void MyNavigtionView_SelectionChanged(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewSelectionChangedEventArgs args)
-    {
-        if (_nowChangingMenuItem) { return; }
-
-        if (args.SelectedItem != null)
-        {
-            _vm.OpenMenuItemCommand.Execute(args.SelectedItem);
-        }
     }
 
     private RelayCommand _RefreshCommand;
@@ -1159,6 +1185,15 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
     #endregion
 
+    private void NavigationViewItem_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.NavigationViewItemBase menuItem
+            && menuItem.DataContext is MenuItemViewModel itemVM
+            )
+        {
+            _vm.OpenMenuItemCommand.Execute(itemVM);
+        }
+    }
 }
 
 
@@ -1173,5 +1208,31 @@ public static class NavigationParametersExtensions
         }
 
         return clone;
+    }
+}
+
+public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
+{
+    public DataTemplate Item { get; set; }
+    public DataTemplate SubItem { get; set; }
+
+    protected override DataTemplate SelectTemplateCore(object item)
+    {
+        return this.SelectTemplateCore(item, null);
+    }
+    protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+    {
+        if (item is MenuSubItemViewModel)
+        {
+            return SubItem ?? base.SelectTemplateCore(item, container);
+        }        
+        else if (item is MenuItemViewModel)
+        {
+            return Item ?? base.SelectTemplateCore(item, container);
+        }
+        else
+        {
+            return base.SelectTemplateCore(item, container);
+        }
     }
 }
