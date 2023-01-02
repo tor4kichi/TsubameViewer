@@ -26,7 +26,7 @@ namespace TsubameViewer.ViewModels
     {
         private readonly IMessenger _messenger;
         private readonly AlbamRepository _albamRepository;
-        private readonly IBookmarkService _bookmarkManager;
+        private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly IThumbnailImageService _thumbnailManager;
@@ -44,7 +44,7 @@ namespace TsubameViewer.ViewModels
             OpenFolderItemCommand openFolderItemCommand,
             OpenImageViewerCommand openImageViewerCommand,
             OpenImageListupCommand openImageListupCommand,
-            IBookmarkService bookmarkManager,
+            LocalBookmarkRepository bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,            
             IThumbnailImageService thumbnailManager

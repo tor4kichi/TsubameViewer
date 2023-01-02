@@ -70,7 +70,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
     private readonly IMessenger _messenger;
     private readonly IScheduler _scheduler;
-    private readonly IBookmarkService _bookmarkManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly AlbamRepository _albamRepository;
@@ -196,7 +196,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public ImageListupPageViewModel(
         IMessenger messenger,
         IScheduler scheduler,
-        IBookmarkService bookmarkManager,
+        LocalBookmarkRepository bookmarkManager,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,

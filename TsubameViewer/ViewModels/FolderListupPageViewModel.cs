@@ -66,7 +66,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
     private readonly IScheduler _scheduler;
     private readonly IMessenger _messenger;
-    private readonly IBookmarkService _bookmarkManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly AlbamRepository _albamRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -161,7 +161,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     public FolderListupPageViewModel(
         IScheduler scheduler,
         IMessenger messenger,
-        IBookmarkService bookmarkManager,
+        LocalBookmarkRepository bookmarkManager,
         AlbamRepository albamRepository,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -353,7 +353,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                     {
                         foreach (var itemVM in FolderItems)
                         {
-                            itemVM.RestoreThumbnailLoadingTask(ct);
+                            itemVM.RestoreThumbnailLoadingTask(ct);                            
                         }
                     }
                 }
@@ -370,9 +370,9 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                 StorageItemViewModel lastIntractItemVM = GetLastIntractItem();
                 if (lastIntractItemVM != null)
                 {
+                    lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();
-                    lastIntractItemVM.Initialize(ct);
-
+                    lastIntractItemVM.Initialize(ct);                    
                     FolderLastIntractItem.Value = lastIntractItemVM;
                 }
                 else

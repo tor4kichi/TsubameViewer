@@ -29,7 +29,7 @@ namespace TsubameViewer.ViewModels
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
-        private readonly IBookmarkService _bookmarkManager;
+        private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly IThumbnailImageService _thumbnailManager;
         private readonly IMessenger _messenger;
@@ -58,7 +58,7 @@ namespace TsubameViewer.ViewModels
         public SourceStorageItemsPageViewModel(
             IMessenger messenger,
             FolderListingSettings folderListingSettings,
-            IBookmarkService bookmarkManager,
+            LocalBookmarkRepository bookmarkManager,
             AlbamRepository albamRepository,
             IThumbnailImageService thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,

@@ -129,7 +129,7 @@ sealed partial class App : Application
         container.Register<IViewLocator, ViewLocator>();
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
-        container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
+        container.Register<LocalBookmarkRepository>(reuse: new SingletonReuse());
         container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
         container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
         container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());

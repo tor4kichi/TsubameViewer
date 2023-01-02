@@ -30,7 +30,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
     {
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly IBookmarkService _bookmarkManager;
+        private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly IThumbnailImageService _thumbnailImageService;
         private readonly AlbamRepository _albamRepository;
 
@@ -94,7 +94,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             IImageSource item, 
             IMessenger messenger, 
             SourceStorageItemsRepository sourceStorageItemsRepository, 
-            IBookmarkService bookmarkManager, 
+            LocalBookmarkRepository bookmarkManager, 
             IThumbnailImageService thumbnailImageService,
             AlbamRepository albamRepository, 
             SelectionContext selectionContext = null

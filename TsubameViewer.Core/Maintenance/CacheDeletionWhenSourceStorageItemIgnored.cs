@@ -29,7 +29,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
     private readonly RecentlyAccessService _recentlyAccessManager;
-    private readonly IBookmarkService _bookmarkManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
     private readonly ISecondaryTileManager _secondaryTileManager;
@@ -41,7 +41,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         IMessenger messenger,
         SourceStorageItemsRepository storageItemsRepository,
         RecentlyAccessService recentlyAccessManager,
-        IBookmarkService bookmarkManager,
+        LocalBookmarkRepository bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService,
         ISecondaryTileManager secondaryTileManager,
