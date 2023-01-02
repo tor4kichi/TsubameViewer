@@ -1,13 +1,10 @@
 ﻿using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.Navigation;
 using Windows.Storage;
 using Windows.Storage.Streams;
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Navigation;
 
 namespace TsubameViewer.Core.Models.Migrate
 {

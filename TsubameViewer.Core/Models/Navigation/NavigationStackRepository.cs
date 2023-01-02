@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Infrastructure;
 
-namespace TsubameViewer.Core.Models;
+namespace TsubameViewer.Core.Models.Navigation;
 
 
 public class PageEntry

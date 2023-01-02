@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -27,9 +28,9 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
-using TsubameViewer.Core.Contracts.Services;
 using Windows.ApplicationModel.DataTransfer;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
+
 
 namespace TsubameViewer.ViewModels;
 

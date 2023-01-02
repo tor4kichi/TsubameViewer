@@ -31,12 +31,13 @@ using Windows.Foundation;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Animation;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Maintenance;
+using TsubameViewer.Core.Contracts.Models;
 using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Contracts.Navigation;
-using TsubameViewer.Core.Contracts.Models;
 
 namespace TsubameViewer;
 
