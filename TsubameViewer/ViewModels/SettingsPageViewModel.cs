@@ -17,7 +17,7 @@ using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;

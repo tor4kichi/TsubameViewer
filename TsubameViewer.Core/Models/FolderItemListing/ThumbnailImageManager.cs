@@ -5,7 +5,6 @@ using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
-using SharpCompress.Compressors.Xz;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,11 +14,10 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Contracts.Models;
 using TsubameViewer.Core.Infrastructure;
-using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
@@ -33,11 +31,18 @@ using Windows.System;
 using Windows.UI.Xaml.Media.Imaging;
 
 
-namespace TsubameViewer.Core.Service;
+namespace TsubameViewer.Core.Models.FolderItemListing;
 
-public sealed class ThumbnailImageService 
-    : IThumbnailImageService
-    , ISecondaryTileThumbnailImageService
+
+public struct ThumbnailSize
+{
+    public uint Width { get; set; }
+    public uint Height { get; set; }
+    public float RatioWH { get; set; }
+}
+
+public sealed class ThumbnailImageManager 
+    : ISecondaryTileThumbnailImageService
     , IThumbnailImageMaintenanceService
 {
     private readonly ILiteDatabase _temporaryDb;
@@ -59,7 +64,7 @@ public sealed class ThumbnailImageService
     }
 
     Regex _titlePriorityRegex;
-    string _lasttitlePriorityRegexText;
+    string? _lasttitlePriorityRegexText = null;
     Regex GetTitlePriorityRegex()
     {
         if (_titlePriorityRegex != null)
@@ -173,7 +178,7 @@ public sealed class ThumbnailImageService
         public string InsideId { get; set; }
     }
 
-    public ThumbnailImageService(
+    public ThumbnailImageManager(
         ILiteDatabase temporaryDb,
         FolderListingSettings folderListingSettings,
         ThumbnailImageInfoRepository thumbnailImageInfoRepository,

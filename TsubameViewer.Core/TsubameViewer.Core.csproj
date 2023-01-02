@@ -122,6 +122,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
+    <Compile Include="Contracts\Maintenance\IThumbnailImageMaintenanceService.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Migrate\IAsyncMigrater.cs" />
     <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />
@@ -143,9 +144,9 @@
     <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="Models\FolderItemListing\LastIntractItemRepository.cs" />
     <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
-    <Compile Include="Contracts\Services\IThumbnailImageService.cs" />
+    <Compile Include="Contracts\Models\IThumbnailImageService.cs" />
     <Compile Include="Models\FolderItemListing\RecentlyAccessRepository.cs" />
-    <Compile Include="Services\ThumbnailImageService.cs" />
+    <Compile Include="Models\FolderItemListing\ThumbnailImageManager.cs" />
     <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
     <Compile Include="Models\ImageViewer\DirectoryPathHelper.cs" />
@@ -231,9 +232,7 @@
       <Version>3.0.3.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Contracts\Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

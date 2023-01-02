@@ -1,29 +1,20 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using System;
 using System.Reactive.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using Windows.Storage;
-using Windows.Storage.AccessCache;
-using Windows.UI.Xaml.Media.Imaging;
-using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.UseCases;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.ViewModels.SourceFolders;
-using TsubameViewer.Core.Contracts.Services;
-using Windows.Storage.Streams;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.ViewModels.PageNavigation
 {
-    using static TsubameViewer.ViewModels.ImageListupPageViewModel;
     using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
     public sealed class StorageItemViewModel : ObservableObject, IDisposable
@@ -31,7 +22,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LocalBookmarkRepository _bookmarkManager;
-        private readonly IThumbnailImageService _thumbnailImageService;
+        private readonly ThumbnailImageManager _thumbnailImageService;
         private readonly AlbamRepository _albamRepository;
 
         public IImageSource Item { get; }
@@ -95,7 +86,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             IMessenger messenger, 
             SourceStorageItemsRepository sourceStorageItemsRepository, 
             LocalBookmarkRepository bookmarkManager, 
-            IThumbnailImageService thumbnailImageService,
+            ThumbnailImageManager thumbnailImageService,
             AlbamRepository albamRepository, 
             SelectionContext selectionContext = null
             )

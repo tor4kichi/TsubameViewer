@@ -28,24 +28,16 @@ using TsubameViewer.Views.Dialogs;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
-using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
-using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Maintenance;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Service;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Contracts.Navigation;
+using TsubameViewer.Core.Contracts.Models;
 
 namespace TsubameViewer;
 
@@ -133,10 +125,9 @@ sealed partial class App : Application
         container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
         container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
         container.Register<RecentlyAccessRepository>(reuse: new SingletonReuse());
-        container.Register<ThumbnailImageService>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
-        container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();
-        container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageService>();
-        container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageService>();
+        container.Register<ThumbnailImageManager>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+        container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
+        container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
         container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
         container.Register<SourceStorageItemsPage>();

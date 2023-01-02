@@ -1,28 +1,23 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.Messaging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.SourceFolders;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels.PageNavigation;
-using TsubameViewer.Core.Contracts.Services;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands
 {
     public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
     {
         private readonly IMessenger _messenger;
-        private readonly IThumbnailImageService _thumbnailManager;
+        private readonly ThumbnailImageManager _thumbnailManager;
 
 
         public bool IsArchiveThumbnailSetToFile { get; set; }
 
         public ChangeStorageItemThumbnailImageCommand(
             IMessenger messenger,
-            IThumbnailImageService thumbnailManager
+            ThumbnailImageManager thumbnailManager
             ) 
         {
             _messenger = messenger;

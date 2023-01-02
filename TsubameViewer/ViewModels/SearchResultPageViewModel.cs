@@ -24,7 +24,7 @@ namespace TsubameViewer.ViewModels
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
-        private readonly IThumbnailImageService _thumbnailManager;
+        private readonly ThumbnailImageManager _thumbnailManager;
 
         public ObservableCollection<StorageItemViewModel> SearchResultItems { get; } = new ObservableCollection<StorageItemViewModel>();
 
@@ -51,7 +51,7 @@ namespace TsubameViewer.ViewModels
             FolderListingSettings folderListingSettings,
             LocalBookmarkRepository bookmarkManager,
             AlbamRepository albamRepository,
-            IThumbnailImageService thumbnailManager,
+            ThumbnailImageManager thumbnailManager,
             ISecondaryTileManager secondaryTileManager,
 
             OpenFolderItemCommand openFolderItemCommand,

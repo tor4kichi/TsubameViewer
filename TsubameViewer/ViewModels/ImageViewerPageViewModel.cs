@@ -207,7 +207,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
-    private readonly IThumbnailImageService _thumbnailManager;
+    private readonly ThumbnailImageManager _thumbnailManager;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -223,7 +223,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
         RecentlyAccessRepository recentlyAccessRepository,
-        IThumbnailImageService thumbnailManager,
+        ThumbnailImageManager thumbnailManager,
         FolderListingSettings folderListingSettings,
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,

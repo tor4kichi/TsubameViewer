@@ -71,7 +71,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
-    private readonly IThumbnailImageService _thumbnailManager;        
+    private readonly ThumbnailImageManager _thumbnailManager;        
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly BackNavigationCommand _backNavigationCommand;
 
@@ -167,7 +167,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ISecondaryTileManager secondaryTileManager,
         LastIntractItemRepository folderLastIntractItemManager,
-        IThumbnailImageService thumbnailManager,            
+        ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         BackNavigationCommand backNavigationCommand,
         OpenPageCommand openPageCommand,

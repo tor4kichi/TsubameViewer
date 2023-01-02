@@ -141,7 +141,7 @@ namespace TsubameViewer.ViewModels
         private CancellationTokenSource _leavePageCancellationTokenSource;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LocalBookmarkRepository _bookmarkManager;
-        private readonly IThumbnailImageService _thumbnailManager;
+        private readonly ThumbnailImageManager _thumbnailManager;
         private readonly RecentlyAccessRepository _recentlyAccessRepository;
         private readonly ApplicationSettings _applicationSettings;
         private readonly IScheduler _scheduler;
@@ -160,7 +160,7 @@ namespace TsubameViewer.ViewModels
         public EBookReaderPageViewModel(
             SourceStorageItemsRepository sourceStorageItemsRepository,
             LocalBookmarkRepository bookmarkManager,
-            IThumbnailImageService thumbnailManager,
+            ThumbnailImageManager thumbnailManager,
             RecentlyAccessRepository recentlyAccessRepository,
             ApplicationSettings applicationSettings,
             EBookReaderSettings themeSettings,

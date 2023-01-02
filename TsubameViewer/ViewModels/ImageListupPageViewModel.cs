@@ -74,7 +74,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly AlbamRepository _albamRepository;
-    private readonly IThumbnailImageService _thumbnailManager;
+    private readonly ThumbnailImageManager _thumbnailManager;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
@@ -200,7 +200,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,
-        IThumbnailImageService thumbnailManager,
+        ThumbnailImageManager thumbnailManager,
         ISecondaryTileManager secondaryTileManager,
         LastIntractItemRepository folderLastIntractItemManager,
         FolderListingSettings folderListingSettings,

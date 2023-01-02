@@ -1,24 +1,14 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.ComponentModel;
-using Reactive.Bindings;
-using System;
-using System.Collections.Generic;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using System.Collections.ObjectModel;
-using System.Text;
-using System.Threading.Tasks;
-using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.UseCases;
-using TsubameViewer.ViewModels.PageNavigation;
-using TsubameViewer.ViewModels.Albam;
-using TsubameViewer.ViewModels.Albam.Commands;
-using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.ViewModels.PageNavigation.Commands;
-using CommunityToolkit.Mvvm.Messaging;
 using System.Linq;
+using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.PageNavigation.Commands;
 
 namespace TsubameViewer.ViewModels
 {
@@ -29,7 +19,7 @@ namespace TsubameViewer.ViewModels
         private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly ImageCollectionManager _imageCollectionManager;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly IThumbnailImageService _thumbnailManager;
+        private readonly ThumbnailImageManager _thumbnailManager;
 
         public ObservableCollection<StorageItemViewModel> Albams { get; } = new ();
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -47,7 +37,7 @@ namespace TsubameViewer.ViewModels
             LocalBookmarkRepository bookmarkManager,
             ImageCollectionManager imageCollectionManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,            
-            IThumbnailImageService thumbnailManager
+            ThumbnailImageManager thumbnailManager
             )
         {
             _messenger = messenger;
