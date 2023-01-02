@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.Models.Migrate
 {
     public sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
     {

@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using TsubameViewer.Core.Models.Albam;
+﻿using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.UseCases;
-using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
 {

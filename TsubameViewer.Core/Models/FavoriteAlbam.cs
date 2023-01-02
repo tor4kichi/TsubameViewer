@@ -4,7 +4,7 @@ using System.Text;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 
-namespace TsubameViewer.Core.UseCases;
+namespace TsubameViewer.Core.Models;
 
 public sealed class FavoriteAlbam 
 {

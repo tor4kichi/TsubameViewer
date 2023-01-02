@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.SourceFolders;
 
-namespace TsubameViewer.Core.UseCases.Migrate;
+namespace TsubameViewer.Core.Models.Migrate;
 
 
 public class MigrateAsyncStorageApplicationPermissionToDb : IAsyncMigrater

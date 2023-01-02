@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.Models.Migrate
 {
     public interface IAsyncMigrater
     {

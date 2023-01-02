@@ -10,7 +10,7 @@ using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.UseCase.Transform;
+using TsubameViewer.Core.Models.Transform;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Storage;
 using Windows.Storage.Pickers;

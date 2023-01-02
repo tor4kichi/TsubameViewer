@@ -11,7 +11,7 @@ using System.IO;
 using SharpCompress.Archives;
 using SharpCompress.Writers;
 
-namespace TsubameViewer.Core.UseCases.Transform;
+namespace TsubameViewer.Core.Models.Transform;
 
 public static class TitleDigitCompletionTransform
 {

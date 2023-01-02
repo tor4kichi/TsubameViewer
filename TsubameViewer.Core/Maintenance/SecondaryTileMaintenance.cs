@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Contracts.Services;
 
-namespace TsubameViewer.Core.UseCases.Maintenance
+namespace TsubameViewer.Core.Models.Maintenance
 {
     /// <summary>
     /// v1.4.0 以前に 外部リンクをアプリにD&Dしたことがある場合、 <br />

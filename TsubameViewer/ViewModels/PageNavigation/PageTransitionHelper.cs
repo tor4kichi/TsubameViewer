@@ -56,7 +56,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             {
                 return CreatePageParameter(archiveFolderImageSource);
             }
-            else if (imageSource is IAlbamImageSource albam)
+            else if (imageSource is AlbamImageSource albam)
             {
                 return CreatePageParameter(albam);
             }

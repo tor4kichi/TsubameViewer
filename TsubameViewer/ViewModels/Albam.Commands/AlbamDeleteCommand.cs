@@ -1,14 +1,10 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.UseCases;
-using TsubameViewer.ViewModels.PageNavigation;
-using Windows.UI.Popups;
 using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels.Albam.Commands
 {

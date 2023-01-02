@@ -177,7 +177,7 @@
     <Compile Include="Helpers\EnumerableTaskHelper.cs" />
     <Compile Include="Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="Infrastructure\LiteDbService.cs" />
-    <Compile Include="UseCases\FavoriteAlbam.cs" />
+    <Compile Include="Models\FavoriteAlbam.cs" />
     <Compile Include="Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
     <Compile Include="Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="Contracts\Maintenance\ILaunchTimeMaintenance.cs" />
@@ -190,8 +190,8 @@
     <Compile Include="Migrate\DropSearchIndexDb.cs" />
     <Compile Include="Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
-    <Compile Include="UseCases\Transform\SplitImageTransform.cs" />
-    <Compile Include="UseCases\Transform\TitleDigitCompletionTransform.cs" />
+    <Compile Include="Models\Transform\SplitImageTransform.cs" />
+    <Compile Include="Models\Transform\TitleDigitCompletionTransform.cs" />
     <Compile Include="Contracts\Services\ISecondaryTileManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\TsubameViewer.Models.rd.xml" />

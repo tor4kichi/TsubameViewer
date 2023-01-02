@@ -13,7 +13,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
 
-namespace TsubameViewer.Core.UseCases.Maintenance;
+namespace TsubameViewer.Core.Models.Maintenance;
 
 /// <summary>
 /// ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に

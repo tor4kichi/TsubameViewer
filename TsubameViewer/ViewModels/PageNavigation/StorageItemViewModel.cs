@@ -9,7 +9,6 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.UseCases;
 using TsubameViewer.ViewModels.SourceFolders;
 using Windows.UI.Xaml.Media.Imaging;
 
