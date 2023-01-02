@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models;
-using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;

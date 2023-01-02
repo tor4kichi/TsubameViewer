@@ -7,7 +7,7 @@
   xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls" 
   xmlns:ss="using:TsubameViewer.Views.StyleSelector" 
-  xmlns:vm="using:TsubameViewer.ViewModels.PageNavigation"
+  xmlns:vm="using:TsubameViewer.ViewModels"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" 
   xmlns:local="using:TsubameViewer.Views.FolderListup"
