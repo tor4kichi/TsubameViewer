@@ -89,7 +89,7 @@ sealed partial class App : Application
         InitializeLocalization();
 
         EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
-        RecentlyAccessService.MaxRecordCount = 100;
+        RecentlyAccessRepository.MaxRecordCount = 100;
     }
 
 
@@ -132,7 +132,7 @@ sealed partial class App : Application
         container.Register<LocalBookmarkRepository>(reuse: new SingletonReuse());
         container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
         container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
-        container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
+        container.Register<RecentlyAccessRepository>(reuse: new SingletonReuse());
         container.Register<ThumbnailImageService>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
         container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageService>();
@@ -169,7 +169,7 @@ sealed partial class App : Application
         container.RegisterMapping<ILaunchTimeMaintenance, CacheDeletionWhenSourceStorageItemIgnored>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.RegisterMapping<ILaunchTimeMaintenance, EnsureFavoriteAlbam>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         
-        container.Register<ILaunchTimeMaintenance, RecentlyAccessService>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<ILaunchTimeMaintenance, RecentlyAccessRepository>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
 
         container.Register<IAsyncMigrater, DropSearchIndexDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.Register<IAsyncMigrater, DropPathReferenceCountDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);

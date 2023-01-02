@@ -35,7 +35,7 @@ namespace TsubameViewer.ViewModels
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LastIntractItemRepository _folderLastIntractItemManager;
-        private readonly RecentlyAccessService _recentlyAccessManager;
+        private readonly RecentlyAccessRepository _recentlyAccessRepository;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
@@ -63,7 +63,7 @@ namespace TsubameViewer.ViewModels
             IThumbnailImageService thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             LastIntractItemRepository folderLastIntractItemManager,
-            RecentlyAccessService recentlyAccessManager,
+            RecentlyAccessRepository recentlyAccessRepository,
             ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -83,7 +83,7 @@ namespace TsubameViewer.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderLastIntractItemManager = folderLastIntractItemManager;
-            _recentlyAccessManager = recentlyAccessManager;
+            _recentlyAccessRepository = recentlyAccessRepository;
             SecondaryTileManager = secondaryTileManager;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenImageListupCommand = openImageListupCommand;
@@ -192,7 +192,7 @@ namespace TsubameViewer.ViewModels
                     return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
 
-                var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
+                var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(15);
                 if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
                 {
                     foreach (var itemVM in RecentlyItems)
@@ -215,7 +215,7 @@ namespace TsubameViewer.ViewModels
                         }
                         catch
                         {
-                            _recentlyAccessManager.Delete(item.Path);
+                            _recentlyAccessRepository.Delete(item.Path);
                         }
 
                         ct.ThrowIfCancellationRequested();

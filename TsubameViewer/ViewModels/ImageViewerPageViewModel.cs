@@ -206,7 +206,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     private readonly AlbamRepository _albamRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly RecentlyAccessService _recentlyAccessManager;
+    private readonly RecentlyAccessRepository _recentlyAccessRepository;
     private readonly IThumbnailImageService _thumbnailManager;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
@@ -222,7 +222,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
-        RecentlyAccessService recentlyAccessManager,
+        RecentlyAccessRepository recentlyAccessRepository,
         IThumbnailImageService thumbnailManager,
         FolderListingSettings folderListingSettings,
         LastIntractItemRepository folderLastIntractItemManager,
@@ -254,7 +254,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         OpenWithExplorerCommand = openWithExplorerCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         _bookmarkManager = bookmarkManager;
-        _recentlyAccessManager = recentlyAccessManager;
+        _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
         _folderListingSettings = folderListingSettings;
         _folderLastIntractItemManager = folderLastIntractItemManager;
@@ -427,7 +427,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                             _ => imageSource.Path,
                         };
                         
-                        _recentlyAccessManager.AddWatched(_pathForSettings);
+                        _recentlyAccessRepository.AddWatched(_pathForSettings);
 
                         Images = default;
 

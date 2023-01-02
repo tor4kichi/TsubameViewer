@@ -8,14 +8,13 @@ using TsubameViewer.Core.Infrastructure;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
-public sealed class RecentlyAccessService 
-    : IRecentlyAccessService
-    , ILaunchTimeMaintenance
+public sealed class RecentlyAccessRepository 
+    : ILaunchTimeMaintenance
 {
-    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    private readonly RecentlyAccessRepository_Internal _recentlyAccessRepository;
     public static int MaxRecordCount { get; set; } = 100;
 
-    public RecentlyAccessService(RecentlyAccessRepository recentlyAccessRepository)
+    public RecentlyAccessRepository(RecentlyAccessRepository_Internal recentlyAccessRepository)
     {
         _recentlyAccessRepository = recentlyAccessRepository;        
     }
@@ -55,9 +54,9 @@ public sealed class RecentlyAccessService
         _recentlyAccessRepository.MaintenanceRecordLimit(MaxRecordCount);
     }
 
-    public sealed class RecentlyAccessRepository : LiteDBServiceBase<RecentlyAccessEntry>
+    public sealed class RecentlyAccessRepository_Internal : LiteDBServiceBase<RecentlyAccessEntry>
     {
-        public RecentlyAccessRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
+        public RecentlyAccessRepository_Internal(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
             _collection.EnsureIndex(x => x.Path);
             _collection.EnsureIndex(x => x.LastAccess);

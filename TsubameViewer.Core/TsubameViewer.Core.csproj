@@ -143,9 +143,8 @@
     <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
     <Compile Include="Models\FolderItemListing\LastIntractItemRepository.cs" />
     <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
-    <Compile Include="Contracts\Services\IRecentlyAccessService.cs" />
     <Compile Include="Contracts\Services\IThumbnailImageService.cs" />
-    <Compile Include="Services\RecentlyAccessService.cs" />
+    <Compile Include="Models\FolderItemListing\RecentlyAccessRepository.cs" />
     <Compile Include="Services\ThumbnailImageService.cs" />
     <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
@@ -164,7 +163,7 @@
     <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
     <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
     <Compile Include="Services\RestoreNavigationService.cs" />
-    <Compile Include="Models\FolderItemListing\LocalBookmarkService.cs" />
+    <Compile Include="Models\FolderItemListing\LocalBookmarkRepository.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="Models\SourceFolders\NeighboringFilesQueryCache.cs" />

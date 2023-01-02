@@ -28,7 +28,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
 {
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
-    private readonly RecentlyAccessService _recentlyAccessManager;
+    private readonly RecentlyAccessRepository _recentlyAccessRepository;
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
@@ -40,7 +40,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     public CacheDeletionWhenSourceStorageItemIgnored(
         IMessenger messenger,
         SourceStorageItemsRepository storageItemsRepository,
-        RecentlyAccessService recentlyAccessManager,
+        RecentlyAccessRepository recentlyAccessRepository,
         LocalBookmarkRepository bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService,
@@ -52,7 +52,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     {
         _messenger = messenger;
         _storageItemsRepository = storageItemsRepository;
-        _recentlyAccessManager = recentlyAccessManager;
+        _recentlyAccessRepository = recentlyAccessRepository;
         _bookmarkManager = bookmarkManager;
         _folderContainerTypeManager = folderContainerTypeManager;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
@@ -82,7 +82,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
             _displaySettingsByPathRepository.FolderChanged(oldPath, newPath);
             _bookmarkManager.FolderChanged(oldPath, newPath);
 
-            _recentlyAccessManager.Delete(oldPath);
+            _recentlyAccessRepository.Delete(oldPath);
             _folderContainerTypeManager.Delete(oldPath);
             _folderLastIntractItemManager.Remove(oldPath);
             _archiveFileInnerStructureCache.DeleteUnderPath(oldPath);
@@ -214,7 +214,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
             _secondaryTileManager.RemoveSecondaryTile(path)
         };
 
-        _recentlyAccessManager.DeleteAllUnderPath(path);
+        _recentlyAccessRepository.DeleteAllUnderPath(path);
         _bookmarkManager.RemoveAllBookmarkUnderPath(path);
         _folderContainerTypeManager.DeleteAllUnderPath(path);
         _folderLastIntractItemManager.RemoveAllUnderPath(path);
@@ -231,7 +231,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
             _secondaryTileManager.RemoveSecondaryTile(path)
         };
 
-        _recentlyAccessManager.Delete(path);
+        _recentlyAccessRepository.Delete(path);
         _bookmarkManager.RemoveBookmark(path);
         _folderContainerTypeManager.Delete(path);
         _folderLastIntractItemManager.Remove(path);
