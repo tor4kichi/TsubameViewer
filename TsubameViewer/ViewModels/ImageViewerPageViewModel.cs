@@ -21,9 +21,8 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.UseCases;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -205,11 +204,11 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly AlbamRepository _albamRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
-    private readonly IBookmarkService _bookmarkManager;
-    private readonly RecentlyAccessService _recentlyAccessManager;
-    private readonly IThumbnailImageService _thumbnailManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    private readonly ThumbnailImageManager _thumbnailManager;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     CompositeDisposable _disposables = new CompositeDisposable();
 
@@ -221,11 +220,11 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         AlbamRepository albamRepository,
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
-        IBookmarkService bookmarkManager,
-        RecentlyAccessService recentlyAccessManager,
-        IThumbnailImageService thumbnailManager,
+        LocalBookmarkRepository bookmarkManager,
+        RecentlyAccessRepository recentlyAccessRepository,
+        ThumbnailImageManager thumbnailManager,
         FolderListingSettings folderListingSettings,
-        IFolderLastIntractItemService folderLastIntractItemManager,
+        LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ToggleFullScreenCommand toggleFullScreenCommand,
         BackNavigationCommand backNavigationCommand,
@@ -254,7 +253,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         OpenWithExplorerCommand = openWithExplorerCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         _bookmarkManager = bookmarkManager;
-        _recentlyAccessManager = recentlyAccessManager;
+        _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
         _folderListingSettings = folderListingSettings;
         _folderLastIntractItemManager = folderLastIntractItemManager;
@@ -420,12 +419,14 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                     {
                         var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
 
-                        _recentlyAccessManager.AddWatched(imageCollectionContext switch
+                        _pathForSettings = imageCollectionContext switch
                         {
                             FolderImageCollectionContext folderICC => folderICC.Folder.Path,
                             ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
                             _ => imageSource.Path,
-                        });
+                        };
+                        
+                        _recentlyAccessRepository.AddWatched(_pathForSettings);
 
                         Images = default;
 
@@ -435,9 +436,6 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                         _imageCollectionContext = imageCollectionContext;
 
                         DisplaySortTypeInheritancePath = null;
-                        _pathForSettings = SupportedFileTypesHelper.IsSupportedImageFileExtension(_currentImageSource.Path)
-                            ? Path.GetDirectoryName(_currentImageSource.Path)
-                            : _currentImageSource.Path;
 
                         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
                         if (settings != null)
@@ -615,7 +613,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
 
                     var imageSource = imageSources[0];
-                    if (_currentImageSource is IStorageItem)
+                    if (_currentImageSource.StorageItem is IStorageItem)
                     {
                         _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
                         _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
@@ -1969,7 +1967,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             {
                 DisplaySortTypeInheritancePath = null;
                 SelectedFileSortType.Value = sortType.Value;
-                if (_currentImageSource is IStorageItem)
+                if (_currentImageSource.StorageItem is IStorageItem)
                 {
                     _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType.Value);
                 }
@@ -1980,7 +1978,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             }
             else
             {
-                if (_currentImageSource is IStorageItem)
+                if (_currentImageSource.StorageItem is IStorageItem)
                 {
                     _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_pathForSettings);
                     if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort

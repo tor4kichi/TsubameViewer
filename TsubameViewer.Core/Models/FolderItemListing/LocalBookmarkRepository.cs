@@ -4,17 +4,56 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 
-namespace TsubameViewer.Core.Services;
+namespace TsubameViewer.Core.Models.FolderItemListing;
 
+public struct NormalizedPagePosition
+{
+    public float Value { get; set; }
 
-public sealed class LocalBookmarkService : IBookmarkService
+    // Note: デフォルトコンストラクタを定義していないとx86 リリースモード時にエラーが
+    public NormalizedPagePosition()
+    {
+        Value = 0f;
+    }
+
+    public NormalizedPagePosition(float normalized)
+    {
+        Value = Math.Clamp(normalized, 0.0f, 1.0f);
+    }
+
+    public NormalizedPagePosition(int pageCount, int currentPagePosition)
+    {
+        if (pageCount < currentPagePosition) { throw new ArgumentOutOfRangeException("pageCount < currentPagePosition"); }
+
+        Value = Math.Clamp(currentPagePosition / (float)pageCount, 0.0f, 1.0f);
+    }
+}
+
+public sealed class BookmarkEntry
+{
+    [BsonId(autoId: true)]
+    public int Id { get; set; }
+
+    [BsonField]
+    public string Path { get; set; }
+
+    [BsonField]
+    public string PageName { get; set; }
+
+    [BsonField]
+    public int InnerPageIndex { get; set; }
+
+    [BsonField]
+    public NormalizedPagePosition Position { get; set; }
+}
+
+public sealed class LocalBookmarkRepository
 {
     private readonly BookmarkRepository _bookmarkRepository;
 
-    public LocalBookmarkService(BookmarkRepository bookmarkRepository)
+    public LocalBookmarkRepository(BookmarkRepository bookmarkRepository)
     {
         _bookmarkRepository = bookmarkRepository;
     }
@@ -157,20 +196,3 @@ public sealed class LocalBookmarkService : IBookmarkService
 
 }
 
-public sealed class BookmarkEntry
-{
-    [BsonId(autoId: true)]
-    public int Id { get; set; }
-
-    [BsonField]
-    public string Path { get; set; }
-
-    [BsonField]
-    public string PageName { get; set; }
-
-    [BsonField]
-    public int InnerPageIndex { get; set; }
-
-    [BsonField]
-    public NormalizedPagePosition Position { get; set; }
-}

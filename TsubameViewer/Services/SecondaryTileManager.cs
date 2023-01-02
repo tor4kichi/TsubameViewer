@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Models;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 using Windows.Storage;

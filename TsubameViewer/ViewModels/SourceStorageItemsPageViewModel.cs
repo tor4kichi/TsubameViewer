@@ -14,6 +14,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -29,13 +30,13 @@ namespace TsubameViewer.ViewModels
         public ObservableCollection<StorageItemViewModel> Folders { get; }
         public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
-        private readonly IBookmarkService _bookmarkManager;
+        private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
-        private readonly IThumbnailImageService _thumbnailManager;
+        private readonly ThumbnailImageManager _thumbnailManager;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-        private readonly RecentlyAccessService _recentlyAccessManager;
+        private readonly LastIntractItemRepository _folderLastIntractItemManager;
+        private readonly RecentlyAccessRepository _recentlyAccessRepository;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
         public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
@@ -58,12 +59,12 @@ namespace TsubameViewer.ViewModels
         public SourceStorageItemsPageViewModel(
             IMessenger messenger,
             FolderListingSettings folderListingSettings,
-            IBookmarkService bookmarkManager,
+            LocalBookmarkRepository bookmarkManager,
             AlbamRepository albamRepository,
-            IThumbnailImageService thumbnailManager,
+            ThumbnailImageManager thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            IFolderLastIntractItemService folderLastIntractItemManager,
-            RecentlyAccessService recentlyAccessManager,
+            LastIntractItemRepository folderLastIntractItemManager,
+            RecentlyAccessRepository recentlyAccessRepository,
             ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,
             OpenFolderItemCommand openFolderItemCommand,
@@ -83,7 +84,7 @@ namespace TsubameViewer.ViewModels
             SourceChoiceCommand = sourceChoiceCommand;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _folderLastIntractItemManager = folderLastIntractItemManager;
-            _recentlyAccessManager = recentlyAccessManager;
+            _recentlyAccessRepository = recentlyAccessRepository;
             SecondaryTileManager = secondaryTileManager;
             OpenImageViewerCommand = openImageViewerCommand;
             OpenImageListupCommand = openImageListupCommand;
@@ -192,7 +193,7 @@ namespace TsubameViewer.ViewModels
                     return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
                 }
 
-                var recentlyAccessItems = _recentlyAccessManager.GetItemsSortWithRecently(15);
+                var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(15);
                 if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
                 {
                     foreach (var itemVM in RecentlyItems)
@@ -215,7 +216,7 @@ namespace TsubameViewer.ViewModels
                         }
                         catch
                         {
-                            _recentlyAccessManager.Delete(item.Path);
+                            _recentlyAccessRepository.Delete(item.Path);
                         }
 
                         ct.ThrowIfCancellationRequested();

@@ -182,7 +182,7 @@ public sealed class ImageCollectionManager
 
     private Task<IImageCollection> GetImagesFromArchiveFileAsync(StorageFile file, CancellationToken ct)
     {
-        return file.FileType.ToLower() switch
+        return file.FileType.ToLowerInvariant() switch
         {
             SupportedFileTypesHelper.ZipFileType => GetImagesFromZipFileAsync(file, ct),
             SupportedFileTypesHelper.RarFileType => GetImagesFromRarFileAsync(file, ct),

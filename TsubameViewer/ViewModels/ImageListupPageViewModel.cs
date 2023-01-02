@@ -23,9 +23,8 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.UseCases;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -35,8 +34,6 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.UI.Xaml.Navigation;
-using static TsubameViewer.Core.Models.ImageViewer.ImageCollectionManager;
-using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 using CommunityToolkit.Diagnostics;
 
 namespace TsubameViewer.ViewModels;
@@ -70,12 +67,12 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
     private readonly IMessenger _messenger;
     private readonly IScheduler _scheduler;
-    private readonly IBookmarkService _bookmarkManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly AlbamRepository _albamRepository;
-    private readonly IThumbnailImageService _thumbnailManager;
-    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+    private readonly ThumbnailImageManager _thumbnailManager;
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly FolderListingSettings _folderListingSettings;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private bool _NowProcessing;
@@ -196,13 +193,13 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public ImageListupPageViewModel(
         IMessenger messenger,
         IScheduler scheduler,
-        IBookmarkService bookmarkManager,
+        LocalBookmarkRepository bookmarkManager,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,
-        IThumbnailImageService thumbnailManager,
+        ThumbnailImageManager thumbnailManager,
         ISecondaryTileManager secondaryTileManager,
-        IFolderLastIntractItemService folderLastIntractItemManager,
+        LastIntractItemRepository folderLastIntractItemManager,
         FolderListingSettings folderListingSettings,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         OpenPageCommand openPageCommand,

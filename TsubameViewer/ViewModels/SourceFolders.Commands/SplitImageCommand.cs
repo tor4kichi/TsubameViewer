@@ -7,15 +7,15 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Services;
-using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.UseCase.Transform;
+using TsubameViewer.Core.Models.Transform;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
+using TsubameViewer.Core.Contracts.Maintenance;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 

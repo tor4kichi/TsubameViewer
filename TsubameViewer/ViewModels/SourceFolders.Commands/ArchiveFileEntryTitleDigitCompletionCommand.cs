@@ -6,11 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.UseCases.Transform;
+using TsubameViewer.Core.Models.Transform;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Storage;
 using TsubameViewer.Core.Models.Albam;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 
 namespace TsubameViewer.ViewModels.SourceFolders.Commands
 {

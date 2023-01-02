@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
@@ -27,9 +28,9 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
-using TsubameViewer.Core.Contracts.Services;
 using Windows.ApplicationModel.DataTransfer;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
+
 
 namespace TsubameViewer.ViewModels;
 
@@ -52,7 +53,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
         IScheduler scheduler,
         IMessenger messenger,
         ApplicationSettings applicationSettings,
-        IRestoreNavigationService restoreNavigationManager,
+        NavigationStackRepository restoreNavigationManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         FolderContainerTypeManager folderContainerTypeManager,
         SourceChoiceCommand sourceChoiceCommand,
@@ -166,7 +167,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
         });
 
     public ApplicationSettings ApplicationSettings { get; }
-    public IRestoreNavigationService RestoreNavigationManager { get; }
+    public NavigationStackRepository RestoreNavigationManager { get; }
     public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
     public SourceChoiceCommand SourceChoiceCommand { get; }
     public RefreshNavigationCommand RefreshNavigationCommand { get; }

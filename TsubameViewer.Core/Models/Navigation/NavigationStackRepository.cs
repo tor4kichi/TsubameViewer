@@ -2,18 +2,38 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Infrastructure;
 
-namespace TsubameViewer.Core.Services;
+namespace TsubameViewer.Core.Models.Navigation;
 
-public sealed class RestoreNavigationService : IRestoreNavigationService
+
+public class PageEntry
 {
-    private readonly NavigationStackRepository _navigationStackRepository;
+    public PageEntry() { }
 
-    public RestoreNavigationService()
+    public PageEntry(string pageName)
     {
-        _navigationStackRepository = new NavigationStackRepository();
+        PageName = pageName;
+        Parameters = new List<KeyValuePair<string, string>>();
+    }
+
+    public PageEntry(string pageName, IEnumerable<KeyValuePair<string, object>> parameters)
+    {
+        PageName = pageName;
+        Parameters = parameters?.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())).ToList();
+    }
+
+    public string PageName { get; set; }
+    public List<KeyValuePair<string, string>> Parameters { get; set; }
+}
+
+public sealed class NavigationStackRepository 
+{
+    private readonly NavigationStackRepository_Internal _navigationStackRepository;
+
+    public NavigationStackRepository()
+    {
+        _navigationStackRepository = new NavigationStackRepository_Internal();
     }
 
     public void SetCurrentNavigationEntry(PageEntry pageEntry)
@@ -48,9 +68,9 @@ public sealed class RestoreNavigationService : IRestoreNavigationService
 
 
 
-    internal class NavigationStackRepository : FlagsRepositoryBase
+    internal class NavigationStackRepository_Internal : FlagsRepositoryBase
     {
-        public NavigationStackRepository()
+        public NavigationStackRepository_Internal()
         {
 
         }

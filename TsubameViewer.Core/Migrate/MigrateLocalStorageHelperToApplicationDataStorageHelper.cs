@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 
-using static TsubameViewer.Core.Services.RestoreNavigationService;
-
-namespace TsubameViewer.Core.UseCases.Migrate
+namespace TsubameViewer.Core.Models.Migrate
 {
     public sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
     {
@@ -22,8 +21,8 @@ namespace TsubameViewer.Core.UseCases.Migrate
         {
             _storageHelper.Clear();
 
-            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.BackNavigationEntriesName);
-            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.ForwardNavigationEntriesName);
+            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.BackNavigationEntriesName);
+            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.ForwardNavigationEntriesName);
         }
     }
 }

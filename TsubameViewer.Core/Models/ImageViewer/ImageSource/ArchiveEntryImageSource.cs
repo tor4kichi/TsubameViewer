@@ -1,19 +1,12 @@
 ﻿using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
 using SharpCompress.Archives;
-using SharpCompress.Archives.Rar;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Disposables;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 using Windows.Storage;
 using Windows.Storage.Streams;
 

@@ -122,6 +122,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
+    <Compile Include="Contracts\Maintenance\IThumbnailImageMaintenanceService.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Migrate\IAsyncMigrater.cs" />
     <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />
@@ -141,11 +142,11 @@
     <Compile Include="Models\FolderItemListing\FolderContainerTypeRepository.cs" />
     <Compile Include="Models\FolderItemListing\FolderItemsCacheRepository.cs" />
     <Compile Include="Models\FolderItemListing\FolderListingSettings.cs" />
+    <Compile Include="Models\FolderItemListing\LastIntractItemRepository.cs" />
     <Compile Include="Models\FolderItemListing\ListingImageConstants.cs" />
-    <Compile Include="Contracts\Services\IRecentlyAccessService.cs" />
-    <Compile Include="Contracts\Services\IThumbnailImageService.cs" />
-    <Compile Include="Services\RecentlyAccessService.cs" />
-    <Compile Include="Services\ThumbnailImageService.cs" />
+    <Compile Include="Contracts\Models\IThumbnailImageService.cs" />
+    <Compile Include="Models\FolderItemListing\RecentlyAccessRepository.cs" />
+    <Compile Include="Models\FolderItemListing\ThumbnailImageManager.cs" />
     <Compile Include="Models\ImageViewer\ArchiveDirectoryEqualityComparer.cs" />
     <Compile Include="Models\ImageViewer\ArchiveFileInnerStructureCache.cs" />
     <Compile Include="Models\ImageViewer\DirectoryPathHelper.cs" />
@@ -160,13 +161,9 @@
     <Compile Include="Models\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="Models\ImageViewer\NotSupportedImageFormatException.cs" />
     <Compile Include="Helpers\MessengerObservableExtensions.cs" />
-    <Compile Include="Services\FolderLastIntractItemService.cs" />
-    <Compile Include="Contracts\Services\IBookmarkService.cs" />
-    <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
-    <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
-    <Compile Include="Contracts\Services\IFolderLastIntractItemManager.cs" />
-    <Compile Include="Services\RestoreNavigationService.cs" />
-    <Compile Include="Services\LocalBookmarkService.cs" />
+    <Compile Include="Models\Navigation\PageNavigationConstants.cs" />
+    <Compile Include="Models\Navigation\NavigationStackRepository.cs" />
+    <Compile Include="Models\FolderItemListing\LocalBookmarkRepository.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />
     <Compile Include="Models\SourceFolders\NeighboringFilesQueryCache.cs" />
@@ -180,7 +177,7 @@
     <Compile Include="Helpers\EnumerableTaskHelper.cs" />
     <Compile Include="Infrastructure\FlagsRepositoryBase.cs" />
     <Compile Include="Infrastructure\LiteDbService.cs" />
-    <Compile Include="UseCases\FavoriteAlbam.cs" />
+    <Compile Include="Models\FavoriteAlbam.cs" />
     <Compile Include="Maintenance\CacheDeletionWhenSourceStorageItemIgnored.cs" />
     <Compile Include="Maintenance\EnsureFavoriteAlbam.cs" />
     <Compile Include="Contracts\Maintenance\ILaunchTimeMaintenance.cs" />
@@ -193,8 +190,8 @@
     <Compile Include="Migrate\DropSearchIndexDb.cs" />
     <Compile Include="Migrate\MigrateAsyncStorageApplicationPermissionToDb.cs" />
     <Compile Include="Migrate\MigrateLocalStorageHelperToApplicationDataStorageHelper.cs" />
-    <Compile Include="UseCases\Transform\SplitImageTransform.cs" />
-    <Compile Include="UseCases\Transform\TitleDigitCompletionTransform.cs" />
+    <Compile Include="Models\Transform\SplitImageTransform.cs" />
+    <Compile Include="Models\Transform\TitleDigitCompletionTransform.cs" />
     <Compile Include="Contracts\Services\ISecondaryTileManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\TsubameViewer.Models.rd.xml" />
@@ -234,9 +231,7 @@
       <Version>3.0.3.1</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Contracts\Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

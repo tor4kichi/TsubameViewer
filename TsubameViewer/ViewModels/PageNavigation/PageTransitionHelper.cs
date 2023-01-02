@@ -5,7 +5,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.Views;
 using Windows.UI.Xaml.Media.Animation;
@@ -56,7 +56,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             {
                 return CreatePageParameter(archiveFolderImageSource);
             }
-            else if (imageSource is IAlbamImageSource albam)
+            else if (imageSource is AlbamImageSource albam)
             {
                 return CreatePageParameter(albam);
             }

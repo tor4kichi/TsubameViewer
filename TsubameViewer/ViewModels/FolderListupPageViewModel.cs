@@ -21,11 +21,10 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
-using TsubameViewer.Services;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -66,12 +65,12 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
     private readonly IScheduler _scheduler;
     private readonly IMessenger _messenger;
-    private readonly IBookmarkService _bookmarkManager;
+    private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly AlbamRepository _albamRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
-    private readonly IThumbnailImageService _thumbnailManager;        
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
+    private readonly ThumbnailImageManager _thumbnailManager;        
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly BackNavigationCommand _backNavigationCommand;
 
@@ -161,13 +160,13 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     public FolderListupPageViewModel(
         IScheduler scheduler,
         IMessenger messenger,
-        IBookmarkService bookmarkManager,
+        LocalBookmarkRepository bookmarkManager,
         AlbamRepository albamRepository,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ISecondaryTileManager secondaryTileManager,
-        IFolderLastIntractItemService folderLastIntractItemManager,
-        IThumbnailImageService thumbnailManager,            
+        LastIntractItemRepository folderLastIntractItemManager,
+        ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         BackNavigationCommand backNavigationCommand,
         OpenPageCommand openPageCommand,
@@ -353,7 +352,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                     {
                         foreach (var itemVM in FolderItems)
                         {
-                            itemVM.RestoreThumbnailLoadingTask(ct);
+                            itemVM.RestoreThumbnailLoadingTask(ct);                            
                         }
                     }
                 }
@@ -370,9 +369,9 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                 StorageItemViewModel lastIntractItemVM = GetLastIntractItem();
                 if (lastIntractItemVM != null)
                 {
+                    lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();
-                    lastIntractItemVM.Initialize(ct);
-
+                    lastIntractItemVM.Initialize(ct);                    
                     FolderLastIntractItem.Value = lastIntractItemVM;
                 }
                 else

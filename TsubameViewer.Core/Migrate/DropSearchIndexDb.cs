@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TsubameViewer.Core.UseCases.Migrate;
+namespace TsubameViewer.Core.Models.Migrate;
 
 public sealed class DropSearchIndexDb : IAsyncMigrater
 {

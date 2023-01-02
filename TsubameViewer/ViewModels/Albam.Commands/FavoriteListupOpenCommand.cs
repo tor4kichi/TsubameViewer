@@ -1,8 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using TsubameViewer.Core.UseCases;
+using TsubameViewer.Core.Models;
 using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels.Albam.Commands

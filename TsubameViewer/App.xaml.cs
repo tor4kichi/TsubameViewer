@@ -17,8 +17,8 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.UseCases.Maintenance;
-using TsubameViewer.Core.UseCases.Migrate;
+using TsubameViewer.Core.Models.Maintenance;
+using TsubameViewer.Core.Models.Migrate;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
@@ -28,22 +28,14 @@ using TsubameViewer.Views.Dialogs;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
-using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
-using Windows.UI.Xaml.Navigation;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Maintenance;
+using TsubameViewer.Core.Contracts.Models;
 using TsubameViewer.Core.Contracts.Maintenance;
-using TsubameViewer.Core.Services;
-using TsubameViewer.Core.Service;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Contracts.Navigation;
 
@@ -89,7 +81,7 @@ sealed partial class App : Application
         InitializeLocalization();
 
         EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
-        RecentlyAccessService.MaxRecordCount = 100;
+        RecentlyAccessRepository.MaxRecordCount = 100;
     }
 
 
@@ -129,14 +121,13 @@ sealed partial class App : Application
         container.Register<IViewLocator, ViewLocator>();
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
-        container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
-        container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
-        container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
-        container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
-        container.Register<ThumbnailImageService>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
-        container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();
-        container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageService>();
-        container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageService>();
+        container.Register<LocalBookmarkRepository>(reuse: new SingletonReuse());
+        container.Register<NavigationStackRepository>(reuse: new SingletonReuse());
+        container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
+        container.Register<RecentlyAccessRepository>(reuse: new SingletonReuse());
+        container.Register<ThumbnailImageManager>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
+        container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
+        container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
         container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
         container.Register<SourceStorageItemsPage>();
@@ -169,7 +160,7 @@ sealed partial class App : Application
         container.RegisterMapping<ILaunchTimeMaintenance, CacheDeletionWhenSourceStorageItemIgnored>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.RegisterMapping<ILaunchTimeMaintenance, EnsureFavoriteAlbam>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         
-        container.Register<ILaunchTimeMaintenance, RecentlyAccessService>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.Register<ILaunchTimeMaintenance, RecentlyAccessRepository>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
 
         container.Register<IAsyncMigrater, DropSearchIndexDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.Register<IAsyncMigrater, DropPathReferenceCountDb>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);

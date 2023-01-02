@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.UseCases.Transform;
+using TsubameViewer.Core.Models.Transform;
 using Windows.Storage;
 
 namespace TsubameViewer.Core.Test

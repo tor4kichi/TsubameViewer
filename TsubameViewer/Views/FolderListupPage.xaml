@@ -15,7 +15,7 @@
   xmlns:winUI="using:Microsoft.UI.Xaml.Controls"
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI" 
-  xmlns:vm="using:TsubameViewer.ViewModels.PageNavigation" 
+  xmlns:vm="using:TsubameViewer.ViewModels" 
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:models="using:TsubameViewer.Core.Models" 
   xmlns:fluentIcon="using:Fluent.Icons"

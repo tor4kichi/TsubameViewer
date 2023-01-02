@@ -192,7 +192,6 @@
     <Compile Include="ViewModels\PageNavigation\PageTransitionHelper.cs" />
     <Compile Include="ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
-    <Compile Include="ViewModels\PageNavigation\StorageItemViewModel.cs" />
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
     <Compile Include="ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
     <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
@@ -205,6 +204,7 @@
     <Compile Include="ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
     <Compile Include="ViewModels\SourceStorageItemsPageViewModel.cs" />
+    <Compile Include="ViewModels\StorageItemViewModel.cs" />
     <Compile Include="ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="Views\AlbamListupPage.xaml.cs">
       <DependentUpon>AlbamListupPage.xaml</DependentUpon>

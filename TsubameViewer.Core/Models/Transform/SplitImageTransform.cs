@@ -7,12 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
-namespace TsubameViewer.Core.UseCase.Transform;
+namespace TsubameViewer.Core.Models.Transform;
 
 public class SplitImageTransform
 {
