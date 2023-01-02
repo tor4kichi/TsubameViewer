@@ -161,9 +161,8 @@
     <Compile Include="Models\ImageViewer\ImageViewerPageSettings.cs" />
     <Compile Include="Models\ImageViewer\NotSupportedImageFormatException.cs" />
     <Compile Include="Helpers\MessengerObservableExtensions.cs" />
-    <Compile Include="Contracts\Services\IRestoreNavigationService.cs" />
     <Compile Include="Contracts\Services\PageNavigationConstants.cs" />
-    <Compile Include="Services\RestoreNavigationService.cs" />
+    <Compile Include="Models\NavigationStackRepository.cs" />
     <Compile Include="Models\FolderItemListing\LocalBookmarkRepository.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />

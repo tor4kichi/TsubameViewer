@@ -34,7 +34,6 @@ using Windows.UI.Xaml.Media.Animation;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Maintenance;
 using TsubameViewer.Core.Contracts.Maintenance;
-using TsubameViewer.Core.Services;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Contracts.Navigation;
 using TsubameViewer.Core.Contracts.Models;
@@ -122,7 +121,7 @@ sealed partial class App : Application
         container.Register<IImageCodecService, ImageCodecService>(made: Parameters.Of.Name("assetUrl", x => new Uri("ms-appx:///Assets/ImageCodecExtensions.json")));
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
         container.Register<LocalBookmarkRepository>(reuse: new SingletonReuse());
-        container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
+        container.Register<NavigationStackRepository>(reuse: new SingletonReuse());
         container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
         container.Register<RecentlyAccessRepository>(reuse: new SingletonReuse());
         container.Register<ThumbnailImageManager>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));

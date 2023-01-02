@@ -52,7 +52,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
         IScheduler scheduler,
         IMessenger messenger,
         ApplicationSettings applicationSettings,
-        IRestoreNavigationService restoreNavigationManager,
+        NavigationStackRepository restoreNavigationManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         FolderContainerTypeManager folderContainerTypeManager,
         SourceChoiceCommand sourceChoiceCommand,
@@ -166,7 +166,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
         });
 
     public ApplicationSettings ApplicationSettings { get; }
-    public IRestoreNavigationService RestoreNavigationManager { get; }
+    public NavigationStackRepository RestoreNavigationManager { get; }
     public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
     public SourceChoiceCommand SourceChoiceCommand { get; }
     public RefreshNavigationCommand RefreshNavigationCommand { get; }
