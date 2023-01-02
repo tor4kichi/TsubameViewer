@@ -32,9 +32,8 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly IBookmarkService _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
     private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
-    private readonly IThumbnailImageService _thumbnailManager;
     private readonly ISecondaryTileManager _secondaryTileManager;
-    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
@@ -46,7 +45,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         FolderContainerTypeManager folderContainerTypeManager,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService,
         ISecondaryTileManager secondaryTileManager,
-        IFolderLastIntractItemService folderLastIntractItemManager,
+        LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ArchiveFileInnerStructureCache archiveFileInnerStructureCache
         )

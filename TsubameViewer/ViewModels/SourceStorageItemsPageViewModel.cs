@@ -34,7 +34,7 @@ namespace TsubameViewer.ViewModels
         private readonly IThumbnailImageService _thumbnailManager;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+        private readonly LastIntractItemRepository _folderLastIntractItemManager;
         private readonly RecentlyAccessService _recentlyAccessManager;
         
         public OpenFolderItemCommand OpenFolderItemCommand { get; }
@@ -62,7 +62,7 @@ namespace TsubameViewer.ViewModels
             AlbamRepository albamRepository,
             IThumbnailImageService thumbnailManager,
             SourceStorageItemsRepository sourceStorageItemsRepository,
-            IFolderLastIntractItemService folderLastIntractItemManager,
+            LastIntractItemRepository folderLastIntractItemManager,
             RecentlyAccessService recentlyAccessManager,
             ISecondaryTileManager secondaryTileManager,
             SourceChoiceCommand sourceChoiceCommand,

@@ -131,7 +131,7 @@ sealed partial class App : Application
         container.Register<ISplitImageInputDialogService, SplitImageInputDialogService>();
         container.Register<IBookmarkService, LocalBookmarkService>(reuse: new SingletonReuse());
         container.Register<IRestoreNavigationService, RestoreNavigationService>(reuse: new SingletonReuse());
-        container.Register<IFolderLastIntractItemService, FolderLastIntractItemService>(reuse: new SingletonReuse());
+        container.Register<LastIntractItemRepository>(reuse: new SingletonReuse());
         container.Register<IRecentlyAccessService, RecentlyAccessService>(reuse: new SingletonReuse());
         container.Register<ThumbnailImageService>(reuse: new SingletonReuse(), made: Parameters.Of.Name("temporaryDb", serviceKey: "TemporaryDb"));
         container.RegisterMapping<IThumbnailImageService, ThumbnailImageService>();

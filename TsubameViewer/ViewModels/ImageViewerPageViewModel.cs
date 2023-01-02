@@ -209,7 +209,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     private readonly RecentlyAccessService _recentlyAccessManager;
     private readonly IThumbnailImageService _thumbnailManager;
     private readonly FolderListingSettings _folderListingSettings;
-    private readonly IFolderLastIntractItemService _folderLastIntractItemManager;
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     CompositeDisposable _disposables = new CompositeDisposable();
 
@@ -225,7 +225,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         RecentlyAccessService recentlyAccessManager,
         IThumbnailImageService thumbnailManager,
         FolderListingSettings folderListingSettings,
-        IFolderLastIntractItemService folderLastIntractItemManager,
+        LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ToggleFullScreenCommand toggleFullScreenCommand,
         BackNavigationCommand backNavigationCommand,
