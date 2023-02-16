@@ -65,6 +65,7 @@
               <uap:FileType ContentType="application/x-7z-compressed">.7z</uap:FileType>
               <uap:FileType ContentType="application/x-cb7">.cb7</uap:FileType>
               <uap:FileType ContentType="image/avif">.avif</uap:FileType>
+              <uap:FileType ContentType="image/webp">.webp</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
