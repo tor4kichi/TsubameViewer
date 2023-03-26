@@ -402,7 +402,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
                     if (BackParametersStack.Any())
                     {
-                        BackParametersStack.RemoveAt(frame.BackStackDepth - 1);
+                        BackParametersStack.RemoveAt(BackParametersStack.Count - 1);
                     }
 
                     rememberBackStack = false;
