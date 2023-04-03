@@ -36,6 +36,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using TsubameViewer.Services;
 
 namespace TsubameViewer.Views;
 
@@ -1140,15 +1141,31 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
     private readonly IImageCodecService _imageCodecService;
 
+
+    bool _nowShowingCodecExtentionAnnounce;
     void InitializeImageCodecExtensions()
     {
-        _messenger.Register<RequireInstallImageCodecExtensionMessage>(this, (r, m) =>
+        _messenger.Register<RequireInstallImageCodecExtensionMessage>(this, async (r, m) =>
         {
+            // zip内に対応可能な拡張子のファイルがあった場合に大量にツールチップが表示されないようにする
+            if (_nowShowingCodecExtentionAnnounce) { return; }
+
+            _nowShowingCodecExtentionAnnounce = true;
+
+            var codecSupportInfo = await _imageCodecService.GetSupportedCodecsAsync();
+            if (!SupportedFileTypesHelper.IsSupportedFileExtension(m.Value) 
+                || !codecSupportInfo.Any(x => x.IsContainFileType(m.Value))
+            )
+            {
+                return;
+            }
+
             void TeachTooltip_Closed(Microsoft.UI.Xaml.Controls.TeachingTip sender, Microsoft.UI.Xaml.Controls.TeachingTipClosedEventArgs args)
             {
                 sender.Closed -= TeachTooltip_Closed;
                 sender.ActionButtonClick -= TeachTooltip_ActionButtonClick;
                 RootGrid.Children.Remove(sender);
+                _nowShowingCodecExtentionAnnounce = false;
             }
 
             void TeachTooltip_ActionButtonClick(Microsoft.UI.Xaml.Controls.TeachingTip sender, object args)
@@ -1156,7 +1173,6 @@ public sealed partial class PrimaryWindowCoreLayout : Page
                 _ = _imageCodecService.OpenImageCodecExtensionStorePageAsync(m.Value);
 
                 sender.IsOpen = false;
-                MenuRightCommandBar.IsOpen = true;
             }
 
             var teachTooltip = new Microsoft.UI.Xaml.Controls.TeachingTip()
@@ -1175,6 +1191,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
             teachTooltip.CloseButtonContent = "Cancel".Translate();
             RootGrid.Children.Add(teachTooltip);
             teachTooltip.IsOpen = true;
+            
         });
     }
 
