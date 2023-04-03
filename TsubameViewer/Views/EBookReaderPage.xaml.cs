@@ -259,6 +259,20 @@ namespace TsubameViewer.Views
                         LeftPageMoveButton.Command.Execute(null);
                     }
                 }
+                else if (item is Button button)
+                {
+                    var command = button.Command;
+                    var parameter = button.CommandParameter;
+                    if (command is not null)
+                    {
+                        if (parameter is not null
+                            && command.CanExecute(parameter)
+                            )
+                        {
+                            command.Execute(parameter);
+                        }
+                    }
+                }
             }
         }
 

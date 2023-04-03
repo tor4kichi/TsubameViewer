@@ -38,13 +38,21 @@
     <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True" Placement="BottomEdgeAlignedLeft" ScrollViewer.IsVerticalScrollChainingEnabled="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
 
-        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
-                      />
-        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
-                      />
 
+        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
+                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  ToolTipService.Placement="Right"
+                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
+                >
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        
         <winUI:NumberBox Value="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=TwoWay}"
                          Minimum="1"
                          Maximum="10"
@@ -195,19 +203,14 @@
           </Button>
         </StackPanel>
 
-        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
-                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Stretch"
-                  ToolTipService.Placement="Right"
-                  ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
-                >
-          <ComboBox.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
+                      />
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
+                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                      />
+
+
 
         <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
 
@@ -426,22 +429,38 @@
                 Visibility="Collapsed"
                 >
     </StackPanel>
-
+    
     <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
     <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
       <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0" />
 
       <Grid x:Name="DraggableTitleBarArea_TVorTouch" IsHitTestVisible="True" Background="Transparent" />
-
-
-      <TextBlock TextTrimming="CharacterEllipsis" TextWrapping="Wrap" MaxLines="3" HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="13" Margin="32 24 32 27"
-                   Opacity="0.5"
-                   >
-            <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-      </TextBlock>
-            
     </Grid>
 
+    <!-- タッチ用の補助UI -->
+    <uwpControls:DockPanel x:Name="Toolbar_Touch" Opacity="0.75" Visibility="Collapsed" Margin="0 0 0 0" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}">
+      <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left"
+              Height="40" Width="60">
+        <SymbolIcon Symbol="Back">
+          <SymbolIcon.RenderTransform>
+            <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
+          </SymbolIcon.RenderTransform>
+        </SymbolIcon>
+      </Button>
+
+      <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 64 0" Spacing="8">
+        <Button Height="40" Width="64" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
+          <SymbolIcon Symbol="Setting" />
+        </Button>
+      </StackPanel>
+
+      <Button Height="40" Command="{x:Bind _OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
+        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
+              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+        </TextBlock>
+      </Button>
+    </uwpControls:DockPanel>
+    
 
     <!-- 補助コントロールUI（デスクトップ） -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
@@ -723,6 +742,7 @@
           <VisualState.Setters>
             <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
             <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
+            <Setter Target="Toolbar_Touch.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
