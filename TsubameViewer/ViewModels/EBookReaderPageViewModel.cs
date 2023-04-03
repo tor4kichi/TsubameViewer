@@ -27,6 +27,8 @@ using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using CommunityToolkit.Mvvm.Messaging;
+using TsubameViewer.ViewModels.PageNavigation;
 
 namespace TsubameViewer.ViewModels
 {
@@ -139,6 +141,7 @@ namespace TsubameViewer.ViewModels
         CompositeDisposable _navigationDisposables;
         
         private CancellationTokenSource _leavePageCancellationTokenSource;
+        private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly ThumbnailImageManager _thumbnailManager;
@@ -158,6 +161,7 @@ namespace TsubameViewer.ViewModels
         Windows.UI.ViewManagement.ApplicationView _applicationView;
 
         public EBookReaderPageViewModel(
+            IMessenger messenger,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             LocalBookmarkRepository bookmarkManager,
             ThumbnailImageManager thumbnailManager,
@@ -169,6 +173,7 @@ namespace TsubameViewer.ViewModels
             BackNavigationCommand backNavigationCommand
             )
         {
+            _messenger = messenger;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _bookmarkManager = bookmarkManager;
             _thumbnailManager = thumbnailManager;
@@ -260,66 +265,75 @@ namespace TsubameViewer.ViewModels
                 }
             }
 
-            
-            if (_currentFolderItem != null)
+            try
             {
-                await RefreshItems(_leavePageCancellationTokenSource.Token);
-            }
-
-            // 表示する画像を決める
-            if (mode == NavigationMode.Forward
-                || parameters.ContainsKey(PageNavigationConstants.Restored)
-                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
-                )
-            {
-                var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
-                if (bookmark.pageName != null)
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
                 {
-                    for (var i = 0; i < _currentBookReadingOrder.Count; i++)
+                    if (_currentFolderItem != null)
                     {
-                        if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
+                        await RefreshItems(ct);
+                    }
+
+                    // 表示する画像を決める
+                    if (mode == NavigationMode.Forward
+                        || parameters.ContainsKey(PageNavigationConstants.Restored)
+                        || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
+                        )
+                    {
+                        var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
+                        if (bookmark.pageName != null)
                         {
-                            CurrentImageIndex = i;
-                            InnerCurrentImageIndex = bookmark.innerPageIndex;
-                            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
-                            break;
+                            for (var i = 0; i < _currentBookReadingOrder.Count; i++)
+                            {
+                                if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
+                                {
+                                    CurrentImageIndex = i;
+                                    InnerCurrentImageIndex = bookmark.innerPageIndex;
+                                    SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
+                                    break;
+                                }
+                            }
                         }
                     }
-                }
+                    else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
+                    {
+                        var unescapedPageName = parsedPageName;
+                        var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                        if (firstSelectItem != null)
+                        {
+                            CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
+                        }
+
+                        SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
+                    }
+
+                    // 最初のページを表示
+                    await UpdateCurrentPage(CurrentImageIndex, ct);
+
+                    // ブックマーク更新
+                    this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
+                        .Subscribe(innerPageIndex =>
+                        {
+                            var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                            if (currentPage == null) { return; }
+
+                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
+                        })
+                        .AddTo(_navigationDisposables);
+
+                }, _leavePageCancellationTokenSource.Token);
             }
-            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
+            catch (OperationCanceledException)
             {
-                var unescapedPageName = parsedPageName;
-                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
-                if (firstSelectItem != null)
-                {
-                    CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
-                }
-
-                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
+                _messenger.Send<BackNavigationRequestMessage>();
             }
-
-            // 最初のページを表示
-            await UpdateCurrentPage(CurrentImageIndex);
-
-            // ブックマーク更新
-            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
-                .Subscribe(innerPageIndex =>
-                {
-                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-                    if (currentPage == null) { return; }
-
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
-                })
-                .AddTo(_navigationDisposables);
-
+            
             await base.OnNavigatedToAsync(parameters);
         }
 
 
-        private async Task UpdateCurrentPage(int requestPage)
+        private async Task UpdateCurrentPage(int requestPage, CancellationToken ct)
         {
-            var ct = _leavePageCancellationTokenSource.Token;
             _InnerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
 
             try
@@ -447,7 +461,7 @@ namespace TsubameViewer.ViewModels
             catch (OperationCanceledException)
             {
                 _InnerPageTotalCountChangedTcs = null;
-                return;
+                throw;
             }
 
 
@@ -470,6 +484,7 @@ namespace TsubameViewer.ViewModels
             catch (OperationCanceledException)
             {
                 // TODO: EBookReaderページのページ更新に失敗した場合の表示
+                throw;
             }
             finally
             {
@@ -593,7 +608,7 @@ namespace TsubameViewer.ViewModels
                 return; 
             }
 
-            await UpdateCurrentPage(_currentBookReadingOrder.IndexOf(selectedBook));
+            await UpdateCurrentPage(_currentBookReadingOrder.IndexOf(selectedBook), _leavePageCancellationTokenSource?.Token ?? default);
         }
 
 
@@ -604,7 +619,7 @@ namespace TsubameViewer.ViewModels
 
         public async Task GoNextImageAsync()
         {
-            await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1));
+            await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1), _leavePageCancellationTokenSource?.Token ?? default);
         }
 
 
@@ -615,7 +630,7 @@ namespace TsubameViewer.ViewModels
 
         public async Task GoPrevImageAsync()
         {
-            await UpdateCurrentPage(Math.Max(CurrentImageIndex - 1, 0));
+            await UpdateCurrentPage(Math.Max(CurrentImageIndex - 1, 0), _leavePageCancellationTokenSource?.Token ?? default);
         }
 
         public bool CanGoPrev()

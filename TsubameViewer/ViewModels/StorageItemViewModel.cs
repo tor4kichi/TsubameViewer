@@ -163,8 +163,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable
             // "コンテンツをエンコードまたはデコードするための適切な変換が見つかりませんでした。"
             _isRequireLoadImageWhenRestored = true;
             _isInitialized = false;
-            _messenger.Send<RequireInstallImageCodecExtensionMessage>(new (ex.FileType));
-            throw;
+            _messenger.Send<RequireInstallImageCodecExtensionMessage>(new (ex.FileType));            
         }
     }
 

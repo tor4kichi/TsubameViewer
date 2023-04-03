@@ -3,5 +3,10 @@
 		"FileTypes": [ ".avif" ],
 		"Label": "AVIF",
 		"DownloadUrl": "ms-windows-store://pdp/?productid=9mvzqvxjbq9v"
+	},
+	{
+		"FileTypes": [ ".webp" ],
+		"Label": "WEBP",
+		"DownloadUrl": "ms-windows-store://pdp/?productid=9PG2DK419DRG"
 	}
 ]

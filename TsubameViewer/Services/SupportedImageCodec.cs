@@ -22,7 +22,7 @@ public sealed class ImageCodecService : IImageCodecService
     }
 
     bool _isInitialize;
-    private async Task EnsureInitialzie()
+    private async ValueTask EnsureInitialzie()
     {
         if (_isInitialize) { return; }
 
