@@ -424,7 +424,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                         _pathForSettings = imageCollectionContext switch
                         {
-                            FolderImageCollectionContext folderICC => folderICC.Folder.Path,
+                            FolderImageCollectionContext folderICC when folderICC.Folder is not null => folderICC.Folder.Path,
                             ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
                             _ => imageSource.Path,
                         };

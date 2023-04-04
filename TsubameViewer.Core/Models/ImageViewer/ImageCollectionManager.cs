@@ -18,11 +18,13 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
+using static System.Net.WebRequestMethods;
 
 namespace TsubameViewer.Core.Models.ImageViewer;
 
@@ -99,7 +101,10 @@ public sealed class ImageCollectionManager
                 try
                 {
                     var parentFolder = await file.GetParentAsync();
-                    return (new StorageItemImageSource(storageItem), GetFolderImageCollectionContext(parentFolder, ct));
+                    if (parentFolder != null)
+                    {
+                        return (new StorageItemImageSource(storageItem), GetFolderImageCollectionContext(parentFolder, ct));
+                    }
                 }
                 catch (UnauthorizedAccessException)
                 {
@@ -113,6 +118,8 @@ public sealed class ImageCollectionManager
                         throw;
                     }
                 }
+
+                return (new StorageItemImageSource(storageItem), new OnlyOneFileImageCollectionContext(file));
             }
             else if (file.IsSupportedMangaFile())
             {
@@ -263,7 +270,6 @@ public sealed class ImageCollectionManager
         var prop = await file.GetBasicPropertiesAsync();
         try
         {
-            IReader reader = ReaderFactory.Open(stream);
             var szArchive = SevenZipArchive.Open(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, szArchive, ct);
@@ -298,6 +304,84 @@ public sealed class ImageCollectionManager
             throw;
         }
     }
-}    
+}
 
 
+public sealed class OnlyOneFileImageCollectionContext : IImageCollectionContext
+{
+    private readonly StorageFile _file;
+    private readonly StorageItemImageSource _imageSource;
+
+    public OnlyOneFileImageCollectionContext(StorageFile file)
+    {
+        _file = file;
+        _imageSource = new StorageItemImageSource(file);
+    }
+    public string Name => _imageSource.Name;
+
+    public bool IsSupportedFolderContentsChanged => false;
+
+    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IObservable<Unit> CreateImageFileChangedObserver()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAsyncEnumerable<IImageSource> GetAllImageFilesAsync(CancellationToken ct)
+    {
+        return new[] { _imageSource }.ToAsyncEnumerable();
+    }
+
+    public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
+    {
+        return AsyncEnumerable.Empty<IImageSource>();
+    }
+
+    public ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        if (index == 0)
+        {
+            return new (_imageSource);
+        }
+        else
+        {
+            throw new InvalidOperationException(index.ToString());
+        }
+    }
+
+    public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
+    {
+        return new(1);
+    }
+
+    public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
+    {
+        return new[] { _imageSource }.ToAsyncEnumerable();
+    }
+
+    public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        if (key == _file.Name) { return new(0); }
+
+        throw new InvalidOperationException(key);
+    }
+
+    public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
+    {
+        return AsyncEnumerable.Empty<IImageSource>();
+    }
+
+    public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
+    {
+        return new(false);
+    }
+
+    public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
+    {
+        return new(false);
+    }
+}

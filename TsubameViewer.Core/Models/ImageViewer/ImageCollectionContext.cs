@@ -53,7 +53,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     private StorageFileQueryResult _imageFileSearchQuery;
     private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
 
-    public string Name => Folder.Name;
+    public string Name => Folder?.Name ?? "";
 
     private readonly Dictionary<FileSortType, QueryOptions> _sortTypetoQueryOptions = new ();
 
