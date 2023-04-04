@@ -561,7 +561,7 @@ sealed partial class App : Application
                 }
                 else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
                 {
-                    NeighboringFilesQueryCache.AddNeighboringFilesQuery(file.Path, args.NeighboringFilesQuery);
+                    
                 }
                 else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
                 {

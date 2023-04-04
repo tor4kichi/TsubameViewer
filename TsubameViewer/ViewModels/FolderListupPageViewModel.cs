@@ -320,11 +320,6 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         using var lockReleaser = await _NavigationLock.LockAsync(default);
 
         var mode = parameters.GetNavigationMode();
-        if (mode == NavigationMode.Refresh && _imageCollectionContext != null)
-        {
-            await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource.Token);
-            return;
-        }
 
         _navigationDisposables = new CompositeDisposable();
         _leavePageCancellationTokenSource = new CancellationTokenSource();

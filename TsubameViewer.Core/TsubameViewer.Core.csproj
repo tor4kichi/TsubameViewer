@@ -166,7 +166,6 @@
     <Compile Include="Models\FolderItemListing\LocalBookmarkRepository.cs" />
     <Compile Include="Models\SourceFolders\FileControlSettings.cs" />
     <Compile Include="Models\SourceFolders\IgnoreStorageItemRepository.cs" />
-    <Compile Include="Models\SourceFolders\NeighboringFilesQueryCache.cs" />
     <Compile Include="Models\SourceFolders\SourceOriginConstants.cs" />
     <Compile Include="Models\SourceFolders\SourceStorageItemIgnoringRequestMessage.cs" />
     <Compile Include="Models\SourceFolders\SourceStorageItemsRepository.cs" />

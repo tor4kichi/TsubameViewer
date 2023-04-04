@@ -334,12 +334,6 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
         var mode = parameters.GetNavigationMode();
-        if (mode == NavigationMode.Refresh)
-        {
-            await ReloadItemsAsync(_imageCollectionContext, _navigationCts.Token);
-            return;
-        }
-
         _navigationDisposables = new CompositeDisposable();
         _navigationCts = new CancellationTokenSource();
         _navigationDisposables.Add(_navigationCts);
@@ -597,6 +591,11 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
                 ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
             }
             Debug.WriteLine($"after added : {ImageFileItems.Count}");
+
+            foreach (var item in ImageFileItems)
+            {
+                item.RestoreThumbnailLoadingTask(ct);
+            }
         }
 
         ct.ThrowIfCancellationRequested();
