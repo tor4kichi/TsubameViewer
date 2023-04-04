@@ -408,6 +408,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             Page1Name = null;
             Title = null;
             PageFolderName = null;
+            IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
 
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
             {
@@ -465,6 +466,15 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             )
                         {
                             firstDisplayPageName = Path.GetFileName(newPath);
+                        }
+
+                        if (imageCollectionContext is OnlyOneFileImageCollectionContext)
+                        {
+                            IfAllFilesWannaWatchThenRegistrationFolderAtApp = true;
+                        }
+                        else 
+                        {
+                            IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
                         }
 
                         await RefreshItems(imageSource, imageCollectionContext, ct);
@@ -2017,6 +2027,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     #endregion
 
 
+    [ObservableProperty]
+    private bool _ifAllFilesWannaWatchThenRegistrationFolderAtApp;
 
 }
 

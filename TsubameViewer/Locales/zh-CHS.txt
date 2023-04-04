@@ -154,6 +154,9 @@ SwitchFullScreen = 全屏切换
 DoubleViewCorrectPaging = 纠正传播的页面偏移
 IsKeepSingleViewOnFirstPage = 不要展开第一页
 
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = 如果您将文件夹 D&D 到应用程序，将显示所有内容
+
+
 
 #### EBookReaderPage
 

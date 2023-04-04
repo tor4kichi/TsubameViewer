@@ -860,6 +860,12 @@
           <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" Margin="8 0" IsHitTestVisible="False">
               <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
           </TextBlock>
+
+          <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop" Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Opacity="0"
+                     VerticalAlignment="Center"
+                     />
         </StackPanel>
       </uwpControls:DockPanel>
     </Grid>
@@ -1230,6 +1236,16 @@
 
         
 
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop.Opacity" Value="1.0" />
+          </VisualState.Setters>
+        </VisualState>
       </VisualStateGroup>
 
     </VisualStateManager.VisualStateGroups>
