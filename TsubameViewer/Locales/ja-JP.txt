@@ -9,7 +9,7 @@ Apply = 適用する
 Open = 開く
 Close = 閉じる
 Confirm = 決定
-
+Refresh = 更新
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -28,6 +28,11 @@ SendFeedbackWithStoreReview = ストアレビューを送る
 SourceStorageItemsPage = Myフォルダ
 CollectionPage = コレクション
 OpenImageCodecExtensionStorePageWithFileType = {0} 画像形式を表示するには拡張機能が必要です。ストアを開きますか？
+
+
+#### Image Codec support
+RefreshAfterCodecExtensionInstalled = 拡張機能をインストールしたら表示を更新してください
+
 
 
 #### Notification

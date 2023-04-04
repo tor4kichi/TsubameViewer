@@ -9,7 +9,7 @@ Apply = Apply
 Open = Open
 Close = Close
 Confirm = Confirm
-
+Refresh = Refresh
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -28,6 +28,11 @@ SendFeedbackWithStoreReview = Send a store review
 SourceStorageItemsPage = My folder
 CollectionPage = Collection
 OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to display the image format. Do you want to open the store?
+
+
+#### Image Codec support
+RefreshAfterCodecExtensionInstalled = Please refresh the display after installing the extension
+
 
 
 #### Notification

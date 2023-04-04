@@ -841,7 +841,8 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         var parameters = _currentNavigationParameters.Clone();
         parameters.SetNavigationMode(NavigationMode.Refresh);
         var currentPage = ContentFrame.Content as Page;
-        await HandleViewModelNavigation(null, currentPage?.DataContext as INavigationAware, parameters);
+        var pageViewModel = currentPage?.DataContext as INavigationAware;
+        await HandleViewModelNavigation(pageViewModel, pageViewModel, parameters);
     }
 
     private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
@@ -1168,11 +1169,34 @@ public sealed partial class PrimaryWindowCoreLayout : Page
                 _nowShowingCodecExtentionAnnounce = false;
             }
 
-            void TeachTooltip_ActionButtonClick(Microsoft.UI.Xaml.Controls.TeachingTip sender, object args)
+            async void TeachTooltip_ActionButtonClick(Microsoft.UI.Xaml.Controls.TeachingTip sender, object args)
             {
-                _ = _imageCodecService.OpenImageCodecExtensionStorePageAsync(m.Value);
-
                 sender.IsOpen = false;
+
+                if (await _imageCodecService.OpenImageCodecExtensionStorePageAsync(m.Value))
+                {
+                    _nowShowingCodecExtentionAnnounce = true;
+                    var teachTooltip = new Microsoft.UI.Xaml.Controls.TeachingTip()
+                    {
+                        PreferredPlacement = Microsoft.UI.Xaml.Controls.TeachingTipPlacementMode.Top
+                    };
+                    teachTooltip.Content = new TextBlock()
+                    {
+                        Text = "RefreshAfterCodecExtensionInstalled".Translate(m.Value),
+                        Margin = new Thickness(16),
+                        TextWrapping = TextWrapping.Wrap,
+                    };
+                    teachTooltip.Closed += (s, e) => RootGrid.Children.Remove(s);
+                    teachTooltip.ActionButtonClick += (s, e) => 
+                    {
+                        s.IsOpen = false;
+                        _ = HandleRefreshReqest(); 
+                    };
+                    teachTooltip.ActionButtonContent = "Refresh".Translate();
+                    teachTooltip.CloseButtonContent = "Cancel".Translate();
+                    RootGrid.Children.Add(teachTooltip);
+                    teachTooltip.IsOpen = true;
+                }                
             }
 
             var teachTooltip = new Microsoft.UI.Xaml.Controls.TeachingTip()

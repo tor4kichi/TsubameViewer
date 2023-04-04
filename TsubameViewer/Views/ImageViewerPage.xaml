@@ -864,8 +864,6 @@
       </uwpControls:DockPanel>
     </Grid>
 
-
-
     <VisualStateManager.VisualStateGroups>
 
       <!-- 画像読み込み中の画面演出 -->

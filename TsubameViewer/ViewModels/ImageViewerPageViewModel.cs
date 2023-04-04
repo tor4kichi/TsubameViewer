@@ -40,6 +40,8 @@ using Windows.UI.Xaml.Navigation;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 using CommunityToolkit.Diagnostics;
+using Windows.UI.Xaml.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TsubameViewer.ViewModels;
 
@@ -49,7 +51,7 @@ public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 }
 
 
-public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDisposable
+public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDisposable
 {    
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
@@ -199,6 +201,9 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
 
     public ReactivePropertySlim<double> DefaultZoom { get; }
 
+    [ObservableProperty]
+    private bool _requireRefresh;
+
     private readonly IScheduler _scheduler;
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -231,6 +236,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         FavoriteAddCommand favoriteAddCommand,
         FavoriteRemoveCommand favoriteRemoveCommand,
         AlbamItemEditCommand albamItemEditCommand,
+        RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand
@@ -248,6 +254,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         FavoriteAddCommand = favoriteAddCommand;
         FavoriteRemoveCommand = favoriteRemoveCommand;
         AlbamItemEditCommand = albamItemEditCommand;
+        RefreshCommand = refreshNavigationCommand;
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
         OpenWithExplorerCommand = openWithExplorerCommand;
@@ -382,19 +389,11 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
         var mode = parameters.GetNavigationMode();
-        if (mode == NavigationMode.Refresh)
-        {
-            return;
-        }
 
         _navigationDisposables = new CompositeDisposable();
         _navigationCts = new CancellationTokenSource()
             .AddTo(_navigationDisposables);
         _imageLoadingCts = new CancellationTokenSource();
-        _imageCollectionContext = null;
-        Page1Name = null;
-        Title = null;
-        PageFolderName = null;
         ClearDisplayImages();
 
         // 一旦ボタン類を押せないように変更通知
@@ -403,9 +402,13 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
 
         var ct = _navigationCts.Token;
         string firstDisplayPageName = null;
-
-        if (mode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward)
+        if (mode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward or NavigationMode.Refresh)
         {
+            _imageCollectionContext = null;
+            Page1Name = null;
+            Title = null;
+            PageFolderName = null;
+
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
             {
                 (string newPath, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedPath));
@@ -522,7 +525,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                 throw new NotSupportedException();
             }
         }
-
+        
         // 以下の場合に表示内容を更新する
         //    1. 表示フォルダが変更された場合
         //    2. 前回の更新が未完了だった場合
@@ -533,7 +536,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             || (mode == NavigationMode.New && string.IsNullOrEmpty(firstDisplayPageName))
             )
         {
-            
+            if (_imageCollectionContext == null) { return; }
             if (string.IsNullOrEmpty(_pathForSettings) is false)
             {
                 var bookmarkPageName = _bookmarkManager.GetBookmarkedPageName(_pathForSettings);
@@ -595,24 +598,28 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
                     _currentDisplayImageSources ??= new IImageSource[2];
                     if (imageSources.Length == 1)
                     {
-                        _currentDisplayImageSources[0] = imageSources[0];
+                        var firstImage = imageSources[0];
+                        _currentDisplayImageSources[0] = firstImage;
                         _currentDisplayImageSources[1] = null;
 
-                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
                         Page2Favorite = false;
                     }
                     else if (imageSources.Length == 2)
                     {
-                        _currentDisplayImageSources[0] = imageSources[0];
-                        _currentDisplayImageSources[1] = imageSources[1];
+                        var firstImage = imageSources[0];
+                        var secondImage = imageSources[1];
+                        _currentDisplayImageSources[0] = firstImage;
+                        _currentDisplayImageSources[1] = secondImage;
 
-                        Page1Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[0].Path);
-                        Page2Favorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _currentDisplayImageSources[1].Path);
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
+                        Page2Favorite = secondImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, secondImage.Path) : false;
                     }
 
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
 
                     var imageSource = imageSources[0];
+                    if (imageSource == null) { return; }
                     if (_currentImageSource.StorageItem is IStorageItem)
                     {
                         _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
@@ -813,6 +820,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             if (imageSources.Length >= 1)
             {
                 var imageSource = imageSources[0];
+                if (imageSource == null) { return; }
                 if (imageSource is ArchiveEntryImageSource archiveEntryImageSource)
                 {
                     Page1Name = Path.GetFileName(imageSource.Name);
@@ -830,6 +838,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
             if (imageSources.Length >= 2)
             {
                 var imageSource = imageSources[1];
+                if (imageSource == null) { return; }
                 if (imageSource is ArchiveEntryImageSource)
                 {
                     Page2Name = Path.GetFileName(imageSource.Name);
@@ -963,6 +972,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
         catch (NotSupportedImageFormatException ex)
         {
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
+            RequireRefresh = true;
         }
         catch (Exception e)
         {
@@ -1856,6 +1866,7 @@ public sealed class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDi
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
+    public RefreshNavigationCommand RefreshCommand { get; }
 
     private RelayCommand _GoNextImageCommand;
     public RelayCommand GoNextImageCommand =>

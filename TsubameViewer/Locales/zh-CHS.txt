@@ -9,7 +9,7 @@ Apply = 应用
 Open = 打开
 Close = 关闭
 Confirm = 确定
-
+Refresh = 更新
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -28,6 +28,11 @@ SendFeedbackWithStoreReview = 评价此应用
 SourceStorageItemsPage = 我的文件夹
 CollectionPage = 库
 OpenImageCodecExtensionStorePageWithFileType = {0} 需要安装扩展以显示图像格式。打开应用商店？
+
+
+#### Image Codec support
+RefreshAfterCodecExtensionInstalled = 安装扩展后请刷新显示
+
 
 
 #### Notification
