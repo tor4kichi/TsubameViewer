@@ -333,11 +333,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
             {
                 (var newPath, var pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
-                if (_sourceStorageItemsRepository.IsIgnoredPath(newPath))
-                {
-                    throw new InvalidOperationException();
-                }
-                else if (await IsRequireUpdateAsync(newPath, pageName, ct))
+                if (await IsRequireUpdateAsync(newPath, pageName, ct))
                 {
                     await ResetContent(newPath, pageName, ct);
                 }

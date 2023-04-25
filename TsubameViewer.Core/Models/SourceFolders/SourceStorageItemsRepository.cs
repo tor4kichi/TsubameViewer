@@ -243,7 +243,7 @@ public sealed class SourceStorageItemsRepository
     }
 
 
-    public async IAsyncEnumerable<string> GetDescendantItemPathsAsync(string parentPath)
+    public async IAsyncEnumerable<string> GetDescendantItemPathsAsync(string parentPath, bool withMostRecentlyUsed = false)
     {
         foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
         {
@@ -253,13 +253,16 @@ public sealed class SourceStorageItemsRepository
                 yield return item.Path;
             }
         }
-
-        foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
+        
+        if (withMostRecentlyUsed)
         {
-            var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-            if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+            foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
             {
-                yield return item.Path;
+                var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
+                if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+                {
+                    yield return item.Path;
+                }
             }
         }
     }
@@ -437,22 +440,6 @@ public sealed class SourceStorageItemsRepository
             try
             {
                 var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
-
-                // TODO: Ignoreに登録した後にトークンに対応するフォルダ名が変更された場合にIgnore判定から漏れる可能性に対応
-
-                // 既に破棄がリクエストされていた場合は、親ディレクトリ方向で利用できるフォルダがあれば
-                // そちらのフォルダのアクセス権を使ってストレージアイテムを取得する
-                if (tokenStorageItem != null && IsIgnoredPathExact(tokenStorageItem.Path))
-                {
-                    var otherEntry = GetAvairableTokensFromPath(path).FirstOrDefault();
-                    if (otherEntry == null)
-                    {
-                        throw new ArgumentException("path is already ignored, can not be used. >>> " + path);
-                    }
-
-                    tokenStorageItem = await GetItemAsync(otherEntry.Token);
-                }
-
                 if (tokenStorageItem?.Path == path)
                 {
                     return tokenStorageItem;
@@ -482,59 +469,6 @@ public sealed class SourceStorageItemsRepository
 
         return null;
     }
-
-    #region Ignore Process
-
-    public void AddIgnoreToken(string path)
-    {
-        if (_ignoreStorageItemRepository.IsIgnoredPath(path) is false)
-        {
-            _ignoreStorageItemRepository.CreateItem(new() { Path = path });
-        }
-    }
-
-    public bool IsIgnoredPath(string path)
-    {
-        var avairableTokens = GetAvairableTokensFromPath(path);
-        return avairableTokens.Any(x => path.StartsWith(x.Path)) is false;
-    }
-
-    public bool IsIgnoredPathExact(string path)
-    {
-        return _ignoreStorageItemRepository.IsIgnoredPathExact(path);
-    }
-
-    private IEnumerable<TokenToPathEntry> GetAvairableTokensFromPath(string path)
-    {
-        return _tokenToPathRepository.FindTokenToPathAll(path).Where(x => _ignoreStorageItemRepository.IsIgnoredPathExact(x.Path) is false);
-    }
-
-    public bool HasIgnorePath()
-    {
-        return _ignoreStorageItemRepository.Any();
-    }
-
-    public bool TryPeek(out string path)
-    {
-        if (_ignoreStorageItemRepository.TryPeek(out var entry))
-        {
-            path = entry.Path;
-            return true;
-        }
-        else
-        {
-            path = null;
-            return false;
-        }
-    }
-
-    public void DeleteIgnorePath(string path)
-    {
-        _ignoreStorageItemRepository.DeleteItem(path);
-
-    }
-
-    #endregion
 
     public void RemoveFolder(string token)
     {
@@ -570,8 +504,6 @@ public sealed class SourceStorageItemsRepository
             ct.ThrowIfCancellationRequested();
             var storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
 
-            if (IsIgnoredPathExact(storageItem.Path)) { continue; }
-
             yield return (storageItem, item.Token, item.Metadata);
         }
 #else
@@ -600,8 +532,6 @@ public sealed class SourceStorageItemsRepository
 
             if (storageItem is not null)
             {
-                if (IsIgnoredPathExact(storageItem.Path)) { continue; }
-
                 yield return (storageItem, item.Token, item.Metadata);
             }
         }
@@ -615,7 +545,7 @@ public sealed class SourceStorageItemsRepository
     public IEnumerable<string> GetParsistantItemsFromCache()
     {
         return _tokenToPathRepository.ReadAllItems()
-            .Where(x => x.TokenListType == TokenListType.FutureAccessList && !IsIgnoredPathExact(x.Path)).Select(x => x.Path);
+            .Where(x => x.TokenListType == TokenListType.FutureAccessList).Select(x => x.Path);
     }
 
     public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)

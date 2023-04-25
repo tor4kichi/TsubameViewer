@@ -973,10 +973,18 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
     private void InitializeBusyWorkUI()
     {
-        _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) =>
+        var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _messenger.Register<BusyWallStartRequestMessage>(this, async (r, m) =>
         {
             _AnimationCancelTimer.Start();
-            VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            if (m.Value.IsCanCancel)
+            {
+                VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            }
+            else
+            {
+                VisualStateManager.GoToState(this, VS_ShowBusyWall_WithoutCancel.Name, true);
+            }
         });
 
         _messenger.Register<BusyWallExitRequestMessage>(this, (r, m) =>

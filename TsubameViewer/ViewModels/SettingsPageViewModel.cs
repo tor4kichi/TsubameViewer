@@ -294,8 +294,6 @@ namespace TsubameViewer.ViewModels
         {            
             await foreach (var item in _SourceStorageItemsRepository.GetParsistantItems())
             {
-                if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
-
                 Folders.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
@@ -307,8 +305,6 @@ namespace TsubameViewer.ViewModels
 
             await foreach (var item in _SourceStorageItemsRepository.GetTemporaryItems())
             {
-                if (_SourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path)) { continue; }
-
                 TempFiles.Add(new StoredFolderViewModel(_messenger, this)
                 {
                     Item = item.item,
@@ -326,7 +322,7 @@ namespace TsubameViewer.ViewModels
         }
     }
 
-    public class StoredFolderViewModel
+    public sealed partial class StoredFolderViewModel
     {
         private readonly IMessenger _messenger;
         private readonly StoredFoldersSettingItemViewModel _parentVM;
@@ -342,14 +338,12 @@ namespace TsubameViewer.ViewModels
         public string Token { get; set; }
         public IStorageItem Item { get; set; }
 
-
-        private RelayCommand _DeleteStoredFolderCommand;
-        public RelayCommand DeleteStoredFolderCommand =>
-            _DeleteStoredFolderCommand ??= new RelayCommand(() => 
-            {
-                _parentVM.RemoveItem(this);
-                _messenger.Send<SourceStorageItemIgnoringRequestMessage>(new(Path));
-            });
+        [RelayCommand]
+        async Task DeleteStoredFolder()
+        {
+            var result = await _messenger.WorkWithBusyWallAsync(async (ct) => await _messenger.Send(new SourceStorageItemIgnoringRequestMessage(Path)), CancellationToken.None);            
+            _parentVM.RemoveItem(this);
+        }
     }
 
 

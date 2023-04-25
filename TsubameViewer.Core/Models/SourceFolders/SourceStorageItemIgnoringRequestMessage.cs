@@ -5,11 +5,17 @@ using System.Text;
 
 namespace TsubameViewer.Core.Models.SourceFolders;
 
-public class SourceStorageItemIgnoringRequestMessage : ValueChangedMessage<string>
+public class SourceStorageItemIgnoringRequestMessage : AsyncRequestMessage<StorageItemDeletionResult>
 {
-    public SourceStorageItemIgnoringRequestMessage(string value) : base(value)
+    public SourceStorageItemIgnoringRequestMessage(string path)
     {
+        Path = path;
     }
+
+    public string Path { get; }
 }
 
-
+public class StorageItemDeletionResult
+{
+    
+}
