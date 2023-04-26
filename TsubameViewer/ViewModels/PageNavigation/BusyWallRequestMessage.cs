@@ -12,12 +12,19 @@ namespace TsubameViewer.ViewModels.PageNavigation
 {
     public class BusyWallStartRequestMessageData
     {
+        public bool IsCanCancel { get; set; }
     }
 
     public sealed class BusyWallStartRequestMessage : ValueChangedMessage<BusyWallStartRequestMessageData>
     {
-        public BusyWallStartRequestMessage() : base(new BusyWallStartRequestMessageData())
+        public BusyWallStartRequestMessage() : base(new BusyWallStartRequestMessageData() { IsCanCancel = true })
         {
+
+        }
+
+        public BusyWallStartRequestMessage(bool isCanCancel) : base(new BusyWallStartRequestMessageData() { IsCanCancel = isCanCancel })
+        {
+            
         }
     }
 

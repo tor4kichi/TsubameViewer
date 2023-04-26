@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,8 +13,18 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Shapes;
 
 namespace TsubameViewer.Core.Models.Maintenance;
+
+public sealed class AccessRemovedValueChangedMessage : ValueChangedMessage<string>
+{
+    public AccessRemovedValueChangedMessage(string value) : base(value)
+    {
+    }
+}
+
 
 /// <summary>
 /// ソース管理に変更が加えられて、新規に管理するストレージアイテムが増えた・減った際に
@@ -22,12 +33,13 @@ namespace TsubameViewer.Core.Models.Maintenance;
 /// 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
 /// </summary>
 public sealed class CacheDeletionWhenSourceStorageItemIgnored :
-    ILaunchTimeMaintenance,
+    ILaunchTimeMaintenanceAsync,
     IRecipient<SourceStorageItemIgnoringRequestMessage>,
     IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>
 {
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
+    private readonly IgnoreStorageItemRepository _ignoreStorageItemRepository;
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
@@ -38,8 +50,9 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
 
     public CacheDeletionWhenSourceStorageItemIgnored(
-        IMessenger messenger,
+        IMessenger messenger,        
         SourceStorageItemsRepository storageItemsRepository,
+        IgnoreStorageItemRepository ignoreStorageItemRepository,
         RecentlyAccessRepository recentlyAccessRepository,
         LocalBookmarkRepository bookmarkManager,
         FolderContainerTypeManager folderContainerTypeManager,
@@ -52,6 +65,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     {
         _messenger = messenger;
         _storageItemsRepository = storageItemsRepository;
+        _ignoreStorageItemRepository = ignoreStorageItemRepository;
         _recentlyAccessRepository = recentlyAccessRepository;
         _bookmarkManager = bookmarkManager;
         _folderContainerTypeManager = folderContainerTypeManager;
@@ -60,7 +74,8 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
-        _messenger.RegisterAll(this);
+        _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this);
+        _messenger.Register<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>(this);
     }
 
     public async void Receive(SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage message)
@@ -105,110 +120,143 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     }
 
 
-    void ILaunchTimeMaintenance.Maintenance()
+    async Task ILaunchTimeMaintenanceAsync.MaintenanceAsync()
     {
         Debug.WriteLine($"Restored CacheDeletionWhenSourceStorageItemIgnored.");
-        TickNext();
+        while (TryPeekIgnoredPath(out string path))
+        {
+            try
+            {
+                await DeleteCacheWithDescendantsAsync(path);
+            }
+            finally
+            {
+                DeleteIgnorePath(path);
+            }
+        }
     }
 
     void IRecipient<SourceStorageItemIgnoringRequestMessage>.Receive(SourceStorageItemIgnoringRequestMessage message)
     {
-        Debug.WriteLine($"recive SourceStorageItemIgnoringRequestMessage.");
-        _storageItemsRepository.AddIgnoreToken(message.Value);
-        Debug.WriteLine($"add ignored StorageItem to Db : {message.Value}");
-        TickNext();
+        message.Reply(
+            Task.Run(async () => 
+            {                
+                var path = message.Path;
+                AddIgnoreToken(path);
+
+                try
+                {
+                    await DeleteCacheWithDescendantsAsync(path);                    
+                    return new StorageItemDeletionResult();
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    DeleteIgnorePath(path);
+                }
+            })
+        );
     }
 
 
-    bool _nowProgress;
-    object _lock = new object();
+    #region Ignore Process
 
-    async void TickNext()
+    public void AddIgnoreToken(string path)
     {
-        lock (_lock)
+        if (_ignoreStorageItemRepository.IsIgnoredPath(path) is false)
         {
-            if (_nowProgress) 
-            {
-                Debug.WriteLine($"Skip cache delete process. (Now Progress)");
-                return; 
-            }
-
-            if (_storageItemsRepository.HasIgnorePath() is false) 
-            {
-                Debug.WriteLine($"Skip cache delete process. (No items)");
-                return; 
-            }
-
-            Debug.WriteLine($"Start cache delete process.");
-            _nowProgress = true;
+            Debug.WriteLine($"除去対象パスに追加 {path}");
+            _ignoreStorageItemRepository.CreateItem(new() { Path = path });
         }
-
-        try
-        {
-            while (_storageItemsRepository.TryPeek(out string path))
-            {
-                Debug.WriteLine($"Start cache deletion: {path}");
-                if (Path.IsPathRooted(path))
-                {
-                    await DeleteCacheWithDescendantsAsync(path);
-                    Debug.WriteLine($"Done cache deletion: {path}");
-                }
-                else
-                {
-                    Debug.WriteLine($"path is not rooted, skip removing process: {path}");
-                }
-                _storageItemsRepository.DeleteIgnorePath(path);
-                Debug.WriteLine($"Remove ignored StorageItem from Db : {path}");
-            }
-        }
-        finally
-        {
-            lock (_lock)
-            {
-                _nowProgress = false;
-            }
-        }
-
-        Debug.WriteLine($"End cache delete process.");
     }
+
+    public bool IsIgnoredPathExact(string path)
+    {
+        return IsIgnoredPathExact(path);
+    }
+
+    public bool HasIgnorePath()
+    {
+        return _ignoreStorageItemRepository.Any();
+    }
+
+    public bool TryPeekIgnoredPath(out string path)
+    {
+        if (_ignoreStorageItemRepository.TryPeek(out var entry))
+        {
+            path = entry.Path;
+            return true;
+        }
+        else
+        {
+            path = null;
+            return false;
+        }
+    }
+
+    public void DeleteIgnorePath(string path)
+    {
+        Debug.WriteLine($"除去対象パスから削除 {path}");
+        _ignoreStorageItemRepository.DeleteItem(path);
+
+    }
+
+    #endregion
+
 
     async Task DeleteCacheWithDescendantsAsync(string path)
     {
+        Debug.WriteLine($"除去作業を開始 {path}");
+
         try
         {
             var (token, item) = await _storageItemsRepository.GetSourceStorageItem(path);
 
+            Debug.WriteLine($"除去対象のトークン {token}");
             // pathを包摂する登録済みフォルダがあれば、キャッシュ削除はスキップする
-            if (_storageItemsRepository.IsIgnoredPath(item.Path))
+            if (item is StorageFolder folder)
             {
-                if (item is StorageFolder folder)
-                {
-                    await foreach (var deletePath in GetAllDeletionPathsAsync(folder))
-                    {
-                        Debug.WriteLine($"Delete cache: {deletePath}");
-                        await DeleteCacheAllUnderPathAsync(deletePath);
-                    }
+                Debug.WriteLine($"除去対象はフォルダです。");
+                // 子孫フォルダ内のコンテンツを消さないように対象とするフォルダを列挙する
+                var descendantPaths = await _storageItemsRepository.GetDescendantItemPathsAsync(folder.Path).ToListAsync();
 
-                    await DeleteCachePathAsync(folder.Path);
-                }
-                else
+                bool IsDeleteTargetPath(string path)
                 {
-                    Debug.WriteLine($"Delete cache: {path}");
-                    await DeleteCachePathAsync(path);
+                    if (descendantPaths.Any(x => path.StartsWith(x)))
+                    {
+                        Debug.WriteLine($"保持されるフォルダのためスキップ: {path}");
+                        return false;
+                    }
+                    else { return true; }
                 }
+
+                await GetAllDeletionPathsAsync(folder, (storageItem) => IsDeleteTargetPath(storageItem.Path), async (storageItem) => await DeleteCacheAllUnderPathAsync(storageItem.Path));
             }
             else
             {
-                Debug.WriteLine($"Skiped delete cache: {path}");
+                Debug.WriteLine($"除去対象はファイルです。");
+                await DeleteCachePathAsync(path);
             }
 
+            Debug.WriteLine($"StorageSourceから当該トークンを削除 {token}");
             _storageItemsRepository.RemoveFolder(token);
+            Debug.WriteLine($"全ての除去処理を完了しました {path}");
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"除去処理に失敗しました");
+            Debug.WriteLine(ex.ToString());
+            throw;
+        }
     }
 
     async Task DeleteCacheAllUnderPathAsync(string path)
     {
+        Debug.WriteLine($"対象パス以下の全てのデータを除去します {path}");
+
         var tasks = new[] {
             _thumbnailImageMaintenanceService.DeleteAllThumbnailUnderPathAsync(path),
             _secondaryTileManager.RemoveSecondaryTile(path)
@@ -222,10 +270,15 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _archiveFileInnerStructureCache.DeleteUnderPath(path);
 
         await Task.WhenAll(tasks);
+        Debug.WriteLine($"対象パス以下の全てのデータを除去完了 {path}");
+        _messenger.Send(new AccessRemovedValueChangedMessage(path));
     }
+
 
     async Task DeleteCachePathAsync(string path)
     {
+        Debug.WriteLine($"対象パスのデータを除去します {path}");
+
         var tasks = new[] {
             _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(path),
             _secondaryTileManager.RemoveSecondaryTile(path)
@@ -239,26 +292,24 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _archiveFileInnerStructureCache.Delete(path);
 
         await Task.WhenAll(tasks);
+        Debug.WriteLine($"対象パスのデータを除去完了 {path}");
+        _messenger.Send(new AccessRemovedValueChangedMessage(path));
     }
 
 
-    async IAsyncEnumerable<string> GetAllDeletionPathsAsync(StorageFolder folder)
-    {
-        // 子孫フォルダ内のコンテンツを消さないように対象とするフォルダを列挙する
-        var descendantPaths = await _storageItemsRepository.GetDescendantItemPathsAsync(folder.Path).ToListAsync();
-
-        bool IsSkipPath(string path)
-        {
-            return folder.Path == path || descendantPaths.Any(x => path.StartsWith(x));
-        }
-        
-
-        var query = folder.CreateFolderQueryWithOptions(new Windows.Storage.Search.QueryOptions() { FolderDepth = Windows.Storage.Search.FolderDepth.Deep });
+    async Task GetAllDeletionPathsAsync(StorageFolder folder, Predicate<IStorageItem> targetPredicate, Func<IStorageItem, Task> actionTask)
+    {        
+        var query = folder.CreateFolderQueryWithOptions(new Windows.Storage.Search.QueryOptions() { FolderDepth = Windows.Storage.Search.FolderDepth.Deep});
         await foreach (var folderItem in query.ToAsyncEnumerable())
         {
-            if (IsSkipPath(folderItem.Path) is false)
+            if (targetPredicate(folderItem))
             {
-                yield return folderItem.Path;
+                Debug.WriteLine($"除去する {folderItem.Path}");
+                await actionTask(folderItem);
+            }
+            else
+            {
+                Debug.WriteLine($"除去しない {folderItem.Path}");
             }
         }
 
@@ -266,10 +317,26 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         var fileQuery = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
         await foreach (var folderItem in fileQuery.ToAsyncEnumerable())
         {
-            if (IsSkipPath(folderItem.Path) is false)
+            if (targetPredicate(folderItem))
             {
-                yield return folderItem.Path;
+                Debug.WriteLine($"除去する {folderItem.Path}");
+                await actionTask(folderItem);
             }
+            else
+            {
+                Debug.WriteLine($"除去しない {folderItem.Path}");
+            }
+        }
+
+        // 最後に渡されたフォルダも処理させる
+        if (targetPredicate(folder))
+        {
+            Debug.WriteLine($"除去する {folder.Path}");
+            await actionTask(folder);
+        }
+        else
+        {
+            Debug.WriteLine($"除去しない {folder.Path}");
         }
     }
 }

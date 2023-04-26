@@ -42,6 +42,9 @@ using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 using CommunityToolkit.Diagnostics;
 using Windows.UI.Xaml.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using I18NPortable;
+using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Views;
 
 namespace TsubameViewer.ViewModels;
 
@@ -414,78 +417,72 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             {
                 (string newPath, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedPath));
 
-                try
-                {
+                _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
+
 #if DEBUG
-                    //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
+                //await _messenger.WorkWithBusyWallAsync(async ct => await Task.Delay(TimeSpan.FromSeconds(5), ct), _leavePageCancellationTokenSource.Token);
 #endif
-                    await _messenger.WorkWithBusyWallAsync(async (ct) =>
-                    {
-                        var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
-
-                        _pathForSettings = imageCollectionContext switch
-                        {
-                            FolderImageCollectionContext folderICC when folderICC.Folder is not null => folderICC.Folder.Path,
-                            ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
-                            _ => imageSource.Path,
-                        };
-                        
-                        _recentlyAccessRepository.AddWatched(_pathForSettings);
-
-                        Images = default;
-
-                        _appView.Title = Title  = imageCollectionContext.Name;
-
-                        _currentImageSource = imageSource;
-                        _imageCollectionContext = imageCollectionContext;
-
-                        DisplaySortTypeInheritancePath = null;
-
-                        var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                        if (settings != null)
-                        {
-                            SelectedFileSortType.Value = settings.Sort;
-                        }
-                        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
-                        {
-                            DisplaySortTypeInheritancePath = parentSort.Path;
-                            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
-                        }
-                        else
-                        {
-                            SelectedFileSortType.Value = DefaultFileSortType;
-                        }
-
-                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
-                            = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
-
-                        _CurrentImageIndex = 0;
-
-                        if (string.IsNullOrEmpty(firstDisplayPageName)
-                            && SupportedFileTypesHelper.IsSupportedImageFileExtension(newPath)
-                            )
-                        {
-                            firstDisplayPageName = Path.GetFileName(newPath);
-                        }
-
-                        if (imageCollectionContext is OnlyOneFileImageCollectionContext)
-                        {
-                            IfAllFilesWannaWatchThenRegistrationFolderAtApp = true;
-                        }
-                        else 
-                        {
-                            IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
-                        }
-
-                        await RefreshItems(imageSource, imageCollectionContext, ct);
-
-                    }, ct);
-                }
-                catch (OperationCanceledException)
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
                 {
-                    (BackNavigationCommand as ICommand).Execute(null);
-                    return;
-                }
+                    var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
+
+                    _pathForSettings = imageCollectionContext switch
+                    {
+                        FolderImageCollectionContext folderICC when folderICC.Folder is not null => folderICC.Folder.Path,
+                        ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
+                        _ => imageSource.Path,
+                    };
+
+                    _recentlyAccessRepository.AddWatched(_pathForSettings);
+
+                    Images = default;
+
+                    _appView.Title = Title = imageCollectionContext.Name;
+
+                    _currentImageSource = imageSource;
+                    _imageCollectionContext = imageCollectionContext;
+
+                    DisplaySortTypeInheritancePath = null;
+
+                    var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
+                    if (settings != null)
+                    {
+                        SelectedFileSortType.Value = settings.Sort;
+                    }
+                    else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                    {
+                        DisplaySortTypeInheritancePath = parentSort.Path;
+                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                    }
+                    else
+                    {
+                        SelectedFileSortType.Value = DefaultFileSortType;
+                    }
+
+                    (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                        = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
+
+                    _CurrentImageIndex = 0;
+
+                    if (string.IsNullOrEmpty(firstDisplayPageName)
+                        && SupportedFileTypesHelper.IsSupportedImageFileExtension(newPath)
+                        )
+                    {
+                        firstDisplayPageName = Path.GetFileName(newPath);
+                    }
+
+                    if (imageCollectionContext is OnlyOneFileImageCollectionContext)
+                    {
+                        IfAllFilesWannaWatchThenRegistrationFolderAtApp = true;
+                    }
+                    else
+                    {
+                        IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
+                    }
+
+                    await RefreshItems(imageSource, imageCollectionContext, ct);
+
+                }, ct);
             }
             else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
             {

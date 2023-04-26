@@ -29,615 +29,612 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using CommunityToolkit.Mvvm.Messaging;
 using TsubameViewer.ViewModels.PageNavigation;
+using I18NPortable;
+using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Views;
 
-namespace TsubameViewer.ViewModels
+namespace TsubameViewer.ViewModels;
+
+public sealed class TocItemViewModel
 {
-    public sealed class TocItemViewModel
+    public string Label { get; set; }
+    public string Id { get; set; }
+}
+
+public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
+{
+    string _LightThemeCss;
+    string _DarkThemeCss;
+
+    private string _currentPath;
+    private StorageFile _currentFolderItem;
+
+
+    private int _CurrentImageIndex;
+    public int CurrentImageIndex
     {
-        public string Label { get; set; }
-        public string Id { get; set; }
+        get => _CurrentImageIndex;
+        set => SetProperty(ref _CurrentImageIndex, value);
     }
 
-    public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
+    public IReadOnlyReactiveProperty<int> DisplayInnerCurrentImageIndex { get; }
+
+
+    private int _InnerCurrentImageIndex;
+    public int InnerCurrentImageIndex
     {
-        string _LightThemeCss;
-        string _DarkThemeCss;
+        get => _InnerCurrentImageIndex;
+        set => SetProperty(ref _InnerCurrentImageIndex, value);
+    }
 
-        private string _currentPath;
-        private StorageFile _currentFolderItem;
+    private int _InnerImageTotalCount;
+    public int InnerImageTotalCount
+    {
+        get => _InnerImageTotalCount;
+        set => SetProperty(ref _InnerImageTotalCount, value);
+    }
 
 
-        private int _CurrentImageIndex;
-        public int CurrentImageIndex
+
+    EpubBookRef _currentBook;
+    EpubTextContentFileRef _currentPage;
+    List<EpubTextContentFileRef> _currentBookReadingOrder;
+    
+    private IReadOnlyList<TocItemViewModel> _TocItems;
+    public IReadOnlyList<TocItemViewModel> TocItems
+    {
+        get { return _TocItems; }
+        set { SetProperty(ref _TocItems, value); }
+    }
+
+    private TocItemViewModel _selectedTocItem;
+    public TocItemViewModel SelectedTocItem
+    {
+        get { return _selectedTocItem; }
+        set { SetProperty(ref _selectedTocItem, value); }
+    }
+
+    private string _PageHtml;
+    public string PageHtml
+    {
+        get { return _PageHtml; }
+        set { SetProperty(ref _PageHtml, value); }
+    }
+
+    private string _title;
+    public string Title
+    {
+        get { return _title; }
+        set { SetProperty(ref _title, value); }
+    }
+
+    private string _currentPageTitle;
+    public string CurrentPageTitle
+    {
+        get { return _currentPageTitle; }
+        set { SetProperty(ref _currentPageTitle, value); }
+    }
+
+    private BitmapImage _CoverImage;
+    public BitmapImage CoverImage
+    {
+        get { return _CoverImage; }
+        set { SetProperty(ref _CoverImage, value); }
+    }
+
+
+    private RelayCommand _ResetEBookReaderSettingsCommand;
+    public RelayCommand ResetEBookReaderSettingsCommand =>
+        _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new RelayCommand(ExecuteResetEBookReaderSettingsCommand));
+
+    void ExecuteResetEBookReaderSettingsCommand()
+    {
+        EBookReaderSettings.RootFontSizeInPixel = EBookReaderSettings.DefaultRootFontSizeInPixel;
+        EBookReaderSettings.LetterSpacingInPixel = EBookReaderSettings.DefaultLetterSpacingInPixel;
+        EBookReaderSettings.LineHeightInNoUnit = EBookReaderSettings.DefaultLineHeightInNoUnit;
+        EBookReaderSettings.RubySizeInPixel = EBookReaderSettings.DefaultRubySizeInPixel;
+        EBookReaderSettings.FontFamily = null;
+        EBookReaderSettings.RubyFontFamily = null;
+        EBookReaderSettings.BackgroundColor = Colors.Transparent;
+        EBookReaderSettings.ForegroundColor = Colors.Transparent;
+    }
+
+
+
+    CompositeDisposable _navigationDisposables;
+    
+    private CancellationTokenSource _leavePageCancellationTokenSource;
+    private readonly IMessenger _messenger;
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    private readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly ThumbnailImageManager _thumbnailManager;
+    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    private readonly ApplicationSettings _applicationSettings;
+    private readonly IScheduler _scheduler;
+
+    public EBookReaderSettings EBookReaderSettings { get; }
+    public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
+    public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
+    public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
+    public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(0, 51).Select(x => (double)x).ToList();
+    public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
+    public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
+    public IReadOnlyList<WritingMode> WritingModeItems { get; } = new[] { WritingMode.Inherit, WritingMode.Horizontal_TopToBottom, WritingMode.Vertical_RightToLeft, /*WritingMode.Vertical_LeftToRight*/ };
+
+    Windows.UI.ViewManagement.ApplicationView _applicationView;
+
+    public EBookReaderPageViewModel(
+        IMessenger messenger,
+        SourceStorageItemsRepository sourceStorageItemsRepository,
+        LocalBookmarkRepository bookmarkManager,
+        ThumbnailImageManager thumbnailManager,
+        RecentlyAccessRepository recentlyAccessRepository,
+        ApplicationSettings applicationSettings,
+        EBookReaderSettings themeSettings,
+        IScheduler scheduler,
+        ToggleFullScreenCommand toggleFullScreenCommand,
+        BackNavigationCommand backNavigationCommand
+        )
+    {
+        _messenger = messenger;
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
+        _bookmarkManager = bookmarkManager;
+        _thumbnailManager = thumbnailManager;
+        _recentlyAccessRepository = recentlyAccessRepository;
+        _applicationSettings = applicationSettings;
+        ToggleFullScreenCommand = toggleFullScreenCommand;
+        BackNavigationCommand = backNavigationCommand;
+        EBookReaderSettings = themeSettings;
+        _scheduler = scheduler;
+
+        DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
+            .Select(x => x + 1)
+            .ToReadOnlyReactivePropertySlim();
+
+        _applicationView = ApplicationView.GetForCurrentView();
+    }
+
+
+    public override void OnNavigatedFrom(INavigationParameters parameters)
+    {
+        lock (_lock)
         {
-            get => _CurrentImageIndex;
-            set => SetProperty(ref _CurrentImageIndex, value);
+            PageHtml = String.Empty;
+
+            _leavePageCancellationTokenSource?.Cancel();
+            _leavePageCancellationTokenSource?.Dispose();
+            _leavePageCancellationTokenSource = null;
+
+            _navigationDisposables.Dispose();
+            _navigationDisposables = null;
+            _currentBook = null;
+            _currentPage = null;
+            _currentBookReadingOrder = null;
+            CoverImage = null;
+
+            _readingSessionDisposer.Dispose();
+            _readingSessionDisposer = null;
+
+            _applicationView.Title = string.Empty;
         }
 
-        public IReadOnlyReactiveProperty<int> DisplayInnerCurrentImageIndex { get; }
+        base.OnNavigatedFrom(parameters);
+    }
 
-
-        private int _InnerCurrentImageIndex;
-        public int InnerCurrentImageIndex
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    {
+        var mode = parameters.GetNavigationMode();
+        if (mode == NavigationMode.Refresh)
         {
-            get => _InnerCurrentImageIndex;
-            set => SetProperty(ref _InnerCurrentImageIndex, value);
+            return;
         }
 
-        private int _InnerImageTotalCount;
-        public int InnerImageTotalCount
+        _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
+        _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
+
+        _navigationDisposables = new CompositeDisposable();
+        _leavePageCancellationTokenSource = new CancellationTokenSource();
+
+        string parsedPageName = null;
+
+        if (mode == NavigationMode.New
+            || mode == NavigationMode.Forward
+            || mode == NavigationMode.Back)
         {
-            get => _InnerImageTotalCount;
-            set => SetProperty(ref _InnerImageTotalCount, value);
-        }
-
-
-
-        EpubBookRef _currentBook;
-        EpubTextContentFileRef _currentPage;
-        List<EpubTextContentFileRef> _currentBookReadingOrder;
-        
-        private IReadOnlyList<TocItemViewModel> _TocItems;
-        public IReadOnlyList<TocItemViewModel> TocItems
-        {
-            get { return _TocItems; }
-            set { SetProperty(ref _TocItems, value); }
-        }
-
-        private TocItemViewModel _selectedTocItem;
-        public TocItemViewModel SelectedTocItem
-        {
-            get { return _selectedTocItem; }
-            set { SetProperty(ref _selectedTocItem, value); }
-        }
-
-        private string _PageHtml;
-        public string PageHtml
-        {
-            get { return _PageHtml; }
-            set { SetProperty(ref _PageHtml, value); }
-        }
-
-        private string _title;
-        public string Title
-        {
-            get { return _title; }
-            set { SetProperty(ref _title, value); }
-        }
-
-        private string _currentPageTitle;
-        public string CurrentPageTitle
-        {
-            get { return _currentPageTitle; }
-            set { SetProperty(ref _currentPageTitle, value); }
-        }
-
-        private BitmapImage _CoverImage;
-        public BitmapImage CoverImage
-        {
-            get { return _CoverImage; }
-            set { SetProperty(ref _CoverImage, value); }
-        }
-
-
-        private RelayCommand _ResetEBookReaderSettingsCommand;
-        public RelayCommand ResetEBookReaderSettingsCommand =>
-            _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new RelayCommand(ExecuteResetEBookReaderSettingsCommand));
-
-        void ExecuteResetEBookReaderSettingsCommand()
-        {
-            EBookReaderSettings.RootFontSizeInPixel = EBookReaderSettings.DefaultRootFontSizeInPixel;
-            EBookReaderSettings.LetterSpacingInPixel = EBookReaderSettings.DefaultLetterSpacingInPixel;
-            EBookReaderSettings.LineHeightInNoUnit = EBookReaderSettings.DefaultLineHeightInNoUnit;
-            EBookReaderSettings.RubySizeInPixel = EBookReaderSettings.DefaultRubySizeInPixel;
-            EBookReaderSettings.FontFamily = null;
-            EBookReaderSettings.RubyFontFamily = null;
-            EBookReaderSettings.BackgroundColor = Colors.Transparent;
-            EBookReaderSettings.ForegroundColor = Colors.Transparent;
-        }
-
-
-
-        CompositeDisposable _navigationDisposables;
-        
-        private CancellationTokenSource _leavePageCancellationTokenSource;
-        private readonly IMessenger _messenger;
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly LocalBookmarkRepository _bookmarkManager;
-        private readonly ThumbnailImageManager _thumbnailManager;
-        private readonly RecentlyAccessRepository _recentlyAccessRepository;
-        private readonly ApplicationSettings _applicationSettings;
-        private readonly IScheduler _scheduler;
-
-        public EBookReaderSettings EBookReaderSettings { get; }
-        public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
-        public IReadOnlyList<double> LeffterSpacingItems { get; } = Enumerable.Concat(Enumerable.Range(0, 20).Select(x => (x - 10) * 0.1), Enumerable.Range(1, 9).Select(x => (double)x)).ToList();
-        public IReadOnlyList<double> LineHeightItems { get; } = Enumerable.Range(1, 40).Select(x => x * 0.1).Select(x => (double)x).ToList();
-        public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(0, 51).Select(x => (double)x).ToList();
-        public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
-        public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
-        public IReadOnlyList<WritingMode> WritingModeItems { get; } = new[] { WritingMode.Inherit, WritingMode.Horizontal_TopToBottom, WritingMode.Vertical_RightToLeft, /*WritingMode.Vertical_LeftToRight*/ };
-
-        Windows.UI.ViewManagement.ApplicationView _applicationView;
-
-        public EBookReaderPageViewModel(
-            IMessenger messenger,
-            SourceStorageItemsRepository sourceStorageItemsRepository,
-            LocalBookmarkRepository bookmarkManager,
-            ThumbnailImageManager thumbnailManager,
-            RecentlyAccessRepository recentlyAccessRepository,
-            ApplicationSettings applicationSettings,
-            EBookReaderSettings themeSettings,
-            IScheduler scheduler,
-            ToggleFullScreenCommand toggleFullScreenCommand,
-            BackNavigationCommand backNavigationCommand
-            )
-        {
-            _messenger = messenger;
-            _sourceStorageItemsRepository = sourceStorageItemsRepository;
-            _bookmarkManager = bookmarkManager;
-            _thumbnailManager = thumbnailManager;
-            _recentlyAccessRepository = recentlyAccessRepository;
-            _applicationSettings = applicationSettings;
-            ToggleFullScreenCommand = toggleFullScreenCommand;
-            BackNavigationCommand = backNavigationCommand;
-            EBookReaderSettings = themeSettings;
-            _scheduler = scheduler;
-
-            DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
-                .Select(x => x + 1)
-                .ToReadOnlyReactivePropertySlim();
-
-            _applicationView = ApplicationView.GetForCurrentView();
-        }
-
-
-        public override void OnNavigatedFrom(INavigationParameters parameters)
-        {
-            lock (_lock)
+            if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {
-                PageHtml = String.Empty;
+                (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
 
-                _leavePageCancellationTokenSource?.Cancel();
-                _leavePageCancellationTokenSource?.Dispose();
-                _leavePageCancellationTokenSource = null;
-
-                _navigationDisposables.Dispose();
-                _navigationDisposables = null;
-                _currentBook = null;
-                _currentPage = null;
-                _currentBookReadingOrder = null;
-                CoverImage = null;
-
-                _readingSessionDisposer.Dispose();
-                _readingSessionDisposer = null;
-
-                _applicationView.Title = string.Empty;
-            }
-
-            base.OnNavigatedFrom(parameters);
-        }
-
-        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
-        {
-            var mode = parameters.GetNavigationMode();
-            if (mode == NavigationMode.Refresh)
-            {
-                return;
-            }
-
-            _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
-            _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
-
-            _navigationDisposables = new CompositeDisposable();
-            _leavePageCancellationTokenSource = new CancellationTokenSource();
-
-            string parsedPageName = null;
-
-            if (mode == NavigationMode.New
-                || mode == NavigationMode.Forward
-                || mode == NavigationMode.Back)
-            {
-                if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
+                var newPath = itemPath;
+                if (_currentPath != newPath)
                 {
-                    (var itemPath, parsedPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(path));
+                    _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
 
-                    var unescapedPath = itemPath;
-                    if (_currentPath != unescapedPath)
+                    _currentPath = newPath;
+                    // PathReferenceCountManagerへの登録が遅延する可能性がある
+                    foreach (var _ in Enumerable.Repeat(0, 10))
                     {
-                        _currentPath = unescapedPath;
-                        // PathReferenceCountManagerへの登録が遅延する可能性がある
-                        foreach (var _ in Enumerable.Repeat(0, 100))
+                        _currentFolderItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath) as StorageFile;
+                        if (_currentFolderItem != null)
                         {
-                            _currentFolderItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(_currentPath) as StorageFile;
-                            if (_currentFolderItem != null)
-                            {
-                                break;
-                            }
-                            await Task.Delay(100);
+                            break;
                         }
+                        await Task.Delay(100);
+                    }
 
-                        if (_currentFolderItem == null)
+                    if (_currentFolderItem == null)
+                    {
+                        throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
+                    }
+                }
+            }
+        }
+
+        await _messenger.WorkWithBusyWallAsync(async (ct) =>
+        {
+            if (_currentFolderItem != null)
+            {
+                await RefreshItems(ct);
+            }
+
+            // 表示する画像を決める
+            if (mode == NavigationMode.Forward
+                || parameters.ContainsKey(PageNavigationConstants.Restored)
+                || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
+                )
+            {
+                var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
+                if (bookmark.pageName != null)
+                {
+                    for (var i = 0; i < _currentBookReadingOrder.Count; i++)
+                    {
+                        if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
                         {
-                            throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
+                            CurrentImageIndex = i;
+                            InnerCurrentImageIndex = bookmark.innerPageIndex;
+                            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
+                            break;
                         }
                     }
                 }
             }
-
-            try
+            else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
-                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                var unescapedPageName = parsedPageName;
+                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                if (firstSelectItem != null)
                 {
-                    if (_currentFolderItem != null)
-                    {
-                        await RefreshItems(ct);
-                    }
+                    CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
+                }
 
-                    // 表示する画像を決める
-                    if (mode == NavigationMode.Forward
-                        || parameters.ContainsKey(PageNavigationConstants.Restored)
-                        || (mode == NavigationMode.New && string.IsNullOrEmpty(parsedPageName))
-                        )
-                    {
-                        var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
-                        if (bookmark.pageName != null)
-                        {
-                            for (var i = 0; i < _currentBookReadingOrder.Count; i++)
-                            {
-                                if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
-                                {
-                                    CurrentImageIndex = i;
-                                    InnerCurrentImageIndex = bookmark.innerPageIndex;
-                                    SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
-                    {
-                        var unescapedPageName = parsedPageName;
-                        var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
-                        if (firstSelectItem != null)
-                        {
-                            CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
-                        }
-
-                        SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
-                    }
-
-                    // 最初のページを表示
-                    await UpdateCurrentPage(CurrentImageIndex, ct);
-
-                    // ブックマーク更新
-                    this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
-                        .Subscribe(innerPageIndex =>
-                        {
-                            var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-                            if (currentPage == null) { return; }
-
-                            _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
-                        })
-                        .AddTo(_navigationDisposables);
-
-                }, _leavePageCancellationTokenSource.Token);
+                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
             }
-            catch (OperationCanceledException)
-            {
-                _messenger.Send<BackNavigationRequestMessage>();
-            }
-            
-            await base.OnNavigatedToAsync(parameters);
-        }
+
+            // 最初のページを表示
+            await UpdateCurrentPage(CurrentImageIndex, ct);
+
+            // ブックマーク更新
+            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
+                .Subscribe(innerPageIndex =>
+                {
+                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    if (currentPage == null) { return; }
+
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
+                })
+                .AddTo(_navigationDisposables);
+
+        }, _leavePageCancellationTokenSource.Token);
+
+        await base.OnNavigatedToAsync(parameters);
+    }
 
 
-        private async Task UpdateCurrentPage(int requestPage, CancellationToken ct)
+    private async Task UpdateCurrentPage(int requestPage, CancellationToken ct)
+    {
+        _InnerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
+
+        try
         {
-            _InnerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
+            CurrentImageIndex = requestPage;
 
-            try
+            var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+            if (currentPage == null) { throw new IndexOutOfRangeException(); }
+
+            _currentPage = currentPage;
+
+            Debug.WriteLine(currentPage.FileName);
+
+            // Tocを更新
+            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FileName));
+
+            // ページ名更新
+            CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FileName);
+
+            using (var lockReleaser = await _PageUpdateLock.LockAsync(ct))
             {
-                CurrentImageIndex = requestPage;
-
-                var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-                if (currentPage == null) { throw new IndexOutOfRangeException(); }
-
-                _currentPage = currentPage;
-
-                Debug.WriteLine(currentPage.FileName);
-
-                // Tocを更新
-                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FileName));
-
-                // ページ名更新
-                CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FileName);
-
-                using (var lockReleaser = await _PageUpdateLock.LockAsync(ct))
+                ApplicationTheme theme = _applicationSettings.Theme;
+                if (theme == ApplicationTheme.Default)
                 {
-                    ApplicationTheme theme = _applicationSettings.Theme;
-                    if (theme == ApplicationTheme.Default)
+                    theme = SystemThemeHelper.GetSystemTheme();
+                }
+
+                PageHtml = await Task.Run(async () =>
+                {
+                    var xmlDoc = new XmlDocument();
+                    var pageContentText = await currentPage.ReadContentAsync();
+                    xmlDoc.LoadXml(pageContentText);
+
+                    var root = xmlDoc.DocumentElement;
+
+                    Stack<XmlNode> _nodes = new Stack<XmlNode>();
+                    _nodes.Push(root);
+                    while (_nodes.Any())
                     {
-                        theme = SystemThemeHelper.GetSystemTheme();
-                    }
+                        var node = _nodes.Pop();
 
-                    PageHtml = await Task.Run(async () =>
-                    {
-                        var xmlDoc = new XmlDocument();
-                        var pageContentText = await currentPage.ReadContentAsync();
-                        xmlDoc.LoadXml(pageContentText);
-
-                        var root = xmlDoc.DocumentElement;
-
-                        Stack<XmlNode> _nodes = new Stack<XmlNode>();
-                        _nodes.Push(root);
-                        while (_nodes.Any())
+                        if (node.Name == "head")
                         {
-                            var node = _nodes.Pop();
-
-                            if (node.Name == "head")
+                            var cssItems = new[] { theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                            foreach (var css in cssItems)
                             {
-                                var cssItems = new[] { theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
-                                foreach (var css in cssItems)
-                                {
-                                    var cssNode = xmlDoc.CreateElement("style");
-                                    var typeAttr = xmlDoc.CreateAttribute("type");
-                                    typeAttr.Value = "text/css";
-                                    cssNode.Attributes.Append(typeAttr);
-                                    cssNode.InnerText = css;
-                                    node.AppendChild(cssNode);
-                                }
+                                var cssNode = xmlDoc.CreateElement("style");
+                                var typeAttr = xmlDoc.CreateAttribute("type");
+                                typeAttr.Value = "text/css";
+                                cssNode.Attributes.Append(typeAttr);
+                                cssNode.InnerText = css;
+                                node.AppendChild(cssNode);
                             }
+                        }
 
-                            // 画像リソースの埋め込み
+                        // 画像リソースの埋め込み
+                        {
+                            XmlAttribute imageSourceAttr = null;
+                            if (node.Name == "img")
                             {
-                                XmlAttribute imageSourceAttr = null;
-                                if (node.Name == "img")
+                                imageSourceAttr = node.Attributes["src"];
+                            }
+                            else if (node.Name == "image")
+                            {
+                                imageSourceAttr = node.Attributes["href"] ?? node.Attributes["xlink:href"];
+                            }
+                            if (imageSourceAttr != null)
+                            {
+                                foreach (var image in _currentBook.Content.Images)
                                 {
-                                    imageSourceAttr = node.Attributes["src"];
-                                }
-                                else if (node.Name == "image")
-                                {
-                                    imageSourceAttr = node.Attributes["href"] ?? node.Attributes["xlink:href"];
-                                }
-                                if (imageSourceAttr != null)
-                                {
-                                    foreach (var image in _currentBook.Content.Images)
+                                    if (imageSourceAttr.Value.EndsWith(image.Key))
                                     {
-                                        if (imageSourceAttr.Value.EndsWith(image.Key))
-                                        {
-                                            // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
-                                            /// <see cref="ResolveWebResourceRequest"/>
-                                            imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
-                                        }
+                                        // WebView.WebResourceRequestedによるリソース解決まで画像読み込みを遅延させる
+                                        /// <see cref="ResolveWebResourceRequest"/>
+                                        imageSourceAttr.Value = _dummyReosurceRequestDomain + image.Key;
                                     }
                                 }
                             }
+                        }
 
-                            // cssの埋め込み
+                        // cssの埋め込み
+                        {
+                            if (node.Name == "link"
+                                && node.Attributes["type"]?.Value == "text/css"
+                            )
                             {
-                                if (node.Name == "link"
-                                    && node.Attributes["type"]?.Value == "text/css"
-                                )
+                                var hrefAttr = node.Attributes["href"];
+                                if (hrefAttr != null)
                                 {
-                                    var hrefAttr = node.Attributes["href"];
-                                    if (hrefAttr != null)
+                                    var hrefValue = hrefAttr.Value.Split("/").Last();
+                                    if (_currentBook.Content.Css.FirstOrDefault(x => x.Key.EndsWith(hrefValue)).Value is not null and var cssContent)
                                     {
-                                        var hrefValue = hrefAttr.Value.Split("/").Last();
-                                        if (_currentBook.Content.Css.FirstOrDefault(x => x.Key.EndsWith(hrefValue)).Value is not null and var cssContent)
-                                        {
-                                            var parent = node.ParentNode;
-                                            parent.RemoveChild(node);
-                                            var styleNode = xmlDoc.CreateElement("style");
-                                            var typeAttr = xmlDoc.CreateAttribute("type");
-                                            typeAttr.Value = cssContent.ContentMimeType;
-                                            styleNode.Attributes.Append(typeAttr);
-                                            styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
-                                            parent.AppendChild(styleNode);
-                                        }
+                                        var parent = node.ParentNode;
+                                        parent.RemoveChild(node);
+                                        var styleNode = xmlDoc.CreateElement("style");
+                                        var typeAttr = xmlDoc.CreateAttribute("type");
+                                        typeAttr.Value = cssContent.ContentMimeType;
+                                        styleNode.Attributes.Append(typeAttr);
+                                        styleNode.InnerText = await cssContent.ReadContentAsTextAsync();
+                                        parent.AppendChild(styleNode);
                                     }
                                 }
                             }
-
-                            foreach (var child in node.ChildNodes)
-                            {
-                                _nodes.Push(child as XmlNode);
-                            }
                         }
 
-                        using (var stringWriter = new StringWriter())
-                        using (var xmlTextWriter = XmlWriter.Create(stringWriter))
+                        foreach (var child in node.ChildNodes)
                         {
-                            xmlDoc.WriteTo(xmlTextWriter);
-                            xmlTextWriter.Flush();
-                            return stringWriter.GetStringBuilder().ToString();
+                            _nodes.Push(child as XmlNode);
                         }
-                    }, ct);
-
-                    // ブックマークに登録
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, new NormalizedPagePosition(_currentBookReadingOrder.Count, CurrentImageIndex));
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                _InnerPageTotalCountChangedTcs = null;
-                throw;
-            }
-
-
-            // Rendererの更新待ち
-            // PageHtmlが表示されるまで更新のLockを止め続けることで
-            // ページ内ページ（InnerCurrentImageIndex） の+1/-1ページ単位での遷移を確実にする
-            try
-            {
-                using (var timeoutCts = new CancellationTokenSource(3000))
-                {
-                    using (timeoutCts.Token.Register(() =>
-                    {
-                        _InnerPageTotalCountChangedTcs.TrySetCanceled(timeoutCts.Token);
-                    }))
-                    {
-                        await _InnerPageTotalCountChangedTcs.Task.ConfigureAwait(false);
                     }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // TODO: EBookReaderページのページ更新に失敗した場合の表示
-                throw;
-            }
-            finally
-            {
-                _InnerPageTotalCountChangedTcs = null;
-            }
-        }
 
-        public void CompletePageLoading()
-        {
-            _InnerPageTotalCountChangedTcs?.SetResult(0);
-        }
-
-
-
-        private const string _dummyReosurceRequestDomain = "https://dummy.com/";
-        private readonly object _lock = new object();
-        public Stream ResolveWebResourceRequest(Uri requestUri)
-        {
-            // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
-            // 1. 同時呼び出し不可。lockによる順列処理化が必要
-            // 2. EPubContentFileRef.ReadContentAsBytesAsync()などのAsync系は呼び出し後は
-            //    EPubReader内部の別スレッドにスイッチする（確証なし）ようなので、
-            //    ResolveWebResourceRequest呼び出し元とは違うスレッドになってしまう可能性がある
-            //    ライブラリ側としてはかなり例外的な内部処理だと思うがAsync系メソッドさえ回避すれば問題ない
-            lock (_lock)
-            {
-                // ページが表示されていない状態の場合はnullを返す
-                if (_navigationDisposables == null) { throw new InvalidOperationException(); }
-
-                var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
-                foreach (var image in _currentBook.Content.Images)
-                {
-                    if (image.Key == key)
+                    using (var stringWriter = new StringWriter())
+                    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
                     {
-                        return new MemoryStream(image.Value.ReadContentAsBytes());
+                        xmlDoc.WriteTo(xmlTextWriter);
+                        xmlTextWriter.Flush();
+                        return stringWriter.GetStringBuilder().ToString();
                     }
-                }
+                }, ct);
 
-                throw new NotSupportedException();
+                // ブックマークに登録
+                _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, new NormalizedPagePosition(_currentBookReadingOrder.Count, CurrentImageIndex));
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _InnerPageTotalCountChangedTcs = null;
+            throw;
         }
 
 
-
-        TaskCompletionSource<int> _InnerPageTotalCountChangedTcs;
-
-        Core.AsyncLock _PageUpdateLock = new ();
-
-        CompositeDisposable _readingSessionDisposer;
-
-
-        private async Task RefreshItems(CancellationToken ct)
+        // Rendererの更新待ち
+        // PageHtmlが表示されるまで更新のLockを止め続けることで
+        // ページ内ページ（InnerCurrentImageIndex） の+1/-1ページ単位での遷移を確実にする
+        try
         {
-            _readingSessionDisposer?.Dispose();
-            _readingSessionDisposer = new CompositeDisposable();
- 
-            var fileStream = await _currentFolderItem.OpenStreamForReadAsync()
-                .AddTo(_readingSessionDisposer);
-
-            var epubBook = await EpubReader.OpenBookAsync(fileStream)
-                .AddTo(_readingSessionDisposer);
-
-            
-
-            _currentBook = epubBook;
-            _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
-
-            if (_currentBook.Schema.Epub2Ncx != null)
+            using (var timeoutCts = new CancellationTokenSource(3000))
             {
-                TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
-            }
-            else if (_currentBook.Schema.Epub3NavDocument != null)
-            {
-                var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.StructuralSemanticsProperty.TOC);
-                TocItems = toc.Ol.Lis.Select(x => new TocItemViewModel() { Id = x.Anchor.Href, Label = x.Anchor.Text }).ToList();
-            }
-            else
-            {
-
-            }
-
-            SelectedTocItem = TocItems.FirstOrDefault();
-
-            
-            var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(_currentFolderItem, ct));
-            if (thumbnailImageStream != null)
-            {
-                using (thumbnailImageStream)
+                using (timeoutCts.Token.Register(() =>
                 {
-                    thumbnailImageStream.Seek(0);
-                    var image = new BitmapImage();
-                    await image.SetSourceAsync(thumbnailImageStream).AsTask(ct);
-                    CoverImage = image;
+                    _InnerPageTotalCountChangedTcs.TrySetCanceled(timeoutCts.Token);
+                }))
+                {
+                    await _InnerPageTotalCountChangedTcs.Task.ConfigureAwait(false);
                 }
             }
-
-            Debug.WriteLine(epubBook.Title);
-
-            // タイトルを更新
-            Title = _currentBook.Title;
-            _applicationView.Title = _currentBook.Title;
-
-
-            _recentlyAccessRepository.AddWatched(_currentPath, DateTimeOffset.Now);
         }
-
-
-        // call from View
-        public async void UpdateFromCurrentTocItem()
+        catch (OperationCanceledException)
         {
-            if (SelectedTocItem == null) { return; }
-
-            var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FileName));
-            if (selectedBook == null)
-            {
-                throw new Exception();
-            }
-
-            if (selectedBook == _currentPage) 
-            {
-                return; 
-            }
-
-            await UpdateCurrentPage(_currentBookReadingOrder.IndexOf(selectedBook), _leavePageCancellationTokenSource?.Token ?? default);
+            // TODO: EBookReaderページのページ更新に失敗した場合の表示
+            throw;
         }
-
-
-        #region Commands
-
-        public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
-        public BackNavigationCommand BackNavigationCommand { get; }
-
-        public async Task GoNextImageAsync()
+        finally
         {
-            await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1), _leavePageCancellationTokenSource?.Token ?? default);
+            _InnerPageTotalCountChangedTcs = null;
         }
-
-
-        public bool CanGoNext()
-        {
-            return _currentBookReadingOrder?.Count > CurrentImageIndex + 1;
-        }
-
-        public async Task GoPrevImageAsync()
-        {
-            await UpdateCurrentPage(Math.Max(CurrentImageIndex - 1, 0), _leavePageCancellationTokenSource?.Token ?? default);
-        }
-
-        public bool CanGoPrev()
-        {
-            return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
-        }
-
-        #endregion
     }
+
+    public void CompletePageLoading()
+    {
+        _InnerPageTotalCountChangedTcs?.SetResult(0);
+    }
+
+
+
+    private const string _dummyReosurceRequestDomain = "https://dummy.com/";
+    private readonly object _lock = new object();
+    public Stream ResolveWebResourceRequest(Uri requestUri)
+    {
+        // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
+        // 1. 同時呼び出し不可。lockによる順列処理化が必要
+        // 2. EPubContentFileRef.ReadContentAsBytesAsync()などのAsync系は呼び出し後は
+        //    EPubReader内部の別スレッドにスイッチする（確証なし）ようなので、
+        //    ResolveWebResourceRequest呼び出し元とは違うスレッドになってしまう可能性がある
+        //    ライブラリ側としてはかなり例外的な内部処理だと思うがAsync系メソッドさえ回避すれば問題ない
+        lock (_lock)
+        {
+            // ページが表示されていない状態の場合はnullを返す
+            if (_navigationDisposables == null) { throw new InvalidOperationException(); }
+
+            var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
+            foreach (var image in _currentBook.Content.Images)
+            {
+                if (image.Key == key)
+                {
+                    return new MemoryStream(image.Value.ReadContentAsBytes());
+                }
+            }
+
+            throw new NotSupportedException();
+        }
+    }
+
+
+
+    TaskCompletionSource<int> _InnerPageTotalCountChangedTcs;
+
+    Core.AsyncLock _PageUpdateLock = new ();
+
+    CompositeDisposable _readingSessionDisposer;
+
+
+    private async Task RefreshItems(CancellationToken ct)
+    {
+        _readingSessionDisposer?.Dispose();
+        _readingSessionDisposer = new CompositeDisposable();
+
+        var fileStream = await _currentFolderItem.OpenStreamForReadAsync()
+            .AddTo(_readingSessionDisposer);
+
+        var epubBook = await EpubReader.OpenBookAsync(fileStream)
+            .AddTo(_readingSessionDisposer);
+
+        
+
+        _currentBook = epubBook;
+        _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
+
+        if (_currentBook.Schema.Epub2Ncx != null)
+        {
+            TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
+        }
+        else if (_currentBook.Schema.Epub3NavDocument != null)
+        {
+            var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.StructuralSemanticsProperty.TOC);
+            TocItems = toc.Ol.Lis.Select(x => new TocItemViewModel() { Id = x.Anchor.Href, Label = x.Anchor.Text }).ToList();
+        }
+        else
+        {
+
+        }
+
+        SelectedTocItem = TocItems.FirstOrDefault();
+
+        
+        var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(_currentFolderItem, ct));
+        if (thumbnailImageStream != null)
+        {
+            using (thumbnailImageStream)
+            {
+                thumbnailImageStream.Seek(0);
+                var image = new BitmapImage();
+                await image.SetSourceAsync(thumbnailImageStream).AsTask(ct);
+                CoverImage = image;
+            }
+        }
+
+        Debug.WriteLine(epubBook.Title);
+
+        // タイトルを更新
+        Title = _currentBook.Title;
+        _applicationView.Title = _currentBook.Title;
+
+
+        _recentlyAccessRepository.AddWatched(_currentPath, DateTimeOffset.Now);
+    }
+
+
+    // call from View
+    public async void UpdateFromCurrentTocItem()
+    {
+        if (SelectedTocItem == null) { return; }
+
+        var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FileName));
+        if (selectedBook == null)
+        {
+            throw new Exception();
+        }
+
+        if (selectedBook == _currentPage) 
+        {
+            return; 
+        }
+
+        await UpdateCurrentPage(_currentBookReadingOrder.IndexOf(selectedBook), _leavePageCancellationTokenSource?.Token ?? default);
+    }
+
+
+    #region Commands
+
+    public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
+    public BackNavigationCommand BackNavigationCommand { get; }
+
+    public async Task GoNextImageAsync()
+    {
+        await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1), _leavePageCancellationTokenSource?.Token ?? default);
+    }
+
+
+    public bool CanGoNext()
+    {
+        return _currentBookReadingOrder?.Count > CurrentImageIndex + 1;
+    }
+
+    public async Task GoPrevImageAsync()
+    {
+        await UpdateCurrentPage(Math.Max(CurrentImageIndex - 1, 0), _leavePageCancellationTokenSource?.Token ?? default);
+    }
+
+    public bool CanGoPrev()
+    {
+        return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
+    }
+
+    #endregion
 }

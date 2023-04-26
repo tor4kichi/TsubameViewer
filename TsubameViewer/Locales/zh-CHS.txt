@@ -40,7 +40,7 @@ RefreshAfterCodecExtensionInstalled = 安装扩展后请刷新显示
 FileDeleteFailed = 文件删除失败 \n {0}
 FolderDeleteFailed = 文件夹删除失败\n{0}
 ThumbnailImageChanged = 更改封面
-
+Notification_SourceStorageItemNotFound = 指定路径已注销
 
 #### Dialog
 DoNotDisplayFromNextTime = 下次不再显示

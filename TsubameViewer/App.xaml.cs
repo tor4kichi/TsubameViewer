@@ -153,11 +153,11 @@ sealed partial class App : Application
 
         container.Register<SecondaryTileMaintenance>();
         container.Register<RemoveSourceStorageItemWhenPathIsEmpty>();
-        container.Register<CacheDeletionWhenSourceStorageItemIgnored>();
+        container.Register<CacheDeletionWhenSourceStorageItemIgnored>(Reuse.Singleton);
         container.Register<EnsureFavoriteAlbam>();
         container.RegisterMapping<ILaunchTimeMaintenanceAsync, SecondaryTileMaintenance>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.RegisterMapping<ILaunchTimeMaintenanceAsync, RemoveSourceStorageItemWhenPathIsEmpty>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
-        container.RegisterMapping<ILaunchTimeMaintenance, CacheDeletionWhenSourceStorageItemIgnored>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
+        container.RegisterMapping<ILaunchTimeMaintenanceAsync, CacheDeletionWhenSourceStorageItemIgnored>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         container.RegisterMapping<ILaunchTimeMaintenance, EnsureFavoriteAlbam>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);
         
         container.Register<ILaunchTimeMaintenance, RecentlyAccessRepository>(ifAlreadyRegistered: IfAlreadyRegistered.AppendNotKeyed);

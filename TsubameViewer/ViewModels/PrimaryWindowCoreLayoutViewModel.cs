@@ -107,7 +107,10 @@ public sealed class PrimaryWindowCoreLayoutViewModel
 
     void IRecipient<SourceStorageItemRemovedMessage>.Receive(SourceStorageItemRemovedMessage message)
     {
-        RefreshFolderSubItems();
+        _scheduler.Schedule(() => 
+        {
+            RefreshFolderSubItems();
+        });
     }
 
     void IRecipient<SourceStorageItemAddedMessage>.Receive(SourceStorageItemAddedMessage message)

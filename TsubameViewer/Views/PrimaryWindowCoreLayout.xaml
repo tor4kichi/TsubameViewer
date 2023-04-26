@@ -226,6 +226,7 @@
                 HorizontalAlignment="Center"
                 Style="{ThemeResource AccentButtonStyle}"
                 AccessKey="C"
+                x:Name="BusyWallCancelButton"
                 />
 
 
@@ -308,6 +309,24 @@
             <Setter Target="BusyWall.Visibility" Value="Visible" />
             <Setter Target="BusyWall.IsHitTestVisible" Value="True" />
             <Setter Target="BusyWall_ProgressRing.IsActive" Value="True" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState x:Name="VS_ShowBusyWall_WithoutCancel">
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               BeginTime="{x:Bind _BusyWallDisplayDelayTime}"
+                               To="1.0"
+                               Storyboard.TargetName="BusyWall"
+                               Storyboard.TargetProperty="Opacity"
+                               />
+            </Storyboard>
+          </VisualState.Storyboard>
+          <VisualState.Setters>
+            <Setter Target="BusyWall.Visibility" Value="Visible" />
+            <Setter Target="BusyWall.IsHitTestVisible" Value="True" />
+            <Setter Target="BusyWall_ProgressRing.IsActive" Value="True" />
+            <Setter Target="BusyWallCancelButton.Visibility" Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

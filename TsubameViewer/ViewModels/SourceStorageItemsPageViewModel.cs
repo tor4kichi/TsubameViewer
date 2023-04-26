@@ -20,6 +20,8 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using Windows.UI.Xaml.Navigation;
+using System.Reactive.Concurrency;
+using TsubameViewer.Core.Models.Maintenance;
 
 namespace TsubameViewer.ViewModels
 {
@@ -33,6 +35,7 @@ namespace TsubameViewer.ViewModels
         private readonly LocalBookmarkRepository _bookmarkManager;
         private readonly AlbamRepository _albamRepository;
         private readonly ThumbnailImageManager _thumbnailManager;
+        private readonly IScheduler _scheduler;
         private readonly IMessenger _messenger;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly LastIntractItemRepository _folderLastIntractItemManager;
@@ -57,6 +60,7 @@ namespace TsubameViewer.ViewModels
 
         bool _foldersInitialized = false;
         public SourceStorageItemsPageViewModel(
+            IScheduler scheduler,
             IMessenger messenger,
             FolderListingSettings folderListingSettings,
             LocalBookmarkRepository bookmarkManager,
@@ -95,6 +99,7 @@ namespace TsubameViewer.ViewModels
             _bookmarkManager = bookmarkManager;
             _albamRepository = albamRepository;
             _thumbnailManager = thumbnailManager;
+            _scheduler = scheduler;
             _messenger = messenger;
 
             Groups = new[]
@@ -138,11 +143,6 @@ namespace TsubameViewer.ViewModels
                     Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
                     await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                     {
-                        if (_sourceStorageItemsRepository.IsIgnoredPathExact(item.item.Path))
-                        {
-                            continue;
-                        }
-
                         var storageItemImageSource = new StorageItemImageSource(item.item);
                         if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
                         {
@@ -157,28 +157,16 @@ namespace TsubameViewer.ViewModels
                 else
                 {
                     var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
-                    List<StorageItemViewModel> ignoredItems = new List<StorageItemViewModel>();
                     foreach (var folderItem in Folders)
                     {
                         if (folderItem.Path == null) { continue; }
 
-                        if (_sourceStorageItemsRepository.IsIgnoredPathExact(folderItem.Path))
-                        {
-                            ignoredItems.Add(folderItem);
-                            continue;
-                        }
                         folderItem.UpdateLastReadPosition();
                         if (folderItem.Name == lastIntaractItemPath)
                         {
                             folderItem.ThumbnailChanged();
                             folderItem.Initialize(ct);
                         }
-                    }
-
-                    foreach (var ignoreItem in ignoredItems)
-                    {
-                        ignoreItem.Dispose();
-                        Folders.Remove(ignoreItem);
                     }
 
                     ct.ThrowIfCancellationRequested();
@@ -204,11 +192,6 @@ namespace TsubameViewer.ViewModels
                     RecentlyItems.Clear();
                     foreach (var item in recentlyAccessItems)
                     {
-                        if (_sourceStorageItemsRepository.IsIgnoredPathExact(item.Path))
-                        {
-                            continue;
-                        }
-
                         try
                         {
                             var itemVM = await ToStorageItemViewModel(item);
@@ -302,14 +285,27 @@ namespace TsubameViewer.ViewModels
                 }                
             });
 
+            _messenger.Register<AccessRemovedValueChangedMessage>(this, (r, m) => 
+            {
+                _scheduler.Schedule(() =>
+                {
+                    RemoveItem(m.Value);
+                });
+            });
             _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) => 
             {
-                RemoveItem(m.Value);
+                _scheduler.Schedule(() =>
+                {
+                    RemoveItem(m.Path);
+                });
             });
 
             _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>
             {
-                RemoveItem(m.Value.Path);
+                _scheduler.Schedule(() => 
+                {
+                    RemoveItem(m.Value.Path);
+                });
             });
         }
 

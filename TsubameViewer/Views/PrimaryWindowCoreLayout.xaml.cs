@@ -37,6 +37,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using TsubameViewer.Services;
+using System.IO;
 
 namespace TsubameViewer.Views;
 
@@ -205,13 +206,13 @@ public sealed partial class PrimaryWindowCoreLayout : Page
     private void InitializeNavigation()
     {
         async Task<INavigationResult> NavigationAsyncInternal(NavigationRequestMessage m)
-        {
-            using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
-
-            var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
-
+        {            
             try
             {
+                using var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
+
+                var (currentNavParam, prevNavParam) = GetNavigationParametersSet();
+
                 if (m.IsForgetNavigaiton)
                 {
                     _isForgetNavigationRequested = true;
@@ -221,11 +222,20 @@ public sealed partial class PrimaryWindowCoreLayout : Page
                 parameters.SetNavigationMode(NavigationMode.New);
                 return await NavigateAsync(m.PageName, parameters, m.IsForgetNavigaiton is false);
             }
-            catch
+            catch (OperationCanceledException)
             {
-                SetCurrentNavigationParameters(prevNavParam);
-                SetCurrentNavigationParameters(currentNavParam);
+                // ロールバックして前のページを表示
+                await HandleBackRequestAsync();
                 _isForgetNavigationRequested = false;
+                throw;
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or UnauthorizedAccessException)
+            {
+                // ファイルにアクセス出来ない例外の場合はホームページへ遷移
+                var navigationParameters = new NavigationParameters();
+                navigationParameters.SetNavigationMode(NavigationMode.New);
+                await NavigateAsync(HomePageName, navigationParameters, false);
+                _messenger.SendShowTextNotificationMessage("Notification_SourceStorageItemNotFound".Translate());
                 throw;
             }
         }
@@ -474,42 +484,26 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         var options = new FrameNavigationOptions() { IsNavigationStackEnabled = isNavigationStackEnabled, TransitionInfoOverride = PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) };
         var result = ContentFrame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 
-        if (result)
+        if (result is false)
         {
-            var currentPage = ContentFrame.Content as Page;
-            return await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+            throw new InvalidOperationException($"Failed ContentFrame navigate to {pageName}.");
         }
-        else
-        {
-            return new NavigationResult() { IsSuccess = false, Exception = new Exception("failed navigation with unknown error. also check Xaml.") };
-        }
+
+        var currentPage = ContentFrame.Content as Page;
+        return await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);        
     }
 
     private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
     {
-        try
+        if (fromPageVM != null)
         {
-            if (fromPageVM != null)
-            {
-                fromPageVM.OnNavigatedFrom(parameters);
-            }
-        }
-        catch (Exception ex)
-        {
-            return new NavigationResult() { IsSuccess = false, Exception = ex };
+            fromPageVM.OnNavigatedFrom(parameters);
         }
 
-        try
+        if (toPageVM != null)
         {
-            if (toPageVM != null)
-            {
-                toPageVM.OnNavigatedTo(parameters);
-                await toPageVM.OnNavigatedToAsync(parameters);
-            }
-        }
-        catch (Exception ex)
-        {
-            return new NavigationResult() { IsSuccess = false, Exception = ex };
+            toPageVM.OnNavigatedTo(parameters);
+            await toPageVM.OnNavigatedToAsync(parameters);
         }
 
         return new NavigationResult() { IsSuccess = true };
@@ -603,8 +597,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         catch
         {
             Debug.WriteLine("[NavigationRestore] failed restore current page. ");
-
-            await ResetNavigationAsync();
+            throw;
         }            
     }
 
@@ -765,6 +758,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
                         {
                             _currentNavigationParameters = lastNavigationParametersSet.Current;
                             _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                            throw;
                         }
                     }
                     else
@@ -830,6 +824,7 @@ public sealed partial class PrimaryWindowCoreLayout : Page
             {
                 _currentNavigationParameters = lastNavigationParametersSet.Current;
                 _prevNavigationParameters = lastNavigationParametersSet.Prev;
+                throw;
             }
         }
     }
@@ -973,10 +968,18 @@ public sealed partial class PrimaryWindowCoreLayout : Page
 
     private void InitializeBusyWorkUI()
     {
-        _messenger.Register<BusyWallStartRequestMessage>(this, (r, m) =>
+        var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        _messenger.Register<BusyWallStartRequestMessage>(this, async (r, m) =>
         {
             _AnimationCancelTimer.Start();
-            VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            if (m.Value.IsCanCancel)
+            {
+                VisualStateManager.GoToState(this, VS_ShowBusyWall.Name, true);
+            }
+            else
+            {
+                VisualStateManager.GoToState(this, VS_ShowBusyWall_WithoutCancel.Name, true);
+            }
         });
 
         _messenger.Register<BusyWallExitRequestMessage>(this, (r, m) =>
