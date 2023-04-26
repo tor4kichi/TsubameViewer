@@ -40,7 +40,7 @@ RefreshAfterCodecExtensionInstalled = Please refresh the display after installin
 FileDeleteFailed = File deletion failed \ n {0}
 FolderDeleteFailed = Failed to delete the folder \ n {0}
 ThumbnailImageChanged = Change thumbnail image
-
+Notification_SourceStorageItemNotFound = The specified path has been unregistered
 
 #### Dialog
 DoNotDisplayFromNextTime = Do not display from next time

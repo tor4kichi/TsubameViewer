@@ -35,6 +35,7 @@ using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.UI.Xaml.Navigation;
 using CommunityToolkit.Diagnostics;
+using TsubameViewer.Contracts.Notification;
 
 namespace TsubameViewer.ViewModels;
 
@@ -352,6 +353,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
                 }
                 else
                 {
+                    _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
+
                     foreach (var itemVM in ImageFileItems)
                     {
                         itemVM.RestoreThumbnailLoadingTask(ct);

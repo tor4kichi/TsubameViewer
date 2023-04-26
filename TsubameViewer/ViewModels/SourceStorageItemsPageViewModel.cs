@@ -287,11 +287,17 @@ namespace TsubameViewer.ViewModels
 
             _messenger.Register<AccessRemovedValueChangedMessage>(this, (r, m) => 
             {
-                RemoveItem(m.Value);
+                _scheduler.Schedule(() =>
+                {
+                    RemoveItem(m.Value);
+                });
             });
             _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) => 
             {
-                RemoveItem(m.Path);
+                _scheduler.Schedule(() =>
+                {
+                    RemoveItem(m.Path);
+                });
             });
 
             _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>

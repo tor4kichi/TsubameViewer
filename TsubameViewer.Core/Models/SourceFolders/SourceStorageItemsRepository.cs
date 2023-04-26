@@ -223,9 +223,18 @@ public sealed class SourceStorageItemsRepository
 
     private void MostRecentlyUsedList_ItemRemoved(StorageItemMostRecentlyUsedList sender, ItemRemovedEventArgs args)
     {
+        Debug.WriteLine($"システムにより最近使ったファイルからアイテムが削除されました: token {args.RemovedEntry.Token}");
+        var token = _tokenToPathRepository.FindById(args.RemovedEntry.Token);
         _tokenToPathRepository.DeleteItem(args.RemovedEntry.Token);
-
-        // TODO: 削除済みをトリガー
+        try
+        {
+            if (token is not null)
+            {
+                Debug.WriteLine($"システムにより最近使ったファイルからアイテムが削除されました: path {token.Path}");
+                _messenger.Send(new SourceStorageItemRemovedMessage(new() { Token = token.Token, Path = token.Path }));
+            }
+        }
+        catch { }
     }
 
 
@@ -242,6 +251,24 @@ public sealed class SourceStorageItemsRepository
         return (token.Token, await GetItemAsync(token.Token));
     }
 
+    public bool PathIsAccessAvailable(string path)
+    {
+        return _tokenToPathRepository.IsAvairableAccessPath(path);
+    }
+
+    /// <summary>
+    /// 指定パスにアクセス可能な登録フォルダへのアクセス権をアプリが保有しているかを検査します。<br />
+    /// FutureAccessList と MostRecentlyUsedList のどちらかでアクセス出来ればアクセス可能とします。
+    /// </summary>
+    /// <param name="path"></param>
+    /// <exception cref="UnauthorizedAccessException"></exception>
+    public void ThrowIfPathIsUnauthorizedAccess(string path)
+    {
+        if (PathIsAccessAvailable(path) is false) 
+        {
+            throw new UnauthorizedAccessException(path);
+        }
+    }
 
     public async IAsyncEnumerable<string> GetDescendantItemPathsAsync(string parentPath, bool withMostRecentlyUsed = false)
     {

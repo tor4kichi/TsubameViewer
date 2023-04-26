@@ -33,6 +33,8 @@ using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Navigation;
 using CommunityToolkit.Diagnostics;
+using TsubameViewer.Contracts.Notification;
+using Windows.Devices.Geolocation;
 
 namespace TsubameViewer.ViewModels;
 
@@ -159,7 +161,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
     public FolderListupPageViewModel(
         IScheduler scheduler,
-        IMessenger messenger,
+        IMessenger messenger,        
         LocalBookmarkRepository bookmarkManager,
         AlbamRepository albamRepository,
         ImageCollectionManager imageCollectionManager,
@@ -339,6 +341,8 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                 }
                 else
                 {
+                    _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
+
                     if (FolderItems != null)
                     {
                         foreach (var itemVM in FolderItems)
@@ -353,6 +357,13 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                 (var albamIdString, _) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(albamPath));
 
                 await ResetContentWithAlbam(albamIdString, ct);                
+            }
+
+            if (mode is NavigationMode.Back && 
+                _imageCollectionContext is FolderImageCollectionContext folderContext
+                )
+            {                
+                _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(folderContext.Folder.Path);
             }
 
             if (mode != NavigationMode.New)
@@ -370,10 +381,6 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                     FolderLastIntractItem.Value = null;
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            return;
         }
         finally
         {
