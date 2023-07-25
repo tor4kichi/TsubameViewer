@@ -125,7 +125,7 @@ public sealed class ImageCollectionManager
             {
                 // string.Emptyを渡すことでルートフォルダのフォルダ取得を行える
                 var imageCollectionContext = await GetArchiveImageCollectionContextAsync(file, pageName ?? string.Empty, ct);
-                if (pageName == null)
+                if (string.IsNullOrWhiteSpace(pageName))
                 {
                     // Mangaファイルが指定された場合
                     return (new StorageItemImageSource(storageItem), imageCollectionContext);
