@@ -26,16 +26,17 @@ public static class FolderHelper
         StorageFolder currentFolder = parent;
         foreach (var descendantName in folderDescendantsNames.SkipLast(1))
         {
-            var child = await currentFolder.GetFolderAsync(descendantName);
+            var child = await currentFolder.TryGetItemAsync(descendantName).AsTask() as StorageFolder;
             if (child == null)
             {
-                throw new Exception("Folder not found. " + Path.Combine(parent.Path, subtractPath));
+                //throw new Exception("Folder not found. " + Path.Combine(parent.Path, subtractPath));
+                return null;
             }
             currentFolder = child;
         }
 
         var lastDescendantName = folderDescendantsNames.Last();
-        return await currentFolder.GetItemAsync(lastDescendantName);
+        return await currentFolder.TryGetItemAsync(lastDescendantName).AsTask();
     }
 
 
