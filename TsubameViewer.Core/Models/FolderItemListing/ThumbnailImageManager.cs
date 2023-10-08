@@ -181,7 +181,6 @@ public sealed class ThumbnailImageManager
     public ThumbnailImageManager(
         ILiteDatabase temporaryDb,
         FolderListingSettings folderListingSettings,
-        ThumbnailImageInfoRepository thumbnailImageInfoRepository,
         SourceStorageItemsRepository sourceStorageItemsRepository
         )
     {
@@ -189,7 +188,7 @@ public sealed class ThumbnailImageManager
         _thumbnailIdDb = _temporaryDb.GetCollection<ThumbnailItemIdEntry>();
         _thumbnailDb = _temporaryDb.FileStorage;
         _folderListingSettings = folderListingSettings;
-        _thumbnailImageInfoRepository = thumbnailImageInfoRepository;
+        _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(temporaryDb);
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
     }
@@ -350,14 +349,14 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource)
     {
-        return _thumbnailImageInfoRepository.TryGetSize(imageSource.Path);        
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(imageSource.Path));        
     }
 
     public ThumbnailSize SetThumbnailSize(IImageSource imageSource, uint pixelWidth, uint pixelHeight)
     {
         var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = imageSource.Path,
+            Path = ToId(imageSource.Path),
             ImageWidth = pixelWidth,
             ImageHeight = pixelHeight,            
             RatioWH = pixelWidth / (float)pixelHeight
@@ -430,10 +429,12 @@ public sealed class ThumbnailImageManager
         _thumbnailImageInfoRepository.DeleteAll();
 
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
+        {
             foreach (var id in _thumbnailDb.FindAll().ToArray())
             {
                 _thumbnailDb.Delete(id.Id);
             }
+        }
     }
 
     public async Task DeleteThumbnailFromPathAsync(string path)
@@ -450,8 +451,8 @@ public sealed class ThumbnailImageManager
 
     public async Task DeleteAllThumbnailUnderPathAsync(string path)
     {
-        _thumbnailImageInfoRepository.DeleteAllUnderPath(path);
         var id = ToId(path);
+        _thumbnailImageInfoRepository.DeleteAllUnderPath(id);
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
         {
             foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(id)).ToArray())
@@ -881,7 +882,7 @@ public sealed class ThumbnailImageManager
             // サムネイルサイズ情報を記録
             _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
             {
-                Path = path,
+                Path = ToId(path),
                 ImageWidth = decoder.PixelWidth,
                 ImageHeight = decoder.PixelHeight,
                 RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
@@ -1075,22 +1076,22 @@ public sealed class ThumbnailImageManager
 
     public ThumbnailSize? GetThumbnailOriginalSize(IStorageItem file)
     {
-        return _thumbnailImageInfoRepository.TryGetSize(file.Path);
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(file.Path));
     }
 
     public ThumbnailSize? GetThumbnailOriginalSize(string path)
     {
-        return _thumbnailImageInfoRepository.TryGetSize(path);
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(path));
     }
 
     public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, IArchiveEntry archiveEntry)
     {
-        return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, archiveEntry));
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(GetArchiveEntryPath(file, archiveEntry)));
     }
 
     public ThumbnailSize? GetThumbnailOriginalSize(StorageFile file, PdfPage pdfPage)
     {
-        return _thumbnailImageInfoRepository.TryGetSize(GetArchiveEntryPath(file, pdfPage));
+        return _thumbnailImageInfoRepository.TryGetSize(ToId(GetArchiveEntryPath(file, pdfPage)));
     }
 
 
@@ -1098,7 +1099,7 @@ public sealed class ThumbnailImageManager
     {
         var item = _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
         {
-            Path = path,
+            Path = ToId(path),
             ImageHeight = (uint)image.PixelHeight,
             ImageWidth = (uint)image.PixelWidth,
             RatioWH = image.PixelWidth / (float)image.PixelHeight
@@ -1127,7 +1128,7 @@ public sealed class ThumbnailImageManager
         public float RatioWH { get; set; }
     }
 
-    public class ThumbnailImageInfoRepository : LiteDBServiceBase<ThumbnailImageInfo>
+    private class ThumbnailImageInfoRepository : LiteDBServiceBase<ThumbnailImageInfo>
     {
         public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
@@ -1138,7 +1139,7 @@ public sealed class ThumbnailImageManager
         public ThumbnailSize? TryGetSize(string path)
         {
             var thumbInfo = _collection.FindById(path);
-
+            //Debug.WriteLine(path);
             if (thumbInfo is not null)
             {
                 if (thumbInfo.RatioWH == 0)
