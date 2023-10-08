@@ -665,51 +665,56 @@
                     >
         <Grid x:Name="FileItemsContainer" Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
-          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
-                                  ItemsSource="{x:Bind _vm.FileItemsView}"
-                                  ItemTemplate="{StaticResource FileItemTemplate_Line}"
-                               Visibility="Collapsed"           
-                               DataContext="{x:Null}"
-                                  >
-            <winUI:ItemsRepeater.Layout>
-              <winUI:UniformGridLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
-            </winUI:ItemsRepeater.Layout>
-          </winUI:ItemsRepeater>
+          <uwpControls:SwitchPresenter x:Name="ItemsSwitchPresenter" Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode.Value), Mode=OneWay}"                                       
+                                       >
+            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Line}" IsDefault="True">
+              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
+                        ItemsSource="{x:Bind _vm.FileItemsView}"
+                        ItemTemplate="{StaticResource FileItemTemplate_Line}"
+                     DataContext="{x:Null}"
+                        >
+                <winUI:ItemsRepeater.Layout>
+                  <winUI:UniformGridLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+                </winUI:ItemsRepeater.Layout>
+              </winUI:ItemsRepeater>
+            </uwpControls:Case>
 
-          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
-                                  ItemsSource="{x:Bind _vm.FileItemsView}"
-                                  ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                               Visibility="Collapsed"
-                               DataContext="{x:Null}"
-                                  >
-            <winUI:ItemsRepeater.Layout>
-              <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
-            </winUI:ItemsRepeater.Layout>
-          </winUI:ItemsRepeater>
-
-          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
+            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Small}">
+              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
+                        ItemsSource="{x:Bind _vm.FileItemsView}"
+                        ItemTemplate="{StaticResource FileItemTemplate_Small}"
+                     DataContext="{x:Null}"
+                        >
+                <winUI:ItemsRepeater.Layout>
+                  <winUI:FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+                </winUI:ItemsRepeater.Layout>
+              </winUI:ItemsRepeater>
+            </uwpControls:Case>
+            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Midium}">
+              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
                                   ItemsSource="{x:Bind _vm.FileItemsView}"
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
-                               Visibility="Collapsed"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                DataContext="{x:Null}"
                                   >
-            <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
-            </winUI:ItemsRepeater.Layout>
-          </winUI:ItemsRepeater>
-
-          <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
-                                  ItemsSource="{x:Bind _vm.FileItemsView}"
-                                  ItemTemplate="{StaticResource FileItemTemplate_Large}"
-                               Visibility="Collapsed"
-                               FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                               DataContext="{x:Null}"
-                                  >
-            <winUI:ItemsRepeater.Layout>
-              <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
-            </winUI:ItemsRepeater.Layout>
-          </winUI:ItemsRepeater>
+                <winUI:ItemsRepeater.Layout>
+                  <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />
+                </winUI:ItemsRepeater.Layout>
+              </winUI:ItemsRepeater>
+            </uwpControls:Case>
+            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Large}">
+              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
+                         ItemsSource="{x:Bind _vm.FileItemsView}"
+                         ItemTemplate="{StaticResource FileItemTemplate_Large}"
+                      FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                      DataContext="{x:Null}"
+                         >
+                <winUI:ItemsRepeater.Layout>
+                  <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="12" VerticalSpacing="12" />
+                </winUI:ItemsRepeater.Layout>
+              </winUI:ItemsRepeater>
+            </uwpControls:Case>
+          </uwpControls:SwitchPresenter>
         </Grid>
       </ScrollViewer>
     </uwpControls:DockPanel>
@@ -729,42 +734,7 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-            
-      <!-- ファイルの表示方法切り替え -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Line}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="FileItemsRepeater_Line.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Small}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="FileItemsRepeater_Small.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Midium}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="FileItemsRepeater_Midium.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.FileDisplayMode.Value, Mode=OneWay}" EqualTo="{x:Bind modelListing:FileDisplayMode.Large}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="FileItemsRepeater_Large.Visibility" Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
+ 
 
 
       
