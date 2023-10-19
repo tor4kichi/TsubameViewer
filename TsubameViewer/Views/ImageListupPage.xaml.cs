@@ -249,12 +249,13 @@ public sealed partial class ImageListupPage : Page
         return mode.ToString();
     }
 
-    private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    private async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
             && fe.DataContext is StorageItemViewModel itemVM
             )
         {
+            await itemVM.PrepareImageSizeAsync(_ct);
             itemVM.Initialize(_ct);
         }
     }

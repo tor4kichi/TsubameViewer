@@ -277,16 +277,16 @@ public sealed class ThumbnailImageManager
         }
         else
         {
-            using var imageStream = await imageSource.GetImageStreamAsync(ct);
-            using (await _fileReadWriteLock.LockAsync(ct))
+            using var imageStream = await imageSource.GetImageStreamAsync(ct);            
             {
-                // Note: ImageViewer画面から _recyclableMemoryStreamManager.GetStream(); を使うと
-                // BitmapEncoder.CreateAsync() でハングアップしてしまう
                 outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
                 try
                 {
                     await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                    using (await _fileReadWriteLock.LockAsync(ct))
+                    {
+                        UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                    }
                     return outputStream;
                 }
                 catch
@@ -346,6 +346,24 @@ public sealed class ThumbnailImageManager
             throw new NotSupportedException();
         }       
     }
+
+    public async ValueTask<ThumbnailSize> GetEnsureThumbnailSizeAsync(IImageSource imageSource, CancellationToken ct)
+    {
+        if (GetCachedThumbnailSize(imageSource) is { } sizeIfCached)
+        {
+            return sizeIfCached;
+        }
+
+        return await Task.Run(async () =>
+        {            
+            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
+            {
+                var decoder = await BitmapDecoder.CreateAsync(imageStream);
+                return SetThumbnailSize(imageSource, decoder.PixelWidth, decoder.PixelHeight);
+            }
+        });
+    }
+
 
     public ThumbnailSize? GetCachedThumbnailSize(IImageSource imageSource)
     {
@@ -868,46 +886,48 @@ public sealed class ThumbnailImageManager
 
     private Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
-        return TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
-    }
+        // Note: _recyclableMemoryStreamManager.GetStream(); と BitmapEncoder.CreateAsync()  を
+        // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
+        return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
 
-    private async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
-    {
-        // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
-                
-        try
+        async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            var decoder = await BitmapDecoder.CreateAsync(stream);
+            // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
 
-            // サムネイルサイズ情報を記録
-            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+            try
             {
-                Path = ToId(path),
-                ImageWidth = decoder.PixelWidth,
-                ImageHeight = decoder.PixelHeight,
-                RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
-            });
+                var decoder = await BitmapDecoder.CreateAsync(stream);
 
-            var pixelData = await decoder.GetPixelDataAsync();
-            var detachedPixelData = pixelData.DetachPixelData();
-            pixelData = null;
+                // サムネイルサイズ情報を記録                
+                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                {
+                    Path = ToId(path),
+                    ImageWidth = decoder.PixelWidth,
+                    ImageHeight = decoder.PixelHeight,
+                    RatioWH = decoder.PixelWidth / (float)decoder.PixelHeight
+                });
 
-            outputStream.Size = 0;
+                var pixelData = await decoder.GetPixelDataAsync();
+                var detachedPixelData = pixelData.DetachPixelData();
+                pixelData = null;
 
-            // Note: outputStreamが AsRandomAccessStream() を通しているとハングアップする？
-            var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
+                outputStream.Size = 0;
 
-            setupEncoder(decoder, encoder);
+                // Note: outputStreamが AsRandomAccessStream() を通しているとハングアップする？
+                var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
 
-            Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
-            encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
+                setupEncoder(decoder, encoder);
 
-            await encoder.FlushAsync().AsTask(ct);
-            await outputStream.FlushAsync().AsTask(ct);
-        }
-        catch (Exception ex) when (ex.HResult == -1072868846)
-        {
-            throw new NotSupportedImageFormatException(Path.GetExtension(path));
+                Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
+                encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
+
+                await encoder.FlushAsync().AsTask(ct);
+                await outputStream.FlushAsync().AsTask(ct);
+            }
+            catch (Exception ex) when (ex.HResult == -1072868846)
+            {
+                throw new NotSupportedImageFormatException(Path.GetExtension(path));
+            }
         }
     }
 
