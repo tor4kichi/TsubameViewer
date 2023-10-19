@@ -572,33 +572,40 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
-        var oldItemPathMap = ImageFileItems.Select(x => x.Path).ToHashSet();
-        var newItems = await imageCollectionContext.GetImageFilesAsync(ct).ToListAsync(ct);
-        var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
-            .Where(x => oldItemPathMap.Contains(x))
-            .ToHashSet();
-
+        var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
         using (FileItemsView.DeferRefresh())
         {
             // 削除アイテム
             Debug.WriteLine($"items count : {ImageFileItems.Count}");
-            foreach (var itemVM in ImageFileItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
-            {
-                itemVM.Dispose();
-                ImageFileItems.Remove(itemVM);
-            }
-            Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+            
             // 新規アイテム
-            foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
+            await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct))
             {
-                ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                if (existItemsHashSet.Contains(item.Path) is false)
+                {
+                    ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                }
+                else
+                {
+                    existItemsHashSet.Remove(item.Path);
+                }
             }
-            Debug.WriteLine($"after added : {ImageFileItems.Count}");
 
-            foreach (var item in ImageFileItems)
+            Debug.WriteLine($"after added : {ImageFileItems.Count}");
+            for (int i = ImageFileItems.Count -  1; i >= 0; i--)
             {
-                item.RestoreThumbnailLoadingTask(ct);
+                var itemVM = ImageFileItems[i];
+                if (existItemsHashSet.Contains(itemVM.Path))
+                {
+                    ImageFileItems.RemoveAt(i);
+                }
+                else
+                {
+                    itemVM.RestoreThumbnailLoadingTask(ct);
+                }
             }
+
+            Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
         }
 
         ct.ThrowIfCancellationRequested();

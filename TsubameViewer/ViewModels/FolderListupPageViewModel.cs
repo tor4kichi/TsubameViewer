@@ -585,43 +585,57 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
+        var existItemsHashSet = FolderItems.Select(x => x.Path).ToHashSet();
 
-        var oldItemPathMap = FolderItems.Select(x => x.Path).ToHashSet();
-        var newItems = await _messenger.WorkWithBusyWallAsync((ct) => imageCollectionContext.GetFolderOrArchiveFilesAsync(ct).Where(x => x is not null), ct).ToListAsync(ct);
-        var deletedItems = Enumerable.Except(oldItemPathMap, newItems.Select(x => x.Path))
-            .Where(x => oldItemPathMap.Contains(x))
-            .ToHashSet();
-
-        using (FileItemsView.DeferRefresh())
+        await _messenger.WorkWithBusyWallAsync(async (ct) =>
         {
-            // 削除アイテム
-            Debug.WriteLine($"items count : {FolderItems.Count}");
-            foreach (var itemVM in FolderItems.Where(x => deletedItems.Contains(x.Path)).ToArray())
+            using (FileItemsView.DeferRefresh())
             {
-                itemVM.Dispose();
-                FolderItems.Remove(itemVM);
-            }
+                Debug.WriteLine($"items count : {FolderItems.Count}");
 
-            Debug.WriteLine($"after deleted : {FolderItems.Count}");
-            // 新規アイテム
-            foreach (var item in newItems.Where(x => oldItemPathMap.Contains(x.Path) is false))
-            {
-                FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
-                ct.ThrowIfCancellationRequested();
+                // 新規アイテム
+                await foreach (var item in imageCollectionContext.GetFolderOrArchiveFilesAsync(ct))
+                {
+                    if (item == null) { continue; }
+
+                    if (existItemsHashSet.Contains(item.Path) is false)
+                    {
+                        FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                    }
+                    else
+                    {
+                        existItemsHashSet.Remove(item.Path);
+                    }
+                }
+
+                Debug.WriteLine($"after added : {FolderItems.Count}");
+                for (int i = FolderItems.Count - 1; i >= 0; i--)
+                {
+                    var itemVM = FolderItems[i];
+                    if (existItemsHashSet.Contains(itemVM.Path))
+                    {
+                        FolderItems.RemoveAt(i);
+                    }
+                    else
+                    {
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                    }
+                }
+
+                Debug.WriteLine($"after deleted : {FolderItems.Count}");
             }
-            Debug.WriteLine($"after added : {FolderItems.Count}");
-        }
+        }, ct);
 
         ct.ThrowIfCancellationRequested();
 
-        if (_currentImageSource?.StorageItem != null)
-        {
-            var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
-            _sourceItemLastUpdatedTime = prop.DateModified;
-        }
-
         _ = Task.Run(async () =>
         {
+            if (_currentImageSource?.StorageItem != null)
+            {
+                var prop = await _currentImageSource.StorageItem.GetBasicPropertiesAsync();
+                _sourceItemLastUpdatedTime = prop.DateModified;
+            }
+
             bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
             _scheduler.Schedule(() => HasFileItem = exist);
         }, ct);
