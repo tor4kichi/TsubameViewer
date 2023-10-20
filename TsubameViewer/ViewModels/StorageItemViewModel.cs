@@ -118,7 +118,16 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable
         _isRequestImageLoading = false;
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new (4);
+    private readonly static Core.AsyncLock _asyncLock = new (Math.Max(1, Environment.ProcessorCount / 2));
+
+    public async ValueTask PrepareImageSizeAsync(CancellationToken ct)
+    {
+        if (ImageAspectRatioWH == null)
+        {
+            var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
+            ImageAspectRatioWH = size.RatioWH;
+        }
+    }
 
     bool _isInitialized = false;
     public async void Initialize(CancellationToken ct)
@@ -136,10 +145,10 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable
             if (Item == null) { return; }
             if (_isRequestImageLoading is false) { return; }
 
-            using (var stream = await Task.Run(() => _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
+            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
-                
+
                 stream.Seek(0);
                 var bitmapImage = new BitmapImage();
                 bitmapImage.AutoPlay = false;
