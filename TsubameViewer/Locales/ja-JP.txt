@@ -42,6 +42,8 @@ FolderDeleteFailed = フォルダ削除に失敗しました\n{0}
 ThumbnailImageChanged = サムネイル画像を変更
 Notification_SourceStorageItemNotFound = 指定されたパスは登録解除済みです
 
+
+
 #### Dialog
 DoNotDisplayFromNextTime = 次回から表示しない
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
@@ -78,6 +80,9 @@ IsReverseImageFliping_Button = 左右のページ送りを逆にする
 GeneralUISettings = 操作設定
 IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
 ForceXboxAppearanceModeEnabled = ウィンドウ周囲に余白を追加（大きい画面向け）
+
+OtherSettings = その他の設定
+ShowWithIndexedFolderItemAccess = 高速なフォルダアイテム表示を使用（試験的な機能）
 
 PrivacyPolicy = プライバシーポリシー
 ThirdPartyLibraryNotice = サードパーティライブラリのライセンス表示

@@ -35,6 +35,7 @@ using Windows.UI.Xaml.Navigation;
 using CommunityToolkit.Diagnostics;
 using TsubameViewer.Contracts.Notification;
 using Windows.Devices.Geolocation;
+using TsubameViewer.Services;
 
 namespace TsubameViewer.ViewModels;
 
@@ -74,6 +75,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly ThumbnailImageManager _thumbnailManager;        
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    private readonly FolderListupSettings _folderListupSettings;
     private readonly BackNavigationCommand _backNavigationCommand;
 
     public ISecondaryTileManager SecondaryTileManager { get; }
@@ -170,6 +172,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         LastIntractItemRepository folderLastIntractItemManager,
         ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        FolderListupSettings folderListupSettings,
         BackNavigationCommand backNavigationCommand,
         OpenPageCommand openPageCommand,
         OpenListupCommand openListupCommand,
@@ -196,6 +199,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _thumbnailManager = thumbnailManager;            
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        _folderListupSettings = folderListupSettings;
         _backNavigationCommand = backNavigationCommand;
         OpenPageCommand = openPageCommand;
         OpenListupCommand = openListupCommand;
@@ -591,7 +595,9 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
-        if (imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess is false)
+        if (imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess is false
+            || _folderListupSettings.ShowWithIndexedFolderItemAccess is false
+            )
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
             {
@@ -635,13 +641,14 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         }
         else
         {
-            //if (_onceSkipContentChangedRefresh) 
+            if (_onceSkipContentChangedRefresh)
             {
-                //_onceSkipContentChangedRefresh = false;
-                //return; 
+                _onceSkipContentChangedRefresh = false;
+                return;
             }
 
             _onceSkipContentChangedRefresh = true;
+
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
             {
                 using (var cts = new CancellationTokenSource(5000))
@@ -735,7 +742,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                     fileSort
                     );
 
-                await ReloadItemsAsync(_imageCollectionContext, ct);
+                await ReloadItemsAsync(_imageCollectionContext, ct);                
             }
             else
             {

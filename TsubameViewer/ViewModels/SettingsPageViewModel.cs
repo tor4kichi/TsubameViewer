@@ -22,6 +22,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
@@ -37,6 +38,7 @@ namespace TsubameViewer.ViewModels
         private readonly FolderListingSettings _folderListingSettings;
         private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
         private readonly ImageViewerSettings _imageViewerPageSettings;
+        private readonly FolderListupSettings _folderListupSettings;
         private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
         public SettingsGroupViewModel[] SettingGroups { get; }
@@ -63,6 +65,7 @@ namespace TsubameViewer.ViewModels
             FolderListingSettings folderListingSettings,
             SourceStorageItemsRepository sourceStorageItemsRepository,
             ImageViewerSettings imageViewerPageSettings,
+            FolderListupSettings folderListupSettings,
             IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
             )
         {
@@ -71,6 +74,7 @@ namespace TsubameViewer.ViewModels
             _folderListingSettings = folderListingSettings;
             _sourceStorageItemsRepository = sourceStorageItemsRepository;
             _imageViewerPageSettings = imageViewerPageSettings;
+            _folderListupSettings = folderListupSettings;
             _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
             _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
             _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
@@ -139,6 +143,14 @@ namespace TsubameViewer.ViewModels
 #endif
                         new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                         new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
+                    }
+                },
+                new SettingsGroupViewModel
+                {
+                    Label = "OtherSettings".Translate(),
+                    Items =
+                    {
+                        new ToggleSwitchSettingItemViewModel<FolderListupSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
                     }
                 },
             };
