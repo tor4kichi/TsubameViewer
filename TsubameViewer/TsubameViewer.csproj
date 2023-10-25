@@ -170,6 +170,8 @@
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
+    <Compile Include="ViewModels\IStorageItemViewModel.cs" />
+    <Compile Include="ViewModels\LazyFolderOrArchiveFileViewModel.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />

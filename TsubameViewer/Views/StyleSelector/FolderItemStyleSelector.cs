@@ -21,7 +21,7 @@ namespace TsubameViewer.Views.StyleSelector
 
         protected override Style SelectStyleCore(object item, DependencyObject container)
         {
-            if (item is StorageItemViewModel itemVM)
+            if (item is IStorageItemViewModel itemVM)
             {
                 return itemVM.Type switch
                 {

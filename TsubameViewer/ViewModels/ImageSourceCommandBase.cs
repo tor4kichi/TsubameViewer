@@ -16,7 +16,7 @@ public abstract class ImageSourceCommandBase : CommandBase
         {
             return CanExecute(imageSource);
         }
-        else if (parameter is StorageItemViewModel itemVM)
+        else if (parameter is IStorageItemViewModel itemVM)
         {
             return CanExecute(itemVM.Item);
         }
@@ -48,7 +48,7 @@ public abstract class ImageSourceCommandBase : CommandBase
         {
             Execute(imageSource);
         }
-        else if (parameter is StorageItemViewModel itemVM)
+        else if (parameter is IStorageItemViewModel itemVM)
         {
             Execute(itemVM.Item);
         }

@@ -551,7 +551,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 {
                     try
                     {
-                        _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
                     }
                     catch
                     {
@@ -564,7 +564,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         {
             try
             {
-                _CurrentImageIndex = await _imageCollectionContext.GetIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, _navigationCts.Token);
             }
             catch
             {
@@ -646,7 +646,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 if (Images == null) { return; }
                 var ct = _navigationCts.Token;
                 var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.OldItem, ct);
-                var newIndex = await _imageCollectionContext.GetIndexFromKeyAsync(oldImage.Name, pair.NewItem, ct);
+                var newIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(oldImage.Name, pair.NewItem, ct);
                 await ResetImageIndex(newIndex);
             })
             .AddTo(_navigationDisposables);
@@ -739,7 +739,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                         try
                         {
-                            var index = await _imageCollectionContext.GetIndexFromKeyAsync(currentItemPath, SelectedFileSortType.Value, ct);
+                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType.Value, ct);
                             await ResetImageIndex(index >= 0 ? index : 0);
                         }
                         catch
@@ -1935,7 +1935,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             if (string.IsNullOrEmpty(folder?.Path) is false)
             {
                 string key = folder is IArchiveEntryImageSource entry ? entry.EntryKey : folder.Path;
-                var index = await _imageCollectionContext.GetIndexFromKeyAsync(key, SelectedFileSortType.Value, ct);
+                var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(key, SelectedFileSortType.Value, ct);
                 if (index >= 0)
                 {
                     await ResetImageIndex(index);
