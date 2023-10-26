@@ -395,7 +395,12 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
             .Subscribe(x => _ = SetSort(x, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None))
             .AddTo(_navigationDisposables);
 
-        if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+        // Note: IsSupportFolderOrArchiveFilesIndexAccess == trueの際、
+        // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
+        if (_imageCollectionContext != null
+            && _imageCollectionContext.IsSupportedFolderContentsChanged
+            && _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess is false 
+            )
         {
             // アプリ内部操作も含めて変更を検知する
             bool requireRefresh = false;
@@ -404,12 +409,6 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
                 {
                     _scheduler.Schedule(async () => 
                     {
-                        if (_onceSkipContentChangedRefresh) 
-                        {
-                            _onceSkipContentChangedRefresh = false;
-                            return; 
-                        }                        
-
                         if (Window.Current.Visible)
                         {
                             requireRefresh = false;
@@ -641,14 +640,6 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         }
         else
         {
-            if (_onceSkipContentChangedRefresh)
-            {
-                _onceSkipContentChangedRefresh = false;
-                return;
-            }
-
-            _onceSkipContentChangedRefresh = true;
-
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
             {
                 using (var cts = new CancellationTokenSource(5000))
@@ -689,7 +680,6 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         }, ct);
     }
 
-    bool _onceSkipContentChangedRefresh;
 #endregion
 
 
