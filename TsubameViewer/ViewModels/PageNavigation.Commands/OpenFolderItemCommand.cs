@@ -41,7 +41,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
 
@@ -60,7 +60,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
         protected override async void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
 

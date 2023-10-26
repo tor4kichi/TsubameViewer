@@ -42,6 +42,8 @@ FolderDeleteFailed = Failed to delete the folder \ n {0}
 ThumbnailImageChanged = Change thumbnail image
 Notification_SourceStorageItemNotFound = The specified path has been unregistered
 
+
+
 #### Dialog
 DoNotDisplayFromNextTime = Do not display from next time
 StorageItemDeleteConfirmTitleWithName = Do you want to delete the following items? \ n {0}
@@ -78,6 +80,9 @@ IsReverseImageFliping_Button = Reverse left/right page feed
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
 ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
+
+OtherSettings = Other settings
+ShowWithIndexedFolderItemAccess = Use fast folder item display (experimental feature)
 
 PrivacyPolicy = Privacy policy
 ThirdPartyLibraryNotice = Third-party library license display

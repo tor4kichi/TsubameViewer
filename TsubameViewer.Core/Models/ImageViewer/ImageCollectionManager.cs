@@ -321,6 +321,8 @@ public sealed class OnlyOneFileImageCollectionContext : IImageCollectionContext
 
     public bool IsSupportedFolderContentsChanged => false;
 
+    public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
+
     public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver()
     {
         throw new NotImplementedException();
@@ -363,7 +365,7 @@ public sealed class OnlyOneFileImageCollectionContext : IImageCollectionContext
         return new[] { _imageSource }.ToAsyncEnumerable();
     }
 
-    public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    public ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
         if (key == _file.Name) { return new(0); }
 
@@ -383,5 +385,20 @@ public sealed class OnlyOneFileImageCollectionContext : IImageCollectionContext
     public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
         return new(false);
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<IImageSource> GetFolderOrArchiveFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
     }
 }

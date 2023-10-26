@@ -51,10 +51,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
         var flyout = sender as FlyoutBase;
         
-        StorageItemViewModel itemVM = flyout.Target.DataContext as StorageItemViewModel;
+        IStorageItemViewModel itemVM = flyout.Target.DataContext as IStorageItemViewModel;
         if (itemVM == null && flyout.Target is Control content)
         {
-            itemVM = (content as ContentControl)?.Content as StorageItemViewModel;
+            itemVM = (content as ContentControl)?.Content as IStorageItemViewModel;
         }
 
         if (itemVM == null)

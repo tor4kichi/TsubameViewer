@@ -46,7 +46,7 @@ namespace TsubameViewer.Views.FolderListup
         {
             if (item == null) { return base.SelectTemplateCore(item, container); }
 
-            if (item is StorageItemViewModel itemVM)
+            if (item is IStorageItemViewModel itemVM)
             {
                 return itemVM.Type switch
                 {

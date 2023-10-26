@@ -165,7 +165,7 @@ namespace TsubameViewer.ViewModels
                         if (folderItem.Name == lastIntaractItemPath)
                         {
                             folderItem.ThumbnailChanged();
-                            folderItem.Initialize(ct);
+                            folderItem.InitializeAsync(ct);
                         }
                     }
 
@@ -215,7 +215,7 @@ namespace TsubameViewer.ViewModels
                         if (item.Name == lastIntaractItemPath)
                         {
                             item.ThumbnailChanged();
-                            item.Initialize(ct);
+                            item.InitializeAsync(ct);
                         }
                     }
                 }

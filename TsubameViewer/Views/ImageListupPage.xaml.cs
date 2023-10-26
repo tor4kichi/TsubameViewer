@@ -140,7 +140,7 @@ public sealed partial class ImageListupPage : Page
     private void SaveScrollStatus(UIElement target)
     {
         if (target is FrameworkElement fe
-                    && fe.DataContext is StorageItemViewModel itemVM)
+                    && fe.DataContext is IStorageItemViewModel itemVM)
         {
             _vm.SetLastIntractItem(itemVM);
         }
@@ -252,18 +252,18 @@ public sealed partial class ImageListupPage : Page
     private async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
-            && fe.DataContext is StorageItemViewModel itemVM
+            && fe.DataContext is IStorageItemViewModel itemVM
             )
         {
             await itemVM.PrepareImageSizeAsync(_ct);
-            itemVM.Initialize(_ct);
+            itemVM.InitializeAsync(_ct);
         }
     }
 
     private void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
     {
         if (args.Element is FrameworkElement fe
-           && fe.DataContext is StorageItemViewModel itemVM
+           && fe.DataContext is IStorageItemViewModel itemVM
            )
         {
             itemVM.StopImageLoading();
@@ -288,7 +288,7 @@ public sealed partial class ImageListupPage : Page
                 .Start(image);
         }
 
-        if (item.DataContext is StorageItemViewModel itemVM)
+        if (item.DataContext is IStorageItemViewModel itemVM)
         {
             if (itemVM.Image?.IsAnimatedBitmap ?? false)
             {
@@ -307,7 +307,7 @@ public sealed partial class ImageListupPage : Page
             .CenterPoint(new Vector2((float)image.ActualWidth * 0.5f, (float)image.ActualHeight * 0.5f), duration: TimeSpan.FromMilliseconds(1))
             .Start(image);
 
-        if (item.DataContext is StorageItemViewModel itemVM)
+        if (item.DataContext is IStorageItemViewModel itemVM)
         {
             if (itemVM.Image?.IsAnimatedBitmap ?? false)
             {
@@ -354,7 +354,7 @@ public sealed partial class ImageListupPage : Page
             || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
             )
         {
-            if (fe.DataContext is StorageItemViewModel itemVM)
+            if (fe.DataContext is IStorageItemViewModel itemVM)
             {
                 itemVM.IsSelected = !itemVM.IsSelected;
                 ItemSelectedProcess(itemVM);
@@ -382,7 +382,7 @@ public sealed partial class ImageListupPage : Page
         }
     }
 
-    ReactivePropertySlim<IReadOnlyList<StorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
+    ReactivePropertySlim<IReadOnlyList<IStorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
 
 
     private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -395,7 +395,7 @@ public sealed partial class ImageListupPage : Page
         }
     }
 
-    private void ItemSelectedProcess(StorageItemViewModel itemVM)
+    private void ItemSelectedProcess(IStorageItemViewModel itemVM)
     {
         var prevSelectedItemIndex = lastSelectedItemIndex;
         var lastSelectedItemsCount = SelectedItemsCount;
@@ -484,7 +484,7 @@ public sealed partial class ImageListupPage : Page
             _messenger.Register<Core.Models.Albam.AlbamItemRemovedMessage>(this, (r, m) =>
             {
                 var (albamId, path, itemType) = m.Value;
-                List<StorageItemViewModel> removeTargets = new();
+                List<IStorageItemViewModel> removeTargets = new();
                 foreach (var itemVM in _vm.Selection.SelectedItems)
                 {
                     if (itemVM.Item is AlbamItemImageSource albamItem)
@@ -508,7 +508,7 @@ public sealed partial class ImageListupPage : Page
     public void ClearSelection()
     {
         IsSelectionModeEnabled = false;
-        foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<StorageItemViewModel>())
+        foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<IStorageItemViewModel>())
         {
             itemVM.IsSelected = false;
         }

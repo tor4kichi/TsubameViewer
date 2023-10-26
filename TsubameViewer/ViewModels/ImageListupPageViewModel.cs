@@ -49,7 +49,7 @@ public sealed class SelectionContext : ObservableObject
         private set => SetProperty(ref _isSelectionModeEnabled, value);
     }
 
-    public ObservableCollection<StorageItemViewModel> SelectedItems { get; } = new ();
+    public ObservableCollection<IStorageItemViewModel> SelectedItems { get; } = new ();
 
     public void StartSelection()
     {
@@ -285,7 +285,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         return null;
     }
 
-    public void SetLastIntractItem(StorageItemViewModel itemVM)
+    public void SetLastIntractItem(IStorageItemViewModel itemVM)
     {
         Debug.WriteLine($"last intaraction item saved, folderPath: {DisplayCurrentPath}, itemPath: {itemVM.Path}");
 

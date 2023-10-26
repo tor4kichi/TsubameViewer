@@ -40,14 +40,14 @@ namespace TsubameViewer.Views
 
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.Item is StorageItemViewModel itemVM)
+            if (args.Item is IStorageItemViewModel itemVM)
             {
                 if (_navigationCts.IsCancellationRequested is false)
                 {
                     ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
                 }
 
-                itemVM.Initialize(_ct);
+                itemVM.InitializeAsync(_ct);
             }
         }
 

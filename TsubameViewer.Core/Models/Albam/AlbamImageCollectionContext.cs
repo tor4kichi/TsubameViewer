@@ -81,7 +81,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
                         _archiveImageCollectionContextCache.Add(file.Path, collection);
                     }
 
-                    var index = await collection.GetIndexFromKeyAsync(pageName, FileSortType.None, ct);
+                    var index = await collection.GetImageFileIndexFromKeyAsync(pageName, FileSortType.None, ct);
                     imageSource = await collection.GetImageFileAtAsync(index, FileSortType.None, ct);
                 }
                 else
@@ -113,6 +113,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public bool IsSupportedFolderContentsChanged => true;
 
+    public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
 
     public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
@@ -186,7 +187,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         return GetAllImageFilesAsync(ct);
     }
 
-    public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    public ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
         var items = _albamRepository.GetAlbamImageItems(_albam._id, sort);
         int index = 0;
@@ -206,5 +207,20 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
     public IAsyncEnumerable<IImageSource> GetLeafFoldersAsync(CancellationToken ct)
     {
         return AsyncEnumerable.Empty<IImageSource>();
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<IImageSource> GetFolderOrArchiveFileAtAsync(int index, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
+    }
+
+    public ValueTask<int> GetFolderOrArchiveFilesIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
+    {
+        throw new NotSupportedException();
     }
 }

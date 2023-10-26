@@ -140,6 +140,7 @@
     <Compile Include="Contracts\Services\IImageCodecService.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
     <Compile Include="Contracts\Services\IMessageDialogService.cs" />
+    <Compile Include="Services\FolderListupSettings.cs" />
     <Compile Include="Services\MessageDialogService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
     <Compile Include="Services\Navigation\NavigationAwareViewModelBase.cs" />
@@ -170,6 +171,8 @@
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
+    <Compile Include="ViewModels\IStorageItemViewModel.cs" />
+    <Compile Include="ViewModels\LazyFolderOrArchiveFileViewModel.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
@@ -376,7 +379,7 @@
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="LiteDB">
-      <Version>5.0.11</Version>
+      <Version>5.0.17</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
       <Version>6.0.0</Version>

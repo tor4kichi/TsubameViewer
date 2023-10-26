@@ -34,7 +34,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
         protected override bool CanExecute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
             }
@@ -47,7 +47,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             var listUpAnimationFactory = () => new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
             var imageViewerAnimationFactory = () => new DrillInNavigationTransitionInfo();
 
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
             }

@@ -93,9 +93,24 @@
     </local:StorageItemIconTemplateSelector.FavoriteIcon>
   </local:StorageItemIconTemplateSelector>
 
-  
-  
-  <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:StorageItemViewModel">
+  <DataTemplate x:Key="LazyStorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
+    <Grid Background="Transparent" IsHitTestVisible="True">
+      <Image Source="{x:Bind Image, Mode=OneWay}"
+           x:Name="ImageControl"
+           Style="{StaticResource FolderItemImageStyle}"
+           />
+      <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <ContentControl Content="{x:Bind Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+                      Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
+                      />
+        <TextBlock Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+    </Grid>
+  </DataTemplate>
+
+  <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
     <Grid Background="Transparent" IsHitTestVisible="True">
       <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
@@ -112,14 +127,14 @@
     </Grid>
   </DataTemplate>
 
-  <DataTemplate x:Key="AddNewFolderTemplate" x:DataType="vm:StorageItemViewModel">
+  <DataTemplate x:Key="AddNewFolderTemplate" x:DataType="vm:IStorageItemViewModel">
     <uwpControls:DockPanel>
       <ToolTipService.ToolTip>
         <TextBlock Text="{x:Bind Name}" />
       </ToolTipService.ToolTip>
 
       <uwpControls:DockPanel uwpControls:DockPanel.Dock="Bottom" Height="{StaticResource FolderItemTitleHeight}" Margin="12 0">
-        <ContentControl Content="{x:Bind}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+        <ContentControl Content="{x:Bind Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
                         UseLayoutRounding="True" uwpControls:DockPanel.Dock="Right"
                         Margin="0 0 4 0"
                         />
@@ -132,6 +147,7 @@
   </DataTemplate>
 
   <ts:FolderItemTemplateSelector x:Key="FolderItemTemplateSelector" 
+                                 LazyFolderOrArchiveFile="{StaticResource LazyStorageItemCardTemplate}"
                                  Folder="{StaticResource StorageItemCardTemplate}"
                                  AddNewFolder="{StaticResource AddNewFolderTemplate}"
                                  Archive="{StaticResource StorageItemCardTemplate}"

@@ -29,14 +29,14 @@ namespace TsubameViewer.Views
         bool _isFirstItem = false;
         private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.Item is StorageItemViewModel itemVM && _navigationCts.IsCancellationRequested is false)
+            if (args.Item is IStorageItemViewModel itemVM && _navigationCts.IsCancellationRequested is false)
             {
                 if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
                 {
                     ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
                 }
 
-                itemVM.Initialize(_navigationCts.Token);
+                itemVM.InitializeAsync(_navigationCts.Token);
 
                 if (_isFirstItem && itemVM.Type != Core.Models.StorageItemTypes.AddAlbam)
                 {

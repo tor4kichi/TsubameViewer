@@ -235,7 +235,7 @@ public sealed class ThumbnailImageManager
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    return null;
                 }
             }
             catch 
@@ -256,12 +256,12 @@ public sealed class ThumbnailImageManager
                 }
                 else
                 {
-                    throw new NotSupportedException();
+                    return null;
                 }
             }
             catch 
             {
-                outputStream.Dispose();
+                outputStream.Dispose();                
                 throw;
             }
         }

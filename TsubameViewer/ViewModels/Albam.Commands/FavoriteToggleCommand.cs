@@ -10,7 +10,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
     {
         protected override bool CanExecute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
             }
@@ -20,7 +20,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 
         protected override void Execute(object parameter)
         {
-            if (parameter is StorageItemViewModel itemVM)
+            if (parameter is IStorageItemViewModel itemVM)
             {
                 parameter = itemVM.Item;
             }

@@ -1,93 +1,78 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
-using System.Reactive.Linq;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models;
 using TsubameViewer.ViewModels.SourceFolders;
 using Windows.UI.Xaml.Media.Imaging;
+using System.Diagnostics;
 
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
-using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-
-public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
+public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject, IStorageItemViewModel
 {
+    private readonly IImageCollectionContext _imageCollectionContext;
+    private readonly int _itemIndex;
+    private readonly FileSortType _fileSortType;
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly ThumbnailImageManager _thumbnailImageService;
     private readonly AlbamRepository _albamRepository;
+    public SelectionContext? Selection { get; }
 
-    public IImageSource Item { get; }
-    public SelectionContext Selection { get; }
-    public string Name { get; }
+    [ObservableProperty]
+    IImageSource? _item;
 
+    [ObservableProperty]
+    string? _name;
 
-    public string Path { get; }
+    [ObservableProperty]
+    string? _path;
 
-    public DateTimeOffset DateCreated { get; }
+    [ObservableProperty]
+    DateTimeOffset _dateCreated;
 
-    private BitmapImage _image;
-    public BitmapImage Image
-    {
-        get { return _image; }
-        set { SetProperty(ref _image, value); }
-    }
+    [ObservableProperty]
+    private BitmapImage? _image;
 
+    [ObservableProperty]
     private float? _ImageAspectRatioWH;
-    public float? ImageAspectRatioWH
-    {
-        get { return _ImageAspectRatioWH; }
-        set { SetProperty(ref _ImageAspectRatioWH, value); }
-    }
 
-
+    [ObservableProperty]
     private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
-    }
 
+    [ObservableProperty]
     private bool _isFavorite;
-    public bool IsFavorite
-    {
-        get => _isFavorite;
-        set => SetProperty(ref _isFavorite, value);
-    }
 
-    public StorageItemTypes Type { get; }
+    [ObservableProperty]
+    StorageItemTypes _type;
 
+    [ObservableProperty]
     private double _ReadParcentage;
-    public double ReadParcentage
-    {
-        get { return _ReadParcentage; }
-        set { SetProperty(ref _ReadParcentage, value); }
-    }
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
 
-    public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)
-    {
-        Name = name;
-        Type = storageItemTypes;
-    }
-
-    public StorageItemViewModel(
-        IImageSource item,
+    public LazyFolderOrArchiveFileViewModel(
+        IImageCollectionContext imageCollectionContext,
+        int itemIndex,
+        FileSortType fileSortType,
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
         ThumbnailImageManager thumbnailImageService,
         AlbamRepository albamRepository,
-        SelectionContext selectionContext = null
+        SelectionContext? selectionContext = null
         )
     {
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -95,18 +80,12 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         _thumbnailImageService = thumbnailImageService;
         _albamRepository = albamRepository;
         Selection = selectionContext;
-        Item = item;
+        _imageCollectionContext = imageCollectionContext;
+        _itemIndex = itemIndex;
+        _fileSortType = fileSortType;
         _messenger = messenger;
-        DateCreated = Item.DateCreated;
 
-        Name = Item.Name;
-        Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
-        Path = item.Path;
-
-        _ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-
-        UpdateLastReadPosition();
-        _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
+        _type = StorageItemTypes.Archive;
     }
 
 
@@ -119,13 +98,16 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
-    public async ValueTask PrepareImageSizeAsync(CancellationToken ct)
+    public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
-        if (ImageAspectRatioWH == null)
-        {
-            var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
-            ImageAspectRatioWH = size.RatioWH;
-        }
+        return new ValueTask();
+        //if (Item == null) { return; }
+
+        //if (ImageAspectRatioWH == null)
+        //{
+        //    var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
+        //    ImageAspectRatioWH = size.RatioWH;
+        //}
     }
 
     bool _isInitialized = false;
@@ -136,13 +118,23 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         _isRequestImageLoading = true;
 
         try
-        {
+        {            
             using var _ = await _asyncLock.LockAsync(ct);
-
+            
             if (_isInitialized) { return; }
             if (_disposed) { return; }
-            if (Item == null) { return; }
             if (_isRequestImageLoading is false) { return; }
+
+            if (Item == null)
+            {
+                Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
+                Name = Item.Name;
+                Path = Item.Path;
+                DateCreated = Item.DateCreated;
+                Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+                UpdateLastReadPosition();
+                IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            }
 
             using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
             {
@@ -155,7 +147,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
                 Image = bitmapImage;
             }
 
-            ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+            //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
             _isRequireLoadImageWhenRestored = false;
             _isInitialized = true;
@@ -173,6 +165,10 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
             _isInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
         }
+        catch (NotSupportedException)
+        {
+
+        }
     }
 
     public void UpdateLastReadPosition()
@@ -187,7 +183,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
         if (_isRequireLoadImageWhenRestored && Image == null)
         {
-            InitializeAsync(ct);
+            _ = InitializeAsync(ct);
         }
     }
 
@@ -203,7 +199,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
         _disposed = true;
         (Item as IDisposable)?.Dispose();
-        _image = null;
+        Image = null;
     }
     bool _disposed;
 }
