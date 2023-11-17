@@ -309,7 +309,7 @@ namespace TsubameViewer.Views.EBookControls
             }
             sb.Append("}");
 
-            sb.Append("body, p, span{");
+            sb.Append("body, p, span, strong, small, h1, h2, h3, h4, h5, h6{");
             sb.Append($"letter-spacing: {LetterSpacingInPixel}px !important;");
             sb.Append($"line-height: {LineHeightInNoUnit} !important;");
             if (ContentsFontFamily != null)
