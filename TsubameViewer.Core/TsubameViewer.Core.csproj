@@ -123,6 +123,7 @@
   <ItemGroup>
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
     <Compile Include="Contracts\Maintenance\IThumbnailImageMaintenanceService.cs" />
+    <Compile Include="Helpers\PerfomanceStopWatch.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Migrate\IAsyncMigrater.cs" />
     <Compile Include="Models\Albam\AlbamImageCollectionContext.cs" />

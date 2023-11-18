@@ -399,7 +399,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
         if (_imageCollectionContext != null
             && _imageCollectionContext.IsSupportedFolderContentsChanged
-            && _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess is false 
+            && IsIndexAccessListingEnabled is false
             )
         {
             // アプリ内部操作も含めて変更を検知する
@@ -481,6 +481,8 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
         await base.OnNavigatedToAsync(parameters);
     }
+
+    bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListupSettings.ShowWithIndexedFolderItemAccess;
 
     IImageCollectionContext _imageCollectionContext;
 
@@ -594,9 +596,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
-        if (imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess is false
-            || _folderListupSettings.ShowWithIndexedFolderItemAccess is false
-            )
+        if (!IsIndexAccessListingEnabled)
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
             {
@@ -725,7 +725,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
         using (await _RefreshLock.LockAsync(ct))
         {
-            if (_imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess)
+            if (IsIndexAccessListingEnabled)
             {
                 _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
                     _currentImageSource.Path,
