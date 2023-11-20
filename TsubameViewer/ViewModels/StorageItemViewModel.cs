@@ -144,7 +144,8 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
             if (Item == null) { return; }
             if (_isRequestImageLoading is false) { return; }
 
-            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
+            // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
 
