@@ -2,6 +2,7 @@
 using Microsoft.Xaml.Interactivity;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Input;
@@ -23,18 +24,21 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
     {
         private readonly IMessenger _messenger;
         private readonly FolderContainerTypeManager _folderContainerTypeManager;
+        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
         private readonly SourceChoiceCommand _sourceChoiceCommand;
         private readonly AlbamCreateCommand _albamCreateCommand;
 
         public OpenFolderItemCommand(
             IMessenger messenger,
             FolderContainerTypeManager folderContainerTypeManager,
+            DisplaySettingsByPathRepository displaySettingsByPathRepository,
             SourceChoiceCommand sourceChoiceCommand,
             AlbamCreateCommand albamCreateCommand
             )
         {
             _messenger = messenger;
             _folderContainerTypeManager = folderContainerTypeManager;
+            _displaySettingsByPathRepository = displaySettingsByPathRepository;
             _sourceChoiceCommand = sourceChoiceCommand;
             _albamCreateCommand = albamCreateCommand;
         }
@@ -105,11 +109,19 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                    }
+                    }                                        
                     else
                     {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                        if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode == DefaultFolderOrArchiveOpenMode.Listup)
+                        {
+                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                        }
+                        else
+                        {
+                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                            var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                        }
                     }
                 }
                 else if (type == StorageItemTypes.EBook)

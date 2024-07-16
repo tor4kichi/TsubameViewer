@@ -63,6 +63,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
     }
 
     public StorageItemTypes Type { get; }
+    public bool StorageItemTypesIsFolder => Type is StorageItemTypes.Folder;
 
     private double _ReadParcentage;
     public double ReadParcentage

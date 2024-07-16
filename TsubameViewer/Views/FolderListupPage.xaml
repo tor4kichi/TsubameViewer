@@ -163,7 +163,7 @@
                                   Visibility="Collapsed"
                             >
                     <DropDownButton.Flyout>
-                      <MenuFlyout>
+                      <MenuFlyout Placement="RightEdgeAlignedTop">
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeChildFileSortCommand}" CommandParameter="{x:Null}">
                         </MenuFlyoutItem>
                         <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
@@ -185,6 +185,30 @@
                           <MenuFlyoutItem.CommandParameter>
                             <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
                           </MenuFlyoutItem.CommandParameter>
+                        </MenuFlyoutItem>
+                      </MenuFlyout>
+                    </DropDownButton.Flyout>
+                  </DropDownButton>
+
+                  <TextBlock x:Name="ChildDefaultFolderOrArchiveOpenModeButtonHeaderText"
+                             Text="{i18nExt:Localize Key=DefaultFolderOrArchiveOpenMode}"
+                             Visibility="Collapsed" />
+                  <DropDownButton x:Name="ChildDefaultFolderOrArchiveOpenModeButton"
+                                  Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                                  Background="Transparent"
+                                  Visibility="Collapsed"                                  
+                                  >
+                    <DropDownButton.Flyout>
+                      <MenuFlyout Placement="RightEdgeAlignedTop">
+                        <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer, Converter={StaticResource LocalizeConverter}}"
+                                        Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
+                                        CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer}"
+                                        >
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup, Converter={StaticResource LocalizeConverter}}"
+                                        Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
+                                        CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup}"
+                                        >
                         </MenuFlyoutItem>
                       </MenuFlyout>
                     </DropDownButton.Flyout>
@@ -257,11 +281,16 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.CurrentFolderItem.StorageItemTypesIsFolder, Mode=OneWay}" />
+            <!--
             <wst:EqualsStateTrigger Value="{Binding CurrentFolderItem.Type}" EqualTo="{x:Bind models:StorageItemTypes.Folder}" />
+              -->
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="ChildFolderSortButton.Visibility" Value="Visible" />
             <Setter Target="ChildFolderSortButtonHeaderText.Visibility" Value="Visible" />
+            <Setter Target="ChildDefaultFolderOrArchiveOpenModeButton.Visibility" Value="Visible" />
+            <Setter Target="ChildDefaultFolderOrArchiveOpenModeButtonHeaderText.Visibility" Value="Visible" />  
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
