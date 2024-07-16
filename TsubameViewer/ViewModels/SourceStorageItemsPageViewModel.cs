@@ -22,6 +22,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using Windows.UI.Xaml.Navigation;
 using System.Reactive.Concurrency;
 using TsubameViewer.Core.Models.Maintenance;
+using System.Diagnostics;
 
 namespace TsubameViewer.ViewModels
 {
@@ -141,17 +142,29 @@ namespace TsubameViewer.ViewModels
                     _foldersInitialized = true;
 
                     Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
-                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
+                    try
                     {
-                        var storageItemImageSource = new StorageItemImageSource(item.item);
-                        if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
+                        await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
                         {
-                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
+                            if (item.item == null)
+                            {
+                                continue;
+                            }
+
+                            var storageItemImageSource = new StorageItemImageSource(item.item);
+                            if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
+                            {
+                                Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
+                            }
+                            else
+                            {
+                                //throw new NotSupportedException();
+                            }
                         }
-                        else
-                        {
-                            //throw new NotSupportedException();
-                        }
+                    }
+                    catch (AggregateException ex)
+                    {
+                        Debug.WriteLine(ex.ToString());
                     }
                 }
                 else
