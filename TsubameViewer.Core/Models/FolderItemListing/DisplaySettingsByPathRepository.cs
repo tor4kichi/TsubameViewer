@@ -7,14 +7,23 @@ using System.Linq;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
 
+#nullable enable
 namespace TsubameViewer.Core.Models.FolderItemListing;
+
+public enum DefaultFolderOrArchiveOpenMode
+{
+    Viewer,
+    Listup,
+}
 
 public record FolderAndArchiveDisplaySettingEntry
 {
     [BsonId]
     public string Path { get; init; }
 
-    public FileSortType Sort { get; init; }
+    public FileSortType Sort { get; set; }
+
+    public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Viewer;
 }
 
 public record FolderAndArchiveChildFileDisplaySettingEntry
@@ -114,18 +123,23 @@ public sealed class DisplaySettingsByPathRepository
         _internalAlbameDisplaySettingsRepository = internalAlbameDisplaySettingsRepository;
     }
 
-    public FolderAndArchiveDisplaySettingEntry GetFolderAndArchiveSettings(string path)
+    public FolderAndArchiveDisplaySettingEntry? GetFolderAndArchiveSettings(string path)
     {
         return _internalFolderAndArchiveRepository.FindById(path);
     }
 
     public void SetFolderAndArchiveSettings(string path, FileSortType sortType)
     {
-        _internalFolderAndArchiveRepository.UpdateItem(new FolderAndArchiveDisplaySettingEntry() 
+        var entry = _internalFolderAndArchiveRepository.FindById(path);
+        if (entry == null)
         {
-            Path =  path,
-            Sort = sortType,
-        });
+            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, Sort = sortType });
+        }
+        else
+        {
+            entry.Sort = sortType;
+            _internalFolderAndArchiveRepository.UpdateItem(entry);
+        }
     }
 
     public void ClearFolderAndArchiveSettings(string path)
@@ -139,7 +153,7 @@ public sealed class DisplaySettingsByPathRepository
         return _internalChildFileRepository.FindById(path)?.ChildItemDefaultSort;
     }
 
-    public FolderAndArchiveChildFileDisplaySettingEntry GetFileParentSettingsUpStreamToRoot(string path)
+    public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsUpStreamToRoot(string path)
     {
         while (!string.IsNullOrEmpty(path))
         {
@@ -184,6 +198,19 @@ public sealed class DisplaySettingsByPathRepository
     }
 
 
+    public void SetChildFolderOrArchiveOpenModeParentSettings(string path, DefaultFolderOrArchiveOpenMode openMode)
+    {
+        var entry = _internalFolderAndArchiveRepository.FindById(path);
+        if (entry == null)
+        {
+            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, DefaultOpenMode = openMode });
+        }
+        else
+        {
+            entry.DefaultOpenMode = openMode;
+            _internalFolderAndArchiveRepository.UpdateItem(entry);
+        }
+    }
 
 
     public void SetAlbamSettings(Guid albamId, FileSortType fileSortType)

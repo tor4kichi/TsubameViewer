@@ -57,7 +57,7 @@ public class CachedFolderListupItems
 }
 
 
-public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
+public sealed partial class FolderListupPageViewModel : NavigationAwareViewModelBase
 {
     private bool _NowProcessing;
     public bool NowProcessing
@@ -112,7 +112,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
 
     public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
     public ReactivePropertySlim<FileSortType?> SelectedChildFileSortType { get; }
-
+    public ReactivePropertySlim<DefaultFolderOrArchiveOpenMode> SelectedChildFolderOrArchiveOpenMode { get; set; }
 
     public ReactivePropertySlim<IStorageItemViewModel> FolderLastIntractItem { get; }
 
@@ -223,6 +223,9 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
             .AddTo(_disposables);
 
         SelectedChildFileSortType = new ReactivePropertySlim<FileSortType?>(null)
+            .AddTo(_disposables);
+
+        SelectedChildFolderOrArchiveOpenMode = new ReactivePropertySlim<DefaultFolderOrArchiveOpenMode>(DefaultFolderOrArchiveOpenMode.Viewer)
             .AddTo(_disposables);
     }
 
@@ -534,6 +537,7 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
         }
 
         SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
+        SelectedChildFolderOrArchiveOpenMode.Value = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path)?.DefaultOpenMode ?? DefaultFolderOrArchiveOpenMode.Viewer;
 
         try
         {
@@ -760,6 +764,17 @@ public sealed class FolderListupPageViewModel : NavigationAwareViewModelBase
             );
     }
 
+    [RelayCommand]
+    private void ChangeChildFolderOrArchiveOpenMode(object mode)
+    {
+        if (mode is DefaultFolderOrArchiveOpenMode openMode)
+        {
+            Guard.IsNotNull(_currentImageSource);
+
+            SelectedChildFolderOrArchiveOpenMode.Value = openMode;
+            _displaySettingsByPathRepository.SetChildFolderOrArchiveOpenModeParentSettings(_currentImageSource.Path, openMode);
+        }
+    }
 
     private RelayCommand<object> _ChangeChildFileSortCommand;
     public RelayCommand<object> ChangeChildFileSortCommand =>

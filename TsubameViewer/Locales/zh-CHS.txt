@@ -121,6 +121,10 @@ FileSortType.TitleDecending = 文件名（降序）
 FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
+DefaultFolderOrArchiveOpenMode = 默认文件夹打开行为
+DefaultFolderOrArchiveOpenMode.Viewer = 在阅读器中打开
+DefaultFolderOrArchiveOpenMode.Listup = 在列表视图中打开
+
 Sort_InheritancePath = 排序继承源
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序

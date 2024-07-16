@@ -121,6 +121,10 @@ FileSortType.TitleDecending = タイトル降順
 FileSortType.UpdateTimeAscending = 古い順
 FileSortType.UpdateTimeDecending = 新しい順
 
+DefaultFolderOrArchiveOpenMode = 既定のフォルダを開く動作
+DefaultFolderOrArchiveOpenMode.Viewer = リーダーで開く
+DefaultFolderOrArchiveOpenMode.Listup = 一覧表示で開く
+
 Sort_InheritancePath = 並び替え継承元
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダの画像並び替え

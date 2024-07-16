@@ -16,6 +16,7 @@ using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
 
+#nullable enable
 namespace TsubameViewer.Core.Models.SourceFolders;
 
 // StorageApplicationPermissionsについて
@@ -522,14 +523,24 @@ public sealed class SourceStorageItemsRepository
         }
     }
 
-    public async IAsyncEnumerable<(IStorageItem item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
+    public string? GetPathFromToken(string token)
+    {
+        return _tokenToPathRepository.FindById(token)?.Path;
+    }
+
+    public async IAsyncEnumerable<(IStorageItem? item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
     {
 #if WINDOWS_UWP
         var myItems = StorageApplicationPermissions.FutureAccessList.Entries;
         foreach (var item in myItems)
         {
             ct.ThrowIfCancellationRequested();
-            var storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
+            IStorageItem? storageItem = null;
+            try
+            {
+                storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
+            }
+            catch (FileNotFoundException) { }
 
             yield return (storageItem, item.Token, item.Metadata);
         }
@@ -591,7 +602,7 @@ public sealed class SourceStorageItemsRepository
 
         await foreach (var (item, token, metadata) in GetParsistantItems(ct).WithCancellation(ct))
         {
-            if (item.Name.Contains(keyword))
+            if (item?.Name.Contains(keyword) ?? false)
             {
                 yield return item;
             }
@@ -599,7 +610,7 @@ public sealed class SourceStorageItemsRepository
             if (item is StorageFolder folder)
             {                    
                 await foreach (var folderItem in SearchInFolder(folder, queryOptions, ct).WithCancellation(ct))
-                {
+                {                    
                     yield return folderItem;
                 }
             }

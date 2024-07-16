@@ -121,6 +121,10 @@ FileSortType.TitleDecending = Title Desc
 FileSortType.UpdateTimeAscending = Recent
 FileSortType.UpdateTimeDecending = Latest
 
+DefaultFolderOrArchiveOpenMode = Default folder opening behavior
+DefaultFolderOrArchiveOpenMode.Viewer = Open in reader
+DefaultFolderOrArchiveOpenMode.Listup = Open in list view
+
 Sort_InheritancePath = Sort inheritance source
 Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
