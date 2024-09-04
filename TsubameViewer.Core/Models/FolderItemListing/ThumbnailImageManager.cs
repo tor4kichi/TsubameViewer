@@ -1079,9 +1079,9 @@ public sealed class ThumbnailImageManager
             await memoryStream.WriteAsync(cover, 0, cover.Length);
             return (true, memoryStream.AsRandomAccessStream());
         }
-        else if (epubBook.Content.Images.Any())
+        else if (epubBook.Content.Images.Local.Any())
         {
-            var firstImage = epubBook.Content.Images.First().Value;
+            var firstImage = epubBook.Content.Images.Local.First();
             var bytes = await firstImage.ReadContentAsync();
             await memoryStream.WriteAsync(bytes, 0, bytes.Length);
             return (true, memoryStream.AsRandomAccessStream());
