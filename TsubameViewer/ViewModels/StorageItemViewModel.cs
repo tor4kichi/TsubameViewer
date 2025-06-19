@@ -118,7 +118,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         _isRequestImageLoading = false;
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
 
     public async ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -189,7 +189,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
         if (_isRequireLoadImageWhenRestored && Image == null)
         {
-            InitializeAsync(ct);
+            _ = InitializeAsync(ct);
         }
     }
 

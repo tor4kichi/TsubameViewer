@@ -228,13 +228,14 @@ public sealed class ThumbnailImageManager
             try
             {
                 var file = await GetCoverThumbnailImageAsync(folder, ct);
-                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                if (file != null && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
                     UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
                     return outputStream;
                 }
                 else
                 {
+                    outputStream.Dispose();
                     return null;
                 }
             }
@@ -395,17 +396,21 @@ public sealed class ThumbnailImageManager
         await Task.Run(async () =>
         {
             var itemId = ToId(targetItem);
-            using (await _fileReadWriteLock.LockAsync(ct))
+            
+            if (requireTrancode)
             {
-                if (requireTrancode)
+                using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {
-                    using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
+                    await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    using (await _fileReadWriteLock.LockAsync(ct))
                     {
-                        await TranscodeThumbnailImageToStreamAsync(targetItem.Path, bitmapImage, memoryStream.AsRandomAccessStream(), EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
                         UploadWithRetry(itemId, targetItem.Name, memoryStream);
                     }
                 }
-                else
+            }
+            else
+            {
+                using (await _fileReadWriteLock.LockAsync(ct))
                 {
                     UploadWithRetry(itemId, targetItem.Name, bitmapImage.AsStreamForRead());
                 }
@@ -595,7 +600,7 @@ public sealed class ThumbnailImageManager
 
     readonly static QueryOptions _AllSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
 
-    private async Task<StorageFile> GetCoverThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
+    private async Task<StorageFile?> GetCoverThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
     {
         StorageFile file = null;
         // タイトルに "cover" を含む画像を優先してサムネイルとして採用する
@@ -794,13 +799,15 @@ public sealed class ThumbnailImageManager
         try
         {
             using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
-            using (await _fileReadWriteLock.LockAsync(ct))
             {
                 var ras = memoryStream.AsRandomAccessStream();
-                await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
-                ras.Seek(0);
+                using (await _fileReadWriteLock.LockAsync(ct))
+                {
+                    await pdfPage.RenderToStreamAsync(ras).AsTask(ct);
+                    ras.Seek(0);
 
-                ct.ThrowIfCancellationRequested();
+                    ct.ThrowIfCancellationRequested();
+                }
 
                 await TranscodeThumbnailImageToStreamAsync(path, ras, outputStream, EncodingForImageFileThumbnailBitmap, ct);
             }
@@ -931,15 +938,15 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<(bool, IRandomAccessStream)> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private ValueTask<(bool, IRandomAccessStream)> ImageFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
         try
         {
-            return (true, await FileRandomAccessStream.OpenAsync(file.Path, FileAccessMode.Read));
+            return new ((true, new FileStream(file.CreateSafeFileHandle(FileAccess.Read), FileAccess.Read).AsRandomAccessStream()));
         }
         catch
         {
-            return (false, null);
+            return new((false, null));
         }
         /*
         using (var fileStream = await file.OpenReadAsync())
@@ -950,10 +957,11 @@ public sealed class ThumbnailImageManager
         }
         */
     }
-    private async Task<(bool, IRandomAccessStream)> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-        using (var zipArchive = new ZipArchive(archiveStream))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
+        using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
+        using (var zipArchive = new ZipArchive(fileStream))
         {
             ct.ThrowIfCancellationRequested();
 
@@ -978,10 +986,11 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<(bool, IRandomAccessStream)> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> RarFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-        using (var rarArchive = RarArchive.Open(archiveStream))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
+        using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
+        using (var rarArchive = RarArchive.Open(fileStream))
         {
             RarArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
@@ -1004,10 +1013,11 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<(bool, IRandomAccessStream)> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> SevenZipFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-        using (var archive = SevenZipArchive.Open(archiveStream))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
+        using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
+        using (var archive = SevenZipArchive.Open(fileStream))
         {
             SevenZipArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
@@ -1030,10 +1040,11 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<(bool, IRandomAccessStream)> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> TarFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using (var archiveStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead())
-        using (var archive = TarArchive.Open(archiveStream))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
+        using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
+        using (var archive = TarArchive.Open(fileStream))
         {
             TarArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
@@ -1056,7 +1067,7 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<(bool, IRandomAccessStream)> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> PdfFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
         var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
         if (pdfDocument.PageCount == 0) { return default; }
@@ -1067,10 +1078,10 @@ public sealed class ThumbnailImageManager
         return (true, memoryStream);
     }
 
-    private async Task<(bool, IRandomAccessStream)> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
+    private async ValueTask<(bool, IRandomAccessStream)> EPubFileThubnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using var fileStream = (await file.OpenReadAsync().AsTask(ct)).AsStreamForRead();
-
+        using var fileHandle = file.CreateSafeFileHandle(FileAccess.Read);
+        using var fileStream = new FileStream(fileHandle, FileAccess.Read);
         var epubBook = await EpubReader.OpenBookAsync(fileStream);
 
         var memoryStream = _recyclableMemoryStreamManager.GetStream();

@@ -41,7 +41,7 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
 
     IStorageItem IImageSource.StorageItem => StorageItem;
 
-    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
+    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
     {
         var memoryStream = new InMemoryRandomAccessStream();
         {
