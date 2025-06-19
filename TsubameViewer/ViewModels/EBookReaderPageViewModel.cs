@@ -520,7 +520,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                 {
                     return new MemoryStream(image.ReadContentAsBytes());
                 }
-            }
+            }            
 
             throw new NotSupportedException();
         }
@@ -546,6 +546,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
         var readOptions = new EpubReaderOptions() 
         {
             XmlReaderOptions = new XmlReaderOptions() { SkipXmlHeaders = true },
+            PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },
         };
         var epubBook = await EpubReader.OpenBookAsync(fileStream, readOptions)
             .AddTo(_readingSessionDisposer);
