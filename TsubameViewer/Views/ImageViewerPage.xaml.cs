@@ -81,7 +81,7 @@ namespace TsubameViewer.Views
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            IntaractionWall.Tapped -= IntaractionWall_Tapped;
+            IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
             IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
             IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
@@ -94,7 +94,7 @@ namespace TsubameViewer.Views
             CloseBottomUI();
 
             IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
-            IntaractionWall.Tapped += IntaractionWall_Tapped;
+            IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
 
             IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
             IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
@@ -374,12 +374,15 @@ namespace TsubameViewer.Views
 
         #region Touch and Controller UI
 
-        private void IntaractionWall_Tapped(object sender, TappedRoutedEventArgs e)
+        private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            if (e.Handled) { return; }
             if (!_nowZoomCenterMovingWithPointer && !IsZoomingEnabled)
             {                
-                var pt = e.GetPosition(RootGrid);
-                
+                var pointer = e.GetCurrentPoint(RootGrid);
+                if (pointer.Properties.IsLeftButtonPressed is false) { return; }
+
+                var pt = pointer.Position; 
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
                 if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
                 
