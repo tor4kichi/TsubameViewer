@@ -290,6 +290,7 @@
             x:Name="ImagesContainer"
             Background="Transparent"
             IsTapEnabled="True"
+            Margin="0 0 0 4"
             >
 
         <i:Interaction.Behaviors>
@@ -813,6 +814,21 @@
         x<Run Text="{x:Bind ToDisplayString(ZoomFactor), Mode=OneWay}" />
       </TextBlock>
     </Grid>
+
+    <!-- コントロールUI非表示時に下部に読了状況を表示する -->
+    <Grid VerticalAlignment="Bottom">
+      <Slider Style="{StaticResource SimpleThumbSlider}"
+              Value="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}"
+              Maximum="{x:Bind _vm.ImageCount, Mode=OneWay}"
+              Opacity="0.45"
+              FlowDirection="RightToLeft"
+              x:Name="ReadOnlySeekBar"
+              IsHitTestVisible="False">
+        <Slider.RenderTransform>
+          <TranslateTransform Y="4" />
+        </Slider.RenderTransform>
+      </Slider>
+    </Grid>
     
     <!-- 補助コントロールUI（デスクトップ） -->
     <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="1.0" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" >
@@ -883,8 +899,7 @@
               <DoubleAnimation Duration="0:0:0.05"
                                To="0.25"
                                Storyboard.TargetName="ImageLoadingBarrier"
-                               Storyboard.TargetProperty="Opacity"
-                               />
+                               Storyboard.TargetProperty="Opacity" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -897,54 +912,61 @@
               <DoubleAnimation Duration="0:0:0.125"
                                To="0.0"
                                Storyboard.TargetName="ImageLoadingBarrier"
-                               Storyboard.TargetProperty="Opacity"
-                               />
+                               Storyboard.TargetProperty="Opacity" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
 
       </VisualStateGroup>
 
-
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="0" />
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
+                                    EqualTo="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageItemsControl_0.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+            <Setter Target="ImageItemsControl_0.(UIElement.RenderTransform).(TranslateTransform.X)"
+                    Value="0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="1" />
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
+                                    EqualTo="1" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageItemsControl_1.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+            <Setter Target="ImageItemsControl_1.(UIElement.RenderTransform).(TranslateTransform.X)"
+                    Value="0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}" EqualTo="2" />
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.CurrentDisplayImageIndex, Mode=OneWay}"
+                                    EqualTo="2" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)" Value="0" />
+            <Setter Target="ImageItemsControl_2.(UIElement.RenderTransform).(TranslateTransform.X)"
+                    Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
+                                                     CollisionRect="0 0 5000 64" />
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
-            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}"  />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
+                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -955,19 +977,20 @@
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="True" />
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
 
-            
       <!-- フルスクリーン -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
             <wst:CompositeStateTrigger Operator="And">
               <wst:FullScreenModeTrigger IsFullScreen="True" />
-              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
+                                                       CollisionRect="0 0 5000 64" />
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
@@ -975,13 +998,11 @@
               <DoubleAnimation Duration="0:0:0.175"
                                To="-1"
                                Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
                                To="32"
                                Storyboard.TargetName="ContentContainer"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -994,13 +1015,11 @@
               <DoubleAnimation Duration="0:0:0.175"
                                To="-32"
                                Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
                                To="-1"
                                Storyboard.TargetName="ContentContainer"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -1013,13 +1032,16 @@
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ContentContainer.Margin" Value="0 32 0 0" />
-            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="-1" />
-            <Setter Target="ContentContainer.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
+            <Setter Target="ContentContainer.Margin"
+                    Value="0 32 0 0" />
+            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="-1" />
+            <Setter Target="ContentContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-            
+
       <!-- 拡大縮小 -->
       <VisualStateGroup>
         <VisualState>
@@ -1027,34 +1049,44 @@
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ZoomingControlUI.Visibility" Value="Visible" />
+            <Setter Target="ZoomingControlUI.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
-      
+
       <!-- アルバムかそれ以外かで画像のアクションを表示切り替え -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding ItemType}" EqualTo="{x:Bind domainModels:StorageItemTypes.Albam}" />
+            <wst:EqualsStateTrigger Value="{Binding ItemType}"
+                                    EqualTo="{x:Bind domainModels:StorageItemTypes.Albam}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page1SetThubmailImageButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page1ThumbnailImageSeparator.Visibility" Value="Collapsed" />
-            <Setter Target="Page2SetThubmailImageButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page2ThumbnailImageSeparator.Visibility" Value="Collapsed" />
+            <Setter Target="Page1SetThubmailImageButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page1ThumbnailImageSeparator.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page2SetThubmailImageButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page2ThumbnailImageSeparator.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding ItemType}" EqualTo="{x:Bind domainModels:StorageItemTypes.Archive}" />
+            <wst:EqualsStateTrigger Value="{Binding ItemType}"
+                                    EqualTo="{x:Bind domainModels:StorageItemTypes.Archive}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page1OpenWithExplorerButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page1OpenWithExternalAppButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page2OpenWithExplorerButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page2OpenWithExternalAppButton.Visibility" Value="Collapsed" />
+            <Setter Target="Page1OpenWithExplorerButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page1OpenWithExternalAppButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page2OpenWithExplorerButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page2OpenWithExternalAppButton.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1063,22 +1095,28 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[0].StorageItem}" EqualTo="{x:Null}" />
+            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[0].StorageItem}"
+                                    EqualTo="{x:Null}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page1NameTextBlock.TextDecorations" Value="Strikethrough" />
-            <Setter Target="Page1ActionButton.IsEnabled" Value="False" />
+            <Setter Target="Page1NameTextBlock.TextDecorations"
+                    Value="Strikethrough" />
+            <Setter Target="Page1ActionButton.IsEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[1].StorageItem}" EqualTo="{x:Null}" />
+            <wst:EqualsStateTrigger Value="{Binding CurrentDisplayImageSources[1].StorageItem}"
+                                    EqualTo="{x:Null}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page2NameTextBlock.TextDecorations" Value="Strikethrough" />
-            <Setter Target="Page2ActionButton.IsEnabled" Value="False" />
+            <Setter Target="Page2NameTextBlock.TextDecorations"
+                    Value="Strikethrough" />
+            <Setter Target="Page2ActionButton.IsEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1090,7 +1128,8 @@
             <StateTrigger IsActive="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DoubleViewCorrectButton.Foreground" Value="{ThemeResource ApplicationForegroundThemeBrush}" />
+            <Setter Target="DoubleViewCorrectButton.Foreground"
+                    Value="{ThemeResource ApplicationForegroundThemeBrush}" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -1098,18 +1137,20 @@
             <StateTrigger IsActive="True" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page2ActionButton.Visibility" Value="Collapsed" />
-            <Setter Target="Page1ActionButton.(Grid.ColumnSpan)" Value="3" />
+            <Setter Target="Page2ActionButton.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="Page1ActionButton.(Grid.ColumnSpan)"
+                    Value="3" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-
 
       <!--見開き表示時の各ページ用アクションボタンの表示 -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}" EqualTo="False" />
+            <wst:EqualsStateTrigger Value="{x:Bind _vm.NowDoubleImageView, Mode=OneWay}"
+                                    EqualTo="False" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -1117,8 +1158,10 @@
             <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page1ActionButton.(Grid.Column)" Value="2" />
-            <Setter Target="Page2ActionButton.(Grid.Column)" Value="0" />
+            <Setter Target="Page1ActionButton.(Grid.Column)"
+                    Value="2" />
+            <Setter Target="Page2ActionButton.(Grid.Column)"
+                    Value="0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1127,14 +1170,18 @@
       <VisualStateGroup x:Name="VSG_MouseScrool">
         <VisualState>
           <VisualState.StateTriggers>
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
-            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}"  />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
+                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
-            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled"
+                    Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled"
+                    Value="False" />
 
-            <Setter Target="ZommingMouseWheelTrigger.IsEnabled" Value="True" />
+            <Setter Target="ZommingMouseWheelTrigger.IsEnabled"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
         <VisualState x:Name="VS_MouseScroolNotReadyToDisplay">
@@ -1142,8 +1189,10 @@
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
-            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="False" />
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled"
+                    Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -1151,8 +1200,10 @@
             <StateTrigger IsActive="{x:Bind _vm.ImageViewerSettings.IsReverseImageFliping_MouseWheel, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="DefaultMouseWheelTrigger.IsEnabled" Value="False" />
-            <Setter Target="ReverseMouseWheelTrigger.IsEnabled" Value="True" />
+            <Setter Target="DefaultMouseWheelTrigger.IsEnabled"
+                    Value="False" />
+            <Setter Target="ReverseMouseWheelTrigger.IsEnabled"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1162,13 +1213,16 @@
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsReadyToImageDisplay, Converter={StaticResource BoolNegationConverter}, Mode=OneWay}" />
-            <myStateTriggers:VirualKeyPressingTrigger Key="Control" myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
+            <myStateTriggers:VirualKeyPressingTrigger Key="Control"
+                                                      myBehaviour:DependencyObjectExtensions.DisposeOnUnloadedTarget="{x:Bind}" />
             <StateTrigger IsActive="{x:Bind IsZoomingEnabled, Mode=OneWay}" />
             <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled" Value="False" />
-            <Setter Target="GamePadRightTriggerBehavior.IsEnabled" Value="False" />
+            <Setter Target="GamePadLeftTriggerBehavior.IsEnabled"
+                    Value="False" />
+            <Setter Target="GamePadRightTriggerBehavior.IsEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -1180,25 +1234,30 @@
             <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PageSelector.FlowDirection" Value="LeftToRight" />
+            <Setter Target="PageSelector.FlowDirection"
+                    Value="LeftToRight" />
+            <Setter Target="ReadOnlySeekBar.FlowDirection"
+                    Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-
 
       <!-- アーカイブファイル内のフォルダ名表示の切り替え -->
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
             <!-- x:BindでバインディングしようとするとXaml internal Compile error: C9999 -->
-            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}" CompareTo="0" Comparison="Equal" />
+            <wst:CompareStateTrigger Value="{Binding PageFolderNames.Length}"
+                                     CompareTo="0"
+                                     Comparison="Equal" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PageFolderNamesSelector.Visibility" Value="Collapsed" />
+            <Setter Target="PageFolderNamesSelector.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
+
       <!-- デスクトップ、タッチ、コントローラーそれぞれの表示切替 -->
       <VisualStateGroup>
 
@@ -1208,18 +1267,22 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ButtonsContainer.Margin" Value="0 48 0 64" />
-            <Setter Target="ImageSelectorContainer.Margin" Value="0 32" />
+            <Setter Target="ButtonsContainer.Margin"
+                    Value="0 48 0 64" />
+            <Setter Target="ImageSelectorContainer.Margin"
+                    Value="0 32" />
           </VisualState.Setters>
         </VisualState>
-        
+
         <VisualState>
           <VisualState.StateTriggers>
             <wst:UserInteractionModeTrigger InteractionMode="Touch" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
-            <Setter Target="Toolbar_Desktop.Background" Value="Transparent" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility"
+                    Value="Visible" />
+            <Setter Target="Toolbar_Desktop.Background"
+                    Value="Transparent" />
           </VisualState.Setters>
         </VisualState>
 
@@ -1228,13 +1291,13 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="TopBarContainer.Visibility" Value="Visible" />
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
-            
+            <Setter Target="TopBarContainer.Visibility"
+                    Value="Visible" />
+            <Setter Target="SwitchFullScreeMenuItem.Visibility"
+                    Value="Visible" />
+
           </VisualState.Setters>
         </VisualState>
-
-        
 
       </VisualStateGroup>
       <VisualStateGroup>
@@ -1243,12 +1306,24 @@
             <StateTrigger IsActive="{x:Bind _vm.IfAllFilesWannaWatchThenRegistrationFolderAtApp, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop.Opacity" Value="1.0" />
+            <Setter Target="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop.Opacity"
+                    Value="1.0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
 
+      <!-- メニューを開いている時は読了状況スライダーを非表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsOpenBottomMenu, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ReadOnlySeekBar.Opacity"
+                    Value="0.0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
-
   </Grid>
 </Page>

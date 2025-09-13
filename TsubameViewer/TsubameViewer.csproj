@@ -445,6 +445,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Styles\SimpleThumbSlider.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\AlbamListupPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
