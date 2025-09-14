@@ -39,7 +39,7 @@ public class IgnoreStorageItemRepository : Infrastructure.LiteDBServiceBase<Igno
         }
         else
         {
-            outEntry = _collection.FindAll().First();
+            outEntry = _collection.Find(x => true).First();
             return true;
         }
     }        

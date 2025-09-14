@@ -33,7 +33,7 @@ public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
 
     public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;        
 
-    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {
         var imageSource = await GetSampleImageSourceAsync(ct);
         if (imageSource == null) { return null; }

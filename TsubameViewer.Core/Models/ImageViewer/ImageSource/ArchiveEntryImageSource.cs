@@ -56,7 +56,7 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
 
     public string EntryKey => _entry.Key;
 
-    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
+    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
     {
         using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
 

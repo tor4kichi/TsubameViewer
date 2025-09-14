@@ -18,7 +18,7 @@ public interface IImageSource : IEquatable<IImageSource>
     string Path { get; }
     DateTime DateCreated { get; }
 
-    Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
+    ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
 }
 
 public static class ImageSourceExtensions

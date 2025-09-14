@@ -11,7 +11,7 @@
     <AssemblyName>TsubameViewer.Core</AssemblyName>
     <DefaultLanguage>ja-JP</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.22000.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.22621.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
@@ -228,7 +228,7 @@
       <Version>5.0.2</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
-      <Version>3.0.3.1</Version>
+      <Version>3.3.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup />

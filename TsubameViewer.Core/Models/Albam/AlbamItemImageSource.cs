@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -57,9 +58,13 @@ public sealed class AlbamItemImageSource : IImageSource, IAlbamImageSource
 
     public DateTime DateCreated => _albamItem.AddedAt.LocalDateTime;
 
-    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {
-        return await InnerImageSource?.GetImageStreamAsync(ct);
+        if (InnerImageSource == null)
+        {
+            return null;
+        }
+        return await InnerImageSource.GetImageStreamAsync(ct);
     }
 
     public bool Equals(IImageSource other)

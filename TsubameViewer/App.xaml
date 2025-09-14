@@ -22,6 +22,7 @@
         <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
         <folderListup:FolderListupItemTemplate />
         <ResourceDictionary Source="Styles/SettingsControlStyles.xaml"/>
+        <ResourceDictionary Source="Styles/SimpleThumbSlider.xaml" />
       </ResourceDictionary.MergedDictionaries>
 
       <ResourceDictionary.ThemeDictionaries>

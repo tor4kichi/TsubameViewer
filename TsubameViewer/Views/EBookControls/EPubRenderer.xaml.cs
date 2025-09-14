@@ -702,7 +702,8 @@ let pList = document.body.getElementsByTagName(`p`);
 let divList = document.body.getElementsByTagName(`div`);
 let spanList = document.body.getElementsByTagName(`span`);
 let imgList = document.body.getElementsByTagName(`img`);
-let allElmeentList = [...pList, ...divList, ...spanList, ...imgList];
+let tdList = document.body.getElementsByTagName(`td`);
+let allElmeentList = [...pList, ...divList, ...spanList, ...imgList, ...tdList];
 let set = new Set();
 for (var item of allElmeentList)
 {

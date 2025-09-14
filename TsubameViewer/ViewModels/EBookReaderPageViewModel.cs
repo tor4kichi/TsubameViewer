@@ -32,6 +32,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using I18NPortable;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Views;
+using VersOne.Epub.Options;
 
 namespace TsubameViewer.ViewModels;
 
@@ -77,8 +78,8 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
 
 
     EpubBookRef _currentBook;
-    EpubTextContentFileRef _currentPage;
-    List<EpubTextContentFileRef> _currentBookReadingOrder;
+    EpubLocalTextContentFileRef _currentPage;
+    List<EpubLocalTextContentFileRef> _currentBookReadingOrder;
     
     private IReadOnlyList<TocItemViewModel> _TocItems;
     public IReadOnlyList<TocItemViewModel> TocItems
@@ -288,7 +289,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                 {
                     for (var i = 0; i < _currentBookReadingOrder.Count; i++)
                     {
-                        if (_currentBookReadingOrder[i].FileName == bookmark.pageName)
+                        if (_currentBookReadingOrder[i].FilePath == bookmark.pageName)
                         {
                             CurrentImageIndex = i;
                             InnerCurrentImageIndex = bookmark.innerPageIndex;
@@ -301,13 +302,13 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
             else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
                 var unescapedPageName = parsedPageName;
-                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FileName == unescapedPageName);
+                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FilePath == unescapedPageName);
                 if (firstSelectItem != null)
                 {
                     CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
                 }
 
-                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FileName));
+                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FilePath));
             }
 
             // 最初のページを表示
@@ -320,7 +321,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                     var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { return; }
 
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
                 })
                 .AddTo(_navigationDisposables);
 
@@ -343,13 +344,13 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
 
             _currentPage = currentPage;
 
-            Debug.WriteLine(currentPage.FileName);
+            Debug.WriteLine(currentPage.FilePath);
 
             // Tocを更新
-            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FileName));
+            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FilePath));
 
             // ページ名更新
-            CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FileName);
+            CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
 
             using (var lockReleaser = await _PageUpdateLock.LockAsync(ct))
             {
@@ -400,7 +401,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                             }
                             if (imageSourceAttr != null)
                             {
-                                foreach (var image in _currentBook.Content.Images)
+                                foreach (var image in _currentBook.Content.Images.Local)
                                 {
                                     if (imageSourceAttr.Value.EndsWith(image.Key))
                                     {
@@ -422,7 +423,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                                 if (hrefAttr != null)
                                 {
                                     var hrefValue = hrefAttr.Value.Split("/").Last();
-                                    if (_currentBook.Content.Css.FirstOrDefault(x => x.Key.EndsWith(hrefValue)).Value is not null and var cssContent)
+                                    if (_currentBook.Content.Css.Local.FirstOrDefault(x => x.Key.EndsWith(hrefValue)) is not null and var cssContent)
                                     {
                                         var parent = node.ParentNode;
                                         parent.RemoveChild(node);
@@ -453,7 +454,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
                 }, ct);
 
                 // ブックマークに登録
-                _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FileName, new NormalizedPagePosition(_currentBookReadingOrder.Count, CurrentImageIndex));
+                _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, new NormalizedPagePosition(_currentBookReadingOrder.Count, CurrentImageIndex));
             }
         }
         catch (OperationCanceledException)
@@ -513,13 +514,13 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
             if (_navigationDisposables == null) { throw new InvalidOperationException(); }
 
             var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
-            foreach (var image in _currentBook.Content.Images)
+            foreach (var image in _currentBook.Content.Images.Local)
             {
                 if (image.Key == key)
                 {
-                    return new MemoryStream(image.Value.ReadContentAsBytes());
+                    return new MemoryStream(image.ReadContentAsBytes());
                 }
-            }
+            }            
 
             throw new NotSupportedException();
         }
@@ -542,7 +543,12 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
         var fileStream = await _currentFolderItem.OpenStreamForReadAsync()
             .AddTo(_readingSessionDisposer);
 
-        var epubBook = await EpubReader.OpenBookAsync(fileStream)
+        var readOptions = new EpubReaderOptions() 
+        {
+            XmlReaderOptions = new XmlReaderOptions() { SkipXmlHeaders = true },
+            PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },
+        };
+        var epubBook = await EpubReader.OpenBookAsync(fileStream, readOptions)
             .AddTo(_readingSessionDisposer);
 
         
@@ -552,11 +558,11 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
 
         if (_currentBook.Schema.Epub2Ncx != null)
         {
-            TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
+            TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Items.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
         }
         else if (_currentBook.Schema.Epub3NavDocument != null)
         {
-            var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.StructuralSemanticsProperty.TOC);
+            var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.Epub3StructuralSemanticsProperty.TOC);
             TocItems = toc.Ol.Lis.Select(x => new TocItemViewModel() { Id = x.Anchor.Href, Label = x.Anchor.Text }).ToList();
         }
         else
@@ -595,7 +601,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
     {
         if (SelectedTocItem == null) { return; }
 
-        var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FileName));
+        var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FilePath));
         if (selectedBook == null)
         {
             throw new Exception();

@@ -1,0 +1,276 @@
+﻿#### General
+
+Copy = Copier
+CopyToClipboard = Copié dans le presse-papier
+Cancel = Annuler
+Delete = Supprimer
+Create = Créer
+Apply = Appliquer
+Open = Ouvrir
+Close = Fermer
+Confirm = Confirmer
+Refresh = Rafraîchir
+
+ApplicationTheme = Thème
+ApplicationTheme.Default = Suivre les paramètres systèmes
+ApplicationTheme.Light = Thème clair
+ApplicationTheme.Dark = Thème sombre
+
+
+#### PrimaryWindowCoreLayout
+
+AddNewFolder = Ajouter un dossier
+Import = Importer
+RefreshLatest = Obtenir les dernières informations
+Settings = Paramètres
+SendFeedbackWithMashmallow = Soumettre un feedback
+SendFeedbackWithStoreReview = Soumettre un avis sur le store
+SourceStorageItemsPage = Mon dossier
+CollectionPage = Collection
+OpenImageCodecExtensionStorePageWithFileType = {0} Une extension est nécessaire pour afficher ce format d'image. Voulez-vous ouvrir le store ?
+
+
+#### Image Codec support
+RefreshAfterCodecExtensionInstalled = Veuillez rafraîchir le contenu après avoir installé l'extension
+
+
+
+#### Notification
+
+FileDeleteFailed = Échec de la suppression de fichier \ n {0}
+FolderDeleteFailed = Échec de la suppression de dossier \ n {0}
+ThumbnailImageChanged = Changer la miniature
+Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregistré
+
+
+
+#### Dialog
+DoNotDisplayFromNextTime = Ne plus afficher la prochaine fois
+StorageItemDeleteConfirmTitleWithName = Voulez-vous supprimer les éléments suivants ? \ n {0}
+
+
+#### SettingsPage
+
+SettingsPageTitle = Paramètres
+AdvancedSettings = Paramètres avancés
+
+OverrideLocale = 🌏Langage
+RequireRestartApplicationToRefrectSettings = Redémarrer l'application pour appliquer les changements
+
+SourceFoldersSettings = Dossiers importés dans l'application
+RemoveSourceFolderFromApp = Supprimer de l'application
+ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer {0} de l'application ?
+ConfirmRemoveSourceFolderFromAppDescription = Cette opération ne supprime pas le dossier spécifié ou les éléments contenus à l'intérieur. \nLe dossier supprimer peut-être réinscrit dans l'application à n'importe quel moment.
+
+ThumbnailImageSettings = Paramètres d'affichage de la miniature
+IsGenerateImageFileThumbnail = Générer les miniatures des images
+IsGenerateFolderThumbnail = Générer les miniatures pour les dossier
+IsGenerateArchiveFileThumbnail = Générer les miniatures des fichiers compressés
+IsGenerateArchiveEntryThumbnail = Générer les miniatures des éléments des fichiers compressés
+DeleteThumbnailCache = Supprimer toutes les miniatures du cache
+ThumbnailCacheSize = Montant de mémoire occupé par les images dans le cache
+ProcessingThumbnailCache = Traitement de l'opération de suppression
+
+
+
+ImageViewerSettings = Paramètres de la visionneuse d'images
+IsReverseImageFliping_MouseWheel = Pagination à défilement inversée
+IsReverseImageFliping_Button = Inverser la page gauche et droite
+
+GeneralUISettings = Paramètres de fonctionnement
+IsForceEnableXYNavigation = Mise au point automatique du contenu lors de l'ouverture de la page\n (Touches directionnelles/Manette)
+ForceXboxAppearanceModeEnabled = Ajouter des marges autour des fenêtres (pour les grands écrans)
+
+OtherSettings = Autres paramètres
+ShowWithIndexedFolderItemAccess = Utiliser l'affichage rapide des éléments de dossier (fonctionnalité expérimentale)
+
+PrivacyPolicy = Politique de confidentialité
+ThirdPartyLibraryNotice = Affichage des licences de bibliothèques tierces
+AskQuestionWithMashmarrow = Envoyer un marshmallow (rapport de bug/question/suggestion)
+
+ImageCodecExtensions = Extensions des codecs d'image
+
+PdfImageSettings = Paramètres d'images PDF
+PdfImageThresholdWidth = Seuil de largeur alternative
+PdfImageAlternateWidth = Valeur de largeur alternative
+PdfImageThresholdHeight = Seuil de hauteur alternatif
+PdfImageAlternateHeight = Valeur de hauteur alternative
+
+
+
+#### SourceStorageItemsPage
+
+Folders = Dossier
+RecentlyUsedFiles = Fichiers récemment consultés
+
+SelectSourceFolder = Ajouter un dossier dans TsubameViewer
+
+
+#### FolderListupPage
+
+ReturnSourceFolderPageButton = Revenir au dossier d'origine
+ChangeViewToFolderListupPage = Passer à l'affichage par dossiers
+ChangeViewToImageListupPage = Passer à l'affichage par liste d'images
+
+
+
+
+FileSortTitle = Trier
+FileSortType.TitleAscending = Titre (Asc)
+FileSortType.TitleDecending = Titre (Desc)
+FileSortType.UpdateTimeAscending = Date d'ajout (Du plus vieux au plus récent)
+FileSortType.UpdateTimeDecending = Date d'ajout (Du plus récent au plus vieux)
+
+DefaultFolderOrArchiveOpenMode = Comportement d'ouverture de dossier par défaut
+DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le lecteur
+DefaultFolderOrArchiveOpenMode.Listup = Ouvrir en mode liste
+
+Sort_InheritancePath = Tri des sources d'héritage
+Sort_Unselected = Non spécifier
+Sort_DefaultChildItemSort = Trier les images dans les dossiers enfants
+
+
+OpenImageViewer = Ouvrir le lecteur
+OpenFolderListup = Lister les fichiers
+OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
+OpenWithExternalApplication = Ouvrir avec
+
+AddSecondaryTile = Épingler au menu de démarrage
+RemoveSecondaryTile = Désépingler du menu de démarrage
+
+SetThumbnailImage = Définir en tant que miniature
+
+ArchiveOrFolderTransform = Conversion
+TitleDigitCompletionTransform = Complétion des chiffres du titre
+
+
+#### ImageListupPage
+ImageSelection_SelectedCount = {0} éléments sélectionnés
+SelectItems_ActionAs = Sélectionner un élément
+StartMultiSelection = Sélection multiple
+
+
+#### ImageViewerPage
+
+CurrentFolder_InArchive = Dossier
+Page = Page
+
+IsEnablePrefetch = Pré-chargement des images
+IsEnableDoubleView = Affichage sur double page
+IsLeftBindingView = Afficher à gauche
+
+SwitchFullScreen = Passage en plein écran
+DoubleViewCorrectPaging = Corriger le désalignement des doubles pages
+IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte avec une autre page
+
+IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
+
+
+
+#### EBookReaderPage
+
+IsReversePageFliping_Scroll = Pagination à défilement inversée
+IsReversePageFliping_Button = Inverser la page gauche et droite
+
+DefaultWithParameter = Par défaut : {0}
+FontSize = Taille de la police d'écriture
+LetterSpacing = Espacement des caractères
+LineHeight = Espacement des lignes
+RubyFontSize = Taille de police phonétique (ex: Furigana)
+FontFamily = Police de caractères
+RubyFontFamily = Police phonétique
+EBookReader_ColumnCount = Nombre de colonnes
+EBookReader_MaxWidth = Largeur maximal d'une page
+EBookReader_MaxHeight = Hauteur maximal d'une page
+
+BackgroundColor = Couleur d'arrière-plan
+ChangeBackgroundColor = Changer la couleur d'arrière-plan
+
+ForegroundColor = Couleur du texte
+ChangeForegroundColor = Changer la couleur du texte
+
+OverrideWritingMode = Écriture horizontal/vertical
+WritingMode.Inherit = Ne changera pas
+WritingMode.Horizontal_TopToBottom = Écriture horizontale
+WritingMode.Vertical_RightToLeft = Écriture verticale (de droite à gauche)
+WritingMode.Vertical_LeftToRight = Écriture verticale (de gauche à droite)
+
+ResetEBookSettings = Réinitialiser les paramètres
+
+DisplaySettings = Paramètres d'affichages
+Toc = Table des matières
+
+#### SearchResult
+
+SearchResultWith = Prochain résultat de recherche
+SearchPlaceholder = Rechercher un titre
+
+
+
+#### Albam
+
+Albam = Album
+
+CreateAlbam = Créer un album
+AlbamName_Placeholder = Entrer le nom d'un album
+AlbamName_Default = Nouvel album
+AlbamEdit = Éditer un album
+AlbamDelete = Supprimer un album
+AlbamDeleteConfirmDialogText = Voulez-vous vraiment supprimer l'album {0} ? (Cette opération est irréversible)
+
+EditAlbamImage = Sélectionner un album à ajouter
+ChoiceTargetAlbam = Sélectionner un album
+AlbamItemRemove = Supprimer de l'album
+AlbamItemAdd = Ajouter à l'album
+
+FavoriteAlbam = Favoris
+AddFavoriteImage = Ajouter aux favoris
+RemoveFavoriteImage = Retirer des favoris
+
+
+#### FolderOrArchiveResturcture
+
+FolderOrArchiveRestructure = Éditer la structure interne
+Output = Sortie
+Find = Rechercher
+ReplaceAll = Tout remplacer
+ReplaceNext = Remplacer le prochain
+Replace = Remplacer
+RestructurePage_SelectAllSearchTarget = Sélectionner les éléments applicables
+RestructurePage_OutputToArchiveFile = Exporter vers .zip
+RestructurePage_OutputToFolder = Exporter vers dossier
+RestructurePage_OutputToArchiveSplitWithPart = Exporter vers zip (divisé en volumes)
+RestructurePage_IsOutput = Destination de sortie
+RestructurePage_ToggleIsOutput = Basculer sur la destination de sortie
+RestructurePage_EditPath = Chemin
+RestructurePage_Description = Vous pouvez éditer les chemins un par un, ou les éditer tous en même temps en cherchant et remplaçant ce que vous souhaitez.
+Décochez la cible de sortie pour les fichiers non nécessaires.
+RestructurePage_Caution = Les fichiers et dossiers compressés d'origine ne sont pas modifiés jusqu'à la sortie.
+Si vous n'êtes pas sûr, veuillez effectuer votre propre sauvegarde.
+Lors de l'exportation au format zip, les éléments autres que les fichiers disparaissent (certains logiciels d'archives ne sont pas compatibles)
+RestructurePage_InvalidPath = Contient une valeur qui ne peut pas être utilisée comme chemin : {0}
+RestructurePage_DupulicatePath = Il y a des entrées en double dans le chemin : {0}
+RestructurePage_InvalidFileType = La chaîne de chemin contient une extension que l'application ne prend pas en charge pour la sortie de dossier : {0}
+RestructurePage_DigitCompletion = Exécuter la complétion des chiffres pour le titre
+RestructurePage_SplitImage = Segmentation d'images
+RestructurePage_SplitImage_AspectRatio = Rapport hauteur/largeur
+RestructurePage_SplitImage_IsLeftBinding = Ouverture à gauche
+RestructurePage_IsSplitImage = Segmentation d'images
+RestructurePage_ToggleIsSplitImage = Changer la segmentation des images
+RestructurePage_OverwriteSave_Confirm = Puis-je écraser le fichier ? \ n {0}
+RestructurePage_OverwriteSave = Écraser la sauvegarde
+RestructurePage_ProcessAllActions = Traitement par lots
+RestructurePage_UnavairableOverwriteFile = Le fichier actuel est en lecture seule et ne peut pas être écrasé
+
+
+#### SplitImageInput
+
+SplitImage = Segmentation d'images
+BookBindingDirection.Left = Reliure gauche
+BookBindingDirection.Right = Reliure droite
+SplitImageInput_NoSelected = Pas de changement
+SplitImageInput_Title = Segmentation d'images
+SplitImageInput_BindingDirectionHeader = Direction pour ouvrir la page
+SplitImageInput_AspectRatioHeader = Rapport hauteur/largeur d'une page (Entrez 0 pour réduire de moitié)
+SplitImageInput_AspectRatioPlaceholderText = Nombre décimal ou largeur/hauteur
+SplitImageInput_EncoderTypeHeader = Encodage d'images

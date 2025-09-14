@@ -64,11 +64,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     CancellationTokenSource _imageLoadingCts;
     Core.AsyncLock _imageLoadingLock = new();
 
+    public int ImageCount => Images?.Length ?? 0;
+
     private IImageSource[] _Images;
     public IImageSource[] Images
     {
         get { return _Images; }
-        private set { SetProperty(ref _Images, value); }
+        private set 
+        { 
+            if (SetProperty(ref _Images, value))
+            {
+                OnPropertyChanged(nameof(ImageCount));
+            }
+        }
     }
 
     private bool _nowImagesChanging = false;

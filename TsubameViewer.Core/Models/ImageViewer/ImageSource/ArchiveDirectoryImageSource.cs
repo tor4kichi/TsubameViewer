@@ -37,7 +37,7 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
     public string EntryKey => _directoryToken.Key;
 
-    public async Task<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {
         var imageSource = GetNearestImageFromDirectory(_directoryToken);
         if (imageSource == null) { return null; }
