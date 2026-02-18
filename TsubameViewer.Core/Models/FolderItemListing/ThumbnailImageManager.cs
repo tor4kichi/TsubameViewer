@@ -889,13 +889,16 @@ public sealed class ThumbnailImageManager
     {
         { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
     };
-    
-    private Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+
+    static AsyncLock _renderLock = new AsyncLock();
+    private async Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         // Note: _recyclableMemoryStreamManager.GetStream(); と BitmapEncoder.CreateAsync()  を
         // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
         //return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
-        return TranscodeWithGPUAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        
+        //using var dispose = await _renderLock.LockAsync(ct);
+        await TranscodeWithGPUAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
@@ -940,7 +943,7 @@ public sealed class ThumbnailImageManager
         {
             try
             {
-                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream);               
+                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream).AsTask(ct);               
                 var scaledSize = CulcThumbnailSize((int)bitmap.Size.Width, (int)bitmap.Size.Height);
                 using var canvas = new CanvasRenderTarget(bitmap, (float)scaledSize.Width, (float)scaledSize.Height);                
                 using (var ds = canvas.CreateDrawingSession())
@@ -963,7 +966,7 @@ public sealed class ThumbnailImageManager
                 });
 
                 outputStream.Size = 0;
-                await canvas.SaveAsync(outputStream, CanvasBitmapFileFormat.JpegXR, 0.8f);
+                await canvas.SaveAsync(outputStream, CanvasBitmapFileFormat.JpegXR, 0.8f).AsTask(ct);
                 outputStream.Seek(0);
             }
             catch (Exception ex) when (ex.HResult == -1072868846)
@@ -1198,7 +1201,7 @@ public sealed class ThumbnailImageManager
     {
         public ThumbnailImageInfoRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
         {
-
+            _collection.EnsureIndex(x => x.Path);
         }
 
 

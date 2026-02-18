@@ -24,7 +24,6 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
 
     void Dispose();
     ValueTask InitializeAsync(CancellationToken ct);
-    ValueTask PrepareImageSizeAsync(CancellationToken ct);
     void RestoreThumbnailLoadingTask(CancellationToken ct);
     void StopImageLoading();
     void ThumbnailChanged();

@@ -96,7 +96,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _isRequestImageLoading = false;
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -118,13 +118,15 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _isRequestImageLoading = true;
 
         try
-        {            
-            using var _ = await _asyncLock.LockAsync(ct);
-            
-            if (_isInitialized) { return; }
-            if (_disposed) { return; }
-            if (_isRequestImageLoading is false) { return; }
+        {
+            using (await _asyncLock.LockAsync(ct))
+            {
 
+                if (_isInitialized) { return; }
+                if (_disposed) { return; }
+                if (_isRequestImageLoading is false) { return; }
+            }
+            
             if (Item == null)
             {
                 Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
@@ -135,10 +137,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                 UpdateLastReadPosition();
                 IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
             }
-
-            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
+            
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
+                if (_isRequestImageLoading is false) { return; }
 
                 stream.Seek(0);
                 var bitmapImage = new BitmapImage();

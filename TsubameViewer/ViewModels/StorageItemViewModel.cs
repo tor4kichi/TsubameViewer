@@ -120,15 +120,6 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
 
-    public async ValueTask PrepareImageSizeAsync(CancellationToken ct)
-    {
-        if (ImageAspectRatioWH == null)
-        {
-            var size = await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct);
-            ImageAspectRatioWH = size.RatioWH;
-        }
-    }
-
     bool _isInitialized = false;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
@@ -138,17 +129,23 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
         try
         {
-            using var _ = await _asyncLock.LockAsync(ct);
+            using (await _asyncLock.LockAsync(ct))
+            {
+                if (_isInitialized) { return; }
+                if (_disposed) { return; }
+                if (Item == null) { return; }
+                if (_isRequestImageLoading is false) { return; }
 
-            if (_isInitialized) { return; }
-            if (_disposed) { return; }
-            if (Item == null) { return; }
-            if (_isRequestImageLoading is false) { return; }
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+            }
 
             // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
+            //using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                if (_isRequestImageLoading is false) { return; }
 
                 stream.Seek(0);
                 var bitmapImage = new BitmapImage();
@@ -156,8 +153,6 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
                 await bitmapImage.SetSourceAsync(stream).AsTask(ct);
                 Image = bitmapImage;
             }
-
-            ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
             _isRequireLoadImageWhenRestored = false;
             _isInitialized = true;

@@ -255,8 +255,7 @@ public sealed partial class ImageListupPage : Page
             && fe.DataContext is IStorageItemViewModel itemVM
             )
         {
-            await itemVM.PrepareImageSizeAsync(_ct);
-            itemVM.InitializeAsync(_ct);
+            _ = itemVM.InitializeAsync(_ct);
         }
     }
 
