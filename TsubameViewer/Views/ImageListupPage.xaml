@@ -696,6 +696,7 @@
                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                DataContext="{x:Null}"
+                                   
                                   >
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8" />

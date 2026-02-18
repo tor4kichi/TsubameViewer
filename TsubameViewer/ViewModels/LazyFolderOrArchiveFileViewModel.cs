@@ -110,7 +110,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         //}
     }
 
-    bool _isInitialized = false;
+    public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
@@ -122,7 +122,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             using (await _asyncLock.LockAsync(ct))
             {
 
-                if (_isInitialized) { return; }
+                if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_isRequestImageLoading is false) { return; }
             }
@@ -153,19 +153,19 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
             _isRequireLoadImageWhenRestored = false;
-            _isInitialized = true;
+            IsInitialized = true;
         }
         catch (OperationCanceledException)
         {
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
         }
         catch (NotSupportedImageFormatException ex)
         {
             // 0xC00D5212
             // "コンテンツをエンコードまたはデコードするための適切な変換が見つかりませんでした。"
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
         }
         catch (NotSupportedException)
@@ -193,7 +193,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public void ThumbnailChanged()
     {
         Image = null;
-        _isInitialized = false;
+        IsInitialized = false;
     }
 
     public void Dispose()

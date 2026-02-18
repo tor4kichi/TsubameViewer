@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -116,59 +117,76 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
     public void StopImageLoading()
     {
         _isRequestImageLoading = false;
+        _initializeCts?.Cancel();
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
+    CancellationTokenSource? _initializeCts;
 
-    bool _isInitialized = false;
-    public async ValueTask InitializeAsync(CancellationToken ct)
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 4));
+
+    public bool IsInitialized { get; private set; } = false;
+    public async ValueTask InitializeAsync(CancellationToken rootCt)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
         _isRequestImageLoading = true;
-
+        
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(rootCt))
             {
-                if (_isInitialized) { return; }
+                if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (Item == null) { return; }
                 if (_isRequestImageLoading is false) { return; }
 
                 ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-            }
 
-            // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
-            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
-            //using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
-            {
-                if (stream is null || stream.Size == 0) { return; }
-                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-                if (_isRequestImageLoading is false) { return; }
 
-                stream.Seek(0);
-                var bitmapImage = new BitmapImage();
-                bitmapImage.AutoPlay = false;
-                await bitmapImage.SetSourceAsync(stream).AsTask(ct);
-                Image = bitmapImage;
+
+                //using var cts = _initializeCts = new CancellationTokenSource();
+                //using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(rootCt, _initializeCts.Token);
+                //var linkedCt = linkedCts.Token;
+                // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
+                //using (await _asyncLock.LockAsync(rootCt))
+                //using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt), rootCt))
+                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt))
+                {
+                    if (stream is null || stream.Size == 0) { return; }
+                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                    if (_isRequestImageLoading is false) { return; }
+
+                    {
+                        stream.Seek(0);
+                        var bitmapImage = new BitmapImage();
+                        bitmapImage.AutoPlay = false;
+                        await bitmapImage.SetSourceAsync(stream).AsTask(rootCt);
+                        Image = bitmapImage;
+                    }
+                }
             }
 
             _isRequireLoadImageWhenRestored = false;
-            _isInitialized = true;
+            IsInitialized = true;
         }
         catch (OperationCanceledException)
         {
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
+
+            Debug.WriteLine("ImageLoading Canceled");
         }
         catch (NotSupportedImageFormatException ex)
         {
             // 0xC00D5212
             // "コンテンツをエンコードまたはデコードするための適切な変換が見つかりませんでした。"
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
+        }
+        finally
+        {
+            _initializeCts = null;
         }
     }
 
@@ -191,7 +209,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
     public void ThumbnailChanged()
     {
         Image = null;
-        _isInitialized = false;
+        IsInitialized = false;
     }
 
     public void Dispose()

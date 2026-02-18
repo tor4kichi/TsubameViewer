@@ -897,7 +897,7 @@ public sealed class ThumbnailImageManager
         // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
         //return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
         
-        //using var dispose = await _renderLock.LockAsync(ct);
+        using var dispose = await _renderLock.LockAsync(ct);
         await TranscodeWithGPUAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -1207,27 +1207,31 @@ public sealed class ThumbnailImageManager
 
         public ThumbnailSize? TryGetSize(string path)
         {
-            var thumbInfo = _collection.FindById(path);
-            //Debug.WriteLine(path);
-            if (thumbInfo is not null)
+            try
             {
-                if (thumbInfo.RatioWH == 0)
+                var thumbInfo = _collection.FindById(path);
+                //Debug.WriteLine(path);
+                if (thumbInfo is not null)
                 {
-                    thumbInfo.RatioWH = thumbInfo.ImageWidth / (float)thumbInfo.ImageHeight;
-                    _collection.Update(thumbInfo);
-                }
+                    if (thumbInfo.RatioWH == 0)
+                    {
+                        thumbInfo.RatioWH = thumbInfo.ImageWidth / (float)thumbInfo.ImageHeight;
+                        _collection.Update(thumbInfo);
+                    }
 
-                return new ThumbnailSize()
+                    return new ThumbnailSize()
+                    {
+                        Width = thumbInfo.ImageWidth,
+                        Height = thumbInfo.ImageHeight,
+                        RatioWH = thumbInfo.RatioWH,
+                    };
+                }
+                else
                 {
-                    Width = thumbInfo.ImageWidth,
-                    Height = thumbInfo.ImageHeight,
-                    RatioWH = thumbInfo.RatioWH,
-                };
+                    return default;
+                }
             }
-            else
-            {
-                return default;
-            }
+            catch { return default; }
         }
 
         public ThumbnailSize GetSize(string path)
