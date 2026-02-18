@@ -1,4 +1,5 @@
 ﻿using LiteDB;
+using Microsoft.Graphics.Canvas;
 using Microsoft.IO;
 using Reactive.Bindings;
 using SharpCompress.Archives;
@@ -8,9 +9,12 @@ using SharpCompress.Archives.Tar;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Numerics;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +27,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using VersOne.Epub;
 using Windows.Data.Pdf;
+using Windows.Foundation;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Search;
@@ -170,6 +175,12 @@ public sealed class ThumbnailImageManager
         encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Fant;
     }
 
+    private SizeF CulcThumbnailSize(int width, int height)
+    {
+        var ratio = (double)ListingImageConstants.LargeFileThumbnailImageHeight / height;
+        return new (MathF.Floor(width * (float)ratio), ListingImageConstants.LargeFileThumbnailImageHeight);
+    }
+
     class ThumbnailItemIdEntry
     {
         [BsonId]
@@ -228,7 +239,8 @@ public sealed class ThumbnailImageManager
             try
             {
                 var file = await GetCoverThumbnailImageAsync(folder, ct);
-                if (file != null && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                if (file != null
+                    && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
                     UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
                     return outputStream;
@@ -877,20 +889,20 @@ public sealed class ThumbnailImageManager
     {
         { "ImageQuality", new BitmapTypedValue(0.8d, Windows.Foundation.PropertyType.Single) },
     };
-
+    
     private Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         // Note: _recyclableMemoryStreamManager.GetStream(); と BitmapEncoder.CreateAsync()  を
         // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
-        return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
+        //return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
+        return TranscodeWithGPUAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
-            // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850
-
+            // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850            
             try
             {
-                var decoder = await BitmapDecoder.CreateAsync(stream);
+                var decoder = await BitmapDecoder.CreateAsync(stream);                
 
                 // サムネイルサイズ情報を記録                
                 _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
@@ -917,6 +929,42 @@ public sealed class ThumbnailImageManager
 
                 await encoder.FlushAsync().AsTask(ct);
                 await outputStream.FlushAsync().AsTask(ct);
+            }
+            catch (Exception ex) when (ex.HResult == -1072868846)
+            {
+                throw new NotSupportedImageFormatException(Path.GetExtension(path));
+            }
+        }
+
+        async Task TranscodeWithGPUAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            try
+            {
+                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream);               
+                var scaledSize = CulcThumbnailSize((int)bitmap.Size.Width, (int)bitmap.Size.Height);
+                using var canvas = new CanvasRenderTarget(bitmap, (float)scaledSize.Width, (float)scaledSize.Height);                
+                using (var ds = canvas.CreateDrawingSession())
+                {
+                    float ratio = scaledSize.Width > scaledSize.Height
+                        ? scaledSize.Width / (float)bitmap.Size.Width
+                        : scaledSize.Height / (float)bitmap.Size.Height;
+                    ds.Transform = Matrix3x2.CreateScale(ratio);
+                    ds.Blend = CanvasBlend.Copy;
+                    ds.DrawImage(bitmap);
+                }
+
+                // サムネイルサイズ情報を記録                
+                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                {
+                    Path = ToId(path),
+                    ImageWidth = (uint)scaledSize.Width,
+                    ImageHeight = (uint)scaledSize.Height,
+                    RatioWH = scaledSize.Width / scaledSize.Height
+                });
+
+                outputStream.Size = 0;
+                await canvas.SaveAsync(outputStream, CanvasBitmapFileFormat.JpegXR, 0.8f);
+                outputStream.Seek(0);
             }
             catch (Exception ex) when (ex.HResult == -1072868846)
             {
