@@ -89,11 +89,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     }
 
 
-    private bool _isRequestImageLoading = false;
+    public bool IsRequestImageLoading { get; private set; } = false;
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
-        _isRequestImageLoading = false;
+        IsRequestImageLoading = false;
     }
 
     private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
@@ -115,7 +115,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
-        _isRequestImageLoading = true;
+        IsRequestImageLoading = true;
 
         try
         {
@@ -124,7 +124,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
-                if (_isRequestImageLoading is false) { return; }
+                if (IsRequestImageLoading is false) { return; }
             }
             
             if (Item == null)
@@ -141,7 +141,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
-                if (_isRequestImageLoading is false) { return; }
+                if (IsRequestImageLoading is false) { return; }
 
                 stream.Seek(0);
                 var bitmapImage = new BitmapImage();

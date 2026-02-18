@@ -112,62 +112,60 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
     }
 
 
-    private bool _isRequestImageLoading = false;
+    public bool IsRequestImageLoading { get; private set; } = false;
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
-        _isRequestImageLoading = false;
+        IsRequestImageLoading = false;
         _initializeCts?.Cancel();
     }
 
     CancellationTokenSource? _initializeCts;
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 4));
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
 
     public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken rootCt)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
-        _isRequestImageLoading = true;
+        IsRequestImageLoading = true;
         
         try
         {
+            using var d = await _asyncLock.LockAsync(rootCt);
+            
+            if (IsInitialized) { return; }
+            if (_disposed) { return; }
+            if (Item == null) { return; }
+            if (IsRequestImageLoading is false) { return; }
+
+            ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+            
+            //using var cts = _initializeCts = new CancellationTokenSource();
+            //using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(rootCt, _initializeCts.Token);
+            //var linkedCt = linkedCts.Token;
+            // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
             //using (await _asyncLock.LockAsync(rootCt))
+            //using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt), rootCt))
+            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt))
             {
-                if (IsInitialized) { return; }
-                if (_disposed) { return; }
-                if (Item == null) { return; }
-                if (_isRequestImageLoading is false) { return; }
-
+                if (stream is null || stream.Size == 0) { return; }
                 ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                if (IsRequestImageLoading is false) { return; }
 
-
-
-                //using var cts = _initializeCts = new CancellationTokenSource();
-                //using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(rootCt, _initializeCts.Token);
-                //var linkedCt = linkedCts.Token;
-                // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
-                //using (await _asyncLock.LockAsync(rootCt))
-                //using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt), rootCt))
-                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt))
                 {
-                    if (stream is null || stream.Size == 0) { return; }
-                    ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-                    if (_isRequestImageLoading is false) { return; }
-
-                    {
-                        stream.Seek(0);
-                        var bitmapImage = new BitmapImage();
-                        bitmapImage.AutoPlay = false;
-                        await bitmapImage.SetSourceAsync(stream).AsTask(rootCt);
-                        Image = bitmapImage;
-                    }
+                    stream.Seek(0);
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.AutoPlay = false;
+                    await bitmapImage.SetSourceAsync(stream).AsTask(rootCt);
+                    Image = bitmapImage;
                 }
             }
 
             _isRequireLoadImageWhenRestored = false;
             IsInitialized = true;
+
         }
         catch (OperationCanceledException)
         {

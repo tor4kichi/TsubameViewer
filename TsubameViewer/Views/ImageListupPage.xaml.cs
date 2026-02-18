@@ -98,7 +98,7 @@ public sealed partial class ImageListupPage : Page
             foreach (var item in _realizedItems)
             {
                 if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }                
-                if (itemVM.IsInitialized) { continue; }
+                if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
                 var t = item.TransformToVisual(FileItemsContainer);
                 var pos = t.TransformPoint(scrollPos);
                 if (boundingBox.Contains(pos))
