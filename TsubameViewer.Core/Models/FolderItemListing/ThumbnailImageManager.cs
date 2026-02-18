@@ -503,7 +503,6 @@ public sealed class ThumbnailImageManager
                     UploadWithRetry(newPathId, oldPathItem.Filename, memoryStream);
                 }
             }
-
         }
     }
 
@@ -514,19 +513,7 @@ public sealed class ThumbnailImageManager
             && _thumbnailDb.Exists(insideId)
             )
         {
-            var memoryStream = _recyclableMemoryStreamManager.GetStream();
-            try
-            {
-                _thumbnailDb.Download(insideId, memoryStream);
-
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                return new ValueTask<IRandomAccessStream>(memoryStream.AsRandomAccessStream());
-            }
-            catch
-            {
-                memoryStream.Dispose();
-                throw;
-            }
+            return new (_thumbnailDb.OpenRead(insideId).AsRandomAccessStream());
         }
         else
         {
