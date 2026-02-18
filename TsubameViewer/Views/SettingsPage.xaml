@@ -158,9 +158,7 @@
             <winui:NumberBox Value="{x:Bind FirstValue}" ValueChanged="{x:Bind OnValueChanged}" Minimum="{x:Bind MinValue}" Maximum="{x:Bind MaxValue}"
                              HorizontalAlignment="Right"
                              HorizontalContentAlignment="Right"
-                             MinWidth="40"                                                  
-                             TextAlignment="Center"
-                             >
+                             MinWidth="40">
               <winui:NumberBox.NumberFormatter>
                 <sss:DecimalFormatter FractionDigits="0">
                   <sss:DecimalFormatter.NumberRounder>
