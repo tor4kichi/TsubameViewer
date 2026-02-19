@@ -89,14 +89,14 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     }
 
 
-    private bool _isRequestImageLoading = false;
+    public bool IsRequestImageLoading { get; private set; } = false;
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
     {
-        _isRequestImageLoading = false;
+        IsRequestImageLoading = false;
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -110,21 +110,23 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         //}
     }
 
-    bool _isInitialized = false;
+    public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken ct)
     {
         // ItemsRepeaterの読み込み順序が対応するためキャンセルが必要
         // ItemsRepeaterは表示しない先の方まで一度サイズを確認するために読み込みを掛けようとする
-        _isRequestImageLoading = true;
+        IsRequestImageLoading = true;
 
         try
-        {            
-            using var _ = await _asyncLock.LockAsync(ct);
-            
-            if (_isInitialized) { return; }
-            if (_disposed) { return; }
-            if (_isRequestImageLoading is false) { return; }
+        {
+            using (await _asyncLock.LockAsync(ct))
+            {
 
+                if (IsInitialized) { return; }
+                if (_disposed) { return; }
+                if (IsRequestImageLoading is false) { return; }
+            }
+            
             if (Item == null)
             {
                 Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
@@ -135,10 +137,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                 UpdateLastReadPosition();
                 IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
             }
-
-            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
+            
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
             {
                 if (stream is null || stream.Size == 0) { return; }
+                if (IsRequestImageLoading is false) { return; }
 
                 stream.Seek(0);
                 var bitmapImage = new BitmapImage();
@@ -150,19 +153,19 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
             _isRequireLoadImageWhenRestored = false;
-            _isInitialized = true;
+            IsInitialized = true;
         }
         catch (OperationCanceledException)
         {
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
         }
         catch (NotSupportedImageFormatException ex)
         {
             // 0xC00D5212
             // "コンテンツをエンコードまたはデコードするための適切な変換が見つかりませんでした。"
             _isRequireLoadImageWhenRestored = true;
-            _isInitialized = false;
+            IsInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
         }
         catch (NotSupportedException)
@@ -190,7 +193,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     public void ThumbnailChanged()
     {
         Image = null;
-        _isInitialized = false;
+        IsInitialized = false;
     }
 
     public void Dispose()

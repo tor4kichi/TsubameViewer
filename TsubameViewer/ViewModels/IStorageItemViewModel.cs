@@ -23,8 +23,9 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
     StorageItemTypes Type { get; }
 
     void Dispose();
+    bool IsRequestImageLoading { get; }
+    bool IsInitialized { get; }
     ValueTask InitializeAsync(CancellationToken ct);
-    ValueTask PrepareImageSizeAsync(CancellationToken ct);
     void RestoreThumbnailLoadingTask(CancellationToken ct);
     void StopImageLoading();
     void ThumbnailChanged();

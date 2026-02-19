@@ -253,9 +253,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
             .AddTo(_disposables);
         ImageLastIntractItem = new ReactivePropertySlim<int>()
-            .AddTo(_disposables);
-
-               
+            .AddTo(_disposables);               
     }
 
     public StorageItemViewModel GetLastIntractItem()

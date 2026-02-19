@@ -2,14 +2,20 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
+using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.UI.Xaml.Controls;
 using Reactive.Bindings;
+using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Reactive.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -19,6 +25,7 @@ using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -53,7 +60,7 @@ public sealed partial class ImageListupPage : Page
 
 
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
-    {
+    {        
         FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
@@ -61,7 +68,58 @@ public sealed partial class ImageListupPage : Page
         FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
+
+        ItemsScrollViewer.ViewChanged += ItemsScrollViewer_ViewChanged;
     }
+
+    ItemsRepeater? GetCurrentItemsRepeater() => ItemsSwitchPresenter.Content as ItemsRepeater;
+
+
+    bool _nowUpdateVisibleRangeItemInitialize = false;
+    private void ItemsScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+    {
+        UpdateVisibleRangeItemInitialize();
+    }
+
+    async void UpdateVisibleRangeItemInitialize()
+    {
+        if (GetCurrentItemsRepeater() is not { } itemRepeater) { return; }
+        if (_nowUpdateVisibleRangeItemInitialize) { return; }
+
+        _nowUpdateVisibleRangeItemInitialize = true;
+        try
+        {
+            var sv = ItemsScrollViewer;
+            Rect boundingBox = sv.ActualSize.ToSize().ToRect();
+            double expandLoadingArea = sv.ActualHeight * 2;
+            boundingBox.Y -= expandLoadingArea;
+            boundingBox.Height += expandLoadingArea * 2;
+            Point scrollPos = new(0, -sv.VerticalOffset);
+            foreach (var item in _realizedItems)
+            {
+                if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }                
+                if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
+                var t = item.TransformToVisual(FileItemsContainer);
+                var pos = t.TransformPoint(scrollPos);
+                if (boundingBox.Contains(pos))
+                {
+                    // ここでawait すると_realizedItems のコレクション変更が発生しうる
+                     _ = itemVM.InitializeAsync(_ct);
+                }
+                else
+                {
+                    itemVM.StopImageLoading();
+                }
+            }
+
+            await Task.Delay(250);
+        }
+        finally
+        {
+            _nowUpdateVisibleRangeItemInitialize = false;
+        }
+    }
+
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
@@ -72,6 +130,8 @@ public sealed partial class ImageListupPage : Page
         FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
+
+        ItemsScrollViewer.ViewChanged -= ItemsScrollViewer_ViewChanged;        
     }
 
 
@@ -97,6 +157,12 @@ public sealed partial class ImageListupPage : Page
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+       
+        _realizedItems.Clear();
+        _realizedItems.CollectionChangedAsObservable()
+            .Throttle(TimeSpan.FromMilliseconds(25), UIDispatcherScheduler.Default)
+            .Take(1)
+            .Subscribe(_ => UpdateVisibleRangeItemInitialize());
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
@@ -135,6 +201,8 @@ public sealed partial class ImageListupPage : Page
         {
             ItemsScrollViewer.Opacity = 1.0;
         }
+
+        UpdateVisibleRangeItemInitialize();
     }
 
     private void SaveScrollStatus(UIElement target)
@@ -249,14 +317,14 @@ public sealed partial class ImageListupPage : Page
         return mode.ToString();
     }
 
-    private async void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    ObservableCollection<FrameworkElement> _realizedItems = [];
+    private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe
             && fe.DataContext is IStorageItemViewModel itemVM
             )
         {
-            await itemVM.PrepareImageSizeAsync(_ct);
-            itemVM.InitializeAsync(_ct);
+            _realizedItems.Add(fe);
         }
     }
 
@@ -266,7 +334,7 @@ public sealed partial class ImageListupPage : Page
            && fe.DataContext is IStorageItemViewModel itemVM
            )
         {
-            itemVM.StopImageLoading();
+            _realizedItems.Remove(fe);
         }
     }
 
