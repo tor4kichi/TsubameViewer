@@ -489,9 +489,9 @@ public sealed class ThumbnailImageManager
 
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
         {
-            foreach (var id in _thumbnailDb.FindAll().ToArray())
+            foreach (var name in _temporaryDb.GetCollectionNames().ToList())
             {
-                _thumbnailDb.Delete(id.Id);
+                _temporaryDb.DropCollection(name);
             }
         }
     }
