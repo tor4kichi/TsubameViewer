@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -31,6 +32,11 @@ public sealed class StorageItemImageSource : IImageSource
     {
         StorageItem = storageItem;
         ItemTypes = SupportedFileTypesHelper.StorageItemToStorageItemTypes(StorageItem);
+    }
+
+    public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
+    {
+        return new(default(SizeF?));
     }
 
     public ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)

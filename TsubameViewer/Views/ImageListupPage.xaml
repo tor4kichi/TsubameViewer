@@ -244,9 +244,15 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="{StaticResource MidiumImageHeight}" MinWidth="80" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}"
-              Click="ImageListItem_Clicked" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited"
-              >
+        <Button x:Name="MyButton"
+                Style="{StaticResource ImageItemButtonStyle}"
+                Tag="{Binding Name}"
+                Height="{StaticResource MidiumImageHeight}"
+                MinWidth="80"
+                Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource MidiumImageHeight}, Mode=OneWay}"
+                Click="ImageListItem_Clicked"
+                PointerEntered="Image_PointerEntered"
+                PointerExited="Image_PointerExited">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource MidiumImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -319,9 +325,15 @@
           </uiNavigation:UINavigationTriggerBehavior>
         </i:Interaction.Behaviors>
 
-        <Button x:Name="MyButton" Style="{StaticResource ImageItemButtonStyle}" Tag="{Binding Name}" Height="{StaticResource LargeImageHeight}" MinWidth="120" Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
-              Click="ImageListItem_Clicked" PointerEntered="Image_PointerEntered" PointerExited="Image_PointerExited"
-              >
+        <Button x:Name="MyButton"
+                Style="{StaticResource ImageItemButtonStyle}"
+                Tag="{Binding Name}"
+                Height="{StaticResource LargeImageHeight}"
+                MinWidth="120"
+                Width="{Binding ImageAspectRatioWH, Converter={StaticResource ImageItemWidthConverter}, ConverterParameter={StaticResource LargeImageHeight}, Mode=OneWay}"
+                Click="ImageListItem_Clicked"
+                PointerEntered="Image_PointerEntered"
+                PointerExited="Image_PointerExited">
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}" Placement="Bottom" VerticalOffset="0" PlacementTarget="{Binding ElementName=Image}">
               <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />

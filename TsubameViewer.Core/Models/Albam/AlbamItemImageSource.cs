@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -57,6 +58,15 @@ public sealed class AlbamItemImageSource : IImageSource, IAlbamImageSource
     public string Path => _albamItem.Path;
 
     public DateTime DateCreated => _albamItem.AddedAt.LocalDateTime;
+
+    public async ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
+    {
+        if (InnerImageSource == null)
+        {
+            return null;
+        }
+        return await InnerImageSource.TryGetSizedImageStreamAsync(requestedSize, imageStream, ct);
+    }
 
     public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {

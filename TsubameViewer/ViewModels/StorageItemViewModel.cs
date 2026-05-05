@@ -151,7 +151,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
             using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt))
             {
                 if (stream is null || stream.Size == 0) { return; }
-                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
                 if (IsRequestImageLoading is false) { return; }
 
                 {

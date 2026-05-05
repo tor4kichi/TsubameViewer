@@ -21,10 +21,9 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
-using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Search;
-using static System.Net.WebRequestMethods;
+
 
 namespace TsubameViewer.Core.Models.ImageViewer;
 
@@ -232,9 +231,13 @@ public sealed class ImageCollectionManager
     }
 
     private async Task<IImageCollection> GetImagesFromPdfFileAsync(StorageFile file, CancellationToken ct)
-    {
-        var pdfDocument = await PdfDocument.LoadFromFileAsync(file).AsTask(ct);
-        return new PdfImageCollection(file, pdfDocument, _imageViewerSettings);
+    {        
+        using (var stream = await file.OpenStreamForReadAsync())
+        {
+            var count = PDFtoImage.Conversion.GetPageCount(stream, leaveOpen: true);
+            var sizes = PDFtoImage.Conversion.GetPageSizes(stream, leaveOpen: true);
+            return new PdfImageCollection(file, sizes.ToArray(), _imageViewerSettings);
+        }
     }
 
 

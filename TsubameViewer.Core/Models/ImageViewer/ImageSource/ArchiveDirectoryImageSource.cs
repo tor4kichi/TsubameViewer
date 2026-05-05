@@ -1,6 +1,8 @@
 ﻿using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,6 +38,11 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
     public DateTime DateCreated => _imageCollection.File.DateCreated.DateTime;
 
     public string EntryKey => _directoryToken.Key;
+
+    public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
+    {
+        return new(default(SizeF?));
+    }
 
     public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
     {

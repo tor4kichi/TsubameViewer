@@ -36,6 +36,7 @@ using Windows.System;
 using Windows.UI.Xaml.Media.Imaging;
 
 
+
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
 
@@ -290,9 +291,32 @@ public sealed class ThumbnailImageManager
         }
         else
         {
-            using var imageStream = await imageSource.GetImageStreamAsync(ct);            
+            outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+            var stream = outputStream.AsStreamForRead();
+            if (await imageSource.TryGetSizedImageStreamAsync(200, stream, ct) is { } size)
             {
-                outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+                // サムネイルサイズ情報を記録                
+                _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+                {
+                    Path = ToId(imageSource.Path),
+                    ImageWidth = (uint)size.Width,
+                    ImageHeight = (uint)size.Height,
+                    RatioWH = size.Width / size.Height
+                });
+                try
+                {
+                    UploadWithRetry(itemId, imageSource.Name, stream);
+                    return outputStream;
+                }
+                catch
+                {
+                    outputStream.Dispose();
+                    throw;
+                }
+            }
+            else
+            {
+                using var imageStream = await imageSource.GetImageStreamAsync(ct);
                 try
                 {
                     await TranscodeThumbnailImageToStreamAsync(imageSource.Path, imageStream, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
