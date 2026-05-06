@@ -215,11 +215,9 @@ public sealed class ImageCollectionManager
         try
         {
             ct.ThrowIfCancellationRequested();
-            var zipArchive = ZipArchive.Open(stream)
+            var zipArchive = ZipArchive.OpenArchive(stream)
                 .AddTo(disposables);
-
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, zipArchive, ct);
-
             return new ArchiveImageCollection(file, zipArchive, sturecture, disposables);
         }
         catch
@@ -250,7 +248,7 @@ public sealed class ImageCollectionManager
         var prop = await file.GetBasicPropertiesAsync();
         try
         {
-            var rarArchive = RarArchive.Open(stream)
+            var rarArchive = RarArchive.OpenArchive(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, rarArchive, ct);
             return new ArchiveImageCollection(file, rarArchive, sturecture, disposables);
@@ -273,7 +271,7 @@ public sealed class ImageCollectionManager
         var prop = await file.GetBasicPropertiesAsync();
         try
         {
-            var szArchive = SevenZipArchive.Open(stream)
+            var szArchive = SevenZipArchive.OpenArchive(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, szArchive, ct);
             return new ArchiveImageCollection(file, szArchive, sturecture, disposables);
@@ -295,7 +293,7 @@ public sealed class ImageCollectionManager
         var prop = await file.GetBasicPropertiesAsync();
         try
         {
-            var tarArchive = TarArchive.Open(stream)
+            var tarArchive = TarArchive.OpenArchive(stream)
                 .AddTo(disposables);
             var sturecture = _archiveFileInnerStructureCache.GetOrCreateStructure(file.Path, prop.Size, tarArchive, ct);
             return new ArchiveImageCollection(file, tarArchive, sturecture, disposables);

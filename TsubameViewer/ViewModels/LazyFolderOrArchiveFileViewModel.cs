@@ -96,7 +96,8 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         IsRequestImageLoading = false;
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
+    // メモリ使用量のスパイクを生じさせたくないので同時読み込み数は１に限定したい
+    private readonly static Core.AsyncLock _asyncLock = new(1);
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -121,39 +122,38 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         {
             using (await _asyncLock.LockAsync(ct))
             {
-
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (IsRequestImageLoading is false) { return; }
-            }
-            
-            if (Item == null)
-            {
-                Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
-                Name = Item.Name;
-                Path = Item.Path;
-                DateCreated = Item.DateCreated;
-                Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-                UpdateLastReadPosition();
-                IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
-            }
-            
-            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct), ct))
-            {
-                if (stream is null || stream.Size == 0) { return; }
-                if (IsRequestImageLoading is false) { return; }
 
-                stream.Seek(0);
-                var bitmapImage = new BitmapImage();
-                bitmapImage.AutoPlay = false;
-                await bitmapImage.SetSourceAsync(stream).AsTask(ct);
-                Image = bitmapImage;
+                if (Item == null)
+                {
+                    Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
+                    Name = Item.Name;
+                    Path = Item.Path;
+                    DateCreated = Item.DateCreated;
+                    Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+                    UpdateLastReadPosition();
+                    IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+                }
+
+                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
+                {
+                    if (stream is null || stream.Size == 0) { return; }
+                    if (IsRequestImageLoading is false) { return; }
+
+                    stream.Seek(0);
+                    var bitmapImage = new BitmapImage();
+                    bitmapImage.AutoPlay = false;
+                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
+                    Image = bitmapImage;
+                }
+
+                //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+
+                _isRequireLoadImageWhenRestored = false;
+                IsInitialized = true;
             }
-
-            //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-
-            _isRequireLoadImageWhenRestored = false;
-            IsInitialized = true;
         }
         catch (OperationCanceledException)
         {

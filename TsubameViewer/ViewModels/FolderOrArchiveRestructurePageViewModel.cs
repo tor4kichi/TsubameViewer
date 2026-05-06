@@ -93,7 +93,7 @@ namespace TsubameViewer.ViewModels
                     )
                 {                    
                     using var fileStream = await FileRandomAccessStream.OpenAsync(unescapedPath, FileAccessMode.Read);
-                    using var archive = ArchiveFactory.Open(fileStream.AsStreamForRead());
+                    using var archive = ArchiveFactory.OpenArchive(fileStream.AsStreamForRead());
                     var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(() => ToPathRestructureItems(archive).ToList()), CancellationToken.None);
                     foreach (var pathRestructure in items)
                     {
@@ -455,7 +455,7 @@ namespace TsubameViewer.ViewModels
         {
             await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
             {
-                using var outputArchive = ZipArchive.Create();
+                using var outputArchive = ZipArchive.CreateArchive();
 
                 ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
                 {
@@ -484,7 +484,7 @@ namespace TsubameViewer.ViewModels
                     using (var bufferedStream = new BufferedStream(writeStream))
                     {
                         writeStream.SetLength(0);
-                        outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.Deflate));
+                        outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.Zip.ZipWriterOptions(SharpCompress.Common.CompressionType.Deflate));
                         bufferedStream.Flush();
                     }
 
@@ -706,7 +706,7 @@ namespace TsubameViewer.ViewModels
         async Task OutputArchiveFileAsync_Internal(IEnumerable<IPathRestructure> items, StorageFile file, Func<string, Stream, CancellationToken, ValueTask> processOutput, CancellationToken ct)
         {
             using (var fileStream = await file.OpenStreamForReadAsync())
-            using (var archive = ArchiveFactory.Open(fileStream))
+            using (var archive = ArchiveFactory.OpenArchive(fileStream))
             {
                 var keyToEntry = archive.Entries.ToDictionary(x => x.Key);
                 foreach (var item in items)
@@ -838,7 +838,7 @@ namespace TsubameViewer.ViewModels
                 {
                     foreach (var (fileName, items) in itemsPerArchive)
                     {
-                        using var outputArchive = ZipArchive.Create();
+                        using var outputArchive = ZipArchive.CreateArchive();
 
                         ValueTask ProcessOutput(string path, Stream contentStream, CancellationToken ct)
                         {
@@ -867,7 +867,7 @@ namespace TsubameViewer.ViewModels
                             using (var bufferedStream = new BufferedStream(writeStream))
                             {
                                 writeStream.SetLength(0);
-                                outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.Deflate));
+                                outputArchive.SaveTo(bufferedStream, new SharpCompress.Writers.Zip.ZipWriterOptions(SharpCompress.Common.CompressionType.Deflate));
                                 bufferedStream.Flush();
                             }
 

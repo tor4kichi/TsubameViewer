@@ -239,7 +239,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
         
         try
         {
-            var result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
+            List<IStorageItem> result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
 
             ct.ThrowIfCancellationRequested();
 

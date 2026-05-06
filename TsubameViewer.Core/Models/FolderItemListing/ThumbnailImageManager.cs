@@ -6,6 +6,7 @@ using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
+using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -203,7 +204,11 @@ public sealed class ThumbnailImageManager
         _thumbnailImageInfoRepository = new ThumbnailImageInfoRepository(temporaryDb);
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+
+        _canvasDevice = new CanvasDevice { LowPriority = true };
     }
+
+    private readonly CanvasDevice _canvasDevice;
 
     private void UploadWithRetry(string itemId, string filename, Stream stream)
     {
@@ -921,15 +926,16 @@ public sealed class ThumbnailImageManager
         // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
         //return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
         
-        using var dispose = await _renderLock.LockAsync(ct);
-        await TranscodeWithGPUAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        //using var dispose = await _renderLock.LockAsync(ct);
+        await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             // implement ref@ https://gist.github.com/alexsorokoletov/71431e403c0fa55f1b4c942845a3c850            
+
             try
             {
-                var decoder = await BitmapDecoder.CreateAsync(stream);                
+                var decoder = await BitmapDecoder.CreateAsync(stream).AsTask().ConfigureAwait(false);
 
                 // サムネイルサイズ情報を記録                
                 _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
@@ -947,14 +953,14 @@ public sealed class ThumbnailImageManager
                 outputStream.Size = 0;
 
                 // Note: outputStreamが AsRandomAccessStream() を通しているとハングアップする？
-                var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet);
+                var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet).AsTask().ConfigureAwait(false);
 
                 setupEncoder(decoder, encoder);
 
                 Debug.WriteLine($"thumb out <{path}> size: w= {encoder.BitmapTransform.ScaledWidth} h= {encoder.BitmapTransform.ScaledHeight}");
                 encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
 
-                await encoder.FlushAsync().AsTask(ct);
+                await encoder.FlushAsync().AsTask(ct).ConfigureAwait(false);
                 await outputStream.FlushAsync().AsTask(ct);
             }
             catch (Exception ex) when (ex.HResult == -1072868846)
@@ -966,8 +972,8 @@ public sealed class ThumbnailImageManager
         async Task TranscodeWithGPUAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
             try
-            {
-                using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), stream).AsTask(ct);               
+            {                
+                using var bitmap = await CanvasBitmap.LoadAsync(_canvasDevice, stream).AsTask(ct);                               
                 var scaledSize = CulcThumbnailSize((int)bitmap.Size.Width, (int)bitmap.Size.Height);
                 using var canvas = new CanvasRenderTarget(bitmap, (float)scaledSize.Width, (float)scaledSize.Height);                
                 using (var ds = canvas.CreateDrawingSession())
@@ -977,6 +983,7 @@ public sealed class ThumbnailImageManager
                         : scaledSize.Height / (float)bitmap.Size.Height;
                     ds.Transform = Matrix3x2.CreateScale(ratio);
                     ds.Blend = CanvasBlend.Copy;
+                    ds.Antialiasing = CanvasAntialiasing.Aliased;
                     ds.DrawImage(bitmap);
                 }
 
@@ -1021,7 +1028,7 @@ public sealed class ThumbnailImageManager
     }
     private async ValueTask<(bool, IRandomAccessStream)> ZipFileThumbnailImageWriteToStreamAsync(StorageFile file, CancellationToken ct)
     {
-        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
+        using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read, options: FileOptions.SequentialScan))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var zipArchive = new ZipArchive(fileStream))
         {
@@ -1052,15 +1059,15 @@ public sealed class ThumbnailImageManager
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
-        using (var rarArchive = RarArchive.Open(fileStream))
+        using (var rarArchive = RarArchive.OpenArchive(fileStream))
         {
             RarArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
-                entry = rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                entry = (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }
 
-            entry ??= rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+            entry ??= (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
             if (entry == null) { return default; }
 
@@ -1079,15 +1086,15 @@ public sealed class ThumbnailImageManager
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
-        using (var archive = SevenZipArchive.Open(fileStream))
+        using (var archive = SevenZipArchive.OpenArchive(fileStream))
         {
             SevenZipArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
-                entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                entry = (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }
 
-            entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+            entry ??= (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
             if (entry == null) { return default; }
 
@@ -1106,15 +1113,15 @@ public sealed class ThumbnailImageManager
     {
         using (var fileHandle = file.CreateSafeFileHandle(FileAccess.Read))
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
-        using (var archive = TarArchive.Open(fileStream))
+        using (var archive = TarArchive.OpenArchive(fileStream))
         {
             TarArchiveEntry entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
-                entry = archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
+                entry = (TarArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
             }
 
-            entry ??= archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
+            entry ??= (TarArchiveEntry)archive.Entries.FirstOrDefault(x => SupportedFileTypesHelper.IsSupportedImageFileExtension(x.Key));
 
             if (entry == null) { return default; }
 
