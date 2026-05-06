@@ -10,7 +10,8 @@
   xmlns:wst="using:WindowsStateTriggers"
   xmlns:viewModel="using:TsubameViewer.ViewModels"
   xmlns:i18Ext="using:I18NPortable.Xaml.Extensions" xmlns:winui="using:Microsoft.UI.Xaml.Controls" xmlns:sss="using:Windows.Globalization.NumberFormatting"
-  mc:Ignorable="d"
+      xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
+      mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
   
   <Page.Resources>
@@ -24,72 +25,44 @@
     <tt:SettingsItemTemplateSelector x:Key="SettingItemTemplateSelector">
       <tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
         <DataTemplate x:DataType="viewModel:IToggleSwitchSettingItemViewModel">
-          <uwpControls:DockPanel Width="{StaticResource SettingItemWidth}" Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}" uwpControls:DockPanel.Dock="Right" Margin="0" Padding="0" />
-            <TextBlock Text="{x:Bind Label}" VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="3" />
-          </uwpControls:DockPanel>
+          <winUIControls:SettingsCard Header="{x:Bind Label}"
+                                      Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}"
+                          uwpControls:DockPanel.Dock="Right"
+                          Margin="0"
+                          Padding="0" />
+          </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
 
       <!-- アプリに記録されたフォルダ -->
       <tt:SettingsItemTemplateSelector.StoredFoldersSettingItem>
         <DataTemplate x:DataType="viewModel:StoredFoldersSettingItemViewModel">
-          <StackPanel Width="{StaticResource SettingItemWidth}" Spacing="16">
-            <ItemsControl ItemsSource="{x:Bind Folders}" IsTabStop="False">
-              <ItemsControl.ItemTemplate>
+          <StackPanel>
+            <winUIControls:SettingsExpander ItemsSource="{x:Bind Folders}"
+                                            Header="{i18Ext:Localize Key=Folders}">
+              <winUIControls:SettingsExpander.ItemTemplate>
                 <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
-                  <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 6">
-                    <uwpControls:DockPanel>
-                      <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
-                      <StackPanel>
-                        <TextBlock Text="{x:Bind FolderName}" />
-                        <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </uwpControls:DockPanel>
-
-                    <DropDownButton.Flyout>
-                      <MenuFlyout Placement="BottomEdgeAlignedRight">
-                        <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
-                      </MenuFlyout>
-                    </DropDownButton.Flyout>
-                  </DropDownButton>
+                  <winUIControls:SettingsCard Header="{x:Bind FolderName}"
+                                              Description="{x:Bind Path}">
+                    <Button Content="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}"
+                            Command="{x:Bind DeleteStoredFolderCommand}" />
+                  </winUIControls:SettingsCard>
                 </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            
-            <uwpControls:Expander>
-              <uwpControls:Expander.Header>
-                <TextBlock Text="{Binding Source=RecentlyUsedFiles, Converter={StaticResource LocalizeConverter}}" 
-                       Style="{StaticResource SubtitleTextBlockStyle}"
-                       />
-              </uwpControls:Expander.Header>
-              <uwpControls:Expander.Content>
-                <ItemsControl ItemsSource="{x:Bind TempFiles}" IsTabStop="False">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
-                      <DropDownButton HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Margin="0 0 0 8">
-                        <uwpControls:DockPanel>
-                          <SymbolIcon Symbol="Folder" uwpControls:DockPanel.Dock="Left" Margin="0 0 16 0" />
-                          <StackPanel>
-                            <TextBlock Text="{x:Bind FolderName}" />
-                            <TextBlock Text="{x:Bind Path}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-                          </StackPanel>
-                        </uwpControls:DockPanel>
-
-                        <DropDownButton.Flyout>
-                          <MenuFlyout Placement="BottomEdgeAlignedRight">
-                            <MenuFlyoutItem Text="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}" Command="{Binding DeleteStoredFolderCommand}" />
-                          </MenuFlyout>
-                        </DropDownButton.Flyout>
-                      </DropDownButton>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-              </uwpControls:Expander.Content>
-            </uwpControls:Expander>
-            
+              </winUIControls:SettingsExpander.ItemTemplate>
+            </winUIControls:SettingsExpander>
+            <winUIControls:SettingsExpander ItemsSource="{x:Bind TempFiles}"
+                                            Header="{i18Ext:Localize Key=RecentlyUsedFiles}">
+              <winUIControls:SettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="viewModel:StoredFolderViewModel">
+                  <winUIControls:SettingsCard Header="{x:Bind FolderName}"
+                                              Description="{x:Bind Path}">
+                    <Button Content="{Binding Source=RemoveSourceFolderFromApp, Converter={StaticResource LocalizeConverter}}"
+                            Command="{x:Bind DeleteStoredFolderCommand}" />
+                  </winUIControls:SettingsCard>
+                </DataTemplate>
+              </winUIControls:SettingsExpander.ItemTemplate>
+            </winUIControls:SettingsExpander>
           </StackPanel>
         </DataTemplate>
 
@@ -97,95 +70,86 @@
 
       <tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
         <DataTemplate x:DataType="viewModel:UpdatableTextSettingItemViewModel">
-          <Grid Width="{StaticResource SettingItemWidth}" Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
-            <TextBlock Text="{x:Bind Label}" />
-            <TextBlock Text="{x:Bind Text.Value, Mode=OneWay}" HorizontalAlignment="Right" />
-          </Grid>
-          
+          <winUIControls:SettingsCard Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                                      Header="{x:Bind Label}"
+                                      Description="{x:Bind Text.Value, Mode=OneWay}" />
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
-
       <tt:SettingsItemTemplateSelector.ButtonSettingItem>
         <DataTemplate x:DataType="viewModel:ButtonSettingItemViewModel">
           <Button Content="{x:Bind Label}" Command="{x:Bind ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
                   HorizontalAlignment="Right"
                   Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                  Margin="0 16"
                   />
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ButtonSettingItem>
       <tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
         <DataTemplate x:DataType="viewModel:ThemeSelectSettingItemViewModel">
-          <Grid>
-            <TextBlock Text="{x:Bind Label}" />
-            <ComboBox ItemsSource="{x:Bind ThemeItems}" SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
-                      HorizontalAlignment="Right"
-                    >
+          <winUIControls:SettingsCard Header="{x:Bind Label}">
+            <ComboBox ItemsSource="{x:Bind ThemeItems}"
+                      SelectedItem="{x:Bind SelectedTheme.Value, Mode=TwoWay}"
+                      HorizontalAlignment="Right">
               <ComboBox.ItemTemplate>
                 <DataTemplate>
                   <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-          </Grid>
-          
+
+          </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
       <tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
         <DataTemplate x:DataType="viewModel:LocaleSelectSettingItemViewModel">
-          <StackPanel Spacing="8">
-            <Grid>
-              <TextBlock Text="{x:Bind Label}" />
-              <ComboBox ItemsSource="{x:Bind Locales}" SelectedValue="{x:Bind SelectedLocale.Value, Mode=TwoWay}"
-                      DisplayMemberPath="DisplayName"
-                      SelectedValuePath="Locale"
-                      HorizontalAlignment="Right"
-                    >
+          <winUIControls:SettingsCard Header="{x:Bind Label}">
+            <StackPanel Orientation="Horizontal">
+              <Button Content="{x:Bind RestartTextTranslated}"
+                      Command="{x:Bind RestartApplicationCommand}"
+                      Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+              <ComboBox ItemsSource="{x:Bind Locales}"
+                        SelectedValue="{x:Bind SelectedLocale.Value, Mode=TwoWay}"
+                        DisplayMemberPath="DisplayName"
+                        SelectedValuePath="Locale"
+                        HorizontalAlignment="Right">
               </ComboBox>
-            </Grid>
-
-            <Button Content="{x:Bind RestartTextTranslated}" 
-                    Command="{x:Bind RestartApplicationCommand}"
-                    Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                    />
-          </StackPanel>
+            </StackPanel>
+          </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
       <tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
         <DataTemplate x:DataType="viewModel:NumberBoxSettingItemViewModel">
-          <Grid>
-            <TextBlock Text="{x:Bind Label}" VerticalAlignment="Center" />
-
-            <winui:NumberBox Value="{x:Bind FirstValue}" ValueChanged="{x:Bind OnValueChanged}" Minimum="{x:Bind MinValue}" Maximum="{x:Bind MaxValue}"
+          <winUIControls:SettingsCard Header="{x:Bind Label}">
+            <winui:NumberBox Value="{x:Bind FirstValue}"
+                             ValueChanged="{x:Bind OnValueChanged}"
+                             Minimum="{x:Bind MinValue}"
+                             Maximum="{x:Bind MaxValue}"
                              HorizontalAlignment="Right"
                              HorizontalContentAlignment="Right"
                              MinWidth="40">
               <winui:NumberBox.NumberFormatter>
                 <sss:DecimalFormatter FractionDigits="0">
                   <sss:DecimalFormatter.NumberRounder>
-                    <sss:IncrementNumberRounder Increment="{x:Bind ValueStep}" RoundingAlgorithm="RoundDown" />
+                    <sss:IncrementNumberRounder Increment="{x:Bind ValueStep}"
+                                                RoundingAlgorithm="RoundDown" />
                   </sss:DecimalFormatter.NumberRounder>
                 </sss:DecimalFormatter>
               </winui:NumberBox.NumberFormatter>
             </winui:NumberBox>
-          </Grid>
+          </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.NumericTextBoxSettingItem>
     </tt:SettingsItemTemplateSelector>
 
-
-    <DataTemplate x:Key="SettingsGroupTemplate" x:DataType="viewModel:SettingsGroupViewModel">
-      <StackPanel Spacing="16" Visibility="{x:Bind IsVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+    <DataTemplate x:Key="SettingsGroupTemplate"
+                  x:DataType="viewModel:SettingsGroupViewModel">
+      <StackPanel Spacing="8" >
         <TextBlock Text="{x:Bind  Label}" Style="{StaticResource SubtitleTextBlockStyle}" />
         <ItemsControl ItemsSource="{x:Bind  Items}"
                       ItemTemplateSelector="{StaticResource SettingItemTemplateSelector}"
                       HorizontalAlignment="Stretch"                      
                       IsTabStop="False"
                         >
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Spacing="{StaticResource ItemsSpacing}" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
         </ItemsControl>
       </StackPanel>
     </DataTemplate>
@@ -193,7 +157,9 @@
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
-      <Grid uwpControls:DockPanel.Dock="Top" Padding="32 16">
+      <Grid uwpControls:DockPanel.Dock="Top"
+            Padding="0 16 0 0"
+            Width="600">
         <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}" Style="{StaticResource SubtitleTextBlockStyle}" 
                    IsTextSelectionEnabled="True"
                    >
@@ -213,47 +179,49 @@
       </Grid>
 
       <ScrollViewer>
-        <StackPanel x:Name="ScrollViewerRootPanel">
+        <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
           <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                         IsTabStop="False"
-                        HorizontalAlignment="Left"
-                        MaxWidth="520"
+                        HorizontalAlignment="Center"
+                        Width="600"                        
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <StackPanel Spacing="{StaticResource GroupSpacing}" />
+                <StackPanel Spacing="16" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
           </ItemsControl>
 
-
-          <StackPanel Spacing="16" HorizontalAlignment="Left" Margin="32 16 0 16">
+          <StackPanel Spacing="0"
+                      HorizontalAlignment="Center"
+                      Margin="0 16 0 16"
+                      >
             <HyperlinkButton Content="{Binding Source=PrivacyPolicy, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Privacy-Policy" 
                              HorizontalContentAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="{StaticResource SettingItemWidth}"
+                             Width="600"
                              />
             <HyperlinkButton Content="{Binding Source=ThirdPartyLibraryNotice, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://github.com/tor4kichi/TsubameViewer/wiki/Third-Party-Library-Notice" 
                              HorizontalContentAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="{StaticResource SettingItemWidth}"
+                             Width="600"
                              />
 
             <HyperlinkButton Content="{Binding Source=AskQuestionWithMashmarrow, Converter={StaticResource LocalizeConverter}}" 
                              NavigateUri="https://marshmallow-qa.com/tor4kichi" 
                              HorizontalContentAlignment="Right"
                              FontWeight="SemiBold"
-                             Width="{StaticResource SettingItemWidth}"
+                             Width="600"
                              />
           </StackPanel>
           
 
           <!-- AdvancedSetting -->
-          <uwpControls:Expander Margin="32 64 32 32" Visibility="Collapsed">
+          <!--<uwpControls:Expander Margin="32 64 32 32" Visibility="Collapsed">
             <uwpControls:Expander.Header>
               <TextBlock Text="{Binding Source=AdvancedSettings, Converter={StaticResource LocalizeConverter}}"
                      Style="{StaticResource SubtitleTextBlockStyle}"
@@ -272,7 +240,7 @@
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
             </ItemsControl>
-          </uwpControls:Expander>          
+          </uwpControls:Expander>-->          
         </StackPanel>
         
         
