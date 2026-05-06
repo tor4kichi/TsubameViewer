@@ -120,7 +120,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
         try
         {
-            using (await _asyncLock.LockAsync(ct))
+            //using (await _asyncLock.LockAsync(ct))
             {
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }

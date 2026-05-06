@@ -133,7 +133,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         
         try
         {
-            using var d = await _asyncLock.LockAsync(rootCt);
+            //using var d = await _asyncLock.LockAsync(rootCt);
             
             if (IsInitialized) { return; }
             if (_disposed) { return; }

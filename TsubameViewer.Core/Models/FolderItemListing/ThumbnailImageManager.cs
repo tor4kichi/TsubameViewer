@@ -205,7 +205,7 @@ public sealed class ThumbnailImageManager
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
 
-        _canvasDevice = new CanvasDevice { LowPriority = true };
+        _canvasDevice = new CanvasDevice();
     }
 
     private readonly CanvasDevice _canvasDevice;
@@ -241,47 +241,53 @@ public sealed class ThumbnailImageManager
 
         if (imageSource.StorageItem is StorageFolder folder)
         {
-            outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
-            try
+            using (await _fileReadWriteLock.LockAsync(ct))
             {
-                var file = await GetCoverThumbnailImageAsync(folder, ct);
-                if (file != null
-                    && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+                try
                 {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
-                    return outputStream;
+                    var file = await GetCoverThumbnailImageAsync(folder, ct);
+                    if (file != null
+                        && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                    {
+                        UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                        return outputStream;
+                    }
+                    else
+                    {
+                        outputStream.Dispose();
+                        return null;
+                    }
                 }
-                else
+                catch
                 {
                     outputStream.Dispose();
-                    return null;
+                    throw;
                 }
-            }
-            catch 
-            {
-                outputStream.Dispose();
-                throw;
             }
         }
         else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file && file.IsSupportedMangaOrEBookFile())
         {
-            outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
-            try
+            using (await _fileReadWriteLock.LockAsync(ct))
             {
-                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                outputStream ??= _recyclableMemoryStreamManager.GetStream().AsRandomAccessStream();
+                try
                 {
-                    UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
-                    return outputStream;
+                    if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
+                    {
+                        UploadWithRetry(itemId, imageSource.Name, outputStream.AsStreamForRead());
+                        return outputStream;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch
                 {
-                    return null;
+                    outputStream.Dispose();
+                    throw;
                 }
-            }
-            catch 
-            {
-                outputStream.Dispose();                
-                throw;
             }
         }
         else if (imageSource is AlbamItemImageSource albamItemImageSource)
@@ -922,11 +928,6 @@ public sealed class ThumbnailImageManager
     static AsyncLock _renderLock = new AsyncLock();
     private async Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
-        // Note: _recyclableMemoryStreamManager.GetStream(); と BitmapEncoder.CreateAsync()  を
-        // 組み合わせて使うとハングアップしてしまうが、Task.Runでラップすることで回避できる。何故..？
-        //return Task.Run(async ()=> await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct), ct);
-        
-        //using var dispose = await _renderLock.LockAsync(ct);
         await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
@@ -952,7 +953,6 @@ public sealed class ThumbnailImageManager
 
                 outputStream.Size = 0;
 
-                // Note: outputStreamが AsRandomAccessStream() を通しているとハングアップする？
                 var encoder = await BitmapEncoder.CreateAsync(encoderId, outputStream, propertySet).AsTask().ConfigureAwait(false);
 
                 setupEncoder(decoder, encoder);
@@ -961,7 +961,7 @@ public sealed class ThumbnailImageManager
                 encoder.SetPixelData(decoder.BitmapPixelFormat, decoder.BitmapAlphaMode, decoder.OrientedPixelWidth, decoder.OrientedPixelHeight, decoder.DpiX, decoder.DpiY, detachedPixelData);
 
                 await encoder.FlushAsync().AsTask(ct).ConfigureAwait(false);
-                await outputStream.FlushAsync().AsTask(ct);
+                await outputStream.FlushAsync().AsTask(ct).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex.HResult == -1072868846)
             {
