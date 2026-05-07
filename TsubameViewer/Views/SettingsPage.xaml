@@ -117,13 +117,10 @@
       <tt:SettingsItemTemplateSelector.LocaleSelectSettingItem>
         <DataTemplate x:DataType="vm:LocaleSelectSettingItemViewModel">
           <winUIControls:SettingsCard Header="{x:Bind Label}">
-            <StackPanel Orientation="Horizontal">
-              <Button Content="{x:Bind RestartTextTranslated}"
-                      Command="{x:Bind RestartApplicationCommand}"
-                      Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+            <StackPanel>
               <ComboBox ItemsSource="{x:Bind Locales}"
-                        SelectedValue="{x:Bind SelectedLocale.Value, Mode=TwoWay}"
-                        SelectedValuePath="Locale"
+                        SelectedValue="{x:Bind SelectedLocale, Mode=OneWay}"
+                        SelectionChanged="ComboBox_SelectionChanged"                        
                         HorizontalAlignment="Right">
                 <ComboBox.ItemTemplate>
                   <DataTemplate>
@@ -133,6 +130,10 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+              <Button Content="{x:Bind RestartTextTranslated}"
+                      Command="{x:Bind RestartApplicationCommand}"
+                      Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                      Margin="0 16 0 0"/>
             </StackPanel>
           </winUIControls:SettingsCard>
         </DataTemplate>

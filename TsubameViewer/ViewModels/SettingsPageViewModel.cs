@@ -510,22 +510,14 @@ public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDispos
     }
 }
 
-public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
 {
     private string _currentLocale = I18NPortable.I18N.Current.Locale;
     public LocaleSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings)
     {
         Label = label;
-        SelectedLocale = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Locale);
-
-        _themeChangedSubscriber = SelectedLocale.Subscribe(locale =>
-        {
-            if (string.IsNullOrEmpty(locale)) { return; }
-
-            I18NPortable.I18N.Current.Locale = locale;
-            IsRequireRestart = _currentLocale != locale;
-            RestartTextTranslated = "RequireRestartApplicationToRefrectSettings".Translate();
-        });
+        _applicationSettings = applicationSettings;
+        SelectedLocale = Locales.FirstOrDefault(x =>x.Locale == applicationSettings.Locale);
     }
 
     private string _RestartTextTranslated;
@@ -542,7 +534,20 @@ public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDispo
         set { SetProperty(ref _isRequireRestart, value); }
     }
 
-    public ReactiveProperty<string> SelectedLocale { get; }
+    [ObservableProperty]
+    PortableLanguage? _selectedLocale;
+
+    partial void OnSelectedLocaleChanged(PortableLanguage? value)
+    {
+        if (value != null)
+        {
+            _applicationSettings.Locale = value.Locale;
+
+            I18NPortable.I18N.Current.Locale = value.Locale;
+            IsRequireRestart = _currentLocale != value.Locale;
+            RestartTextTranslated = "RequireRestartApplicationToRefrectSettings".Translate();
+        }
+    }
 
     public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
 
@@ -552,15 +557,13 @@ public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDispo
 
     public void Dispose()
     {
-        ((IDisposable)SelectedLocale).Dispose();
         _themeChangedSubscriber.Dispose();
     }
 
-    private RelayCommand _RestartApplicationCommand;
-    public RelayCommand RestartApplicationCommand =>
-        _RestartApplicationCommand ?? (_RestartApplicationCommand = new RelayCommand(ExecuteRestartApplicationCommand));
+    private readonly ApplicationSettings _applicationSettings;
 
-    void ExecuteRestartApplicationCommand()
+    [RelayCommand]
+    void RestartApplication()
     {
         _ = Windows.ApplicationModel.Core.CoreApplication.RequestRestartAsync("");
     }
