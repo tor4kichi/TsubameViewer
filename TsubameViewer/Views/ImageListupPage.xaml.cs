@@ -283,7 +283,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     }
                     else
                     {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
                     }
                 }
             }

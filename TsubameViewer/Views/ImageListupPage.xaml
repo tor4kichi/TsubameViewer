@@ -680,21 +680,10 @@
 
       <StackPanel x:Name="HeaderLayout"
                   uwpControls:DockPanel.Dock="Top"
-                  Padding="48 8 48 8"
+                  Padding="48 8 48 0"
                   Background="{ThemeResource ApplicationContentBackgroundBrush}"
                   Spacing="8">
         <uwpControls:DockPanel>
-
-          <StackPanel x:Name="HeaderStackPanel"
-                      uwpControls:DockPanel.Dock="Left"
-                      Spacing="8">
-            <Button x:Name="ReturnSourceFolderPageButton"
-                    Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}"
-                    Command="{x:Bind _vm.OpenPageCommand}"
-                    CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
-                    AccessKey="R" />
-          </StackPanel>
-
           <Border uwpControls:DockPanel.Dock="Right"
                   Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
             <Button x:Name="ChangeViewtoFolderListupPageButton"
@@ -820,7 +809,9 @@
 
           <Border />
         </uwpControls:DockPanel>
-
+        <Border Background="{ThemeResource SystemBaseLowColor}"
+                Height="1"
+                Opacity="0.5"></Border>
       </StackPanel>
 
       <ScrollViewer Padding="48 0 48 0"
@@ -979,8 +970,6 @@
             <Setter Target="FileDisplayModeItemsListView.IsEnabled"
                     Value="True" />
 
-            <Setter Target="ReturnSourceFolderPageButton.IsEnabled"
-                    Value="False" />
             <Setter Target="ChangeViewtoFolderListupPageButton.IsEnabled"
                     Value="False" />
             <Setter Target="OptionalActionsButton.IsEnabled"

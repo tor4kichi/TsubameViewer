@@ -117,7 +117,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     }
                     else
                     {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
                     }
                 }
             }
@@ -145,7 +145,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var lastIntaractItem = _vm.GetLastIntractItem();
         if (lastIntaractItem == null)
         {
-            ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
             return;
         }
 
