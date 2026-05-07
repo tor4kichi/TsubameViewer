@@ -420,11 +420,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:CompositeStateTrigger Operator="And">
-              <wst:FullScreenModeTrigger IsFullScreen="True" />
-              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
-                                                       CollisionRect="0 0 5000 64" />
-            </wst:CompositeStateTrigger>
+            <StateTrigger IsActive="{x:Bind NowShowTitlebarInFullScreen, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Storyboard>
             <Storyboard>

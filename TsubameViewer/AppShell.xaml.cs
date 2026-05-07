@@ -73,7 +73,7 @@ public sealed partial class AppShell : UserControl
         DataContext = _vm = viewModel;
         _messenger = messenger;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-        _viewLocator = Ioc.Default.GetService<IViewLocator>();
+        _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
         InitializeNavigation();
         InitializeThemeChangeRequest();
         InitializeSearchBox();
@@ -83,13 +83,57 @@ public sealed partial class AppShell : UserControl
         CancelBusyWorkCommand = new RelayCommand(() => _messenger.Send<BusyWallCanceledMessage>());
         InitializeBusyWorkUI();                    
 
-        _imageCodecService = Ioc.Default.GetService<IImageCodecService>();
+        _imageCodecService = Ioc.Default.GetRequiredService<IImageCodecService>();
         InitializeImageCodecExtensions();
 
         InitializeInAppNotification();
 
         var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
         coreTitleBar.ExtendViewIntoTitleBar = true;
+        coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
+
+        var appView = ApplicationView.GetForCurrentView();
+        appView.VisibleBoundsChanged += AppView_VisibleBoundsChanged;
+
+        Loaded += AppShell_Loaded;
+    }
+
+    private void AppShell_Loaded(object sender, RoutedEventArgs e)
+    {
+        CoreApplicationViewTitleBar coreTitleBar =
+            CoreApplication.GetCurrentView().TitleBar;
+        var appView = ApplicationView.GetForCurrentView();
+        UpdateTitleBarDisplay(coreTitleBar.IsVisible, appView.IsFullScreenMode);
+    }
+
+    public bool NowShowTitlebarInFullScreen
+    {
+        get { return (bool)GetValue(NowShowTitlebarInFullScreenProperty); }
+        set { SetValue(NowShowTitlebarInFullScreenProperty, value); }
+    }
+
+    public static readonly DependencyProperty NowShowTitlebarInFullScreenProperty =
+        DependencyProperty.Register(nameof(NowShowTitlebarInFullScreen), typeof(bool), typeof(AppShell), new PropertyMetadata(false));
+
+
+    private void AppView_VisibleBoundsChanged(ApplicationView sender, object args)
+    {
+        CoreApplicationViewTitleBar coreTitleBar =
+                    CoreApplication.GetCurrentView().TitleBar;
+        UpdateTitleBarDisplay(coreTitleBar.IsVisible, sender.IsFullScreenMode);
+    }
+
+    private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
+    {
+        var appView = ApplicationView.GetForCurrentView();
+        UpdateTitleBarDisplay(sender.IsVisible, appView.IsFullScreenMode);
+    }
+
+
+
+    void UpdateTitleBarDisplay(bool isDisplay, bool isFullScreen)
+    {
+        NowShowTitlebarInFullScreen = isDisplay && isFullScreen;
     }
 
     #region InAppNotification
