@@ -425,7 +425,7 @@
       <Version>6.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>5.0.2</Version>
+      <Version>10.0.7</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
       <Version>3.3.2</Version>
