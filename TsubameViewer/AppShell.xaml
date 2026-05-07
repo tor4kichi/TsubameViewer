@@ -1,5 +1,5 @@
-﻿<Page
-    x:Class="TsubameViewer.Views.PrimaryWindowCoreLayout"
+﻿<UserControl
+    x:Class="TsubameViewer.Views.AppShell"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Views"
@@ -19,10 +19,11 @@
   xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
   xmlns:fi="using:Fluent.Icons"
-  mc:Ignorable="d"
+             xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
+             mc:Ignorable="d"
   Background="{ThemeResource ApplicationContentBackgroundBrush}"
   >
-  <Page.Resources>
+  <UserControl.Resources>
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
@@ -43,18 +44,18 @@
 
       </CollectionViewSource>
 
-      <ts:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
-        <ts:MenuItemTemplateSelector.MenuSeparator>
+      <local:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
+        <local:MenuItemTemplateSelector.MenuSeparator>
           <DataTemplate>
             <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
           </DataTemplate>
-        </ts:MenuItemTemplateSelector.MenuSeparator>
-        <ts:MenuItemTemplateSelector.MenuItem>
+        </local:MenuItemTemplateSelector.MenuSeparator>
+        <local:MenuItemTemplateSelector.MenuItem>
           <DataTemplate x:DataType="viewModel:MenuItemViewModel">
             <TextBlock Text="{x:Bind PageType, Converter={StaticResource LocalizeConverter}}" />
           </DataTemplate>
-        </ts:MenuItemTemplateSelector.MenuItem>
-      </ts:MenuItemTemplateSelector>
+        </local:MenuItemTemplateSelector.MenuItem>
+      </local:MenuItemTemplateSelector>
 
 
       <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
@@ -83,7 +84,7 @@
       </local:MenuItemDateTemplateSelector>
 
     </ResourceDictionary>
-  </Page.Resources>
+  </UserControl.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop"
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
         x:Name="RootGrid"
@@ -97,8 +98,12 @@
       IsBackButtonVisible="Collapsed"
       IsSettingsVisible="False"
       XYFocusDownNavigationStrategy="Projection"
-      SelectionFollowsFocus="Disabled"
+      SelectionFollowsFocus="Disabled"      
       >
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
       </muxc:NavigationView.PaneHeader>
@@ -197,10 +202,33 @@
         </CommandBar>
       </muxc:NavigationView.PaneFooter>
 
-      <Frame x:Name="ContentFrame" DataContext="{x:Null}" CacheSize="5"
-             XYFocusDownNavigationStrategy="RectilinearDistance"
-             />
+      <Frame x:Name="ContentFrame"
+             DataContext="{x:Null}"
+             CacheSize="5"
+             XYFocusDownNavigationStrategy="RectilinearDistance">
+      </Frame>
     </muxc:NavigationView>
+
+    <uwpControls:DockPanel x:Name="TitlebarArea"
+                           Background="Transparent"
+                           VerticalAlignment="Top"
+                           Height="32">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+
+    </uwpControls:DockPanel>
+
+    <ContentControl x:Name="TitlebarContent"
+                    HorizontalContentAlignment="Stretch"
+                    Margin="56 0 184 0"
+                    VerticalAlignment="Top"
+                    Height="32"
+                    VerticalContentAlignment="Stretch">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+    </ContentControl>
 
     <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
       <Grid.Background>
@@ -382,13 +410,78 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MyNavigtionView.Margin" Value="0 27 0 0" />
             <Setter Target="NavigationViewHeader.Padding" Value="48 0 0 0" />
             <Setter Target="MenuRightCommandBar.Padding" Value="0 0 48 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+
+      <!-- フルスクリーン -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind NowShowTitlebarInFullScreen, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-1"
+                               Storyboard.TargetName="TitlebarArea"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-1"
+                               Storyboard.TargetName="TitlebarContent"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="32"
+                               Storyboard.TargetName="MyNavigtionView"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:FullScreenModeTrigger IsFullScreen="True" />
+          </VisualState.StateTriggers>
+          <VisualState.Storyboard>
+            <Storyboard>
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-32"
+                               Storyboard.TargetName="TitlebarArea"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-32"
+                               Storyboard.TargetName="TitlebarContent"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-1"
+                               Storyboard.TargetName="MyNavigtionView"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+            </Storyboard>
+          </VisualState.Storyboard>
+        </VisualState>
+
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:CompositeStateTrigger Operator="And">
+              <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
+              <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
+            </wst:CompositeStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigtionView.Margin"
+                    Value="0 32 0 0" />
+            <Setter Target="TitlebarArea.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="-1" />
+            <Setter Target="TitlebarContent.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="-1" />
+            <Setter Target="MyNavigtionView.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
     </VisualStateManager.VisualStateGroups>
   </Grid>
 
-</Page>
+</UserControl>

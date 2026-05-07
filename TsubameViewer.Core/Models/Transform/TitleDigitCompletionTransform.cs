@@ -10,6 +10,7 @@ using TsubameViewer.Core.Models;
 using System.IO;
 using SharpCompress.Archives;
 using SharpCompress.Writers;
+using SharpCompress.Writers.Zip;
 
 namespace TsubameViewer.Core.Models.Transform;
 
@@ -94,7 +95,7 @@ public static class TitleDigitCompletionTransform
     /// <param name="digitCompletionChar"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static (bool Result, IWritableArchive Archive) TransformArchive(IArchive srcArchive, char digitCompletionChar, Action<(string Old, string New)>? onRenamed, CancellationToken ct)
+    public static (bool Result, IWritableArchive<ZipWriterOptions> Archive) TransformArchive(IArchive srcArchive, char digitCompletionChar, Action<(string Old, string New)>? onRenamed, CancellationToken ct)
     {
         // アーカイブ内でフォルダが別れている場合がある
         // 各アーカイブ内フォルダごとに数字の最大数を出して処理する必要があるけど
@@ -113,8 +114,8 @@ public static class TitleDigitCompletionTransform
         // m[2] = "00"
         // m[3] = "000"                        
         string[] m = Enumerable.Range(0, digitCount).Select(x => new string(Enumerable.Range(0, x).Select(_ => digitCompletionChar).ToArray())).ToArray();
-
-        var destArchive = SharpCompress.Archives.ArchiveFactory.Create(srcArchive.Type);
+        
+        var destArchive = ArchiveFactory.CreateArchive<ZipWriterOptions>();
 
         // 並びはそのまま維持して桁数補完できるアイテムのみを
         foreach (var item in srcArchive.Entries)
@@ -151,9 +152,9 @@ public static class TitleDigitCompletionTransform
     {
         if (SupportedFileTypesHelper.IsSupportedMangaFile(file) is false) { throw new NotSupportedException(); }
 
-        IWritableArchive destArchive;
+        IWritableArchive<ZipWriterOptions> destArchive;
         using (var stream = await file.OpenStreamForReadAsync())
-        using (var srcArchive = ArchiveFactory.Open(stream))
+        using (var srcArchive = ArchiveFactory.OpenArchive(stream))
         {
             (var result, destArchive) = TransformArchive(srcArchive, digitCompletionChar, onRenamed, ct);
             if (result is false)
@@ -165,8 +166,8 @@ public static class TitleDigitCompletionTransform
         using (var stream = await file.OpenStreamForWriteAsync())
         using (destArchive)
         {
-            stream.SetLength(0);
-            destArchive.SaveTo(stream, new WriterOptions(compressionType));
+            stream.SetLength(0);            
+            destArchive.SaveTo(stream, new ZipWriterOptions(compressionType: SharpCompress.Common.CompressionType.Deflate));
         }
 
         return true;

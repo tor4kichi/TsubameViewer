@@ -45,6 +45,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using I18NPortable;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Views;
+using Microsoft.IO;
 
 namespace TsubameViewer.ViewModels;
 
@@ -226,6 +227,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private readonly FolderListingSettings _folderListingSettings;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
     CompositeDisposable _disposables = new CompositeDisposable();
 
     public ImageViewerPageViewModel(
@@ -250,7 +252,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand
+        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
+        RecyclableMemoryStreamManager recyclableMemoryStreamManager
         )
     {
         _scheduler = scheduler;
@@ -270,6 +273,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
         OpenWithExplorerCommand = openWithExplorerCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
+        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         _bookmarkManager = bookmarkManager;
         _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
@@ -388,7 +392,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _imageLoadingCts?.Cancel();
         _imageLoadingCts?.Dispose();
 
-        _appView.Title = String.Empty;
         ParentFolderOrArchiveName = String.Empty;
 
         _messenger.Unregister<AlbamItemAddedMessage>(this);
@@ -1390,7 +1393,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            image = new PrefetchImageInfo(source);
+            image = new PrefetchImageInfo(source, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
             _CachedImages.Insert(0, image);
 
             if (_CachedImages.Count > 8)
@@ -1520,13 +1523,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     if (image1.DecodePixelHeight != 0)
                     {
-                        using var loader1 = new PrefetchImageInfo(imageSource1);
+                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
                         image1 = await loader1.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
                     }
                     if (image2.DecodePixelHeight != 0)
                     {
-                        using var loader2 = new PrefetchImageInfo(imageSource2);
+                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
                         image2 = await loader2.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
                     }
@@ -1539,7 +1542,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 else
                 {
                     var imageSource1 = _sourceImagesSingle[indexType][0];
-                    using var loader1 = new PrefetchImageInfo(imageSource1);
+                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
                     SetDisplayImages_Internal(PrefetchIndexType.Current,
                         imageSource1, await loader1.GetBitmapImageAsync(ct)
                         );
@@ -2039,9 +2042,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
 public class PrefetchImageInfo : IDisposable
 {
-    public PrefetchImageInfo(IImageSource imageSource)
+    public PrefetchImageInfo(IImageSource imageSource, int canvasWidth, RecyclableMemoryStreamManager recyclable)
     {
         ImageSource = imageSource;
+        _canvasWidth = canvasWidth;
+        _recyclable = recyclable;
     }
 
     CancellationTokenSource _PrefetchCts = new CancellationTokenSource();
@@ -2055,6 +2060,8 @@ public class PrefetchImageInfo : IDisposable
     public bool IsCanceled { get; set; }
 
     static Core.AsyncLock _prefetchProcessLock = new ();
+    private readonly int _canvasWidth;
+    private readonly RecyclableMemoryStreamManager _recyclable;
 
     public void Cancel()
     {
@@ -2067,43 +2074,60 @@ public class PrefetchImageInfo : IDisposable
     {
         if (Image != null) { return Image; }
 
-        using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_PrefetchCts.Token, ct))
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_PrefetchCts.Token, ct);
+        var linkedCt = linkedCts.Token;
+        using (await _prefetchProcessLock.LockAsync(linkedCt))
         {
-            var linkedCt = linkedCts.Token;
-            using (await _prefetchProcessLock.LockAsync(linkedCt))
+            if (Image != null) { return Image; }
+
+            if (ImageSource.IsStorageItemNotFound() is false)
             {
-                if (Image == null)
+                var image = new BitmapImage();                    
+                if (ImageSource is PdfPageImageSource)
                 {
-                    if (ImageSource.IsStorageItemNotFound() is false)
+                    using var stream = _recyclable.GetStream();
+                    var size = await ImageSource.TryGetSizedImageStreamAsync(_canvasWidth, stream, linkedCt);
+                    if (size != null)
                     {
-                        var image = new BitmapImage();
-                        using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
+                        try
                         {
-                            try
-                            {
-                                await image.SetSourceAsync(stream).AsTask(linkedCt);
-                            }
-                            catch (Exception ex) when (ex.HResult == -1072868846)
-                            {
-                                throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
-                            }
+                            await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(linkedCt);
                         }
-
-                        Image = image;
-
-                        Debug.WriteLine("image load to memory : " + ImageSource.Name);
+                        catch (Exception ex) when (ex.HResult == -1072868846)
+                        {
+                            throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
+                        }
                     }
-                    else
-                    {                            
-                        Debug.WriteLine("image load failed : " + ImageSource.Name);
+                }
+                else
+                {
+                    using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
+                    {
+                        try
+                        {
+                            await image.SetSourceAsync(stream).AsTask(linkedCt);
+                        }
+                        catch (Exception ex) when (ex.HResult == -1072868846)
+                        {
+                            throw new NotSupportedImageFormatException(Path.GetExtension(ImageSource.Name));
+                        }
                     }
                 }
 
-                IsCompleted = true;
+                Image = image;
 
-                return Image;
+                Debug.WriteLine("image load to memory : " + ImageSource.Name);
             }
+            else
+            {                            
+                Debug.WriteLine("image load failed : " + ImageSource.Name);
+            }
+
+            IsCompleted = true;
+
+            return Image;
         }
+        
     }
 
     public void Dispose()

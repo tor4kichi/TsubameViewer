@@ -186,7 +186,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     };
 
 
-    public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
+    public string FoldersManagementPageName => AppShell.HomePageName;
 
     CompositeDisposable _disposables = new CompositeDisposable();
     CompositeDisposable _navigationDisposables;

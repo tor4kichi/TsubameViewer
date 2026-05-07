@@ -12,33 +12,45 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:wst="using:WindowsStateTriggers"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
-  mc:Ignorable="d"
+      xmlns:vm="using:TsubameViewer.ViewModels"
+      mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
   <Page.Resources>
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:SearchResultPageViewModel">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
+        <StackPanel Orientation="Horizontal"
+                    Grid.Column="1">
+
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock TextTrimming="CharacterEllipsis"
+                     FontSize="12"
+                     IsHitTestVisible="False">
+      <Run Text="{Binding Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
   </Page.Resources>
 
   <Grid Margin="0 0 0 0">
-
     <uwpControls:DockPanel>
-      <StackPanel 
-          uwpControls:DockPanel.Dock="Top" 
-          x:Name="HeaderLayout"
-          Background="{ThemeResource ApplicationContentBackgroundBrush}"          
-          Padding="8 8"
-        Margin="0 24 0 16"
-          >
-
+      <StackPanel uwpControls:DockPanel.Dock="Top"
+                  x:Name="HeaderLayout"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  Padding="8 8"
+                  Margin="0 24 0 16">
         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
             <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
         </TextBlock>
-
-
       </StackPanel>
-
-
-
       <uwpControls:AdaptiveGridView
         ItemsSource="{Binding SearchResultItems}"
         x:Name="FoldersAdaptiveGridView"

@@ -3,6 +3,7 @@ using SharpCompress.Archives;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -12,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using Windows.Data.Pdf;
 using Windows.Storage;
 using static TsubameViewer.Core.Models.ImageViewer.ArchiveFileInnerStructureCache;
 
@@ -360,21 +360,21 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
 
 public sealed class PdfImageCollection : IImageCollection
 {
-    private readonly PdfDocument _pdfDocument;
+    private readonly SizeF[] _sizes;
     private readonly ImageViewerSettings _imageViewerSettings;
 
     private readonly IImageSource[] _imageSourcesCache;
     public PdfImageCollection(
-        StorageFile file, 
-        PdfDocument pdfDocument, 
+        StorageFile file,
+        SizeF[] sizes, 
         ImageViewerSettings imageViewerSettings 
         )
     {
         File = file;
-        _pdfDocument = pdfDocument;
-        _imageViewerSettings = imageViewerSettings;
+        _sizes = sizes;
+         _imageViewerSettings = imageViewerSettings;
 
-        _imageSourcesCache = new IImageSource[_pdfDocument.PageCount];
+        _imageSourcesCache = new IImageSource[_sizes.Length];
     }
     public string Name => File.Name;
 
@@ -382,15 +382,14 @@ public sealed class PdfImageCollection : IImageCollection
 
     public IEnumerable<IImageSource> GetAllImages()
     {
-        return Enumerable.Range(0, (int)_pdfDocument.PageCount)
-          .Select(x => _pdfDocument.GetPage((uint)x))
-          .Select(x => (IImageSource)new PdfPageImageSource(x, File, _imageViewerSettings));
+        return Enumerable.Range(0, (int)_sizes.Length)          
+          .Select(x => (IImageSource)new PdfPageImageSource(x, _sizes[x], File, _imageViewerSettings));
     }
 
 
     public ValueTask<int> GetImageCountAsync(CancellationToken ct)
     {
-        return new ((int)_pdfDocument.PageCount);
+        return new ((int)_sizes.Length);
     }
     
     public ValueTask<IImageSource> GetImageAtAsync(int index, FileSortType sort, CancellationToken ct)
@@ -400,20 +399,21 @@ public sealed class PdfImageCollection : IImageCollection
 
     private IImageSource GetImageAt(int index)
     {
-        var page = _pdfDocument.GetPage((uint)index);
-        return _imageSourcesCache[index] = new PdfPageImageSource(page, File, _imageViewerSettings);
+        //var page = _pdfDocument.GetPage((uint)index);
+        Guard.IsBetweenOrEqualTo(index, 0, _sizes.Length - 1);
+        return _imageSourcesCache[index] = new PdfPageImageSource(index, _sizes[index], File, _imageViewerSettings);
     }
 
     public ValueTask<int> GetIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
-        var index = int.Parse(key);
+        var index = int.Parse(key) - 1;
         return new (sort switch
         {
             FileSortType.None => index,
             FileSortType.TitleAscending => index,
-            FileSortType.TitleDecending => (int)_pdfDocument.PageCount - index - 1,
+            FileSortType.TitleDecending => (int)_sizes.Length - index - 1,
             FileSortType.UpdateTimeAscending => index,
-            FileSortType.UpdateTimeDecending => (int)_pdfDocument.PageCount - index - 1,
+            FileSortType.UpdateTimeDecending => (int)_sizes.Length - index - 1,
             _ => throw new NotSupportedException(sort.ToString())
         });
     }

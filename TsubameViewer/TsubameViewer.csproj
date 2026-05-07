@@ -139,6 +139,9 @@
     <Compile Include="Contracts\Services\IFileControlDialogService.cs" />
     <Compile Include="Contracts\Services\ISplitImageInputDialogService.cs" />
     <Compile Include="Contracts\Services\IImageCodecService.cs" />
+    <Compile Include="R3\DispatcherQueueTimerProvider.cs" />
+    <Compile Include="R3\WinRTProviderInitializer.cs" />
+    <Compile Include="R3\XamlCancellationHelper.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
     <Compile Include="Contracts\Services\IMessageDialogService.cs" />
     <Compile Include="Services\FolderListupSettings.cs" />
@@ -197,7 +200,7 @@
     <Compile Include="ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
-    <Compile Include="ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
+    <Compile Include="ViewModels\AppShellViewModel.cs" />
     <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="ViewModels\SettingsPageViewModel.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
@@ -232,6 +235,7 @@
     <Compile Include="Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="Views\Converters\SliderValueChangedEventArgsConverter.cs" />
     <Compile Include="Views\Converters\ToKMGTPEZYConverter.cs" />
+    <Compile Include="Views\Converters\UriHumanReadableConverter.cs" />
     <Compile Include="Views\Dialogs\SplitImageInputDialog.xaml.cs">
       <DependentUpon>SplitImageInputDialog.xaml</DependentUpon>
     </Compile>
@@ -272,8 +276,8 @@
     <Compile Include="Views\ImageViewerPage.xaml.cs">
       <DependentUpon>ImageViewerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\PrimaryWindowCoreLayout.xaml.cs">
-      <DependentUpon>PrimaryWindowCoreLayout.xaml</DependentUpon>
+    <Compile Include="AppShell.xaml.cs">
+      <DependentUpon>AppShell.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
@@ -292,7 +296,6 @@
     <Compile Include="Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\FolderItemTemplateSelector.cs" />
-    <Compile Include="Views\TemplateSelector\MenuItemTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
     <Compile Include="Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="Views\UINavigation\UINavigationButtons.cs" />
@@ -371,6 +374,9 @@
     <PackageReference Include="CommunityToolkit.Mvvm">
       <Version>8.0.0</Version>
     </PackageReference>
+    <PackageReference Include="CommunityToolkit.Uwp.Controls.SettingsControls">
+      <Version>8.2.251219</Version>
+    </PackageReference>
     <PackageReference Include="DryIoc">
       <Version>5.3.1</Version>
     </PackageReference>
@@ -382,9 +388,6 @@
     </PackageReference>
     <PackageReference Include="LiteDB">
       <Version>5.0.17</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
-      <Version>6.0.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream">
       <Version>2.2.1</Version>
@@ -409,26 +412,29 @@
     <PackageReference Include="Microsoft.UI.Xaml">
       <Version>2.8.7</Version>
     </PackageReference>
+    <PackageReference Include="R3">
+      <Version>1.3.0</Version>
+    </PackageReference>
     <PackageReference Include="ReactiveProperty.UWP">
       <Version>7.2.0</Version>
     </PackageReference>
     <PackageReference Include="sharpcompress">
-      <Version>0.32.2</Version>
+      <Version>0.47.4</Version>
     </PackageReference>
     <PackageReference Include="System.Linq.Async">
       <Version>6.0.1</Version>
     </PackageReference>
-    <PackageReference Include="System.Text.Encoding.CodePages">
-      <Version>6.0.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>5.0.2</Version>
+      <Version>10.0.7</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
       <Version>3.3.2</Version>
     </PackageReference>
     <PackageReference Include="WindowsStateTriggers">
       <Version>1.1.0</Version>
+    </PackageReference>
+    <PackageReference Include="ZLinq">
+      <Version>1.5.6</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -501,7 +507,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Views\PrimaryWindowCoreLayout.xaml">
+    <Page Include="AppShell.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -225,7 +225,7 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
 
                 bool IsDeleteTargetPath(string path)
                 {
-                    if (descendantPaths.Any(x => path.StartsWith(x)))
+                    if (descendantPaths.Any(path.StartsWith))
                     {
                         Debug.WriteLine($"保持されるフォルダのためスキップ: {path}");
                         return false;
@@ -300,43 +300,47 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     async Task GetAllDeletionPathsAsync(StorageFolder folder, Predicate<IStorageItem> targetPredicate, Func<IStorageItem, Task> actionTask)
     {        
         var query = folder.CreateFolderQueryWithOptions(new Windows.Storage.Search.QueryOptions() { FolderDepth = Windows.Storage.Search.FolderDepth.Deep});
-        await foreach (var folderItem in query.ToAsyncEnumerable())
-        {
-            if (targetPredicate(folderItem))
-            {
-                Debug.WriteLine($"除去する {folderItem.Path}");
-                await actionTask(folderItem);
-            }
-            else
-            {
-                Debug.WriteLine($"除去しない {folderItem.Path}");
-            }
-        }
 
-        // 対象フォルダ上（子孫フォルダ含まず）のファイルを列挙
-        var fileQuery = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
-        await foreach (var folderItem in fileQuery.ToAsyncEnumerable())
-        {
-            if (targetPredicate(folderItem))
-            {
-                Debug.WriteLine($"除去する {folderItem.Path}");
-                await actionTask(folderItem);
-            }
-            else
-            {
-                Debug.WriteLine($"除去しない {folderItem.Path}");
-            }
-        }
+        List<Task> deleteTasks = [];
+        //await foreach (var folderItem in query.ToAsyncEnumerable())
+        //{
+        //    if (targetPredicate(folderItem))
+        //    {
+        //        Debug.WriteLine($"除去する {folderItem.Path}");
+        //        deleteTasks.Add(actionTask(folderItem));
+        //    }
+        //    else
+        //    {
+        //        Debug.WriteLine($"除去しない {folderItem.Path}");
+        //    }
+        //}
+
+        //// 対象フォルダ上（子孫フォルダ含まず）のファイルを列挙
+        //var fileQuery = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.GetAllSupportedFileExtensions()));
+        //await foreach (var folderItem in fileQuery.ToAsyncEnumerable())
+        //{
+        //    if (targetPredicate(folderItem))
+        //    {
+        //        Debug.WriteLine($"除去する {folderItem.Path}");
+        //        deleteTasks.Add(actionTask(folderItem));
+        //    }
+        //    else
+        //    {
+        //        Debug.WriteLine($"除去しない {folderItem.Path}");
+        //    }
+        //}
 
         // 最後に渡されたフォルダも処理させる
         if (targetPredicate(folder))
         {
             Debug.WriteLine($"除去する {folder.Path}");
-            await actionTask(folder);
+            deleteTasks.Add(actionTask(folder));
         }
         else
         {
             Debug.WriteLine($"除去しない {folder.Path}");
         }
+
+        await Task.WhenAll(deleteTasks);
     }
 }

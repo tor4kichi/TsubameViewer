@@ -47,6 +47,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
 
     public RelayCommand AppInfoCopyToClipboard { get; }
 
+    private readonly ButtonSettingItemViewModel _cacheSizeButton;
     CancellationTokenSource _navigationCts;
 
     public bool IsForceXboxAppearanceModeEnabled
@@ -87,27 +88,21 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
             Clipboard.SetContent(data);
         });
 
+        _cacheSizeButton = new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), "ThumbnailCacheSize".Translate(), "?", () => DeleteAllThumbnailsAsync());
+
         SettingGroups = new[]
-        {                
+        {
             new SettingsGroupViewModel
             {
-                Label = "SourceFoldersSettings".Translate(),
+                Label = "GeneralUISettings".Translate(),
                 Items =
                 {
-                    new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
-                }
-            },
-            new SettingsGroupViewModel
-            {
-                Label = "ThumbnailImageSettings".Translate(),
-                Items =
-                {
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, x => x.IsImageFileGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, x => x.IsFolderGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
-                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
-                    new UpdatableTextSettingItemViewModel("ThumbnailCacheSize".Translate(), _ThumbnailImagesCacheSizeText),
-                    new ButtonSettingItemViewModel("DeleteThumbnailCache".Translate(), () => DeleteAllThumbnailsAsync()),
+                    new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
+                    new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#if DEBUG
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
+#endif
                 }
             },
             new SettingsGroupViewModel
@@ -124,26 +119,22 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
             },
             new SettingsGroupViewModel
             {
-                Label = "PdfImageSettings".Translate(),
+                Label = "ThumbnailImageSettings".Translate(),
                 Items =
                 {
-                    new NumberBoxSettingItemViewModel("PdfImageThresholdWidth".Translate(), _imageViewerPageSettings.PdfImageThresholdWidth, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageThresholdWidth = (uint)value),
-                    new NumberBoxSettingItemViewModel("PdfImageAlternateWidth".Translate(), _imageViewerPageSettings.PdfImageAlternateWidth, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageAlternateWidth = (uint)value),
-                    new NumberBoxSettingItemViewModel("PdfImageThresholdHeight".Translate(), _imageViewerPageSettings.PdfImageThresholdHeight, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageThresholdHeight = (uint)value),
-                    new NumberBoxSettingItemViewModel("PdfImageAlternateHeight".Translate(), _imageViewerPageSettings.PdfImageAlternateHeight, 0d, 9999d, 1d, value => _imageViewerPageSettings.PdfImageAlternateHeight = (uint)value),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, x => x.IsImageFileGenerateThumbnailEnabled),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateFolderThumbnail".Translate(), _folderListingSettings, x => x.IsFolderGenerateThumbnailEnabled),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
+                    _cacheSizeButton,
                 }
             },
             new SettingsGroupViewModel
             {
-                Label = "GeneralUISettings".Translate(),
+                Label = "SourceFoldersSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
-#if DEBUG
-                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
-#endif
-                    new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
-                    new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
+                    new StoredFoldersSettingItemViewModel(_messenger, _sourceStorageItemsRepository),
                 }
             },
             new SettingsGroupViewModel
@@ -246,8 +237,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         try
         {
             var size = (ulong) await Task.Run(() => _thumbnailImageMaintenanceService.ComputeUsingSize(), ct);
-
-            _ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
+            _cacheSizeButton.Description = ToUserFiendlyFileSizeText(size) + "B";
+            //_ThumbnailImagesCacheSizeText.Value = ToUserFiendlyFileSizeText(size) + "B";
         }
         catch (OperationCanceledException)
         {
@@ -440,25 +431,31 @@ public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase, IDisp
     }
 }
 
-public class ButtonSettingItemViewModel : SettingItemViewModelBase, IDisposable
+public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDisposable
 {
-    public ButtonSettingItemViewModel(string label, Func<Task> buttonAction)
+    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Func<Task> buttonAction)
     {
+        ButtonLabel = buttonLabel;
         Label = label;
+        Description = description;
         ActionCommand = new AsyncReactiveCommand();
         ActionCommand.Subscribe(buttonAction);
     }
 
-    public ButtonSettingItemViewModel(string label, Func<Task> buttonAction, IObservable<bool> canExecuteObservable)
+    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Func<Task> buttonAction, IObservable<bool> canExecuteObservable)
     {
+        ButtonLabel = buttonLabel;
         Label = label;
+        Description = description;
         ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
         ActionCommand.Subscribe(buttonAction);
     }
 
-    public ButtonSettingItemViewModel(string label, Action buttonAction, IObservable<bool> canExecuteObservable)
+    public ButtonSettingItemViewModel(string buttonLabel, string label, string description, Action buttonAction, IObservable<bool> canExecuteObservable)
     {
+        ButtonLabel = buttonLabel;
         Label = label;
+        Description = description;
         ActionCommand = canExecuteObservable.ToAsyncReactiveCommand();
         ActionCommand.Subscribe(_ => 
         {
@@ -467,7 +464,13 @@ public class ButtonSettingItemViewModel : SettingItemViewModelBase, IDisposable
         });
     }
 
+    public string ButtonLabel { get; }
     public string Label { get; }
+
+
+    [ObservableProperty]
+    string _description;
+
     public AsyncReactiveCommand ActionCommand { get; }
 
     public void Dispose()
@@ -507,22 +510,14 @@ public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDispos
     }
 }
 
-public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
+public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
 {
     private string _currentLocale = I18NPortable.I18N.Current.Locale;
     public LocaleSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings)
     {
         Label = label;
-        SelectedLocale = applicationSettings.ToReactivePropertyAsSynchronized(x => x.Locale);
-
-        _themeChangedSubscriber = SelectedLocale.Subscribe(locale =>
-        {
-            if (string.IsNullOrEmpty(locale)) { return; }
-
-            I18NPortable.I18N.Current.Locale = locale;
-            IsRequireRestart = _currentLocale != locale;
-            RestartTextTranslated = "RequireRestartApplicationToRefrectSettings".Translate();
-        });
+        _applicationSettings = applicationSettings;
+        SelectedLocale = Locales.FirstOrDefault(x =>x.Locale == applicationSettings.Locale);
     }
 
     private string _RestartTextTranslated;
@@ -539,7 +534,20 @@ public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDispo
         set { SetProperty(ref _isRequireRestart, value); }
     }
 
-    public ReactiveProperty<string> SelectedLocale { get; }
+    [ObservableProperty]
+    PortableLanguage? _selectedLocale;
+
+    partial void OnSelectedLocaleChanged(PortableLanguage? value)
+    {
+        if (value != null)
+        {
+            _applicationSettings.Locale = value.Locale;
+
+            I18NPortable.I18N.Current.Locale = value.Locale;
+            IsRequireRestart = _currentLocale != value.Locale;
+            RestartTextTranslated = "RequireRestartApplicationToRefrectSettings".Translate();
+        }
+    }
 
     public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
 
@@ -549,15 +557,13 @@ public class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDispo
 
     public void Dispose()
     {
-        ((IDisposable)SelectedLocale).Dispose();
         _themeChangedSubscriber.Dispose();
     }
 
-    private RelayCommand _RestartApplicationCommand;
-    public RelayCommand RestartApplicationCommand =>
-        _RestartApplicationCommand ?? (_RestartApplicationCommand = new RelayCommand(ExecuteRestartApplicationCommand));
+    private readonly ApplicationSettings _applicationSettings;
 
-    void ExecuteRestartApplicationCommand()
+    [RelayCommand]
+    void RestartApplication()
     {
         _ = Windows.ApplicationModel.Core.CoreApplication.RequestRestartAsync("");
     }

@@ -81,7 +81,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
                 if (outputFile == null) { return; }
 
                 using (var inputFile = await file.OpenStreamForReadAsync())
-                using (var archive = ArchiveFactory.Open(inputFile))
+                using (var archive = ArchiveFactory.OpenArchive(inputFile))
                 {
                     await _messenger.WorkWithBusyWallAsync(async (ct) =>
                     {
@@ -92,7 +92,7 @@ public sealed class SplitImageCommand : ImageSourceCommandBase
 
                             using (var fileStream = await tempOutputFile.OpenStreamForWriteAsync())
                             {
-                                outputArchive.SaveTo(fileStream, new SharpCompress.Writers.WriterOptions(SharpCompress.Common.CompressionType.None));
+                                outputArchive.SaveTo(fileStream, new SharpCompress.Writers.Zip.ZipWriterOptions(SharpCompress.Common.CompressionType.None));
                             }
 
                             await _thumbnailImageMaintenanceService.DeleteThumbnailFromPathAsync(outputFile.Path);

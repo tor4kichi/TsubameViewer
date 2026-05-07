@@ -24,7 +24,27 @@
   NavigationCacheMode="Enabled"
   >
   <Page.Resources>
-    
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:FolderListupPageViewModel">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal"
+                    Grid.Column="1">
+
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{x:Bind DisplayCurrentPath, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
+          </TextBlock>
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{x:Bind DisplayCurrentArchiveFolderName, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
   </Page.Resources>
   <Grid >
 
@@ -80,43 +100,25 @@
                     uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
                   uwpControls:DockPanel.Dock="Top"
                   HorizontalAlignment="Stretch"
-                    >
-        <uwpControls:DockPanel>
-          <StackPanel uwpControls:DockPanel.Dock="Left" Padding="0 8" Spacing="8">
-            <TextBlock Opacity="0.7" TextWrapping="Wrap">
-              <Run Text="{x:Bind _vm.DisplayCurrentPath, Mode=OneWay}" /> <Run Text="{x:Bind _vm.DisplayCurrentArchiveFolderName, Mode=OneWay}" />
-            </TextBlock>
-            <Button x:Name="ReturnSourceFolderPageButton"
-                  Content="{i18nExt:Localize Key=ReturnSourceFolderPageButton}" 
-                  Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="{x:Bind _vm.FoldersManagementPageName, Mode=OneWay}"
-                    XYFocusRight="{x:Bind ChangetoImageListupButton}"
-                    AccessKey="R"
                   >
-            </Button>
-          </StackPanel>
-
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 16 0 8">
           <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
-                  uwpControls:DockPanel.Dock="Right"
-                  >
+                  uwpControls:DockPanel.Dock="Right">
             <Button Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
                     Command="{x:Bind _vm.OpenImageListupCommand}"
                     CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
                     x:Name="ChangetoImageListupButton"
-                    AccessKey="L"
-                    >
+                    AccessKey="L">
             </Button>
           </Border>
 
-          <Border />
-        </uwpControls:DockPanel>
-
-        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 0 0 8">
           <DropDownButton x:Name="FileSortButton" 
                             uwpControls:DockPanel.Dock="Left"
                             Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
                             ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                           AccessKey="S"
+                          CornerRadius="4"
                             >
             <DropDownButton.Flyout>
               <MenuFlyout>
@@ -161,6 +163,7 @@
                             Content="{x:Bind _vm.SelectedChildFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
                                   Visibility="Collapsed"
+                                  CornerRadius="4"
                             >
                     <DropDownButton.Flyout>
                       <MenuFlyout Placement="RightEdgeAlignedTop">
@@ -196,8 +199,8 @@
                   <DropDownButton x:Name="ChildDefaultFolderOrArchiveOpenModeButton"
                                   Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                                   Background="Transparent"
-                                  Visibility="Collapsed"                                  
-                                  >
+                                  Visibility="Collapsed"
+                                  CornerRadius="4">
                     <DropDownButton.Flyout>
                       <MenuFlyout Placement="RightEdgeAlignedTop">
                         <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer, Converter={StaticResource LocalizeConverter}}"
@@ -219,6 +222,8 @@
             </Button.Flyout>
           </Button>
         </uwpControls:DockPanel>
+
+        <Border Background="{ThemeResource SystemBaseLowColor}" Height="1" Opacity="0.5"></Border>
       </StackPanel>
 
       <uwpControls:AdaptiveGridView 
@@ -271,7 +276,6 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.SelectionMode" Value="Multiple" />
             <Setter Target="SelectActionsContainer.Visibility" Value="Visible" />
-            <Setter Target="ReturnSourceFolderPageButton.IsEnabled" Value="False" />
             <Setter Target="ChangetoImageListupButton.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>

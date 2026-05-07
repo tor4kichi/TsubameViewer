@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.ImageViewer;
-using Windows.Data.Pdf;
 using Windows.Storage;
 using Windows.Storage.Streams;
 

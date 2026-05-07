@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,7 @@ public interface IImageSource : IEquatable<IImageSource>
     string Path { get; }
     DateTime DateCreated { get; }
 
+    ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default);
     ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
 }
 

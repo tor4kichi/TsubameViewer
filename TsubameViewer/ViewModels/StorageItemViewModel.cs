@@ -122,7 +122,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     CancellationTokenSource? _initializeCts;
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount));
+    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
     public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken rootCt)
@@ -133,7 +133,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         
         try
         {
-            using var d = await _asyncLock.LockAsync(rootCt);
+            //using var d = await _asyncLock.LockAsync(rootCt);
             
             if (IsInitialized) { return; }
             if (_disposed) { return; }
@@ -141,17 +141,11 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
             if (IsRequestImageLoading is false) { return; }
 
             ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
-            
-            //using var cts = _initializeCts = new CancellationTokenSource();
-            //using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(rootCt, _initializeCts.Token);
-            //var linkedCt = linkedCts.Token;
-            // Note: Task.Run() で包まないと一部環境でハングアップする可能性あり
-            //using (await _asyncLock.LockAsync(rootCt))
-            //using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt), rootCt))
-            using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt))
+
+            using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {
                 if (stream is null || stream.Size == 0) { return; }
-                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+                ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
                 if (IsRequestImageLoading is false) { return; }
 
                 {

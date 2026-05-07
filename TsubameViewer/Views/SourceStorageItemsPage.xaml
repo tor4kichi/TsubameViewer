@@ -11,14 +11,25 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core"
   xmlns:wst="using:WindowsStateTriggers" 
   xmlns:myBehaior="using:TsubameViewer.Views.Behaviors" 
-  xmlns:ss="using:TsubameViewer.Views.StyleSelector" 
-  xmlns:viewModel="using:TsubameViewer.ViewModels" xmlns:myFlyouts="using:TsubameViewer.Views.Flyouts"
+  xmlns:ss="using:TsubameViewer.Views.StyleSelector"
+      xmlns:vm="using:TsubameViewer.ViewModels" 
+  xmlns:myFlyouts="using:TsubameViewer.Views.Flyouts"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
   >
 
   <Page.Resources>
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:SourceStorageItemsPageViewModel">
+      <StackPanel Orientation="Horizontal"
+                  Spacing="8">
+        <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="TsubameViewer" />
+        </TextBlock>
+      </StackPanel>
+    </DataTemplate>
+    
     <CollectionViewSource x:Key="ItemsCollectionViewSource" 
                           Source="{x:Bind _vm.Groups, Mode=OneWay}"
                           IsSourceGrouped="True"
@@ -27,10 +38,6 @@
   </Page.Resources>
   <Grid Margin="0 0 0 0">
 
-    <Border VerticalAlignment="Top"
-            Height="44"
-            Background="{ThemeResource ApplicationContentBackgroundBrush}"
-            />
     <uwpControls:AdaptiveGridView 
       x:Name="FoldersAdaptiveGridView"
       StretchContentForSingleRow="False"
@@ -47,13 +54,6 @@
       ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
       >
       
-      <GridView.Header>
-        <Grid HorizontalAlignment="Right">
-
-        </Grid>
-
-      </GridView.Header>
-
       <!-- 表示がチラつくのでGridViewItemのアニメーションを無効にしている -->
       <GridView.ItemContainerTransitions>
         <TransitionCollection />
@@ -62,7 +62,7 @@
         <GroupStyle HidesIfEmpty="True"
                     >
           <GroupStyle.HeaderTemplate>
-            <DataTemplate x:DataType="viewModel:SourceItemsGroup">
+            <DataTemplate x:DataType="vm:SourceItemsGroup">
               <TextBlock Text="{x:Bind GroupId, Converter={StaticResource LocalizeConverter}}" />
             </DataTemplate>
           </GroupStyle.HeaderTemplate>

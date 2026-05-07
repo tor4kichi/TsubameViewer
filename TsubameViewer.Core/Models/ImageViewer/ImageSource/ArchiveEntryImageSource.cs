@@ -2,6 +2,7 @@
 using SharpCompress.Archives;
 using System;
 using System.Collections.Immutable;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -55,6 +56,11 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
     public DateTime DateCreated { get; }
 
     public string EntryKey => _entry.Key;
+
+    public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
+    {
+        return new(default(SizeF?));
+    }
 
     public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
     {

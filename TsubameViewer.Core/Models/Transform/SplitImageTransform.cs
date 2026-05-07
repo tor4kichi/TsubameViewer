@@ -1,5 +1,6 @@
 ﻿using Microsoft.IO;
 using SharpCompress.Archives;
+using SharpCompress.Writers.Zip;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,9 +33,9 @@ public class SplitImageTransform
     /// <param name="encoderId">BitmapEncoder.XXXEncoderIdの値を使用する。nullの場合は、JpegEncoderIdを使用する。</param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task<IWritableArchive> SplitImageOutputToArchiveFileAsync(IArchive archive, double thresholdAspectRatio, double? pageAspectRatio, bool isLeftBinding, Guid? encoderId, CancellationToken ct)
+    public async Task<IWritableArchive<ZipWriterOptions>> SplitImageOutputToArchiveFileAsync(IArchive archive, double thresholdAspectRatio, double? pageAspectRatio, bool isLeftBinding, Guid? encoderId, CancellationToken ct)
     {
-        var outputArchive = ArchiveFactory.Create(SharpCompress.Common.ArchiveType.Zip);
+        var outputArchive = ArchiveFactory.CreateArchive<ZipWriterOptions>();
 
         try
         {

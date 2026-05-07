@@ -1,10 +1,11 @@
-﻿using DryIoc;
-using I18NPortable;
-using LiteDB;
-using CommunityToolkit.Diagnostics;
+﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
+using DryIoc;
+using I18NPortable;
+using LiteDB;
 using Microsoft.Toolkit.Uwp.Helpers;
+using R3.UWP;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,13 +15,20 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Contracts.Navigation;
+using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Contracts.Maintenance;
+using TsubameViewer.Core.Contracts.Models;
+using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Maintenance;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Migrate;
-using TsubameViewer.Services.Navigation;
+using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services;
+using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
@@ -31,13 +39,6 @@ using Windows.Foundation;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Animation;
-using TsubameViewer.Core.Models.Navigation;
-using TsubameViewer.Core.Maintenance;
-using TsubameViewer.Core.Contracts.Models;
-using TsubameViewer.Core.Contracts.Maintenance;
-using TsubameViewer.Core.Contracts.Services;
-using TsubameViewer.Contracts.Services;
-using TsubameViewer.Contracts.Navigation;
 
 namespace TsubameViewer;
 
@@ -64,7 +65,8 @@ sealed partial class App : Application
         UnhandledException += App_UnhandledException;
 
         RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
-        
+        WinRTProviderInitializer.SetDefaultObservableSystem(OnTimerProviderException);
+
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
@@ -92,6 +94,17 @@ sealed partial class App : Application
         Debug.WriteLine(e.Message);
         Debug.WriteLine(e.Exception.ToString());
     }
+
+    void OnTimerProviderException(Exception exception)
+    {
+        if (exception == null) { return; }
+        if (exception is OperationCanceledException) { return; }
+
+        Debug.WriteLine(exception);
+
+        //Container.Resolve<IMessenger>()?.Send<AppExceptionMessage>(new(exception));
+    }
+
 
     private Container ConfigureService()
     {
@@ -129,7 +142,7 @@ sealed partial class App : Application
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
-        container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
+        container.Register<AppShell>(reuse: new SingletonReuse());
         container.Register<SourceStorageItemsPage>();
         container.Register<ImageListupPage>();
         container.Register<FolderListupPage>();
@@ -293,7 +306,7 @@ sealed partial class App : Application
 
         if (_isRestored is false)
         {
-            var shell = Window.Current.Content as PrimaryWindowCoreLayout;
+            var shell = Window.Current.Content as AppShell;
             shell.RestoreNavigationStack();
         }
     }
@@ -422,7 +435,7 @@ sealed partial class App : Application
 
         UpdateFolderItemSizingResourceValues();
 
-        Window.Current.Content = Ioc.Default.GetService<PrimaryWindowCoreLayout>();
+        Window.Current.Content = Ioc.Default.GetService<AppShell>();
         Window.Current.Activate();
     }
 

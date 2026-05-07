@@ -7,12 +7,35 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
   xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-  xmlns:muxc="using:Microsoft.UI.Xaml.Controls" xmlns:windowsstatetriggers="using:WindowsStateTriggers"
+  xmlns:muxc="using:Microsoft.UI.Xaml.Controls" 
+  xmlns:windowsstatetriggers="using:WindowsStateTriggers"
+  xmlns:vm="using:TsubameViewer.ViewModels"
   mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"  
   >
 
   <Page.Resources>
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:FolderOrArchiveRestructurePageViewModel">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal"
+                    Grid.Column="1">
+
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock TextTrimming="CharacterEllipsis"
+                     FontSize="12"
+                     IsHitTestVisible="False">
+      <Run Text="{Binding Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+    
     <local:EnumValueConverter x:Key="EnumValueConverter" />
   </Page.Resources>
   <Grid KeyboardAcceleratorPlacementMode="Hidden">
@@ -22,10 +45,11 @@
       <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="{x:Bind SaveOverwrite}" />
     </Grid.KeyboardAccelerators>
 
-    <uwpControls:DockPanel MaxWidth="1080">
+    <uwpControls:DockPanel>
 
       <Grid x:Name="HeaderLayout" uwpControls:DockPanel.Dock="Top" Margin="16 27 16 16"
             Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+            MaxWidth="1080"
             >
         <uwpControls:DockPanel>
           <uwpControls:DockPanel uwpControls:DockPanel.Dock="Top" Margin="0 0 0 8">
@@ -57,9 +81,11 @@
                         Command="{x:Bind _vm.OverwriteSaveCommand}"
                         CornerRadius="4 0 0 4"                                                
                         />
-                <DropDownButton Padding="0 0 8 0" Height="30" Background="{ThemeResource SystemAccentColor}" CornerRadius="0 4 4 0" 
-                 uwpControls:DockPanel.Dock="Right"
-                 >
+                <DropDownButton Padding="0 0 8 0"
+                                Height="30"
+                                Background="{ThemeResource SystemAccentColor}"
+                                CornerRadius="0 4 4 0"
+                                uwpControls:DockPanel.Dock="Right">
                   <DropDownButton.Flyout>
                     <MenuFlyout Placement="BottomEdgeAlignedRight">
                       <MenuFlyoutItem x:Name="MenuFlyoutItem_OutputToArchiveFile" Text="{i18nExt:Localize Key=RestructurePage_OutputToArchiveFile}" Command="{x:Bind _vm.OutputToArchiveFileCommand}"  />
@@ -213,7 +239,7 @@
         SelectedItem="{x:Bind _vm.SelectedItem, Mode=TwoWay}"
         SelectionChanged="DataGrid_SelectionChanged"          
         AlternatingRowBackground="{ThemeResource ApplicationContentBackgroundBrush}"
-        >
+                            MaxWidth="1080">
         <uwpControls:DataGrid.Columns>
           <uwpControls:DataGridCheckBoxColumn x:Name="DataGridColumn_IsOutput" Header="{i18nExt:Localize Key=RestructurePage_IsOutput}" IsReadOnly="False" Binding="{Binding IsOutput, Mode=TwoWay}" IsThreeState="False" />
           <uwpControls:DataGridTextColumn x:Name="DataGridColumn_RelativePath" Header="{i18nExt:Localize Key=RestructurePage_EditPath}" IsReadOnly="False" Binding="{Binding EditPath, Mode=TwoWay}" FontSize="12" />

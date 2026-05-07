@@ -24,8 +24,13 @@ using Windows.UI.Xaml.Navigation;
 #nullable enable
 namespace TsubameViewer.Views;
 
-public sealed partial class FolderListupPage : Page
+public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 {
+    public DataTemplate? GetContent()
+    {
+        return TitlebarContent;
+    }
+
     public FolderListupPage()
     {
         this.InitializeComponent();
@@ -112,7 +117,7 @@ public sealed partial class FolderListupPage : Page
                     }
                     else
                     {
-                        ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
                     }
                 }
             }
@@ -140,7 +145,7 @@ public sealed partial class FolderListupPage : Page
         var lastIntaractItem = _vm.GetLastIntractItem();
         if (lastIntaractItem == null)
         {
-            ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
             return;
         }
 

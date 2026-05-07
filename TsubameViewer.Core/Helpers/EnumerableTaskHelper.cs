@@ -10,7 +10,7 @@ public static class EnumerableTaskHelper
     // Note: 論理スレッド数は Environment.ProcessorCount で取得できる
 
 
-    public static async Task ToAwaitableParallelTaskAsync<T>(this IEnumerable<T> items, Func<T, Task> taskFactory, int maxDegreeOfParallelism = -1)
+    public static async Task ToAwaitableParallelTaskAsync<T>(this IEnumerable<T> items, Func<T, Task> taskFactory, int maxDegreeOfParallelism = -1, int intervalMS = -1)
     {
         if (maxDegreeOfParallelism == 0) { throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "0は指定できない"); }
         if (maxDegreeOfParallelism <= -2) { throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "-1より小さい値は設定できない"); }
@@ -22,6 +22,10 @@ public static class EnumerableTaskHelper
             {
                 var exit = await Task.WhenAny(tasks);
                 tasks.Remove(exit);
+                if (intervalMS != -1)
+                {
+                    await Task.Delay(intervalMS);
+                }
             }
 
             tasks.Add(taskFactory(item));
