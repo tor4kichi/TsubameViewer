@@ -43,19 +43,17 @@
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
-          <TextBlock Style="{StaticResource TitlebarTextBlock}"
-                     Opacity="0.7">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
             <Run Text="{Binding DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
           </TextBlock>
           <Button Command="{Binding ToggleFullScreenCommand}"
-                  Opacity="0.7"
                   Style="{StaticResource TitlebarButton}">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </Button>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" Opacity="0.7">
+        <StackPanel Orientation="Horizontal">
           <TextBlock Style="{StaticResource TitlebarTextBlock}">
               <Run Text="{Binding Title, Mode=OneWay}" />
           </TextBlock>

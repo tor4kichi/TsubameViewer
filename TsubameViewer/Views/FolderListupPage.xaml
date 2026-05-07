@@ -101,7 +101,7 @@
                   uwpControls:DockPanel.Dock="Top"
                   HorizontalAlignment="Stretch"
                   >
-        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 48 0 8">
+        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 16 0 8">
           <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                   uwpControls:DockPanel.Dock="Right">
             <Button Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"

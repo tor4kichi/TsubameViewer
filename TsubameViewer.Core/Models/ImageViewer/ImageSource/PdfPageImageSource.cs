@@ -50,7 +50,8 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     {
         using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
         {
-            PDFtoImage.Conversion.SaveJpeg(imageStream, pdfStream, page: PageIndex, 
+            // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
+            PDFtoImage.Conversion.SavePng(imageStream, pdfStream, page: PageIndex, 
                 options: new PDFtoImage.RenderOptions(Dpi: 96, Width: requestedSize, WithAspectRatio: true));
 
             ct.ThrowIfCancellationRequested();
@@ -72,21 +73,8 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
         {
             var memoryStream = recyclable.GetStream();
 
-            /*
-                        if (Size.Height < _imageViewerSettings.PdfImageThresholdHeight)
-                        {
-                            await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() { DestinationHeight = _imageViewerSettings.PdfImageAlternateHeight }).AsTask(ct);
-                        }
-                        else if (_pdfPage.Size.Width < _imageViewerSettings.PdfImageThresholdWidth)
-                        {
-                            await _pdfPage.RenderToStreamAsync(memoryStream, new PdfPageRenderOptions() {  DestinationWidth = _imageViewerSettings.PdfImageThresholdWidth }).AsTask(ct);
-                        }
-                        else
-                        {
-                            await _pdfPage.RenderToStreamAsync(memoryStream).AsTask(ct);
-                        }
-                        */
-            PDFtoImage.Conversion.SaveJpeg(memoryStream, pdfStream, page: PageIndex);
+            // Note: Jpegだとリリースビルド時のタブレット端末でクラッシュする
+            PDFtoImage.Conversion.SavePng(memoryStream, pdfStream, page: PageIndex);
 
             ct.ThrowIfCancellationRequested();
 

@@ -137,7 +137,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
                 }
 
-                using (var stream = await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct))
+                using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
                     if (stream is null || stream.Size == 0) { return; }
                     if (IsRequestImageLoading is false) { return; }
