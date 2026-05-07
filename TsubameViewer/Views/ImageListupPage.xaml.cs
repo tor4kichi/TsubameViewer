@@ -83,8 +83,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void TryStartLoadingTaskMonitor()
     {
         if (_lodingTaskMonitor != null) { return; }
-        if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0) { return; }
-
+        
         Debug.WriteLine("LoadingTaskMonitor START.");
         _lodingTaskMonitor = R3.Observable.IntervalFrame(5, this.GetCancellationTokenOnUnloaded())
             .SubscribeAwait(async (_, ct) =>
@@ -298,7 +297,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             ItemsScrollViewer.Opacity = 1.0;
         }
 
-        UpdateVisibleRangeItemInitialize();
+        TryStartLoadingTaskMonitor();
     }
 
     private void SaveScrollStatus(UIElement target)
