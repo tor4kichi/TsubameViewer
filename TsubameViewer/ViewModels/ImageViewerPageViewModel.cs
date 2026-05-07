@@ -388,7 +388,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _imageLoadingCts?.Cancel();
         _imageLoadingCts?.Dispose();
 
-        _appView.Title = String.Empty;
         ParentFolderOrArchiveName = String.Empty;
 
         _messenger.Unregister<AlbamItemAddedMessage>(this);

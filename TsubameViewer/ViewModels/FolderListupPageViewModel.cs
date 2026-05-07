@@ -147,7 +147,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
 
 
   
-    public string FoldersManagementPageName => PrimaryWindowCoreLayout.HomePageName;
+    public string FoldersManagementPageName => AppShell.HomePageName;
 
     private string _DisplayCurrentArchiveFolderName;
     public string DisplayCurrentArchiveFolderName

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
@@ -9,7 +10,9 @@ using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -20,33 +23,38 @@ using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Helpers;
+using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.System;
+using Windows.UI;
 using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
-using TsubameViewer.Services;
-using System.IO;
-
+#nullable enable
 namespace TsubameViewer.Views;
 
-/// <summary>
-/// An empty page that can be used on its own or navigated to within a Frame.
-/// </summary>
-public sealed partial class PrimaryWindowCoreLayout : Page
+public interface ITitlebarContentAware
+{
+    DataTemplate? GetContent();
+}
+
+public sealed partial class AppShell : UserControl
 {        
-    private readonly PrimaryWindowCoreLayoutViewModel _vm;
+    private readonly AppShellViewModel _vm;
     private readonly IMessenger _messenger;
 
     private readonly DispatcherQueue _dispatcherQueue;
@@ -54,8 +62,9 @@ public sealed partial class PrimaryWindowCoreLayout : Page
     private readonly DispatcherQueueTimer _AnimationCancelTimer;
     private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
 
-    public PrimaryWindowCoreLayout(
-        PrimaryWindowCoreLayoutViewModel viewModel, 
+
+    public AppShell(
+        AppShellViewModel viewModel, 
         IMessenger messenger
         )
     {
@@ -77,8 +86,10 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         _imageCodecService = Ioc.Default.GetService<IImageCodecService>();
         InitializeImageCodecExtensions();
 
-
         InitializeInAppNotification();
+
+        var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+        coreTitleBar.ExtendViewIntoTitleBar = true;
     }
 
     #region InAppNotification
@@ -271,7 +282,21 @@ public sealed partial class PrimaryWindowCoreLayout : Page
         if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
         var frame = (Frame)sender;
+        Window.Current.SetTitleBar(null);
 
+        if (frame.Content is ITitlebarContentAware tbContent
+            && tbContent.GetContent() is { } content)
+        {
+            TitlebarContent.ContentTemplate = content;
+            TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+        }
+        else
+        {
+            TitlebarContent.ContentTemplate = null;
+            TitlebarContent.Content = null;
+        }
+
+        Window.Current.SetTitleBar(TitlebarArea);
 
         // アプリメニュー表示の切替
         MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -489,8 +514,10 @@ public sealed partial class PrimaryWindowCoreLayout : Page
             throw new InvalidOperationException($"Failed ContentFrame navigate to {pageName}.");
         }
 
-        var currentPage = ContentFrame.Content as Page;
-        return await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);        
+        var page = ContentFrame.Content;
+        var currentPage = page as Page;        
+        var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+        return handleResult;
     }
 
     private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
@@ -938,14 +965,14 @@ public sealed partial class PrimaryWindowCoreLayout : Page
     {
         if (_isInputIncomplete == false)
         {
-            (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+            (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
         }
     }
 
     private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
     {
         _isInputIncomplete = false;
-        (DataContext as PrimaryWindowCoreLayoutViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
+        (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
     }
 
 
@@ -1038,6 +1065,47 @@ public sealed partial class PrimaryWindowCoreLayout : Page
             Core.Models.ApplicationTheme.Default => ElementTheme.Default,
             _ => throw new NotSupportedException(),
         };
+
+        var titleBar = ApplicationView.GetForCurrentView().TitleBar;
+        if ((this.RequestedTheme == ElementTheme.Default && GetWindowsTheme() == Windows.UI.Xaml.ApplicationTheme.Light)
+            || this.RequestedTheme is ElementTheme.Light
+            )
+        {
+            titleBar.ButtonBackgroundColor = "#F6F8FB".ToColor();
+            titleBar.ButtonForegroundColor = "#000000".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#E9E9E9".ToColor();
+            titleBar.ButtonHoverForegroundColor = "#000000".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#F3F3F3".ToColor();
+            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+        }
+        else
+        {
+            titleBar.ButtonBackgroundColor = "#1F1F1F".ToColor();
+            titleBar.ButtonForegroundColor = "#FFFFFF".ToColor();
+            titleBar.ButtonHoverBackgroundColor = "#2d2d2d".ToColor();
+            titleBar.ButtonHoverForegroundColor = "#FFFFFF".ToColor();
+            titleBar.ButtonInactiveBackgroundColor = "#202020".ToColor();
+            titleBar.ButtonInactiveForegroundColor = "#797979".ToColor();
+        }
+
+    }
+
+    public static Windows.UI.Xaml.ApplicationTheme GetWindowsTheme()
+    {
+        var DefaultTheme = new Windows.UI.ViewManagement.UISettings();
+        var uiTheme = DefaultTheme.GetColorValue(Windows.UI.ViewManagement.UIColorType.Background).ToString();
+        if (uiTheme == "#FF000000")
+        {
+            return Windows.UI.Xaml.ApplicationTheme.Dark;
+        }
+        else if (uiTheme == "#FFFFFFFF")
+        {
+            return Windows.UI.Xaml.ApplicationTheme.Light;
+        }
+        else
+        {
+            return Windows.UI.Xaml.ApplicationTheme.Light;
+        }
     }
 
     #endregion
@@ -1273,5 +1341,25 @@ public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
         {
             return base.SelectTemplateCore(item, container);
         }
+    }
+}
+
+public sealed class MenuItemTemplateSelector : DataTemplateSelector
+{
+    public DataTemplate MenuSeparator { get; set; }
+    public DataTemplate MenuItem { get; set; }
+
+    protected override DataTemplate SelectTemplateCore(object item)
+    {
+        return SelectTemplateCore(item, null);
+    }
+    protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+    {
+        return item switch
+        {
+            MenuItemViewModel _ => MenuItem,
+            MenuSeparatorViewModel _ => MenuSeparator,
+            _ => throw new NotSupportedException(),
+        };
     }
 }

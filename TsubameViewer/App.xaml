@@ -38,6 +38,46 @@
 
       <x:Boolean x:Key="DebugTVMode">False</x:Boolean>
 
+      <!-- Titlebar -->
+      <Style TargetType="Button"
+             x:Key="TitlebarButton">
+        <Setter Property="Width"
+                Value="40" />
+        <Setter Property="Height"
+                Value="32" />
+        <Setter Property="CornerRadius"
+                Value="4" />
+        <Setter Property="Margin"
+                Value="0 3 0 0" />
+        <Setter Property="Padding"
+                Value="0 0 0 0 " />
+        <Setter Property="BorderThickness"
+                Value="0" />
+      </Style>
+      <Style TargetType="TextBlock"
+             x:Key="TitlebarTextBlock">
+        <Setter Property="FontSize"
+                Value="12" />
+        <Setter Property="VerticalAlignment"
+                Value="Center" />
+        <Setter Property="TextLineBounds"
+                Value="Tight" />
+        <Setter Property="IsHitTestVisible"
+                Value="False" />
+        <Setter Property="TextTrimming"
+                Value="CharacterEllipsis" />
+      </Style>
+      <Style TargetType="SymbolIcon"
+             x:Key="TitlebarSymbolIcon">
+        <Setter Property="RenderTransformOrigin"
+                Value="0.5, 0.5" />
+        <Setter Property="RenderTransform">
+          <Setter.Value>
+            <CompositeTransform ScaleX="0.75"
+                                ScaleY="0.75" />
+          </Setter.Value>
+        </Setter>
+      </Style>
 
       <myFlyouts:StorageItemMenuFlyout x:Key="StorageItemMenuFlyout" IsRootPage="False" />
       <myFlyouts:StorageItemMenuFlyout x:Key="RootPageStorageItemMenuFlyout" IsRootPage="True" />
@@ -84,6 +124,7 @@
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
+      <myConv:UriHumanReadableConverter x:Key="UriHumanReadableConverter" />
 
       <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToBooleanConverter">
         <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>

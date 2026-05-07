@@ -200,7 +200,7 @@
     <Compile Include="ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
-    <Compile Include="ViewModels\PrimaryWindowCoreLayoutViewModel.cs" />
+    <Compile Include="ViewModels\AppShellViewModel.cs" />
     <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
     <Compile Include="ViewModels\SettingsPageViewModel.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
@@ -235,6 +235,7 @@
     <Compile Include="Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="Views\Converters\SliderValueChangedEventArgsConverter.cs" />
     <Compile Include="Views\Converters\ToKMGTPEZYConverter.cs" />
+    <Compile Include="Views\Converters\UriHumanReadableConverter.cs" />
     <Compile Include="Views\Dialogs\SplitImageInputDialog.xaml.cs">
       <DependentUpon>SplitImageInputDialog.xaml</DependentUpon>
     </Compile>
@@ -275,8 +276,8 @@
     <Compile Include="Views\ImageViewerPage.xaml.cs">
       <DependentUpon>ImageViewerPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\PrimaryWindowCoreLayout.xaml.cs">
-      <DependentUpon>PrimaryWindowCoreLayout.xaml</DependentUpon>
+    <Compile Include="AppShell.xaml.cs">
+      <DependentUpon>AppShell.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
@@ -295,7 +296,6 @@
     <Compile Include="Views\TemplateSelector\FileDisplayModeTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\FolderItemsGroupTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\FolderItemTemplateSelector.cs" />
-    <Compile Include="Views\TemplateSelector\MenuItemTemplateSelector.cs" />
     <Compile Include="Views\TemplateSelector\SettingsItemTemplateSelector.cs" />
     <Compile Include="Views\UINavigation\CurrentFocusTriggerBridgeAction.cs" />
     <Compile Include="Views\UINavigation\UINavigationButtons.cs" />
@@ -507,7 +507,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Views\PrimaryWindowCoreLayout.xaml">
+    <Page Include="AppShell.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

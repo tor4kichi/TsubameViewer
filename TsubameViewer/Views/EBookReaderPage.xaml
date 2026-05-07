@@ -18,7 +18,8 @@
   xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger" 
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
-  mc:Ignorable="d"
+      xmlns:vm="using:TsubameViewer.ViewModels"
+      mc:Ignorable="d"
   NavigationCacheMode="Enabled"
   >
   <Page.Transitions>
@@ -28,6 +29,28 @@
   </Page.Transitions>
   
   <Page.Resources>
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:EBookReaderPageViewModel">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{Binding Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <Button Flyout="{StaticResource SettingsFlyout}"
+                  Style="{StaticResource TitlebarButton}">
+            <SymbolIcon Symbol="Setting"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </Button>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
 
     <DataTemplate x:Key="PixelUnitTextTemplate">
       <TextBlock>
@@ -431,72 +454,15 @@
     </StackPanel>
     
     <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
-    <Grid x:Name="SwipeProcessScreen" Background="Transparent" IsHitTestVisible="True" Visibility="Collapsed">
-      <Grid x:Name="AnimationUIContainer" Background="{ThemeResource SystemAltMediumLowColor}" Opacity="0" />
-
-      <Grid x:Name="DraggableTitleBarArea_TVorTouch" IsHitTestVisible="True" Background="Transparent" />
+    <Grid x:Name="SwipeProcessScreen"
+          Background="Transparent"
+          IsHitTestVisible="True"
+          Visibility="Collapsed">
+      <Grid x:Name="AnimationUIContainer"
+            Background="{ThemeResource SystemAltMediumLowColor}"
+            Opacity="0" />
     </Grid>
 
-    <!-- タッチ用の補助UI -->
-    <uwpControls:DockPanel x:Name="Toolbar_Touch" Opacity="0.75" Visibility="Collapsed" Margin="0 0 0 0" VerticalAlignment="Top" Background="{ThemeResource ApplicationHeaderBackgroundBrush}">
-      <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left"
-              Height="40" Width="60">
-        <SymbolIcon Symbol="Back">
-          <SymbolIcon.RenderTransform>
-            <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-          </SymbolIcon.RenderTransform>
-        </SymbolIcon>
-      </Button>
-
-      <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 64 0" Spacing="8">
-        <Button Height="40" Width="64" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
-          <SymbolIcon Symbol="Setting" />
-        </Button>
-      </StackPanel>
-
-      <Button Height="40" Command="{x:Bind _OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
-        <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
-              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-        </TextBlock>
-      </Button>
-    </uwpControls:DockPanel>
-    
-
-    <!-- 補助コントロールUI（デスクトップ） -->
-    <Grid Height="32" x:Name="Toolbar_Desktop" VerticalAlignment="Top" Opacity="0.75" Background="{ThemeResource ApplicationHeaderBackgroundBrush}" Visibility="Collapsed">
-      <Grid.RenderTransform>
-        <TranslateTransform />
-      </Grid.RenderTransform>
-      
-      <Grid x:Name="DraggableTitleBarArea_Desktop" IsHitTestVisible="True" Background="Transparent">
-        
-      </Grid>
-      <uwpControls:DockPanel>
-        <Button Command="{x:Bind _vm.BackNavigationCommand}" uwpControls:DockPanel.Dock="Left" Height="32" Width="48" Style="{ThemeResource AccentButtonStyle}" Opacity="0.6">
-          <SymbolIcon Symbol="Back">
-            <SymbolIcon.RenderTransform>
-              <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-            </SymbolIcon.RenderTransform>
-          </SymbolIcon>
-        </Button>
-
-        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Right" Margin="0 0 184 0" Spacing="8">
-          <Button Height="40" Width="48" Background="Transparent" Flyout="{StaticResource SettingsFlyout}">
-            <SymbolIcon Symbol="Setting" />
-          </Button>
-          <Border BorderBrush="{ThemeResource SystemBaseMediumLowColor}" BorderThickness="1 0 0 0" Margin="0 8" />
-        </StackPanel>
-
-        <uwpControls:DockPanel Padding="8 0" >
-          
-          <Button Command="{x:Bind _OpenTocPaneCommand}" uwpControls:DockPanel.Dock="Right" Margin="8 0 0 0">
-            <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" FontSize="12" IsHitTestVisible="False">
-              <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-            </TextBlock>
-          </Button>
-        </uwpControls:DockPanel>
-      </uwpControls:DockPanel>
-    </Grid>
 
     <!-- Toc -->
     <Grid x:Name="TocContainer" Visibility="Collapsed">
@@ -596,7 +562,8 @@
           <VisualState.StateTriggers>
             <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
-            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
+            <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}"
+                                                     CollisionRect="0 0 5000 64" />
             <wst:EqualsStateTrigger Value="{x:Bind TocContainer.Visibility, Mode=OneWay}">
               <wst:EqualsStateTrigger.EqualTo>
                 <Visibility>Visible</Visibility>
@@ -604,7 +571,8 @@
             </wst:EqualsStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="False" />
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -615,65 +583,12 @@
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled" Value="True" />
+            <Setter Target="PointerCursolAutoHideBehavior.IsAutoHideEnabled"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-      
-      <!-- フルスクリーン -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:CompositeStateTrigger Operator="And">
-              <wst:FullScreenModeTrigger IsFullScreen="True" />
-              <myStateTriggers:PointerCollisionTrigger Target="{x:Bind RootGrid}" CollisionRect="0 0 5000 64" />
-            </wst:CompositeStateTrigger>
-          </VisualState.StateTriggers>
-          <VisualState.Storyboard>
-            <Storyboard>
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="0"
-                               Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
 
-            </Storyboard>
-          </VisualState.Storyboard>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:FullScreenModeTrigger IsFullScreen="True" />
-          </VisualState.StateTriggers>
-          <VisualState.Storyboard>
-            <Storyboard>
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="Toolbar_Desktop"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                               />
-            </Storyboard>
-          </VisualState.Storyboard>
-        </VisualState>
-
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Xbox" />
-            <StateTrigger IsActive="{StaticResource DebugTVMode}" />
-          </VisualState.StateTriggers>
-        </VisualState>
-        
-        <VisualState>
-          <VisualState.StateTriggers>
-            <wst:UserInteractionModeTrigger InteractionMode="Mouse" />
-            <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="EPubRendererContainer.Margin" Value="32 56 32 56" />
-            <Setter Target="Toolbar_Desktop.(UIElement.RenderTransform).(TranslateTransform.Y)" Value="0" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-      
       <!-- スクロールのページ送りを逆にする -->
       <VisualStateGroup>
 

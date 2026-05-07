@@ -40,11 +40,13 @@ using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
-/// <summary>
-/// それ自体で使用できる空白ページまたはフレーム内に移動できる空白ページ。
-/// </summary>
-public sealed partial class ImageListupPage : Page
+public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 {
+    public DataTemplate? GetContent()
+    {
+        return TitlebarContent;
+    }
+
     private readonly ImageListupPageViewModel _vm;
     private readonly IMessenger _messenger;
     private readonly FocusHelper _focusHelper;
@@ -730,6 +732,7 @@ public sealed partial class ImageListupPage : Page
             }                
         }
     }
+
 }
 
 

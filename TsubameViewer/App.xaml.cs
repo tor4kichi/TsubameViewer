@@ -142,7 +142,7 @@ sealed partial class App : Application
         container.RegisterMapping<ISecondaryTileThumbnailImageService, ThumbnailImageManager>();
         container.RegisterMapping<IThumbnailImageMaintenanceService, ThumbnailImageManager>();
         
-        container.Register<PrimaryWindowCoreLayout>(reuse: new SingletonReuse());
+        container.Register<AppShell>(reuse: new SingletonReuse());
         container.Register<SourceStorageItemsPage>();
         container.Register<ImageListupPage>();
         container.Register<FolderListupPage>();
@@ -306,7 +306,7 @@ sealed partial class App : Application
 
         if (_isRestored is false)
         {
-            var shell = Window.Current.Content as PrimaryWindowCoreLayout;
+            var shell = Window.Current.Content as AppShell;
             shell.RestoreNavigationStack();
         }
     }
@@ -435,7 +435,7 @@ sealed partial class App : Application
 
         UpdateFolderItemSizingResourceValues();
 
-        Window.Current.Content = Ioc.Default.GetService<PrimaryWindowCoreLayout>();
+        Window.Current.Content = Ioc.Default.GetService<AppShell>();
         Window.Current.Activate();
     }
 

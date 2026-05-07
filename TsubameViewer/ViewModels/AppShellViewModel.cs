@@ -34,7 +34,7 @@ using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepositor
 
 namespace TsubameViewer.ViewModels;
 
-public sealed class PrimaryWindowCoreLayoutViewModel 
+public sealed class AppShellViewModel 
     : ObservableRecipient    
     , IRecipient<SourceStorageItemAddedMessage>
     , IRecipient<SourceStorageItemRemovedMessage>
@@ -49,7 +49,7 @@ public sealed class PrimaryWindowCoreLayoutViewModel
 
     CompositeDisposable _disposables = new CompositeDisposable();
 
-    public PrimaryWindowCoreLayoutViewModel(
+    public AppShellViewModel(
         IScheduler scheduler,
         IMessenger messenger,
         ApplicationSettings applicationSettings,

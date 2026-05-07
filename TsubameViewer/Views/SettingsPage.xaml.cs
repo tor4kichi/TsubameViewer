@@ -15,22 +15,22 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
+#nullable enable
+namespace TsubameViewer.Views;
 
-namespace TsubameViewer.Views
+public sealed partial class SettingsPage : Page, ITitlebarContentAware
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class SettingsPage : Page
+    public DataTemplate? GetContent()
     {
-        public SettingsPage()
-        {
-            this.InitializeComponent();
-
-            DataContext = _vm = Ioc.Default.GetService<SettingsPageViewModel>();
-        }
-
-        private readonly SettingsPageViewModel _vm;
+        return TitlebarContent;
     }
+
+    public SettingsPage()
+    {
+        this.InitializeComponent();
+
+        DataContext = _vm = Ioc.Default.GetRequiredService<SettingsPageViewModel>();
+    }
+
+    private readonly SettingsPageViewModel _vm;
 }

@@ -18,53 +18,53 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
+#nullable enable
+namespace TsubameViewer.Views;
 
-namespace TsubameViewer.Views
+public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class SearchResultPage : Page
+    public DataTemplate GetContent()
     {
-        private readonly SearchResultPageViewModel _vm;
+        return null;
+    }
 
-        public SearchResultPage()
+    private readonly SearchResultPageViewModel _vm;
+
+    public SearchResultPage()
+    {
+        this.InitializeComponent();
+
+        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+
+        DataContext = _vm = Ioc.Default.GetRequiredService<SearchResultPageViewModel>();
+    }
+
+    private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        if (args.Item is IStorageItemViewModel itemVM)
         {
-            this.InitializeComponent();
-
-            this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-
-            DataContext = _vm = Ioc.Default.GetService<SearchResultPageViewModel>();
-        }
-
-        private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            if (args.Item is IStorageItemViewModel itemVM)
+            if (_navigationCts.IsCancellationRequested is false)
             {
-                if (_navigationCts.IsCancellationRequested is false)
-                {
-                    ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
-                }
-
-                itemVM.InitializeAsync(_ct);
+                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
             }
-        }
 
-        CancellationTokenSource _navigationCts;
-        CancellationToken _ct;
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            _navigationCts = new CancellationTokenSource();
-            _ct = _navigationCts.Token;
-            base.OnNavigatedTo(e);
+            itemVM.InitializeAsync(_ct);
         }
+    }
 
-        protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
-        {
-            _navigationCts.Cancel();
-            _navigationCts.Dispose();            
-            base.OnNavigatingFrom(e);
-        }
+    CancellationTokenSource _navigationCts;
+    CancellationToken _ct;
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        _navigationCts = new CancellationTokenSource();
+        _ct = _navigationCts.Token;
+        base.OnNavigatedTo(e);
+    }
+
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    {
+        _navigationCts.Cancel();
+        _navigationCts.Dispose();            
+        base.OnNavigatingFrom(e);
     }
 }
