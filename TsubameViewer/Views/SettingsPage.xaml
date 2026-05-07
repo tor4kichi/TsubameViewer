@@ -87,11 +87,15 @@
       </tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
       <tt:SettingsItemTemplateSelector.ButtonSettingItem>
         <DataTemplate x:DataType="vm:ButtonSettingItemViewModel">
-          <Button Content="{x:Bind Label}" Command="{x:Bind ActionCommand}" MaxWidth="{StaticResource SettingItemWidth}"
-                  HorizontalAlignment="Right"
-                  Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
-                  Margin="0 16"
-                  />
+          <winUIControls:SettingsCard Header="{x:Bind Label, Mode=OneWay}"
+                                      Description="{x:Bind Description, Mode=OneWay}">
+            <Button Content="{x:Bind ButtonLabel, Mode=OneWay}"
+                    Command="{x:Bind ActionCommand}"
+                    MaxWidth="{StaticResource SettingItemWidth}"
+                    HorizontalAlignment="Right"
+                    Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Margin="0 16" />
+          </winUIControls:SettingsCard>
         </DataTemplate>
       </tt:SettingsItemTemplateSelector.ButtonSettingItem>
       <tt:SettingsItemTemplateSelector.ThemeSelectSettingItem>
@@ -119,9 +123,15 @@
                       Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
               <ComboBox ItemsSource="{x:Bind Locales}"
                         SelectedValue="{x:Bind SelectedLocale.Value, Mode=TwoWay}"
-                        DisplayMemberPath="DisplayName"
                         SelectedValuePath="Locale"
                         HorizontalAlignment="Right">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock>
+                      <Run Text="{Binding DisplayName}" /> <Run Text="{Binding Locale}" />
+                    </TextBlock>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
               </ComboBox>
             </StackPanel>
           </winUIControls:SettingsCard>
