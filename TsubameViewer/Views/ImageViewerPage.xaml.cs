@@ -11,6 +11,7 @@ using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -86,6 +87,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
+        IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
         IntaractionWall.ManipulationDelta -= ImagesContainer_ManipulationDelta;
         IntaractionWall.ManipulationStarted -= IntaractionWall_ManipulationStarted;
         IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
@@ -99,6 +101,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         IntaractionWall.ManipulationMode = ManipulationModes.Scale | ManipulationModes.TranslateX | ManipulationModes.TranslateY;
         IntaractionWall.PointerPressed += IntaractionWall_PointerPressed;
+        IntaractionWall.PointerReleased += IntaractionWall_PointerReleased;
 
         IntaractionWall.ManipulationDelta += ImagesContainer_ManipulationDelta;
         IntaractionWall.ManipulationStarted += IntaractionWall_ManipulationStarted;
@@ -353,18 +356,21 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     #region Touch and Controller UI
 
-    private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+    private void IntaractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
+        var lastMnipulating = _nowZoomCenterMovingWithPointer;
+        _nowZoomCenterMovingWithPointer = false;
         if (e.Handled) { return; }
-        if (!_nowZoomCenterMovingWithPointer && !IsZoomingEnabled)
-        {                
+        if (!lastMnipulating && !IsZoomingEnabled)
+        {
             var pointer = e.GetCurrentPoint(RootGrid);
-            if (pointer.Properties.IsLeftButtonPressed is false) { return; }
+            if (!_isLastPointerPressedLeft) { return; }
 
-            var pt = pointer.Position; 
+            var pt = pointer.Position;
             if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ButtonsContainer).Any()) { return; }
             if (VisualTreeHelper.FindElementsInHostCoordinates(pt, ImageSelectorContainer).Any()) { return; }
-            
+            if (_nowZoomCenterMovingWithPointer) { return; }
+
             if (!IsOpenBottomMenu)
             {
                 var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
@@ -401,12 +407,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
                 }
             }
-            else 
+            else
             {
                 ToggleOpenCloseBottomUI();
                 e.Handled = true;
             }
         }
+    }
+
+    bool _isLastPointerPressedLeft;
+    private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var pointer = e.GetCurrentPoint(null);
+        _isLastPointerPressedLeft = pointer.Properties.IsLeftButtonPressed;
     }
 
 
@@ -564,7 +577,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     private void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
         bool isMoveCenter = _nowZoomCenterMovingWithPointer;
-        _nowZoomCenterMovingWithPointer = false;
 
         if (IsZoomingEnabled)
         {
@@ -578,19 +590,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
         else
         {
-            if (e.Cumulative.Translation.X > 1
-                || e.Velocities.Linear.X > 0.01
-                )
+            if (e.Cumulative.Translation.X > 30)
             {
                 // 右スワイプ
                 ReversableGoNext();
             }
-            else if (e.Cumulative.Translation.X < -1
-                || e.Velocities.Linear.X < -0.01
-                )
+            else if (e.Cumulative.Translation.X < -30)
             {
                 // 左スワイプ
                 ReversableGoPrev();
+            }
+            else
+            {
+                _nowZoomCenterMovingWithPointer = false;
             }
         }
     }
