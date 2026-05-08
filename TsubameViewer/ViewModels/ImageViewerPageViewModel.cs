@@ -1063,7 +1063,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var candidateIndex = requestIndex + index;
                 if (0 <= candidateIndex && candidateIndex < _Images.Length)
                 {
-                    candidateImages.Add(await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType.Value, ct));
+                    candidateImages.Add(await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType.Value, ct), ct));
                 }
             }
             
@@ -1122,7 +1122,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                thumbImage.SetSource(imageStream);
+                                await thumbImage.SetSourceAsync(imageStream).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -1186,7 +1186,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                thumbImage.SetSource(imageStream);
+                                await thumbImage.SetSourceAsync(imageStream).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -1210,7 +1210,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            var image = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType.Value, ct);
+            var image = await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType.Value, ct), ct);
             if (image == null)
             {
                 throw new InvalidOperationException();
