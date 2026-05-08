@@ -10,7 +10,7 @@ public sealed class FolderListupSettings : FlagsRepositoryBase
 {
     public bool ShowWithIndexedFolderItemAccess
     {
-        get => Read(false);
+        get => Read(true);
         set => Save(value);
     }
 }
