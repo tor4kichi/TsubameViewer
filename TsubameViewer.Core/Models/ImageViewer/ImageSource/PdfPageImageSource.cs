@@ -44,6 +44,8 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     public SizeF Size { get; }
     public StorageFile StorageItem { get; }
 
+    public SizeF? PreCulcuratedSize => Size;
+
     IStorageItem IImageSource.StorageItem => StorageItem;
 
     public async ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)

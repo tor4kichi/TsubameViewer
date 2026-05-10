@@ -204,5 +204,11 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         (Item as IDisposable)?.Dispose();
         Image = null;
     }
+
+    public ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
     bool _disposed;
 }

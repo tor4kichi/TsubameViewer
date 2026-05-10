@@ -124,6 +124,11 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
+    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    {
+        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+    }
+
     public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken rootCt)
     {
@@ -133,14 +138,14 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         
         try
         {
-            //using var d = await _asyncLock.LockAsync(rootCt);
-            
             if (IsInitialized) { return; }
             if (_disposed) { return; }
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
-            ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+            // ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, rootCt)).RatioWH;
+
+            //using var d = await _asyncLock.LockAsync(rootCt);
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {

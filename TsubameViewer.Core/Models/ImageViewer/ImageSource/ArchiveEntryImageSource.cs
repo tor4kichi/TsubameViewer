@@ -57,6 +57,8 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
 
     public string EntryKey => _entry.Key;
 
+    public SizeF? PreCulcuratedSize => null;
+
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
     {
         return new(default(SizeF?));

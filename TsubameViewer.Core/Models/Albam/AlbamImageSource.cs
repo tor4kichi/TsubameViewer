@@ -35,6 +35,8 @@ public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
 
     public DateTime DateCreated => AlbamEntry.CreatedAt.LocalDateTime;
 
+    public SizeF? PreCulcuratedSize => null;
+
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
     {
         return new(default(SizeF?));

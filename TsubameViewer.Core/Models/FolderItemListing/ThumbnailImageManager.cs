@@ -7,6 +7,7 @@ using SharpCompress.Archives.Rar;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
 using SharpCompress.Readers;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -402,12 +403,25 @@ public sealed class ThumbnailImageManager
             return sizeIfCached;
         }
 
+        if (imageSource.PreCulcuratedSize is { } size)
+        {
+            return SetThumbnailSize(imageSource, (uint)size.Width, (uint)size.Height);
+        }
+
         return await Task.Run(async () =>
         {            
             using (var imageStream = await imageSource.GetImageStreamAsync(ct))
             {
-                var decoder = await BitmapDecoder.CreateAsync(imageStream);
-                return SetThumbnailSize(imageSource, decoder.PixelWidth, decoder.PixelHeight);
+                var imageInfo = SKBitmap.DecodeBounds(imageStream.AsStreamForRead());                
+                if (imageInfo != SKImageInfo.Empty)
+                {
+                    return SetThumbnailSize(imageSource, (uint)imageInfo.Width, (uint)imageInfo.Height);
+                }
+            }
+            using (var imageStream = await imageSource.GetImageStreamAsync(ct))
+            {
+                var decoder = await BitmapDecoder.CreateAsync(imageStream).AsTask(ct).ConfigureAwait(false);
+                return SetThumbnailSize(imageSource, (uint)decoder.PixelWidth, (uint)decoder.PixelHeight);
             }
         });
     }

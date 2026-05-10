@@ -39,6 +39,8 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
     public string EntryKey => _directoryToken.Key;
 
+    public SizeF? PreCulcuratedSize => null;
+
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
     {
         return new(default(SizeF?));

@@ -23,6 +23,8 @@ public sealed class StorageItemImageSource : IImageSource
 
     public DateTime DateCreated => StorageItem?.DateCreated.DateTime ?? DateTime.MinValue;
 
+    public SizeF? PreCulcuratedSize => null;
+
     /// <summary>
     /// Tokenで取得されたファイルやフォルダ
     /// </summary>
