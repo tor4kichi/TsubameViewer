@@ -145,7 +145,7 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
             // ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, rootCt)).RatioWH;
 
-            //using var d = await _asyncLock.LockAsync(rootCt);
+            using var d = await _asyncLock.LockAsync(rootCt);
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {

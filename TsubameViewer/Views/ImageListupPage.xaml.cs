@@ -28,6 +28,8 @@ using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
+using Windows.System;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -97,7 +99,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         
         Debug.WriteLine("LoadingTaskMonitor START.");
         _lodingTaskMonitor =  R3.Observable.Merge(_priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(), _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable())
-            .Debounce(TimeSpan.FromMilliseconds(5))
+            .ThrottleFirstLast(TimeSpan.FromMilliseconds(25))
             .SubscribeAwait(async (_, ct) =>
             {
                 if (_isVisibleRangeUpdated is false) { return; }
@@ -105,29 +107,23 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _isVisibleRangeUpdated = false;
                 if (_priorityLoadPendingItems.Any())
                 {
-                    await _priorityLoadPendingItems.ToAwaitableParallelTaskAsync(
-                            async x => await x.InitializeAsync(ct));
+                    using var tasks = _priorityLoadPendingItems.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToArrayPool();
+                    await ValueTaskSupplement.ValueTaskEx.WhenAll(tasks.ArraySegment);
                     _priorityLoadPendingItems.Clear();
                 }
 
                 await Task.Delay(50);
-                if (_loadPendingItems.Any())
+                if (_isVisibleRangeUpdated is false)
                 {
-                    using var items = _loadPendingItems.AsValueEnumerable().ToArrayPool();
-                    foreach (var chunk in items.AsValueEnumerable().Chunk(8))
+                    if (_loadPendingItems.Any())
                     {
-                        if (_isVisibleRangeUpdated) { break; }
-                        {
-                            await chunk.ToAwaitableParallelTaskAsync(async x => await x.InitializeAsync(ct));                            
-                        }
-                    }                    
-
-                    if (_isVisibleRangeUpdated is false)
-                    {
+                        using var items = _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                        using var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToArrayPool();
+                        await ValueTaskSupplement.ValueTaskEx.WhenAll(tasks.ArraySegment);
                         _loadPendingItems.Clear();
                     }
                 }
-                
+
                 UpdateVisibleRangeItemInitialize();
                 if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
                 {
