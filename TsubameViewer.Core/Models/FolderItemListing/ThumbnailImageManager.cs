@@ -942,7 +942,57 @@ public sealed class ThumbnailImageManager
     static AsyncLock _renderLock = new AsyncLock();
     private async Task TranscodeThumbnailImageToStreamAsync(string path, IRandomAccessStream stream, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
-        await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        try
+        {
+            await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        }
+        catch
+        {
+            stream.Size = 0;
+            await TranscodeAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+        }
+
+        async Task TranscodeSkiaAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+        {
+            stream.Seek(0);
+            using var skiaStream = new SKManagedStream(stream.AsStreamForRead());            
+            using var bitmap = SKBitmap.Decode(skiaStream);
+
+            if (bitmap == null)
+                throw new NotSupportedImageFormatException(Path.GetExtension(path));
+
+            // サムネイルサイズ計算
+            var scaledSize = CulcThumbnailSize(bitmap.Width, bitmap.Height);
+
+            // SkiaSharpでリサイズ
+            using var resizedBitmap = bitmap.Resize(new SKImageInfo((int)scaledSize.Width, (int)scaledSize.Height), SKFilterQuality.Medium);
+
+            if (resizedBitmap == null)
+                throw new Exception("SkiaSharp resize failed.");
+
+            // サムネイルサイズ情報を記録
+            _thumbnailImageInfoRepository.UpdateItem(new ThumbnailImageInfo()
+            {
+                Path = ToId(path),
+                ImageWidth = (uint)resizedBitmap.Width,
+                ImageHeight = (uint)resizedBitmap.Height,
+                RatioWH = resizedBitmap.Width / (float)resizedBitmap.Height
+            });
+
+            // SKBitmap → SKImage → SKData (エンコード)
+            using var image = SKImage.FromBitmap(resizedBitmap);
+            using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80); // 80%品質
+
+            // SKData → outputStream
+            outputStream.Size = 0;
+            var outStream = outputStream.AsStreamForWrite();
+            {
+                data.SaveTo(outStream);
+                await outStream.FlushAsync(ct);
+            }
+            outputStream.Seek(0);
+        }
+
 
         async Task TranscodeAsync(string path, IRandomAccessStream stream, Guid encoderId, BitmapPropertySet propertySet, IRandomAccessStream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
         {
