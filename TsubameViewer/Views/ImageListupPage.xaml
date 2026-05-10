@@ -840,7 +840,8 @@
               <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="6"
@@ -853,11 +854,13 @@
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                    FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="8"
-                                          VerticalSpacing="8" />
+                                          VerticalSpacing="8"
+                                          />
                 </winUI:ItemsRepeater.Layout>
               </winUI:ItemsRepeater>
             </uwpControls:Case>
@@ -866,7 +869,8 @@
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                    FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="5">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="12"

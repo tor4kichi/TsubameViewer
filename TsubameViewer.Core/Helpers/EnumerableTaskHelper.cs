@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TsubameViewer.Core;
@@ -10,7 +11,7 @@ public static class EnumerableTaskHelper
     // Note: 論理スレッド数は Environment.ProcessorCount で取得できる
 
 
-    public static async Task ToAwaitableParallelTaskAsync<T>(this IEnumerable<T> items, Func<T, Task> taskFactory, int maxDegreeOfParallelism = -1, int intervalMS = -1)
+    public static async Task ToAwaitableParallelTaskAsync<T>(this IEnumerable<T> items, Func<T, Task> taskFactory, int maxDegreeOfParallelism = -1, int intervalMS = -1, CancellationToken ct = default)
     {
         if (maxDegreeOfParallelism == 0) { throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "0は指定できない"); }
         if (maxDegreeOfParallelism <= -2) { throw new ArgumentOutOfRangeException(nameof(maxDegreeOfParallelism), "-1より小さい値は設定できない"); }
@@ -24,7 +25,7 @@ public static class EnumerableTaskHelper
                 tasks.Remove(exit);
                 if (intervalMS != -1)
                 {
-                    await Task.Delay(intervalMS);
+                    await Task.Delay(intervalMS, ct);
                 }
             }
 
