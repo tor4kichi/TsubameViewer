@@ -1,7 +1,8 @@
-﻿using I18NPortable;
+﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
@@ -19,13 +20,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
-using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Navigation;
-using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -33,9 +34,8 @@ using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
-using CommunityToolkit.Diagnostics;
-using TsubameViewer.Contracts.Notification;
 
 namespace TsubameViewer.ViewModels;
 
@@ -387,6 +387,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
                     ImageLastIntractItem.Value = 0;
                 }
             }
+
+            ApplicationView.GetForCurrentView().Title = _imageCollectionContext?.Name ?? CurrentFolderItem?.Name ?? nameof(TsubameViewer);
         }
         finally
         {
@@ -479,8 +481,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             throw;
         }
 
-        CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-
+        CurrentFolderItem = new StorageItemViewModel(_currentImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);        
         DisplayCurrentPath = _currentImageSource.Path;
         if (_imageCollectionContext is ArchiveImageCollectionContext archiveImageCollectionContext)
         {

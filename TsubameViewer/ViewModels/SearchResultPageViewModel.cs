@@ -8,12 +8,14 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.ViewModels
@@ -98,7 +100,7 @@ namespace TsubameViewer.ViewModels
             if (parameters.TryGetValue("q", out string q))
             {
                 SearchText = q;
-
+                ApplicationView.GetForCurrentView().Title = $"\"{q}\"";
                 try
                 {
                     await foreach (var entry in _sourceStorageItemsRepository.SearchAsync(q, ct).WithCancellation(ct))

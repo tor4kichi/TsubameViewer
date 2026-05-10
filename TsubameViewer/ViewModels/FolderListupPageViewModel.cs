@@ -36,6 +36,7 @@ using CommunityToolkit.Diagnostics;
 using TsubameViewer.Contracts.Notification;
 using Windows.Devices.Geolocation;
 using TsubameViewer.Services;
+using Windows.UI.ViewManagement;
 
 namespace TsubameViewer.ViewModels;
 
@@ -380,7 +381,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();
-                    lastIntractItemVM.InitializeAsync(ct);                    
+                    _ = lastIntractItemVM.InitializeAsync(ct);                    
                     FolderLastIntractItem.Value = lastIntractItemVM;
                 }
                 else
@@ -388,6 +389,8 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
                     FolderLastIntractItem.Value = null;
                 }
             }
+
+            ApplicationView.GetForCurrentView().Title = _imageCollectionContext.Name;
         }
         finally
         {

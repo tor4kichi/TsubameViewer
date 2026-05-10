@@ -28,6 +28,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -225,7 +226,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         var ct = _navigationCts.Token;
 
         _IsThumbnailDeleteButtonActive.Value = true;
-
+        ApplicationView.GetForCurrentView().Title = "Settings".Translate();
         _ = RefreshThumbnailFilesSizeAsync(ct);
         // base.OnNavigatedToAsync(parameters);
 

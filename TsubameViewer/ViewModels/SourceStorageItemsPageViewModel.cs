@@ -4,25 +4,27 @@ using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
-using System.Reactive.Concurrency;
-using TsubameViewer.Core.Models.Maintenance;
-using System.Diagnostics;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -135,6 +137,8 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
         _navigationCts = new CancellationTokenSource();
 
         var ct = _navigationCts.Token;
+
+        ApplicationView.GetForCurrentView().Title = nameof(TsubameViewer);
 
         try
         {
