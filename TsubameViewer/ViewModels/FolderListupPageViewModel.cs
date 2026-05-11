@@ -380,8 +380,8 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
                 if (lastIntractItemVM != null)
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
-                    lastIntractItemVM.ThumbnailChanged();
-                    _ = lastIntractItemVM.InitializeAsync(ct);                    
+                    lastIntractItemVM.ThumbnailChanged();                    
+                    _ = lastIntractItemVM.InitializeAsync(ct);
                     FolderLastIntractItem.Value = lastIntractItemVM;
                 }
                 else

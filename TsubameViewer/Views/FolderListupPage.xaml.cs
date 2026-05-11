@@ -126,7 +126,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 await BringIntoViewLastIntractItem(ct);
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { }        
     }
 
     #endregion

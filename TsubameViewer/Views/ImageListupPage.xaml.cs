@@ -297,6 +297,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
 
         StartLoadingTaskMonitor(this.GetCancellationTokenOnNavigatingFrom());
+        UpdateVisibleRangeItemInitialize();
     }
 
     private void SaveScrollStatus(UIElement target)
