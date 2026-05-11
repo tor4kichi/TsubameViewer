@@ -552,13 +552,10 @@ public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewMo
 
     public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
 
-    IDisposable _themeChangedSubscriber;
-
     public string Label { get; }
 
     public void Dispose()
     {
-        _themeChangedSubscriber.Dispose();
     }
 
     private readonly ApplicationSettings _applicationSettings;
