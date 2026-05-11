@@ -70,7 +70,7 @@ public sealed class AlbamItemImageSource : IImageSource, IAlbamImageSource
         return await InnerImageSource.TryGetSizedImageStreamAsync(requestedSize, imageStream, ct);
     }
 
-    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default)
     {
         if (InnerImageSource == null)
         {

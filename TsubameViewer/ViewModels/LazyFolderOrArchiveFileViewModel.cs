@@ -14,6 +14,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.ViewModels.SourceFolders;
 using Windows.UI.Xaml.Media.Imaging;
 using System.Diagnostics;
+using System.IO;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -139,13 +140,13 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
-                    if (stream is null || stream.Size == 0) { return; }
+                    if (stream is null || stream.Length == 0) { return; }
                     if (IsRequestImageLoading is false) { return; }
 
-                    stream.Seek(0);
+                    stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream).AsTask(ct);
+                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                     Image = bitmapImage;
                 }
 

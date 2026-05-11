@@ -41,14 +41,14 @@ public sealed class StorageItemImageSource : IImageSource
         return new(default(SizeF?));
     }
 
-    public ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
+    public ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
         if (StorageItem is StorageFile file)
         {
             if (file.IsSupportedImageFile())
             {
                 var fileHandle = file.CreateSafeFileHandle(FileAccess.Read);
-                return new (new FileStream(fileHandle, FileAccess.Read).AsRandomAccessStream());
+                return new (new FileStream(fileHandle, FileAccess.Read));
             }
             else
             {

@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,15 +150,15 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {
-                if (stream is null || stream.Size == 0) { return; }
+                if (stream is null || stream.Length == 0) { return; }
                 ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
                 if (IsRequestImageLoading is false) { return; }
 
                 {
-                    stream.Seek(0);
+                    stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream).AsTask(rootCt);
+                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
                     Image = bitmapImage;
                 }
             }

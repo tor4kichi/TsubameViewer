@@ -267,7 +267,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             StartSelection();
         });
 
-        ItemsScrollViewer.Opacity = 0.01;
         try
         {
             if (e.NavigationMode == NavigationMode.New)
@@ -295,7 +294,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         catch (OperationCanceledException) { }
         finally
         {
-            ItemsScrollViewer.Opacity = 1.0;
         }
 
         StartLoadingTaskMonitor(this.GetCancellationTokenOnNavigatingFrom());

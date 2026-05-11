@@ -1122,7 +1122,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream).AsTask(ct);
+                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -1186,7 +1186,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                await thumbImage.SetSourceAsync(imageStream).AsTask(ct);
+                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -2105,7 +2105,7 @@ public class PrefetchImageInfo : IDisposable
                     {
                         try
                         {
-                            await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(linkedCt);
                         }
                         catch (Exception ex) when (ex.HResult == -1072868846)
                         {

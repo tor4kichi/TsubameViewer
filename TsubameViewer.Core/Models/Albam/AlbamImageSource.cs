@@ -42,7 +42,7 @@ public sealed class AlbamImageSource : IImageSource, IAlbamImageSource
         return new(default(SizeF?));
     }
 
-    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default)
     {
         var imageSource = await GetSampleImageSourceAsync(ct);
         if (imageSource == null) { return null; }
