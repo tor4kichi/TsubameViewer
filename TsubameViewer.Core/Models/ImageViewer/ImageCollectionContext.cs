@@ -254,22 +254,23 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
     {
-        return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct);
+        return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct); ;
     }
 
     private FileSortType _lastFileSortType;
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
+        //using var l = await _lock.LockAsync(ct);
         if (_lastFileSortType != sort)
         {
             _lastFileSortType = sort;
-            _imageFileSearchQuery.ApplyNewQueryOptions(GetImageFileSortQueryOptions(sort));
+            _imageFileSearchQuery = Folder.CreateFileQueryWithOptions(CreateDefaultImageFileSearchQueryOptions(sort));
         }
 
-        if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is not null and var files 
-            && files.ElementAtOrDefault(0) is not null and var imageSource)
+        if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is { } files
+            && files.FirstOrDefault() is { } file)
         {
-            return new StorageItemImageSource(imageSource);
+            return new StorageItemImageSource(file);
         }
         else
         {
@@ -277,14 +278,12 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         }
     }
 
-
     // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
     public static QueryOptions CreateDefaultImageFileSearchQueryOptions(FileSortType sort)
     {
         var query = new QueryOptions(CommonFileQuery.DefaultQuery, SupportedFileTypesHelper.SupportedImageFileExtensions)
         {
-            FolderDepth = FolderDepth.Shallow,
-            IndexerOption = IndexerOption.UseIndexerWhenAvailable,            
+            FolderDepth = FolderDepth.Shallow,            
         };
         query.SortOrder.Clear();
         switch (sort)
@@ -299,10 +298,10 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
                 query.SortOrder.Add(new SortEntry() { PropertyName = "System.ItemNameDisplay", AscendingOrder = false });
                 break;
             case FileSortType.UpdateTimeAscending:
-                query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateModified", AscendingOrder = true });
+                query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateImported", AscendingOrder = true });
                 break;
             case FileSortType.UpdateTimeDecending:
-                query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateModified", AscendingOrder = false });
+                query.SortOrder.Add(new SortEntry() { PropertyName = "System.DateImported", AscendingOrder = false });
                 break;
         }
 
@@ -380,7 +379,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         return Observable.Create<Unit>(observer =>
         {
             void FolderAndArchiveFileSearchQuery_ContentsChanged(IStorageQueryResultBase sender, object args)
-            {
+            {                
                 observer.OnNext(Unit.Default);
             }
             ImageFileSearchQuery.ContentsChanged += FolderAndArchiveFileSearchQuery_ContentsChanged;
@@ -465,9 +464,8 @@ public sealed class ArchiveImageCollectionContext : IImageCollectionContext, IDi
 
     public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
 
-    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
-
-    public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
+    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => Observable.Empty<Unit>();
+    public IObservable<Unit> CreateImageFileChangedObserver() => Observable.Empty<Unit>();
 
     public void Dispose()
     {
@@ -505,8 +503,8 @@ public sealed class PdfImageCollectionContext : IImageCollectionContext
 
     public bool IsSupportFolderOrArchiveFilesIndexAccess => false;
 
-    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => throw new NotSupportedException();
-    public IObservable<Unit> CreateImageFileChangedObserver() => throw new NotSupportedException();
+    public IObservable<Unit> CreateFolderAndArchiveFileChangedObserver() => Observable.Empty<Unit>();
+    public IObservable<Unit> CreateImageFileChangedObserver() => Observable.Empty<Unit>();
 
     public IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync(CancellationToken ct)
     {

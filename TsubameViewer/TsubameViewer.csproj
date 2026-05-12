@@ -144,7 +144,6 @@
     <Compile Include="R3\XamlCancellationHelper.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
     <Compile Include="Contracts\Services\IMessageDialogService.cs" />
-    <Compile Include="Services\FolderListupSettings.cs" />
     <Compile Include="Services\MessageDialogService.cs" />
     <Compile Include="Services\Navigation\IViewLocator.cs" />
     <Compile Include="Services\Navigation\NavigationAwareViewModelBase.cs" />
@@ -177,6 +176,7 @@
     <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
     <Compile Include="ViewModels\IStorageItemViewModel.cs" />
     <Compile Include="ViewModels\LazyFolderOrArchiveFileViewModel.cs" />
+    <Compile Include="ViewModels\LazyImageFileViewModel.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
@@ -279,6 +279,7 @@
     <Compile Include="AppShell.xaml.cs">
       <DependentUpon>AppShell.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\KeyIndexMappedAdvancedCollectionView.cs" />
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>

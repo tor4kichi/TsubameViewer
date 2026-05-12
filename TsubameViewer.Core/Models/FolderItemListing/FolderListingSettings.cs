@@ -25,6 +25,7 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
         _FolderItemTitleHeight = Read(DefaultFolderItemTitleHeight, nameof(FolderItemTitleHeight));
         
         _ThumbnailPriorityTitleRegex = Read(DefaultThumbnailPriorityTitleRegexString, nameof(ThumbnailPriorityTitleRegex));
+        _ShowWithIndexedFolderItemAccess = Read(true, nameof(ShowWithIndexedFolderItemAccess));
     }
 
     private FileDisplayMode _FileDisplayMode;
@@ -82,5 +83,12 @@ public sealed class FolderListingSettings : FlagsRepositoryBase
     {
         get { return _ThumbnailPriorityTitleRegex; }
         set { SetProperty(ref _ThumbnailPriorityTitleRegex, value); }
+    }
+
+    private bool _ShowWithIndexedFolderItemAccess;
+    public bool ShowWithIndexedFolderItemAccess
+    {
+        get => _ShowWithIndexedFolderItemAccess;
+        set => SetProperty(ref _ShowWithIndexedFolderItemAccess, value);
     }
 }

@@ -40,7 +40,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
     private readonly FolderListingSettings _folderListingSettings;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly ImageViewerSettings _imageViewerPageSettings;
-    private readonly FolderListupSettings _folderListupSettings;
+    private readonly FolderListingSettings _folderListupSettings;
     private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
@@ -68,7 +68,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ImageViewerSettings imageViewerPageSettings,
-        FolderListupSettings folderListupSettings,
+        FolderListingSettings folderListupSettings,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
     {
@@ -143,7 +143,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
                 Label = "OtherSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<FolderListupSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
                 }
             },
         };

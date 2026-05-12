@@ -816,6 +816,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     {
         Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
 
+        if (imageCollectionContext == null) { return; }
+
         var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
         _nowCurrenImageIndexChanging = true;
         _nowImagesChanging = true;

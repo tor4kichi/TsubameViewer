@@ -25,7 +25,7 @@
       xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
       xmlns:myTrigger="using:TsubameViewer.Views.StateTrigger"
       xmlns:fluentIcon="using:Fluent.Icons"
-      NavigationCacheMode="Enabled"
+      NavigationCacheMode="Disabled"
       x:Name="PageRoot">
 
   <!-- NavigaitonCacheMode = Enabled にすると
@@ -870,7 +870,7 @@
                                    ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                    FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                                    DataContext="{x:Null}"
-                                   VerticalCacheLength="5">
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="12"

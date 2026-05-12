@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
+using LiteDB;
 using Microsoft.Toolkit.Uwp.UI;
+using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -20,22 +22,27 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Contracts.Services;
+using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
+using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 
 namespace TsubameViewer.ViewModels;
 
@@ -98,7 +105,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public FavoriteAddCommand FavoriteAddCommand { get; }
     public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
     public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
-    public ObservableCollection<StorageItemViewModel> ImageFileItems { get; }
+    public ObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
 
 
@@ -176,7 +183,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
     }
     
-    public ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
+    public Reactive.Bindings.ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
     public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
     {
         Core.Models.FolderItemListing.FileDisplayMode.Large,
@@ -188,8 +195,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
     public string FoldersManagementPageName => AppShell.HomePageName;
 
-    CompositeDisposable _disposables = new CompositeDisposable();
-    CompositeDisposable _navigationDisposables;
+    IDisposable _disposables;
+    IDisposable _navigationDisposables;
 
     public ImageListupPageViewModel(
         IMessenger messenger,
@@ -244,19 +251,23 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         AlbamItemRemoveCommand = albamItemRemoveCommand;
         FavoriteAddCommand = favoriteAddCommand;
         FavoriteRemoveCommand = favoriteRemoveCommand;
-        ImageFileItems = new ObservableCollection<StorageItemViewModel>();
+        ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
 
-        FileItemsView = new AdvancedCollectionView(ImageFileItems);
+        FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);        
+
+        DisposableBuilder db = new();
         SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
-            .AddTo(_disposables);
+            .AddTo(ref db);
 
         FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
-            .AddTo(_disposables);
+            .AddTo(ref db);
         ImageLastIntractItem = new ReactivePropertySlim<int>()
-            .AddTo(_disposables);               
+            .AddTo(ref db);
+
+        _disposables = db.Build();
     }
 
-    public StorageItemViewModel GetLastIntractItem()
+    public IStorageItemViewModel GetLastIntractItem()
     {
         string lastIntaractItem = null;
         if (_currentImageSource.StorageItem is IStorageItem storageItem)
@@ -300,7 +311,11 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
 
+        _navigationCts?.Cancel();
+        _navigationCts = null;
         _navigationDisposables?.Dispose();
+        _cacheFileRepository?.Dispose();
+        _cacheFileRepository = null;
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -326,6 +341,12 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             return true;
         }
 
+        if (IsIndexAccessListingEnabled 
+            && ImageFileItems.Count != await _imageCollectionContext.GetImageFileCountAsync(ct))
+        {
+            return true;
+        }
+
 
         return false;
     }
@@ -333,9 +354,9 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
         var mode = parameters.GetNavigationMode();
-        _navigationDisposables = new CompositeDisposable();
+        var db = new R3.CompositeDisposable();
         _navigationCts = new CancellationTokenSource();
-        _navigationDisposables.Add(_navigationCts);
+        db.Add(_navigationCts);
 
         var ct = _navigationCts.Token;
 
@@ -390,53 +411,53 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
             ApplicationView.GetForCurrentView().Title = _imageCollectionContext?.Name ?? CurrentFolderItem?.Name ?? nameof(TsubameViewer);
         }
+        catch
+        {
+            db.Dispose();
+            throw;
+        }
         finally
         {
             NowProcessing = false;
         }
 
-        SelectedFileSortType
-            .Subscribe(async _ =>
-            {
-                await SetSort(SelectedFileSortType.Value, ct);
-            })
-            .AddTo(_navigationDisposables);
-
-        if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+        try
         {
-            // アプリ内部操作も含めて変更を検知する
-            _imageCollectionContext.CreateImageFileChangedObserver()
-                .Subscribe(_ =>
+            var d1 = SelectedFileSortType
+                .Subscribe(async _ =>
                 {
-                    _scheduler.Schedule(async () => 
-                    {
-                        await ReloadItemsAsync(_imageCollectionContext, ct);
-                        Debug.WriteLine("Images Update required. " + _currentImageSource);
-                    });
-                })
-                .AddTo(_navigationDisposables);
+                    await SetSort(SelectedFileSortType.Value, ct);
+                });
+            db.Add(d1);
+
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = true;
+                }
+            });
+
+            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = false;
+                }
+            });
+
+            _navigationDisposables = db;
         }
-
-        _messenger.Register<AlbamItemAddedMessage>(this, (r, m) => 
+        catch
         {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = true;
-            }
-        });
-
-        _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-        {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = false;
-            }
-        });
-
+            db.Dispose();
+            throw;
+        }
+        
         await base.OnNavigatedToAsync(parameters);
     }
 
@@ -456,6 +477,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         (CurrentFolderItem as IDisposable)?.Dispose();
         CurrentFolderItem = null;
         DisplayCurrentArchiveFolderName = null;
+        _itemsDisposable?.Dispose();
+        _itemsDisposable = null;
     }
 
 
@@ -568,43 +591,148 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
         OnPropertyChanged(nameof(ImageFileItems));
     }
+    bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListingSettings.ShowWithIndexedFolderItemAccess;
 
+    FolderStructureFilesRepository? _cacheFileRepository;
+    
+    IDisposable? _itemsDisposable;
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
-        var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
-        using (FileItemsView.DeferRefresh())
+        _itemsDisposable?.Dispose();
+        _itemsDisposable = null;
+        if (!IsIndexAccessListingEnabled)
         {
-            // 削除アイテム
-            Debug.WriteLine($"items count : {ImageFileItems.Count}");
-            
-            // 新規アイテム
-            await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct))
+            var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
+            using (FileItemsView.DeferRefresh())
             {
-                if (existItemsHashSet.Contains(item.Path) is false)
+                ImageFileItems.Clear();
+                // 削除アイテム
+                Debug.WriteLine($"items count : {ImageFileItems.Count}");
+
+                // 新規アイテム
+                await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct))
                 {
-                    ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                    if (existItemsHashSet.Contains(item.Path) is false)
+                    {
+                        ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                    }
+                    else
+                    {
+                        existItemsHashSet.Remove(item.Path);
+                    }
+                }
+
+                Debug.WriteLine($"after added : {ImageFileItems.Count}");
+                for (int i = ImageFileItems.Count - 1; i >= 0; i--)
+                {
+                    var itemVM = ImageFileItems[i];
+                    if (existItemsHashSet.Contains(itemVM.Path))
+                    {
+                        ImageFileItems.RemoveAt(i);
+                    }
+                    else
+                    {
+                        itemVM.RestoreThumbnailLoadingTask(ct);
+                    }
+                }
+
+                Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
+            }
+
+            if (_imageCollectionContext?.IsSupportedFolderContentsChanged ?? false)
+            {
+                R3.CompositeDisposable disposable = new R3.CompositeDisposable();
+                // アプリ内部操作も含めて変更を検知する
+                var d2 = _imageCollectionContext.CreateImageFileChangedObserver()
+                    .Subscribe(_ =>
+                    {
+                        _scheduler.Schedule(async () =>
+                        {
+                            await ReloadItemsAsync(_imageCollectionContext, ct);
+                            Debug.WriteLine("Images Update required. " + _currentImageSource);
+                        });
+                    });
+                disposable.Add(d2);
+                _itemsDisposable = disposable;
+            }
+        }
+        else
+        {
+            var sortType = SelectedFileSortType.Value;
+            if (imageCollectionContext is FolderImageCollectionContext col)
+            {
+                R3.CompositeDisposable disposable = new R3.CompositeDisposable();
+                // StorageFolderはアイテム取得に時間がかかる
+                _cacheFileRepository ??= new(new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") }));
+                var context = new FolderStructureCacheContext(col, sortType, _cacheFileRepository);                
+                Func<FolderStructureFileEntry, IImageSource?, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry, imageSource) => 
+                {
+                    return new LazyCacheImageFileViewModel(col, sortType, entry, imageSource, _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                };
+
+                var d1 = imageCollectionContext.CreateImageFileChangedObserver()
+                    .ToObservable()
+                    .SubscribeAwait((context, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
+                    {
+                        Debug.WriteLine("ImageFileChanged!!!");
+                        var (context, items, itemFacotry) = s;
+                        var ignore = context.HandleDiffItems(items.Source as ObservableCollection<IStorageItemViewModel>, items.DeferRefresh, itemFacotry, ct);
+                    });
+
+                disposable.Add(d1);
+                _itemsDisposable = disposable;
+                
+                if (context.HasCache())
+                {
+                    using (FileItemsView.DeferRefresh())
+                    {
+                        ImageFileItems.Clear();
+                        var files = context.GetCacheItems();
+                        foreach (var entry in files)
+                        {
+                            var itemVM = new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                                    _sourceStorageItemsRepository,
+                                    _bookmarkManager,
+                                    _thumbnailManager,
+                                    _albamRepository,
+                                    Selection);
+                            ImageFileItems.Add(itemVM);
+                        }
+                    }
                 }
                 else
                 {
-                    existItemsHashSet.Remove(item.Path);
+                    ImageFileItems.Clear();
                 }
-            }
 
-            Debug.WriteLine($"after added : {ImageFileItems.Count}");
-            for (int i = ImageFileItems.Count -  1; i >= 0; i--)
+                _ = context.HandleDiffItems(ImageFileItems, FileItemsView.DeferRefresh, cacheImageViewModelFactory, ct);
+            }
+            else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
-                var itemVM = ImageFileItems[i];
-                if (existItemsHashSet.Contains(itemVM.Path))
+                using (FileItemsView.DeferRefresh())
                 {
-                    ImageFileItems.RemoveAt(i);
-                }
-                else
-                {
-                    itemVM.RestoreThumbnailLoadingTask(ct);
-                }
+                    ImageFileItems.Clear();
+                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);
+                    foreach (var index in ValueEnumerable.Range(0, count))
+                    {
+                        ImageFileItems.Add(new LazyImageFileViewModel(
+                            _imageCollectionContext,
+                            index,
+                            SelectedFileSortType.Value,
+                            _messenger,
+                            _sourceStorageItemsRepository,
+                            _bookmarkManager,
+                            _thumbnailManager,
+                            _albamRepository,
+                            Selection));
+                    }
+                }                
             }
-
-            Debug.WriteLine($"after deleted : {ImageFileItems.Count}");
         }
 
         ct.ThrowIfCancellationRequested();
@@ -617,9 +745,9 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         }, ct);
     }
 
-#endregion
+    #endregion
 
-#region FileSortType
+    #region FileSortType
 
 
     public IEnumerable<SortDescription> ToSortDescription(FileSortType fileSortType)
@@ -638,7 +766,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             FileSortType.TitleDecending => new[] { new SortDescription(nameof(StorageItemViewModel.Name), SortDirection.Descending, comparer) },
             FileSortType.UpdateTimeAscending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Ascending) },
             FileSortType.UpdateTimeDecending => new[] { new SortDescription(nameof(StorageItemViewModel.DateCreated), SortDirection.Descending) },
-            _ => throw new NotSupportedException(),
+            _ => Array.Empty<SortDescription>(),
         };
     }
 
@@ -740,4 +868,174 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
 
 #endregion
+}
+
+public sealed class FolderStructureCacheContext : IDisposable
+{
+    public FolderStructureCacheContext(FolderImageCollectionContext imageCollection, FileSortType sortType, FolderStructureFilesRepository cacheFilesRepository)
+    {
+        ImageCollection = imageCollection;
+        _sortType = sortType;
+        _repo = cacheFilesRepository;
+    }
+
+    public FolderImageCollectionContext ImageCollection { get; }
+
+    private readonly FileSortType _sortType;
+    private readonly FolderStructureFilesRepository _repo;
+
+    public bool HasCache()
+    {
+        return _repo.HasFolderItems(ImageCollection.Folder);
+    }
+
+    public List<FolderStructureFileEntry> GetCacheItems()
+    {
+        return _repo.FindFolderItems(ImageCollection.Folder.Path).AsValueEnumerable().ToList();
+    }
+
+    public async Task<Observable<IImageSource>> GetFilesAsObservable(CancellationToken ct)
+    {        
+        return R3.Observable.ToObservable(ImageCollection.GetAllImageFilesAsync(ct));        
+    }
+
+    readonly static Core.AsyncLock _asyncLock = new();
+    public async Task HandleDiffItems(ObservableCollection<IStorageItemViewModel> items, 
+        Func<IDisposable> deferRefreshFactory, 
+        Func<FolderStructureFileEntry, IImageSource, LazyCacheImageFileViewModel> cacheImageViewModelFactory, 
+        CancellationToken ct)
+    {
+        using var reelaser = await _asyncLock.LockAsync(ct);
+
+        int imagesCount = await ImageCollection.GetImageFileCountAsync(ct);
+        if (imagesCount == _repo.GetFolderItemsCount(ImageCollection.Folder.Path))
+        {
+            return;
+        }
+
+        // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
+        var cached = _repo.FindFolderItems(ImageCollection.Folder.Path).ToDictionary(x => x.Path);
+        bool isInitial = !_repo.HasFolderItems(ImageCollection.Folder);
+        // filesにあるアイテムがcachedに無い → 増分
+        IDisposable deferRefresh = deferRefreshFactory();
+        int count = 50;
+        foreach (var index in Enumerable.Range(0, imagesCount))
+        {
+            var imageSource = await ImageCollection.GetImageFileAtAsync(index, _sortType, ct);
+            if (isInitial || !cached.Remove(imageSource.Path, out var entry))
+            {
+                ct.ThrowIfCancellationRequested();
+                entry = _repo.AddOrUpdateItem(imageSource.StorageItem);
+                var itemVM = cacheImageViewModelFactory(entry, imageSource);
+                items.Add(itemVM);                
+            }
+            else { continue; }
+
+            if (count-- <= 0)
+            {
+                count = 50;
+                deferRefresh.Dispose();
+                await Task.Delay(3000);
+                deferRefresh = deferRefreshFactory();
+            }
+        }
+
+        deferRefresh.Dispose();
+        deferRefresh = deferRefreshFactory();
+
+        // cachedにあってfilesに無い → 減分
+        foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
+        {
+            if (cached.TryGetValue(item.Path, out var entry))
+            {
+                items.RemoveAt(i);
+                _repo.FileRemoved(entry);
+            }
+        }
+
+        deferRefresh.Dispose();
+    }
+
+    public void Dispose()
+    {
+        _repo.Dispose();
+    }
+}
+
+public sealed class FolderStructureFileEntry
+{
+    [BsonId]
+    public string Path { get; set; }
+
+    public string ParentFolderPath { get; set; }
+
+    public DateTimeOffset DateCreated { get; set; }
+
+    public string GetFileName() => System.IO.Path.GetFileName(Path);
+}
+
+public sealed class FolderStructureFilesRepository : IDisposable
+{
+    private readonly ILiteCollection<FolderStructureFileEntry> _collection;
+    private readonly ILiteDatabase _tempLiteDatabase;
+
+    public sealed class InternalFolderItemsCacheRepository : LiteDBServiceBase<FolderStructureFileEntry>
+    {
+        public InternalFolderItemsCacheRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
+        {
+        }
+
+        public FolderStructureFileEntry FindById(string path)
+        {
+            return _collection.FindById(path);
+        }
+    }
+
+    public FolderStructureFilesRepository(ILiteDatabase tempLiteDatabase)
+    {
+        _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();       
+        _collection.EnsureIndex(x => x.ParentFolderPath);
+        _tempLiteDatabase = tempLiteDatabase;
+    }
+
+    public bool HasFolderItems(StorageFolder folder)
+    {
+        return _collection.Exists(x => x.ParentFolderPath == folder.Path);
+    }
+
+    public FolderStructureFileEntry AddOrUpdateItem(IStorageItem file)
+    {
+        var entry = new FolderStructureFileEntry()
+        {
+            Path = file.Path,
+            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
+            DateCreated = file.DateCreated
+        };
+        _collection.Upsert(entry);
+        return entry;
+    }
+
+    public IEnumerable<FolderStructureFileEntry> FindFolderItems(string folderPath)
+    {
+        return _collection.Find(x => x.ParentFolderPath == folderPath);
+    }
+
+    public int GetFolderItemsCount(string folderPath)
+    {
+        return _collection.Count(x => x.ParentFolderPath == folderPath);
+    }
+
+    public void DeleteItem(string folderPath)
+    {
+        _collection.DeleteMany(x => x.ParentFolderPath == folderPath);
+    }
+    public void FileRemoved(FolderStructureFileEntry entry)
+    {
+        _collection.Delete(entry.Path);
+    }
+
+    public void Dispose()
+    {
+        _tempLiteDatabase.Dispose();
+    }
 }

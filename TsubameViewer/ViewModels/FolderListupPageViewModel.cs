@@ -76,7 +76,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly ThumbnailImageManager _thumbnailManager;        
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    private readonly FolderListupSettings _folderListupSettings;
+    private readonly FolderListingSettings _folderListingSettings;
     private readonly BackNavigationCommand _backNavigationCommand;
 
     public ISecondaryTileManager SecondaryTileManager { get; }
@@ -173,7 +173,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
         LastIntractItemRepository folderLastIntractItemManager,
         ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
-        FolderListupSettings folderListupSettings,
+        FolderListingSettings folderListingSettings,
         BackNavigationCommand backNavigationCommand,
         OpenPageCommand openPageCommand,
         OpenListupCommand openListupCommand,
@@ -200,7 +200,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _thumbnailManager = thumbnailManager;            
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
-        _folderListupSettings = folderListupSettings;
+        _folderListingSettings = folderListingSettings;
         _backNavigationCommand = backNavigationCommand;
         OpenPageCommand = openPageCommand;
         OpenListupCommand = openListupCommand;
@@ -488,7 +488,7 @@ public sealed partial class FolderListupPageViewModel : NavigationAwareViewModel
         await base.OnNavigatedToAsync(parameters);
     }
 
-    bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListupSettings.ShowWithIndexedFolderItemAccess;
+    bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListingSettings.ShowWithIndexedFolderItemAccess;
 
     IImageCollectionContext _imageCollectionContext;
 
