@@ -918,10 +918,10 @@ public sealed class FolderStructureCacheContext : IDisposable
         bool isInitial = !_repo.HasFolderItems(ImageCollection.Folder);
         // filesにあるアイテムがcachedに無い → 増分
         IDisposable deferRefresh = deferRefreshFactory();
-        int count = 50;
+        int count = 200;
         foreach (var index in Enumerable.Range(0, imagesCount))
         {
-            var imageSource = await ImageCollection.GetImageFileAtAsync(index, _sortType, ct);
+            var imageSource = await ImageCollection.GetImageFileAtAsync(index, _sortType, ct);            
             if (isInitial || !cached.Remove(imageSource.Path, out var entry))
             {
                 ct.ThrowIfCancellationRequested();
@@ -933,7 +933,7 @@ public sealed class FolderStructureCacheContext : IDisposable
 
             if (count-- <= 0)
             {
-                count = 50;
+                count = 200;
                 deferRefresh.Dispose();
                 await Task.Delay(3000);
                 deferRefresh = deferRefreshFactory();

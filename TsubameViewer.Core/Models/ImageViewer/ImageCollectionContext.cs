@@ -270,6 +270,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         if (await ImageFileSearchQuery.GetFilesAsync((uint)index, 1).AsTask(ct) is { } files
             && files.FirstOrDefault() is { } file)
         {
+            await Task.Delay(1);
             return new StorageItemImageSource(file);
         }
         else
