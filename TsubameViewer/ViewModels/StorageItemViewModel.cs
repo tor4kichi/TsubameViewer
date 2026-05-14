@@ -112,7 +112,6 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
     }
 
-
     public bool IsRequestImageLoading { get; private set; } = false;
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()

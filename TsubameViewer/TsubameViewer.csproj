@@ -207,6 +207,7 @@
     <Compile Include="ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\FolderOrArchiveResturctureCommand.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\RegisterItemRemoveFromAccessListCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />

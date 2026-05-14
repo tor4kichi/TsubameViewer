@@ -47,14 +47,12 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             {
                 if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
                 {
-                    var result = await _messageDialogService.ShowMessageDialogAsync(
-                        message: "AlbamDeleteConfirmDialogText".Translate(albam.Name),
-                        CommandLabels: new[] { "Delete".Translate(), "Cancel".Translate() },
-                        cancelCommandIndex: 1,
-                        defaultCommandIndex: 1
-                        );
-
-                    if (result.IsConfirm == false || result.ResultCommandIndex == 1)
+                    if (!await _messageDialogService.ShowMessageDialogAsync(
+                        "AlbamDeleteConfirmDialogText".Translate(albam.Name),
+                        "Delete".Translate(),
+                        "Cancel".Translate(),
+                        true
+                        ))
                     {
                         return;
                     }
