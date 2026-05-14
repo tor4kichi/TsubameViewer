@@ -154,8 +154,11 @@
                 HorizontalContentAlignment="Left"
                 Click="ImageListItem_Clicked">
           <ToolTipService.ToolTip>
-            <TextBlock Text="{Binding Name}"
-                       TextWrapping="Wrap" />
+            <ToolTip Placement="Bottom"
+                     VerticalOffset="2">
+              <TextBlock Text="{Binding Name}"
+                         TextWrapping="Wrap" />
+            </ToolTip>
           </ToolTipService.ToolTip>
 
           <Grid>
@@ -250,8 +253,7 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource SmallImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
+                     VerticalOffset="2">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
@@ -331,6 +333,14 @@
     <DataTemplate x:Key="FileItemTemplate_Midium"
                   x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
+        <ToolTipService.ToolTip>
+          <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
+                   Placement="Bottom"
+                   VerticalOffset="4">
+            <TextBlock Text="{Binding Name}"
+                       TextWrapping="Wrap" />
+          </ToolTip>
+        </ToolTipService.ToolTip>
 
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
@@ -350,15 +360,6 @@
                 Click="ImageListItem_Clicked"
                 PointerEntered="Image_PointerEntered"
                 PointerExited="Image_PointerExited">
-          <ToolTipService.ToolTip>
-            <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
-                     Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
-              <TextBlock Text="{Binding Name}"
-                         TextWrapping="Wrap" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
                    Source="{Binding Image, Mode=OneWay}"
@@ -455,8 +456,7 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
+                     VerticalOffset="4">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
