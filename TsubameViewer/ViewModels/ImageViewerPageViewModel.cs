@@ -1,6 +1,11 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using I18NPortable;
+using LiteDB;
+using Microsoft.IO;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -16,6 +21,7 @@ using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -23,6 +29,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -30,22 +37,16 @@ using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
-using TsubameViewer.Helpers;
+using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-using CommunityToolkit.Diagnostics;
-using Windows.UI.Xaml.Media;
-using CommunityToolkit.Mvvm.ComponentModel;
-using I18NPortable;
-using TsubameViewer.Contracts.Notification;
-using TsubameViewer.Views;
-using Microsoft.IO;
 
 namespace TsubameViewer.ViewModels;
 
@@ -399,9 +400,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         base.OnNavigatedFrom(parameters);
     }
-
+    
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
+#if DEBUG
+        long time = TimeProvider.System.GetTimestamp();
+#endif
         var mode = parameters.GetNavigationMode();
 
         _navigationDisposables = new CompositeDisposable();
@@ -543,7 +547,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 throw new NotSupportedException();
             }
         }
-        
+
+#if DEBUG
+        Debug.WriteLine($"RefreshItems: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
+
+
         // 以下の場合に表示内容を更新する
         //    1. 表示フォルダが変更された場合
         //    2. 前回の更新が未完了だった場合
@@ -562,7 +572,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 {
                     try
                     {
-                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, ct);
                     }
                     catch
                     {
@@ -575,7 +585,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         {
             try
             {
-                _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, ct);
             }
             catch
             {
@@ -588,6 +598,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _nowCurrenImageIndexChanging = false;
 
         await ResetImageIndex(CurrentImageIndex);
+
+#if DEBUG
+        Debug.WriteLine($"SetImages: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
 
         SetCurrentDisplayImageIndex(CurrentDisplayImageIndex);
 
@@ -655,7 +670,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             .Subscribe(async pair =>
             {
                 if (Images == null) { return; }
-                var ct = _navigationCts.Token;
                 var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.OldItem, ct);
                 var newIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(oldImage.Name, pair.NewItem, ct);
                 await ResetImageIndex(newIndex);
@@ -743,7 +757,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 {
                     if (visible && requireRefresh && _imageCollectionContext is not null)
                     {
-                        var ct = _navigationCts?.Token ?? CancellationToken.None;
                         requireRefresh = false;
                         var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType.Value, ct)).Path;
                         await ReloadItemsAsync(_imageCollectionContext, ct);
@@ -767,6 +780,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 })
                 .AddTo(_navigationDisposables);
         }
+
+#if DEBUG
+        Debug.WriteLine($"Complete: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
+
 
         await base.OnNavigatedToAsync(parameters);
     }
@@ -818,7 +837,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         if (imageCollectionContext == null) { return; }
 
-        var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+        int imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
         _nowCurrenImageIndexChanging = true;
         _nowImagesChanging = true;
         Images = new IImageSource[imageCount];

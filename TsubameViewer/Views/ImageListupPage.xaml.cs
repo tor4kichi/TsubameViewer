@@ -87,7 +87,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         Loaded += FolderListupPage_Loaded;
         Unloaded += FolderListupPage_Unloaded;
 
-
         FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
@@ -95,39 +94,24 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged += ItemsScrollViewer_ViewChanged;
     }
-
 
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-
-        FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged -= ItemsScrollViewer_ViewChanged;
-
-        FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Large.ElementPrepared += FileItemsRepeater_ElementPrepared;
-
-        FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged += ItemsScrollViewer_ViewChanged;        
     }
 
-    IDisposable? _lodingTaskMonitor;
-    void StartLoadingTaskMonitor(CancellationToken ct)
+    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         StopLoadingTaskMonitor();
+    }
 
+    #region Image Loading
+
+    IDisposable? _lodingTaskMonitor;
+    async void StartLoadingTaskMonitor(CancellationToken ct)
+    {
+        StopLoadingTaskMonitor();
+        _lastVerticalOffset = 0;
         DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
         R3.Observable.Merge(
@@ -135,7 +119,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
                 R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
                 ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
-            .Debounce(TimeSpan.FromMilliseconds(250))
+            .Debounce(TimeSpan.FromMilliseconds(100))
             .SubscribeAwait(async (_, ct) =>
             {
                 var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
@@ -157,7 +141,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
                         {
                             tasks.RemoveAt(index);
-                            await Task.Delay(1);
                             count--;
                             if (count <= 0)
                             {
@@ -174,7 +157,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     }
                 }
 
-                await Task.Delay(50);
                 if (_loadPendingItems.Any())
                 {
                     Debug.WriteLine("LoadingTaskMonitor secondary.");
@@ -187,7 +169,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         {
                             int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
                             tasks.RemoveAt(index);
-                            await Task.Delay(10);
+                            await Task.Delay(1);
                             count--;
                             if (count <= 0 || _isVisibleRangeUpdated)
                             {
@@ -234,12 +216,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     ItemsRepeater? GetCurrentItemsRepeater() => ItemsSwitchPresenter.Content as ItemsRepeater;
 
 
-    bool _nowUpdateVisibleRangeItemInitialize = false;
-    private void ItemsScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
-    {
-        
-    }
-
     bool _isVisibleRangeUpdated;
     ObservableCollection<IStorageItemViewModel> _priorityLoadPendingItems = [];
     ObservableCollection<IStorageItemViewModel> _loadPendingItems = [];
@@ -249,64 +225,41 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         //Debug.WriteLine("LoadingTaskMonitor UpdateVisibleRangeItemInitialize.");
         if (GetCurrentItemsRepeater() is not { } itemRepeater) { return; }
-        
-        try
-        {
-            var sv = ItemsScrollViewer;
-            Rect boundingBox = sv.ActualSize.ToSize().ToRect();
-            Rect currentContentArea = boundingBox;
-            currentContentArea.Y -= 140; // アイテムの高さ分を調整
-            currentContentArea.Height += 140 * 2;
-            double expandLoadingArea = sv.ActualHeight * 2;
-            Point scrollPos = new(0, -sv.VerticalOffset);
-            Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
-                {
-                    return Comparer<int>.Default.Compare(_vm.FileItemsView.IndexOf(x), _vm.FileItemsView.IndexOf(y));
-                };
 
-            _priorityLoadPendingItems.Clear();
-            _loadPendingItems.Clear();
-            foreach (var item in _realizedItems)
+        var sv = ItemsScrollViewer;
+        Rect boundingBox = sv.ActualSize.ToSize().ToRect();
+        Rect currentContentArea = boundingBox;
+        currentContentArea.Y -= 140; // アイテムの高さ分を調整
+        currentContentArea.Height += 140 * 2;
+        double expandLoadingArea = sv.ActualHeight * 2;
+        Point scrollPos = new(0, -sv.VerticalOffset);
+        Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
+        {
+            return Comparer<int>.Default.Compare(_vm.FileItemsView.IndexOf(x), _vm.FileItemsView.IndexOf(y));
+        };
+
+        _priorityLoadPendingItems.Clear();
+        _loadPendingItems.Clear();
+        foreach (var item in _realizedItems)
+        {
+            if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
+            if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
+
+            var t = item.TransformToVisual(FileItemsContainer);
+            var pos = t.TransformPoint(scrollPos);
+            if (currentContentArea.Contains(pos))
             {
-                if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }                
-                if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
-                
-                var t = item.TransformToVisual(FileItemsContainer);
-                var pos = t.TransformPoint(scrollPos);
-                if (currentContentArea.Contains(pos))
-                {
-                    _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
-                }
-                else 
-                {
-                    _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
-                }
+                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
             }
-            _isVisibleRangeUpdated = true;
+            else
+            {
+                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+            }
         }
-        finally
-        {
-            _nowUpdateVisibleRangeItemInitialize = false;
-        }
+        _isVisibleRangeUpdated = true;
     }
 
-
-    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        StopLoadingTaskMonitor();
-
-        FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-
-        FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged -= ItemsScrollViewer_ViewChanged;        
-    }
-
-
+    #endregion
 
 
     #region 初期フォーカス設定
@@ -332,19 +285,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _navigationCts = new CancellationTokenSource();
         var ct = _ct = _navigationCts.Token;
-
-        _realizedItems.CollectionChangedAsObservable()
-            .Throttle(TimeSpan.FromMilliseconds(25), UIDispatcherScheduler.Default)
-            .Take(1)
-            .Subscribe(_ =>
-            {
-                UpdateVisibleRangeItemInitialize();
-                foreach (var itemVM in _priorityLoadPendingItems)
-                {
-                    var a = itemVM.InitializeAsync(ct);
-                }
-                _priorityLoadPendingItems.Clear();
-            });
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
@@ -517,7 +457,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
                 itemVM.StopImageLoading();
-                itemVM.ThumbnailChanged();
             }
         }
     }

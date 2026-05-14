@@ -29,6 +29,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services;
@@ -41,6 +42,7 @@ using TsubameViewer.Views;
 using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 
@@ -314,8 +316,6 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         _navigationCts?.Cancel();
         _navigationCts = null;
         _navigationDisposables?.Dispose();
-        _cacheFileRepository?.Dispose();
-        _cacheFileRepository = null;
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -373,11 +373,6 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
                 else
                 {
                     _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
-
-                    foreach (var itemVM in ImageFileItems)
-                    {
-                        itemVM.RestoreThumbnailLoadingTask(ct);
-                    }
                 }
             }
             else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string albamPath))
@@ -592,8 +587,6 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         OnPropertyChanged(nameof(ImageFileItems));
     }
     bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListingSettings.ShowWithIndexedFolderItemAccess;
-
-    FolderStructureFilesRepository? _cacheFileRepository;
     
     IDisposable? _itemsDisposable;
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
@@ -663,11 +656,9 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // StorageFolderはアイテム取得に時間がかかる
-                _cacheFileRepository ??= new(new LiteDatabase(new ConnectionString() { Filename = Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "folder_structure.litedb") }));
-                var context = new FolderStructureCacheContext(col, sortType, _cacheFileRepository);                
-                Func<FolderStructureFileEntry, IImageSource?, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry, imageSource) => 
+                Func<FolderStructureFileEntry, StorageFile?, LazyCacheImageFileViewModel> cacheImageViewModelFactory = (entry, file) => 
                 {
-                    return new LazyCacheImageFileViewModel(col, sortType, entry, imageSource, _messenger,
+                    return new LazyCacheImageFileViewModel(col, sortType, entry, new StorageItemImageSource(file), _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
@@ -677,40 +668,36 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 
                 var d1 = imageCollectionContext.CreateImageFileChangedObserver()
                     .ToObservable()
-                    .SubscribeAwait((context, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
+                    .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
                     {
-                        Debug.WriteLine("ImageFileChanged!!!");
-                        var (context, items, itemFacotry) = s;
-                        var ignore = context.HandleDiffItems(items.Source as ObservableCollection<IStorageItemViewModel>, items.DeferRefresh, itemFacotry, ct);
+                        var (col, items, itemFacotry) = s;
+                        //await ReloadItemsAsync(col, ct);
+                        var ignore = col.Context.HandleDiffItems(
+                            items.Source as ObservableCollection<IStorageItemViewModel>, 
+                            items.DeferRefresh,
+                            itemFacotry,
+                            (IStorageItemViewModel itemVM) => itemVM.Path,
+                            ct);
                     });
 
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
-                
-                if (context.HasCache())
-                {
-                    using (FileItemsView.DeferRefresh())
-                    {
-                        ImageFileItems.Clear();
-                        var files = context.GetCacheItems();
-                        foreach (var entry in files)
-                        {
-                            var itemVM = new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
-                                    _sourceStorageItemsRepository,
-                                    _bookmarkManager,
-                                    _thumbnailManager,
-                                    _albamRepository,
-                                    Selection);
-                            ImageFileItems.Add(itemVM);
-                        }
-                    }
-                }
-                else
+
+                await col.Context.UpdateCacheIfCountNotSameAsync(ct);
+                using (FileItemsView.DeferRefresh())
                 {
                     ImageFileItems.Clear();
+                    foreach (var entry in col.Context.GetCacheItems())
+                    {
+                        var itemVM = new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                            _sourceStorageItemsRepository,
+                            _bookmarkManager,
+                            _thumbnailManager,
+                            _albamRepository,
+                            Selection);
+                        ImageFileItems.Add(itemVM);
+                    }
                 }
-
-                _ = context.HandleDiffItems(ImageFileItems, FileItemsView.DeferRefresh, cacheImageViewModelFactory, ct);
             }
             else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
             {
@@ -870,172 +857,3 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
 #endregion
 }
 
-public sealed class FolderStructureCacheContext : IDisposable
-{
-    public FolderStructureCacheContext(FolderImageCollectionContext imageCollection, FileSortType sortType, FolderStructureFilesRepository cacheFilesRepository)
-    {
-        ImageCollection = imageCollection;
-        _sortType = sortType;
-        _repo = cacheFilesRepository;
-    }
-
-    public FolderImageCollectionContext ImageCollection { get; }
-
-    private readonly FileSortType _sortType;
-    private readonly FolderStructureFilesRepository _repo;
-
-    public bool HasCache()
-    {
-        return _repo.HasFolderItems(ImageCollection.Folder);
-    }
-
-    public List<FolderStructureFileEntry> GetCacheItems()
-    {
-        return _repo.FindFolderItems(ImageCollection.Folder.Path).AsValueEnumerable().ToList();
-    }
-
-    public async Task<Observable<IImageSource>> GetFilesAsObservable(CancellationToken ct)
-    {        
-        return R3.Observable.ToObservable(ImageCollection.GetAllImageFilesAsync(ct));        
-    }
-
-    readonly static Core.AsyncLock _asyncLock = new();
-    public async Task HandleDiffItems(ObservableCollection<IStorageItemViewModel> items, 
-        Func<IDisposable> deferRefreshFactory, 
-        Func<FolderStructureFileEntry, IImageSource, LazyCacheImageFileViewModel> cacheImageViewModelFactory, 
-        CancellationToken ct)
-    {
-        using var reelaser = await _asyncLock.LockAsync(ct);
-
-        int imagesCount = await ImageCollection.GetImageFileCountAsync(ct);
-        if (imagesCount == _repo.GetFolderItemsCount(ImageCollection.Folder.Path))
-        {
-            return;
-        }
-
-        // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
-        var cached = _repo.FindFolderItems(ImageCollection.Folder.Path).ToDictionary(x => x.Path);
-        bool isInitial = !_repo.HasFolderItems(ImageCollection.Folder);
-        // filesにあるアイテムがcachedに無い → 増分
-        IDisposable deferRefresh = deferRefreshFactory();
-        int count = 200;
-        foreach (var index in Enumerable.Range(0, imagesCount))
-        {
-            var imageSource = await ImageCollection.GetImageFileAtAsync(index, _sortType, ct);            
-            if (isInitial || !cached.Remove(imageSource.Path, out var entry))
-            {
-                ct.ThrowIfCancellationRequested();
-                entry = _repo.AddOrUpdateItem(imageSource.StorageItem);
-                var itemVM = cacheImageViewModelFactory(entry, imageSource);
-                items.Add(itemVM);                
-            }
-            else { continue; }
-
-            if (count-- <= 0)
-            {
-                count = 200;
-                deferRefresh.Dispose();
-                await Task.Delay(3000);
-                deferRefresh = deferRefreshFactory();
-            }
-        }
-
-        deferRefresh.Dispose();
-        deferRefresh = deferRefreshFactory();
-
-        // cachedにあってfilesに無い → 減分
-        foreach (var (i, item) in items.AsValueEnumerable().Index().Reverse())
-        {
-            if (cached.TryGetValue(item.Path, out var entry))
-            {
-                items.RemoveAt(i);
-                _repo.FileRemoved(entry);
-            }
-        }
-
-        deferRefresh.Dispose();
-    }
-
-    public void Dispose()
-    {
-        _repo.Dispose();
-    }
-}
-
-public sealed class FolderStructureFileEntry
-{
-    [BsonId]
-    public string Path { get; set; }
-
-    public string ParentFolderPath { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
-
-    public string GetFileName() => System.IO.Path.GetFileName(Path);
-}
-
-public sealed class FolderStructureFilesRepository : IDisposable
-{
-    private readonly ILiteCollection<FolderStructureFileEntry> _collection;
-    private readonly ILiteDatabase _tempLiteDatabase;
-
-    public sealed class InternalFolderItemsCacheRepository : LiteDBServiceBase<FolderStructureFileEntry>
-    {
-        public InternalFolderItemsCacheRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
-        {
-        }
-
-        public FolderStructureFileEntry FindById(string path)
-        {
-            return _collection.FindById(path);
-        }
-    }
-
-    public FolderStructureFilesRepository(ILiteDatabase tempLiteDatabase)
-    {
-        _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();       
-        _collection.EnsureIndex(x => x.ParentFolderPath);
-        _tempLiteDatabase = tempLiteDatabase;
-    }
-
-    public bool HasFolderItems(StorageFolder folder)
-    {
-        return _collection.Exists(x => x.ParentFolderPath == folder.Path);
-    }
-
-    public FolderStructureFileEntry AddOrUpdateItem(IStorageItem file)
-    {
-        var entry = new FolderStructureFileEntry()
-        {
-            Path = file.Path,
-            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
-            DateCreated = file.DateCreated
-        };
-        _collection.Upsert(entry);
-        return entry;
-    }
-
-    public IEnumerable<FolderStructureFileEntry> FindFolderItems(string folderPath)
-    {
-        return _collection.Find(x => x.ParentFolderPath == folderPath);
-    }
-
-    public int GetFolderItemsCount(string folderPath)
-    {
-        return _collection.Count(x => x.ParentFolderPath == folderPath);
-    }
-
-    public void DeleteItem(string folderPath)
-    {
-        _collection.DeleteMany(x => x.ParentFolderPath == folderPath);
-    }
-    public void FileRemoved(FolderStructureFileEntry entry)
-    {
-        _collection.Delete(entry.Path);
-    }
-
-    public void Dispose()
-    {
-        _tempLiteDatabase.Dispose();
-    }
-}
