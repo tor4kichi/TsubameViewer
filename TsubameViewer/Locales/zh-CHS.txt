@@ -202,11 +202,14 @@ Toc = 目录
 
 #### SearchResult
 
-SearchResultWith = 下一个搜索结果
+SearchResultWith = 搜索结果：{0}
 SearchPlaceholder = 在页面内搜索
 Search_FromAll = 从所有来源搜索
 Search_DisplayItemsCount = {0} 项
 Search_FilteredDisplayItemsCount = 显示 {0} 项
+
+
+
 #### Albam
 
 Albam = 专辑

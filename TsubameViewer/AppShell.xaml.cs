@@ -1371,6 +1371,7 @@ public sealed partial class AppShell : UserControl
     private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
     }
 }
 
@@ -1438,6 +1439,14 @@ public sealed class MenuItemTemplateSelector : DataTemplateSelector
 public sealed class InPageSearchRequestMessage : ValueChangedMessage<string>
 {
     public InPageSearchRequestMessage(string value) : base(value)
+    {
+
+    }
+}
+
+public sealed class SearchQuerySubmitedRequestMessage : ValueChangedMessage<string>
+{
+    public SearchQuerySubmitedRequestMessage(string value) : base(value)
     {
 
     }

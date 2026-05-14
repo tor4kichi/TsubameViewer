@@ -202,11 +202,14 @@ Toc = Table of contents
 
 #### SearchResult
 
-SearchResultWith = Next search result
+SearchResultWith = Search results for {0}
 SearchPlaceholder = Search within the page
 Search_FromAll = Search from all
 Search_DisplayItemsCount = {0} items
 Search_FilteredDisplayItemsCount = Showing {0} items
+
+
+
 #### Albam
 
 Albam = Album

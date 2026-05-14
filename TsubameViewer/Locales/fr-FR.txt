@@ -202,11 +202,14 @@ Toc = Table des matières
 
 #### SearchResult
 
-SearchResultWith = Prochain résultat de recherche
+SearchResultWith = Résultats de la recherche pour {0}
 SearchPlaceholder = Rechercher dans la page
 Search_FromAll = Recherche parmi tous les
 Search_DisplayItemsCount = {0} éléments
 Search_FilteredDisplayItemsCount = Affichage de {0} éléments
+
+
+
 #### Albam
 
 Albam = Album

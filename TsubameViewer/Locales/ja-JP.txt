@@ -202,11 +202,14 @@ Toc = 目次
 
 #### SearchResult
 
-SearchResultWith = 次の検索結果
+SearchResultWith = "{0}"の検索結果
 SearchPlaceholder = ページ内を検索
 Search_FromAll = 全体から検索
 Search_DisplayItemsCount = {0}件
 Search_FilteredDisplayItemsCount = {0}件を表示中
+
+
+
 #### Albam
 
 Albam = アルバム

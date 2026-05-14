@@ -32,12 +32,20 @@
         <StackPanel Orientation="Horizontal">
           <TextBlock TextTrimming="CharacterEllipsis"
                      FontSize="12"
-                     IsHitTestVisible="False">
-      <Run Text="{Binding Title, Mode=OneWay}" />
+                     IsHitTestVisible="False"
+                     VerticalAlignment="Center">
+            <Run Text="{x:Bind SearchText, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='SearchResultWith'}" />
           </TextBlock>
         </StackPanel>
       </Grid>
     </DataTemplate>
+
+    <CollectionViewSource x:Key="SearchResultItemsViewSource"
+                          ItemsPath="Items"
+                          IsSourceGrouped="True"
+                          Source="{x:Bind _vm.SearchResultItems}">
+      
+    </CollectionViewSource>
   </Page.Resources>
 
   <Grid Margin="0 0 0 0">
@@ -45,31 +53,44 @@
       <StackPanel uwpControls:DockPanel.Dock="Top"
                   x:Name="HeaderLayout"
                   Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                  Padding="8 8"
-                  Margin="0 24 0 16">
-        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Opacity="0.8">
-            <Run Text="{Binding Source=SearchResultWith, Converter={StaticResource LocalizeConverter}}" /> "<Run Text="{Binding SearchText}" />"
-        </TextBlock>
+                  Padding="8 8 8 0"
+                  Margin="0 24 0 0">
+        <StackPanel Orientation="Horizontal"
+                    Margin="8 0"
+                    HorizontalAlignment="Right">
+          <TextBlock Margin="0 0 0 0"
+                     VerticalAlignment="Center">
+            <Run Text="{x:Bind _vm.HitCount, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
+          </TextBlock>
+        </StackPanel>
       </StackPanel>
-      <uwpControls:AdaptiveGridView
-        ItemsSource="{Binding SearchResultItems}"
-        x:Name="FoldersAdaptiveGridView"
-        StretchContentForSingleRow="False"
-        OneRowModeEnabled="False"
-        VerticalAlignment="Top"
-        ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
-        ItemContainerStyle="{StaticResource FolderStyle}"
-        DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
-        ItemHeight="{StaticResource FolderGridViewItemHeight}"
-        IsItemClickEnabled="True"
-        ItemClickCommand="{Binding OpenFolderItemCommand}"
-        IsSynchronizedWithCurrentItem="False"
-        SelectionMode="None"
-        XYFocusDownNavigationStrategy="NavigationDirectionDistance"  
-        IsTabStop="False"
-        ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
-        >
-
+      <uwpControls:AdaptiveGridView ItemsSource="{Binding Source={StaticResource SearchResultItemsViewSource}}"
+                                    x:Name="FoldersAdaptiveGridView"
+                                    StretchContentForSingleRow="False"
+                                    OneRowModeEnabled="False"
+                                    VerticalAlignment="Top"
+                                    ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+                                    ItemContainerStyle="{StaticResource FolderStyle}"
+                                    DesiredWidth="{StaticResource FolderGridViewItemWidth}"
+                                    ItemHeight="160"
+                                    IsItemClickEnabled="True"
+                                    ItemClickCommand="{Binding OpenFolderItemCommand}"
+                                    IsSynchronizedWithCurrentItem="False"
+                                    SelectionMode="None"
+                                    XYFocusDownNavigationStrategy="NavigationDirectionDistance"
+                                    IsTabStop="False"
+                                    ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}">
+        <GridView.GroupStyle>
+          <GroupStyle>
+            <GroupStyle.HeaderTemplate>
+              <DataTemplate x:DataType="vm:ItemsGroupedByFolderViewModel">
+                <StackPanel>
+                  <TextBlock Text="{Binding Name}" />
+                </StackPanel>
+              </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+          </GroupStyle>
+        </GridView.GroupStyle>
         <GridView.ItemContainerTransitions>
           <TransitionCollection />
         </GridView.ItemContainerTransitions>
