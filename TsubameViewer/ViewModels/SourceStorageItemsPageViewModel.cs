@@ -149,7 +149,7 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
                 Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
                 try
                 {
-                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
+                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems().WithCancellation(ct))
                     {
                         if (item.item == null)
                         {

@@ -639,7 +639,7 @@ public sealed partial class FolderListupPageViewModel
                     Debug.WriteLine($"items count : {FolderItems.Count}");
 
                     // 新規アイテム               
-                    await foreach (var item in imageCollectionContext.GetFolderOrArchiveFilesAsync(ct))
+                    await foreach (var item in imageCollectionContext.GetFolderOrArchiveFilesAsync(ct).WithCancellation(ct))
                     {
                         if (item == null) { continue; }
 

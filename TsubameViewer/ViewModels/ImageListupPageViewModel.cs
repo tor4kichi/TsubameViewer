@@ -623,7 +623,7 @@ public sealed partial class ImageListupPageViewModel
                 Debug.WriteLine($"items count : {ImageFileItems.Count}");
 
                 // 新規アイテム
-                await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct))
+                await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct).WithCancellation(ct))
                 {
                     if (existItemsHashSet.Contains(item.Path) is false)
                     {

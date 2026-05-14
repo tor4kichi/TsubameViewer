@@ -166,7 +166,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         {
             // FindStartIndexAsync が意図したIndexを返さないので頭から走査する
             int index = 0;
-            await foreach (var file in FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct))
+            await foreach (var file in FolderAndArchiveFileSearchQuery.ToAsyncEnumerable(ct).WithCancellation(ct))
             {
                 if (file.Name == key || file.Path == key)
                 {
@@ -479,7 +479,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         // filesにあるアイテムがcachedに無い → 増分
         IDisposable deferRefresh = deferRefreshFactory();
         int count = 200;
-        await foreach (var file in query.ToAsyncEnumerable(ct))
+        await foreach (var file in query.ToAsyncEnumerable(ct).WithCancellation(ct))
         {            
             if (isInitial || !cached.Remove(file.Path, out var entry))
             {
