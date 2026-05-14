@@ -696,12 +696,13 @@
         </uwpControls:DockPanel>
         <uwpControls:DockPanel x:Name="FilesActionLayout"
                                Margin="0 0 0 0">
-          <Border uwpControls:DockPanel.Dock="Bottom"
+          <StackPanel uwpControls:DockPanel.Dock="Bottom"
+                      Orientation="Horizontal"
                   Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
             <TextBlock Opacity="0.7">
-            <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
             </TextBlock>
-          </Border>
+          </StackPanel>
 
           <DropDownButton x:Name="FileSortButton"
                           uwpControls:DockPanel.Dock="Left"
@@ -778,6 +779,20 @@
                     SingleSelectionFollowsFocus="False"
                     XYFocusLeft="{x:Bind OptionalActionsButton}"
                     AccessKey="I">
+            <ListView.Header>
+              <StackPanel Orientation="Horizontal" Margin="8 0">
+                <TextBlock VerticalAlignment="Center"
+                           Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                           Margin="0 0 8 0">
+                  <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
+                </TextBlock>
+                <TextBlock Margin="0 0 0 0"
+                           VerticalAlignment="Center"
+                           Opacity="0.7">
+                  <Run Text="{x:Bind _vm.ImageFileItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
+                </TextBlock>
+              </StackPanel>
+            </ListView.Header>
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
             </ListView.ItemContainerTransitions>

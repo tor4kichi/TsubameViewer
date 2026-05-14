@@ -36,13 +36,13 @@
 
       <myConv:AutoSuggestBoxQuerySubmittedEventArgsConverter x:Key="AutoSuggestBoxQuerySubmittedEventArgsConverter" />
 
-      <CollectionViewSource x:Key="AutoSuggestBoxItems"
+      <!--<CollectionViewSource x:Key="AutoSuggestBoxItems"
                           Source="{x:Bind _vm.AutoSuggestBoxItems}"
                           IsSourceGrouped="True"
                           ItemsPath="Items"
                           >
 
-      </CollectionViewSource>
+      </CollectionViewSource>-->
 
       <local:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
         <local:MenuItemTemplateSelector.MenuSeparator>
@@ -124,21 +124,23 @@
                         x:Name="AutoSuggestBox"
                         Padding="0"
                         Width="196"                        
-                        ItemsSource="{Binding Source={StaticResource AutoSuggestBoxItems}}"
                         TextMemberPath="Title"
                         UpdateTextOnSelect="False"
                         AutoMaximizeSuggestionArea="True"
                         IsSuggestionListOpen="True"   
                         IsFocusEngagementEnabled="True"
                         UseSystemFocusVisuals="True"
+                        TextChanged="AutoSuggestBox_TextChanged"
+                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
                         FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
                         AccessKey="F"
                         AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted"
                         >
           <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="QuerySubmitted">
+            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
               <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-            </core:EventTriggerBehavior>
+            </core:EventTriggerBehavior>-->
             <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
               <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
             </uiNavigation:UINavigationTriggerBehavior>

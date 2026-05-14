@@ -83,6 +83,7 @@
       <myFlyouts:StorageItemMenuFlyout x:Key="RootPageStorageItemMenuFlyout" IsRootPage="True" />
 
       <locale:LocalizeConverter x:Key="LocalizeConverter" />
+      <locale:LocalizeKeyAsParametersConverter x:Key="LocalizeKeyAsParametersConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />

@@ -328,8 +328,9 @@ public sealed class AppShellViewModel
                 _cts?.Cancel();
                 _cts = null;
             }
-                // 検索ページを開く
-                await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
+
+            // 検索ページを開く
+            await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
             using (await _suggestUpdateLock.LockAsync(default))
             {
                 _onceSkipSuggestUpdate = false;                

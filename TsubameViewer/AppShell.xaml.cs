@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using I18NPortable;
@@ -96,6 +97,11 @@ public sealed partial class AppShell : UserControl
         appView.VisibleBoundsChanged += AppView_VisibleBoundsChanged;
 
         Loaded += AppShell_Loaded;
+
+        _messenger.Register<CurrentInPageSearchTextRequestMessage>(this, (r, m) => 
+        {
+            m.Reply(AutoSuggestBox.Text);
+        });
     }
 
     private void AppShell_Loaded(object sender, RoutedEventArgs e)
@@ -1345,6 +1351,27 @@ public sealed partial class AppShell : UserControl
             _vm.OpenMenuItemCommand.Execute(itemVM);
         }
     }
+
+    InPageSearchRequestMessage? _searchMessage;
+    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        if (!sender.Items.Any())
+        {
+            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        }
+        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+    }
+
+    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        _vm.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+    }
 }
 
 
@@ -1406,4 +1433,17 @@ public sealed class MenuItemTemplateSelector : DataTemplateSelector
             _ => throw new NotSupportedException(),
         };
     }
+}
+
+public sealed class InPageSearchRequestMessage : ValueChangedMessage<string>
+{
+    public InPageSearchRequestMessage(string value) : base(value)
+    {
+
+    }
+}
+
+public sealed class CurrentInPageSearchTextRequestMessage : RequestMessage<string>
+{
+
 }

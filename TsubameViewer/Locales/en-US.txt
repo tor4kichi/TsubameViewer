@@ -203,10 +203,10 @@ Toc = Table of contents
 #### SearchResult
 
 SearchResultWith = Next search result
-SearchPlaceholder = Search for title
-
-
-
+SearchPlaceholder = Search within the page
+Search_FromAll = Search from all
+Search_DisplayItemsCount = {0} items
+Search_FilteredDisplayItemsCount = Showing {0} items
 #### Albam
 
 Albam = Album

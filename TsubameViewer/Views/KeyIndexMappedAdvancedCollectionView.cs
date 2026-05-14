@@ -37,7 +37,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemRemoved:
                 {
-                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old)
+                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
                     {
                         _keyIndexMap.Remove(old.Key);
                     }
@@ -45,7 +45,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
                 break;
             case Windows.Foundation.Collections.CollectionChange.ItemChanged:
                 {
-                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old)
+                    if (_keyIndexMap.FirstOrDefault(x => x.Value == index) is { } old && old.Key != null)
                     {
                         _keyIndexMap.Remove(old.Key);
                     }

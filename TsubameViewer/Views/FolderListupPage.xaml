@@ -150,6 +150,22 @@
             </DropDownButton.KeyboardAccelerators>
           </DropDownButton>
 
+          <StackPanel Orientation="Horizontal"
+                      Opacity="0.7"
+                      Margin="8 0"
+                      uwpControls:DockPanel.Dock="Right">
+            <TextBlock VerticalAlignment="Center"
+                       Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                       Margin="0 0 8 0">
+              <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
+            </TextBlock>
+            <TextBlock Margin="0 0 0 0"
+                       VerticalAlignment="Center"
+                       Opacity="0.7">
+              <Run Text="{x:Bind _vm.FolderItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
+            </TextBlock>
+          </StackPanel>
+
           <Button Margin="8 0 0 0">
             <Button.Content>
               <SymbolIcon Symbol="More" />

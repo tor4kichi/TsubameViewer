@@ -42,6 +42,7 @@ using TsubameViewer.Views;
 using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
@@ -72,8 +73,24 @@ public sealed class SelectionContext : ObservableObject
     }
 }
 
-public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
+public sealed partial class ImageListupPageViewModel 
+    : NavigationAwareViewModelBase
+    , IRecipient<InPageSearchRequestMessage>
 {
+
+    public void Receive(InPageSearchRequestMessage message)
+    {
+        _filterText = message.Value;
+        OnPropertyChanged(nameof(FilterText));
+    }
+
+    public Visibility NotEmptyToVisible(string s)
+    {
+        return string.IsNullOrWhiteSpace(s) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    [ObservableProperty]
+    string _filterText = "";
 
     private readonly IMessenger _messenger;
     private readonly IScheduler _scheduler;
@@ -109,14 +126,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
     public ObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
-
-
-    private AdvancedCollectionView _FileItemsView;
-    public AdvancedCollectionView FileItemsView
-    {
-        get { return _FileItemsView; }
-        set { SetProperty(ref _FileItemsView, value); }
-    }
+    public AdvancedCollectionView FileItemsView { get; }
 
     private bool _HasFileItem;
     public bool HasFileItem
@@ -255,7 +265,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         FavoriteRemoveCommand = favoriteRemoveCommand;
         ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
 
-        FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);        
+        FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
+        FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel).Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
 
         DisposableBuilder db = new();
         SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
@@ -264,6 +275,11 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
         FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
             .AddTo(ref db);
         ImageLastIntractItem = new ReactivePropertySlim<int>()
+            .AddTo(ref db);
+
+        this.ObservePropertyChanged(x => x.FilterText)
+            .Debounce(TimeSpan.FromSeconds(1))
+            .Subscribe(_ => FileItemsView.RefreshFilter())
             .AddTo(ref db);
 
         _disposables = db.Build();
@@ -312,6 +328,7 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
     {
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
+        _messenger.Unregister<InPageSearchRequestMessage>(this);
 
         _navigationCts?.Cancel();
         _navigationCts = null;
@@ -452,7 +469,8 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             db.Dispose();
             throw;
         }
-        
+
+        _messenger.Register<InPageSearchRequestMessage>(this);
         await base.OnNavigatedToAsync(parameters);
     }
 
@@ -531,7 +549,9 @@ public sealed class ImageListupPageViewModel : NavigationAwareViewModelBase
             DisplaySortTypeInheritancePath = null;
             SelectedFileSortType.Value = DefaultFileSortType;
         }
-               
+
+        FilterText = "";
+
         await SetSort(SelectedFileSortType.Value, ct);        
         await ReloadItemsAsync(_imageCollectionContext, ct);
 
