@@ -8,6 +8,7 @@ using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Tar;
 using SharpCompress.Common;
 using SharpCompress.Compressors.LZMA;
+using SharpCompress.Compressors.Xz;
 using SharpCompress.Readers;
 using SkiaSharp;
 using System;
@@ -931,9 +932,19 @@ public sealed class ThumbnailImageManager
     {
         try
         {
-            using (var inputStream = await streamOpener())
+            if (path.EndsWith(".gif"))
             {
-                await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                using (var inputStream = await streamOpener())
+                {
+                    inputStream.CopyTo(outputStream);
+                }
+            }
+            else
+            {
+                using (var inputStream = await streamOpener())
+                {
+                    await TranscodeSkiaAsync(path, inputStream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+                }
             }
         }
         catch
@@ -953,7 +964,14 @@ public sealed class ThumbnailImageManager
     {
         try
         {
-            await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            if (path.EndsWith(".gif"))
+            {
+                stream.CopyTo(outputStream);
+            }
+            else
+            {
+                await TranscodeSkiaAsync(path, stream, BitmapEncoder.JpegXREncoderId, _jpegPropertySet, outputStream, setupEncoder, ct);
+            }
         }
         catch
         {
