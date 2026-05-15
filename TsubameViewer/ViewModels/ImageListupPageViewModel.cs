@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
 using Microsoft.Toolkit.Uwp.UI;
@@ -15,9 +16,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -41,6 +39,7 @@ using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
 using TsubameViewer.Views.Helpers;
 using Windows.Storage;
+using Windows.System;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -93,7 +92,6 @@ public sealed partial class ImageListupPageViewModel
     string _filterText = "";
 
     private readonly IMessenger _messenger;
-    private readonly IScheduler _scheduler;
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -145,8 +143,9 @@ public sealed partial class ImageListupPageViewModel
 
     public SelectionContext Selection { get; } = new SelectionContext();
 
-    public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
-
+    [ObservableProperty]
+    FileSortType _selectedFileSortType;
+   
     private readonly FileSortType DefaultFileSortType = FileSortType.UpdateTimeDecending;
 
     private string _DisplaySortTypeInheritancePath;
@@ -156,8 +155,8 @@ public sealed partial class ImageListupPageViewModel
         private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
     }
 
-
-    public ReactivePropertySlim<int> ImageLastIntractItem { get; }
+    [ObservableProperty]
+    int _imageLastIntractItem;
 
     private static readonly Core.AsyncLock _NavigationLock = new ();
 
@@ -194,8 +193,15 @@ public sealed partial class ImageListupPageViewModel
         get { return _DisplayCurrentArchiveFolderName; }
         private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
     }
-    
-    public Reactive.Bindings.ReactiveProperty<FileDisplayMode> FileDisplayMode { get; }
+
+    [ObservableProperty]
+    FileDisplayMode _fileDisplayMode;
+
+    partial void OnFileDisplayModeChanged(FileDisplayMode value)
+    {
+        _folderListingSettings.FileDisplayMode = value;
+    }
+
     public FileDisplayMode[] FileDisplayModeItems { get; } = new FileDisplayMode[]
     {
         Core.Models.FolderItemListing.FileDisplayMode.Large,
@@ -206,13 +212,11 @@ public sealed partial class ImageListupPageViewModel
 
 
     public string FoldersManagementPageName => AppShell.HomePageName;
-
-    IDisposable _disposables;
+    
     IDisposable _navigationDisposables;
 
     public ImageListupPageViewModel(
         IMessenger messenger,
-        IScheduler scheduler,
         LocalBookmarkRepository bookmarkManager,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -239,7 +243,6 @@ public sealed partial class ImageListupPageViewModel
         )
     {
         _messenger = messenger;
-        _scheduler = scheduler;
         _bookmarkManager = bookmarkManager;
         _imageCollectionManager = imageCollectionManager;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -264,25 +267,10 @@ public sealed partial class ImageListupPageViewModel
         FavoriteAddCommand = favoriteAddCommand;
         FavoriteRemoveCommand = favoriteRemoveCommand;
         ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
-
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel).Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
-
-        DisposableBuilder db = new();
-        SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDecending)
-            .AddTo(ref db);
-
-        FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
-            .AddTo(ref db);
-        ImageLastIntractItem = new ReactivePropertySlim<int>()
-            .AddTo(ref db);
-
-        this.ObservePropertyChanged(x => x.FilterText)
-            .Debounce(TimeSpan.FromSeconds(1))
-            .Subscribe(_ => FileItemsView.RefreshFilter())
-            .AddTo(ref db);
-
-        _disposables = db.Build();
+        SelectedFileSortType = FileSortType.UpdateTimeDecending;
+        FileDisplayMode = _folderListingSettings.FileDisplayMode;        
     }
 
     public IStorageItemViewModel GetLastIntractItem()
@@ -333,6 +321,7 @@ public sealed partial class ImageListupPageViewModel
         _navigationCts?.Cancel();
         _navigationCts = null;
         _navigationDisposables?.Dispose();
+        _navigationDisposables = null;
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -370,13 +359,12 @@ public sealed partial class ImageListupPageViewModel
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
+        _navigationDisposables?.Dispose();
+        _navigationDisposables = null;
+
         var mode = parameters.GetNavigationMode();
-        var db = new R3.CompositeDisposable();
-        _navigationCts = new CancellationTokenSource();
-        db.Add(_navigationCts);
-
-        var ct = _navigationCts.Token;
-
+        var cts  = new CancellationTokenSource();        
+        var ct = cts.Token;
         NowProcessing = true;
         try
         {
@@ -413,11 +401,11 @@ public sealed partial class ImageListupPageViewModel
                 if (lastIntaractItem != null)
                 {
                     var item = ImageFileItems.FirstOrDefault(x => x.Name == lastIntaractItem);
-                    ImageLastIntractItem.Value = ImageFileItems.IndexOf(item);
+                    ImageLastIntractItem = ImageFileItems.IndexOf(item);
                 }
                 else
                 {
-                    ImageLastIntractItem.Value = 0;
+                    ImageLastIntractItem = 0;
                 }
             }
 
@@ -425,7 +413,7 @@ public sealed partial class ImageListupPageViewModel
         }
         catch
         {
-            db.Dispose();
+            cts.Dispose();
             throw;
         }
         finally
@@ -433,36 +421,44 @@ public sealed partial class ImageListupPageViewModel
             NowProcessing = false;
         }
 
+        _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+        {
+            var (albamId, path, itemType) = m.Value;
+            if (albamId == FavoriteAlbam.FavoriteAlbamId)
+            {
+                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                itemVM.IsFavorite = true;
+            }
+        });
+
+        _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
+        {
+            var (albamId, path, itemType) = m.Value;
+            if (albamId == FavoriteAlbam.FavoriteAlbamId)
+            {
+                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                itemVM.IsFavorite = false;
+            }
+        });
+
+        _messenger.Register<InPageSearchRequestMessage>(this);
+
+        var db = new DisposableBuilder();
         try
         {
-            var d1 = SelectedFileSortType
-                .Subscribe(async _ =>
+            this.ObservePropertyChanged(x => x.SelectedFileSortType)
+                .SubscribeAwait(async (sort, ct) =>
                 {
-                    await SetSort(SelectedFileSortType.Value, ct);
-                });
-            db.Add(d1);
+                    await SetSort(sort, ct);
+                })
+                .AddTo(ref db);            
 
-            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
-            {
-                var (albamId, path, itemType) = m.Value;
-                if (albamId == FavoriteAlbam.FavoriteAlbamId)
-                {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = true;
-                }
-            });
+            this.ObservePropertyChanged(x => x.FilterText)
+                .Debounce(TimeSpan.FromSeconds(1))
+                .Subscribe(_ => FileItemsView.RefreshFilter())
+                .AddTo(ref db);
 
-            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-            {
-                var (albamId, path, itemType) = m.Value;
-                if (albamId == FavoriteAlbam.FavoriteAlbamId)
-                {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = false;
-                }
-            });
-
-            _navigationDisposables = db;
+            _navigationDisposables = db.Build();
         }
         catch
         {
@@ -470,7 +466,6 @@ public sealed partial class ImageListupPageViewModel
             throw;
         }
 
-        _messenger.Register<InPageSearchRequestMessage>(this);
         await base.OnNavigatedToAsync(parameters);
     }
 
@@ -535,24 +530,24 @@ public sealed partial class ImageListupPageViewModel
         if (settings != null)
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType.Value = settings.Sort;
+            SelectedFileSortType = settings.Sort;
         }
         else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
             && parentSort.ChildItemDefaultSort != null
             )
         {
             DisplaySortTypeInheritancePath = parentSort.Path;
-            SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+            SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
         }
         else
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType.Value = DefaultFileSortType;
+            SelectedFileSortType = DefaultFileSortType;
         }
 
         FilterText = "";
 
-        await SetSort(SelectedFileSortType.Value, ct);        
+        await SetSort(SelectedFileSortType, ct);        
         await ReloadItemsAsync(_imageCollectionContext, ct);
 
         HasFileItem = ImageFileItems.Any();
@@ -593,15 +588,15 @@ public sealed partial class ImageListupPageViewModel
         if (settings != null)
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType.Value = settings.Sort;
+            SelectedFileSortType = settings.Sort;
         }
         else
         {
             DisplaySortTypeInheritancePath = null;
-            SelectedFileSortType.Value = DefaultFileSortType;
+            SelectedFileSortType = DefaultFileSortType;
         }
 
-        await SetSort(SelectedFileSortType.Value, ct);
+        await SetSort(SelectedFileSortType, ct);
         await ReloadItemsAsync(_imageCollectionContext, ct);
 
         OnPropertyChanged(nameof(ImageFileItems));
@@ -657,13 +652,11 @@ public sealed partial class ImageListupPageViewModel
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
                 // アプリ内部操作も含めて変更を検知する
                 var d2 = _imageCollectionContext.CreateImageFileChangedObserver()
-                    .Subscribe(_ =>
+                    .ToObservable()
+                    .SubscribeAwait(async (_, ct) =>
                     {
-                        _scheduler.Schedule(async () =>
-                        {
-                            await ReloadItemsAsync(_imageCollectionContext, ct);
-                            Debug.WriteLine("Images Update required. " + _currentImageSource);
-                        });
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
+                        Debug.WriteLine("Images Update required. " + _currentImageSource);
                     });
                 disposable.Add(d2);
                 _itemsDisposable = disposable;
@@ -671,7 +664,7 @@ public sealed partial class ImageListupPageViewModel
         }
         else
         {
-            var sortType = SelectedFileSortType.Value;
+            var sortType = SelectedFileSortType;
             if (imageCollectionContext is FolderImageCollectionContext col)
             {
                 R3.CompositeDisposable disposable = new R3.CompositeDisposable();
@@ -730,7 +723,7 @@ public sealed partial class ImageListupPageViewModel
                         ImageFileItems.Add(new LazyImageFileViewModel(
                             _imageCollectionContext,
                             index,
-                            SelectedFileSortType.Value,
+                            SelectedFileSortType,
                             _messenger,
                             _sourceStorageItemsRepository,
                             _bookmarkManager,
@@ -745,11 +738,11 @@ public sealed partial class ImageListupPageViewModel
         ct.ThrowIfCancellationRequested();
 
         HasFileItem = ImageFileItems.Any();
-        _ = Task.Run(async () =>
+        _ = DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
             bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
-            _scheduler.Schedule(() => HasFolderOrBookItem = exist);
-        }, ct);
+            HasFolderOrBookItem = exist;
+        }, priority: DispatcherQueuePriority.Low);
     }
 
     #endregion
@@ -796,18 +789,18 @@ public sealed partial class ImageListupPageViewModel
             if (sortType.HasValue)
             {
                 DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = sortType.Value;
+                SelectedFileSortType = sortType.Value;
                 if (_currentImageSource.StorageItem is IStorageItem)
                 {
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, SelectedFileSortType);
                 }
                 else if (_currentImageSource is AlbamImageSource albamImageSource)
                 {
-                    _displaySettingsByPathRepository.SetAlbamSettings(albamImageSource.AlbamId, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetAlbamSettings(albamImageSource.AlbamId, SelectedFileSortType);
                 }
                 else if (_currentImageSource is AlbamItemImageSource albamItemImageSource)
                 {
-                    _displaySettingsByPathRepository.SetAlbamSettings(albamItemImageSource.AlbamId, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetAlbamSettings(albamItemImageSource.AlbamId, SelectedFileSortType);
                 }
             }
             else
@@ -820,18 +813,18 @@ public sealed partial class ImageListupPageViewModel
                     )
                     {
                         DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
                     }
                     else
                     {
                         DisplaySortTypeInheritancePath = null;
-                        SelectedFileSortType.Value = DefaultFileSortType;
+                        SelectedFileSortType = DefaultFileSortType;
                     }
                 }
                 else if (_currentImageSource is AlbamImageSource albamImageSource)
                 {
                     _displaySettingsByPathRepository.ClearAlbamSettings(albamImageSource.AlbamId);
-                    SelectedFileSortType.Value = DefaultFileSortType;
+                    SelectedFileSortType = DefaultFileSortType;
                 }
             }
         });
@@ -869,7 +862,7 @@ public sealed partial class ImageListupPageViewModel
         {
             Guard.IsNotNull(_currentImageSource);
 
-            _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentImageSource.Path), SelectedFileSortType.Value);
+            _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentImageSource.Path), SelectedFileSortType);
         });
 
 

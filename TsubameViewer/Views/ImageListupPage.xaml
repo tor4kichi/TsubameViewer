@@ -706,7 +706,7 @@
 
           <DropDownButton x:Name="FileSortButton"
                           uwpControls:DockPanel.Dock="Left"
-                          Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                          Content="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                           Background="Transparent"
                           ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                           AccessKey="S"
@@ -773,7 +773,7 @@
           <ListView x:Name="FileDisplayModeItemsListView"
                     uwpControls:DockPanel.Dock="Right"
                     ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
-                    SelectedItem="{x:Bind _vm.FileDisplayMode.Value, Mode=TwoWay}"
+                    SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
                     ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                     SelectionMode="Single"
                     SingleSelectionFollowsFocus="False"
@@ -836,7 +836,7 @@
               Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <uwpControls:SwitchPresenter x:Name="ItemsSwitchPresenter"
-                                       Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode.Value), Mode=OneWay}">
+                                       Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode), Mode=OneWay}">
             <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Line}"
                               IsDefault="True">
               <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
