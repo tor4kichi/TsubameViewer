@@ -57,6 +57,8 @@ public interface ITitlebarContentAware
 [ObservableObject]
 public sealed partial class AppShell : UserControl
 {
+    #region Purchase Cheer Addon
+
     [RelayCommand(CanExecute = nameof(IsStoreAvairable))]
     async Task PurchaseAddonAsync()
     {
@@ -75,8 +77,7 @@ public sealed partial class AppShell : UserControl
     [NotifyCanExecuteChangedFor(nameof(PurchaseAddonCommand))]
     bool _isStoreAvairable;
 
-
-    private async void PurchaseConfirmFlyout_Opening(object sender, object e)
+    async void InitialziePurchase()
     {
         var service = Ioc.Default.GetService<PurchaseAddonService>();
         if (service == null) { return; }
@@ -84,24 +85,12 @@ public sealed partial class AppShell : UserControl
         if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
         {
             var info = await service.GetCheerAddonInfoAsync();
-
             PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
-            
             IsStoreAvairable = info != null;
-            if (info != null)
-            {
-
-                Debug.WriteLine(info.Title);
-                Debug.WriteLine(info.Description);
-            }
         }
     }
 
-    [RelayCommand]
-    async Task ShowPurchaseHistoryAsync()
-    {
-
-    }
+    #endregion
 
     private readonly AppShellViewModel _vm;
     private readonly IMessenger _messenger;
@@ -150,6 +139,8 @@ public sealed partial class AppShell : UserControl
         {
             m.Reply(AutoSuggestBox.Text);
         });
+
+        InitialziePurchase();
     }
 
     private void AppShell_Loaded(object sender, RoutedEventArgs e)
