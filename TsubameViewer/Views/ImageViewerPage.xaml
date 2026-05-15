@@ -328,12 +328,16 @@
         <i:Interaction.Behaviors>
           <!-- Image sizing -->
           <core:EventTriggerBehavior EventName="Loaded">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
+                                       PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
           </core:EventTriggerBehavior>
           <core:EventTriggerBehavior EventName="SizeChanged">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
             <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
           </core:EventTriggerBehavior>
         </i:Interaction.Behaviors>
