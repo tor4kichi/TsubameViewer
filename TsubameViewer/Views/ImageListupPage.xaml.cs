@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -42,6 +43,7 @@ using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
+
 public static class ObservableCollectionExtensions
 {
     public static void InsertSorted<T>(this ObservableCollection<T> collection, T item, Comparison<T> comparison)
@@ -65,6 +67,7 @@ public static class ObservableCollectionExtensions
     }
 }
 
+[ObservableObject]
 public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
@@ -521,8 +524,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     });
 
-    RelayCommand<UIElement> _OpenItemCommand;
-    public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
+    [RelayCommand]
+    void PrepareConnectedAnimationWithCurrentFocusElement(UIElement item)
     {
         if (item == null) { return; }
 
@@ -535,9 +538,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
             anim.Configuration = new BasicConnectedAnimationConfiguration();
         }
-    });
+    }
 
-    private int lastSelectedItemIndex = -1;
+    private int _lastSelectedItemIndex = -1;
     private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
@@ -573,7 +576,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    ReactivePropertySlim<IReadOnlyList<IStorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
+    [ObservableProperty]
+    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<StorageItemViewModel>();
 
 
     private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -588,7 +592,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     private void ItemSelectedProcess(IStorageItemViewModel itemVM)
     {
-        var prevSelectedItemIndex = lastSelectedItemIndex;
+        var prevSelectedItemIndex = _lastSelectedItemIndex;
         var lastSelectedItemsCount = SelectedItemsCount;
         //if (prevSelectedItemIndex >= 0 
         //    && Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Shift) != CoreVirtualKeyStates.None
@@ -601,17 +605,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (itemVM.IsSelected)
             {
                 _vm.Selection.SelectedItems.Add(itemVM);
-                _selectedItems.Value = _vm.Selection.SelectedItems;
+                _selectedItems = _vm.Selection.SelectedItems;
             }
             else
             {
                 _vm.Selection.SelectedItems.Remove(itemVM);
-                _selectedItems.Value = _vm.Selection.SelectedItems;
+                _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
         }
 
-        lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
+        _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
 
         var selectedItemsCount = SelectedItemsCount;
         if (selectedItemsCount > 0)
@@ -657,7 +661,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public void StartSelection()
     {
         IsSelectionModeEnabled = true;
-        _selectedItems.Value = _vm.Selection.SelectedItems;
+        _selectedItems = _vm.Selection.SelectedItems;
         _vm.Selection.StartSelection();
         _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
         if (_messenger.IsRegistered<BackNavigationRequestingMessage>(this) is false)
@@ -699,16 +703,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public void ClearSelection()
     {
         IsSelectionModeEnabled = false;
-        foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<IStorageItemViewModel>())
+        foreach (var itemVM in _selectedItems ?? [])
         {
             itemVM.IsSelected = false;
         }
 
-        _selectedItems.Value = null;
+        _selectedItems = null;
         SelectedCountDisplayText = String.Empty;
         SelectedItemsCount = 0;
         _vm.Selection.EndSelection();
-        lastSelectedItemIndex = -1;
+        _lastSelectedItemIndex = -1;
         _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<Core.Models.Albam.AlbamItemRemovedMessage>(this);
