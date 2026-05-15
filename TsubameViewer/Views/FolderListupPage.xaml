@@ -114,12 +114,12 @@
 
           <DropDownButton x:Name="FileSortButton" 
                             uwpControls:DockPanel.Dock="Left"
-                            Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
                             ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                           AccessKey="S"
                           CornerRadius="4"
                             >
+            <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
             <DropDownButton.Flyout>
               <MenuFlyout>
                 <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
@@ -176,7 +176,7 @@
                 <StackPanel Spacing="8">
                   <TextBlock x:Name="ChildFolderSortButtonHeaderText" Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}" Visibility="Collapsed" />
                   <DropDownButton x:Name="ChildFolderSortButton" 
-                            Content="{x:Bind _vm.SelectedChildFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                            Content="{x:Bind _vm.SelectedChildFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                             Background="Transparent"
                                   Visibility="Collapsed"
                                   CornerRadius="4"
@@ -213,7 +213,7 @@
                              Text="{i18nExt:Localize Key=DefaultFolderOrArchiveOpenMode}"
                              Visibility="Collapsed" />
                   <DropDownButton x:Name="ChildDefaultFolderOrArchiveOpenModeButton"
-                                  Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                                  Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                                   Background="Transparent"
                                   Visibility="Collapsed"
                                   CornerRadius="4">
@@ -260,7 +260,7 @@
         ContextFlyout="{StaticResource StorageItemMenuFlyout}"
         uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
         XYFocusUp="{x:Bind FileSortButton}"
-        SelectedItem="{x:Bind _vm.FolderLastIntractItem.Value, Mode=TwoWay}"  
+        SelectedItem="{x:Bind _vm.FolderLastIntractItem, Mode=TwoWay}"  
         SelectionChanged="OnSelectionChanged"
         >
 

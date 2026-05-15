@@ -126,16 +126,17 @@ public sealed partial class FolderListupPageViewModel
     }
 
 
-    public ReactiveProperty<FileSortType> SelectedFileSortType { get; }
-    public ReactiveProperty<FileSortType?> SelectedChildFileSortType { get; }
-    public ReactiveProperty<DefaultFolderOrArchiveOpenMode> SelectedChildFolderOrArchiveOpenMode { get; set; }
-
-    public ReactiveProperty<IStorageItemViewModel> FolderLastIntractItem { get; }
-
+    [ObservableProperty]
+    FileSortType _selectedFileSortType;
+    [ObservableProperty]
+    FileSortType? _selectedChildFileSortType;
+    [ObservableProperty]
+    DefaultFolderOrArchiveOpenMode _selectedChildFolderOrArchiveOpenMode;
+    [ObservableProperty]
+    IStorageItemViewModel? _folderLastIntractItem;
+   
     private static readonly Core.AsyncLock _NavigationLock = new ();
-
     private IImageSource? _currentImageSource;
-
     private CancellationTokenSource _leavePageCancellationTokenSource;
 
     private string _DisplayCurrentPath;
@@ -172,8 +173,7 @@ public sealed partial class FolderListupPageViewModel
         private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
     }
 
-    R3.CompositeDisposable _disposables = new R3.CompositeDisposable();
-    R3.CompositeDisposable _navigationDisposables;
+    IDisposable? _navigationDisposables;
 
     DateTimeOffset _sourceItemLastUpdatedTime;
 
@@ -231,22 +231,8 @@ public sealed partial class FolderListupPageViewModel
         FolderItems = new ObservableCollection<IStorageItemViewModel>();
         FileItemsView = new AdvancedCollectionView(FolderItems);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel).Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
-        FolderLastIntractItem = new ReactiveProperty<IStorageItemViewModel>()
-            .AddTo(_disposables);
 
-        SelectedFileSortType = new ReactiveProperty<FileSortType>(FileSortType.TitleAscending)
-            .AddTo(_disposables);
-
-        SelectedChildFileSortType = new ReactiveProperty<FileSortType?>(null)
-            .AddTo(_disposables);
-
-        SelectedChildFolderOrArchiveOpenMode = new ReactiveProperty<DefaultFolderOrArchiveOpenMode>(DefaultFolderOrArchiveOpenMode.Viewer)
-            .AddTo(_disposables);
-
-        this.ObservePropertyChanged(x => x.FilterText)
-            .Debounce(TimeSpan.FromSeconds(0.25))
-            .Subscribe(_ => FileItemsView.RefreshFilter())
-            .AddTo(_disposables);
+        SelectedChildFolderOrArchiveOpenMode = DefaultFolderOrArchiveOpenMode.Viewer;
     }
 
 
@@ -348,13 +334,12 @@ public sealed partial class FolderListupPageViewModel
     {
         // ナビゲーション全体をカバーしてロックしていないと_leavePageCancellationTokenSourceが先にキャンセルされているケースがある
         using var lockReleaser = await _NavigationLock.LockAsync(default);
+        _navigationDisposables?.Dispose();
+        _navigationDisposables = null;
 
         var mode = parameters.GetNavigationMode();
-
-        _navigationDisposables = new CompositeDisposable();
         _leavePageCancellationTokenSource = new CancellationTokenSource();
         var ct = _leavePageCancellationTokenSource.Token;
-
         var res = _messenger.Send(new CurrentInPageSearchTextRequestMessage());
         FilterText = res.Response;
 
@@ -407,11 +392,11 @@ public sealed partial class FolderListupPageViewModel
                     lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();                    
                     _ = lastIntractItemVM.InitializeAsync(ct);
-                    FolderLastIntractItem.Value = lastIntractItemVM;
+                    FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else
                 {
-                    FolderLastIntractItem.Value = null;
+                    FolderLastIntractItem  = null;
                 }
             }
 
@@ -422,11 +407,16 @@ public sealed partial class FolderListupPageViewModel
             NowProcessing = false;
         }
 
-        SelectedFileSortType
-            .Skip(1)
+        var db = new DisposableBuilder();
+        this.ObservePropertyChanged(x => x.SelectedFileSortType, false)            
             .DistinctUntilChanged()
-            .Subscribe(x => _ = SetSort(x, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None))
-            .AddTo(_navigationDisposables);
+            .SubscribeAwait(async (x, ct) => await SetSort(x, ct))
+            .AddTo(ref db);
+
+        this.ObservePropertyChanged(x => x.FilterText, false)
+            .Debounce(TimeSpan.FromSeconds(0.25))
+            .Subscribe(_ => FileItemsView.RefreshFilter())
+            .AddTo(ref db);
 
         // Note: IsSupportFolderOrArchiveFilesIndexAccess == trueの際、
         // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
@@ -453,7 +443,7 @@ public sealed partial class FolderListupPageViewModel
 
                     Debug.WriteLine("Folder/Archive Update required. " + _currentImageSource?.Name ?? string.Empty);
                 })
-                .AddTo(_navigationDisposables);
+                .AddTo(ref db);
 
             Window.Current.WindowActivationStateChanged()
                 .Subscribe(async visible =>
@@ -465,7 +455,7 @@ public sealed partial class FolderListupPageViewModel
                         Debug.WriteLine("Folder/Archive Updated. " + _currentImageSource?.Name ?? string.Empty);
                     }
                 })
-                .AddTo(_navigationDisposables);
+                .AddTo(ref db);
         }
 
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
@@ -499,7 +489,7 @@ public sealed partial class FolderListupPageViewModel
                     _messenger.Unregister<BackNavigationRequestingMessage>(this);
                 }
             })
-            .AddTo(_navigationDisposables);
+            .AddTo(ref db);
 
         Selection.SelectedItems.ObservePropertyChanged(x => x.Count)
             .Subscribe(count =>
@@ -508,7 +498,9 @@ public sealed partial class FolderListupPageViewModel
                 FileDeleteCommand.NotifyCanExecuteChanged();
                 OpenWithExplorerCommand.NotifyCanExecuteChanged();
             })
-            .AddTo(_navigationDisposables);
+            .AddTo(ref db);
+
+        _navigationDisposables = db.Build();
 
         _messenger.Register<InPageSearchRequestMessage>(this);
         await base.OnNavigatedToAsync(parameters);
@@ -548,25 +540,25 @@ public sealed partial class FolderListupPageViewModel
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
         if (settings != null)
         {
-            SelectedFileSortType.Value = settings.Sort;
-            SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+            SelectedFileSortType = settings.Sort;
+            SetSortAsyncUnsafe(SelectedFileSortType, path);
         }
         else
         {
             if (_currentImageSource.StorageItem is StorageFolder)
             {
-                SelectedFileSortType.Value = FileSortType.TitleAscending;
-                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                SelectedFileSortType = FileSortType.UpdateTimeDecending;
+                SetSortAsyncUnsafe(SelectedFileSortType, path);
             }
             else if (_currentImageSource.StorageItem is StorageFile file && file.IsSupportedMangaFile())
             {
-                SelectedFileSortType.Value = FileSortType.TitleAscending;
-                SetSortAsyncUnsafe(SelectedFileSortType.Value, path);
+                SelectedFileSortType = FileSortType.UpdateTimeDecending;
+                SetSortAsyncUnsafe(SelectedFileSortType, path);
             }
         }
 
-        SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFolderOrArchiveOpenMode.Value = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path)?.DefaultOpenMode ?? DefaultFolderOrArchiveOpenMode.Viewer;
+        SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
+        SelectedChildFolderOrArchiveOpenMode = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path)?.DefaultOpenMode ?? DefaultFolderOrArchiveOpenMode.Viewer;
 
         try
         {
@@ -596,10 +588,10 @@ public sealed partial class FolderListupPageViewModel
 
         string path = albam._id.ToString();
 
-        //SelectedChildFileSortType.Value = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFileSortType.Value = FileSortType.None;
-        SelectedFileSortType.Value = FileSortType.UpdateTimeDecending;
-        SetSortAsyncUnsafe(SelectedFileSortType.Value, path);        
+        //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
+        SelectedChildFileSortType  = FileSortType.None;
+        SelectedFileSortType = FileSortType.UpdateTimeDecending;
+        SetSortAsyncUnsafe(SelectedFileSortType, path);        
 
         ClearContent();
 
@@ -693,7 +685,7 @@ public sealed partial class FolderListupPageViewModel
                         FileItemsView.SortDescriptions.Clear();
                         foreach (int index in Enumerable.Range(0, itemsCount))
                         {
-                            FolderItems.Add(new LazyFolderOrArchiveFileViewModel(imageCollectionContext, index, SelectedFileSortType.Value, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                            FolderItems.Add(new LazyFolderOrArchiveFileViewModel(imageCollectionContext, index, SelectedFileSortType, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
                         }
                         FileItemsView.RefreshFilter();
                     }
@@ -750,7 +742,7 @@ public sealed partial class FolderListupPageViewModel
 
             if (sortType.HasValue)
             {
-                SelectedFileSortType.Value = sortType.Value;
+                SelectedFileSortType = sortType.Value;
             }
         });
 
@@ -802,7 +794,7 @@ public sealed partial class FolderListupPageViewModel
         {
             Guard.IsNotNull(_currentImageSource);
 
-            SelectedChildFolderOrArchiveOpenMode.Value = openMode;
+            SelectedChildFolderOrArchiveOpenMode = openMode;
             _displaySettingsByPathRepository.SetChildFolderOrArchiveOpenModeParentSettings(_currentImageSource.Path, openMode);
         }
     }
@@ -823,7 +815,7 @@ public sealed partial class FolderListupPageViewModel
                 sortType = sortTypeExact;
             }
                             
-            SelectedChildFileSortType.Value = sortType;
+            SelectedChildFileSortType  = sortType;
             _displaySettingsByPathRepository.SetFileParentSettings(_currentImageSource.Path, sortType);
         });
 

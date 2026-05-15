@@ -21,7 +21,7 @@ public record FolderAndArchiveDisplaySettingEntry
     [BsonId]
     public string Path { get; init; }
 
-    public FileSortType Sort { get; set; }
+    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
 
     public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Viewer;
 }

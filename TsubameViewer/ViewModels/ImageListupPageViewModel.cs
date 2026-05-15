@@ -147,7 +147,7 @@ public sealed partial class ImageListupPageViewModel
 
     public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
 
-    private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
+    private readonly FileSortType DefaultFileSortType = FileSortType.UpdateTimeDecending;
 
     private string _DisplaySortTypeInheritancePath;
     public string DisplaySortTypeInheritancePath
@@ -269,7 +269,7 @@ public sealed partial class ImageListupPageViewModel
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel).Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
 
         DisposableBuilder db = new();
-        SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.TitleAscending)
+        SelectedFileSortType = new ReactivePropertySlim<FileSortType>(FileSortType.UpdateTimeDecending)
             .AddTo(ref db);
 
         FileDisplayMode = _folderListingSettings.ToReactivePropertyAsSynchronized(x => x.FileDisplayMode)
