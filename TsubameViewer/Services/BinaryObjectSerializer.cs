@@ -24,7 +24,7 @@ public interface IBytesObjectSerializer
 {
     byte[]? Serialize<T>(T value);
 
-    T? Deserialize<T>(Stream value);
+    T? Deserialize<T>(byte[] value);
 }
 
 
@@ -32,7 +32,7 @@ public class BinaryJsonObjectSerializer : IBytesObjectSerializer
 {
     public byte[] Serialize<T>(T value) => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value);
 
-    public T? Deserialize<T>(Stream value) => value == null || value.Length == 0 ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
+    public T? Deserialize<T>(byte[] value) => value == null || value.Length == 0 ? default(T) : System.Text.Json.JsonSerializer.Deserialize<T>(value);
 }
 
 /// <summary>
@@ -115,7 +115,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
     {
         if (Settings.Values.TryGetValue(key, out var valueObj) && valueObj is byte[] valueByteArray)
         {
-            return Serializer.Deserialize<T>(new MemoryStream(valueByteArray));
+            return Serializer.Deserialize<T>(valueByteArray);
         }
 
         return @default;
@@ -126,7 +126,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
     {
         if (Settings.Values.TryGetValue(key, out var valueObj) && valueObj is byte[] valueByteArray)
         {
-            value = Serializer.Deserialize<T>(new MemoryStream(valueByteArray));
+            value = Serializer.Deserialize<T>(valueByteArray);
             return true;
         }
 
@@ -183,7 +183,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
             byte[] compositeValue = (byte[])composite[key];
             if (compositeValue != null)
             {
-                value = Serializer.Deserialize<T>(new MemoryStream(compositeValue));
+                value = Serializer.Deserialize<T>(compositeValue);
                 return true;
             }
         }
@@ -206,7 +206,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         {
             if (composite.TryGetValue(key, out object valueObj) && valueObj is byte[] value)
             {
-                return Serializer.Deserialize<T>(new MemoryStream(value));
+                return Serializer.Deserialize<T>(value);
             }
         }
 
@@ -305,17 +305,10 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
     {
         try
         {
-            if (await folder.GetFileAsync(filePath) is { } file)
+            if (await folder.TryGetItemAsync(filePath) is StorageFile file)
             {
-                using (var stream = await file.OpenStreamForReadAsync())
-                {
-                    if (stream.Length == 0)
-                    {
-                        return default;
-                    }
-
-                    return Serializer.Deserialize<T>(stream);
-                }
+                var stream = await file.ReadBytesAsync();
+                return Serializer.Deserialize<T>(stream);
             }
             else { return default; }
         }

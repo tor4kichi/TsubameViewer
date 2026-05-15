@@ -17,6 +17,15 @@ ApplicationTheme.Light = 浅色主题
 ApplicationTheme.Dark = 深色主题
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = 向开发者发送小费
+
+PurchaseAddon_ShowPurchaseUI = 继续购买屏幕
+PurchaseAddon_ShowPurchaseHistory = 查看您的购买记录
+PurchaseAddon_PurchasedThanksMessage = 感谢您的支持！
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = 新增文件夹
@@ -165,6 +174,10 @@ IsKeepSingleViewOnFirstPage = 不要展开第一页
 
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = 如果您将文件夹 D&D 到应用程序，将显示所有内容
 
+ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
+
+
+
 
 
 #### EBookReaderPage
@@ -202,8 +215,11 @@ Toc = 目录
 
 #### SearchResult
 
-SearchResultWith = 下一个搜索结果
-SearchPlaceholder = 搜索标题
+SearchResultWith = 搜索结果：{0}
+SearchPlaceholder = 在页面内搜索
+Search_FromAll = 从所有来源搜索
+Search_DisplayItemsCount = {0} 项
+Search_FilteredDisplayItemsCount = 显示 {0} 项
 
 
 

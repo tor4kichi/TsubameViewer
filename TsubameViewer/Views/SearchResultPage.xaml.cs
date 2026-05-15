@@ -25,7 +25,7 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 {
     public DataTemplate GetContent()
     {
-        return null;
+        return TitlebarContent;
     }
 
     private readonly SearchResultPageViewModel _vm;

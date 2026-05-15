@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -111,7 +112,6 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
     }
 
-
     public bool IsRequestImageLoading { get; private set; } = false;
     private bool _isRequireLoadImageWhenRestored = false;
     public void StopImageLoading()
@@ -124,6 +124,11 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
+    public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
+    {
+        ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
+    }
+
     public bool IsInitialized { get; private set; } = false;
     public async ValueTask InitializeAsync(CancellationToken rootCt)
     {
@@ -133,26 +138,26 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
         
         try
         {
-            //using var d = await _asyncLock.LockAsync(rootCt);
-            
             if (IsInitialized) { return; }
             if (_disposed) { return; }
             if (Item == null) { return; }
             if (IsRequestImageLoading is false) { return; }
 
-            ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+            // ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, rootCt)).RatioWH;
+
+            using var d = await _asyncLock.LockAsync(rootCt);
 
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {
-                if (stream is null || stream.Size == 0) { return; }
+                if (stream is null || stream.Length == 0) { return; }
                 ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH ?? 1;
                 if (IsRequestImageLoading is false) { return; }
 
                 {
-                    stream.Seek(0);
+                    stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream).AsTask(rootCt);
+                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
                     Image = bitmapImage;
                 }
             }

@@ -576,11 +576,11 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
         var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(_currentFolderItem, ct));
         if (thumbnailImageStream != null)
         {
-            using (thumbnailImageStream)
+            using (var ras = thumbnailImageStream.AsRandomAccessStream())
             {
-                thumbnailImageStream.Seek(0);
+                ras.Seek(0);
                 var image = new BitmapImage();
-                await image.SetSourceAsync(thumbnailImageStream).AsTask(ct);
+                await image.SetSourceAsync(ras).AsTask(ct);
                 CoverImage = image;
             }
         }

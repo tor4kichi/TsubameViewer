@@ -28,6 +28,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -39,7 +40,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
     private readonly FolderListingSettings _folderListingSettings;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly ImageViewerSettings _imageViewerPageSettings;
-    private readonly FolderListupSettings _folderListupSettings;
+    private readonly FolderListingSettings _folderListupSettings;
     private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
@@ -67,7 +68,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         FolderListingSettings folderListingSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ImageViewerSettings imageViewerPageSettings,
-        FolderListupSettings folderListupSettings,
+        FolderListingSettings folderListupSettings,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
     {
@@ -142,7 +143,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
                 Label = "OtherSettings".Translate(),
                 Items =
                 {
-                    new ToggleSwitchSettingItemViewModel<FolderListupSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
+                    new ToggleSwitchSettingItemViewModel<FolderListingSettings>("ShowWithIndexedFolderItemAccess".Translate(), _folderListupSettings, x => x.ShowWithIndexedFolderItemAccess),
                 }
             },
         };
@@ -225,7 +226,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         var ct = _navigationCts.Token;
 
         _IsThumbnailDeleteButtonActive.Value = true;
-
+        ApplicationView.GetForCurrentView().Title = "Settings".Translate();
         _ = RefreshThumbnailFilesSizeAsync(ct);
         // base.OnNavigatedToAsync(parameters);
 
@@ -551,13 +552,10 @@ public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewMo
 
     public IReadOnlyList<PortableLanguage> Locales { get; } = I18NPortable.I18N.Current.Languages;
 
-    IDisposable _themeChangedSubscriber;
-
     public string Label { get; }
 
     public void Dispose()
     {
-        _themeChangedSubscriber.Dispose();
     }
 
     private readonly ApplicationSettings _applicationSettings;

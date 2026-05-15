@@ -26,6 +26,7 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
     bool IsRequestImageLoading { get; }
     bool IsInitialized { get; }
     ValueTask InitializeAsync(CancellationToken ct);
+    ValueTask EnsureImageSizeRatioAsync(CancellationToken ct);
     void RestoreThumbnailLoadingTask(CancellationToken ct);
     void StopImageLoading();
     void ThumbnailChanged();

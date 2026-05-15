@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -28,6 +29,8 @@ using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
+using Windows.System;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -40,6 +43,31 @@ using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
+
+public static class ObservableCollectionExtensions
+{
+    public static void InsertSorted<T>(this ObservableCollection<T> collection, T item, Comparison<T> comparison)
+    {
+        int index = 0;
+        while (index < collection.Count && comparison(collection[index], item) < 0)
+        {
+            index++;
+        }
+        collection.Insert(index, item);
+    }
+
+    public static void InsertSortedDescending<T>(this ObservableCollection<T> collection, T item, Comparison<T> comparison)
+    {
+        int index = 0;
+        while (index < collection.Count && comparison(collection[index], item) > 0)
+        {
+            index++;
+        }
+        collection.Insert(index, item);
+    }
+}
+
+[ObservableObject]
 public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
@@ -61,12 +89,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         Loaded += FolderListupPage_Loaded;
         Unloaded += FolderListupPage_Unloaded;
-    }
-
-
-    private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        StopLoadingTaskMonitor();
 
         FileItemsRepeater_Small.ElementPrepared += FileItemsRepeater_ElementPrepared;
         FileItemsRepeater_Midium.ElementPrepared += FileItemsRepeater_ElementPrepared;
@@ -75,61 +97,118 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         FileItemsRepeater_Small.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Midium.ElementClearing += FileItemsRepeater_Large_ElementClearing;
         FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged += ItemsScrollViewer_ViewChanged;        
     }
 
-    IDisposable? _lodingTaskMonitor;
-    void TryStartLoadingTaskMonitor()
+    private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        if (_lodingTaskMonitor != null) { return; }
-        
+    }
+
+    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        StopLoadingTaskMonitor();
+    }
+
+    #region Image Loading
+
+    IDisposable? _lodingTaskMonitor;
+    async void StartLoadingTaskMonitor(CancellationToken ct)
+    {
+        StopLoadingTaskMonitor();
+        _lastVerticalOffset = 0;
+        DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
-        _lodingTaskMonitor = R3.Observable.IntervalFrame(5, this.GetCancellationTokenOnUnloaded())
+        R3.Observable.Merge(
+                _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+                _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+                R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
+                ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
+            .Debounce(TimeSpan.FromMilliseconds(100))
             .SubscribeAwait(async (_, ct) =>
             {
-                Debug.WriteLine("LoadingTaskMonitor processing.");
-
+                var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
+                
                 UpdateVisibleRangeItemInitialize();
-
+                if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
+                _isVisibleRangeUpdated = false;
+                bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
+                _lastVerticalOffset = currentVerticalOffset;
+                
                 if (_priorityLoadPendingItems.Any())
                 {
-                    foreach (var chunk in _priorityLoadPendingItems.AsValueEnumerable().Chunk(Math.Max(1, Environment.ProcessorCount)))
+                    Debug.WriteLine("LoadingTaskMonitor primary.");
+                    try
                     {
-                        await chunk.ToAwaitableParallelTaskAsync(
-                            async x => await x.InitializeAsync(ct));
-                        await Task.Delay(50);
-                    }
-                    _priorityLoadPendingItems.Clear();
-                }
-                else if (_loadPendingItems.Any())
-                {
-                    using var items = _loadPendingItems.AsValueEnumerable().Take(Math.Max(1, Environment.ProcessorCount)).ToArrayPool();
-                    await items.ArraySegment.ToAwaitableParallelTaskAsync(
-                        async x => await x.InitializeAsync(ct));
-                    await Task.Delay(50);
+                        using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
+                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                        int count = tasks.Count;
+                        while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
+                        {
+                            tasks.RemoveAt(index);
+                            count--;
+                            if (count <= 0)
+                            {
+                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
+                                break;
+                            }
+                        }
 
-                    foreach (var item in items.ArraySegment)
+                        _priorityLoadPendingItems.Clear();
+                    }
+                    catch (OperationCanceledException)
                     {
-                        _loadPendingItems.Remove(item);
+                        return;
+                    }
+                }
+
+                if (_loadPendingItems.Any())
+                {
+                    Debug.WriteLine("LoadingTaskMonitor secondary.");
+                    try
+                    {
+                        using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                        int count = tasks.Count;
+                        foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
+                        {
+                            int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
+                            tasks.RemoveAt(index);
+                            await Task.Delay(1);
+                            count--;
+                            if (count <= 0 || _isVisibleRangeUpdated)
+                            {
+                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
+                                break;
+                            }
+                        }
+                        if (!_isVisibleRangeUpdated)
+                        {
+                            _loadPendingItems.Clear();
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
                     }
                 }
 
                 if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
                 {
-                    _lodingTaskMonitor?.Dispose();
-                    _lodingTaskMonitor = null;
-                    Debug.WriteLine("LoadingTaskMonitor STOP.");
+                    Debug.WriteLine("LoadingTaskMonitor STOP.");                    
                 }
                 else
                 {
-                    Debug.WriteLine("LoadingTaskMonitor continue.");
+                    Debug.WriteLine("LoadingTaskMonitor Continue.");
                 }
-            }, awaitOperation: AwaitOperation.Drop);
+            }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
+            .AddTo(ref db);
+
+        _lodingTaskMonitor = db.Build();
     }
 
     void StopLoadingTaskMonitor()
     {
+        if (_lodingTaskMonitor == null) { return; }
+
         _lodingTaskMonitor?.Dispose();
         _lodingTaskMonitor = null;
         Debug.WriteLine("LoadingTaskMonitor STOP.");
@@ -140,87 +219,50 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     ItemsRepeater? GetCurrentItemsRepeater() => ItemsSwitchPresenter.Content as ItemsRepeater;
 
 
-    bool _nowUpdateVisibleRangeItemInitialize = false;
-    private void ItemsScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
-    {
-        TryStartLoadingTaskMonitor();
-    }
-
     bool _isVisibleRangeUpdated;
-    List<IStorageItemViewModel> _priorityLoadPendingItems = [];
-    List<IStorageItemViewModel> _loadPendingItems = [];
+    ObservableCollection<IStorageItemViewModel> _priorityLoadPendingItems = [];
+    ObservableCollection<IStorageItemViewModel> _loadPendingItems = [];
 
+    double _lastVerticalOffset;
     void UpdateVisibleRangeItemInitialize()
     {
+        //Debug.WriteLine("LoadingTaskMonitor UpdateVisibleRangeItemInitialize.");
         if (GetCurrentItemsRepeater() is not { } itemRepeater) { return; }
-        //if (_nowUpdateVisibleRangeItemInitialize) { return; }        
-        //_nowUpdateVisibleRangeItemInitialize = true;
-        try
+
+        var sv = ItemsScrollViewer;
+        Rect boundingBox = sv.ActualSize.ToSize().ToRect();
+        Rect currentContentArea = boundingBox;
+        currentContentArea.Y -= 140; // アイテムの高さ分を調整
+        currentContentArea.Height += 140 * 2;
+        double expandLoadingArea = sv.ActualHeight * 2;
+        Point scrollPos = new(0, -sv.VerticalOffset);
+        Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
         {
-            var sv = ItemsScrollViewer;
-            Rect boundingBox = sv.ActualSize.ToSize().ToRect();
-            Rect currentContentArea = boundingBox;
-            currentContentArea.Y -= 140; // アイテムの高さ分を調整
-            currentContentArea.Height += 140 * 2;
-            double expandLoadingArea = sv.ActualHeight * 2;
-            boundingBox.Y -= expandLoadingArea;
-            boundingBox.Height += expandLoadingArea * 2;
-            Point scrollPos = new(0, -sv.VerticalOffset);
-            foreach (var item in _realizedItems)
+            return Comparer<int>.Default.Compare(_vm.FileItemsView.IndexOf(x), _vm.FileItemsView.IndexOf(y));
+        };
+
+        _priorityLoadPendingItems.Clear();
+        _loadPendingItems.Clear();
+        foreach (var item in _realizedItems)
+        {
+            if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
+            if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
+
+            var t = item.TransformToVisual(FileItemsContainer);
+            var pos = t.TransformPoint(scrollPos);
+            if (currentContentArea.Contains(pos))
             {
-                if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }                
-                if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
-                
-                var t = item.TransformToVisual(FileItemsContainer);
-                var pos = t.TransformPoint(scrollPos);
-                if (currentContentArea.Contains(pos))
-                {
-                    _loadPendingItems.Remove(itemVM);
-                    _priorityLoadPendingItems.Remove(itemVM);
-                    _priorityLoadPendingItems.Add(itemVM);
-                }
-                else if (boundingBox.Contains(pos))
-                {
-                    // ここでawait すると_realizedItems のコレクション変更が発生しうる                    
-                    _loadPendingItems.Remove(itemVM);
-                    _priorityLoadPendingItems.Remove(itemVM);
-                    _loadPendingItems.Add(itemVM);
-                }
-                else
-                {
-                    _loadPendingItems.Remove(itemVM);
-                    _priorityLoadPendingItems.Remove(itemVM);
-                }
+                _priorityLoadPendingItems.InsertSorted(itemVM, comparisonItemVM);
             }
-
-            Comparison<IStorageItemViewModel> comparisonItemVM = (x, y) =>
+            else
             {
-                return _vm.FileItemsView.IndexOf(x).CompareTo(_vm.FileItemsView.IndexOf(y));
-            };
-            _priorityLoadPendingItems.Sort(comparisonItemVM);
-            _loadPendingItems.Sort(comparisonItemVM);
+                _loadPendingItems.InsertSorted(itemVM, comparisonItemVM);
+            }
         }
-        finally
-        {
-            _nowUpdateVisibleRangeItemInitialize = false;
-        }
+        _isVisibleRangeUpdated = true;
     }
 
-
-    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-        FileItemsRepeater_Large.ElementPrepared -= FileItemsRepeater_ElementPrepared;
-
-        FileItemsRepeater_Small.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Midium.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-        FileItemsRepeater_Large.ElementClearing -= FileItemsRepeater_Large_ElementClearing;
-
-        ItemsScrollViewer.ViewChanged -= ItemsScrollViewer_ViewChanged;        
-    }
-
-
+    #endregion
 
 
     #region 初期フォーカス設定
@@ -247,26 +289,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         _navigationCts = new CancellationTokenSource();
         var ct = _ct = _navigationCts.Token;
 
-        _realizedItems.Clear();
-        _realizedItems.CollectionChangedAsObservable()
-            .Throttle(TimeSpan.FromMilliseconds(25), UIDispatcherScheduler.Default)
-            .Take(1)
-            .Subscribe(_ =>
-            {
-                UpdateVisibleRangeItemInitialize();
-                foreach (var itemVM in _priorityLoadPendingItems)
-                {
-                    var a = itemVM.InitializeAsync(ct);
-                }
-                _priorityLoadPendingItems.Clear();
-            });
-
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
             StartSelection();
         });
 
-        ItemsScrollViewer.Opacity = 0.01;
         try
         {
             if (e.NavigationMode == NavigationMode.New)
@@ -294,10 +321,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         catch (OperationCanceledException) { }
         finally
         {
-            ItemsScrollViewer.Opacity = 1.0;
         }
 
-        TryStartLoadingTaskMonitor();
+        StartLoadingTaskMonitor(ct);
+        UpdateVisibleRangeItemInitialize();
     }
 
     private void SaveScrollStatus(UIElement target)
@@ -415,21 +442,25 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     ObservableCollection<FrameworkElement> _realizedItems = [];
     private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
-        if (args.Element is FrameworkElement fe
-            && fe.DataContext is IStorageItemViewModel itemVM
-            )
+        if (args.Element is FrameworkElement fe)
         {
             _realizedItems.Add(fe);
+            if (fe.DataContext is IStorageItemViewModel itemVM)
+            {
+                _ = itemVM.EnsureImageSizeRatioAsync(_ct);
+            }
         }
     }
 
     private void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
     {
-        if (args.Element is FrameworkElement fe
-           && fe.DataContext is IStorageItemViewModel itemVM
-           )
+        if (args.Element is FrameworkElement fe)
         {
             _realizedItems.Remove(fe);
+            if (fe.DataContext is IStorageItemViewModel itemVM)
+            {
+                itemVM.StopImageLoading();
+            }
         }
     }
 
@@ -493,8 +524,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     });
 
-    RelayCommand<UIElement> _OpenItemCommand;
-    public RelayCommand<UIElement> PrepareConnectedAnimationWithCurrentFocusElementCommand => _OpenItemCommand ??= new RelayCommand<UIElement>(item =>
+    [RelayCommand]
+    void PrepareConnectedAnimationWithCurrentFocusElement(UIElement item)
     {
         if (item == null) { return; }
 
@@ -507,9 +538,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
             anim.Configuration = new BasicConnectedAnimationConfiguration();
         }
-    });
+    }
 
-    private int lastSelectedItemIndex = -1;
+    private int _lastSelectedItemIndex = -1;
     private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
@@ -545,7 +576,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    ReactivePropertySlim<IReadOnlyList<IStorageItemViewModel>> _selectedItems = new(new List<StorageItemViewModel>(), mode: ReactivePropertyMode.None);
+    [ObservableProperty]
+    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<StorageItemViewModel>();
 
 
     private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -560,7 +592,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     private void ItemSelectedProcess(IStorageItemViewModel itemVM)
     {
-        var prevSelectedItemIndex = lastSelectedItemIndex;
+        var prevSelectedItemIndex = _lastSelectedItemIndex;
         var lastSelectedItemsCount = SelectedItemsCount;
         //if (prevSelectedItemIndex >= 0 
         //    && Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Shift) != CoreVirtualKeyStates.None
@@ -573,17 +605,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             if (itemVM.IsSelected)
             {
                 _vm.Selection.SelectedItems.Add(itemVM);
-                _selectedItems.Value = _vm.Selection.SelectedItems;
+                _selectedItems = _vm.Selection.SelectedItems;
             }
             else
             {
                 _vm.Selection.SelectedItems.Remove(itemVM);
-                _selectedItems.Value = _vm.Selection.SelectedItems;
+                _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
         }
 
-        lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
+        _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
 
         var selectedItemsCount = SelectedItemsCount;
         if (selectedItemsCount > 0)
@@ -629,7 +661,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public void StartSelection()
     {
         IsSelectionModeEnabled = true;
-        _selectedItems.Value = _vm.Selection.SelectedItems;
+        _selectedItems = _vm.Selection.SelectedItems;
         _vm.Selection.StartSelection();
         _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
         if (_messenger.IsRegistered<BackNavigationRequestingMessage>(this) is false)
@@ -671,16 +703,16 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public void ClearSelection()
     {
         IsSelectionModeEnabled = false;
-        foreach (var itemVM in _selectedItems.Value ?? Enumerable.Empty<IStorageItemViewModel>())
+        foreach (var itemVM in _selectedItems ?? [])
         {
             itemVM.IsSelected = false;
         }
 
-        _selectedItems.Value = null;
+        _selectedItems = null;
         SelectedCountDisplayText = String.Empty;
         SelectedItemsCount = 0;
         _vm.Selection.EndSelection();
-        lastSelectedItemIndex = -1;
+        _lastSelectedItemIndex = -1;
         _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<Core.Models.Albam.AlbamItemRemovedMessage>(this);

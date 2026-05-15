@@ -1,36 +1,48 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using I18NPortable;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
-using System.Reactive.Concurrency;
-using TsubameViewer.Core.Models.Maintenance;
-using System.Diagnostics;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
-// TODO: アクセス履歴対応
-
-public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBase, IDisposable
+public sealed class SourceStorageItemsPageViewModel 
+    : NavigationAwareViewModelBase
+    , IDisposable
+    , IRecipient<RemoveSourceStorageItemFromAppMessage>
 {
+    public void Receive(RemoveSourceStorageItemFromAppMessage message)
+    {
+        if (message.Value is StorageItemViewModel itemVM)
+        {
+            Folders.Remove(itemVM);
+        }
+    }
+
     public ObservableCollection<StorageItemViewModel> Folders { get; }
     public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
@@ -136,6 +148,8 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
 
         var ct = _navigationCts.Token;
 
+        ApplicationView.GetForCurrentView().Title = nameof(TsubameViewer);
+
         try
         {
             if (!_foldersInitialized)
@@ -145,7 +159,7 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
                 Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
                 try
                 {
-                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems())
+                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems().WithCancellation(ct))
                     {
                         if (item.item == null)
                         {
@@ -238,6 +252,8 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
         {
         }
 
+        _messenger.Register<RemoveSourceStorageItemFromAppMessage>(this);
+
         await base.OnNavigatedToAsync(parameters);
     }
 
@@ -251,6 +267,8 @@ public sealed class SourceStorageItemsPageViewModel : NavigationAwareViewModelBa
         _navigationCts.Cancel();
         _navigationCts.Dispose();
         _navigationCts = null;
+
+        _messenger.Unregister<RemoveSourceStorageItemFromAppMessage>(this);
 
         foreach (var itemVM in Enumerable.Concat(Folders, RecentlyItems))
         {
@@ -345,4 +363,12 @@ public sealed class SourceItemsGroup
 {
     public string GroupId { get; set; }
     public ObservableCollection<StorageItemViewModel> Items { get; set; }
+}
+
+
+public sealed class RemoveSourceStorageItemFromAppMessage : ValueChangedMessage<IStorageItemViewModel>
+{
+    public RemoveSourceStorageItemFromAppMessage(IStorageItemViewModel value) : base(value)
+    {
+    }
 }

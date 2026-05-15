@@ -157,13 +157,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         bool isFirst = true;
         _messenger.Register<ImageLoadedMessage>(this, (r, m) => 
         {
-            async Task<Unit> DelayReply()
+            async Task<R3.Unit> DelayReply()
             { 
                 _navigationDisposables.Add(InitializeZoomReaction());
 
                 await StartNavigatedAnimationAsync(ct);
 
-                return Unit.Default;
+                return R3.Unit.Default;
             }
 
             if (isFirst)
@@ -173,7 +173,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }
             else
             {
-                m.Reply(Unit.Default);
+                m.Reply(R3.Unit.Default);
             }
         });
 
@@ -316,7 +316,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     private void ReversableGoNext()
     {
-        if (!_vm.IsLeftBindingEnabled.Value)
+        if (!_vm.IsLeftBindingEnabled)
         {
             if (_vm.GoNextImageCommand.CanExecute(null))
             {
@@ -335,7 +335,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     private void ReversableGoPrev()
     {
-        if (!_vm.IsLeftBindingEnabled.Value)
+        if (!_vm.IsLeftBindingEnabled)
         {
             if (_vm.GoPrevImageCommand.CanExecute(null))
             {

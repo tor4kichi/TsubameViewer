@@ -27,6 +27,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
         OpenListupItem.Command = Ioc.Default.GetService<OpenListupCommand>();
         SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
+        RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
         SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
         SelectedItems_AlbamItemEditMenuItem.Command = Ioc.Default.GetService<AlbamItemEditCommand>();
         AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
@@ -94,6 +95,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
             SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive).TrueToVisible();
+            RemoveFromAccessListMenuItem.CommandParameter = itemVM;
+            RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
 
             if (itemVM.Path is not null)
             {
@@ -140,7 +143,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             }
 
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
-            SetThumbnailImageMenuItem.Visibility = Visibility.Visible;
+            SetThumbnailImageMenuItem.Visibility = Visibility.Visible;            
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
@@ -168,6 +171,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             AlbamMenuSubItem.Visibility = Visibility.Collapsed;
 
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
@@ -201,6 +205,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             }
 
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
             AddSecondaryTile.Visibility = Visibility.Collapsed;
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
@@ -252,7 +257,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
         if (IsRootPage is true)
         {
-            SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
+            SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;            
         }
+
+        RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
+        RemoveFromAccessListMenuItem.CommandParameter = itemVM;
     }
 }

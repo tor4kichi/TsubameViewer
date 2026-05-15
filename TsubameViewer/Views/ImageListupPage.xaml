@@ -154,8 +154,11 @@
                 HorizontalContentAlignment="Left"
                 Click="ImageListItem_Clicked">
           <ToolTipService.ToolTip>
-            <TextBlock Text="{Binding Name}"
-                       TextWrapping="Wrap" />
+            <ToolTip Placement="Bottom"
+                     VerticalOffset="2">
+              <TextBlock Text="{Binding Name}"
+                         TextWrapping="Wrap" />
+            </ToolTip>
           </ToolTipService.ToolTip>
 
           <Grid>
@@ -250,8 +253,7 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource SmallImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
+                     VerticalOffset="2">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
@@ -331,6 +333,14 @@
     <DataTemplate x:Key="FileItemTemplate_Midium"
                   x:DataType="vm:StorageItemViewModel">
       <UserControl x:Name="ItemControl">
+        <ToolTipService.ToolTip>
+          <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
+                   Placement="Bottom"
+                   VerticalOffset="4">
+            <TextBlock Text="{Binding Name}"
+                       TextWrapping="Wrap" />
+          </ToolTip>
+        </ToolTipService.ToolTip>
 
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
@@ -350,15 +360,6 @@
                 Click="ImageListItem_Clicked"
                 PointerEntered="Image_PointerEntered"
                 PointerExited="Image_PointerExited">
-          <ToolTipService.ToolTip>
-            <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
-                     Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
-              <TextBlock Text="{Binding Name}"
-                         TextWrapping="Wrap" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
           <Grid>
             <Image x:Name="Image"
                    Source="{Binding Image, Mode=OneWay}"
@@ -455,8 +456,7 @@
           <ToolTipService.ToolTip>
             <ToolTip PlacementRect="{StaticResource LargeImageRect}"
                      Placement="Bottom"
-                     VerticalOffset="0"
-                     PlacementTarget="{Binding ElementName=Image}">
+                     VerticalOffset="4">
               <TextBlock Text="{Binding Name}"
                          TextWrapping="Wrap" />
             </ToolTip>
@@ -646,7 +646,7 @@
             <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
                           Label="{i18nExt:Localize Key=Delete}"
                           Command="{x:Bind _vm.FileDeleteCommand}"
-                          CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>
@@ -657,7 +657,7 @@
             <AppBarButton x:Name="SelectAction_OpenWithExplorerButton"
                           Label="{i18nExt:Localize Key=OpenWithExplorer}"
                           Command="{x:Bind _vm.OpenWithExplorerCommand}"
-                          CommandParameter="{x:Bind _selectedItems.Value, Mode=OneWay}">
+                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <fluentIcon:FluentIconElement Symbol="Open24" />
               </AppBarButton.Icon>
@@ -696,16 +696,17 @@
         </uwpControls:DockPanel>
         <uwpControls:DockPanel x:Name="FilesActionLayout"
                                Margin="0 0 0 0">
-          <Border uwpControls:DockPanel.Dock="Bottom"
+          <StackPanel uwpControls:DockPanel.Dock="Bottom"
+                      Orientation="Horizontal"
                   Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
             <TextBlock Opacity="0.7">
-            <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
             </TextBlock>
-          </Border>
+          </StackPanel>
 
           <DropDownButton x:Name="FileSortButton"
                           uwpControls:DockPanel.Dock="Left"
-                          Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                          Content="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                           Background="Transparent"
                           ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
                           AccessKey="S"
@@ -772,12 +773,26 @@
           <ListView x:Name="FileDisplayModeItemsListView"
                     uwpControls:DockPanel.Dock="Right"
                     ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
-                    SelectedItem="{x:Bind _vm.FileDisplayMode.Value, Mode=TwoWay}"
+                    SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
                     ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
                     SelectionMode="Single"
                     SingleSelectionFollowsFocus="False"
                     XYFocusLeft="{x:Bind OptionalActionsButton}"
                     AccessKey="I">
+            <ListView.Header>
+              <StackPanel Orientation="Horizontal" Margin="8 0">
+                <TextBlock VerticalAlignment="Center"
+                           Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                           Margin="0 0 8 0">
+                  <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
+                </TextBlock>
+                <TextBlock Margin="0 0 0 0"
+                           VerticalAlignment="Center"
+                           Opacity="0.7">
+                  <Run Text="{x:Bind _vm.ImageFileItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
+                </TextBlock>
+              </StackPanel>
+            </ListView.Header>
             <ListView.ItemContainerTransitions>
               <TransitionCollection />
             </ListView.ItemContainerTransitions>
@@ -821,7 +836,7 @@
               Margin="0 16 0 32">
           <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
           <uwpControls:SwitchPresenter x:Name="ItemsSwitchPresenter"
-                                       Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode.Value), Mode=OneWay}">
+                                       Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode), Mode=OneWay}">
             <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Line}"
                               IsDefault="True">
               <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
@@ -840,7 +855,8 @@
               <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="6"
@@ -853,11 +869,13 @@
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Midium}"
                                    FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="8"
-                                          VerticalSpacing="8" />
+                                          VerticalSpacing="8"
+                                          />
                 </winUI:ItemsRepeater.Layout>
               </winUI:ItemsRepeater>
             </uwpControls:Case>
@@ -866,7 +884,8 @@
                                    ItemsSource="{x:Bind _vm.FileItemsView}"
                                    ItemTemplate="{StaticResource FileItemTemplate_Large}"
                                    FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}">
+                                   DataContext="{x:Null}"
+                                   VerticalCacheLength="3">
                 <winUI:ItemsRepeater.Layout>
                   <uwpControls:WrapLayout Orientation="Horizontal"
                                           HorizontalSpacing="12"

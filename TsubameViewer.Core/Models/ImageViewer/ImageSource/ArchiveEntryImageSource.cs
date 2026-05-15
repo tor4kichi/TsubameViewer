@@ -1,4 +1,6 @@
-﻿using Reactive.Bindings;
+﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using Microsoft.IO;
+using Reactive.Bindings;
 using SharpCompress.Archives;
 using System;
 using System.Collections.Immutable;
@@ -57,22 +59,25 @@ public sealed class ArchiveEntryImageSource : IArchiveEntryImageSource, IImageSo
 
     public string EntryKey => _entry.Key;
 
+    public SizeF? PreCulcuratedSize => null;
+
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
     {
         return new(default(SizeF?));
     }
 
-    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
+    public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
         using var mylock = await _archiveEntryAccessLock.LockAsync(ct);
 
-        var memoryStream = new InMemoryRandomAccessStream();
+        var recyclable = Ioc.Default.GetRequiredService<RecyclableMemoryStreamManager>();
+        var memoryStream = recyclable.GetStream();
         using (var entryStream = _entry.OpenEntryStream())
         {
             // Note: コメントアウトした書き方だと稀にコピーできないケースが発生する
             // entryStream.CopyTo(memoryStream.AsStream());
-            await RandomAccessStream.CopyAsync(entryStream.AsInputStream(), memoryStream);
-            memoryStream.Seek(0);
+            await entryStream.CopyToAsync(memoryStream, 81920, ct);
+            memoryStream.Seek(0, SeekOrigin.Begin);
 
             ct.ThrowIfCancellationRequested();
         }

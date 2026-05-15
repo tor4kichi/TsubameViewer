@@ -44,6 +44,8 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
     public SizeF Size { get; }
     public StorageFile StorageItem { get; }
 
+    public SizeF? PreCulcuratedSize => Size;
+
     IStorageItem IImageSource.StorageItem => StorageItem;
 
     public async ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
@@ -66,7 +68,7 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
         }
     }
 
-    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct)
+    public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct)
     {
         var recyclable = Ioc.Default.GetRequiredService<RecyclableMemoryStreamManager>();
         using (var pdfStream = await StorageItem.OpenStreamForReadAsync())
@@ -82,7 +84,7 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
             memoryStream.Seek(0, SeekOrigin.Begin);
 
             ct.ThrowIfCancellationRequested();
-            return memoryStream.AsRandomAccessStream();
+            return memoryStream;
         }
     }
 

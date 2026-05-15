@@ -44,7 +44,7 @@
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
           <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{Binding DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+            <Run Text="{Binding DisplayCurrentImageIndex, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
           </TextBlock>
           <Button Command="{Binding ToggleFullScreenCommand}"
                   Style="{StaticResource TitlebarButton}">
@@ -74,7 +74,7 @@
       <StackPanel Spacing="16">
         <TextBlock Text="{i18nExt:Localize Key=FileSortTitle}" />
         <DropDownButton x:Name="FileSortButton"
-                        Content="{x:Bind _vm.SelectedFileSortType.Value, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                        Content="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
                         Background="Transparent"
                         CornerRadius="4">
           <DropDownButton.Flyout>
@@ -328,12 +328,16 @@
         <i:Interaction.Behaviors>
           <!-- Image sizing -->
           <core:EventTriggerBehavior EventName="Loaded">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight,Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm,Mode=OneWay}"
+                                       PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
           </core:EventTriggerBehavior>
           <core:EventTriggerBehavior EventName="SizeChanged">
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasWidth, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
-            <core:ChangePropertyAction TargetObject="{x:Bind _vm.CanvasHeight, Mode=OneWay}" PropertyName="Value" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasWidth" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualWidth)}" />
+            <core:ChangePropertyAction TargetObject="{x:Bind _vm, Mode=OneWay}"
+                                       PropertyName="CanvasHeight" Value="{Binding ElementName=ImagesContainer, Path=(uwpUIExtensions:FrameworkElementExtensions.ActualHeight)}" />
             <core:InvokeCommandAction Command="{x:Bind _vm.SizeChangedCommand, Mode=OneWay}" />
           </core:EventTriggerBehavior>
         </i:Interaction.Behaviors>
@@ -559,7 +563,7 @@
 
       <Button x:Name="DoubleViewCorrectButton" 
               Command="{StaticResource DoubleViewCorrectUICommand}"
-              IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}"
+              IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
               Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
               AccessKey="U"
               >
@@ -575,7 +579,7 @@
         
       </Button>
 
-      <ToggleButton x:Name="DoubleViewToggleButton" IsChecked="{x:Bind _vm.IsDoubleViewEnabled.Value, Mode=OneWay}" 
+      <ToggleButton x:Name="DoubleViewToggleButton" IsChecked="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}" 
                     Command="{StaticResource DoubleViewToggleUICommand}"  
                     AccessKey="I"
                     >
@@ -588,7 +592,7 @@
         </ToggleButton.Content>
       </ToggleButton>
 
-      <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" 
+      <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}" 
                     Command="{StaticResource LeftBindingToggleUICommand}"
                     AccessKey="O"
                     >
@@ -794,7 +798,7 @@
           <TextBlock.RenderTransform>
             <TranslateTransform Y="-6" />
           </TextBlock.RenderTransform>
-          <Run Text="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
+          <Run Text="{x:Bind _vm.DisplayCurrentImageIndex, Mode=OneWay}" />/<Run Text="{Binding Images.Length}" />
         </TextBlock>
 
       </StackPanel>
@@ -850,7 +854,7 @@
     <!-- コントロールUI非表示時に下部に読了状況を表示する -->
     <Grid VerticalAlignment="Bottom">
       <Slider Style="{StaticResource SimpleThumbSlider}"
-              Value="{x:Bind _vm.DisplayCurrentImageIndex.Value, Mode=OneWay}"
+              Value="{x:Bind _vm.DisplayCurrentImageIndex, Mode=OneWay}"
               Maximum="{x:Bind _vm.ImageCount, Mode=OneWay}"
               Opacity="0.45"
               FlowDirection="RightToLeft"
@@ -1072,7 +1076,7 @@
         </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="Page1ActionButton.(Grid.Column)"
@@ -1148,7 +1152,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled.Value, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="PageSelector.FlowDirection"

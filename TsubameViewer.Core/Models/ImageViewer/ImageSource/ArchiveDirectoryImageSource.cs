@@ -39,12 +39,14 @@ public sealed class ArchiveDirectoryImageSource : IArchiveEntryImageSource, IIma
 
     public string EntryKey => _directoryToken.Key;
 
+    public SizeF? PreCulcuratedSize => null;
+
     public ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default)
     {
         return new(default(SizeF?));
     }
 
-    public async ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default)
+    public async ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default)
     {
         var imageSource = GetNearestImageFromDirectory(_directoryToken);
         if (imageSource == null) { return null; }

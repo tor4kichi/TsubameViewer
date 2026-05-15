@@ -1,6 +1,8 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
 using I18NPortable;
@@ -52,8 +54,44 @@ public interface ITitlebarContentAware
     DataTemplate? GetContent();
 }
 
+[ObservableObject]
 public sealed partial class AppShell : UserControl
-{        
+{
+    #region Purchase Cheer Addon
+
+    [RelayCommand(CanExecute = nameof(IsStoreAvairable))]
+    async Task PurchaseAddonAsync()
+    {
+        var service = Ioc.Default.GetService<PurchaseAddonService>();
+        if (service == null) { return; }
+        var result = await service.PurchaseCheerAsync();        
+        Debug.WriteLine(result);
+
+        if (result is Windows.Services.Store.StorePurchaseStatus.Succeeded or Windows.Services.Store.StorePurchaseStatus.AlreadyPurchased)
+        {
+            PurchaseThanksMassageFlyout.ShowAt(PurchaseConfirmButton);
+        }
+    }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PurchaseAddonCommand))]
+    bool _isStoreAvairable;
+
+    async void InitialziePurchase()
+    {
+        var service = Ioc.Default.GetService<PurchaseAddonService>();
+        if (service == null) { return; }
+
+        if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
+        {
+            var info = await service.GetCheerAddonInfoAsync();
+            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
+            IsStoreAvairable = info != null;
+        }
+    }
+
+    #endregion
+
     private readonly AppShellViewModel _vm;
     private readonly IMessenger _messenger;
 
@@ -96,6 +134,13 @@ public sealed partial class AppShell : UserControl
         appView.VisibleBoundsChanged += AppView_VisibleBoundsChanged;
 
         Loaded += AppShell_Loaded;
+
+        _messenger.Register<CurrentInPageSearchTextRequestMessage>(this, (r, m) => 
+        {
+            m.Reply(AutoSuggestBox.Text);
+        });
+
+        InitialziePurchase();
     }
 
     private void AppShell_Loaded(object sender, RoutedEventArgs e)
@@ -1345,6 +1390,28 @@ public sealed partial class AppShell : UserControl
             _vm.OpenMenuItemCommand.Execute(itemVM);
         }
     }
+
+    InPageSearchRequestMessage? _searchMessage;
+    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        if (!sender.Items.Any())
+        {
+            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        }
+        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+    }
+
+    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        _vm.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
+    }
 }
 
 
@@ -1406,4 +1473,25 @@ public sealed class MenuItemTemplateSelector : DataTemplateSelector
             _ => throw new NotSupportedException(),
         };
     }
+}
+
+public sealed class InPageSearchRequestMessage : ValueChangedMessage<string>
+{
+    public InPageSearchRequestMessage(string value) : base(value)
+    {
+
+    }
+}
+
+public sealed class SearchQuerySubmitedRequestMessage : ValueChangedMessage<string>
+{
+    public SearchQuerySubmitedRequestMessage(string value) : base(value)
+    {
+
+    }
+}
+
+public sealed class CurrentInPageSearchTextRequestMessage : RequestMessage<string>
+{
+
 }

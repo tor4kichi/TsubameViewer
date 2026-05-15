@@ -38,5 +38,7 @@
   <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
   <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
   <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
-  
+
+  <MenuFlyoutItem x:Name="RemoveFromAccessListMenuItem"
+                  Text="{i18nExt:Localize Key=RemoveSourceFolderFromApp}" />
 </MenuFlyout>

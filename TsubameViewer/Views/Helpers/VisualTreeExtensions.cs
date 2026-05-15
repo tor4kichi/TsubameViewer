@@ -42,7 +42,7 @@ namespace TsubameViewer.Views.Helpers
         {
             while (whenComplete(element) is false)
             {
-                await Task.Delay(1, ct);
+                await Task.Delay(10, ct);
             }
         }
 
@@ -50,7 +50,7 @@ namespace TsubameViewer.Views.Helpers
         {
             while (whenComplete() is false)
             {
-                await Task.Delay(1, ct);
+                await Task.Delay(10, ct);
             }
         }
     }

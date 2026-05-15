@@ -17,6 +17,15 @@ ApplicationTheme.Light = Thème clair
 ApplicationTheme.Dark = Thème sombre
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = Envoyez un pourboire au développeur
+
+PurchaseAddon_ShowPurchaseUI = Procéder à l'achat de l'écran
+PurchaseAddon_ShowPurchaseHistory = Consultez votre historique d'achats
+PurchaseAddon_PurchasedThanksMessage = Merci pour votre soutien !
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = Ajouter un dossier
@@ -165,6 +174,10 @@ IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte a
 
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
 
+ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
+
+
+
 
 
 #### EBookReaderPage
@@ -202,8 +215,11 @@ Toc = Table des matières
 
 #### SearchResult
 
-SearchResultWith = Prochain résultat de recherche
-SearchPlaceholder = Rechercher un titre
+SearchResultWith = Résultats de la recherche pour {0}
+SearchPlaceholder = Rechercher dans la page
+Search_FromAll = Recherche parmi tous les
+Search_DisplayItemsCount = {0} éléments
+Search_FilteredDisplayItemsCount = Affichage de {0} éléments
 
 
 

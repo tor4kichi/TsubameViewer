@@ -17,6 +17,15 @@ ApplicationTheme.Light = Light theme
 ApplicationTheme.Dark = Dark theme
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = Send a tip to the developer
+
+PurchaseAddon_ShowPurchaseUI = Proceed to purchase screen
+PurchaseAddon_ShowPurchaseHistory = Check your purchase history
+PurchaseAddon_PurchasedThanksMessage = Thank you for your support!
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = Add Folder
@@ -165,6 +174,10 @@ IsKeepSingleViewOnFirstPage = Do not spread the first page
 
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = If you D&D the folder to the app, all will be displayed
 
+ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
+
+
+
 
 
 #### EBookReaderPage
@@ -202,8 +215,11 @@ Toc = Table of contents
 
 #### SearchResult
 
-SearchResultWith = Next search result
-SearchPlaceholder = Search for title
+SearchResultWith = Search results for {0}
+SearchPlaceholder = Search within the page
+Search_FromAll = Search from all
+Search_DisplayItemsCount = {0} items
+Search_FilteredDisplayItemsCount = Showing {0} items
 
 
 

@@ -5,33 +5,30 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Services;
 using Windows.UI.Popups;
+using Windows.UI.Xaml.Controls;
 
 namespace TsubameViewer.Services;
 
 
 public sealed class MessageDialogService : IMessageDialogService
 {
-    public async Task<MessageDialogResult> ShowMessageDialogAsync(string message, string[] CommandLabels, uint cancelCommandIndex = 0, uint defaultCommandIndex = 0)
+    public async Task<bool> ShowMessageDialogAsync(
+        string message, 
+        string primaryButtonText, 
+        string cancelButtonText,
+        bool isDefaultAsCancel = false,
+        string title = "")
     {
-        var dialog = new MessageDialog(message)
+        var dialog = new ContentDialog()
         {
-            CancelCommandIndex = cancelCommandIndex,
-            DefaultCommandIndex = defaultCommandIndex,
+            Title = title,
+            Content = message,
+            PrimaryButtonText = primaryButtonText,
+            SecondaryButtonText = cancelButtonText,
+            DefaultButton = isDefaultAsCancel ? ContentDialogButton.Secondary : ContentDialogButton.Primary
         };
 
-        foreach (var command in CommandLabels.Select(x => new UICommand(x)))
-        {
-            dialog.Commands.Add(command);
-        }
-
-        if (await dialog.ShowAsync() is IUICommand resultCommand)
-        {
-            return new MessageDialogResult(true, (uint)dialog.Commands.IndexOf(resultCommand));
-        }
-        else
-        {
-            return new MessageDialogResult(false, 0);
-        }
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 }
 

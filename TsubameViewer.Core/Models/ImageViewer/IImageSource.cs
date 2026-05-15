@@ -20,8 +20,9 @@ public interface IImageSource : IEquatable<IImageSource>
     string Path { get; }
     DateTime DateCreated { get; }
 
+    SizeF? PreCulcuratedSize { get; }
     ValueTask<SizeF?> TryGetSizedImageStreamAsync(int requestedSize, Stream imageStream, CancellationToken ct = default);
-    ValueTask<IRandomAccessStream> GetImageStreamAsync(CancellationToken ct = default);                 
+    ValueTask<Stream> GetImageStreamAsync(CancellationToken ct = default);                 
 }
 
 public static class ImageSourceExtensions

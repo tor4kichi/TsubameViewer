@@ -1,21 +1,22 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
-using Reactive.Bindings;
-using Reactive.Bindings.Extensions;
+using I18NPortable;
+using LiteDB;
+using Microsoft.IO;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reactive;
-using System.Reactive.Concurrency;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -23,6 +24,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -30,22 +32,15 @@ using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
-using TsubameViewer.Helpers;
+using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
-using CompositeDisposable = System.Reactive.Disposables.CompositeDisposable;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-using CommunityToolkit.Diagnostics;
-using Windows.UI.Xaml.Media;
-using CommunityToolkit.Mvvm.ComponentModel;
-using I18NPortable;
-using TsubameViewer.Contracts.Notification;
-using TsubameViewer.Views;
-using Microsoft.IO;
 
 namespace TsubameViewer.ViewModels;
 
@@ -55,7 +50,7 @@ public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 }
 
 
-public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelBase, IDisposable
+public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelBase
 {    
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
@@ -91,6 +86,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             if (_nowImagesChanging) { return; }
             
             SetProperty(ref _CurrentImageIndex, value);
+            DisplayCurrentImageIndex = value + 1;
         }
     }
 
@@ -103,8 +99,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         private set { SetProperty(ref _ParentFolderOrArchiveName, value); }
     }
 
-    public IReadOnlyReactiveProperty<int> DisplayCurrentImageIndex { get; }
-    public ReactivePropertySlim<FileSortType> SelectedFileSortType { get; }
+    [ObservableProperty]
+    int _displayCurrentImageIndex;
+
+    [ObservableProperty]
+    FileSortType _selectedFileSortType;
 
     private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
 
@@ -115,8 +114,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         private set { SetProperty(ref _DisplaySortTypeInheritancePath, value); }
     }
 
-    public ReactiveProperty<double> CanvasWidth { get; }
-    public ReactiveProperty<double> CanvasHeight { get; }
+    [ObservableProperty]
+    double _canvasWidth;
+
+    [ObservableProperty]
+    double _canvasHeight;
 
 
 
@@ -199,24 +201,24 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     private ApplicationView _appView;
-    CompositeDisposable _navigationDisposables;
+    IDisposable _navigationDisposables;
     private readonly DispatcherQueue _dispatcherQueue;
 
     public ApplicationSettings ApplicationSettings { get; }
     public ImageViewerSettings ImageViewerSettings { get; }
 
-    public ReactivePropertySlim<bool> IsLeftBindingEnabled { get; }
-    public ReactiveCommand ToggleLeftBindingCommand { get; }
+    [ObservableProperty]
+    bool _isLeftBindingEnabled;
 
-    public ReactivePropertySlim<bool> IsDoubleViewEnabled { get; }
-    public ReactiveCommand ToggleDoubleViewCommand { get; }
+    [ObservableProperty]
+    public bool _isDoubleViewEnabled;
 
-    public ReactivePropertySlim<double> DefaultZoom { get; }
+    [ObservableProperty]
+    public double _defaultZoom;
 
     [ObservableProperty]
     private bool _requireRefresh;
 
-    private readonly IScheduler _scheduler;
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     private readonly AlbamRepository _albamRepository;
@@ -228,10 +230,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
-    CompositeDisposable _disposables = new CompositeDisposable();
-
+    
     public ImageViewerPageViewModel(
-        IScheduler scheduler,
         IMessenger messenger,
         ApplicationSettings applicationSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -256,7 +256,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         RecyclableMemoryStreamManager recyclableMemoryStreamManager
         )
     {
-        _scheduler = scheduler;
         _messenger = messenger;
         ApplicationSettings = applicationSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -288,80 +287,54 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _DisplayImages_1 = _displayImagesSingle[1];
         _DisplayImages_2 = _displayImagesSingle[2];
 
-        DisplayCurrentImageIndex = this.ObserveProperty(x => x.CurrentImageIndex)
-             .Select(x => x + 1)
-             .ToReadOnlyReactivePropertySlim()
-             .AddTo(_disposables);
-
-        CanvasWidth = new ReactiveProperty<double>()
-            .AddTo(_disposables);
-        CanvasHeight = new ReactiveProperty<double>()
-            .AddTo(_disposables);
-
         _appView = ApplicationView.GetForCurrentView();
 
-        SelectedFileSortType = new ReactivePropertySlim<FileSortType>(DefaultFileSortType)
-            .AddTo(_disposables);
-
-        IsLeftBindingEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
-
-        ToggleLeftBindingCommand = new ReactiveCommand().AddTo(_disposables);
-        ToggleLeftBindingCommand.Subscribe(() => 
-        {
-            static bool SwapIfDoubleView(BitmapImage[] images)
-            {
-                if (images.Any() && images.Length == 2)
-                {
-                    (images[0], images[1]) = (images[1], images[0]);
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            IsLeftBindingEnabled.Value = !IsLeftBindingEnabled.Value;                
-            ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
-
-            if (SwapIfDoubleView(DisplayImages_0))
-            {
-                OnPropertyChanged(nameof(DisplayImages_0));
-            }
-            if (SwapIfDoubleView(DisplayImages_1))
-            {
-                OnPropertyChanged(nameof(DisplayImages_1));
-            }
-            if (SwapIfDoubleView(DisplayImages_2))
-            {
-                OnPropertyChanged(nameof(DisplayImages_2));
-            }
-        }).AddTo(_disposables);
-        IsDoubleViewEnabled = new ReactivePropertySlim<bool>(mode: ReactivePropertyMode.DistinctUntilChanged)
-            .AddTo(_disposables);
-        ToggleDoubleViewCommand = new ReactiveCommand()
-            .AddTo(_disposables);
-        ToggleDoubleViewCommand.Subscribe(async () => 
-        {
-            IsDoubleViewEnabled.Value = !IsDoubleViewEnabled.Value;
-            ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value);
-            Debug.WriteLine($"window w={CanvasWidth.Value:F0}, h={CanvasHeight.Value:F0}");
-            await ResetImageIndex(CurrentImageIndex);
-        })
-            .AddTo(_disposables);
-        DefaultZoom = new ReactivePropertySlim<double>(mode: ReactivePropertyMode.DistinctUntilChanged).AddTo(_disposables);
+        SelectedFileSortType = DefaultFileSortType;
+       
     }
 
-
-
-    public void Dispose()
+    [RelayCommand]
+    async Task ToggleLeftBinding()
     {
-        _disposables.Dispose();
-        (_imageCollectionContext as IDisposable)?.Dispose();
+        static bool SwapIfDoubleView(BitmapImage[] images)
+        {
+            if (images.Any() && images.Length == 2)
+            {
+                (images[0], images[1]) = (images[1], images[0]);
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        IsLeftBindingEnabled = !IsLeftBindingEnabled;
+        ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom);
+
+        if (SwapIfDoubleView(DisplayImages_0))
+        {
+            OnPropertyChanged(nameof(DisplayImages_0));
+        }
+        if (SwapIfDoubleView(DisplayImages_1))
+        {
+            OnPropertyChanged(nameof(DisplayImages_1));
+        }
+        if (SwapIfDoubleView(DisplayImages_2))
+        {
+            OnPropertyChanged(nameof(DisplayImages_2));
+        }
     }
 
-
+    [RelayCommand]
+    async Task ToggleDoubleView()
+    {
+        IsDoubleViewEnabled = !IsDoubleViewEnabled;
+        ImageViewerSettings.SetViewerSettingsPerPath(_currentImageSource.Path, IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom);
+        Debug.WriteLine($"window w={CanvasWidth:F0}, h={CanvasHeight:F0}");
+        await ResetImageIndex(CurrentImageIndex);
+    }
 
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
@@ -399,14 +372,17 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         base.OnNavigatedFrom(parameters);
     }
-
+    
     public override async Task OnNavigatedToAsync(INavigationParameters parameters)
     {
+#if DEBUG
+        long time = TimeProvider.System.GetTimestamp();
+#endif
         var mode = parameters.GetNavigationMode();
 
-        _navigationDisposables = new CompositeDisposable();
-        _navigationCts = new CancellationTokenSource()
-            .AddTo(_navigationDisposables);
+        _navigationCts?.Dispose();
+        _navigationCts = null;
+        var cts = new CancellationTokenSource();
         _imageLoadingCts = new CancellationTokenSource();
         ClearDisplayImages();
 
@@ -414,10 +390,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         GoNextImageCommand.NotifyCanExecuteChanged();
         GoPrevImageCommand.NotifyCanExecuteChanged();
 
-        var ct = _navigationCts.Token;
+        var ct = cts.Token;
         string firstDisplayPageName = null;
         if (mode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward or NavigationMode.Refresh)
         {
+            (_imageCollectionContext as IDisposable)?.Dispose();
             _imageCollectionContext = null;
             Page1Name = null;
             Title = null;
@@ -458,19 +435,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
                     if (settings != null)
                     {
-                        SelectedFileSortType.Value = settings.Sort;
+                        SelectedFileSortType = settings.Sort;
                     }
                     else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
                     {
                         DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
                     }
                     else
                     {
-                        SelectedFileSortType.Value = DefaultFileSortType;
+                        SelectedFileSortType = DefaultFileSortType;
                     }
 
-                    (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                    (IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom)
                         = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
 
                     _CurrentImageIndex = 0;
@@ -524,14 +501,14 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         var settings = _displaySettingsByPathRepository.GetAlbamDisplaySettings(albam._id);
                         if (settings != null)
                         {
-                            SelectedFileSortType.Value = settings.Sort;
+                            SelectedFileSortType = settings.Sort;
                         }
                         else
                         {
-                            SelectedFileSortType.Value = DefaultFileSortType;
+                            SelectedFileSortType = DefaultFileSortType;
                         }
 
-                        (IsDoubleViewEnabled.Value, IsLeftBindingEnabled.Value, DefaultZoom.Value)
+                        (IsDoubleViewEnabled, IsLeftBindingEnabled, DefaultZoom)
                             = ImageViewerSettings.GetViewerSettingsPerPath(_currentImageSource.Path);
 
                         await RefreshItems(albamImageSource, albamImageCollectionContext, ct);
@@ -543,7 +520,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 throw new NotSupportedException();
             }
         }
-        
+
+#if DEBUG
+        Debug.WriteLine($"RefreshItems: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
+
         // 以下の場合に表示内容を更新する
         //    1. 表示フォルダが変更された場合
         //    2. 前回の更新が未完了だった場合
@@ -562,7 +544,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 {
                     try
                     {
-                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                        _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(bookmarkPageName, SelectedFileSortType, ct);
                     }
                     catch
                     {
@@ -575,7 +557,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         {
             try
             {
-                _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType.Value, _navigationCts.Token);
+                _CurrentImageIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(firstDisplayPageName, SelectedFileSortType, ct);
             }
             catch
             {
@@ -589,6 +571,14 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         await ResetImageIndex(CurrentImageIndex);
 
+        var db = new DisposableBuilder();
+
+#if DEBUG
+
+        Debug.WriteLine($"SetImages: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
+
         SetCurrentDisplayImageIndex(CurrentDisplayImageIndex);
 
         IsAlreadySetDisplayImages = true;
@@ -599,12 +589,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         // 画像更新
         Observable.Merge(
-            this.ObserveProperty(x => x.CurrentImageIndex, isPushCurrentValueAtFirst: true).ToUnit(),
-            this.ObserveProperty(x => x.NowDoubleImageView, isPushCurrentValueAtFirst: false).ToUnit()
+            this.ObservePropertyChanged(x => x.CurrentImageIndex, true).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.NowDoubleImageView, false).AsUnitObservable()
             )
             .Subscribe(_ =>
             {
-                var ct = _imageLoadingCts.Token;
                 //using (_imageLoadingLock.LockAsync(ct))
                 {
                     if (Images == null) { return; }
@@ -648,28 +637,27 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         _folderLastIntractItemManager.SetLastIntractItemName(albam.AlbamId, imageSource.Path);
                     }
                 }
-            }).AddTo(_navigationDisposables);
+            }).AddTo(ref db);
 
-        SelectedFileSortType
+        this.ObservePropertyChanged(x => x.SelectedFileSortType)
             .Pairwise()
-            .Subscribe(async pair =>
+            .SubscribeAwait(async (pair, ct) =>
             {
                 if (Images == null) { return; }
-                var ct = _navigationCts.Token;
-                var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.OldItem, ct);
-                var newIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(oldImage.Name, pair.NewItem, ct);
+                var oldImage = await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, pair.Previous, ct);
+                var newIndex = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(oldImage.Name, pair.Current, ct);
                 await ResetImageIndex(newIndex);
             })
-            .AddTo(_navigationDisposables);
+            .AddTo(ref db);
 
         _SizeChangedSubject
             .Where(x => Images != null)
-            .Select(x => (X: CanvasWidth.Value, Y:CanvasHeight.Value))
+            .Select(x => (X: CanvasWidth, Y:CanvasHeight))
             .Pairwise()
-            .Where(x => x.NewItem != x.OldItem)
+            .Where(x => x.Current != x.Previous)
             .Do(_ => NowImageLoadingLongRunning = true)
-            .Throttle(TimeSpan.FromMilliseconds(50), _scheduler)
-            .Subscribe(async size =>
+            .ThrottleLast(TimeSpan.FromMilliseconds(50))
+            .SubscribeAwait(async (size, ct) =>
             {
                 using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                 {
@@ -682,9 +670,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                 await ResetImageIndex(CurrentImageIndex);
             })
-            .AddTo(_navigationDisposables);
+            .AddTo(ref db);
 
-        ImageViewerSettings.ObserveProperty(x => x.IsEnablePrefetch, isPushCurrentValueAtFirst: false)
+        ImageViewerSettings.ObservePropertyChanged(x => x.IsEnablePrefetch, false)
             .Subscribe(async isEnabledPrefetch => 
             {
                 if (isEnabledPrefetch)
@@ -692,7 +680,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     await PrefetchDisplayImagesAsync(IndexMoveDirection.Refresh, CurrentImageIndex, _imageLoadingCts.Token);
                 }
             })
-            .AddTo(_navigationDisposables);
+            .AddTo(ref db);
 
         _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
         {
@@ -736,21 +724,21 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     requireRefresh = true;
                     Debug.WriteLine("Images Update required. " + _currentImageSource.Path);
                 })
-                .AddTo(_navigationDisposables);
+                .AddTo(ref db);
 
             Window.Current.WindowActivationStateChanged()
-                .Subscribe(async visible =>
+                .ToObservable()
+                .SubscribeAwait(async (visible, ct) =>
                 {
                     if (visible && requireRefresh && _imageCollectionContext is not null)
                     {
-                        var ct = _navigationCts?.Token ?? CancellationToken.None;
                         requireRefresh = false;
-                        var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType.Value, ct)).Path;
+                        var currentItemPath = (await _imageCollectionContext.GetImageFileAtAsync(CurrentImageIndex, SelectedFileSortType, ct)).Path;
                         await ReloadItemsAsync(_imageCollectionContext, ct);
 
                         try
                         {
-                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType.Value, ct);
+                            var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(currentItemPath, SelectedFileSortType, ct);
                             await ResetImageIndex(index >= 0 ? index : 0);
                         }
                         catch
@@ -765,8 +753,16 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         Debug.WriteLine("Images Updated. " + _currentImageSource.Path);
                     }
                 })
-                .AddTo(_navigationDisposables);
+                .AddTo(ref db);
         }
+
+
+        _navigationDisposables = db.Build();
+#if DEBUG
+        Debug.WriteLine($"Complete: {TimeProvider.System.GetElapsedTime(time)}");
+        time = TimeProvider.System.GetTimestamp();
+#endif
+        _navigationCts = cts;
 
         await base.OnNavigatedToAsync(parameters);
     }
@@ -781,32 +777,35 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         await ReloadItemsAsync(imageCollectionContext, ct);
 
-        if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
+        _ = DispatcherQueue.GetForCurrentThread().TryEnqueue(DispatcherQueuePriority.Low, async () => 
         {
-            var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
-            if (folders.Count <= 1)
+            if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
-                PageFolderNames = new string[0];
+                var folders = await imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);
+                if (folders.Count <= 1)
+                {
+                    PageFolderNames = new string[0];
+                }
+                else
+                {
+                    PageFolderNames = folders.Select(x =>
+                    {
+                        if (x is ArchiveDirectoryImageSource archiveDirectory)
+                        {
+                            return archiveDirectory.Name.TrimEnd(SeparateChars);
+                        }
+                        else
+                        {
+                            return x.Name.TrimEnd(SeparateChars);
+                        }
+                    }).ToArray();
+                }
             }
             else
             {
-                PageFolderNames = folders.Select(x =>
-                {
-                    if (x is ArchiveDirectoryImageSource archiveDirectory)
-                    {
-                        return archiveDirectory.Name.TrimEnd(SeparateChars);
-                    }
-                    else
-                    {
-                        return x.Name.TrimEnd(SeparateChars);
-                    }
-                }).ToArray();
+                PageFolderNames = new string[0];
             }
-        }
-        else
-        {
-            PageFolderNames = new string[0];
-        }
+        });
 
         GoNextImageCommand.NotifyCanExecuteChanged();
         GoPrevImageCommand.NotifyCanExecuteChanged();
@@ -816,7 +815,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     {
         Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
 
-        var imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
+        if (imageCollectionContext == null) { return; }
+
+        int imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
         _nowCurrenImageIndexChanging = true;
         _nowImagesChanging = true;
         Images = new IImageSource[imageCount];
@@ -958,15 +959,14 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     ElementSoundPlayer.Volume = 1.0;
                     ElementSoundPlayer.Play(ElementSoundKind.Invoke);
 
-                    _ = Task.Delay(500).ContinueWith(prevTask =>
+                    DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
                     {
-                        _scheduler.Schedule(async () =>
+                        await Task.Delay(500);
+                        using (await _imageLoadingLock.LockAsync(CancellationToken.None))
                         {
-                            using (await _imageLoadingLock.LockAsync(CancellationToken.None))
-                            {
-                                ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
-                            }
-                        });
+                            ElementSoundPlayer.State = ElementSoundPlayerState.Auto;
+                        }
+
                     });
                 }
 
@@ -1063,7 +1063,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var candidateIndex = requestIndex + index;
                 if (0 <= candidateIndex && candidateIndex < _Images.Length)
                 {
-                    candidateImages.Add(await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType.Value, ct));
+                    candidateImages.Add(await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(candidateIndex, SelectedFileSortType, ct), ct));
                 }
             }
             
@@ -1122,7 +1122,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                thumbImage.SetSource(imageStream);
+                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -1186,7 +1186,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                             {
                                 using var imageStream = await Task.Run(async () => await _thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct));
                                 var thumbImage = new BitmapImage();
-                                thumbImage.SetSource(imageStream);
+                                await thumbImage.SetSourceAsync(imageStream.AsRandomAccessStream()).AsTask(ct);
                                 return thumbImage;
                             }
 
@@ -1210,7 +1210,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            var image = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType.Value, ct);
+            var image = await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType, ct), ct);
             if (image == null)
             {
                 throw new InvalidOperationException();
@@ -1248,7 +1248,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     (int requestIndex, bool isJumpHeadTail, int requestImageCount) GetMovedIndex(IndexMoveDirection direction, int currentIndex)
     {
-        int requestImageCount = IsDoubleViewEnabled.Value ? 2 : 1;
+        int requestImageCount = IsDoubleViewEnabled ? 2 : 1;
         int lastRequestImageCount = GetCurrentDisplayImageCount();
 
         var (requestIndex, isJumpHeadTail) = GetMovedImageIndex(direction, currentIndex, Images.Length);
@@ -1313,7 +1313,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     private async ValueTask<ImageDoubleViewCulcResult> CheckImagesCanDoubleViewInCurrentCanvasSizeAsync(IEnumerable<IImageSource> candidateImages, CancellationToken ct)
     {
-        if (IsDoubleViewEnabled.Value)
+        if (IsDoubleViewEnabled)
         {
             if (candidateImages.Count() == 1)
             {
@@ -1321,7 +1321,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             }
             else
             {
-                var canvasSize = new Vector2((float)CanvasWidth.Value, (float)CanvasHeight.Value);
+                var canvasSize = new Vector2((float)CanvasWidth, (float)CanvasHeight);
 
                 Debug.WriteLine(canvasSize);
                 var firstImage = candidateImages.ElementAt(0);
@@ -1393,7 +1393,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            image = new PrefetchImageInfo(source, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
+            image = new PrefetchImageInfo(source, (int)CanvasWidth, _recyclableMemoryStreamManager);
             _CachedImages.Insert(0, image);
 
             if (_CachedImages.Count > 8)
@@ -1523,13 +1523,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     if (image1.DecodePixelHeight != 0)
                     {
-                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
+                        using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth, _recyclableMemoryStreamManager);
                         image1 = await loader1.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource1.Name}");
                     }
                     if (image2.DecodePixelHeight != 0)
                     {
-                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
+                        using var loader2 = new PrefetchImageInfo(imageSource2, (int)CanvasWidth, _recyclableMemoryStreamManager);
                         image2 = await loader2.GetBitmapImageAsync(ct);
                         Debug.WriteLine($"Reload with no decode pixel : {imageSource2.Name}");
                     }
@@ -1542,7 +1542,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 else
                 {
                     var imageSource1 = _sourceImagesSingle[indexType][0];
-                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth.Value, _recyclableMemoryStreamManager);
+                    using var loader1 = new PrefetchImageInfo(imageSource1, (int)CanvasWidth, _recyclableMemoryStreamManager);
                     SetDisplayImages_Internal(PrefetchIndexType.Current,
                         imageSource1, await loader1.GetBitmapImageAsync(ct)
                         );
@@ -1580,7 +1580,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             }
         }
 
-        SetDecodePixelSize(firstImage, (float)CanvasWidth.Value, (float)CanvasHeight.Value);
+        SetDecodePixelSize(firstImage, (float)CanvasWidth, (float)CanvasHeight);
 
         SetDisplayImages_Internal(type, firstSource, firstImage);
     }
@@ -1621,9 +1621,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     private void SetDecodePixelHeightWhenLargerThenCanvasHeight(BitmapImage image)
     {
-        if (image.PixelHeight > CanvasHeight.Value)
+        if (image.PixelHeight > CanvasHeight)
         {
-            image.DecodePixelHeight = (int)CanvasHeight.Value;
+            image.DecodePixelHeight = (int)CanvasHeight;
         }
     }
 
@@ -1917,7 +1917,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     }
 
 
-    ISubject<int> _SizeChangedSubject = new BehaviorSubject<int>(-1);
+    ReactiveProperty<int> _SizeChangedSubject = new ReactiveProperty<int>(-1);
 
     private RelayCommand _SizeChangedCommand;
     public RelayCommand SizeChangedCommand =>
@@ -1946,7 +1946,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             if (string.IsNullOrEmpty(folder?.Path) is false)
             {
                 string key = folder is IArchiveEntryImageSource entry ? entry.EntryKey : folder.Path;
-                var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(key, SelectedFileSortType.Value, ct);
+                var index = await _imageCollectionContext.GetImageFileIndexFromKeyAsync(key, SelectedFileSortType, ct);
                 if (index >= 0)
                 {
                     await ResetImageIndex(index);
@@ -1995,14 +1995,14 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             if (sortType.HasValue)
             {
                 DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType.Value = sortType.Value;
+                SelectedFileSortType = sortType.Value;
                 if (_currentImageSource.StorageItem is IStorageItem)
                 {
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType);
                 }
                 else if (_currentImageSource is AlbamImageSource albam)
                 {
-                    _displaySettingsByPathRepository.SetAlbamSettings(albam.AlbamId, SelectedFileSortType.Value);
+                    _displaySettingsByPathRepository.SetAlbamSettings(albam.AlbamId, SelectedFileSortType);
                 }
             }
             else
@@ -2015,19 +2015,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     )
                     {
                         DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType.Value = parentSort.ChildItemDefaultSort.Value;
+                        SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
                     }
                     else
                     {
                         DisplaySortTypeInheritancePath = null;
-                        SelectedFileSortType.Value = DefaultFileSortType;
+                        SelectedFileSortType = DefaultFileSortType;
                     }
                 }
                 else if (_currentImageSource is AlbamImageSource albam)
                 {
                     _displaySettingsByPathRepository.ClearAlbamSettings(albam.AlbamId);
                     DisplaySortTypeInheritancePath = null;
-                    SelectedFileSortType.Value = DefaultFileSortType;
+                    SelectedFileSortType = DefaultFileSortType;
                 }
             }
         });
@@ -2105,7 +2105,7 @@ public class PrefetchImageInfo : IDisposable
                     {
                         try
                         {
-                            await image.SetSourceAsync(stream).AsTask(linkedCt);
+                            await image.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(linkedCt);
                         }
                         catch (Exception ex) when (ex.HResult == -1072868846)
                         {
