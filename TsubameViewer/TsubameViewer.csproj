@@ -150,6 +150,7 @@
     <Compile Include="Services\Navigation\NavigationParametersExtensions.cs" />
     <Compile Include="Services\AlbamDialogService.cs" />
     <Compile Include="Services\FileControlDialogService.cs" />
+    <Compile Include="Services\PurchaseAddonService.cs" />
     <Compile Include="Services\SplitImageInputDialogService.cs" />
     <Compile Include="Helpers\ApplicationLifecycleObservableExtensions.cs" />
     <Compile Include="Services\SecondaryTileManager.cs" />

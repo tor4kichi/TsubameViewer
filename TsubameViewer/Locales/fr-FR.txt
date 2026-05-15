@@ -17,6 +17,15 @@ ApplicationTheme.Light = Thème clair
 ApplicationTheme.Dark = Thème sombre
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = Envoyez un pourboire au développeur
+
+PurchaseAddon_ShowPurchaseUI = Procéder à l'achat de l'écran
+PurchaseAddon_ShowPurchaseHistory = Consultez votre historique d'achats
+PurchaseAddon_PurchasedThanksMessage = Merci pour votre soutien !
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = Ajouter un dossier

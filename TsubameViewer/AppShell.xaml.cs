@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
@@ -53,8 +54,55 @@ public interface ITitlebarContentAware
     DataTemplate? GetContent();
 }
 
+[ObservableObject]
 public sealed partial class AppShell : UserControl
-{        
+{
+    [RelayCommand(CanExecute = nameof(IsStoreAvairable))]
+    async Task PurchaseAddonAsync()
+    {
+        var service = Ioc.Default.GetService<PurchaseAddonService>();
+        if (service == null) { return; }
+        var result = await service.PurchaseCheerAsync();        
+        Debug.WriteLine(result);
+
+        if (result is Windows.Services.Store.StorePurchaseStatus.Succeeded or Windows.Services.Store.StorePurchaseStatus.AlreadyPurchased)
+        {
+            PurchaseThanksMassageFlyout.ShowAt(PurchaseConfirmButton);
+        }
+    }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(PurchaseAddonCommand))]
+    bool _isStoreAvairable;
+
+
+    private async void PurchaseConfirmFlyout_Opening(object sender, object e)
+    {
+        var service = Ioc.Default.GetService<PurchaseAddonService>();
+        if (service == null) { return; }
+
+        if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
+        {
+            var info = await service.GetCheerAddonInfoAsync();
+
+            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
+            
+            IsStoreAvairable = info != null;
+            if (info != null)
+            {
+
+                Debug.WriteLine(info.Title);
+                Debug.WriteLine(info.Description);
+            }
+        }
+    }
+
+    [RelayCommand]
+    async Task ShowPurchaseHistoryAsync()
+    {
+
+    }
+
     private readonly AppShellViewModel _vm;
     private readonly IMessenger _messenger;
 

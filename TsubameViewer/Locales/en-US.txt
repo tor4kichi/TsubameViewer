@@ -17,6 +17,15 @@ ApplicationTheme.Light = Light theme
 ApplicationTheme.Dark = Dark theme
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = Send a tip to the developer
+
+PurchaseAddon_ShowPurchaseUI = Proceed to purchase screen
+PurchaseAddon_ShowPurchaseHistory = Check your purchase history
+PurchaseAddon_PurchasedThanksMessage = Thank you for your support!
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = Add Folder

@@ -17,6 +17,15 @@ ApplicationTheme.Light = 浅色主题
 ApplicationTheme.Dark = 深色主题
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = 向开发者发送小费
+
+PurchaseAddon_ShowPurchaseUI = 继续购买屏幕
+PurchaseAddon_ShowPurchaseHistory = 查看您的购买记录
+PurchaseAddon_PurchasedThanksMessage = 感谢您的支持！
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = 新增文件夹

@@ -17,6 +17,15 @@ ApplicationTheme.Light = 明るいテーマ
 ApplicationTheme.Dark = 暗いテーマ
 
 
+#### Purchase Addon
+PurchaseAddon_ButtonTitle = 開発者にチップを送る
+
+PurchaseAddon_ShowPurchaseUI = 購入画面へ
+PurchaseAddon_ShowPurchaseHistory = 購入履歴の確認
+PurchaseAddon_PurchasedThanksMessage = ご支援頂きありがとうございます！
+
+
+
 #### PrimaryWindowCoreLayout
 
 AddNewFolder = フォルダを追加

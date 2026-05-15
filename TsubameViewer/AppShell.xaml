@@ -27,10 +27,12 @@
     <ResourceDictionary>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="NavigationViewTopPaneBackground"
+                           Color="{ThemeResource SystemChromeMediumColor}" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="NavigationViewTopPaneBackground"
+                           Color="{ThemeResource SystemChromeMediumColor}" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
 
@@ -47,7 +49,8 @@
       <local:MenuItemTemplateSelector x:Key="MenuItemTemplateSelector">
         <local:MenuItemTemplateSelector.MenuSeparator>
           <DataTemplate>
-            <Border BorderThickness="0 1 0 0" BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
+            <Border BorderThickness="0 1 0 0"
+                    BorderBrush="{ThemeResource AppBarBorderThemeBrush}" />
           </DataTemplate>
         </local:MenuItemTemplateSelector.MenuSeparator>
         <local:MenuItemTemplateSelector.MenuItem>
@@ -57,17 +60,20 @@
         </local:MenuItemTemplateSelector.MenuItem>
       </local:MenuItemTemplateSelector>
 
-
       <Thickness x:Key="NavigationViewHeaderMargin">0</Thickness>
       <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
-
 
       <local:MenuItemDateTemplateSelector x:Key="MenuItemDateTemplateSelector">
         <local:MenuItemDateTemplateSelector.Item>
           <DataTemplate x:DataType="viewModel:MenuItemViewModel">
-            <muxc:NavigationViewItem Content="{x:Bind Title}" AccessKey="{x:Bind AccessKey}" DataContext="{x:Bind}" Tag="{x:Bind}" Tapped="NavigationViewItem_Tapped">
+            <muxc:NavigationViewItem Content="{x:Bind Title}"
+                                     AccessKey="{x:Bind AccessKey}"
+                                     DataContext="{x:Bind}"
+                                     Tag="{x:Bind}"
+                                     Tapped="NavigationViewItem_Tapped">
               <muxc:NavigationViewItem.KeyboardAccelerators>
-                <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}" Modifiers="Control" />
+                <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
+                                     Modifiers="Control" />
               </muxc:NavigationViewItem.KeyboardAccelerators>
             </muxc:NavigationViewItem>
           </DataTemplate>
@@ -76,12 +82,20 @@
           <DataTemplate x:DataType="viewModel:MenuSubItemViewModel">
             <muxc:NavigationViewItem Content="{x:Bind Title}"
                                      MenuItemsSource="{x:Bind Items}"
-                                     AccessKey="{x:Bind AccessKey}" DataContext="{x:Bind}" Tag="{x:Bind}" Tapped="NavigationViewItem_Tapped"
-                                     >
+                                     AccessKey="{x:Bind AccessKey}"
+                                     DataContext="{x:Bind}"
+                                     Tag="{x:Bind}"
+                                     Tapped="NavigationViewItem_Tapped">
             </muxc:NavigationViewItem>
           </DataTemplate>
         </local:MenuItemDateTemplateSelector.SubItem>
       </local:MenuItemDateTemplateSelector>
+
+      <Flyout x:Name="PurchaseThanksMassageFlyout">
+        <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_PurchasedThanksMessage}"
+                   TextWrapping="Wrap"
+                   MaxWidth="320" />
+      </Flyout>
 
     </ResourceDictionary>
   </UserControl.Resources>
@@ -221,16 +235,63 @@
 
     </uwpControls:DockPanel>
 
-    <ContentControl x:Name="TitlebarContent"
-                    HorizontalContentAlignment="Stretch"
-                    Margin="56 0 184 0"
-                    VerticalAlignment="Top"
-                    Height="32"
-                    VerticalContentAlignment="Stretch">
-      <UIElement.RenderTransform>
-        <TranslateTransform />
-      </UIElement.RenderTransform>
-    </ContentControl>
+    <uwpControls:DockPanel>
+
+      <Button Margin="16 0 184 0"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              uwpControls:DockPanel.Dock="Right"
+              Height="32"
+              x:Name="PurchaseConfirmButton">
+        <UIElement.RenderTransform>
+          <TranslateTransform />
+        </UIElement.RenderTransform>
+        <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   TextWrapping="Wrap"
+                   MaxLines="2"
+                   MaxWidth="200"                   
+                   TextLineBounds="Tight"
+                   />
+
+        <Button.Flyout>
+          <Flyout x:Name="PurchaseConfirmFlyout"
+                  Opening="PurchaseConfirmFlyout_Opening">
+            <StackPanel Spacing="16">
+              <TextBlock x:Name="PurchaseConfirmFlyout_DescTextBlock"
+                         Text=""
+                         MinWidth="180"
+                         MaxWidth="240" TextWrapping="Wrap"
+                         MinHeight="60"
+                         Margin="0 16 0 0"/>
+
+              <Button Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseUI}"
+                      Command="{x:Bind PurchaseAddonCommand}" 
+                      HorizontalAlignment="Stretch"
+                      Style="{StaticResource AccentButtonStyle}"
+                      />
+
+              <HyperlinkButton Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseHistory}"
+                               NavigateUri="https://account.microsoft.com/billing/orders"
+                               HorizontalAlignment="Stretch"/>
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      <ContentControl x:Name="TitlebarContent"
+                      HorizontalContentAlignment="Stretch"
+                      Margin="56 0 0 0"
+                      VerticalAlignment="Top"
+                      Height="32"
+                      VerticalContentAlignment="Stretch"
+                      >
+        <UIElement.RenderTransform>
+          <TranslateTransform />
+        </UIElement.RenderTransform>
+      </ContentControl>
+    </uwpControls:DockPanel>
+
+    
 
     <Grid x:Name="BusyWall" IsHitTestVisible="False" Opacity="0" Visibility="Collapsed">
       <Grid.Background>
@@ -435,6 +496,10 @@
                                Storyboard.TargetName="TitlebarContent"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
+                               To="-1"
+                               Storyboard.TargetName="PurchaseConfirmButton"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
                                To="32"
                                Storyboard.TargetName="MyNavigtionView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
@@ -454,6 +519,10 @@
               <DoubleAnimation Duration="0:0:0.175"
                                To="-32"
                                Storyboard.TargetName="TitlebarContent"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="-32"
+                               Storyboard.TargetName="PurchaseConfirmButton"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
                                To="-1"
@@ -476,6 +545,8 @@
             <Setter Target="TitlebarArea.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="-1" />
             <Setter Target="TitlebarContent.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="-1" />
+            <Setter Target="PurchaseConfirmButton.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="-1" />
             <Setter Target="MyNavigtionView.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
