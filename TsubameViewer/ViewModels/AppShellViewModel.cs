@@ -303,6 +303,10 @@ public sealed class AppShellViewModel
             {
                 await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
             }
+            else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
+            {
+                await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+            }
         }
 
         using (await _suggestUpdateLock.LockAsync(default))

@@ -20,13 +20,14 @@ public sealed class FolderItemTemplateSelector : DataTemplateSelector
     public Windows.UI.Xaml.DataTemplate? Albam { get; set; }
     public Windows.UI.Xaml.DataTemplate? AlbamImage { get; set; }
     public Windows.UI.Xaml.DataTemplate? EBook { get; set; }
+    public Windows.UI.Xaml.DataTemplate? Movie { get; set; }
 
     protected override Windows.UI.Xaml.DataTemplate? SelectTemplateCore(object item)
     {
         return SelectTemplateCore(item, null!);
     }
     protected override Windows.UI.Xaml.DataTemplate? SelectTemplateCore(object item, DependencyObject container)
-    {
+    {        
         if (item is LazyFolderOrArchiveFileViewModel)
         {
             return LazyFolderOrArchiveFile;
@@ -44,6 +45,7 @@ public sealed class FolderItemTemplateSelector : DataTemplateSelector
                 StorageItemTypes.EBook => EBook,
                 StorageItemTypes.AddFolder => AddNewFolder,
                 StorageItemTypes.AddAlbam => AddNewFolder,
+                StorageItemTypes.Movie => Movie,
                 _ => throw new NotSupportedException()
             };
         }

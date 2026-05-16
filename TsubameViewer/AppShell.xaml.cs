@@ -1272,6 +1272,10 @@ public sealed partial class AppShell : UserControl
                     {
                         await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                     }
+                    else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(fileItem.FileType))
+                    {
+                        await _messenger.NavigateAsync(nameof(Views.MovieViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                    }
                 }
             }
         }

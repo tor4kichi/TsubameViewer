@@ -282,6 +282,9 @@
       <DependentUpon>AppShell.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\KeyIndexMappedAdvancedCollectionView.cs" />
+    <Compile Include="Views\MovieViewerPage.xaml.cs">
+      <DependentUpon>MovieViewerPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
@@ -516,6 +519,10 @@
     <Page Include="AppShell.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\MovieViewerPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SearchResultPage.xaml">
       <Generator>MSBuild:Compile</Generator>
