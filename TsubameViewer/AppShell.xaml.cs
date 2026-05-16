@@ -533,7 +533,6 @@ public sealed partial class AppShell : UserControl
                     rememberBackStack = false;
                 }
 
-
                 if (e.NavigationMode is not Windows.UI.Xaml.Navigation.NavigationMode.New)
                 {
                     rememberBackStack = false;
@@ -568,10 +567,10 @@ public sealed partial class AppShell : UserControl
             {
                 if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
                     && frame.BackStack.Count >= 3
-                    && e.SourcePageType == typeof(FolderListupPage)
-                    && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                    && (e.SourcePageType == typeof(FolderListupPage) || e.SourcePageType == typeof(ImageListupPage))
+                    && frame.BackStack.TakeLast(3).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
                     && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.GeneralPathKey, out string currentNavigationPathParameter)
-                    && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                    && BackParametersStack.TakeLast(3).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                     )
                 {
                     foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
