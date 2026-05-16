@@ -117,9 +117,8 @@ SelectSourceFolder = Ajouter un dossier dans TsubameViewer
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = Revenir au dossier d'origine
-ChangeViewToFolderListupPage = Passer à l'affichage par dossiers
-ChangeViewToImageListupPage = Passer à l'affichage par liste d'images
+ChangeViewToFolderListupPage = Affichage des dossiers
+ChangeViewToImageListupPage = Affichage des images
 
 
 

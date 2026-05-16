@@ -24,7 +24,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             _messenger = messenger;
             _messageDialogService = messageDialogService;
         }
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -36,7 +36,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
                 ;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {

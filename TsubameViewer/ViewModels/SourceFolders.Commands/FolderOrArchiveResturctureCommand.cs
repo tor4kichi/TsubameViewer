@@ -17,13 +17,13 @@ internal class FolderOrArchiveResturctureCommand : CommandBase
     {
         _messeger = messeger;
     }
-    protected override bool CanExecute(object parameter)
+    public override bool CanExecute(object parameter)
     {
         return parameter is IStorageItemViewModel itemVM 
             && itemVM.Type is Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive;
     }
 
-    protected override void Execute(object parameter)
+    public override void Execute(object parameter)
     {
         if (parameter is IStorageItemViewModel itemVM)
         {

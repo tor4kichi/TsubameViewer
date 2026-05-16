@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
@@ -36,11 +38,31 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         this.InitializeComponent();
 
         DataContext = _vm = Ioc.Default.GetRequiredService<FolderListupPageViewModel>();
+        _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
         this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
+
+        Loaded += FolderListupPage_Loaded;
     }
 
+    private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        
+    }
+
+    private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selector = (Selector)sender;
+        if (selector.IsLoaded && selector.SelectedIndex == 1 && _vm?.CurrentFolderItem != null)
+        {
+            _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item), isForgetNavigation: true);
+        }
+    }
+
+
+
     private readonly FolderListupPageViewModel _vm;
+    private readonly IMessenger _messenger;
     private readonly FocusHelper _focusHelper;
 
     private async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)

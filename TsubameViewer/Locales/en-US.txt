@@ -117,9 +117,8 @@ SelectSourceFolder = Add folder to TsubameViewer
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = Return to original folder
-ChangeViewToFolderListupPage = Switch to folder view
-ChangeViewToImageListupPage = Switch to image list view
+ChangeViewToFolderListupPage = Folder View
+ChangeViewToImageListupPage = Image View
 
 
 

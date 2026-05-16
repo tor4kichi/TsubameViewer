@@ -22,7 +22,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             _albamDialogService = albamDialogService;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -32,7 +32,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             return parameter is AlbamImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {

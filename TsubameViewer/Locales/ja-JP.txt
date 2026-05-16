@@ -117,9 +117,8 @@ SelectSourceFolder = ツバメビューアにフォルダを追加
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = 元のフォルダへ戻る
-ChangeViewToFolderListupPage = フォルダビューに切替
-ChangeViewToImageListupPage = 画像一覧ビューに切替
+ChangeViewToFolderListupPage = フォルダビュー
+ChangeViewToImageListupPage = 画像ビュー
 
 
 

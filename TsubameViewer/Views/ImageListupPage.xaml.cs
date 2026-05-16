@@ -36,6 +36,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
@@ -101,12 +102,23 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
+        
     }
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         StopLoadingTaskMonitor();
     }
+
+    private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selector = (Selector)sender;
+        if (selector.IsLoaded && selector.SelectedIndex == 0 && _vm?.CurrentFolderItem != null)
+        {
+            _messenger.NavigateAsync(nameof(FolderListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item), isForgetNavigation: true);
+        }
+    }
+
 
     #region Image Loading
 
@@ -763,7 +775,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }                
         }
     }
-
 }
 
 

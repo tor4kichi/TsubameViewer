@@ -13,12 +13,12 @@ namespace TsubameViewer.ViewModels.ViewManagement.Commands
         {
             _currentView = ApplicationView.GetForCurrentView();
         }
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             return true;
         }
 
-        protected override void Execute(object parameter)
+        public override void Execute(object parameter)
         {
             System.Diagnostics.Debug.WriteLine("ToggleFullScreenCommand");
             if (_currentView.IsFullScreenMode)

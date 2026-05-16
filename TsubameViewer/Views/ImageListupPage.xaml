@@ -9,6 +9,7 @@
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
       xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:i="using:Microsoft.Xaml.Interactivity"
       xmlns:core="using:Microsoft.Xaml.Interactions.Core"
       xmlns:myBehaior="using:TsubameViewer.Views.Behaviors"
@@ -51,6 +52,17 @@
 
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1">
+          <Border uwpControls:DockPanel.Dock="Right"
+                  Visibility="{x:Bind HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+            <winUIControls:Segmented SelectionMode="Single"
+                                     SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                     x:Name="ContentViewTypeSelector"
+                                     AccessKey="L">
+              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}" />
+              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"                                           
+                                           IsSelected="True" />
+            </winUIControls:Segmented>
+          </Border>
 
         </StackPanel>
         <StackPanel Orientation="Horizontal">
@@ -683,17 +695,6 @@
                   Padding="48 8 48 0"
                   Background="{ThemeResource ApplicationContentBackgroundBrush}"
                   Spacing="8">
-        <uwpControls:DockPanel>
-          <Border uwpControls:DockPanel.Dock="Right"
-                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-            <Button x:Name="ChangeViewtoFolderListupPageButton"
-                    Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                    Command="{x:Bind _vm.OpenFolderListupCommand}"
-                    CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
-                    AccessKey="L" />
-          </Border>
-          <Border />
-        </uwpControls:DockPanel>
         <uwpControls:DockPanel x:Name="FilesActionLayout"
                                Margin="0 0 0 0">
           <StackPanel uwpControls:DockPanel.Dock="Bottom"
@@ -989,7 +990,7 @@
             <Setter Target="FileDisplayModeItemsListView.IsEnabled"
                     Value="True" />
 
-            <Setter Target="ChangeViewtoFolderListupPageButton.IsEnabled"
+            <Setter Target="ContentViewTypeSelector.IsEnabled"
                     Value="False" />
             <Setter Target="OptionalActionsButton.IsEnabled"
                     Value="False" />

@@ -10,7 +10,7 @@ namespace TsubameViewer.ViewModels;
 
 public abstract class ImageSourceCommandBase : CommandBase
 {
-    protected override bool CanExecute(object parameter)
+    public override bool CanExecute(object parameter)
     {
         if (parameter is IImageSource imageSource)
         {
@@ -42,7 +42,7 @@ public abstract class ImageSourceCommandBase : CommandBase
 
     protected virtual bool CanExecute(IEnumerable<IImageSource> imageSources) => imageSources.All(CanExecute);
 
-    protected override void Execute(object parameter)
+    public override void Execute(object parameter)
     {
         if (parameter is IImageSource imageSource)
         {

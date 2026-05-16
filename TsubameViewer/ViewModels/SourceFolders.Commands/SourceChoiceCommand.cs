@@ -27,12 +27,12 @@ public sealed class SourceChoiceCommand : CommandBase
 
     public bool OpenAfterChoice { get; set; } = false;
 
-    protected override bool CanExecute(object parameter)
+    public override bool CanExecute(object parameter)
     {
         return true;
     }
 
-    protected override async void Execute(object parameter)
+    public override async void Execute(object parameter)
     {
         var picker = new Windows.Storage.Pickers.FolderPicker();
         picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;

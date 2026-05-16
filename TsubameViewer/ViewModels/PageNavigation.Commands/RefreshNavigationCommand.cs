@@ -14,12 +14,12 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _messenger = messenger;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             return true;
         }
 
-        protected override void Execute(object parameter)
+        public override void Execute(object parameter)
         {
             _messenger.Send<RefreshNavigationRequestMessage>();
         }

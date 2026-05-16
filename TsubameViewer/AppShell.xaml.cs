@@ -595,7 +595,11 @@ public sealed partial class AppShell : UserControl
         SetCurrentNavigationParameters(parameters);
 
         var prevPage = ContentFrame.Content as Page;
-        var options = new FrameNavigationOptions() { IsNavigationStackEnabled = isNavigationStackEnabled, TransitionInfoOverride = PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) };
+        var options = new FrameNavigationOptions() 
+        {
+            IsNavigationStackEnabled = isNavigationStackEnabled, 
+            TransitionInfoOverride = isNavigationStackEnabled ? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) : new SuppressNavigationTransitionInfo() 
+        };
         var result = ContentFrame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 
         if (result is false)
