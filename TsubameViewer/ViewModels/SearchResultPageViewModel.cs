@@ -109,21 +109,19 @@ public sealed partial class SearchResultPageViewModel
         SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
     }
 
-    CancellationTokenSource _navigationCts;
 
+    CancellationToken _navigationCt;
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
         if (mode == NavigationMode.Refresh)
         {
             return;
         }
 
-        SearchResultItems.Clear();
-        _navigationCts = new CancellationTokenSource();
-        var ct = _navigationCts.Token;
-        
+        SearchResultItems.Clear();        
         if (parameters.TryGetValue("q", out string q))
         {
             FilterText = q;
@@ -143,7 +141,7 @@ public sealed partial class SearchResultPageViewModel
 
         _messenger.Register<SearchQuerySubmitedRequestMessage>(this);
 
-        await base.OnNavigatedToAsync(parameters);
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
 
@@ -186,10 +184,6 @@ public sealed partial class SearchResultPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
         _messenger.Unregister<SearchQuerySubmitedRequestMessage>(this);
 
         base.OnNavigatedFrom(parameters);

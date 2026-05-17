@@ -357,14 +357,11 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    CancellationToken _navigationCt;
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
-
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
-        var cts  = new CancellationTokenSource();        
-        var ct = cts.Token;
         NowProcessing = true;
         try
         {
@@ -411,47 +408,44 @@ public sealed partial class ImageListupPageViewModel
 
             ApplicationView.GetForCurrentView().Title = _imageCollectionContext?.Name ?? CurrentFolderItem?.Name ?? nameof(TsubameViewer);
         }
-        catch
-        {
-            cts.Dispose();
-            throw;
-        }
         finally
         {
             NowProcessing = false;
         }
 
-        _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
-        {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = true;
-            }
-        });
-
-        _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-        {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = false;
-            }
-        });
-
-        _messenger.Register<InPageSearchRequestMessage>(this);
-
+       
         var db = new DisposableBuilder();
         try
         {
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = true;
+                }
+            });
+
+            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = false;
+                }
+            });
+
+            _messenger.Register<InPageSearchRequestMessage>(this);
+
+
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
                 {
                     await SetSort(sort, ct);
                 })
-                .AddTo(ref db);            
+                .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
                 .Debounce(TimeSpan.FromSeconds(1))
@@ -463,10 +457,14 @@ public sealed partial class ImageListupPageViewModel
         catch
         {
             db.Dispose();
+            _messenger.Unregister<AlbamItemAddedMessage>(this); 
+            _messenger.Unregister<AlbamItemRemovedMessage>(this);
+            _messenger.Unregister<InPageSearchRequestMessage>(this);
             throw;
         }
 
-        await base.OnNavigatedToAsync(parameters);
+
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
     #region Refresh Item

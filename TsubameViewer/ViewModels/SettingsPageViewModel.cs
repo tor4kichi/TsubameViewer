@@ -33,7 +33,7 @@ using Windows.UI.ViewManagement;
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
-public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDisposable
+public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
 {
     private readonly IMessenger _messenger;
     private readonly ApplicationSettings _applicationSettings;
@@ -49,8 +49,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
     public RelayCommand AppInfoCopyToClipboard { get; }
 
     private readonly ButtonSettingItemViewModel _cacheSizeButton;
-    CancellationTokenSource _navigationCts;
-
+    
     public bool IsForceXboxAppearanceModeEnabled
     {
         get => _applicationSettings.ForceXboxAppearanceModeEnabled;
@@ -176,17 +175,6 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        Dispose();
-
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
-        base.OnNavigatedFrom(parameters);
-    }
-
-    public void Dispose()
-    {
         foreach (var group in SettingGroups)
         {
             (group as IDisposable)?.Dispose();
@@ -196,6 +184,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         {
             (group as IDisposable)?.Dispose();
         }
+
+        base.OnNavigatedFrom(parameters);
     }
 
     private async Task DeleteAllThumbnailsAsync()
@@ -205,30 +195,27 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase, IDispo
         _IsThumbnailDeleteButtonActive.Value = false;
         await _thumbnailImageMaintenanceService.DeleteAllThumbnailsAsync();
 
-        _ = RefreshThumbnailFilesSizeAsync(_navigationCts?.Token ?? CancellationToken.None);
+        _ = RefreshThumbnailFilesSizeAsync(_navigationCt);
     }
 
     ReactiveProperty<bool> _IsThumbnailDeleteButtonActive;
     ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
-    
 
-    public override Task OnNavigatedToAsync(INavigationParameters parameters)
+
+    CancellationToken _navigationCt;
+    public override Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
         if (mode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh)
         {
             return Task.CompletedTask;
         }
 
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();            
-        _navigationCts = new CancellationTokenSource();
-        var ct = _navigationCts.Token;
-
         _IsThumbnailDeleteButtonActive.Value = true;
         ApplicationView.GetForCurrentView().Title = "Settings".Translate();
         _ = RefreshThumbnailFilesSizeAsync(ct);
-        // base.OnNavigatedToAsync(parameters);
+        // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;
     }

@@ -78,9 +78,9 @@ namespace TsubameViewer.ViewModels
             base.OnNavigatedFrom(parameters);
         }
 
-        public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+        public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
         {
-            await base.OnNavigatedToAsync(parameters);
+            await base.OnNavigatedToAsync(parameters, ct);
             
             if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string path))
             {

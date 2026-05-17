@@ -612,8 +612,13 @@ public sealed partial class AppShell : UserControl
         return handleResult;
     }
 
+    CancellationTokenSource? _navigateCts;
     private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
     {
+        _navigateCts?.Cancel();
+        _navigateCts?.Dispose();
+        _navigateCts = new CancellationTokenSource();
+        var ct = _navigateCts.Token;
         if (fromPageVM != null)
         {
             fromPageVM.OnNavigatedFrom(parameters);
@@ -622,7 +627,7 @@ public sealed partial class AppShell : UserControl
         if (toPageVM != null)
         {
             toPageVM.OnNavigatedTo(parameters);
-            await toPageVM.OnNavigatedToAsync(parameters);
+            await toPageVM.OnNavigatedToAsync(parameters, ct);
         }
 
         return new NavigationResult() { IsSuccess = true };

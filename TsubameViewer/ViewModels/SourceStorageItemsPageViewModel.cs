@@ -66,10 +66,6 @@ public sealed class SourceStorageItemsPageViewModel
     public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
     public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
 
-    CompositeDisposable _disposables = new CompositeDisposable();
-    CompositeDisposable _navigationDisposables;
-
-    CancellationTokenSource _navigationCts;
     public SourceItemsGroup[] Groups { get; }
 
     bool _foldersInitialized = false;
@@ -133,9 +129,9 @@ public sealed class SourceStorageItemsPageViewModel
         RegisterSourceStorageItemChange();
     }
 
-    
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    CancellationToken _navigationCt;
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         var mode = parameters.GetNavigationMode();
         if (mode == NavigationMode.Refresh)
@@ -143,118 +139,107 @@ public sealed class SourceStorageItemsPageViewModel
             return;
         }
 
-        _navigationDisposables = new CompositeDisposable();
-        _navigationCts = new CancellationTokenSource();
-
-        var ct = _navigationCts.Token;
-
         ApplicationView.GetForCurrentView().Title = nameof(TsubameViewer);
 
-        try
+        if (!_foldersInitialized)
         {
-            if (!_foldersInitialized)
+            _foldersInitialized = true;
+
+            Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
+            try
             {
-                _foldersInitialized = true;
-
-                Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
-                try
+                await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems().WithCancellation(ct))
                 {
-                    await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems().WithCancellation(ct))
+                    if (item.item == null)
                     {
-                        if (item.item == null)
-                        {
-                            continue;
-                        }
-
-                        var storageItemImageSource = new StorageItemImageSource(item.item);
-                        if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
-                        {
-                            Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
-                        }
-                        else
-                        {
-                            //throw new NotSupportedException();
-                        }
+                        continue;
                     }
-                }
-                catch (AggregateException ex)
-                {
-                    Debug.WriteLine(ex.ToString());
+
+                    var storageItemImageSource = new StorageItemImageSource(item.item);
+                    if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
+                    {
+                        Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
+                    }
+                    else
+                    {
+                        //throw new NotSupportedException();
+                    }
                 }
             }
-            else
+            catch (AggregateException ex)
             {
-                var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
-                foreach (var folderItem in Folders)
-                {
-                    if (folderItem.Path == null) { continue; }
+                Debug.WriteLine(ex.ToString());
+            }
+        }
+        else
+        {
+            var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
+            foreach (var folderItem in Folders)
+            {
+                if (folderItem.Path == null) { continue; }
 
-                    folderItem.UpdateLastReadPosition();
-                    if (folderItem.Name == lastIntaractItemPath)
-                    {
-                        folderItem.ThumbnailChanged();
-                        folderItem.InitializeAsync(ct);
-                    }
+                folderItem.UpdateLastReadPosition();
+                if (folderItem.Name == lastIntaractItemPath)
+                {
+                    folderItem.ThumbnailChanged();
+                    folderItem.InitializeAsync(ct);
+                }
+            }
+
+            ct.ThrowIfCancellationRequested();
+        }
+
+        async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
+        {
+            var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
+            if (storageItem == null) { throw new FileNotFoundException(entry.Path); }
+
+            var storageItemImageSource = new StorageItemImageSource(storageItem);
+            return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
+        }
+
+        var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(15);
+        if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
+        {
+            foreach (var itemVM in RecentlyItems)
+            {
+                itemVM.Dispose();
+            }
+
+            RecentlyItems.Clear();
+            foreach (var item in recentlyAccessItems)
+            {
+                try
+                {
+                    var itemVM = await ToStorageItemViewModel(item);
+                    RecentlyItems.Add(itemVM);
+                }
+                catch
+                {
+                    _recentlyAccessRepository.Delete(item.Path);
                 }
 
                 ct.ThrowIfCancellationRequested();
             }
 
-            async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
-            {
-                var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
-                if (storageItem == null) { throw new FileNotFoundException(entry.Path); }
-
-                var storageItemImageSource = new StorageItemImageSource(storageItem);
-                return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-            }
-
-            var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(15);
-            if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
-            {
-                foreach (var itemVM in RecentlyItems)
-                {
-                    itemVM.Dispose();
-                }
-
-                RecentlyItems.Clear();
-                foreach (var item in recentlyAccessItems)
-                {
-                    try
-                    {
-                        var itemVM = await ToStorageItemViewModel(item);
-                        RecentlyItems.Add(itemVM);
-                    }
-                    catch
-                    {
-                        _recentlyAccessRepository.Delete(item.Path);
-                    }
-
-                    ct.ThrowIfCancellationRequested();
-                }
-
-                _LastUpdatedRecentlyAccessEnties = recentlyAccessItems;
-            }
-            else
-            {
-                var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
-                foreach (var item in RecentlyItems)
-                {
-                    if (item.Name == lastIntaractItemPath)
-                    {
-                        item.ThumbnailChanged();
-                        item.InitializeAsync(ct);
-                    }
-                }
-            }
+            _LastUpdatedRecentlyAccessEnties = recentlyAccessItems;
         }
-        catch (OperationCanceledException)
+        else
         {
+            var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
+            foreach (var item in RecentlyItems)
+            {
+                if (item.Name == lastIntaractItemPath)
+                {
+                    item.ThumbnailChanged();
+                    _ = item.InitializeAsync(ct);
+                }
+            }
         }
 
         _messenger.Register<RemoveSourceStorageItemFromAppMessage>(this);
 
-        await base.OnNavigatedToAsync(parameters);
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
 
@@ -264,18 +249,12 @@ public sealed class SourceStorageItemsPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
-        _navigationCts = null;
-
         _messenger.Unregister<RemoveSourceStorageItemFromAppMessage>(this);
 
         foreach (var itemVM in Enumerable.Concat(Folders, RecentlyItems))
         {
             itemVM.StopImageLoading();
         }
-
-        _navigationDisposables?.Dispose();
 
         if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
         {
@@ -288,7 +267,6 @@ public sealed class SourceStorageItemsPageViewModel
 
     public void Dispose()
     {
-        ((IDisposable)_disposables).Dispose();
         UnregisterSourceStorageItemChange();
     }
 

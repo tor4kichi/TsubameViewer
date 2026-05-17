@@ -285,6 +285,7 @@
     <Compile Include="Views\MovieViewerPage.xaml.cs">
       <DependentUpon>MovieViewerPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\MovieViewerPageViewModel.cs" />
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
