@@ -1,4 +1,6 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,19 +8,169 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.PageNavigation;
+using Windows.Media.Core;
+using Windows.Storage;
+using Windows.UI.ViewManagement;
 #nullable enable
 namespace TsubameViewer.Views;
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
 {
+    public MovieViewerPageViewModel(
+        IMessenger messenger,
+        SourceStorageItemsRepository sourceStorageItemsRepository,
+        AlbamRepository albamRepository,
+        ImageCollectionManager imageCollectionManager,
+        ImageViewerSettings imageCollectionSettings,
+        LocalBookmarkRepository bookmarkManager,
+        RecentlyAccessRepository recentlyAccessRepository,
+        ThumbnailImageManager thumbnailManager,
+        LastIntractItemRepository folderLastIntractItemManager,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        RecyclableMemoryStreamManager recyclableMemoryStreamManager)
+    {
+        _messenger = messenger;
+        _sourceStorageItemsRepository = sourceStorageItemsRepository;
+        _albamRepository = albamRepository;
+        _imageCollectionManager = imageCollectionManager;
+        _imageCollectionSettings = imageCollectionSettings;
+        _bookmarkManager = bookmarkManager;
+        _recentlyAccessRepository = recentlyAccessRepository;
+        _thumbnailManager = thumbnailManager;
+        _folderLastIntractItemManager = folderLastIntractItemManager;
+        _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+    }
+
+    CancellationToken _navigationCt;
+    private readonly IMessenger _messenger;
+    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    private readonly AlbamRepository _albamRepository;
+    private readonly ImageCollectionManager _imageCollectionManager;
+    private readonly ImageViewerSettings _imageCollectionSettings;
+    private readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    private readonly ThumbnailImageManager _thumbnailManager;
+    private readonly LastIntractItemRepository _folderLastIntractItemManager;
+    private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+    
+    [ObservableProperty]
+    MediaSource? _movieSource;
+
+    partial void OnMovieSourceChanging(MediaSource? value)
+    {
+        if (MovieSource != null && MovieSource != value)
+        {
+            MovieSource.Dispose();
+        }
+    }
+
+    private string? _pathForSettings = null;
+
+    [ObservableProperty]
+    private string _parentFolderOrArchiveName;
+
+    [ObservableProperty]
+    string _title;
+
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
+#if DEBUG
+        long time = TimeProvider.System.GetTimestamp();
+#endif
+        var mode = parameters.GetNavigationMode();
+        string firstDisplayPageName = null;
+        if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
+        {
+            MovieSource = null;
 
+            (string newPath, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedPath));
+
+            _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
+
+            await _messenger.WorkWithBusyWallAsync(async (ct) =>
+            {
+                var (imageSource, imageCollectionContext) = await _imageCollectionManager.GetImageSourceAndContextAsync(newPath, string.Empty, ct);
+
+                _pathForSettings = imageCollectionContext switch
+                {
+                    FolderImageCollectionContext folderICC when folderICC.Folder is not null => folderICC.Folder.Path,
+                    ArchiveImageCollectionContext ArchiveICC => ArchiveICC.File.Path,
+                    _ => imageSource.Path,
+                };
+
+                _recentlyAccessRepository.AddWatched(_pathForSettings);
+
+                if (imageSource.StorageItem is StorageFile file)
+                {
+                    MovieSource = MediaSource.CreateFromStorageFile(file);                    
+                    ApplicationView.GetForCurrentView().Title = Title = file.Name;
+                }
+                else
+                {
+                    
+                }
+
+                //_currentImageSource = imageSource;
+                //_imageCollectionContext = imageCollectionContext;
+
+                //DisplaySortTypeInheritancePath = null;
+
+                //var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
+                //if (settings != null)
+                //{
+                //    SelectedFileSortType = settings.Sort;
+                //}
+                //else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
+                //{
+                //    DisplaySortTypeInheritancePath = parentSort.Path;
+                //    SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
+                //}
+                //else
+                //{
+                //    SelectedFileSortType = DefaultFileSortType;
+                //}
+
+                //_CurrentImageIndex = 0;
+
+                //if (string.IsNullOrEmpty(firstDisplayPageName)
+                //    && SupportedFileTypesHelper.IsSupportedImageFileExtension(newPath)
+                //    )
+                //{
+                //    firstDisplayPageName = Path.GetFileName(newPath);
+                //}
+
+                //if (imageCollectionContext is OnlyOneFileImageCollectionContext)
+                //{
+                //    IfAllFilesWannaWatchThenRegistrationFolderAtApp = true;
+                //}
+                //else
+                //{
+                //    IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
+                //}
+
+                //await RefreshItems(imageSource, imageCollectionContext, ct);
+
+            }, ct);
+        }
+        else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
+        {
+            (string albamIdString, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedAlbamPath));
+        }
     }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
-    {
+    {        
+        MovieSource = null;
+
         base.OnNavigatedFrom(parameters);
     }
 }

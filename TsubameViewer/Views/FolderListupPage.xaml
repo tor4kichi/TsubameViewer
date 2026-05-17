@@ -34,7 +34,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1">
-          <Border Visibility="{x:Bind HasFileItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+          <Border Visibility="{x:Bind HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                   uwpControls:DockPanel.Dock="Right">
             <winUIControls:Segmented uwpControls:DockPanel.Dock="Right"
                                      SelectionMode="Single"

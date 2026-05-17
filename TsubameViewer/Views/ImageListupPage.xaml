@@ -53,7 +53,7 @@
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1">
           <Border uwpControls:DockPanel.Dock="Right"
-                  Visibility="{x:Bind HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                  Visibility="{x:Bind HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <winUIControls:Segmented SelectionMode="Single"
                                      SelectionChanged="ContentViewTypeSelector_SelectionChanged"
                                      x:Name="ContentViewTypeSelector"

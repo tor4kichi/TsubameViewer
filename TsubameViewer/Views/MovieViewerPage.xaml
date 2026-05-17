@@ -5,10 +5,64 @@
     xmlns:local="using:TsubameViewer.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+      xmlns:i="using:Microsoft.Xaml.Interactivity"
+      xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+      xmlns:myConv="using:TsubameViewer.Views.Converters"
+      xmlns:wst="using:WindowsStateTriggers"
+      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
+      xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+      xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
+      xmlns:domainModels="using:TsubameViewer.Core.Models"
+      xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
+      xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+      xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+      xmlns:models="using:TsubameViewer.Core.Models.FolderItemListing"
+      xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+      mc:Ignorable="d"
+    >
 
-    <Grid>
+  <Page.Resources>
+    <DataTemplate x:Name="TitlebarContent">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="1*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal"
+                    Grid.Column="1"
+                    Spacing="8">
+          <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
+                     Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Opacity="0"
+                     Style="{StaticResource TitlebarTextBlock}" />
+          <Button Command="{Binding ToggleFullScreenCommand}"
+                  Style="{StaticResource TitlebarButton}">
+            <SymbolIcon Symbol="FullScreen"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </Button>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{Binding Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+  </Page.Resources>
+  <Grid>
+    <MediaPlayerElement AutoPlay="True"
+                        Stretch="Uniform"
+                        x:Name="MyMediaPlayerElement"
+                        AreTransportControlsEnabled="True">
 
-    </Grid>
+    </MediaPlayerElement>
+
+    <ProgressRing IsActive="{x:Bind _vm.MovieSource, Mode=OneWay, Converter={StaticResource NullToTrueConverter}}"
+                  Visibility="{x:Bind _vm.MovieSource, Mode=OneWay, Converter={StaticResource NullToVisibleConverter}}"
+                  />
+  </Grid>
 </Page>

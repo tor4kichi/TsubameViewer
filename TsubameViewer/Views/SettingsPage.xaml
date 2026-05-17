@@ -36,7 +36,7 @@
       <tt:SettingsItemTemplateSelector.ToggleSwitchSettingItem>
         <DataTemplate x:DataType="vm:IToggleSwitchSettingItemViewModel">
           <winUIControls:SettingsCard Header="{x:Bind Label}"
-                                      Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisibilityConverter}}">
+                                      Visibility="{Binding IsVisible, Converter={StaticResource TrueToVisibleConverter}}">
             <ToggleSwitch IsOn="{x:Bind ValueContainer.Value, Mode=TwoWay}"
                           uwpControls:DockPanel.Dock="Right"
                           Margin="0"
@@ -80,7 +80,7 @@
 
       <tt:SettingsItemTemplateSelector.UpdatableTextSettingItem>
         <DataTemplate x:DataType="vm:UpdatableTextSettingItemViewModel">
-          <winUIControls:SettingsCard Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+          <winUIControls:SettingsCard Visibility="{x:Bind IsVisible, Converter={StaticResource TrueToVisibleConverter}}"
                                       Header="{x:Bind Label}"
                                       Description="{x:Bind Text.Value, Mode=OneWay}" />
         </DataTemplate>
@@ -93,7 +93,7 @@
                     Command="{x:Bind ActionCommand}"
                     MaxWidth="{StaticResource SettingItemWidth}"
                     HorizontalAlignment="Right"
-                    Visibility="{x:Bind IsVisible, Converter={StaticResource BoolToVisibilityConverter}}"
+                    Visibility="{x:Bind IsVisible, Converter={StaticResource TrueToVisibleConverter}}"
                     Margin="0 16" />
           </winUIControls:SettingsCard>
         </DataTemplate>
@@ -132,7 +132,7 @@
               </ComboBox>
               <Button Content="{x:Bind RestartTextTranslated}"
                       Command="{x:Bind RestartApplicationCommand}"
-                      Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                      Visibility="{x:Bind IsRequireRestart, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
                       Margin="0 16 0 0"/>
             </StackPanel>
           </winUIControls:SettingsCard>

@@ -264,6 +264,7 @@ public sealed partial class AppShell : UserControl
     {
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
@@ -274,6 +275,7 @@ public sealed partial class AppShell : UserControl
         typeof(ImageListupPage),
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
@@ -283,6 +285,7 @@ public sealed partial class AppShell : UserControl
     {
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
