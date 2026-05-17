@@ -270,6 +270,7 @@
       <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Helpers\CodeBehindExtensions.cs" />
+    <Compile Include="Views\Helpers\ObserveDependencyPropertyExtensions.cs" />
     <Compile Include="Views\Helpers\SystemThemeHelper.cs" />
     <Compile Include="Views\Helpers\VisualTreeExtensions.cs" />
     <Compile Include="Views\ImageListupPage.xaml.cs">

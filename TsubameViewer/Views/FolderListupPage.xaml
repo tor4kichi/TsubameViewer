@@ -325,7 +325,6 @@
             <StateTrigger IsActive="{Binding NowProcessing}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ContentRootStackPanel.Opacity" Value="0.5" />
             <Setter Target="FileSortButton.IsEnabled" Value="False" />
           </VisualState.Setters>
         </VisualState>

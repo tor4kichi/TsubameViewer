@@ -1,21 +1,32 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Toolkit.Uwp.UI.Animations;
 using R3;
+using R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
+using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Playback;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 
 #nullable enable
@@ -30,39 +41,58 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     private readonly MovieViewerPageViewModel _vm;
+    private readonly IMessenger _messenger;
+
+    [ObservableProperty]
+    MediaPlayer? _mediaPlayer;
+
+    [ObservableProperty]
+    bool _isDisplayControlUI;
+
+    private void ControlUIInteractionWall_Click(object sender, RoutedEventArgs e)
+    {
+        IsDisplayControlUI = !IsDisplayControlUI;
+    }
 
     public MovieViewerPage()
     {
         this.InitializeComponent();
 
         DataContext = _vm = Ioc.Default.GetRequiredService<MovieViewerPageViewModel>();
-
+        _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
     }
 
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
-        MediaPlayer?.Dispose();       
         MediaPlayer = new MediaPlayer();
         MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
 
+        DisposableBuilder db = new();
         _vm.ObservePropertyChanged(x => x.MovieSource)
-            .Subscribe(x => MediaPlayer.Source = x)
-            .RegisterTo(this.GetCancellationTokenOnUnloaded());
+            .Subscribe(x =>
+            {
+                MediaPlayer.Source = x;                
+            })
+
+            .AddTo(ref db);
+
+        InitializeZoomReaction(ref db);
+
+        db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
+        MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
+        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
     }
 
-    public Visibility IsPalyerPreparing(MediaPlaybackState state)
-    {
-        return (state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering).TrueToVisible();
-    }
 
-    private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+
+    private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()
-            .Subscribe(_ => PlayerState = sender.PlaybackState);
+            .Subscribe((this, sender), (_, s) => s.Item1.VideoDuration = s.sender.NaturalDuration);
     }
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
@@ -70,17 +100,570 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (MediaPlayer == null) { return; }
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
+        MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
+        MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
 
         MyMediaPlayerElement.SetMediaPlayer(null);
         MediaPlayer?.Dispose();
-        MediaPlayer = null;        
+        MediaPlayer = null;
+    }
+
+    private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        Observable.NextFrame()
+            .Subscribe((this, sender), (_, s) => s.Item1.PlayerState = s.sender.PlaybackState);
     }
 
     [ObservableProperty]
-    MediaPlayer? _mediaPlayer;
+    MediaPlaybackState _playerState;
 
+    public Visibility IsPalyerPreparing(MediaPlaybackState state)
+    {
+        return (state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering).TrueToVisible();
+    }
 
+    private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
+    {
+        Observable.NextFrame()
+            .Subscribe(this, (_, s) => s.SetVideoPositionFromCode(s.MediaPlayer?.PlaybackSession.Position ?? TimeSpan.Zero));
+    }
 
     [ObservableProperty]
-    MediaPlaybackState _playerState;
+    TimeSpan _videoDuration;
+
+    [ObservableProperty]
+    TimeSpan _videoPosition;
+
+    string ToHHMMSSString(TimeSpan t)
+    {
+        return t.ToString("hh\\:mm\\:ss");
+    }
+
+    double ToTotalSeconds(TimeSpan t) => t.TotalSeconds;
+
+    bool _videoPositionChangingFromCode;
+    void SetVideoPositionFromCode(TimeSpan ts)
+    {
+        _videoPositionChangingFromCode = true;
+        try
+        {
+            VideoPosition = ts;
+        }
+        finally
+        {
+            _videoPositionChangingFromCode = false;
+        }
+    }
+
+    private void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_videoPositionChangingFromCode) { return; }
+
+        _videoPosition = TimeSpan.FromSeconds((double)e.NewValue);
+        MediaPlayer?.PlaybackSession.Position = _videoPosition;
+    }
+
+    string ToPlaybackRateString(double rate)
+    {
+        return $"x{rate:F1}";
+    }
+
+    readonly double MinPlaybackRate = 0.1;
+    readonly double MaxPlaybackRate = 4;
+
+    bool _nowPlaybackRateChangingFromCode;
+    void SetPlaybackRateFromCode(double playbackRate)
+    {
+        _nowPlaybackRateChangingFromCode = true;
+        try
+        {
+            PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
+        }
+        finally
+        {
+            _nowPlaybackRateChangingFromCode = false;
+        }
+    }
+
+    [ObservableProperty]
+    double _playbackRate = 1;
+
+    private void PlaybackRateSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_nowPlaybackRateChangingFromCode) { return; }
+
+        SetPlaybackRateFromCode((double)e.NewValue);
+        MediaPlayer?.PlaybackSession.PlaybackRate = _playbackRate;
+    }
+
+    private void Page2MenuFlyout_Opening(object sender, object e)
+    {
+
+    }
+
+    private void ForceClosePage(object sender, RoutedEventArgs e)
+    {        
+        _messenger.Send(new BackNavigationRequestMessage());
+    }
+
+
+    [RelayCommand]
+    void TogglePlayPause()
+    {
+        if (MediaPlayer == null) { return; }
+        if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
+        {
+            MediaPlayer.Play();
+        }
+        else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+    }
+
+    [ObservableProperty]
+    bool _isLoopingEnabled;
+
+    partial void OnIsLoopingEnabledChanged(bool value)
+    {
+        MediaPlayer?.IsLoopingEnabled = value;
+    }
+
+
+    #region ZoomInOut
+
+
+    private const float MaxZoomFactor = 8.0f;
+    private const float MinZoomFactor = 0.5f;
+
+    private static readonly float[] ZoomFactorList = Enumerable.Concat(
+        new[] { 0.5f, .75f },
+        new[] { 1.0f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
+        ).ToArray();
+
+    private int CurrentZoomFactorIndex;
+    private static readonly TimeSpan DefaultZoomingDuration = TimeSpan.FromMilliseconds(150);
+    private readonly AnimationBuilder ZoomCenterAb = AnimationBuilder.Create();
+
+    private const float ControlerZoomCenterMoveAmount = 100.0f;
+    float GetZoomCenterMoveingFactorForMouseTouch()
+    {
+        return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
+    }
+
+    float GetZoomCenterMoveingFactorForController()
+    {
+        return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.1f;
+    }
+
+
+    private Vector2 _CanvasHalfSize;
+
+    private int GetDefaultZoomFactorListIndex()
+    {
+        return Array.IndexOf(ZoomFactorList, 1.0f);
+    }
+
+    private void InitializeZoomReaction(ref DisposableBuilder db)
+    {
+        CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+        _CanvasHalfSize = MyMediaPlayerElement.ActualSize * 0.5f;
+        ElementCompositionPreview.GetElementVisual(MyMediaPlayerElement).CenterPoint = new Vector3(_CanvasHalfSize, 0);
+
+        MyMediaPlayerElement.ObserveSizeChanged()
+            .Subscribe(x =>
+            {
+                _CanvasHalfSize = x.NewSize.ToVector2() * 0.5f;
+            })
+            .AddTo(ref db);
+        _vm.ObservePropertyChanged(x => x.MovieSource)
+            .Subscribe(_ =>
+            {
+                ZoomFactor = 1.0;
+                CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+            })
+            .AddTo(ref db);
+        this.ObserveDependencyProperty(ZoomFactorProperty)
+            .Select(x => this.ZoomFactor)
+            .Subscribe(zoom =>
+            {
+                IsZoomingEnabled = zoom != 1.0;
+                AnimationBuilder.Create().Scale(zoom, duration: ZoomDuration).Start(MyMediaPlayerElement);
+            })
+            .AddTo(ref db);
+        this.ObserveDependencyProperty(ZoomCenterProperty)
+            .Select(x => this.ZoomCenter)
+            .Subscribe(center =>
+            {
+                if (_nowZoomCenterMovingWithPointer is false)
+                {
+                    ZoomCenterAb.CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(MyMediaPlayerElement);
+                }
+            })
+            .AddTo(ref db);
+
+        ZoomCenter = _CanvasHalfSize;        
+    }
+
+    private void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+    {
+        bool isMoveCenter = _nowZoomCenterMovingWithPointer;
+
+        if (IsZoomingEnabled)
+        {
+            IsZoomingEnabled = ZoomFactor != 1.0f;
+
+            if (isMoveCenter is false)
+            {
+                ToggleOpenCloseBottomUI();
+                e.Handled = true;
+            }
+        }
+        else
+        {
+            if (e.Cumulative.Translation.X > 30)
+            {
+                // 右スワイプ
+                ReversableGoNext();
+            }
+            else if (e.Cumulative.Translation.X < -30)
+            {
+                // 左スワイプ
+                ReversableGoPrev();
+            }
+            else
+            {
+                _nowZoomCenterMovingWithPointer = false;
+            }
+        }
+    }
+
+    private void ReversableGoPrev()
+    {
+    }
+
+    private void ReversableGoNext()
+    {
+    }
+
+    private void ToggleOpenCloseBottomUI()
+    {
+    }
+
+    bool _nowZoomCenterMovingWithPointer;
+
+    private void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+    {
+        _startZoomFactor = (float)ZoomFactor;
+        _nowZoomCenterMovingWithPointer = true;
+    }
+
+    float _startZoomFactor;
+    float _sumScale;
+    private void MyMediaPlayerElement_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+    {
+        var factor = GetZoomCenterMoveingFactorForMouseTouch();
+        if (e.PointerDeviceType is PointerDeviceType.Touch)
+        {
+            // ズーム操作と移動操作は排他的に行う
+            if (e.Delta.Scale is not 1.0f)
+            {
+                // 拡縮開始時との差分で計算する
+                _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
+                var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), MinZoomFactor, MaxZoomFactor);
+                if (nextZoom < 1.0f)
+                {
+                    nextZoom = 1.0f;
+                }
+
+                ZoomFactor = nextZoom;
+            }
+            else
+            {
+                if (ZoomFactor > 1.0)
+                {
+                    ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                    var visual = ElementCompositionPreview.GetElementVisual(MyMediaPlayerElement);
+                    visual.CenterPoint = new Vector3(ZoomCenter, 0);
+                }
+            }
+        }
+        else
+        {
+            if (ZoomFactor > 1.0)
+            {
+                // ズームが強くなるほど視点移動速度を下げて「滑ってる感」を小さくしたい
+                ZoomCenter = ZoomCenter - e.Delta.Translation.ToVector2() * MathF.Pow(factor, 2f);
+                var visual = ElementCompositionPreview.GetElementVisual(MyMediaPlayerElement);
+                visual.CenterPoint = new Vector3(ZoomCenter, 0);
+            }
+        }
+    }
+
+
+    RelayCommand<PointerRoutedEventArgs> _ZoomUpCommand;
+    public RelayCommand<PointerRoutedEventArgs> ZoomUpCommand => _ZoomUpCommand
+        ??= new RelayCommand<PointerRoutedEventArgs>(args =>
+        {
+            var targetUI = MyMediaPlayerElement;
+            var lastZoom = (float)ZoomFactor;
+            var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
+            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex + 1 < ZoomFactorList.Length ? ++CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+            if (lastZoom < 1.0f && nextZoom >= 1.0f)
+            {
+                nextZoom = 1.0f;
+                nextCenter = _CanvasHalfSize;
+            }
+            else if (nextZoom == lastZoom)
+            {
+                return;
+            }
+            else if (nextZoom <= 1.0f)
+            {
+                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+                var imageCenterPos = targetUI.ActualSize;
+                Vector2 lastCenterPos = new Vector2(targetUI.CenterPoint.X, targetUI.CenterPoint.Y);
+                nextCenter = (imageCenterPos - lastCenterPos) * 0.5f + lastCenterPos;
+            }
+
+            ZoomFactor = nextZoom;
+            ZoomCenter = nextCenter;
+            IsZoomingEnabled = nextZoom != 1.0f;
+        });
+
+    RelayCommand<PointerRoutedEventArgs> _ZoomDownCommand;
+    public RelayCommand<PointerRoutedEventArgs> ZoomDownCommand => _ZoomDownCommand
+        ??= new RelayCommand<PointerRoutedEventArgs>(args =>
+        {
+            var targetUI = MyMediaPlayerElement;
+            var lastZoom = (float)ZoomFactor;
+            var lastCenter = ZoomCenter;
+            var nextCenter = Vector2.Zero;
+            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex - 1 >= 0 ? --CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+            if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
+            {
+                nextZoom = 1.0f;
+                nextCenter = lastCenter;
+            }
+            else if (nextZoom == lastZoom)
+            {
+                return;
+            }
+            else if (nextZoom > 1.0f)
+            {
+                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+                var imageCenterPos = _CanvasHalfSize;
+                nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
+            }
+            else
+            {
+                nextCenter = _CanvasHalfSize;
+            }
+
+            ZoomFactor = nextZoom;
+            IsZoomingEnabled = nextZoom != 1.0f;
+            ZoomCenter = nextCenter;
+        });
+
+    RelayCommand _ZoomResetCommand;
+    public RelayCommand ZoomResetCommand => _ZoomResetCommand
+        ??= new RelayCommand(() =>
+        {
+            CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+            ZoomCenter = _CanvasHalfSize;
+            ZoomFactor = 1.0;
+        });
+
+    Vector2 ToZoomCenterInsideCanvas(Vector2 center)
+    {
+        var range = MyMediaPlayerElement.ActualSize;
+        var x = Math.Clamp(center.X, -range.X, range.X);
+        var y = Math.Clamp(center.Y, -range.Y, range.Y);
+        return new Vector2(x, y);
+    }
+
+    RelayCommand _ZoomUpWithControllerCommand;
+    public RelayCommand ZoomUpWithControllerCommand => _ZoomUpWithControllerCommand
+        ??= new RelayCommand(() =>
+        {
+            var lastZoom = (float)ZoomFactor;
+            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex + 1 < ZoomFactorList.Length ? ++CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+            if (lastZoom < 1.0f && nextZoom >= 1.0f)
+            {
+                nextZoom = 1.0f;
+            }
+            else if (nextZoom == lastZoom)
+            {
+                return;
+            }
+
+            ZoomFactor = nextZoom;
+            IsZoomingEnabled = nextZoom != 1.0f;
+        });
+
+    RelayCommand _ZoomDownWithControllerCommand;
+    public RelayCommand ZoomDownWithControllerCommand => _ZoomDownWithControllerCommand
+        ??= new RelayCommand(() =>
+        {
+            var lastZoom = (float)ZoomFactor;
+            var lastCenter = ZoomCenter;
+            var nextCenter = Vector2.Zero;
+            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex - 1 >= 0 ? --CurrentZoomFactorIndex : CurrentZoomFactorIndex];
+            if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
+            {
+                nextZoom = 1.0f;
+                nextCenter = lastCenter;
+            }
+            else if (nextZoom == lastZoom)
+            {
+                return;
+            }
+            else if (nextZoom > 1.0f)
+            {
+                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+                var imageCenterPos = _CanvasHalfSize;
+                nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
+            }
+            else
+            {
+                nextCenter = _CanvasHalfSize;
+            }
+
+            ZoomFactor = nextZoom;
+            IsZoomingEnabled = nextZoom != 1.0f;
+            ZoomCenter = nextCenter;
+        });
+
+
+    RelayCommand _ZoomCenterMoveRightCommand;
+    public RelayCommand ZoomCenterMoveRightCommand => _ZoomCenterMoveRightCommand
+        ??= new RelayCommand(() =>
+        {
+            if (ZoomFactor > 1.0f)
+            {
+                ZoomCenter += new Vector2(ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+            }
+        });
+
+    RelayCommand _ZoomCenterMoveLeftCommand;
+    public RelayCommand ZoomCenterMoveLeftCommand => _ZoomCenterMoveLeftCommand
+        ??= new RelayCommand(() =>
+        {
+            if (ZoomFactor > 1.0f)
+            {
+                ZoomCenter += new Vector2(-ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+            }
+        });
+
+    RelayCommand _ZoomCenterMoveUpCommand;
+    public RelayCommand ZoomCenterMoveUpCommand => _ZoomCenterMoveUpCommand
+        ??= new RelayCommand(() =>
+        {
+            if (ZoomFactor > 1.0f)
+            {
+                ZoomCenter += new Vector2(0, -ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+            }
+        });
+
+    RelayCommand _ZoomCenterMoveDownCommand;
+
+    public RelayCommand ZoomCenterMoveDownCommand => _ZoomCenterMoveDownCommand
+        ??= new RelayCommand(() =>
+        {
+            if (ZoomFactor > 1.0f)
+            {
+                ZoomCenter += new Vector2(0, ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+            }
+        });
+
+    public bool IsZoomingEnabled
+    {
+        get { return (bool)GetValue(IsZoomingEnabledProperty); }
+        set { SetValue(IsZoomingEnabledProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for IsZoomingEnabled.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty IsZoomingEnabledProperty =
+        DependencyProperty.Register("IsZoomingEnabled", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
+
+
+
+    public TimeSpan ZoomDuration
+    {
+        get { return (TimeSpan)GetValue(ZoomDurationProperty); }
+        set { SetValue(ZoomDurationProperty, value); }
+    }
+
+    // Using a DependencyProperty as the backing store for ZoomDuration.  This enables animation, styling, binding, etc...
+    public static readonly DependencyProperty ZoomDurationProperty =
+        DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(DefaultZoomingDuration));
+
+
+    private string ToDisplayString(double zoomFactor)
+    {
+        return zoomFactor.ToString("F1");
+    }
+
+    public double ZoomFactor
+    {
+        get { return (double)GetValue(ZoomFactorProperty); }
+        set { SetValue(ZoomFactorProperty, value); }
+    }
+
+    public static readonly DependencyProperty ZoomFactorProperty =
+        DependencyProperty.Register("ZoomFactor", typeof(double), typeof(ImageViewerPage), new PropertyMetadata(1.0));
+
+
+
+
+    public Vector2 ZoomCenter
+    {
+        get { return (Vector2)GetValue(ZoomCenterProperty); }
+        set { SetValue(ZoomCenterProperty, value); }
+    }
+
+    public static readonly DependencyProperty ZoomCenterProperty =
+        DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
+
+    #endregion
+
+}
+
+public class SecondsToVideoTimeConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is double d)
+        {
+            return TimeSpan.FromSeconds(d).ToString();
+        }
+
+        ThrowHelper.ThrowInvalidOperationException();
+        return null;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+
+public class ToPlaybackRateConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is double d)
+        {
+            return $"x{d:F1}";
+        }
+
+        ThrowHelper.ThrowInvalidOperationException();
+        return null;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
+    }
 }

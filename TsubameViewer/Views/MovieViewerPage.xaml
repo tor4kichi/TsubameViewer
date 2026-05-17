@@ -20,10 +20,16 @@
       xmlns:models="using:TsubameViewer.Core.Models.FolderItemListing"
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+      xmlns:fluentIcon="using:Fluent.Icons"
       mc:Ignorable="d"
     >
 
   <Page.Resources>
+    <Style TargetType="fluentIcon:FluentSymbolIcon">
+      <Setter Property="IsTabStop"
+              Value="False" />
+    </Style>
+
     <DataTemplate x:Name="TitlebarContent">
       <Grid>
         <Grid.ColumnDefinitions>
@@ -52,24 +58,440 @@
         </StackPanel>
       </Grid>
     </DataTemplate>
+
+    <XamlUICommand x:Key="ZoomResetUICommand"
+                   Command="{x:Bind ZoomResetCommand}"
+                   Label="{i18nExt:Localize Key=ZoomReset}"
+                   Description="{i18nExt:Localize Key=ZoomReset}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="Zoom" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="X" />
+        <KeyboardAccelerator Key="R" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="ZoomInUICommand"
+                   Command="{x:Bind ZoomUpWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomIn}"
+                   Description="{i18nExt:Localize Key=ZoomIn}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomIn" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Add" />
+        <KeyboardAccelerator Key="W" />
+        <KeyboardAccelerator Key="T" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="ZoomOutUICommand"
+                   Command="{x:Bind ZoomDownWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomOut}"
+                   Description="{i18nExt:Localize Key=ZoomOut}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomOut" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Subtract" />
+        <KeyboardAccelerator Key="S" />
+        <KeyboardAccelerator Key="Y" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <local:SecondsToVideoTimeConverter x:Key="SecondsToVideoTimeConverter" />
+    <local:ToPlaybackRateConverter x:Key="ToPlaybackRateConverter" />
   </Page.Resources>
   <Grid>
 
     <VisualStateManager.VisualStateGroups>
       <VisualStateGroup>
-
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ButtonsContainer.Visibility"
+                    Value="Visible" />
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ButtonsContainer.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
       </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
-    
+
     <MediaPlayerElement AutoPlay="True"
                         Stretch="Uniform"
-                        x:Name="MyMediaPlayerElement"
-                        AreTransportControlsEnabled="True">
+                        x:Name="MyMediaPlayerElement">
 
     </MediaPlayerElement>
 
-    
-    
+    <RepeatButton IsHitTestVisible="True"
+          Background="Transparent"
+                  Opacity="0"
+          Click="ControlUIInteractionWall_Click"
+          ClickMode="Release"
+          x:Name="ControlUIInteractionWall"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+      
+    </RepeatButton>
+
+    <StackPanel x:Name="ButtonsContainer"
+                Background="{ThemeResource SystemChromeMediumHighColor}"
+                Grid.ColumnSpan="3"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Center"
+                IsHitTestVisible="True"
+                CornerRadius="8"
+                Orientation="Horizontal"
+                Padding="4 4"
+                Margin="0 48 0 0"
+                Spacing="4"
+                Visibility="Collapsed">
+      <StackPanel.Shadow>
+        <ThemeShadow />
+      </StackPanel.Shadow>
+
+      <animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, -88"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <StackPanel.Resources>
+        <Style TargetType="Button">
+          <Setter Property="Height"
+                  Value="40" />
+          <Setter Property="Width"
+                  Value="40" />
+          <Setter Property="Padding"
+                  Value="0" />
+          <Setter Property="CornerRadius"
+                  Value="4" />
+          <Setter Property="Background"
+                  Value="Transparent" />
+        </Style>
+        <Style TargetType="ToggleButton">
+          <Setter Property="Height"
+                  Value="40" />
+          <Setter Property="Width"
+                  Value="40" />
+          <Setter Property="Padding"
+                  Value="0" />
+          <Setter Property="CornerRadius"
+                  Value="4" />
+          <Setter Property="Background"
+                  Value="Transparent" />
+        </Style>
+        <Style TargetType="SymbolIcon">
+          <Setter Property="RenderTransformOrigin"
+                  Value="0.5, 0.5" />
+          <Setter Property="RenderTransform">
+            <Setter.Value>
+              <ScaleTransform ScaleX="0.8"
+                              ScaleY="0.8" />
+            </Setter.Value>
+          </Setter>
+        </Style>
+      </StackPanel.Resources>
+
+      <Button x:Name="BottomUIBackNavigationButton"
+              Click="ForceClosePage"
+              AccessKey="Q">
+        <SymbolIcon Symbol="Clear" />
+
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Escape"
+                               Modifiers="Shift" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Border Width="12" />
+
+      <Button x:Name="ZoomResetButton"
+              Command="{StaticResource ZoomResetUICommand}"
+              AccessKey="R"
+              IsEnabled="False">
+        <SymbolIcon Symbol="Zoom" />
+      </Button>
+
+      <Button x:Name="ZoomInButton"
+              Command="{StaticResource ZoomInUICommand}"
+              AccessKey="T"
+              IsEnabled="False">
+        <SymbolIcon Symbol="ZoomIn" />
+      </Button>
+
+      <Button x:Name="ZoomOutButton"
+              Command="{StaticResource ZoomOutUICommand}"
+              AccessKey="Y"
+              IsEnabled="False">
+        <SymbolIcon Symbol="ZoomOut" />
+      </Button>
+
+      
+      <!-- 左右反転 -->
+      <Button x:Name="FlipHorizontalButton"              
+              AccessKey="Y"
+              IsEnabled="False">
+        <SymbolIcon Symbol="Sort" RenderTransformOrigin="0.5, 0.5">
+          <SymbolIcon.RenderTransform>
+            <RotateTransform Angle="90" />
+          </SymbolIcon.RenderTransform>
+        </SymbolIcon>
+      </Button>
+
+    </StackPanel>
+
+    <Border x:Name="ImageSelectorContainer"
+            Background="{ThemeResource SystemChromeMediumHighColor}"
+            Grid.ColumnSpan="3"
+            VerticalAlignment="Bottom"
+            HorizontalAlignment="Center"
+            MinWidth="380"
+            MaxWidth="420"
+            CornerRadius="8"
+            Margin="0 0 0 16"
+            Translation="0, 0, 16">
+
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+
+      <animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, 180"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <StackPanel Margin="8"
+                  Spacing="6">
+
+        <Grid Margin="0 0 0 8">
+          <Grid.Resources>
+            <ScaleTransform x:Key="FavoriteIconTransform"
+                            ScaleX="0.9"
+                            ScaleY="0.9" />
+          </Grid.Resources>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+          </Grid.ColumnDefinitions>
+
+          <muxc:DropDownButton x:Name="Page2ActionButton"
+                               Grid.Column="0"
+                               HorizontalAlignment="Stretch"
+                               HorizontalContentAlignment="Stretch"
+                               Margin="0 0 0 0"
+                               IsAccessKeyScope="True"
+                               AccessKey="2">
+            <muxc:DropDownButton.KeyboardAccelerators>
+              <KeyboardAccelerator Key="Number1" />
+            </muxc:DropDownButton.KeyboardAccelerators>
+
+            <uwpControls:DockPanel>
+              <SymbolIcon Symbol="Favorite"
+                          
+                          uwpControls:DockPanel.Dock="Left"
+                          Margin="0 0 4 0"
+                          RenderTransform="{StaticResource FavoriteIconTransform}"
+                          RenderTransformOrigin="0.5, 0.5" />
+              <TextBlock x:Name="Page2NameTextBlock"
+                         VerticalAlignment="Center"
+                         FontSize="12"
+                         Margin="0 0 0 0"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxLines="1"
+                         TextTrimming="CharacterEllipsis">
+          <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+              </TextBlock>
+            </uwpControls:DockPanel>
+
+            <muxc:DropDownButton.Flyout>
+              <MenuFlyout Opening="Page2MenuFlyout_Opening">
+                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton"
+                                   Text="{i18nExt:Localize Key=AlbamItemAdd}"
+                                   >
+
+                </MenuFlyoutSubItem>
+                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton"
+                                AccessKey="T"
+                                Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="T" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton"
+                                AccessKey="G"
+                                Text="{i18nExt:Localize Key=OpenWithExplorer}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="G" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton"
+                                AccessKey="B"
+                                Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="B" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+              </MenuFlyout>
+            </muxc:DropDownButton.Flyout>
+          </muxc:DropDownButton>
+        </Grid>
+
+        <uwpControls:DockPanel>
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Right">
+            <ToggleButton x:Name="ControlUI_RepeatButton"
+                          IsChecked="{x:Bind IsLoopingEnabled, Mode=TwoWay}"
+                          Height="40"
+                          Width="48">
+              <SymbolIcon Symbol="RepeatAll" />
+            </ToggleButton>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
+            <Button x:Name="ControlUI_PlayPauseButton"                    
+                    Command="{x:Bind TogglePlayPauseCommand}">
+              <SymbolIcon Symbol="Play" />
+
+            </Button>
+          </StackPanel>
+
+
+          <Border />
+        </uwpControls:DockPanel>
+        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
+         XYFocus*を使って強制的に移動先を指定している 
+    -->
+        <!--
+        <ComboBox x:Name="PageFolderNamesSelector"
+                  uwpControls:DockPanel.Dock="Top"
+                  ItemsSource="{Binding PageFolderNames}"
+                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                  SelectionChangedTrigger="Committed"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0 4"
+                  AccessKey="3">
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="SelectionChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}">
+                <core:InvokeCommandAction.InputConverter>
+                  <local:SelectorSelectedChangedToStringConverter />
+                </core:InvokeCommandAction.InputConverter>
+              </core:InvokeCommandAction>
+              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}"
+                                     MethodName="Hide" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <ComboBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="3" />
+          </ComboBox.KeyboardAccelerators>
+        </ComboBox>
+-->
+        <Slider x:Name="PageSelector"
+                uwpControls:DockPanel.Dock="Bottom"
+                Minimum="0"
+                Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                ValueChanged="VideoPositionSlider_ValueChanged"
+                ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                TickFrequency="1"
+                StepFrequency="1"
+                Padding="0"
+                Margin="0 0"                
+                FlowDirection="LeftToRight"
+                AccessKey="4">
+          
+          <Slider.KeyboardAccelerators>
+            <KeyboardAccelerator Key="4" />
+          </Slider.KeyboardAccelerators>
+        </Slider>
+
+        <uwpControls:DockPanel>
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Left">
+            <Button Content="{x:Bind ToPlaybackRateString(PlaybackRate), Mode=OneWay}"
+                    MinWidth="60">
+              <Button.Flyout>
+                <Flyout>
+                  <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+
+                      <Button Content="x0.5" />
+                      <Button Content="x0.75" />
+                      <Button Content="x1.0" />
+                      <Button Content="x1.25" />
+                      <Button Content="x1.5" />
+                      <Button Content="x1.75" />
+                      <Button Content="x2.0" />
+
+                    </StackPanel>
+
+                    <Slider HorizontalAlignment="Stretch"
+                            Maximum="{x:Bind MaxPlaybackRate}"
+                            Minimum="{x:Bind MinPlaybackRate}"
+                            Value="{x:Bind PlaybackRate, Mode=OneWay}"
+                            ValueChanged="PlaybackRateSlider_ValueChanged"
+                            StepFrequency="0.1"
+                            x:Name="PlaybackRateSlider"
+                            IsThumbToolTipEnabled="True"
+                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}"
+                            />
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+
+          <TextBlock VerticalAlignment="Center"
+                     FontSize="12"
+                     Margin="0 0"
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom">
+
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+          
+          <Run Text="{x:Bind ToHHMMSSString(VideoPosition), Mode=OneWay}" />/<Run Text="{x:Bind ToHHMMSSString(VideoDuration), Mode=OneWay}" />
+          </TextBlock>
+        </uwpControls:DockPanel>
+
+      </StackPanel>
+
+    </Border>
+
     <muxc:ProgressBar IsIndeterminate="True"
                   Opacity="1"
                       Visibility="{x:Bind IsPalyerPreparing(PlayerState), Mode=OneWay}"

@@ -51,6 +51,11 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         {
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts.IsCancellationRequested is false)
             {
+                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                if (size.Y == 0)
+                {
+                    size = new Vector2(120, 200);
+                }
                 ToolTipService.SetToolTip(args.ItemContainer, 
                     new ToolTip() 
                     { 
@@ -59,7 +64,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                             Text = itemVM.Name, 
                             TextWrapping = TextWrapping.Wrap 
                         },
-                        PlacementRect = new Windows.Foundation.Rect(new(), (args.ItemContainer.ActualSize - new Vector2(0, 16)).ToSize()),
+                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
                         Placement = PlacementMode.Bottom 
                     });
             }
