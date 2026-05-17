@@ -3,11 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
@@ -50,7 +51,17 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         {
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts.IsCancellationRequested is false)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                ToolTipService.SetToolTip(args.ItemContainer, 
+                    new ToolTip() 
+                    { 
+                        Content = new TextBlock() 
+                        { 
+                            Text = itemVM.Name, 
+                            TextWrapping = TextWrapping.Wrap 
+                        },
+                        PlacementRect = new Windows.Foundation.Rect(new(), (args.ItemContainer.ActualSize - new Vector2(0, 16)).ToSize()),
+                        Placement = PlacementMode.Bottom 
+                    });
             }
 
             itemVM.InitializeAsync(_ct);

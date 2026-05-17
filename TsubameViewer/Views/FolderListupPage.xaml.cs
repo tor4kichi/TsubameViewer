@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
@@ -73,7 +74,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             await itemVM.InitializeAsync(_ct);
             if (itemVM.Item != null)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                ToolTipService.SetToolTip(args.ItemContainer, 
+                    new ToolTip()
+                    { 
+                        Content = new TextBlock() 
+                        { 
+                            Text = itemVM.Name, 
+                            TextWrapping = TextWrapping.Wrap 
+                        },
+                        PlacementRect = new Windows.Foundation.Rect(new(), (args.ItemContainer.ActualSize - new Vector2(0, 16)).ToSize()),
+                        Placement = PlacementMode.Bottom
+                    });
             }
         }
     }
