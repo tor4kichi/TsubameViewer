@@ -124,9 +124,14 @@
   <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
     <Grid Background="Transparent" IsHitTestVisible="True">
       <Image Source="{x:Bind Image, Mode=OneWay}"
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="UniformToFill"
+             Opacity="0.2" />
+      <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
-             />
+             Stretch="Uniform"
+             VerticalAlignment="Center" />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
@@ -143,10 +148,14 @@
     <Grid Background="Transparent"
           IsHitTestVisible="True">
       <Image Source="{x:Bind Image, Mode=OneWay}"
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="UniformToFill"
+             Opacity="0.2" />
+      <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
-             Stretch="Fill" 
-             Width="80"/>
+             Stretch="Uniform"
+             VerticalAlignment="Center" />
       <Grid Height="{StaticResource FolderItemTitleHeight}"
             VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
