@@ -54,6 +54,13 @@
     </DataTemplate>
   </Page.Resources>
   <Grid>
+
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+    
     <MediaPlayerElement AutoPlay="True"
                         Stretch="Uniform"
                         x:Name="MyMediaPlayerElement"
@@ -61,8 +68,16 @@
 
     </MediaPlayerElement>
 
-    <ProgressRing IsActive="{x:Bind _vm.MovieSource, Mode=OneWay, Converter={StaticResource NullToTrueConverter}}"
-                  Visibility="{x:Bind _vm.MovieSource, Mode=OneWay, Converter={StaticResource NullToVisibleConverter}}"
+    
+    
+    <muxc:ProgressBar IsIndeterminate="True"
+                  Opacity="1"
+                      Visibility="{x:Bind IsPalyerPreparing(PlayerState), Mode=OneWay}"
+                  IsHitTestVisible="False"
+                  Foreground="{ThemeResource SystemAccentColor}"
+                  x:Name="LoadingProgressRing"
+                  VerticalAlignment="Bottom"
+                      HorizontalAlignment="Stretch"
                   />
   </Grid>
 </Page>

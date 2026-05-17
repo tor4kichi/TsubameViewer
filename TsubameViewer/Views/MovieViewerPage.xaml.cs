@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Playback;
@@ -49,10 +50,27 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.ObservePropertyChanged(x => x.MovieSource)
             .Subscribe(x => MediaPlayer.Source = x)
             .RegisterTo(this.GetCancellationTokenOnUnloaded());
+
+        MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
+    }
+
+    public Visibility IsPalyerPreparing(MediaPlaybackState state)
+    {
+        return (state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering).TrueToVisible();
+    }
+
+    private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        Observable.NextFrame()
+            .Subscribe(_ => PlayerState = sender.PlaybackState);
     }
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        if (MediaPlayer == null) { return; }
+
+        MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
+
         MyMediaPlayerElement.SetMediaPlayer(null);
         MediaPlayer?.Dispose();
         MediaPlayer = null;        
@@ -63,5 +81,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
 
 
-
+    [ObservableProperty]
+    MediaPlaybackState _playerState;
 }
