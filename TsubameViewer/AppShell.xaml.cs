@@ -85,7 +85,8 @@ public sealed partial class AppShell : UserControl
         if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
         {
             var info = await service.GetCheerAddonInfoAsync();
-            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
+            if (info == null) { return; }
+            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description ?? "";
             IsStoreAvairable = info != null;
         }
     }
