@@ -8,6 +8,7 @@ using R3;
 using R3.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -62,8 +63,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
+
     }
 
+    private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        if (MediaPlayer == null) { return; }
+
+        Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
+        Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
+
+        MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
+        MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
+        MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
+
+        MyMediaPlayerElement.SetMediaPlayer(null);
+        MediaPlayer?.Dispose();
+        MediaPlayer = null;
+    }
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
         MediaPlayer = new MediaPlayer();
@@ -85,29 +102,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
+
+        Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
+        Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
     }
 
 
-
-    private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
-    {
-        Observable.NextFrame()
-            .Subscribe((this, sender), (_, s) => s.Item1.VideoDuration = s.sender.NaturalDuration);
-    }
-
-    private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        if (MediaPlayer == null) { return; }
-
-        MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
-        MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
-
-        MyMediaPlayerElement.SetMediaPlayer(null);
-        MediaPlayer?.Dispose();
-        MediaPlayer = null;
-    }
-
+    #region Playback
     private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()
@@ -122,11 +123,47 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return (state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering).TrueToVisible();
     }
 
+
+    [RelayCommand]
+    void TogglePlayPause()
+    {
+        if (MediaPlayer == null) { return; }
+        if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
+        {
+            MediaPlayer.Play();
+        }
+        else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+    }
+
+    [ObservableProperty]
+    bool _isLoopingEnabled;
+
+    partial void OnIsLoopingEnabledChanged(bool value)
+    {
+        MediaPlayer?.IsLoopingEnabled = value;
+    }
+
+
+    #endregion
+
+
+    #region Position and Duration
+
+    private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
+    {
+        Observable.NextFrame()
+            .Subscribe((this, sender), (_, s) => s.Item1.VideoDuration = s.sender.NaturalDuration);
+    }
+
     private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()
             .Subscribe(this, (_, s) => s.SetVideoPositionFromCode(s.MediaPlayer?.PlaybackSession.Position ?? TimeSpan.Zero));
     }
+
 
     [ObservableProperty]
     TimeSpan _videoDuration;
@@ -156,12 +193,41 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     private void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-        if (_videoPositionChangingFromCode) { return; }
+    {        
+        if (_videoPositionChangingFromCode) 
+        {
+            return; 
+        }
 
         _videoPosition = TimeSpan.FromSeconds((double)e.NewValue);
         MediaPlayer?.PlaybackSession.Position = _videoPosition;
     }
+
+    bool _prevPlaying;
+    private void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
+    {
+        if (args.IsContactUIElement(PageSelector, Window.Current.Content))
+        {
+            Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
+
+            _prevPlaying = PlayerState is MediaPlaybackState.Playing;
+            MediaPlayer?.Pause();
+        }
+    }
+
+    private void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
+    {
+        if (_prevPlaying)
+        {
+            _prevPlaying = false;
+            MediaPlayer?.Play();
+        }
+    }
+
+    #endregion
+
+    #region Playback Rate
+
 
     string ToPlaybackRateString(double rate)
     {
@@ -196,6 +262,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer?.PlaybackSession.PlaybackRate = _playbackRate;
     }
 
+
+    #endregion
+
+
     private void Page2MenuFlyout_Opening(object sender, object e)
     {
 
@@ -206,28 +276,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger.Send(new BackNavigationRequestMessage());
     }
 
-
-    [RelayCommand]
-    void TogglePlayPause()
-    {
-        if (MediaPlayer == null) { return; }
-        if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
-        {
-            MediaPlayer.Play();
-        }
-        else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
-        {
-            MediaPlayer.Pause();
-        }
-    }
-
-    [ObservableProperty]
-    bool _isLoopingEnabled;
-
-    partial void OnIsLoopingEnabledChanged(bool value)
-    {
-        MediaPlayer?.IsLoopingEnabled = value;
-    }
 
 
     #region ZoomInOut

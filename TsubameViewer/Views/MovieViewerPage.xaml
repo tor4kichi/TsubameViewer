@@ -134,8 +134,11 @@
 
     <MediaPlayerElement AutoPlay="True"
                         Stretch="Uniform"
-                        x:Name="MyMediaPlayerElement">
-
+                        x:Name="MyMediaPlayerElement"
+                        RenderTransformOrigin="0.5, 0.5">
+      <UIElement.RenderTransform>
+        <TranslateTransform x:Name="PlayerTransform" />
+      </UIElement.RenderTransform>
     </MediaPlayerElement>
 
     <RepeatButton IsHitTestVisible="True"
@@ -426,13 +429,12 @@
                 Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
                 ValueChanged="VideoPositionSlider_ValueChanged"
                 ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
-                TickFrequency="1"
-                StepFrequency="1"
+                TickFrequency="0.01"
+                StepFrequency="0.01"
                 Padding="0"
-                Margin="0 0"                
+                Margin="0 0"
                 FlowDirection="LeftToRight"
                 AccessKey="4">
-          
           <Slider.KeyboardAccelerators>
             <KeyboardAccelerator Key="4" />
           </Slider.KeyboardAccelerators>
@@ -467,6 +469,7 @@
                             x:Name="PlaybackRateSlider"
                             IsThumbToolTipEnabled="True"
                             ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}"
+                            
                             />
                   </StackPanel>
                 </Flyout>
