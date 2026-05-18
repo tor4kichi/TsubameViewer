@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.IO;
 using System;
@@ -18,7 +19,7 @@ using Windows.Media.Core;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
 #nullable enable
-namespace TsubameViewer.Views;
+namespace TsubameViewer.ViewModels;
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
 {
@@ -72,13 +73,13 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         }
     }
 
-    private string? _pathForSettings = null;
+    string? _pathForSettings = null;
 
     [ObservableProperty]
-    private string _parentFolderOrArchiveName;
+    string _parentFolderOrArchiveName = "";
 
     [ObservableProperty]
-    string _title;
+    string _title = "";
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -87,7 +88,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         long time = TimeProvider.System.GetTimestamp();
 #endif
         var mode = parameters.GetNavigationMode();
-        string firstDisplayPageName = null;
+        string? firstDisplayPageName = null;
         if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
         {
             MovieSource = null;
@@ -173,4 +174,38 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
         base.OnNavigatedFrom(parameters);
     }
+
+
+    [ObservableProperty]
+    bool _isMirrorDisplayEnabled;
+
+
+    [RelayCommand]
+    void ToggleFullScreen()
+    {
+        var appView = ApplicationView.GetForCurrentView();
+        if (appView.IsFullScreenMode)
+        {
+            appView.ExitFullScreenMode();
+        }
+        else
+        {
+            appView.TryEnterFullScreenMode();
+        }
+    }
+
+    [RelayCommand]
+    void ToggleHorizontalMirrorDisplay()
+    {
+        IsHorizontalMirrorModeEnabled = !IsHorizontalMirrorModeEnabled;
+    }
+
+    [ObservableProperty]
+    bool _isHorizontalMirrorModeEnabled;
+
+
+    [ObservableProperty]
+    bool _isTransformModeEnabled;
+
+
 }

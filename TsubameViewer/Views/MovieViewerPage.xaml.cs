@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
@@ -42,7 +43,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
-    private readonly MovieViewerPageViewModel _vm;
+    internal readonly MovieViewerPageViewModel _vm;
     private readonly IMessenger _messenger;
 
     [ObservableProperty]
@@ -108,6 +109,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
     }
 
+    #region Display Style
+
+
+    #endregion
 
     #region Playback
     private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
