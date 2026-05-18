@@ -45,11 +45,13 @@
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
-          <Button x:Name="ZoomResetButton"
-                  AccessKey="R"
-                  Command="{StaticResource ZoomResetUICommand}">
+          <!--変形モード-->
+          <!--
+          <Button AccessKey="R"
+                  Command="{x:Bind ToggleTransformModeCommand}">
             <SymbolIcon Symbol="ZoomIn" />
           </Button>
+          -->
           <!-- 左右反転 -->
           <ToggleButton x:Name="FlipHorizontalButton"
                   AccessKey="Y"
@@ -76,6 +78,7 @@
       </Grid>
     </DataTemplate>
 
+    <!--
     <XamlUICommand x:Key="ZoomResetUICommand"
                    Command="{x:Bind ZoomResetCommand}"
                    Label="{i18nExt:Localize Key=ZoomReset}"
@@ -88,7 +91,7 @@
         <KeyboardAccelerator Key="R" />
       </XamlUICommand.KeyboardAccelerators>
     </XamlUICommand>
-<!--
+
     <XamlUICommand x:Key="ZoomInUICommand"
                    Command="{x:Bind ZoomUpWithControllerCommand}"
                    Label="{i18nExt:Localize Key=ZoomIn}"
@@ -123,14 +126,54 @@
   <Grid>
 
     <VisualStateManager.VisualStateGroups>
+
+      <!-- 変形モードのUI表示状態 -->
       <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.IsTransformModeEnabled, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="TransformUIContainer.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ButtonsContainer.Visibility"
+            <Setter Target="TransformUIContainer.Visibility"
                     Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="TransformUIContainer.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      
+      <!-- プレイヤーコントロールUIの表示状態 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.IsTransformModeEnabled, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Visible" />
           </VisualState.Setters>
@@ -140,8 +183,6 @@
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ButtonsContainer.Visibility"
-                    Value="Collapsed" />
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Collapsed" />
           </VisualState.Setters>
@@ -216,16 +257,15 @@
       </UIElement.RenderTransform>
     </MediaPlayerElement>
 
-    <RepeatButton IsHitTestVisible="True"
+    <Grid IsHitTestVisible="True"
           Background="Transparent"
                   Opacity="0"
-          Click="ControlUIInteractionWall_Click"
-          ClickMode="Release"
+          PointerPressed="ControlUIInteractionWall_PointerPressed"
           x:Name="ControlUIInteractionWall"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch">
       
-    </RepeatButton>
+    </Grid>
 
     <Border x:Name="ImageSelectorContainer"
             Background="{ThemeResource SystemChromeMediumHighColor}"
@@ -525,6 +565,40 @@
 
     </Border>
 
+    <Border x:Name="TransformUIContainer"
+            Background="{ThemeResource SystemChromeMediumHighColor}"
+            Grid.ColumnSpan="3"
+            VerticalAlignment="Top"
+            HorizontalAlignment="Center"
+            Width="460"
+            CornerRadius="8"
+            Margin="0 0 0 16"
+            Translation="0, 0, 16">
+      <Border.Shadow>
+        <ThemeShadow />
+      </Border.Shadow>
+      <!--<animation:Implicit.ShowAnimations>
+        <animation:TranslationAnimation To="0, 0"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:TranslationAnimation To="0, 180"
+                                        EasingType="Cubic"
+                                        Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>-->
+
+      <StackPanel Margin="8"
+                  Spacing="6"
+                  Orientation="Horizontal">
+        <Button x:Name="TransformUI_PlayPauseButton"
+                Command="{x:Bind TogglePlayPauseCommand}">
+          <SymbolIcon Symbol="Play" />
+        </Button>
+      </StackPanel>
+    </Border>
+
+    
     <muxc:ProgressBar IsIndeterminate="True"
                   Opacity="1"
                       Visibility="{x:Bind IsPalyerPreparing(PlayerState), Mode=OneWay}"

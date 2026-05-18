@@ -181,7 +181,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
 
     [RelayCommand]
-    void ToggleFullScreen()
+    public void ToggleFullScreen()
     {
         var appView = ApplicationView.GetForCurrentView();
         if (appView.IsFullScreenMode)
@@ -207,5 +207,9 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     bool _isTransformModeEnabled;
 
-
+    [RelayCommand]
+    void ToggleTransformMode()
+    {
+        IsTransformModeEnabled = !IsTransformModeEnabled;
+    }
 }

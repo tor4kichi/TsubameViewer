@@ -52,10 +52,20 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     bool _isDisplayControlUI;
 
-    private void ControlUIInteractionWall_Click(object sender, RoutedEventArgs e)
+
+    private void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        IsDisplayControlUI = !IsDisplayControlUI;
+        var pt = e.GetCurrentPoint(null);
+        if (pt.Properties.IsMiddleButtonPressed)
+        {
+            _vm.ToggleFullScreen();
+        }
+        if (pt.Properties.IsLeftButtonPressed)
+        {
+            IsDisplayControlUI = !IsDisplayControlUI;
+        }
     }
+
 
     public MovieViewerPage()
     {
@@ -764,7 +774,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
 
     #endregion
-
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter
