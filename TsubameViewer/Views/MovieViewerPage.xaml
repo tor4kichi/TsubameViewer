@@ -287,7 +287,7 @@
                                         Duration="0:0:0.175" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 180"
+        <animation:TranslationAnimation To="0, 200"
                                         EasingType="Cubic"
                                         Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>

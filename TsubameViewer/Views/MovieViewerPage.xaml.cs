@@ -105,9 +105,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         DisposableBuilder db = new();
         _vm.ObservePropertyChanged(x => x.MovieSource)
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
-                MediaPlayer.Source = x;
+                s.MediaPlayer?.Source = x;
+                if (x != null)
+                {
+                    s.HideMouseCursor();
+                    s.IsDisplayControlUI = false;
+                }
             })
 
             .AddTo(ref db);
@@ -124,42 +129,53 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             conversion => (sender, args) => conversion(args),
             h => Window.Current.Activated += h,
             h => Window.Current.Activated -= h);
-        observeWindowActivate.Subscribe(e => _isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
+
+        var observePointerEntered = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => this.PointerEntered += h,
+            h => this.PointerEntered -= h);
+        var observePointerExited = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => this.PointerExited+= h,
+            h => this.PointerExited -= h);
+
+        var insideWindowRp = Observable.Merge(observePointerEntered.Select(x => true), observePointerExited.Select(x => false))
+            .ToReadOnlyReactiveProperty(true)
+            .AddTo(ref db);
+
+        observeWindowActivate.Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
             .AddTo(ref db);
         observeMouseMove
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
-                ShowMouseCursor();
-                if (_lastHideDisplayControlUIWithAutoHide)
+                s.ShowMouseCursor();
+                if (s._lastHideDisplayControlUIWithAutoHide)
                 {
-                    _lastHideDisplayControlUIWithAutoHide = false;
-                    IsDisplayControlUI = true;
+                    s._lastHideDisplayControlUIWithAutoHide = false;
+                    s.IsDisplayControlUI = true;
                 }
             })
             .AddTo(ref db);
         Observable.Merge(
             observeMouseMove.AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable()
-            )
-            .Where(x => !_isWindowActive)
-            .Debounce(TimeSpan.FromSeconds(2))
-            .Where(_ => 
+            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable()
+            )            
+            .Debounce(TimeSpan.FromSeconds(1.25))            
+            .Where((this, insideWindowRp), static (_, s) => 
             {
-                if (!Window.Current.Content.RenderSize.ToRect().Contains(Window.Current.CoreWindow.PointerPosition))
-                {
-                    return false;
-                }
-
-                if (!_isWindowActive) { return false; }
+                if (!s.insideWindowRp.CurrentValue) { return false; }
+                if (!s.Item1._isWindowActive) { return false; }
+                if (s.Item1.PlayerState != MediaPlaybackState.Playing) { return false; }
                 //if (IsDisplayControlUI) { return false; }
 
                 return true;
             })
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
-                HideMouseCursor();
-                _lastHideDisplayControlUIWithAutoHide = IsDisplayControlUI;
-                IsDisplayControlUI = false;
+                s.HideMouseCursor();
+                s._lastHideDisplayControlUIWithAutoHide = s.IsDisplayControlUI;
+                s.IsDisplayControlUI = false;
             })
             .AddTo(ref db);
 
