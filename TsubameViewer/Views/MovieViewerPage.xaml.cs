@@ -8,6 +8,7 @@ using R3;
 using R3.Extensions;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -121,6 +122,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     public Visibility IsPalyerPreparing(MediaPlaybackState state)
     {
         return (state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering).TrueToVisible();
+    }
+
+    public bool TrueToPlayerPlaying(MediaPlaybackState state)
+    {
+        return state is MediaPlaybackState.Playing;
     }
 
 
@@ -264,6 +270,78 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+
+    #region Sound Volume
+
+    [ObservableProperty]    
+    double _soundVolume = 0.5;
+
+    partial void OnSoundVolumeChanged(double value)
+    {
+        MediaPlayer?.Volume = SoundVolume;
+    }
+
+    [ObservableProperty]
+    double _soundVolume_Display = 0.5;
+
+    [ObservableProperty]
+    bool _isMute;
+
+    [RelayCommand]
+    void ToggleIsMuted()
+    {
+        IsMute = !IsMute;
+    }
+
+    partial void OnIsMuteChanged(bool value)
+    {
+        MediaPlayer?.IsMuted = value;
+
+        _nowSoundVolumeChanging = true;
+        try
+        {
+            if (value)
+            {
+                SoundVolume_Display = 0;
+            }
+            else
+            {
+                SoundVolume_Display = SoundVolume;
+            }
+        }
+        finally
+        {
+            _nowSoundVolumeChanging = false;
+        }
+    }
+
+    bool _nowSoundVolumeChanging;
+    private void ControlUI_SoundVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        if (_nowSoundVolumeChanging) { return; }
+
+        SetSoundVolumeFromCode((double)e.NewValue);        
+    }
+
+    void SetSoundVolumeFromCode(double v)
+    {
+        _nowSoundVolumeChanging = true;
+        try
+        {
+            SoundVolume = Math.Clamp(v, 0.0, 1.0);
+            IsMute = SoundVolume == 0;
+            //SoundVolume_Display = SoundVolume;
+        }
+        finally
+        {
+            _nowSoundVolumeChanging = false;
+        }
+    }    
+
+    #endregion
+
+
 
 
     private void Page2MenuFlyout_Opening(object sender, object e)

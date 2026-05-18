@@ -8,7 +8,7 @@
       xmlns:i="using:Microsoft.Xaml.Interactivity"
       xmlns:core="using:Microsoft.Xaml.Interactions.Core"
       xmlns:myConv="using:TsubameViewer.Views.Converters"
-      xmlns:wst="using:WindowsStateTriggers"
+      xmlns:wst="using:Microsoft.Toolkit.Uwp.UI.Triggers"
       xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
       xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
       xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
@@ -127,6 +127,49 @@
                     Value="Collapsed" />
             <Setter Target="ImageSelectorContainer.Visibility"
                     Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsMute, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ToggleIsMutedButton.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="SpeakerMute24" />
+              </Setter.Value>
+            </Setter>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:IsEqualStateTrigger Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+                                     To="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ToggleIsMutedButton.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="SpeakerMute24" />
+              </Setter.Value>
+            </Setter>
+          </VisualState.Setters>
+        </VisualState>
+
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind TrueToPlayerPlaying(PlayerState), Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ControlUI_PlayPauseButton.Content">
+              <Setter.Value>
+                <SymbolIcon Symbol="Pause" />
+              </Setter.Value>
+            </Setter>
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -269,8 +312,7 @@
             Grid.ColumnSpan="3"
             VerticalAlignment="Bottom"
             HorizontalAlignment="Center"
-            MinWidth="380"
-            MaxWidth="420"
+            Width="460"            
             CornerRadius="8"
             Margin="0 0 0 16"
             Translation="0, 0, 16">
@@ -380,16 +422,29 @@
               <SymbolIcon Symbol="RepeatAll" />
             </ToggleButton>
           </StackPanel>
-          <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
-            <Button x:Name="ControlUI_PlayPauseButton"                    
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Left">
+            <Button x:Name="ControlUI_PlayPauseButton"
                     Command="{x:Bind TogglePlayPauseCommand}">
               <SymbolIcon Symbol="Play" />
-
             </Button>
           </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Button x:Name="ToggleIsMutedButton"
+                    Command="{x:Bind ToggleIsMutedCommand}">
+              <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
+            </Button>
+            <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+                    Maximum="1"
+                    Minimum="0"
+                    StepFrequency="0.01"
+                    x:Name="ControlUI_SoundVolumeSlider"
+                    ValueChanged="ControlUI_SoundVolumeSlider_ValueChanged"
+                    MinWidth="120"
+                    Margin="0 4 0 0">
 
-
-          <Border />
+            </Slider>
+          </StackPanel>
         </uwpControls:DockPanel>
         <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
          XYFocus*を使って強制的に移動先を指定している 
