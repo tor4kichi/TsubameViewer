@@ -140,6 +140,7 @@
     <Compile Include="Contracts\Services\ISplitImageInputDialogService.cs" />
     <Compile Include="Contracts\Services\IImageCodecService.cs" />
     <Compile Include="R3\DispatcherQueueTimerProvider.cs" />
+    <Compile Include="R3\ObservableTypedEventHandler.cs" />
     <Compile Include="R3\WinRTProviderInitializer.cs" />
     <Compile Include="R3\XamlCancellationHelper.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />

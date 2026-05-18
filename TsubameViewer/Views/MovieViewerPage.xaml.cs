@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using PDFtoImage;
 using R3;
 using R3.Extensions;
 using System;
@@ -62,6 +64,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         if (pt.Properties.IsLeftButtonPressed)
         {
+            if (_lastHideDisplayControlUIWithAutoHide) { return; }
             IsDisplayControlUI = !IsDisplayControlUI;
         }
     }
@@ -80,6 +83,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        ShowMouseCursor();
+
         if (MediaPlayer == null) { return; }
 
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
@@ -102,12 +107,60 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.ObservePropertyChanged(x => x.MovieSource)
             .Subscribe(x =>
             {
-                MediaPlayer.Source = x;                
+                MediaPlayer.Source = x;
             })
 
             .AddTo(ref db);
 
         InitializeZoomReaction(ref db);
+
+        _lastHideDisplayControlUIWithAutoHide = false;
+        var observeMouseMove = ObservableEventExtensions.FromTypedEvent<MouseDevice, MouseEventArgs>(
+            h => MouseDevice.GetForCurrentView().MouseMoved += h,
+            h => MouseDevice.GetForCurrentView().MouseMoved -= h
+            );
+
+        var observeWindowActivate = Observable.FromEvent<WindowActivatedEventHandler, WindowActivatedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => Window.Current.Activated += h,
+            h => Window.Current.Activated -= h);
+        observeWindowActivate.Subscribe(e => _isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
+            .AddTo(ref db);
+        observeMouseMove
+            .Subscribe(x =>
+            {
+                ShowMouseCursor();
+                if (_lastHideDisplayControlUIWithAutoHide)
+                {
+                    _lastHideDisplayControlUIWithAutoHide = false;
+                    IsDisplayControlUI = true;
+                }
+            })
+            .AddTo(ref db);
+        Observable.Merge(
+            observeMouseMove.AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable()
+            )
+            .Debounce(TimeSpan.FromSeconds(2))
+            .Where(_ => 
+            {
+                if (!Window.Current.Content.RenderSize.ToRect().Contains(Window.Current.CoreWindow.PointerPosition))
+                {
+                    return false;
+                }
+
+                if (!_isWindowActive) { return false; }
+                //if (IsDisplayControlUI) { return false; }
+
+                return true;
+            })
+            .Subscribe(x =>
+            {
+                HideMouseCursor();
+                _lastHideDisplayControlUIWithAutoHide = IsDisplayControlUI;
+                IsDisplayControlUI = false;
+            })
+            .AddTo(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
 
@@ -120,6 +173,26 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     #region Display Style
+
+
+
+    bool _isWindowActive = true;
+    bool _lastHideDisplayControlUIWithAutoHide = false;
+
+    // マウスカーソルを非表示にする
+    private void HideMouseCursor()
+    {
+        // 現在のウィンドウのカーソルに null を設定
+        Window.Current.CoreWindow.PointerCursor = null;
+    }
+
+
+    // マウスカーソルを再表示する（通常の矢印カーソル）
+    private void ShowMouseCursor()
+    {
+        // Arrow（矢印）タイプを指定して再設定
+        Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
+    }
 
 
     #endregion
