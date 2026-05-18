@@ -503,16 +503,59 @@
               <Button.Flyout>
                 <Flyout>
                   <StackPanel>
-                    <StackPanel Orientation="Horizontal">
-
-                      <Button Content="x0.5" />
-                      <Button Content="x0.75" />
-                      <Button Content="x1.0" />
-                      <Button Content="x1.25" />
-                      <Button Content="x1.5" />
-                      <Button Content="x1.75" />
-                      <Button Content="x2.0" />
-
+                    <StackPanel.Resources>
+                      <Style TargetType="Button">
+                        <Setter Property="Padding"
+                                Value="8 4" />
+                        <Setter Property="CornerRadius"
+                                Value="4" />
+                        <Setter Property="MinWidth"
+                                Value="52" />
+                      </Style>
+                    </StackPanel.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <Button Content="x0.5"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>0.5</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x0.75"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>0.75</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.0"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.0</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.25"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.25</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.5"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.5</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.75"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.75</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x2.0"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>2.0</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
                     </StackPanel>
 
                     <Slider HorizontalAlignment="Stretch"
@@ -524,8 +567,20 @@
                             x:Name="PlaybackRateSlider"
                             IsThumbToolTipEnabled="True"
                             ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}"
-                            
                             />
+                    <Grid>
+                      <TextBlock Text="x0.1" HorizontalAlignment="Left" />
+                      <TextBlock Text="x1.0"
+                                 HorizontalAlignment="Center" Margin="0 0 198 0" />
+                      <TextBlock Text="x2.0"
+                                 HorizontalAlignment="Center"
+                                 Margin="0 0 12 0" />
+                      <TextBlock Text="x3.0"
+                                 HorizontalAlignment="Center"
+                                 Margin="180 0 0 0" />
+                      <TextBlock Text="x4.0"
+                                 HorizontalAlignment="Right" />
+                    </Grid>
                   </StackPanel>
                 </Flyout>
               </Button.Flyout>

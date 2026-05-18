@@ -269,6 +269,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
 
+    [RelayCommand]
+    void SetPlaybackRate(double d)
+    {
+        SetPlaybackRateFromCode(d);
+        MediaPlayer?.PlaybackSession.PlaybackRate = _playbackRate;
+    }
+
     #endregion
 
 
