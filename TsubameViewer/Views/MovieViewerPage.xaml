@@ -598,7 +598,16 @@
       </StackPanel>
     </Border>
 
-    
+    <ProgressBar Minimum="0"
+                      Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                      Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Bottom"
+                      IsHitTestVisible="False"
+                      Opacity="0.3"           
+                 Visibility="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
+                      />
+
     <muxc:ProgressBar IsIndeterminate="True"
                   Opacity="1"
                       Visibility="{x:Bind IsPalyerPreparing(PlayerState), Mode=OneWay}"

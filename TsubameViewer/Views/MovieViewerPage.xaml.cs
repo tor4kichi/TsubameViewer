@@ -141,6 +141,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             observeMouseMove.AsUnitObservable(),
             this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable()
             )
+            .Where(x => !_isWindowActive)
             .Debounce(TimeSpan.FromSeconds(2))
             .Where(_ => 
             {

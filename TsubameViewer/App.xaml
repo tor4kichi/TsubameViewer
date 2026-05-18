@@ -93,14 +93,14 @@
 
       <uwpConv:BoolNegationConverter x:Key="BoolNegationConverter" />
       <uwpConv:BoolToVisibilityConverter x:Key="TrueToVisibleConverter" />
-      <uwpConv:EmptyObjectToObjectConverter x:Key="FalseToVisibleConverter">
-        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+      <uwpConv:BoolToObjectConverter x:Key="FalseToVisibleConverter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
           <Visibility>Collapsed</Visibility>
-        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
-        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
           <Visibility>Visible</Visibility>
-        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
-      </uwpConv:EmptyObjectToObjectConverter>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
       <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
         <uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
           <x:Boolean>True</x:Boolean>
