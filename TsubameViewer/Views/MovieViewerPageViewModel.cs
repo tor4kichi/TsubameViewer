@@ -63,15 +63,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
     
     [ObservableProperty]
-    MediaSource? _movieSource;
-
-    partial void OnMovieSourceChanging(MediaSource? value)
-    {
-        if (MovieSource != null && MovieSource != value)
-        {
-            MovieSource.Dispose();
-        }
-    }
+    StorageFile? _movieFile;
 
     string? _pathForSettings = null;
 
@@ -91,8 +83,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         string? firstDisplayPageName = null;
         if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string escapedPath))
         {
-            MovieSource = null;
-
             (string newPath, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedPath));
 
             _sourceStorageItemsRepository.ThrowIfPathIsUnauthorizedAccess(newPath);
@@ -112,7 +102,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
                 if (imageSource.StorageItem is StorageFile file)
                 {
-                    MovieSource = MediaSource.CreateFromStorageFile(file);                    
+                    MovieFile = file;
                     ApplicationView.GetForCurrentView().Title = Title = file.Name;
                 }
                 else
@@ -170,8 +160,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {        
-        MovieSource = null;
-
         base.OnNavigatedFrom(parameters);
     }
 

@@ -22,6 +22,7 @@ using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -94,27 +95,60 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
 
+        MediaPlayer.Source = null;
+        _playbackResources?.Dispose();
+        _playbackResources = null;
         MyMediaPlayerElement.SetMediaPlayer(null);
-        MediaPlayer?.Dispose();
+        MediaPlayer.Dispose();
         MediaPlayer = null;
     }
+
+
+    IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
         MediaPlayer = new MediaPlayer();
         MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
 
-        DisposableBuilder db = new();
-        _vm.ObservePropertyChanged(x => x.MovieSource)
-            .Subscribe(this, static (x, s) =>
+        MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
+        MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
+        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
+
+        Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
+        Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
+
+        DisposableBuilder db = new();        
+        _vm.ObservePropertyChanged(x => x.MovieFile)
+            .SubscribeAwait(this, static async (x, s, ct) =>
             {
-                s.MediaPlayer?.Source = x;
+                s._playbackResources?.Dispose();
+
+                s.MediaPlayer?.Source = null;
+
+                if (x == null) { return; }
+                if (s.MediaPlayer == null) { return; }
+
+                CompositeDisposable db = new();
+                try
+                {
+                    var mediaSource = MediaSource.CreateFromStorageFile(x);
+                    db.Add(mediaSource);
+                    s.MediaPlayer?.Source = mediaSource;
+                    ct.ThrowIfCancellationRequested();
+                }
+                catch
+                {
+                    db.Dispose();
+                    throw;
+                }
+                s._playbackResources = db;
+
                 if (x != null)
                 {
                     s.HideMouseCursor();
                     s.IsDisplayControlUI = false;
                 }
             })
-
             .AddTo(ref db);
 
         InitializeZoomReaction(ref db);
@@ -180,13 +214,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
-
-        MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
-        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
-
-        Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
-        Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
     }
 
     #region Display Style
@@ -514,7 +541,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 _CanvasHalfSize = x.NewSize.ToVector2() * 0.5f;
             })
             .AddTo(ref db);
-        _vm.ObservePropertyChanged(x => x.MovieSource)
+        _vm.ObservePropertyChanged(x => x.MovieFile)
             .Subscribe(_ =>
             {
                 ZoomFactor = 1.0;
