@@ -156,6 +156,7 @@
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
       <myConv:UriHumanReadableConverter x:Key="UriHumanReadableConverter" />
+      <myConv:DoubleToPercentTextConverter x:Key="DoubleToPercentTextConverter" />
 
       <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToTrueConverter">
         <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>

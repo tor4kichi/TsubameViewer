@@ -418,7 +418,8 @@
                     StepFrequency="0.01"
                     x:Name="ControlUI_SoundVolumeSlider"                    
                     MinWidth="120"
-                    Margin="0 4 0 0">
+                    Margin="0 4 0 0"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}">
 
             </Slider>
           </StackPanel>
