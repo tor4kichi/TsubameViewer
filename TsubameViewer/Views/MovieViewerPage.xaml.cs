@@ -1008,7 +1008,19 @@ public class SecondsToVideoTimeConverter : IValueConverter
     {
         if (value is double d)
         {
-            return TimeSpan.FromSeconds(d).ToString();
+            var timeSpan = TimeSpan.FromSeconds(d);
+            int hours = (int)timeSpan.TotalHours;
+            int minutes = timeSpan.Minutes;
+            int seconds = timeSpan.Seconds;
+
+            if (hours > 0)
+            {
+                return $"{hours:D2}:{minutes:D2}:{seconds:D2}";
+            }
+            else
+            {
+                return $"{minutes:D2}:{seconds:D2}";
+            }
         }
 
         ThrowHelper.ThrowInvalidOperationException();

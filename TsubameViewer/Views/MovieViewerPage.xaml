@@ -575,7 +575,7 @@
               <TranslateTransform Y="-6" />
             </TextBlock.RenderTransform>
           
-          <Run Text="{x:Bind ToHHMMSSString(VideoPosition), Mode=OneWay}" />/<Run Text="{x:Bind ToHHMMSSString(VideoDuration), Mode=OneWay}" />
+          <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
           </TextBlock>
         </uwpControls:DockPanel>
 
