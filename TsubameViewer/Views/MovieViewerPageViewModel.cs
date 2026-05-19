@@ -41,7 +41,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _albamRepository = albamRepository;
         _imageCollectionManager = imageCollectionManager;
         _imageCollectionSettings = imageCollectionSettings;
-        _bookmarkManager = bookmarkManager;
+        BookmarkManager = bookmarkManager;
         _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
         _folderLastIntractItemManager = folderLastIntractItemManager;
@@ -55,13 +55,15 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     private readonly AlbamRepository _albamRepository;
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly ImageViewerSettings _imageCollectionSettings;
-    private readonly LocalBookmarkRepository _bookmarkManager;
+    public LocalBookmarkRepository BookmarkManager { get; }
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
     private readonly ThumbnailImageManager _thumbnailManager;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
     
+
+
     [ObservableProperty]
     StorageFile? _movieFile;
 

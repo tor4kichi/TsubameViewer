@@ -170,6 +170,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             conversion => (sender, args) => conversion(args),
             h => this.PointerEntered += h,
             h => this.PointerEntered -= h);
+
+        var observePointerMoved = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => this.PointerMoved += h,
+            h => this.PointerMoved -= h);
+
         var observePointerExited = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
             conversion => (sender, args) => conversion(args),
             h => this.PointerExited += h,
@@ -181,7 +187,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         observeWindowActivate.Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
             .AddTo(ref db);
-        observeMouseMove
+
+        Observable.Merge(
+            observeMouseMove.AsUnitObservable(),
+            insideWindowRp.AsUnitObservable(),
+            observePointerMoved.AsUnitObservable()
+            )
+            .Debounce(TimeSpan.FromMilliseconds(10))
             .Subscribe(this, static (x, s) =>
             {
                 s.ShowMouseCursor();
@@ -195,7 +207,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Observable.Merge(
             observeMouseMove.AsUnitObservable(),
             this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable()
+            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable(),
+            insideWindowRp.AsUnitObservable()
             )            
             .Debounce(TimeSpan.FromSeconds(1.25))            
             .Where((this, insideWindowRp), static (_, s) => 
@@ -210,9 +223,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe(this, static (x, s) =>
             {
                 s.HideMouseCursor();
+            })
+            .AddTo(ref db);
+
+        Observable.Merge(
+            observeMouseMove.AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable(),
+            insideWindowRp.AsUnitObservable(),
+            observePointerMoved.AsUnitObservable()
+            )
+            .Debounce(TimeSpan.FromSeconds(1.25))
+            .Where((this, insideWindowRp), static (_, s) =>
+            {
+                if (s.Item1.PlayerState != MediaPlaybackState.Playing) { return false; }
+                //if (IsDisplayControlUI) { return false; }
+
+                return true;
+            })
+            .Subscribe(this, static (x, s) =>
+            {
                 s._lastHideDisplayControlUIWithAutoHide = s.IsDisplayControlUI;
                 s.IsDisplayControlUI = false;
             })
+            .AddTo(ref db);
+
+
+        this.ObservePropertyChanged(x => x.VideoPosition)
+            .Debounce(TimeSpan.FromSeconds(1))
+            .Where(this, (x, s) => !s._nowRequestPlayStart && s.VideoDuration > TimeSpan.FromSeconds(5) && s._vm.MovieFile != null)
+            .Subscribe(this, (x, s) => s._vm.BookmarkManager.AddBookmark(s._vm.MovieFile!.Path, s.VideoPosition.ToString(), new Core.Models.FolderItemListing.NormalizedPagePosition((float)(s.VideoPosition.TotalSeconds / s.VideoDuration.TotalSeconds))))
             .AddTo(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
@@ -262,6 +302,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             && _nowRequestPlayStart)
         {
             _nowRequestPlayStart = false;
+            if (_vm.MovieFile != null)
+            {
+                var pos = _vm.BookmarkManager.GetBookmarkLastReadPositionInNormalized(_vm.MovieFile.Path);
+                VideoPosition = VideoDuration * pos;
+            }
             MediaPlayer?.Play();
         }
 
