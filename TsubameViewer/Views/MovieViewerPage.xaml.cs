@@ -25,6 +25,7 @@ using Windows.Foundation.Collections;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.UI.Core;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -55,7 +56,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     bool _isDisplayControlUI;
 
-
     private void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -66,6 +66,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (pt.Properties.IsLeftButtonPressed)
         {
             if (_lastHideDisplayControlUIWithAutoHide) { return; }
+
             IsDisplayControlUI = !IsDisplayControlUI;
         }
     }
@@ -254,6 +255,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Where(this, (x, s) => !s._nowRequestPlayStart && s.VideoDuration > TimeSpan.FromSeconds(5) && s._vm.MovieFile != null)
             .Subscribe(this, (x, s) => s._vm.BookmarkManager.AddBookmark(s._vm.MovieFile!.Path, s.VideoPosition.ToString(), new Core.Models.FolderItemListing.NormalizedPagePosition((float)(s.VideoPosition.TotalSeconds / s.VideoDuration.TotalSeconds))))
             .AddTo(ref db);
+        HandleWindowDisplayState(ref db);
+        HandleSoundVolumeChanged(ref db);
+        HandleLoopingChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
@@ -278,6 +282,30 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         // Arrow（矢印）タイプを指定して再設定
         Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
+    }
+
+
+
+    [ObservableProperty]
+    bool _nowFullScreenMode;
+
+
+    void HandleWindowDisplayState(ref DisposableBuilder db)
+    {
+        var observeWindowActivate = Observable.FromEvent<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+           conversion => (sender, args) => conversion(args),
+           h => Window.Current.SizeChanged += h,
+           h => Window.Current.SizeChanged -= h);
+
+        var appView = ApplicationView.GetForCurrentView();
+        observeWindowActivate.Debounce(TimeSpan.FromMilliseconds(50))
+            .Subscribe((this, appView ), (args, s) => 
+            {                
+                s.Item1.NowFullScreenMode = s.appView.IsFullScreenMode;
+            })
+            .AddTo(ref db);
+
+        NowFullScreenMode = appView.IsFullScreenMode;
     }
 
 
@@ -338,12 +366,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    [ObservableProperty]
-    bool _isLoopingEnabled;
 
-    partial void OnIsLoopingEnabledChanged(bool value)
+    void HandleLoopingChanged(ref DisposableBuilder db)
     {
-        MediaPlayer?.IsLoopingEnabled = value;
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsRepeat)
+            .Subscribe(this, (x, s) => s.MediaPlayer?.IsLoopingEnabled = x)
+            .AddTo(ref db);
     }
 
 
@@ -429,6 +457,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     #region Playback Rate
 
 
+
+    void HandlePlaybackRateChanged(ref DisposableBuilder db)
+    {
+
+    }
+
     string ToPlaybackRateString(double rate)
     {
         return $"x{rate:F1}";
@@ -445,7 +479,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             bool prevPlaying = PlayerState == MediaPlaybackState.Playing;
             MediaPlayer?.Pause();
-            PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
+            _vm.PageSettings.PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
             if (prevPlaying)
             {
                 Observable.NextFrame()
@@ -457,16 +491,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _nowPlaybackRateChangingFromCode = false;
         }
     }
-
-    [ObservableProperty]
-    double _playbackRate = 1;
-
+    
     private void PlaybackRateSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
+        if (((FrameworkElement)sender).IsLoaded is false) { return; }
         if (_nowPlaybackRateChangingFromCode) { return; }
 
         SetPlaybackRateFromCode((double)e.NewValue);
-        MediaPlayer?.PlaybackSession.PlaybackRate = _playbackRate;
+        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
 
@@ -474,7 +506,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackRate(double d)
     {
         SetPlaybackRateFromCode(d);
-        MediaPlayer?.PlaybackSession.PlaybackRate = _playbackRate;
+        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
     #endregion
@@ -482,14 +514,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     #region Sound Volume
 
-    [ObservableProperty]    
-    double _soundVolume = 0.5;
-
-    partial void OnSoundVolumeChanged(double value)
+    void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
-        MediaPlayer?.Volume = SoundVolume;
+        _vm.PageSettings.ObservePropertyChanged(x => x.SoundVolume)
+            .Subscribe((this), (x, s) => s.MediaPlayer?.Volume = x)
+            .AddTo(ref db);
+
+        SoundVolume_Display = _vm.PageSettings.SoundVolume;
+
+        ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
+        ControlUI_SoundVolumeSlider.ValueChanged += ControlUI_SoundVolumeSlider_ValueChanged;
+        Disposable.Create(this, s => s.ControlUI_SoundVolumeSlider.ValueChanged += s.ControlUI_SoundVolumeSlider_ValueChanged)
+            .AddTo(ref db);
     }
 
+   
     [ObservableProperty]
     double _soundVolume_Display = 0.5;
 
@@ -515,7 +554,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             else
             {
-                SoundVolume_Display = SoundVolume;
+                SoundVolume_Display = _vm.PageSettings.SoundVolume;
             }
         }
         finally
@@ -527,6 +566,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool _nowSoundVolumeChanging;
     private void ControlUI_SoundVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
+        if (((FrameworkElement)sender).IsLoaded is false) { return; }
         if (_nowSoundVolumeChanging) { return; }
 
         SetSoundVolumeFromCode((double)e.NewValue);        
@@ -537,8 +577,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _nowSoundVolumeChanging = true;
         try
         {
-            SoundVolume = Math.Clamp(v, 0.0, 1.0);
-            IsMute = SoundVolume == 0;
+            _vm.PageSettings.SoundVolume = Math.Clamp(v, 0.0, 1.0);
+            IsMute = _vm.PageSettings.SoundVolume == 0;
             //SoundVolume_Display = SoundVolume;
         }
         finally

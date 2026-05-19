@@ -170,7 +170,7 @@
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
     <Compile Include="ViewModels\EBookReaderPageViewModel.cs" />
-    <Compile Include="ViewModels\FolderListupPageViewModel.cs" />
+    <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="ViewModels\ImageListupPageViewModel.cs" />
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />

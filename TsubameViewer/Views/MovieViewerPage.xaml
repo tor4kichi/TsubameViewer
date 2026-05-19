@@ -55,7 +55,7 @@
           <!-- 左右反転 -->
           <ToggleButton x:Name="FlipHorizontalButton"
                   AccessKey="Y"
-                  Command="{x:Bind ToggleHorizontalMirrorDisplayCommand}">
+                        IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}">
             <SymbolIcon Symbol="Sort"
                         RenderTransformOrigin="0.5, 0.5">
               <SymbolIcon.RenderTransform>
@@ -234,7 +234,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsHorizontalMirrorModeEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="MirrorScaleTransform.ScaleX"
@@ -242,6 +242,24 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
+      <!-- 全画面表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="FullScreenExitButtonContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
     </VisualStateManager.VisualStateGroups>
 
     <MediaPlayerElement AutoPlay="False"
@@ -281,16 +299,16 @@
         <ThemeShadow />
       </Border.Shadow>
 
-      <animation:Implicit.ShowAnimations>
+      <!--<animation:Implicit.ShowAnimations>
         <animation:TranslationAnimation To="0, 0"
                                         EasingType="Cubic"
-                                        Duration="0:0:0.175" />
+                                        Duration="0:0:0.125" />
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:TranslationAnimation To="0, 200"
                                         EasingType="Cubic"
-                                        Duration="0:0:0.175" />
-      </animation:Implicit.HideAnimations>
+                                        Duration="0:0:0.125" />
+      </animation:Implicit.HideAnimations>-->
 
       <StackPanel Margin="8"
                   Spacing="6">
@@ -376,7 +394,7 @@
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right">
             <ToggleButton x:Name="ControlUI_RepeatButton"
-                          IsChecked="{x:Bind IsLoopingEnabled, Mode=TwoWay}"
+                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
                           Height="40"
                           Width="48">
               <SymbolIcon Symbol="RepeatAll" />
@@ -398,8 +416,7 @@
                     Maximum="1"
                     Minimum="0"
                     StepFrequency="0.01"
-                    x:Name="ControlUI_SoundVolumeSlider"
-                    ValueChanged="ControlUI_SoundVolumeSlider_ValueChanged"
+                    x:Name="ControlUI_SoundVolumeSlider"                    
                     MinWidth="120"
                     Margin="0 4 0 0">
 
@@ -458,7 +475,7 @@
         <uwpControls:DockPanel>
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Left">
-            <Button Content="{x:Bind ToPlaybackRateString(PlaybackRate), Mode=OneWay}"
+            <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60">
               <Button.Flyout>
                 <Flyout>
@@ -521,7 +538,7 @@
                     <Slider HorizontalAlignment="Stretch"
                             Maximum="{x:Bind MaxPlaybackRate}"
                             Minimum="{x:Bind MinPlaybackRate}"
-                            Value="{x:Bind PlaybackRate, Mode=OneWay}"
+                            Value="{x:Bind _vm.PageSettings.PlaybackRate, Mode=OneWay}"
                             ValueChanged="PlaybackRateSlider_ValueChanged"
                             StepFrequency="0.1"
                             x:Name="PlaybackRateSlider"
@@ -598,6 +615,28 @@
       </StackPanel>
     </Border>
 
+    <Grid HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Visibility="Collapsed"
+          x:Name="FullScreenExitButtonContainer"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          CornerRadius="24"
+          BorderBrush="{ThemeResource SystemBaseMediumColor}"
+          BorderThickness="1"
+          Margin="48">
+      <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
+              Width="60"
+              Height="60"
+              RenderTransformOrigin="0.5, 0.5"
+              FontWeight="Thin"
+              Padding="1 1 0 0">
+        <UIElement.RenderTransform>
+          <ScaleTransform ScaleX="1.5"
+                          ScaleY="1.5" />
+        </UIElement.RenderTransform>
+        <SymbolIcon Symbol="Clear" />
+      </Button>
+    </Grid>
     <ProgressBar Minimum="0"
                       Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
                       Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -20,6 +21,55 @@ using Windows.Storage;
 using Windows.UI.ViewManagement;
 #nullable enable
 namespace TsubameViewer.ViewModels;
+
+
+public sealed class MovieViewerPageSettings : FlagsRepositoryBase
+{
+    public MovieViewerPageSettings()
+    {
+        _isRepeat = Read(false, nameof(IsRepeat));
+        _isMuted = Read(false, nameof(IsMuted));
+        _playbackRate = Read(1d, nameof(PlaybackRate));
+        _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
+        _soundVolume = Read(0.5d, nameof(SoundVolume));
+    }
+
+    bool _isRepeat;
+    public bool IsRepeat
+    {
+        get => _isRepeat;
+        set => SetProperty(ref _isRepeat, value);
+    }
+
+    bool _isMuted;
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set => SetProperty(ref _isMuted, value);
+    }
+
+
+    double _soundVolume;
+    public double SoundVolume
+    {
+        get => _soundVolume;
+        set => SetProperty(ref _soundVolume, value);
+    }
+
+    double _playbackRate;
+    public double PlaybackRate
+    {
+        get => _playbackRate;
+        set => SetProperty(ref _playbackRate, value);
+    }
+
+    bool _isHorizontalMirror;
+    public bool IsHorizontalMirror
+    {
+        get => _isHorizontalMirror;
+        set => SetProperty(ref _isHorizontalMirror, value);
+    }
+}
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
 {
@@ -34,7 +84,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         ThumbnailImageManager thumbnailManager,
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
-        RecyclableMemoryStreamManager recyclableMemoryStreamManager)
+        RecyclableMemoryStreamManager recyclableMemoryStreamManager,
+        MovieViewerPageSettings pageSettings)
     {
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -47,6 +98,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+        PageSettings = pageSettings;
     }
 
     CancellationToken _navigationCt;
@@ -56,6 +108,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     private readonly ImageCollectionManager _imageCollectionManager;
     private readonly ImageViewerSettings _imageCollectionSettings;
     public LocalBookmarkRepository BookmarkManager { get; }
+    public MovieViewerPageSettings PageSettings { get; }
+
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
     private readonly ThumbnailImageManager _thumbnailManager;
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
@@ -166,17 +220,13 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     }
 
 
-    [ObservableProperty]
-    bool _isMirrorDisplayEnabled;
-
-
     [RelayCommand]
     public void ToggleFullScreen()
     {
         var appView = ApplicationView.GetForCurrentView();
         if (appView.IsFullScreenMode)
         {
-            appView.ExitFullScreenMode();
+            appView.ExitFullScreenMode();            
         }
         else
         {

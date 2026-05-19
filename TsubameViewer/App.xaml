@@ -86,6 +86,10 @@
       <locale:LocalizeKeyAsParametersConverter x:Key="LocalizeKeyAsParametersConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
+      <DataTemplate x:Key="LocalizeTextTemplate">
+        <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
+      </DataTemplate>
+      
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
