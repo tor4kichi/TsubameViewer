@@ -443,7 +443,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _nowPlaybackRateChangingFromCode = true;
         try
         {
+            bool prevPlaying = PlayerState == MediaPlaybackState.Playing;
+            MediaPlayer?.Pause();
             PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
+            if (prevPlaying)
+            {
+                Observable.NextFrame()
+                    .Subscribe(MediaPlayer, (_, s) => s?.Play());                
+            }
         }
         finally
         {
