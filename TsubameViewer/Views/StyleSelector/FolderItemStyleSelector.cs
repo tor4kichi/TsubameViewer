@@ -35,7 +35,7 @@ namespace TsubameViewer.Views.StyleSelector
                     StorageItemTypes.AlbamImage => AlbamImage,
                     StorageItemTypes.EBook => EBook,
                     StorageItemTypes.Movie => Movie,
-                    _ => throw new NotSupportedException()
+                    _ => Image
                 };
             }
             return base.SelectStyleCore(item, container);

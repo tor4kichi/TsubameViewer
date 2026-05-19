@@ -61,7 +61,7 @@ namespace TsubameViewer.Views.FolderListup
                     StorageItemTypes.AddFolder => AddFolderIcon,
                     StorageItemTypes.AddAlbam => AddAlbamIcon,
                     StorageItemTypes.Movie => MovieIcon,
-                    var type => throw new NotSupportedException(type.ToString()),
+                    var type => ImageIcon,
                 };
             }
 

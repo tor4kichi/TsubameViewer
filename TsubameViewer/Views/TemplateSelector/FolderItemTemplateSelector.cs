@@ -46,7 +46,7 @@ public sealed class FolderItemTemplateSelector : DataTemplateSelector
                 StorageItemTypes.AddFolder => AddNewFolder,
                 StorageItemTypes.AddAlbam => AddNewFolder,
                 StorageItemTypes.Movie => Movie,
-                _ => throw new NotSupportedException()
+                _ => Image,
             };
         }
         
