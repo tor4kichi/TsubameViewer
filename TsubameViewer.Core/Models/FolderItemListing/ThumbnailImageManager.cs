@@ -35,6 +35,8 @@ using VersOne.Epub;
 using Windows.Foundation;
 using Windows.Graphics.Display;
 using Windows.Graphics.Imaging;
+using Windows.Media.Core;
+using Windows.Media.Editing;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
@@ -1240,14 +1242,31 @@ public sealed class ThumbnailImageManager
     {
         // 1. サムネイルの取得設定
         // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
-        uint requestedSize = 300; // 要求するピクセルサイズ（長辺）
-        ThumbnailOptions options = ThumbnailOptions.UseCurrentScale;
-        if (await file.GetThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct) is not { } thumbnail) { return false; }
+        uint requestedSize = 200; // 要求するピクセルサイズ（長辺）
 
-        using (thumbnail)
+        try
         {
-            thumbnail.AsStreamForRead().CopyTo(outputStream);
+            var videoProps = await file.Properties.GetVideoPropertiesAsync();            
+            var clip = await MediaClip.CreateFromFileAsync(file);
+            var mc = new MediaComposition();
+            mc.Clips.Add(clip);            
+            
+            await TranscodeThumbnailImageToStreamAsync(file.Path, async () => 
+            {
+                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(0.5), (int)videoProps.Width, (int)videoProps.Height, VideoFramePrecision.NearestFrame)).AsStreamForRead();
+            }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
             return true;
+        }
+        catch
+        {
+            ThumbnailOptions options = ThumbnailOptions.None;
+            {                
+                await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
+                {
+                    return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
+                }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
         }
     }
 
