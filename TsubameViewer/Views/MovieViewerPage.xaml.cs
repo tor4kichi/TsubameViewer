@@ -94,7 +94,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
-
+        
         MediaPlayer.Source = null;
         _playbackResources?.Dispose();
         _playbackResources = null;
@@ -112,7 +112,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
-        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
+        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;                
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
@@ -131,6 +131,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 CompositeDisposable db = new();
                 try
                 {
+                    s._nowRequestPlayStart = true;
                     var mediaSource = MediaSource.CreateFromStorageFile(x);
                     db.Add(mediaSource);
                     s.MediaPlayer?.Source = mediaSource;
@@ -138,6 +139,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }
                 catch
                 {
+                    s._nowRequestPlayStart = false;
                     db.Dispose();
                     throw;
                 }
@@ -170,7 +172,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             h => this.PointerEntered -= h);
         var observePointerExited = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
             conversion => (sender, args) => conversion(args),
-            h => this.PointerExited+= h,
+            h => this.PointerExited += h,
             h => this.PointerExited -= h);
 
         var insideWindowRp = Observable.Merge(observePointerEntered.Select(x => true), observePointerExited.Select(x => false))
@@ -242,6 +244,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     #endregion
 
     #region Playback
+
+    bool _nowRequestPlayStart;
+
     private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()
@@ -250,6 +255,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     [ObservableProperty]
     MediaPlaybackState _playerState;
+
+    partial void OnPlayerStateChanged(MediaPlaybackState value)
+    {
+        if (value == MediaPlaybackState.Paused
+            && _nowRequestPlayStart)
+        {
+            _nowRequestPlayStart = false;
+            MediaPlayer?.Play();
+        }
+
+        Debug.WriteLine(value);
+    }
 
     public Visibility IsPalyerPreparing(MediaPlaybackState state)
     {
@@ -289,7 +306,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
 
     #region Position and Duration
-
+    
     private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()

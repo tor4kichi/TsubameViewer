@@ -244,7 +244,7 @@
       </VisualStateGroup>
     </VisualStateManager.VisualStateGroups>
 
-    <MediaPlayerElement AutoPlay="True"
+    <MediaPlayerElement AutoPlay="False"
                         Stretch="Uniform"
                         x:Name="MyMediaPlayerElement"
                         RenderTransformOrigin="0.5, 0.5">
