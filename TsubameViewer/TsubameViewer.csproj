@@ -237,6 +237,7 @@
     <Compile Include="Views\Converters\PointToRectConverter.cs" />
     <Compile Include="Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="Views\Converters\SliderValueChangedEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\TimeSpanToStringConverter.cs" />
     <Compile Include="Views\Converters\ToKMGTPEZYConverter.cs" />
     <Compile Include="Views\Converters\UriHumanReadableConverter.cs" />
     <Compile Include="Views\Dialogs\SplitImageInputDialog.xaml.cs">

@@ -1246,7 +1246,8 @@ public sealed class ThumbnailImageManager
 
         try
         {
-            var videoProps = await file.Properties.GetVideoPropertiesAsync();            
+            var videoProps = await file.Properties.GetVideoPropertiesAsync();
+            
             var clip = await MediaClip.CreateFromFileAsync(file);
             var mc = new MediaComposition();
             mc.Clips.Add(clip);            

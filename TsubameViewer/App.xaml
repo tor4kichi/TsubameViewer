@@ -118,13 +118,31 @@
           <x:Boolean>True</x:Boolean>
         </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyStringToObjectConverter>
-
+           
       <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToBooleanConverter">
         <uwpConv:EmptyStringToObjectConverter.EmptyValue>
           <x:Boolean>True</x:Boolean>
         </uwpConv:EmptyStringToObjectConverter.EmptyValue>
         <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
           <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringNotEmptyToVisibleConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToVisibleConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <Visibility>Collapsed</Visibility>
         </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyStringToObjectConverter>
 

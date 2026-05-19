@@ -118,6 +118,33 @@
                       />
         <TextBlock Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            >
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0 0 0 0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+        
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+          
+        </Border>
+      </Grid>
     </Grid>
   </DataTemplate>
 
@@ -140,6 +167,34 @@
                         />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
       </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+
+        </Border>
+      </Grid>
+
     </Grid>
   </DataTemplate>
 
@@ -174,6 +229,33 @@
                         uwpControls:DockPanel.Dock="Right" />
         <TextBlock Text="{x:Bind Name}"
                    Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+
+        </Border>
       </Grid>
     </Grid>
   </DataTemplate>
