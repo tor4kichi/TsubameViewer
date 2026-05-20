@@ -46,7 +46,7 @@ public static class ObservableEventExtensions
             h => window.Activated -= h);
     }
 
-    public static Observable<PointerRoutedEventArgs> ObservePointerMoved(this Control control)
+    public static Observable<PointerRoutedEventArgs> ObservePointerMoved(this FrameworkElement control)
     {
         return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
             conversion => (sender, args) => conversion(args),
@@ -54,7 +54,7 @@ public static class ObservableEventExtensions
             h => control.PointerMoved -= h);
     }
 
-    public static Observable<PointerRoutedEventArgs> ObservePointerEntered(this Control control)
+    public static Observable<PointerRoutedEventArgs> ObservePointerEntered(this FrameworkElement control)
     {
         return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
             conversion => (sender, args) => conversion(args),
@@ -62,11 +62,14 @@ public static class ObservableEventExtensions
             h => control.PointerEntered -= h);
     }
 
-    public static Observable<PointerRoutedEventArgs> ObservePointerExited(this Control control)
+    public static Observable<PointerRoutedEventArgs> ObservePointerExited(this FrameworkElement control)
     {
         return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
             conversion => (sender, args) => conversion(args),
             h => control.PointerExited += h,
             h => control.PointerExited -= h);
     }
+
+
+
 }

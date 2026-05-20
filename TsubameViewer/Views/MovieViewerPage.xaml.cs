@@ -132,6 +132,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .ToReadOnlyReactiveProperty(false)
             .AddTo(ref db);
 
+        var insideControlUIRp = Observable.Merge(
+                ImageSelectorContainer.ObservePointerEntered().Select(x => true),
+                ImageSelectorContainer.ObservePointerExited().Select(x => false))
+            .Do(x => Debug.WriteLine($"inside ControlUI: {x}"))
+            .ToReadOnlyReactiveProperty(false)
+            .AddTo(ref db);
+
         Window.Current.ObserveActivated()
             .Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
             .AddTo(ref db);
@@ -143,12 +150,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         void MouseCursorMonitorTimer_Tick(DispatcherQueueTimer sender, object args)
         {
             if (insideWindowRp.CurrentValue
-                && PlayerState == MediaPlaybackState.Playing)
+                && PlayerState == MediaPlaybackState.Playing
+                && !insideControlUIRp.CurrentValue)
             {
-                HideMouseCursor();
+                HideMouseCursor();                
+            }
+
+            if (PlayerState == MediaPlaybackState.Playing
+                && !insideControlUIRp.CurrentValue)
+            {
                 IsDisplayControlUI = false;
             }
         }
+
         _vm.ObservePropertyChanged(x => x.MovieFile)
             .SubscribeAwait(this, static async (x, s, ct) =>
             {
@@ -191,17 +205,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         InitializeZoomReaction(ref db);
 
         Observable.Merge(
-            MouseDevice.GetForCurrentView().ObserveMouseMoved().AsUnitObservable().Debounce(TimeSpan.FromMilliseconds(10)),
+            MouseDevice.GetForCurrentView().ObserveMouseMoved().AsUnitObservable(),
             insideWindowRp.Where(x => x).AsUnitObservable(),
-            this.ObservePointerMoved().AsUnitObservable()
-            )                        
-            .Subscribe(this, static (x, s) =>
+            Window.Current.ObserveActivated().AsUnitObservable()
+            )
+            .Subscribe((this, insideWindowRp), static (x, s) =>
             {
-                s.ShowMouseCursor();
-                s.IsDisplayControlUI = true;
-                                
-                s._mouseCursorAutoHideTimer.Stop();
-                s._mouseCursorAutoHideTimer.Start();
+                var _this = s.Item1;
+                _this.ShowMouseCursor();
+                if (s.insideWindowRp.CurrentValue)
+                {
+                    _this.IsDisplayControlUI = true;
+
+                    _this._mouseCursorAutoHideTimer.Stop();
+                    _this._mouseCursorAutoHideTimer.Start();
+                }
             })
             .AddTo(ref db);        
 
