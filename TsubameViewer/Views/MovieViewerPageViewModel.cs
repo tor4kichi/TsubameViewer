@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -94,10 +95,10 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _imageCollectionSettings = imageCollectionSettings;
         BookmarkManager = bookmarkManager;
         _recentlyAccessRepository = recentlyAccessRepository;
-        _thumbnailManager = thumbnailManager;
+        ThumbnailManager = thumbnailManager;
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
-        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
+        RecyclableMemoryStreamManager = recyclableMemoryStreamManager;
         PageSettings = pageSettings;
     }
 
@@ -111,11 +112,13 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     public MovieViewerPageSettings PageSettings { get; }
 
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
-    private readonly ThumbnailImageManager _thumbnailManager;
+    public ThumbnailImageManager ThumbnailManager { get; }
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+    public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
     
+
+    public ICommand TogglePlayerStretchCommand { get; set; }
 
 
     [ObservableProperty]

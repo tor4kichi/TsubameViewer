@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
+using I18NPortable;
+using Microsoft.Graphics.Canvas;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using PDFtoImage;
 using R3;
@@ -16,15 +18,19 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.Display;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.System;
+using Windows.UI.Composition;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
@@ -83,6 +89,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
+
+        _vm.TogglePlayerStretchCommand = TogglePlayerStretchCommand;
 
     }
 
@@ -177,7 +185,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 try
                 {
                     s._nowRequestPlayStart = true;
-                    var mediaSource = MediaSource.CreateFromStorageFile(x);
+                    var mediaSource = MediaSource.CreateFromStorageFile(x);                    
                     db.Add(mediaSource);
                     s.MediaPlayer?.Source = mediaSource;
                     ct.ThrowIfCancellationRequested();
@@ -974,6 +982,66 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
 
     #endregion
+
+    [RelayCommand]
+    async Task TogglePlayerStretch()
+    {
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+        MediaPlayer?.Pause();
+        MyMediaPlayerElement.Stretch = MyMediaPlayerElement.Stretch switch
+        {
+            Stretch.None => Stretch.Uniform,
+            //Stretch.Fill => Stretch.Uniform,
+            Stretch.Uniform => Stretch.UniformToFill,
+            Stretch.UniformToFill => Stretch.None,
+            _ => Stretch.None,
+        };
+
+        if (isPlaying)
+        {
+            MediaPlayer?.Play();
+        }
+    }
+
+
+    [RelayCommand]
+    async Task SetThumbnailImageAsync()
+    {
+        if (MediaPlayer == null) { return; }
+
+        try
+        {
+            bool prevPlaying = false;
+            if (MediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing)
+            {
+                MediaPlayer.Pause();
+                prevPlaying = true;
+            }
+
+            var source = MediaPlayer.Source as MediaSource;
+
+            using CanvasRenderTarget crt = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (float)MyMediaPlayerElement.ActualWidth, (float)MyMediaPlayerElement.ActualHeight, DisplayInformation.GetForCurrentView().LogicalDpi);
+            MediaPlayer.CopyFrameToVideoSurface(crt);
+
+            using (var stream = _vm.RecyclableMemoryStreamManager.GetStream())
+            {
+                await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);
+                stream.Seek(0, SeekOrigin.Begin);
+                await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream, true, this.GetCancellationTokenOnNavigatingFrom());
+            }
+
+            _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
+
+            if (prevPlaying)
+            {
+                MediaPlayer.Play();
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 }
 
 public class SecondsToVideoTimeConverter : IValueConverter

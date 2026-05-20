@@ -45,13 +45,13 @@
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
-          <!--変形モード-->
-          <!--
-          <Button AccessKey="R"
-                  Command="{x:Bind ToggleTransformModeCommand}">
-            <SymbolIcon Symbol="ZoomIn" />
+          <!-- プレイヤーの変形表示を切り替え -->
+          <Button Command="{x:Bind TogglePlayerStretchCommand}"
+                  Style="{StaticResource TitlebarButton}">
+            <SymbolIcon Symbol="ZoomIn"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
           </Button>
-          -->
           <!-- 左右反転 -->
           <ToggleButton x:Name="FlipHorizontalButton"
                   AccessKey="Y"
@@ -297,8 +297,8 @@
     <Border x:Name="ImageSelectorContainer"
             Grid.ColumnSpan="3"
             VerticalAlignment="Bottom"
-            Margin="0 0 0 16"
-            Padding="0 8"
+            Margin="0 0 0 0"
+            Padding="0 8 0 24"
             Opacity="0"
             IsHitTestVisible="False"
             Background="{ThemeResource SystemAltMediumHighColor}"
@@ -350,14 +350,17 @@
 
             <muxc:DropDownButton.Flyout>
               <MenuFlyout Opening="Page2MenuFlyout_Opening">
+                <!--
                 <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton"
                                    Text="{i18nExt:Localize Key=AlbamItemAdd}"
                                    >
 
                 </MenuFlyoutSubItem>
+                -->
                 <MenuFlyoutItem x:Name="Page2SetThubmailImageButton"
                                 AccessKey="T"
                                 Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                Command="{x:Bind SetThumbnailImageCommand}"
                                 >
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="T" />
@@ -390,10 +393,11 @@
                       uwpControls:DockPanel.Dock="Right"
                       Spacing="8">
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
-                    MinWidth="60">
+                    MinWidth="60"
+                    Height="40">
               <Button.Flyout>
                 <Flyout>
-                  <StackPanel>
+                  <StackPanel Spacing="8">
                     <StackPanel.Resources>
                       <Style TargetType="Button">
                         <Setter Property="Padding"
