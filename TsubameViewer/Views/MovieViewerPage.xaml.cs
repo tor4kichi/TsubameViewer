@@ -261,6 +261,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
+        HandlePlaybackRateChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
@@ -353,7 +354,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MediaPlayer.Pause();
         }
     }
-
 
     void HandleLoopingChanged(ref DisposableBuilder db)
     {
@@ -448,7 +448,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void HandlePlaybackRateChanged(ref DisposableBuilder db)
     {
-
+        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
     string ToPlaybackRateString(double rate)
