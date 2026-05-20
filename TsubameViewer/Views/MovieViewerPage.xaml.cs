@@ -237,7 +237,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         this.ObservePropertyChanged(x => x.PlayerState)
             .Where(x => x == MediaPlaybackState.Paused)
             .Take(1)
-            .Subscribe((this, bookmarkRp), static (x, s) =>
+            .SubscribeAwait((this, bookmarkRp), static async (x, s, ct) =>
             {
                 var _this = s.Item1;
                 if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
@@ -245,8 +245,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 if (_this._nowRequestPlayStart)
                 {
                     _this._nowRequestPlayStart = false;
+                    await Observable.TimerFrame(20).WaitAsync();
                     _this.MediaPlayer?.Play();
+                    await Observable.NextFrame().WaitAsync();
                 }
+                // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
+                _this.MediaPlayer?.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
             });
 
         this.ObservePropertyChanged(x => x.VideoPosition)
@@ -408,6 +412,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {        
+        if (((FrameworkElement)sender).IsLoaded == false) { return; }
         if (_videoPositionChangingFromCode) 
         {
             return; 
