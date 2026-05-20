@@ -165,8 +165,10 @@
             <StateTrigger IsActive="{x:Bind _vm.IsTransformModeEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Visibility"
-                    Value="Collapsed" />
+            <Setter Target="ImageSelectorContainer.Opacity"
+                    Value="0" />
+            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -174,8 +176,10 @@
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Visibility"
-                    Value="Visible" />
+            <Setter Target="ImageSelectorContainer.Opacity"
+                    Value="1" />
+            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -183,8 +187,10 @@
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Visibility"
-                    Value="Collapsed" />
+            <Setter Target="ImageSelectorContainer.Opacity"
+                    Value="0" />
+            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
+                    Value="False" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -254,8 +260,10 @@
             <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FullScreenExitButtonContainer.Visibility"
-                    Value="Visible" />
+            <Setter Target="FullScreenExitButtonContainer.Opacity"
+                    Value="1" />
+            <Setter Target="FullScreenExitButtonContainer.IsHitTestVisible"
+                    Value="True" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -279,6 +287,7 @@
           Background="Transparent"
                   Opacity="0"
           PointerPressed="ControlUIInteractionWall_PointerPressed"
+          PointerReleased="ControlUIInteractionWall_PointerReleased"
           x:Name="ControlUIInteractionWall"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch">
@@ -286,32 +295,18 @@
     </Grid>
 
     <Border x:Name="ImageSelectorContainer"
-            Background="{ThemeResource SystemChromeMediumHighColor}"
             Grid.ColumnSpan="3"
             VerticalAlignment="Bottom"
-            HorizontalAlignment="Center"
-            Width="460"            
-            CornerRadius="8"
             Margin="0 0 0 16"
-            Translation="0, 0, 16">
-
-      <Border.Shadow>
-        <ThemeShadow />
-      </Border.Shadow>
-
-      <!--<animation:Implicit.ShowAnimations>
-        <animation:TranslationAnimation To="0, 0"
-                                        EasingType="Cubic"
-                                        Duration="0:0:0.125" />
-      </animation:Implicit.ShowAnimations>
-      <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 200"
-                                        EasingType="Cubic"
-                                        Duration="0:0:0.125" />
-      </animation:Implicit.HideAnimations>-->
-
-      <StackPanel Margin="8"
-                  Spacing="6">
+            Padding="0 8"
+            Opacity="0"
+            IsHitTestVisible="False"
+            Background="{ThemeResource SystemAltMediumHighColor}"
+            >
+      <StackPanel Margin="8 0"
+                  Spacing="6"
+                  MaxWidth="720"
+                  >
 
         <Grid Margin="0 0 0 8">
           <Grid.Resources>
@@ -392,90 +387,8 @@
 
         <uwpControls:DockPanel>
           <StackPanel Orientation="Horizontal"
-                      uwpControls:DockPanel.Dock="Right">
-            <ToggleButton x:Name="ControlUI_RepeatButton"
-                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
-                          Height="40"
-                          Width="48">
-              <SymbolIcon Symbol="RepeatAll" />
-            </ToggleButton>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal"
-                      uwpControls:DockPanel.Dock="Left">
-            <Button x:Name="ControlUI_PlayPauseButton"
-                    Command="{x:Bind TogglePlayPauseCommand}">
-              <SymbolIcon Symbol="Play" />
-            </Button>
-          </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <Button x:Name="ToggleIsMutedButton"
-                    Command="{x:Bind ToggleIsMutedCommand}">
-              <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
-            </Button>
-            <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
-                    Maximum="1"
-                    Minimum="0"
-                    StepFrequency="0.01"
-                    x:Name="ControlUI_SoundVolumeSlider"                    
-                    MinWidth="120"
-                    Margin="0 4 0 0"
-                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}">
-
-            </Slider>
-          </StackPanel>
-        </uwpControls:DockPanel>
-        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
-         XYFocus*を使って強制的に移動先を指定している 
-    -->
-        <!--
-        <ComboBox x:Name="PageFolderNamesSelector"
-                  uwpControls:DockPanel.Dock="Top"
-                  ItemsSource="{Binding PageFolderNames}"
-                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                  SelectionChangedTrigger="Committed"
-                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="0 4"
-                  AccessKey="3">
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}">
-                <core:InvokeCommandAction.InputConverter>
-                  <local:SelectorSelectedChangedToStringConverter />
-                </core:InvokeCommandAction.InputConverter>
-              </core:InvokeCommandAction>
-              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}"
-                                     MethodName="Hide" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-          <ComboBox.KeyboardAccelerators>
-            <KeyboardAccelerator Key="3" />
-          </ComboBox.KeyboardAccelerators>
-        </ComboBox>
--->
-        <Slider x:Name="PageSelector"
-                uwpControls:DockPanel.Dock="Bottom"
-                Minimum="0"
-                Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
-                Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
-                ValueChanged="VideoPositionSlider_ValueChanged"
-                ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
-                TickFrequency="0.01"
-                StepFrequency="0.01"
-                Padding="0"
-                Margin="0 0"
-                FlowDirection="LeftToRight"
-                AccessKey="4">
-          <Slider.KeyboardAccelerators>
-            <KeyboardAccelerator Key="4" />
-          </Slider.KeyboardAccelerators>
-        </Slider>
-
-        <uwpControls:DockPanel>
-          <StackPanel Orientation="Horizontal"
-                      uwpControls:DockPanel.Dock="Left">
+                      uwpControls:DockPanel.Dock="Right"
+                      Spacing="8">
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60">
               <Button.Flyout>
@@ -491,7 +404,8 @@
                                 Value="52" />
                       </Style>
                     </StackPanel.Resources>
-                    <StackPanel Orientation="Horizontal" Spacing="4">
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="4">
                       <Button Content="x0.5"
                               Command="{x:Bind SetPlaybackRateCommand}">
                         <Button.CommandParameter>
@@ -544,12 +458,13 @@
                             StepFrequency="0.1"
                             x:Name="PlaybackRateSlider"
                             IsThumbToolTipEnabled="True"
-                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}"
-                            />
+                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}" />
                     <Grid>
-                      <TextBlock Text="x0.1" HorizontalAlignment="Left" />
+                      <TextBlock Text="x0.1"
+                                 HorizontalAlignment="Left" />
                       <TextBlock Text="x1.0"
-                                 HorizontalAlignment="Center" Margin="0 0 198 0" />
+                                 HorizontalAlignment="Center"
+                                 Margin="0 0 198 0" />
                       <TextBlock Text="x2.0"
                                  HorizontalAlignment="Center"
                                  Margin="0 0 12 0" />
@@ -563,22 +478,103 @@
                 </Flyout>
               </Button.Flyout>
             </Button>
+            <ToggleButton x:Name="ControlUI_RepeatButton"
+                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
+                          Height="40"
+                          Width="48">
+              <SymbolIcon Symbol="RepeatAll" />
+            </ToggleButton>
           </StackPanel>
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Left">
+            <Button x:Name="ControlUI_PlayPauseButton"
+                    Command="{x:Bind TogglePlayPauseCommand}"
+                    Height="40"
+                    Width="48">
+              <SymbolIcon Symbol="Play" />
+            </Button>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Button x:Name="ToggleIsMutedButton"
+                    Command="{x:Bind ToggleIsMutedCommand}"
+                    Height="40"
+                    Width="48">
+              <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
+            </Button>
+            <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+                    Maximum="1"
+                    Minimum="0"
+                    StepFrequency="0.01"
+                    x:Name="ControlUI_SoundVolumeSlider"                    
+                    MinWidth="120"
+                    Margin="0 4 0 0"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}">
 
-          <TextBlock VerticalAlignment="Center"
+            </Slider>
+          </StackPanel>
+        </uwpControls:DockPanel>
+        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
+         XYFocus*を使って強制的に移動先を指定している 
+    -->
+        <!--
+        <ComboBox x:Name="PageFolderNamesSelector"
+                  uwpControls:DockPanel.Dock="Top"
+                  ItemsSource="{Binding PageFolderNames}"
+                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
+                  SelectionChangedTrigger="Committed"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0 4"
+                  AccessKey="3">
+          <i:Interaction.Behaviors>
+            <core:EventTriggerBehavior EventName="SelectionChanged">
+              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}">
+                <core:InvokeCommandAction.InputConverter>
+                  <local:SelectorSelectedChangedToStringConverter />
+                </core:InvokeCommandAction.InputConverter>
+              </core:InvokeCommandAction>
+              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}"
+                                     MethodName="Hide" />
+            </core:EventTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <ComboBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="3" />
+          </ComboBox.KeyboardAccelerators>
+        </ComboBox>
+-->
+        <Grid>
+          <Slider x:Name="PageSelector"
+                  uwpControls:DockPanel.Dock="Bottom"
+                  Minimum="0"
+                  Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                  Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                  ValueChanged="VideoPositionSlider_ValueChanged"
+                  ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                  TickFrequency="0.01"
+                  StepFrequency="0.01"
+                  Padding="0"
+                  Margin="0 0"
+                  FlowDirection="LeftToRight"
+                  AccessKey="4">
+            <Slider.KeyboardAccelerators>
+              <KeyboardAccelerator Key="4" />
+            </Slider.KeyboardAccelerators>
+          </Slider>
+          <TextBlock VerticalAlignment="Bottom"
                      FontSize="12"
-                     Margin="0 0"
+                     Margin="0 32 8 0"                     
                      HorizontalAlignment="Right"
                      uwpControls:DockPanel.Dock="Bottom">
 
             <TextBlock.RenderTransform>
               <TranslateTransform Y="-6" />
             </TextBlock.RenderTransform>
-          
-          <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
-          </TextBlock>
-        </uwpControls:DockPanel>
 
+<Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
+        </Grid>
       </StackPanel>
 
     </Border>
@@ -618,7 +614,8 @@
 
     <Grid HorizontalAlignment="Center"
           VerticalAlignment="Top"
-          Visibility="Collapsed"
+          Opacity="0"
+          IsHitTestVisible="False"
           x:Name="FullScreenExitButtonContainer"
           Background="{ThemeResource ApplicationContentBackgroundBrush}"
           CornerRadius="24"

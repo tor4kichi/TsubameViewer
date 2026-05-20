@@ -5,7 +5,12 @@ using System.Linq;
 using System.Reactive;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Devices.Input;
 using Windows.Foundation;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 
 namespace R3.Extensions;
 
@@ -23,5 +28,45 @@ public static class ObservableEventExtensions
             addHandler,
             removeHandler
         );
+    }
+
+    public static Observable<EventPattern<MouseDevice, MouseEventArgs>> ObserveMouseMoved(this MouseDevice mouseDevice)
+    {
+        return ObservableEventExtensions.FromTypedEvent<MouseDevice, MouseEventArgs>(
+            h => mouseDevice.MouseMoved += h,
+            h => mouseDevice.MouseMoved -= h
+            );
+    }
+
+    public static Observable<WindowActivatedEventArgs> ObserveActivated(this Window window)
+    {
+        return Observable.FromEvent<WindowActivatedEventHandler, WindowActivatedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => window.Activated += h,
+            h => window.Activated -= h);
+    }
+
+    public static Observable<PointerRoutedEventArgs> ObservePointerMoved(this Control control)
+    {
+        return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerMoved += h,
+            h => control.PointerMoved -= h);
+    }
+
+    public static Observable<PointerRoutedEventArgs> ObservePointerEntered(this Control control)
+    {
+        return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerEntered += h,
+            h => control.PointerEntered -= h);
+    }
+
+    public static Observable<PointerRoutedEventArgs> ObservePointerExited(this Control control)
+    {
+        return Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.PointerExited += h,
+            h => control.PointerExited -= h);
     }
 }

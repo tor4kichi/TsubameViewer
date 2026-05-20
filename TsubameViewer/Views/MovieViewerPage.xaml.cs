@@ -24,6 +24,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Core;
 using Windows.Media.Playback;
+using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
@@ -65,12 +66,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         if (pt.Properties.IsLeftButtonPressed)
         {
-            if (_lastHideDisplayControlUIWithAutoHide) { return; }
-
-            IsDisplayControlUI = !IsDisplayControlUI;
+            IsDisplayControlUI = true;
         }
     }
 
+    private void ControlUIInteractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        _lastHideDisplayControlUIWithAutoHide = false; ;
+    }
 
     public MovieViewerPage()
     {
@@ -118,7 +121,34 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
 
-        DisposableBuilder db = new();        
+        DisposableBuilder db = new();
+
+        _lastHideDisplayControlUIWithAutoHide = false;
+        
+        var insideWindowRp = Observable.Merge(
+                this.ObservePointerEntered().Select(x => true), 
+                this.ObservePointerExited().Select(x => false))
+            .Do(x => Debug.WriteLine($"inside window: {x}"))
+            .ToReadOnlyReactiveProperty(false)
+            .AddTo(ref db);
+
+        Window.Current.ObserveActivated()
+            .Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
+            .AddTo(ref db);
+
+        _mouseCursorAutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _mouseCursorAutoHideTimer.Tick += MouseCursorMonitorTimer_Tick;
+        _mouseCursorAutoHideTimer.Interval = TimeSpan.FromSeconds(1.75);
+        _mouseCursorAutoHideTimer.IsRepeating = false;
+        void MouseCursorMonitorTimer_Tick(DispatcherQueueTimer sender, object args)
+        {
+            if (insideWindowRp.CurrentValue
+                && PlayerState == MediaPlaybackState.Playing)
+            {
+                HideMouseCursor();
+                IsDisplayControlUI = false;
+            }
+        }
         _vm.ObservePropertyChanged(x => x.MovieFile)
             .SubscribeAwait(this, static async (x, s, ct) =>
             {
@@ -148,8 +178,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                 if (x != null)
                 {
-                    s.HideMouseCursor();
-                    s.IsDisplayControlUI = false;
+                    s._mouseCursorAutoHideTimer.Start();                    
                 }
             })
             .AddTo(ref db);
@@ -161,98 +190,20 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         InitializeZoomReaction(ref db);
 
-        _lastHideDisplayControlUIWithAutoHide = false;
-        var observeMouseMove = ObservableEventExtensions.FromTypedEvent<MouseDevice, MouseEventArgs>(
-            h => MouseDevice.GetForCurrentView().MouseMoved += h,
-            h => MouseDevice.GetForCurrentView().MouseMoved -= h
-            );
-
-        var observeWindowActivate = Observable.FromEvent<WindowActivatedEventHandler, WindowActivatedEventArgs>(
-            conversion => (sender, args) => conversion(args),
-            h => Window.Current.Activated += h,
-            h => Window.Current.Activated -= h);
-
-        var observePointerEntered = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
-            conversion => (sender, args) => conversion(args),
-            h => this.PointerEntered += h,
-            h => this.PointerEntered -= h);
-
-        var observePointerMoved = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
-            conversion => (sender, args) => conversion(args),
-            h => this.PointerMoved += h,
-            h => this.PointerMoved -= h);
-
-        var observePointerExited = Observable.FromEvent<PointerEventHandler, PointerRoutedEventArgs>(
-            conversion => (sender, args) => conversion(args),
-            h => this.PointerExited += h,
-            h => this.PointerExited -= h);
-
-        var insideWindowRp = Observable.Merge(observePointerEntered.Select(x => true), observePointerExited.Select(x => false))
-            .ToReadOnlyReactiveProperty(true)
-            .AddTo(ref db);
-
-        observeWindowActivate.Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
-            .AddTo(ref db);
-
         Observable.Merge(
-            observeMouseMove.AsUnitObservable(),
-            insideWindowRp.AsUnitObservable(),
-            observePointerMoved.AsUnitObservable()
-            )
-            .Debounce(TimeSpan.FromMilliseconds(10))
+            MouseDevice.GetForCurrentView().ObserveMouseMoved().AsUnitObservable().Debounce(TimeSpan.FromMilliseconds(10)),
+            insideWindowRp.Where(x => x).AsUnitObservable(),
+            this.ObservePointerMoved().AsUnitObservable()
+            )                        
             .Subscribe(this, static (x, s) =>
             {
                 s.ShowMouseCursor();
-                if (s._lastHideDisplayControlUIWithAutoHide)
-                {
-                    s._lastHideDisplayControlUIWithAutoHide = false;
-                    s.IsDisplayControlUI = true;
-                }
+                s.IsDisplayControlUI = true;
+                                
+                s._mouseCursorAutoHideTimer.Stop();
+                s._mouseCursorAutoHideTimer.Start();
             })
-            .AddTo(ref db);
-        Observable.Merge(
-            observeMouseMove.AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable(),
-            insideWindowRp.AsUnitObservable()
-            )            
-            .Debounce(TimeSpan.FromSeconds(1.25))            
-            .Where((this, insideWindowRp), static (_, s) => 
-            {
-                if (!s.insideWindowRp.CurrentValue) { return false; }
-                if (!s.Item1._isWindowActive) { return false; }
-                if (s.Item1.PlayerState != MediaPlaybackState.Playing) { return false; }
-                //if (IsDisplayControlUI) { return false; }
-
-                return true;
-            })
-            .Subscribe(this, static (x, s) =>
-            {
-                s.HideMouseCursor();
-            })
-            .AddTo(ref db);
-
-        Observable.Merge(
-            observeMouseMove.AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.IsDisplayControlUI).Where(x => x).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.PlayerState).Where(x => x == MediaPlaybackState.Playing).AsUnitObservable(),
-            insideWindowRp.AsUnitObservable(),
-            observePointerMoved.AsUnitObservable()
-            )
-            .Debounce(TimeSpan.FromSeconds(1.25))
-            .Where((this, insideWindowRp), static (_, s) =>
-            {
-                if (s.Item1.PlayerState != MediaPlaybackState.Playing) { return false; }
-                //if (IsDisplayControlUI) { return false; }
-
-                return true;
-            })
-            .Subscribe(this, static (x, s) =>
-            {
-                s._lastHideDisplayControlUIWithAutoHide = s.IsDisplayControlUI;
-                s.IsDisplayControlUI = false;
-            })
-            .AddTo(ref db);
+            .AddTo(ref db);        
 
         this.ObservePropertyChanged(x => x.PlayerState)
             .Where(x => x == MediaPlaybackState.Paused)
@@ -282,11 +233,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
+    DispatcherQueueTimer _mouseCursorAutoHideTimer;
+
     #region Display Style
 
 
 
-    bool _isWindowActive = true;
+    bool _isWindowActive = false;
     bool _lastHideDisplayControlUIWithAutoHide = false;
 
     // マウスカーソルを非表示にする
