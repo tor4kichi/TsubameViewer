@@ -415,7 +415,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             return; 
         }
 
-        _videoPosition = TimeSpan.FromSeconds((double)e.NewValue);
+        SetVideoPositionFromCode(TimeSpan.FromSeconds((double)e.NewValue));
         MediaPlayer?.PlaybackSession.Position = _videoPosition;
     }
 
