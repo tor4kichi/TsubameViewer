@@ -254,6 +254,20 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        this.ObservePropertyChanged(x => x.PlayerState)
+            .Where(x => x == MediaPlaybackState.Paused)
+            .Take(1)
+            .Subscribe((this, bookmarkRp), static (x, s) =>
+            {
+                var _this = s.Item1;
+                if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
+                _this.VideoPosition = _this.VideoDuration * bkmk.ReadPosition.Value;
+                if (_this._nowRequestPlayStart)
+                {
+                    _this._nowRequestPlayStart = false;
+                    _this.MediaPlayer?.Play();
+                }
+            });
 
         this.ObservePropertyChanged(x => x.VideoPosition)
             .Debounce(TimeSpan.FromSeconds(1))
@@ -329,23 +343,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     [ObservableProperty]
     MediaPlaybackState _playerState;
-
-    partial void OnPlayerStateChanged(MediaPlaybackState value)
-    {
-        if (value == MediaPlaybackState.Paused
-            && _nowRequestPlayStart)
-        {
-            _nowRequestPlayStart = false;
-            if (_vm.MovieFile != null)
-            {
-                var pos = _vm.BookmarkManager.GetBookmarkLastReadPositionInNormalized(_vm.MovieFile.Path);
-                VideoPosition = VideoDuration * pos;
-            }
-            MediaPlayer?.Play();
-        }
-
-        Debug.WriteLine(value);
-    }
 
     public Visibility IsPalyerPreparing(MediaPlaybackState state)
     {
