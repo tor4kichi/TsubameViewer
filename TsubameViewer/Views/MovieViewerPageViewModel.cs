@@ -119,7 +119,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     
 
     public ICommand TogglePlayerStretchCommand { get; set; }
-
+    public ICommand SaveCurrentFrameCommand { get; set; }
+    public ICommand TogglePlayerRotateCommand { get; set; }
 
     [ObservableProperty]
     StorageFile? _movieFile;

@@ -34,17 +34,38 @@
                   x:DataType="vm:MovieViewerPageViewModel">
       <Grid>
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="1*" />
-          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" MinWidth="0" />
+          <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{x:Bind Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
-                    Spacing="8">
+                    Spacing="8"
+                    HorizontalAlignment="Right">
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
                      Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
+
+          <!-- フレームをキャプチャ -->
+          <Button Command="{x:Bind SaveCurrentFrameCommand}"
+                  Style="{StaticResource TitlebarButton}">
+            <SymbolIcon Symbol="Download"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </Button>
+          <!-- 回転 -->
+          <Button Command="{x:Bind TogglePlayerRotateCommand}"
+                  Style="{StaticResource TitlebarButton}">
+            <SymbolIcon Symbol="Rotate"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </Button>
           <!-- プレイヤーの変形表示を切り替え -->
           <Button Command="{x:Bind TogglePlayerStretchCommand}"
                   Style="{StaticResource TitlebarButton}">
@@ -69,11 +90,6 @@
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </Button>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{x:Bind Title, Mode=OneWay}" />
-          </TextBlock>
         </StackPanel>
       </Grid>
     </DataTemplate>
@@ -370,6 +386,7 @@
                 <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton"
                                 AccessKey="G"
                                 Text="{i18nExt:Localize Key=OpenWithExplorer}"
+                                Command="{x:Bind OpenMovieFileWithExplorerCommand}"
                                 >
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="G" />
@@ -378,6 +395,7 @@
                 <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton"
                                 AccessKey="B"
                                 Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
+                                Command="{x:Bind LaunchMovieFileCommand}"
                                 >
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="B" />
@@ -658,5 +676,25 @@
                   VerticalAlignment="Bottom"
                       HorizontalAlignment="Stretch"
                   />
+
+    <uwpControls:InAppNotification x:Name="FrameSavedNotification"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0 0 0 94"
+                                   >
+      <uwpControls:DockPanel>
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SavedCurrentFrame}" 
+                   uwpControls:DockPanel.Dock="Left" VerticalAlignment="Center" 
+                   Margin="0 0 8 0"/>
+
+        <uwpControls:WrapPanel Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8">
+          <Button Content="{i18nExt:Localize Key=OpenWithExternalApplication}" 
+                  MinWidth="80"
+                  Command="{x:Bind OpenSavedFrameImageFileCommand}"/>
+          <Button Content="{i18nExt:Localize Key=OpenWithExplorer}" MinWidth="80"
+                  Command="{x:Bind OpenSavedFrameImageFileWithExplorerCommand}"/>
+        </uwpControls:WrapPanel>
+      </uwpControls:DockPanel>
+    </uwpControls:InAppNotification>
   </Grid>
 </Page>

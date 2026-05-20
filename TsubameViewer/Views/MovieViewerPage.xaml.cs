@@ -29,9 +29,12 @@ using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
 using Windows.Media.Core;
 using Windows.Media.Playback;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.System;
 using Windows.UI.Composition;
 using Windows.UI.Core;
+using Windows.UI.Notifications;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -42,6 +45,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -91,6 +95,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Unloaded += MovieViewerPage_Unloaded;
 
         _vm.TogglePlayerStretchCommand = TogglePlayerStretchCommand;
+        _vm.SaveCurrentFrameCommand = SaveCurrentFrameCommand;
+        _vm.TogglePlayerRotateCommand = TogglePlayerRotateCommand;
 
     }
 
@@ -986,8 +992,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task TogglePlayerStretch()
     {
+        if (MediaPlayer == null) { return; }
+
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer?.Pause();
+        MediaPlayer.Pause();
         MyMediaPlayerElement.Stretch = MyMediaPlayerElement.Stretch switch
         {
             Stretch.None => Stretch.Uniform,
@@ -999,10 +1007,34 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         if (isPlaying)
         {
-            MediaPlayer?.Play();
+            MediaPlayer.Play();
         }
     }
 
+    
+
+    [RelayCommand]
+    async Task TogglePlayerRotate()
+    {
+        if (MediaPlayer == null) { return; }
+
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+        MediaPlayer.Pause();
+
+        MediaPlayer.PlaybackSession.PlaybackRotation = MediaPlayer.PlaybackSession.PlaybackRotation switch
+        {
+            Windows.Media.MediaProperties.MediaRotation.None => Windows.Media.MediaProperties.MediaRotation.Clockwise90Degrees,
+            Windows.Media.MediaProperties.MediaRotation.Clockwise90Degrees => Windows.Media.MediaProperties.MediaRotation.Clockwise180Degrees,
+            Windows.Media.MediaProperties.MediaRotation.Clockwise180Degrees => Windows.Media.MediaProperties.MediaRotation.Clockwise270Degrees,
+            Windows.Media.MediaProperties.MediaRotation.Clockwise270Degrees => Windows.Media.MediaProperties.MediaRotation.None,
+            _ => throw new NotSupportedException(),
+        };
+
+        if (isPlaying)
+        {
+            MediaPlayer.Play();
+        }
+    }
 
     [RelayCommand]
     async Task SetThumbnailImageAsync()
@@ -1017,8 +1049,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 MediaPlayer.Pause();
                 prevPlaying = true;
             }
-
-            var source = MediaPlayer.Source as MediaSource;
 
             using CanvasRenderTarget crt = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (float)MyMediaPlayerElement.ActualWidth, (float)MyMediaPlayerElement.ActualHeight, DisplayInformation.GetForCurrentView().LogicalDpi);
             MediaPlayer.CopyFrameToVideoSurface(crt);
@@ -1041,6 +1071,105 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             throw;
         }
+    }
+
+    [RelayCommand]
+    async Task LaunchMovieFileAsync()
+    {
+        if (_vm.MovieFile == null) { return; }
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+        MediaPlayer?.Pause();
+        await Launcher.LaunchFileAsync(_vm.MovieFile);
+    }
+
+    [RelayCommand]
+    async Task OpenMovieFileWithExplorerAsync()
+    {
+        if (_vm.MovieFile == null) { return; }
+        MediaPlayer?.Pause();
+        await Launcher.LaunchFolderPathAsync(
+            Path.GetDirectoryName(_vm.MovieFile.Path),
+            new() { ItemsToSelect = { _vm.MovieFile } });
+    }
+
+
+    [RelayCommand]
+    async Task SaveCurrentFrameAsync()
+    {
+        if (MediaPlayer == null) { return; }
+
+        bool prevPlaying = false;
+        try
+        {
+            if (MediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing)
+            {
+                MediaPlayer.Pause();
+                prevPlaying = true;
+            }
+            
+            var picker = new FileSavePicker()
+            {                
+                FileTypeChoices = {
+                    { ".jpg", [".jpg"] },
+                    { ".png", [".png"] },
+                },
+                SuggestedFileName = $"tv_{_vm.MovieFile?.Name.Substring(0, 20)}_{MediaPlayer.PlaybackSession.Position.TotalMilliseconds:F0}",
+                DefaultFileExtension = ".jpg",
+            };
+
+            if (await picker.PickSaveFileAsync() is not { } file) { return; }
+
+
+            CanvasBitmapFileFormat outputFormat = file.FileType switch
+            {
+                ".jpg" => CanvasBitmapFileFormat.Jpeg,
+                ".png" => CanvasBitmapFileFormat.Png,
+                _ => CanvasBitmapFileFormat.Jpeg,
+            };
+
+            using CanvasRenderTarget crt = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (float)MyMediaPlayerElement.ActualWidth, (float)MyMediaPlayerElement.ActualHeight, DisplayInformation.GetForCurrentView().LogicalDpi);
+            MediaPlayer.CopyFrameToVideoSurface(crt);
+
+            using (var fileStream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite))
+            {
+                await crt.SaveAsync(fileStream, CanvasBitmapFileFormat.Jpeg);                
+            }
+
+            FrameSavedNotification.ShowDismissButton = true;
+            FrameSavedNotification.Show();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+        finally
+        {
+            if (prevPlaying)
+            {
+                MediaPlayer.Play();
+            }
+        }
+    }
+    
+
+    [ObservableProperty]
+    StorageFile? _savedVideoFrameFile;
+
+
+    [RelayCommand]
+    async Task OpenSavedFrameImageFileAsync()
+    {
+        if (SavedVideoFrameFile == null) { return; }
+        await Launcher.LaunchFileAsync(SavedVideoFrameFile);
+    }
+
+    [RelayCommand]
+    async Task OpenSavedFrameImageFileWithExplorerAsync()
+    {
+        if (SavedVideoFrameFile == null) { return; }
+        await Launcher.LaunchFolderPathAsync(
+            Path.GetDirectoryName(SavedVideoFrameFile.Path),
+            new () { ItemsToSelect = { SavedVideoFrameFile } });
     }
 }
 

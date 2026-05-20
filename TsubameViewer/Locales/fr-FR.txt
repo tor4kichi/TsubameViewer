@@ -212,6 +212,15 @@ ResetEBookSettings = Réinitialiser les paramètres
 DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
 
+#### Movie Viewer Page
+MovieViewer_SavedCurrentFrame = L'image vidéo a été enregistrée.
+
+
+
+
+
+
+
 #### SearchResult
 
 SearchResultWith = Résultats de la recherche pour {0}

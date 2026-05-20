@@ -212,6 +212,15 @@ ResetEBookSettings = 重新设置
 DisplaySettings = 显示设置
 Toc = 目录
 
+#### Movie Viewer Page
+MovieViewer_SavedCurrentFrame = 视频帧已保存。
+
+
+
+
+
+
+
 #### SearchResult
 
 SearchResultWith = 搜索结果：{0}

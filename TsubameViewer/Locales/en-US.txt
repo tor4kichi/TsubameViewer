@@ -212,6 +212,15 @@ ResetEBookSettings = Reset settings
 DisplaySettings = Display settings
 Toc = Table of contents
 
+#### Movie Viewer Page
+MovieViewer_SavedCurrentFrame = The video frame has been saved.
+
+
+
+
+
+
+
 #### SearchResult
 
 SearchResultWith = Search results for {0}
