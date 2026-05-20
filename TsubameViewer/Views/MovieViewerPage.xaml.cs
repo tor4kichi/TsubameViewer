@@ -154,6 +154,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
+            .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
+            .ToReadOnlyReactiveProperty()
+            .AddTo(ref db);
+
         InitializeZoomReaction(ref db);
 
         _lastHideDisplayControlUIWithAutoHide = false;
@@ -252,9 +257,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         this.ObservePropertyChanged(x => x.VideoPosition)
             .Debounce(TimeSpan.FromSeconds(1))
-            .Where(this, (x, s) => !s._nowRequestPlayStart && s.VideoDuration > TimeSpan.FromSeconds(5) && s._vm.MovieFile != null)
-            .Subscribe(this, (x, s) => s._vm.BookmarkManager.AddBookmark(s._vm.MovieFile!.Path, s.VideoPosition.ToString(), new Core.Models.FolderItemListing.NormalizedPagePosition((float)(s.VideoPosition.TotalSeconds / s.VideoDuration.TotalSeconds))))
+            .Where((this, bookmarkRp), (x, s) => !s.Item1._nowRequestPlayStart && s.Item1.VideoDuration > TimeSpan.FromSeconds(5) && s.Item1._vm.MovieFile != null && s.bookmarkRp.CurrentValue != null)
+            .Subscribe((this, bookmarkRp), (x, s) =>   s.bookmarkRp.CurrentValue?.ReadPosition = new ((float)(s.Item1.VideoPosition.TotalSeconds / s.Item1.VideoDuration.TotalSeconds)))
             .AddTo(ref db);
+
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
