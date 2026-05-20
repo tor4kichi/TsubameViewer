@@ -21,6 +21,8 @@
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
       xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:mediaProps="using:Windows.Media.MediaProperties"
+      xmlns:media="using:Windows.UI.Xaml.Media"
       mc:Ignorable="d"
     >
 
@@ -51,39 +53,7 @@
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
-
-          <!-- フレームをキャプチャ -->
-          <Button Command="{x:Bind SaveCurrentFrameCommand}"
-                  Style="{StaticResource TitlebarButton}">
-            <SymbolIcon Symbol="Download"
-                        Style="{StaticResource TitlebarSymbolIcon}">
-            </SymbolIcon>
-          </Button>
-          <!-- 回転 -->
-          <Button Command="{x:Bind TogglePlayerRotateCommand}"
-                  Style="{StaticResource TitlebarButton}">
-            <SymbolIcon Symbol="Rotate"
-                        Style="{StaticResource TitlebarSymbolIcon}">
-            </SymbolIcon>
-          </Button>
-          <!-- プレイヤーの変形表示を切り替え -->
-          <Button Command="{x:Bind TogglePlayerStretchCommand}"
-                  Style="{StaticResource TitlebarButton}">
-            <SymbolIcon Symbol="ZoomIn"
-                        Style="{StaticResource TitlebarSymbolIcon}">
-            </SymbolIcon>
-          </Button>
-          <!-- 左右反転 -->
-          <ToggleButton x:Name="FlipHorizontalButton"
-                  AccessKey="Y"
-                        IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}">
-            <SymbolIcon Symbol="Sort"
-                        RenderTransformOrigin="0.5, 0.5">
-              <SymbolIcon.RenderTransform>
-                <RotateTransform Angle="90" />
-              </SymbolIcon.RenderTransform>
-            </SymbolIcon>
-          </ToggleButton>
+          
           <Button Command="{x:Bind ToggleFullScreenCommand}"
                   Style="{StaticResource TitlebarButton}">
             <SymbolIcon Symbol="FullScreen"
@@ -143,50 +113,8 @@
 
     <VisualStateManager.VisualStateGroups>
 
-      <!-- 変形モードのUI表示状態 -->
-      <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsTransformModeEnabled, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="TransformUIContainer.Visibility"
-                    Value="Collapsed" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="TransformUIContainer.Visibility"
-                    Value="Visible" />
-          </VisualState.Setters>
-        </VisualState>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="TransformUIContainer.Visibility"
-                    Value="Collapsed" />
-          </VisualState.Setters>
-        </VisualState>
-      </VisualStateGroup>
-      
       <!-- プレイヤーコントロールUIの表示状態 -->
       <VisualStateGroup>
-        <VisualState>
-          <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind _vm.IsTransformModeEnabled, Mode=OneWay}" />
-          </VisualState.StateTriggers>
-          <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Opacity"
-                    Value="0" />
-            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
-                    Value="False" />
-          </VisualState.Setters>
-        </VisualState>
         <VisualState>
           <VisualState.StateTriggers>
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
@@ -195,6 +123,10 @@
             <Setter Target="ImageSelectorContainer.Opacity"
                     Value="1" />
             <Setter Target="ImageSelectorContainer.IsHitTestVisible"
+                    Value="True" />
+            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.Opacity"
+                    Value="1" />
+            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.IsHitTestVisible"
                     Value="True" />
           </VisualState.Setters>
         </VisualState>
@@ -206,6 +138,10 @@
             <Setter Target="ImageSelectorContainer.Opacity"
                     Value="0" />
             <Setter Target="ImageSelectorContainer.IsHitTestVisible"
+                    Value="False" />
+            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.Opacity"
+                    Value="0" />
+            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.IsHitTestVisible"
                     Value="False" />
           </VisualState.Setters>
         </VisualState>
@@ -506,6 +442,47 @@
                           Width="48">
               <SymbolIcon Symbol="RepeatAll" />
             </ToggleButton>
+
+            <Button>
+              <SymbolIcon Symbol="Setting" />
+
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
+                                  Command="{x:Bind SaveCurrentFrameCommand}" />
+                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.None}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.None}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise90Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise90Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise180Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise180Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise270Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise270Degrees}" />
+                  </MenuFlyoutSubItem>
+                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.None}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.None}"/>
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Fill}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.Fill}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Uniform}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.Uniform}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.UniformToFill}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.UniformToFill}" />
+                  </MenuFlyoutSubItem>
+                  <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
+                                        IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
           </StackPanel>
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Left">
@@ -589,50 +566,39 @@
                      Margin="0 32 8 0"                     
                      HorizontalAlignment="Right"
                      uwpControls:DockPanel.Dock="Bottom">
-
             <TextBlock.RenderTransform>
               <TranslateTransform Y="-6" />
             </TextBlock.RenderTransform>
-
-<Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
           </TextBlock>
         </Grid>
       </StackPanel>
 
     </Border>
 
-    <Border x:Name="TransformUIContainer"
-            Background="{ThemeResource SystemChromeMediumHighColor}"
-            Grid.ColumnSpan="3"
-            VerticalAlignment="Top"
-            HorizontalAlignment="Center"
-            Width="460"
-            CornerRadius="8"
-            Margin="0 0 0 16"
-            Translation="0, 0, 16">
-      <Border.Shadow>
-        <ThemeShadow />
-      </Border.Shadow>
-      <!--<animation:Implicit.ShowAnimations>
-        <animation:TranslationAnimation To="0, 0"
-                                        EasingType="Cubic"
-                                        Duration="0:0:0.175" />
-      </animation:Implicit.ShowAnimations>
-      <animation:Implicit.HideAnimations>
-        <animation:TranslationAnimation To="0, 180"
-                                        EasingType="Cubic"
-                                        Duration="0:0:0.175" />
-      </animation:Implicit.HideAnimations>-->
-
-      <StackPanel Margin="8"
-                  Spacing="6"
-                  Orientation="Horizontal">
-        <Button x:Name="TransformUI_PlayPauseButton"
-                Command="{x:Bind TogglePlayPauseCommand}">
-          <SymbolIcon Symbol="Play" />
-        </Button>
-      </StackPanel>
-    </Border>
+    <Grid Visibility="{x:Bind IsPlayerTemporaryTransformChanged, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Top"
+          Margin="24"
+          x:Name="ClearPlayerTemporaryTransformButtonContainer"
+          Opacity="0"
+          CornerRadius="6"
+          IsHitTestVisible="False"
+          Background="{ThemeResource ApplicationContentBackgroundBrush}"
+          BorderThickness="1">
+      <Button Command="{x:Bind ResetPlayerTemporaryTransformCommand}"
+              CornerRadius="6">
+        <StackPanel>
+          <SymbolIcon Symbol="Clear"
+                      HorizontalAlignment="Center" />
+          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_ResetPlayerTransform}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="WrapWholeWords"
+                     MaxWidth="120"
+                     Style="{StaticResource CaptionTextBlockStyle}" />
+        </StackPanel>
+      </Button>
+    </Grid>
 
     <Grid HorizontalAlignment="Center"
           VerticalAlignment="Top"

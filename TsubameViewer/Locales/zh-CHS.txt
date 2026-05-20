@@ -213,7 +213,22 @@ DisplaySettings = 显示设置
 Toc = 目录
 
 #### Movie Viewer Page
-MovieViewer_SavedCurrentFrame = 视频帧已保存。
+MovieViewer_SaveCurrentFrame = 保存帧图像
+MovieViewer_ResetPlayerTransform = 重置玩家变身
+MovieViewer_PlayerStretch = 球员拉伸
+Stretch.None = 原尺寸
+Stretch.Fill = 请忽略比例，填写完整。
+Stretch.Uniform = 适合窗户尺寸
+Stretch.UniformToFill = 在保持比例的前提下将其填满
+
+MovieViewer_IsHorizontalMirror = 水平翻转
+MovieViewer_PlayerRotate = 旋转（顺时针）
+MediaRotation.None = 无旋转
+MediaRotation.Clockwise90Degrees = 90度
+MediaRotation.Clockwise180Degrees = 180度
+MediaRotation.Clockwise270Degrees = 270度
+
+MovieViewer_SaveCurrentFrame_Saved = 视频帧已保存。
 
 
 

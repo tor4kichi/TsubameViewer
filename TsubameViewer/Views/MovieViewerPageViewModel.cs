@@ -74,6 +74,8 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
 {
+    public ICommand ToggleFullScreenCommand { get; set; }
+
     public MovieViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -117,11 +119,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
     
-
-    public ICommand TogglePlayerStretchCommand { get; set; }
-    public ICommand SaveCurrentFrameCommand { get; set; }
-    public ICommand TogglePlayerRotateCommand { get; set; }
-
     [ObservableProperty]
     StorageFile? _movieFile;
 
@@ -223,21 +220,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         base.OnNavigatedFrom(parameters);
     }
 
-
-    [RelayCommand]
-    public void ToggleFullScreen()
-    {
-        var appView = ApplicationView.GetForCurrentView();
-        if (appView.IsFullScreenMode)
-        {
-            appView.ExitFullScreenMode();            
-        }
-        else
-        {
-            appView.TryEnterFullScreenMode();
-        }
-    }
-
     [RelayCommand]
     void ToggleHorizontalMirrorDisplay()
     {
@@ -247,13 +229,4 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     bool _isHorizontalMirrorModeEnabled;
 
-
-    [ObservableProperty]
-    bool _isTransformModeEnabled;
-
-    [RelayCommand]
-    void ToggleTransformMode()
-    {
-        IsTransformModeEnabled = !IsTransformModeEnabled;
-    }
 }

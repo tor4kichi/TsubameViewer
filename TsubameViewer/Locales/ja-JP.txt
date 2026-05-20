@@ -213,7 +213,22 @@ DisplaySettings = 表示設定
 Toc = 目次
 
 #### Movie Viewer Page
-MovieViewer_SavedCurrentFrame = 動画フレームを保存しました
+MovieViewer_SaveCurrentFrame = フレーム画像を保存
+MovieViewer_ResetPlayerTransform = プレイヤー変形をリセット
+MovieViewer_PlayerStretch = プレイヤーの伸縮
+Stretch.None = オリジナルサイズ
+Stretch.Fill = 比率を無視して埋め尽くす
+Stretch.Uniform = ウィンドウサイズに合わせる
+Stretch.UniformToFill = 比率を維持して埋め尽くす
+
+MovieViewer_IsHorizontalMirror = 左右反転
+MovieViewer_PlayerRotate = 回転（時計回り）
+MediaRotation.None = 回転無し
+MediaRotation.Clockwise90Degrees = ９０度
+MediaRotation.Clockwise180Degrees = １８０度
+MediaRotation.Clockwise270Degrees = ２７０度
+
+MovieViewer_SaveCurrentFrame_Saved = 動画フレームを保存しました
 
 
 

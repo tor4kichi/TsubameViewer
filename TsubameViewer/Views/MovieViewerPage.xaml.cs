@@ -72,7 +72,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var pt = e.GetCurrentPoint(null);
         if (pt.Properties.IsMiddleButtonPressed)
         {
-            _vm.ToggleFullScreen();
+            _ = ToggleFullScreen();
         }
         if (pt.Properties.IsLeftButtonPressed)
         {
@@ -94,10 +94,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
 
-        _vm.TogglePlayerStretchCommand = TogglePlayerStretchCommand;
-        _vm.SaveCurrentFrameCommand = SaveCurrentFrameCommand;
-        _vm.TogglePlayerRotateCommand = TogglePlayerRotateCommand;
-
+        _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
@@ -262,6 +259,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
         HandlePlaybackRateChanged(ref db);
+        HandlePlayerTemporaryTransformChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
@@ -989,39 +987,111 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     #endregion
 
+
     [RelayCommand]
-    async Task TogglePlayerStretch()
+    async Task ToggleFullScreen()
+    {
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+        MediaPlayer?.Pause();
+        await Observable.NextFrame().WaitAsync();
+        var appView = ApplicationView.GetForCurrentView();
+        if (appView.IsFullScreenMode)
+        {
+            appView.ExitFullScreenMode();
+        }
+        else
+        {
+            appView.TryEnterFullScreenMode();
+        }
+
+        await Observable.TimerFrame(10).WaitAsync();
+        if (isPlaying)
+        {
+            MediaPlayer?.Play();
+        }
+    }
+
+
+
+
+    void HandlePlayerTemporaryTransformChanged(ref DisposableBuilder db)
+    {
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsHorizontalMirror)
+            .Subscribe(_ => RefreshIsPlayerTemporaryTransformChanged())
+            .AddTo(ref db);
+        
+        RefreshIsPlayerTemporaryTransformChanged();
+    }
+
+
+    [ObservableProperty]
+    bool _isPlayerTemporaryTransformChanged;
+
+
+    [RelayCommand]
+    async Task ResetPlayerTemporaryTransform()
     {
         if (MediaPlayer == null) { return; }
 
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         MediaPlayer.Pause();
-        MyMediaPlayerElement.Stretch = MyMediaPlayerElement.Stretch switch
+        await Observable.NextFrame().WaitAsync();
+        if (MyMediaPlayerElement.Stretch != Stretch.Uniform)
         {
-            Stretch.None => Stretch.Uniform,
-            //Stretch.Fill => Stretch.Uniform,
-            Stretch.Uniform => Stretch.UniformToFill,
-            Stretch.UniformToFill => Stretch.None,
-            _ => Stretch.None,
-        };
-
+            MyMediaPlayerElement.Stretch = Stretch.Uniform;
+            await Observable.NextFrame().WaitAsync();
+        }
+        if (MediaPlayer.PlaybackSession.PlaybackRotation != Windows.Media.MediaProperties.MediaRotation.None)
+        {
+            MediaPlayer.PlaybackSession.PlaybackRotation = Windows.Media.MediaProperties.MediaRotation.None;
+            await Observable.NextFrame().WaitAsync();
+        }
+        if (_vm.PageSettings.IsHorizontalMirror)
+        {
+            _vm.PageSettings.IsHorizontalMirror = false;
+            await Observable.NextFrame().WaitAsync();
+        }
         if (isPlaying)
         {
             MediaPlayer.Play();
         }
+        RefreshIsPlayerTemporaryTransformChanged();
     }
 
-    
+    void RefreshIsPlayerTemporaryTransformChanged()
+    {
+        if (MediaPlayer == null) 
+        {
+            IsPlayerTemporaryTransformChanged = false;
+            return;
+        }
+
+        IsPlayerTemporaryTransformChanged = MyMediaPlayerElement.Stretch != Stretch.Uniform
+            || MediaPlayer!.PlaybackSession.PlaybackRotation != Windows.Media.MediaProperties.MediaRotation.None
+            || _vm.PageSettings.IsHorizontalMirror;
+    }
 
     [RelayCommand]
-    async Task TogglePlayerRotate()
+    async Task SetPlayerStretch(Stretch stretch)
     {
         if (MediaPlayer == null) { return; }
+        if (MyMediaPlayerElement.Stretch == stretch) { return; }
 
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         MediaPlayer.Pause();
+        await Observable.NextFrame().WaitAsync();
+        MyMediaPlayerElement.Stretch = stretch;
+        await Observable.NextFrame().WaitAsync();
+        if (isPlaying)
+        {
+            MediaPlayer.Play();
+        }
+        RefreshIsPlayerTemporaryTransformChanged();
+    }
 
-        MediaPlayer.PlaybackSession.PlaybackRotation = MediaPlayer.PlaybackSession.PlaybackRotation switch
+    Windows.Media.MediaProperties.MediaRotation GetNextRotate(Windows.Media.MediaProperties.MediaRotation rotate)
+    {
+        return rotate switch
         {
             Windows.Media.MediaProperties.MediaRotation.None => Windows.Media.MediaProperties.MediaRotation.Clockwise90Degrees,
             Windows.Media.MediaProperties.MediaRotation.Clockwise90Degrees => Windows.Media.MediaProperties.MediaRotation.Clockwise180Degrees,
@@ -1029,11 +1099,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             Windows.Media.MediaProperties.MediaRotation.Clockwise270Degrees => Windows.Media.MediaProperties.MediaRotation.None,
             _ => throw new NotSupportedException(),
         };
+    }
 
+    [RelayCommand]
+    async Task SetPlayerRotate(Windows.Media.MediaProperties.MediaRotation rotate)
+    {
+        if (MediaPlayer == null) { return; }
+        if (MediaPlayer.PlaybackSession.PlaybackRotation == rotate) { return; }
+
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+        MediaPlayer.Pause();
+        await Observable.NextFrame().WaitAsync();
+        MediaPlayer.PlaybackSession.PlaybackRotation = rotate;
+        await Observable.NextFrame().WaitAsync();
         if (isPlaying)
         {
             MediaPlayer.Play();
         }
+        RefreshIsPlayerTemporaryTransformChanged();
     }
 
     [RelayCommand]
@@ -1049,6 +1132,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 MediaPlayer.Pause();
                 prevPlaying = true;
             }
+
+            await Observable.NextFrame().WaitAsync();
 
             using CanvasRenderTarget crt = new CanvasRenderTarget(CanvasDevice.GetSharedDevice(), (float)MyMediaPlayerElement.ActualWidth, (float)MyMediaPlayerElement.ActualHeight, DisplayInformation.GetForCurrentView().LogicalDpi);
             MediaPlayer.CopyFrameToVideoSurface(crt);

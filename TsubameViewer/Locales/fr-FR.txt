@@ -213,7 +213,22 @@ DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
 
 #### Movie Viewer Page
-MovieViewer_SavedCurrentFrame = L'image vidéo a été enregistrée.
+MovieViewer_SaveCurrentFrame = Enregistrer l'image du cadre
+MovieViewer_ResetPlayerTransform = Réinitialiser la transformation du joueur
+MovieViewer_PlayerStretch = Étirements des joueurs
+Stretch.None = Taille originale
+Stretch.Fill = Remplissez-le en ignorant les proportions.
+Stretch.Uniform = Adapté aux dimensions de la fenêtre
+Stretch.UniformToFill = Remplissez-le tout en maintenant les proportions
+
+MovieViewer_IsHorizontalMirror = Retourner horizontalement
+MovieViewer_PlayerRotate = Rotation (dans le sens horaire)
+MediaRotation.None = Pas de rotation
+MediaRotation.Clockwise90Degrees = 90 degrés
+MediaRotation.Clockwise180Degrees = 180 degrés
+MediaRotation.Clockwise270Degrees = 270 degrés
+
+MovieViewer_SaveCurrentFrame_Saved = L'image vidéo a été enregistrée.
 
 
 

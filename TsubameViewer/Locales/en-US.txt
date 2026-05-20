@@ -213,7 +213,22 @@ DisplaySettings = Display settings
 Toc = Table of contents
 
 #### Movie Viewer Page
-MovieViewer_SavedCurrentFrame = The video frame has been saved.
+MovieViewer_SaveCurrentFrame = Save frame image
+MovieViewer_ResetPlayerTransform = Reset player transformation
+MovieViewer_PlayerStretch = Player stretching
+Stretch.None = Original size
+Stretch.Fill = Fill it in, ignoring the proportions.
+Stretch.Uniform = Fit to window size
+Stretch.UniformToFill = Fill it up while maintaining the ratio
+
+MovieViewer_IsHorizontalMirror = Flip horizontally
+MovieViewer_PlayerRotate = Rotation (clockwise)
+MediaRotation.None = No rotation
+MediaRotation.Clockwise90Degrees = 90 degrees
+MediaRotation.Clockwise180Degrees = 180 degrees
+MediaRotation.Clockwise270Degrees = 270 degrees
+
+MovieViewer_SaveCurrentFrame_Saved = The video frame has been saved.
 
 
 
