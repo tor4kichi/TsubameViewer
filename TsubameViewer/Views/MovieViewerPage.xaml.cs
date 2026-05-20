@@ -99,6 +99,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _mouseCursorAutoHideTimer.Stop();
         ShowMouseCursor();
 
         if (MediaPlayer == null) { return; }
@@ -451,7 +452,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void HandlePlaybackRateChanged(ref DisposableBuilder db)
     {
-        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
     string ToPlaybackRateString(double rate)
