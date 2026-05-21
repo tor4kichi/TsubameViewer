@@ -258,7 +258,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 if (_this._nowRequestPlayStart)
                 {
                     _this._nowRequestPlayStart = false;
-                    await Observable.TimerFrame(20).WaitAsync();
                     _this.MediaPlayer?.Play();
                     await Observable.NextFrame().WaitAsync();
                 }
