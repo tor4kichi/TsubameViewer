@@ -37,17 +37,18 @@ internal static class TimeSpanHelper
     /// <returns>フォーマットされた時間文字列</returns>
     public static string FormatTimeSpan(TimeSpan timeSpan)
     {
-        int hours = (int)timeSpan.TotalHours;
-        int minutes = timeSpan.Minutes;
-        int seconds = timeSpan.Seconds;
-
-        if (hours > 0)
+        var duration = timeSpan.Duration();
+        int hours = (int)duration.TotalHours;
+        int minutes = duration.Minutes;
+        int seconds = duration.Seconds;
+        bool isAnyNegation = timeSpan < TimeSpan.Zero;
+        if (hours != 0)
         {
-            return $"{hours:D2}:{minutes:D2}:{seconds:D2}";
+            return $"{(isAnyNegation?"-":"")}{hours:D2}:{minutes:D2}:{seconds:D2}";
         }
         else
         {
-            return $"{minutes:D2}:{seconds:D2}";
+            return $"{(isAnyNegation ? "-" : "")}{minutes:D2}:{seconds:D2}";
         }
     }
 }

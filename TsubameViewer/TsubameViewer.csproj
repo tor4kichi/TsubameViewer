@@ -170,6 +170,8 @@
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
     <Compile Include="ViewModels\EBookReaderPageViewModel.cs" />
+    <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />
+    <Compile Include="Views\Behaviors\SwipeDistanceBehavior.cs" />
     <Compile Include="Views\Converters\DoubleToPercentTextConverter.cs" />
     <Compile Include="Views\Converters\TimeSpanToSimpleTextConverter.cs" />
     <Compile Include="Views\FolderListupPageViewModel.cs" />

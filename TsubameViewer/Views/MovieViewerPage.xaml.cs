@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
 using Windows.Foundation;
@@ -83,7 +84,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void ControlUIInteractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
-        _lastHideDisplayControlUIWithAutoHide = false; ;
+        _lastHideDisplayControlUIWithAutoHide = false;
     }
 
     public MovieViewerPage()
@@ -464,6 +465,53 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+
+
+    [RelayCommand]
+    void SetPlaybackRate(double d)
+    {
+        SetPlaybackRateFromCode(d);
+        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+    }
+
+
+    [RelayCommand]
+    void BackwordOneFrame()
+    {
+        if (PlayerState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+        MediaPlayer.StepBackwardOneFrame();
+    }
+
+    [RelayCommand]
+    void ForwordOneFrame()
+    {
+        if (PlayerState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+        MediaPlayer.StepForwardOneFrame();
+    }
+
+
+    void SeekPlaybackPosition(TimeSpan relativeTime)
+    {
+        SetVideoPositionFromCode(VideoPosition + relativeTime);
+    }
+
+    private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
+    {
+        var ts = TimeSpan.FromSeconds(args.X);
+        MediaPlayer.PlaybackSession.Position = VideoPosition + ts;
+    }
+
+    string ProgressXToTimeText(double progressX)
+    {
+        return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
+    }
+
     #endregion
 
     #region Playback Rate
@@ -512,34 +560,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
-
-    [RelayCommand]
-    void SetPlaybackRate(double d)
-    {
-        SetPlaybackRateFromCode(d);
-        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
-    }
-
-
-    [RelayCommand]
-    void BackwordOneFrame()
-    {
-        if (PlayerState == MediaPlaybackState.Playing)
-        {
-            MediaPlayer.Pause();
-        }
-        MediaPlayer.StepBackwardOneFrame();
-    }
-
-    [RelayCommand]
-    void ForwordOneFrame()
-    {
-        if (PlayerState == MediaPlaybackState.Playing)
-        {
-            MediaPlayer.Pause();
-        }
-        MediaPlayer.StepForwardOneFrame();
-    }
 
     #endregion
 

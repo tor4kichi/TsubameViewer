@@ -255,8 +255,13 @@
           PointerReleased="ControlUIInteractionWall_PointerReleased"
           x:Name="ControlUIInteractionWall"
                   HorizontalAlignment="Stretch"
-                  VerticalAlignment="Stretch">
-      
+                  VerticalAlignment="Stretch"
+          >
+      <i:Interaction.Behaviors>
+        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
+                                           Invoked="MySwipeDistanceBehavior_Invoked"                                           
+                                           XPixelsToOneUnit="8" />
+      </i:Interaction.Behaviors>
     </Grid>
 
     <Border x:Name="ImageSelectorContainer"
@@ -627,6 +632,19 @@
       </StackPanel>
 
     </Border>
+
+    <Grid x:Name="SeekingTimeUIContainer"
+          Visibility="{x:Bind MySwipeDistanceBehavior.NowManipulation, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          CornerRadius="6"
+          Margin="32 48 32 32"
+          Padding="16 8 16 8"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top">
+      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
+                 
+                 FontSize="24"/>
+    </Grid>
 
     <ProgressBar Minimum="0"
                       Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
