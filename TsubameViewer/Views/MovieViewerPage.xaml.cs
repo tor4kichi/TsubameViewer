@@ -78,7 +78,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         if (pt.Properties.IsLeftButtonPressed)
         {
-            IsDisplayControlUI = true;
+            if (PlayerState == MediaPlaybackState.Paused)
+            {
+                IsDisplayControlUI = !IsDisplayControlUI;
+            }
+            else
+            {
+                IsDisplayControlUI = true;
+            }
         }
     }
 
@@ -238,7 +245,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var _this = s.Item1;
                 _this.ShowMouseCursor();
-                if (s.insideWindowRp.CurrentValue)
+                if (s.insideWindowRp.CurrentValue && s.Item1.PlayerState == MediaPlaybackState.Playing)
                 {
                     _this.IsDisplayControlUI = true;
 
