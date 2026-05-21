@@ -34,6 +34,7 @@ using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
+using Windows.System.Display;
 using Windows.UI.Composition;
 using Windows.UI.Core;
 using Windows.UI.Notifications;
@@ -114,13 +115,75 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
-        
+
+        Window.Current.CoreWindow.CharacterReceived += CoreWindow_CharacterReceived;
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         
         MediaPlayer.Source = null;
         _playbackResources?.Dispose();
         _playbackResources = null;
+    }
+
+    private void CoreWindow_CharacterReceived(CoreWindow sender, CharacterReceivedEventArgs args)
+    {
+        // 判定：入力された文字コード(KeyCode)をcharに変換して比較
+        char inputChar = (char)args.KeyCode;
+
+        if (inputChar == '>')
+        {
+            SetPlaybackRateToNext();
+        }
+        else if (inputChar == '<')
+        {
+            SetPlaybackRateToPrev();
+        }
+        else if (inputChar == ' ' && FocusManager.GetFocusedElement() == null) 
+        {
+            TogglePlayPause();
+        }
+    }
+
+    internal class DisplayRequestFacade : IDisposable
+    {
+        private readonly DisplayRequest _req;
+
+        bool _isActive;
+        public DisplayRequestFacade()
+        {
+            _req = new DisplayRequest();
+        }
+
+        public bool IsActive
+        {
+            get { return _isActive; }
+            set
+            {
+                if (_isActive != value)
+                {
+                    if (value)
+                    {
+                        _req.RequestActive();
+                    }
+                    else
+                    {
+                        _req.RequestRelease();
+                    }
+                }
+            }
+        }
+
+        bool _isDisposed;
+        public void Dispose()
+        {
+            if (_isDisposed) { return; }
+            _isDisposed = true;
+
+            if (_isActive)
+            {
+                _req.RequestRelease();
+            }
+        }
     }
 
     IDisposable? _playbackResources;
@@ -233,6 +296,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
             .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
             .ToReadOnlyReactiveProperty()
+            .AddTo(ref db);
+
+        this.ObservePropertyChanged(x => x.PlayerState)
+            .Subscribe(new DisplayRequestFacade(), (state, s)  => 
+            {
+                s.IsActive = state == MediaPlaybackState.Playing;
+            }, (result, s) => s.Dispose())
             .AddTo(ref db);
 
         InitializeZoomReaction(ref db);
@@ -578,6 +648,28 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
+
+    [RelayCommand]
+    void SetPlaybackRateToNext()
+    {
+        var rate = MediaPlayer.PlaybackSession.PlaybackRate;
+        float roundedRate = Math.DivRem((int)(rate*10), 5, out var _) / 10f;
+
+        var nextRate = Math.Min(roundedRate + 0.5f, MaxPlaybackRate);
+        SetPlaybackRateFromCode(nextRate);
+        MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
+    }
+
+    [RelayCommand]
+    void SetPlaybackRateToPrev()
+    {
+        var rate = MediaPlayer.PlaybackSession.PlaybackRate;
+        float roundedRate = Math.DivRem((int)(rate * 10), 5, out var _) / 10f;
+
+        var prevRate = Math.Min(roundedRate - 0.5f, MinPlaybackRate);
+        SetPlaybackRateFromCode(prevRate);
+        MediaPlayer.PlaybackSession.PlaybackRate = prevRate;
+    }
 
     #endregion
 
