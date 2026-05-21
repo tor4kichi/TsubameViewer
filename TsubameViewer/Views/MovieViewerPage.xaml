@@ -498,13 +498,52 @@
             </Button>
           </StackPanel>
           <StackPanel Orientation="Horizontal"
-                      uwpControls:DockPanel.Dock="Left">
+                      uwpControls:DockPanel.Dock="Left"
+                      Spacing="8">
             <Button x:Name="ControlUI_PlayPauseButton"
                     Command="{x:Bind TogglePlayPauseCommand}"
                     Height="40"
                     Width="48">
               <SymbolIcon Symbol="Play" />
             </Button>
+
+            <RepeatButton x:Name="ControlUI_BackwordOneFrameButton"
+                    Command="{x:Bind BackwordOneFrameCommand}"
+                    Height="40"
+                    Width="48" Margin="16 0 0 0"
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Stretch">
+              <Grid>
+                <TextBlock Text="1" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           Style="{StaticResource CaptionTextBlockStyle}"/>
+                <SymbolIcon Symbol="Undo"
+                            RenderTransformOrigin="1, 1">
+                  <SymbolIcon.RenderTransform>
+                    <CompositeTransform ScaleX="0.8"
+                                        ScaleY="0.8" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Grid>
+            </RepeatButton>
+            <RepeatButton x:Name="ControlUI_ForwordOneFrameButton"
+                    Command="{x:Bind ForwordOneFrameCommand}"
+                    Height="40"
+                    Width="48"                          
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Stretch">
+              <Grid>
+                <TextBlock Text="1"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Top"
+                           Style="{StaticResource CaptionTextBlockStyle}" />
+                <SymbolIcon Symbol="Redo"
+                            RenderTransformOrigin="0, 1">
+                  <SymbolIcon.RenderTransform>
+                    <CompositeTransform ScaleX="0.8" ScaleY="0.8" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Grid>
+            </RepeatButton>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
             <Button x:Name="ToggleIsMutedButton"

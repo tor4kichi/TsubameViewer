@@ -179,7 +179,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 s._playbackResources?.Dispose();
 
-                s.MediaPlayer?.Source = null;
+                s.MediaPlayer.Source = null;
 
                 if (x == null) { return; }
                 if (s.MediaPlayer == null) { return; }
@@ -190,7 +190,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     s._nowRequestPlayStart = true;
                     var mediaSource = MediaSource.CreateFromStorageFile(x);                    
                     db.Add(mediaSource);
-                    s.MediaPlayer?.Source = mediaSource;
+                    s.MediaPlayer.Source = mediaSource;
                     ct.ThrowIfCancellationRequested();
                 }
                 catch
@@ -258,11 +258,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 if (_this._nowRequestPlayStart)
                 {
                     _this._nowRequestPlayStart = false;
-                    _this.MediaPlayer?.Play();
+                    _this.MediaPlayer.Play();
                     await Observable.NextFrame().WaitAsync();
                 }
                 // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
-                _this.MediaPlayer?.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
+                _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
             });
 
         this.ObservePropertyChanged(x => x.VideoPosition)
@@ -385,7 +385,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void HandleLoopingChanged(ref DisposableBuilder db)
     {
         _vm.PageSettings.ObservePropertyChanged(x => x.IsRepeat)
-            .Subscribe(this, (x, s) => s.MediaPlayer?.IsLoopingEnabled = x)
+            .Subscribe(this, (x, s) => s.MediaPlayer.IsLoopingEnabled = x)
             .AddTo(ref db);
     }
 
@@ -441,7 +441,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var ts = TimeSpan.FromSeconds((double)e.NewValue);
         _videoPositionChangingFromCode = true;
         VideoPosition = ts;
-        MediaPlayer?.PlaybackSession.Position = ts;
+        MediaPlayer.PlaybackSession.Position = ts;
     }
 
     bool _prevPlaying;
@@ -451,7 +451,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
-            MediaPlayer?.Pause();
+            MediaPlayer.Pause();
         }
     }
 
@@ -460,7 +460,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_prevPlaying)
         {
             _prevPlaying = false;
-            MediaPlayer?.Play();
+            MediaPlayer.Play();
         }
     }
 
@@ -489,7 +489,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         try
         {
             bool prevPlaying = PlayerState == MediaPlaybackState.Playing;
-            MediaPlayer?.Pause();
+            MediaPlayer.Pause();
             _vm.PageSettings.PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
             if (prevPlaying)
             {
@@ -509,7 +509,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (_nowPlaybackRateChangingFromCode) { return; }
 
         SetPlaybackRateFromCode((double)e.NewValue);
-        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
 
@@ -517,7 +517,28 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackRate(double d)
     {
         SetPlaybackRateFromCode(d);
-        MediaPlayer?.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+    }
+
+
+    [RelayCommand]
+    void BackwordOneFrame()
+    {
+        if (PlayerState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+        MediaPlayer.StepBackwardOneFrame();
+    }
+
+    [RelayCommand]
+    void ForwordOneFrame()
+    {
+        if (PlayerState == MediaPlaybackState.Playing)
+        {
+            MediaPlayer.Pause();
+        }
+        MediaPlayer.StepForwardOneFrame();
     }
 
     #endregion
@@ -528,7 +549,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
         _vm.PageSettings.ObservePropertyChanged(x => x.SoundVolume)
-            .Subscribe((this), (x, s) => s.MediaPlayer?.Volume = x)
+            .Subscribe((this), (x, s) => s.MediaPlayer.Volume = x)
             .AddTo(ref db);
 
         SoundVolume_Display = _vm.PageSettings.SoundVolume;
@@ -554,7 +575,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     partial void OnIsMuteChanged(bool value)
     {
-        MediaPlayer?.IsMuted = value;
+        MediaPlayer.IsMuted = value;
 
         _nowSoundVolumeChanging = true;
         try
@@ -1017,7 +1038,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task ToggleFullScreen()
     {
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer?.Pause();
+        MediaPlayer.Pause();
         await Observable.NextFrame().WaitAsync();
         var appView = ApplicationView.GetForCurrentView();
         if (appView.IsFullScreenMode)
@@ -1032,7 +1053,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         await Observable.TimerFrame(10).WaitAsync();
         if (isPlaying)
         {
-            MediaPlayer?.Play();
+            MediaPlayer.Play();
         }
     }
 
@@ -1154,7 +1175,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (_vm.MovieFile == null) { return; }
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer?.Pause();
+        MediaPlayer.Pause();
         await Launcher.LaunchFileAsync(_vm.MovieFile);
     }
 
@@ -1162,7 +1183,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task OpenMovieFileWithExplorerAsync()
     {
         if (_vm.MovieFile == null) { return; }
-        MediaPlayer?.Pause();
+        MediaPlayer.Pause();
         await Launcher.LaunchFolderPathAsync(
             Path.GetDirectoryName(_vm.MovieFile.Path),
             new() { ItemsToSelect = { _vm.MovieFile } });
