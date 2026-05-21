@@ -1203,7 +1203,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     { ".jpg", [".jpg"] },
                     { ".png", [".png"] },
                 },
-                SuggestedFileName = $"tv_{_vm.MovieFile?.Name.Substring(0, 20)}_{MediaPlayer.PlaybackSession.Position.TotalMilliseconds:F0}",
+                SuggestedFileName = $"tv_{Path.GetFileNameWithoutExtension(_vm.MovieFile?.Name)}_{MediaPlayer.PlaybackSession.Position.TotalMilliseconds:F0}",
                 DefaultFileExtension = ".jpg",
             };
 
