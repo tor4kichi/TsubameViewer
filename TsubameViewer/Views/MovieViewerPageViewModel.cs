@@ -18,8 +18,10 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Media.Core;
+using Windows.Media.MediaProperties;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Media;
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
@@ -33,6 +35,10 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _playbackRate = Read(1d, nameof(PlaybackRate));
         _isHorizontalMirror = Read(false, nameof(IsHorizontalMirror));
         _soundVolume = Read(0.5d, nameof(SoundVolume));
+        _isPlayerRotateEnabled = Read(false, nameof(IsPlayerRotateEnabled));
+        _mediaRotate = (MediaRotation)Read((int)MediaRotation.Clockwise90Degrees, nameof(PlayerRotate));
+        _isPlayerStretchEnabled = Read(false, nameof(IsPlayerStretchEnabled));
+        _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
     }
 
     bool _isRepeat;
@@ -69,6 +75,34 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     {
         get => _isHorizontalMirror;
         set => SetProperty(ref _isHorizontalMirror, value);
+    }
+
+    bool _isPlayerRotateEnabled;
+    public bool IsPlayerRotateEnabled
+    {
+        get => _isPlayerRotateEnabled;
+        set => SetProperty(ref _isPlayerRotateEnabled, value);
+    }
+
+    MediaRotation _mediaRotate;
+    public MediaRotation PlayerRotate
+    {
+        get => _mediaRotate;
+        set => SetProperty(_mediaRotate, value, this, (m, v) => m.Save((int)(m._mediaRotate = v), nameof(PlayerRotate)));
+    }
+
+    bool _isPlayerStretchEnabled;
+    public bool IsPlayerStretchEnabled
+    {
+        get => _isPlayerStretchEnabled;
+        set => SetProperty(ref _isPlayerStretchEnabled, value);
+    }
+
+    Stretch _playerStretch;
+    public Stretch PlayerStretch
+    {
+        get => _playerStretch;
+        set => SetProperty(_playerStretch, value, this, (m, v) => m.Save((int)(m._playerStretch = v), nameof(PlayerStretch)));
     }
 }
 
@@ -219,14 +253,4 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     {        
         base.OnNavigatedFrom(parameters);
     }
-
-    [RelayCommand]
-    void ToggleHorizontalMirrorDisplay()
-    {
-        IsHorizontalMirrorModeEnabled = !IsHorizontalMirrorModeEnabled;
-    }
-
-    [ObservableProperty]
-    bool _isHorizontalMirrorModeEnabled;
-
 }

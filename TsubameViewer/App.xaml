@@ -54,6 +54,21 @@
         <Setter Property="BorderThickness"
                 Value="0" />
       </Style>
+      <Style TargetType="ToggleButton"
+             x:Key="TitlebarToggleButton">
+        <Setter Property="Width"
+                Value="40" />
+        <Setter Property="Height"
+                Value="32" />
+        <Setter Property="CornerRadius"
+                Value="4" />
+        <Setter Property="Margin"
+                Value="0 0 0 0" />
+        <Setter Property="Padding"
+                Value="0 0 0 0 " />
+        <Setter Property="BorderThickness"
+                Value="0" />
+      </Style>
       <Style TargetType="TextBlock"
              x:Key="TitlebarTextBlock">
         <Setter Property="FontSize"
@@ -73,8 +88,8 @@
                 Value="0.5, 0.5" />
         <Setter Property="RenderTransform">
           <Setter.Value>
-            <CompositeTransform ScaleX="0.75"
-                                ScaleY="0.75" />
+            <CompositeTransform ScaleX="0.70"
+                                ScaleY="0.70" />
           </Setter.Value>
         </Setter>
       </Style>

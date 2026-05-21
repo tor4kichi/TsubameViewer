@@ -28,6 +28,7 @@ using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
 using Windows.Media.Core;
+using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -57,6 +58,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         return TitlebarContent;
     }
+
 
     internal readonly MovieViewerPageViewModel _vm;
     private readonly IMessenger _messenger;
@@ -111,8 +113,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _playbackResources?.Dispose();
         _playbackResources = null;
     }
-
-
 
     IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
@@ -272,11 +272,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this, bookmarkRp), (x, s) =>   s.bookmarkRp.CurrentValue?.ReadPosition = new ((float)(s.Item1.VideoPosition.TotalSeconds / s.Item1.VideoDuration.TotalSeconds)))
             .AddTo(ref db);
 
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsPlayerStretchEnabled)
+            .SubscribeAwait(this, static async (x, s, ct) => 
+            {
+                await s.SetPlayerStretch_Internal(x ? s._vm.PageSettings.PlayerStretch : Stretch.Uniform);                
+            })
+            .AddTo(ref db);
+
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsPlayerRotateEnabled)
+            .SubscribeAwait(this, static async (x, s, ct) =>
+            {
+                await s.SetPlayerRotate_Internal(x ? s._vm.PageSettings.PlayerRotate : MediaRotation.None);
+            })
+            .AddTo(ref db);
+
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
         HandlePlaybackRateChanged(ref db);
-        HandlePlayerTemporaryTransformChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
@@ -1024,68 +1037,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-
-
-
-    void HandlePlayerTemporaryTransformChanged(ref DisposableBuilder db)
-    {
-        _vm.PageSettings.ObservePropertyChanged(x => x.IsHorizontalMirror)
-            .Subscribe(_ => RefreshIsPlayerTemporaryTransformChanged())
-            .AddTo(ref db);
-        
-        RefreshIsPlayerTemporaryTransformChanged();
-    }
-
-
-    [ObservableProperty]
-    bool _isPlayerTemporaryTransformChanged;
-
-
-    [RelayCommand]
-    async Task ResetPlayerTemporaryTransform()
-    {
-        if (MediaPlayer == null) { return; }
-
-        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer.Pause();
-        await Observable.NextFrame().WaitAsync();
-        if (MyMediaPlayerElement.Stretch != Stretch.Uniform)
-        {
-            MyMediaPlayerElement.Stretch = Stretch.Uniform;
-            await Observable.NextFrame().WaitAsync();
-        }
-        if (MediaPlayer.PlaybackSession.PlaybackRotation != Windows.Media.MediaProperties.MediaRotation.None)
-        {
-            MediaPlayer.PlaybackSession.PlaybackRotation = Windows.Media.MediaProperties.MediaRotation.None;
-            await Observable.NextFrame().WaitAsync();
-        }
-        if (_vm.PageSettings.IsHorizontalMirror)
-        {
-            _vm.PageSettings.IsHorizontalMirror = false;
-            await Observable.NextFrame().WaitAsync();
-        }
-        if (isPlaying)
-        {
-            MediaPlayer.Play();
-        }
-        RefreshIsPlayerTemporaryTransformChanged();
-    }
-
-    void RefreshIsPlayerTemporaryTransformChanged()
-    {
-        if (MediaPlayer == null) 
-        {
-            IsPlayerTemporaryTransformChanged = false;
-            return;
-        }
-
-        IsPlayerTemporaryTransformChanged = MyMediaPlayerElement.Stretch != Stretch.Uniform
-            || MediaPlayer!.PlaybackSession.PlaybackRotation != Windows.Media.MediaProperties.MediaRotation.None
-            || _vm.PageSettings.IsHorizontalMirror;
-    }
-
-    [RelayCommand]
-    async Task SetPlayerStretch(Stretch stretch)
+    async Task SetPlayerStretch_Internal(Stretch stretch)
     {
         if (MediaPlayer == null) { return; }
         if (MyMediaPlayerElement.Stretch == stretch) { return; }
@@ -1099,7 +1051,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             MediaPlayer.Play();
         }
-        RefreshIsPlayerTemporaryTransformChanged();
+    }
+
+    [RelayCommand]
+    async Task SetPlayerStretch(Stretch stretch)
+    {
+        if (stretch != Stretch.Uniform)
+        {
+            _vm.PageSettings.PlayerStretch = stretch;
+            _vm.PageSettings.IsPlayerStretchEnabled = true;
+        }
+        else
+        {
+            _vm.PageSettings.IsPlayerStretchEnabled = false;
+        }
+        await SetPlayerStretch_Internal(stretch);
     }
 
     Windows.Media.MediaProperties.MediaRotation GetNextRotate(Windows.Media.MediaProperties.MediaRotation rotate)
@@ -1114,8 +1080,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         };
     }
 
-    [RelayCommand]
-    async Task SetPlayerRotate(Windows.Media.MediaProperties.MediaRotation rotate)
+    async Task SetPlayerRotate_Internal(MediaRotation rotate)
     {
         if (MediaPlayer == null) { return; }
         if (MediaPlayer.PlaybackSession.PlaybackRotation == rotate) { return; }
@@ -1129,7 +1094,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             MediaPlayer.Play();
         }
-        RefreshIsPlayerTemporaryTransformChanged();
+    }
+
+    [RelayCommand]
+    async Task SetPlayerRotate(MediaRotation rotate)
+    {
+        if (rotate != Windows.Media.MediaProperties.MediaRotation.None)
+        {
+            _vm.PageSettings.PlayerRotate = rotate;
+            _vm.PageSettings.IsPlayerRotateEnabled = true;
+        }        
+        else
+        {
+            _vm.PageSettings.IsPlayerRotateEnabled = false;
+        }
+        await SetPlayerRotate_Internal(rotate);
     }
 
     [RelayCommand]

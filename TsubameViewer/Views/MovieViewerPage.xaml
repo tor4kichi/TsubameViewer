@@ -53,7 +53,31 @@
                      Foreground="{ThemeResource SystemErrorTextColor}"
                      Opacity="0"
                      Style="{StaticResource TitlebarTextBlock}" />
-          
+
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
+            <SymbolIcon Symbol="ZoomIn"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </ToggleButton>
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerRotateEnabled, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
+            <SymbolIcon Symbol="Orientation"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </ToggleButton>
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}">
+            <SymbolIcon Symbol="Sort"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+              <SymbolIcon.RenderTransform>
+                <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7" />
+              </SymbolIcon.RenderTransform>
+            </SymbolIcon>
+          </ToggleButton>
           <Button Command="{x:Bind ToggleFullScreenCommand}"
                   Style="{StaticResource TitlebarButton}">
             <SymbolIcon Symbol="FullScreen"
@@ -124,10 +148,6 @@
                     Value="1" />
             <Setter Target="ImageSelectorContainer.IsHitTestVisible"
                     Value="True" />
-            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.Opacity"
-                    Value="1" />
-            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.IsHitTestVisible"
-                    Value="True" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -138,10 +158,6 @@
             <Setter Target="ImageSelectorContainer.Opacity"
                     Value="0" />
             <Setter Target="ImageSelectorContainer.IsHitTestVisible"
-                    Value="False" />
-            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.Opacity"
-                    Value="0" />
-            <Setter Target="ClearPlayerTemporaryTransformButtonContainer.IsHitTestVisible"
                     Value="False" />
           </VisualState.Setters>
         </VisualState>
@@ -450,20 +466,6 @@
                 <MenuFlyout>
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
                                   Command="{x:Bind SaveCurrentFrameCommand}" />
-                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.None}"
-                                    Command="{x:Bind SetPlayerRotateCommand}"
-                                    CommandParameter="{x:Bind mediaProps:MediaRotation.None}" />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise90Degrees}"
-                                    Command="{x:Bind SetPlayerRotateCommand}"
-                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise90Degrees}" />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise180Degrees}"
-                                    Command="{x:Bind SetPlayerRotateCommand}"
-                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise180Degrees}" />
-                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise270Degrees}"
-                                    Command="{x:Bind SetPlayerRotateCommand}"
-                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise270Degrees}" />
-                  </MenuFlyoutSubItem>
                   <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.None}"
                                     Command="{x:Bind SetPlayerStretchCommand}"
@@ -477,6 +479,20 @@
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.UniformToFill}"
                                     Command="{x:Bind SetPlayerStretchCommand}"
                                     CommandParameter="{x:Bind media:Stretch.UniformToFill}" />
+                  </MenuFlyoutSubItem>
+                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.None}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.None}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise90Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise90Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise180Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise180Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise270Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise270Degrees}" />
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
@@ -575,30 +591,6 @@
       </StackPanel>
 
     </Border>
-
-    <Grid Visibility="{x:Bind IsPlayerTemporaryTransformChanged, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-          HorizontalAlignment="Right"
-          VerticalAlignment="Top"
-          Margin="24"
-          x:Name="ClearPlayerTemporaryTransformButtonContainer"
-          Opacity="0"
-          CornerRadius="6"
-          IsHitTestVisible="False"
-          Background="{ThemeResource ApplicationContentBackgroundBrush}"
-          BorderThickness="1">
-      <Button Command="{x:Bind ResetPlayerTemporaryTransformCommand}"
-              CornerRadius="6">
-        <StackPanel>
-          <SymbolIcon Symbol="Clear"
-                      HorizontalAlignment="Center" />
-          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_ResetPlayerTransform}"
-                     HorizontalAlignment="Center"
-                     TextWrapping="WrapWholeWords"
-                     MaxWidth="120"
-                     Style="{StaticResource CaptionTextBlockStyle}" />
-        </StackPanel>
-      </Button>
-    </Grid>
 
     <Grid HorizontalAlignment="Center"
           VerticalAlignment="Top"
