@@ -127,32 +127,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
 
-        Window.Current.CoreWindow.CharacterReceived += CoreWindow_CharacterReceived;
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         
         MediaPlayer.Source = null;
         _playbackResources?.Dispose();
         _playbackResources = null;
-    }
-
-    private void CoreWindow_CharacterReceived(CoreWindow sender, CharacterReceivedEventArgs args)
-    {
-        // 判定：入力された文字コード(KeyCode)をcharに変換して比較
-        char inputChar = (char)args.KeyCode;
-
-        if (inputChar == '>')
-        {
-            SetPlaybackRateToNext();
-        }
-        else if (inputChar == '<')
-        {
-            SetPlaybackRateToPrev();
-        }
-        else if (inputChar == ' ' && FocusManager.GetFocusedElement() == null) 
-        {
-            TogglePlayPause();
-        }
     }
 
     internal class DisplayRequestFacade : IDisposable
@@ -700,11 +680,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this), (x, s) => s.MediaPlayer.Volume = x)
             .AddTo(ref db);
 
-        SoundVolume_Display = _vm.PageSettings.SoundVolume;
+        IsMute = _vm.PageSettings.IsMuted;
+        //SoundVolume_Display = _vm.PageSettings.SoundVolume;
 
         ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
         ControlUI_SoundVolumeSlider.ValueChanged += ControlUI_SoundVolumeSlider_ValueChanged;
-        Disposable.Create(this, s => s.ControlUI_SoundVolumeSlider.ValueChanged += s.ControlUI_SoundVolumeSlider_ValueChanged)
+        Disposable.Create(this, s => s.ControlUI_SoundVolumeSlider.ValueChanged -= s.ControlUI_SoundVolumeSlider_ValueChanged)
             .AddTo(ref db);
     }
 
@@ -718,7 +699,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void ToggleIsMuted()
     {
-        IsMute = !IsMute;
+        IsMute = _vm.PageSettings.IsMuted = !_vm.PageSettings.IsMuted;        
     }
 
     partial void OnIsMuteChanged(bool value)
@@ -735,7 +716,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             else
             {
                 SoundVolume_Display = _vm.PageSettings.SoundVolume;
-            }
+            }            
         }
         finally
         {

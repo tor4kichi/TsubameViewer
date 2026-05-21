@@ -40,7 +40,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isPlayerStretchEnabled = Read(false, nameof(IsPlayerStretchEnabled));
         _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
     }
-
+    
     bool _isRepeat;
     public bool IsRepeat
     {
@@ -54,7 +54,6 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         get => _isMuted;
         set => SetProperty(ref _isMuted, value);
     }
-
 
     double _soundVolume;
     public double SoundVolume
