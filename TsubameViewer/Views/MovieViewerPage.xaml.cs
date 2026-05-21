@@ -61,8 +61,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     internal readonly MovieViewerPageViewModel _vm;
     private readonly IMessenger _messenger;
 
-    [ObservableProperty]
-    MediaPlayer? _mediaPlayer;
+    public MediaPlayer MediaPlayer => MyMediaPlayerElement.MediaPlayer;
 
     [ObservableProperty]
     bool _isDisplayControlUI;
@@ -102,32 +101,26 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mouseCursorAutoHideTimer.Stop();
         ShowMouseCursor();
 
-        if (MediaPlayer == null) { return; }
-
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
-
+        
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.PositionChanged -= PlaybackSession_PositionChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         
         MediaPlayer.Source = null;
         _playbackResources?.Dispose();
         _playbackResources = null;
-        MyMediaPlayerElement.SetMediaPlayer(null);
-        MediaPlayer.Dispose();
-        MediaPlayer = null;
     }
+
 
 
     IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
-        MediaPlayer = new MediaPlayer();
-        MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
-
+        //MediaPlayer = new MediaPlayer();
+        //MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
+        
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.PositionChanged += PlaybackSession_PositionChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;                
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
@@ -136,7 +129,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         DisposableBuilder db = new();
 
         _lastHideDisplayControlUIWithAutoHide = false;
-        
+
+        var mediaPlayer = MyMediaPlayerElement.MediaPlayer;
+        var playerPositionChanged = ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
+            h => mediaPlayer.PlaybackSession.PositionChanged += h,
+            h => mediaPlayer.PlaybackSession.PositionChanged -= h
+            );
+
         var insideWindowRp = Observable.Merge(
                 this.ObservePointerEntered().Select(x => true), 
                 this.ObservePointerExited().Select(x => false))
@@ -208,6 +207,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 }
             })
             .AddTo(ref db);
+
+        playerPositionChanged
+            .ObserveOnCurrentSynchronizationContext()
+            .Debounce(TimeSpan.FromSeconds(0.1))
+            .Subscribe(this, (e, s) => 
+            {
+                if (_videoPositionChangingFromCode)
+                {
+                    _videoPositionChangingFromCode = false;
+                    return;
+                }
+                s.SetVideoPositionFromCode(e.Sender?.Position ?? default);                
+            });
 
         var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
             .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
@@ -377,12 +389,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this, sender), (_, s) => s.Item1.VideoDuration = s.sender.NaturalDuration);
     }
 
-    private void PlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
-    {
-        Observable.NextFrame()
-            .Subscribe(this, (_, s) => s.SetVideoPositionFromCode(s.MediaPlayer?.PlaybackSession.Position ?? TimeSpan.Zero));
-    }
-
 
     [ObservableProperty]
     TimeSpan _videoDuration;
@@ -400,6 +406,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool _videoPositionChangingFromCode;
     void SetVideoPositionFromCode(TimeSpan ts)
     {
+        if (_videoPositionChangingFromCode) { return; }
         _videoPositionChangingFromCode = true;
         try
         {
@@ -419,8 +426,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             return; 
         }
 
-        SetVideoPositionFromCode(TimeSpan.FromSeconds((double)e.NewValue));
-        MediaPlayer?.PlaybackSession.Position = _videoPosition;
+        var ts = TimeSpan.FromSeconds((double)e.NewValue);
+        _videoPositionChangingFromCode = true;
+        VideoPosition = ts;
+        MediaPlayer?.PlaybackSession.Position = ts;
     }
 
     bool _prevPlaying;
@@ -429,7 +438,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (args.IsContactUIElement(PageSelector, Window.Current.Content))
         {
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
-
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
             MediaPlayer?.Pause();
         }
