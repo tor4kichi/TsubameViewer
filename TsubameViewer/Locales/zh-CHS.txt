@@ -229,7 +229,7 @@ MediaRotation.Clockwise180Degrees = 180度
 MediaRotation.Clockwise270Degrees = 270度
 
 MovieViewer_SaveCurrentFrame_Saved = 视频帧已保存。
-
+MovieViewer_SeekNotSupported = 此视频不支持搜索功能。
 
 
 

@@ -255,6 +255,7 @@
           >
       <i:Interaction.Behaviors>
         <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
+                                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                                            Invoked="MySwipeDistanceBehavior_Invoked"                                           
                                            XPixelsToOneUnit="8" />
       </i:Interaction.Behaviors>
@@ -518,6 +519,7 @@
 
             <RepeatButton x:Name="ControlUI_BackwordOneFrameButton"
                     Command="{x:Bind BackwordOneFrameCommand}"
+                          IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                     Height="40"
                     Width="48" Margin="16 0 0 0"
                           HorizontalContentAlignment="Stretch"
@@ -536,6 +538,7 @@
             </RepeatButton>
             <RepeatButton x:Name="ControlUI_ForwordOneFrameButton"
                     Command="{x:Bind ForwordOneFrameCommand}"
+                          IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                     Height="40"
                     Width="48"                          
                           HorizontalContentAlignment="Stretch"
@@ -616,21 +619,40 @@
                   Padding="0"
                   Margin="0 0"
                   FlowDirection="LeftToRight"
-                  AccessKey="4">
+                  AccessKey="4"
+                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>
           </Slider>
+          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SeekNotSupported}"
+                     VerticalAlignment="Bottom"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}" />
           <TextBlock VerticalAlignment="Bottom"
                      FontSize="12"
                      Margin="0 32 8 0"                     
                      HorizontalAlignment="Right"
-                     uwpControls:DockPanel.Dock="Bottom">
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
             <TextBlock.RenderTransform>
               <TranslateTransform Y="-6" />
             </TextBlock.RenderTransform>
             <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
           </TextBlock>
+          <TextBlock VerticalAlignment="Bottom"
+                     FontSize="12"
+                     Margin="0 32 8 0"
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
+
         </Grid>
       </StackPanel>
 

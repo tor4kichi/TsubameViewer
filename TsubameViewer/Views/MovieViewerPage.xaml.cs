@@ -274,7 +274,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         playerPositionChanged
             .ObserveOnCurrentSynchronizationContext()
-            .Debounce(TimeSpan.FromSeconds(0.1))
+            .Debounce(TimeSpan.FromSeconds(0.1))            
             .Subscribe(this, (e, s) => 
             {
                 if (_videoPositionChangingFromCode)
@@ -282,7 +282,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     _videoPositionChangingFromCode = false;
                     return;
                 }
-                s.SetVideoPositionFromCode(e.Sender?.Position ?? default);                
+                var ts = e.Sender?.Position ?? default;
+                s.SetVideoPositionFromCode(ts);
             });
 
         var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
@@ -327,12 +328,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var _this = s.Item1;
                 if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
-                var ts = _this.VideoDuration * bkmk.ReadPosition.Value;
-                if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+
+                if (_this.IsDurationAvairable)
                 {
-                    ts = TimeSpan.Zero;
+                    var ts = _this.VideoDuration * bkmk.ReadPosition.Value;
+                    if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+                    {
+                        ts = TimeSpan.Zero;
+                    }
+                    _this.MediaPlayer.PlaybackSession.Position = ts;
                 }
-                _this.MediaPlayer.PlaybackSession.Position = ts;
+
                 if (_this._nowRequestPlayStart)
                 {
                     _this._nowRequestPlayStart = false;
@@ -345,6 +351,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         this.ObservePropertyChanged(x => x.VideoPosition)
             .Debounce(TimeSpan.FromSeconds(1))
+            .Where(this, (x, s) => s.IsDurationAvairable)
             .Where((this, bookmarkRp), (x, s) => !s.Item1._nowRequestPlayStart && s.Item1.VideoDuration > TimeSpan.FromSeconds(5) && s.Item1._vm.MovieFile != null && s.bookmarkRp.CurrentValue != null)
             .Subscribe((this, bookmarkRp), (x, s) =>   s.bookmarkRp.CurrentValue?.ReadPosition = new ((float)(s.Item1.VideoPosition.TotalSeconds / s.Item1.VideoDuration.TotalSeconds)))
             .AddTo(ref db);
@@ -477,11 +484,27 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
 
     #region Position and Duration
-    
+
+    [ObservableProperty]
+    bool _isDurationAvairable;
+
     private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
     {
         Observable.NextFrame()
-            .Subscribe((this, sender), (_, s) => s.Item1.VideoDuration = s.sender.NaturalDuration);
+            .Subscribe((this, sender), (_, s) =>
+            {
+                s.Item1.VideoDuration = s.sender.NaturalDuration;
+                if (s.Item1.VideoDuration.TotalDays < 1)
+                {
+                    PageSelector.Maximum = s.Item1.VideoDuration.TotalSeconds;
+                    s.Item1.IsDurationAvairable = true;
+                }
+                else
+                {
+                    PageSelector.Maximum = TimeSpan.FromDays(1).TotalSeconds;
+                    s.Item1.IsDurationAvairable = false;
+                }
+            });
     }
 
 
@@ -496,7 +519,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return t.ToString("hh\\:mm\\:ss");
     }
 
-    double ToTotalSeconds(TimeSpan t) => t.TotalSeconds;
+    double ToTotalSeconds(TimeSpan t)
+    {
+        var oneDay = TimeSpan.FromDays(1);
+        if (t > oneDay)
+        {
+            return oneDay.TotalSeconds;
+        }
+        else
+        {
+            return t.TotalSeconds;
+        }
+    }
 
     bool _videoPositionChangingFromCode;
     void SetVideoPositionFromCode(TimeSpan ts)
@@ -506,6 +540,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         try
         {
             VideoPosition = ts;
+            if (IsDurationAvairable)
+            {
+                PageSelector.Value = ToTotalSeconds(ts);
+            }
         }
         finally
         {
@@ -514,7 +552,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     private void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {        
+    {
         if (((FrameworkElement)sender).IsLoaded == false) { return; }
         if (_videoPositionChangingFromCode) 
         {
@@ -525,9 +563,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _videoPositionChangingFromCode = true;
         VideoPosition = ts;
         MediaPlayer.PlaybackSession.Position = ts;
-
-        // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
-        MediaPlayer.StepForwardOneFrame();
     }
 
     bool _prevPlaying;
@@ -543,10 +578,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        if (_prevPlaying)
+        if (args.IsContactUIElement(PageSelector, Window.Current.Content))
         {
-            _prevPlaying = false;
-            MediaPlayer.Play();
+            if (_prevPlaying)
+            {
+                _prevPlaying = false;
+                MediaPlayer.Play();
+            }
+            else
+            {
+                // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
+                MediaPlayer.StepForwardOneFrame();
+            }
         }
     }
 
@@ -578,13 +621,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
     {
+        if (!IsDurationAvairable) { return; }
+
         _nextIsDisplayControlUI = null;
 
+        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         var ts = TimeSpan.FromSeconds(args.X);
         MediaPlayer.PlaybackSession.Position = VideoPosition + ts;
 
         // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
-        MediaPlayer.StepForwardOneFrame();
+        if (!isPlaying)
+        {
+            MediaPlayer.StepForwardOneFrame();
+        }
     }
 
     string ProgressXToTimeText(double progressX)

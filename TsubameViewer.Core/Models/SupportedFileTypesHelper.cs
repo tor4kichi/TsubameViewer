@@ -55,7 +55,7 @@ public static class SupportedFileTypesHelper
         SupportedMovieFileExtensions = new string[]
         {
             Movie_Mp4FileType,
-            //Movie_WebPFileType,
+            Movie_WebPFileType,
             Movie_HevcFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })

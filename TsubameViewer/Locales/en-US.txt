@@ -229,7 +229,7 @@ MediaRotation.Clockwise180Degrees = 180 degrees
 MediaRotation.Clockwise270Degrees = 270 degrees
 
 MovieViewer_SaveCurrentFrame_Saved = The video frame has been saved.
-
+MovieViewer_SeekNotSupported = Seeking is not supported in this video.
 
 
 
