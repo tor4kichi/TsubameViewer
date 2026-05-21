@@ -443,7 +443,7 @@
               <SymbolIcon Symbol="RepeatAll" />
             </ToggleButton>
 
-            <Button>
+            <Button Height="40" Width="48">
               <SymbolIcon Symbol="Setting" />
 
               <Button.Flyout>
