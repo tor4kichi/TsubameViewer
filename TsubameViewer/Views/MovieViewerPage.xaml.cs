@@ -108,6 +108,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        MediaPlayer.Pause();
         _mouseCursorAutoHideTimer.Stop();
         ShowMouseCursor();
 

@@ -144,10 +144,8 @@
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Opacity"
-                    Value="1" />
-            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
-                    Value="True" />
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -155,10 +153,8 @@
             <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="ImageSelectorContainer.Opacity"
-                    Value="0" />
-            <Setter Target="ImageSelectorContainer.IsHitTestVisible"
-                    Value="False" />
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -269,10 +265,18 @@
             VerticalAlignment="Bottom"
             Margin="0 0 0 0"
             Padding="0 8 0 24"
-            Opacity="0"
-            IsHitTestVisible="False"
+            Visibility="Collapsed"
             Background="{ThemeResource SystemAltMediumHighColor}"
             >
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.225" />
+      </animation:Implicit.HideAnimations>
+
       <StackPanel Margin="8 0"
                   Spacing="6"
                   MaxWidth="720"
@@ -641,6 +645,14 @@
           Padding="16 8 16 8"
           HorizontalAlignment="Center"
           VerticalAlignment="Top">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1" Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.275" />
+      </animation:Implicit.HideAnimations>
+
       <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
                  
                  FontSize="24"/>
