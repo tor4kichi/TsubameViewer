@@ -70,6 +70,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     bool _isDisplayControlUI;
 
+    bool? _nextIsDisplayControlUI;
     private void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -77,15 +78,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             _ = ToggleFullScreen();
         }
+
         if (pt.Properties.IsLeftButtonPressed)
         {
             if (PlayerState == MediaPlaybackState.Paused)
             {
-                IsDisplayControlUI = !IsDisplayControlUI;
+                _nextIsDisplayControlUI = !IsDisplayControlUI;
             }
             else
             {
-                IsDisplayControlUI = true;
+                _nextIsDisplayControlUI = true;
             }
         }
     }
@@ -93,6 +95,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void ControlUIInteractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         _lastHideDisplayControlUIWithAutoHide = false;
+        if (MySwipeDistanceBehavior.NowManipulation)
+        {
+            _nextIsDisplayControlUI = null;
+        }
+        if (_nextIsDisplayControlUI is { } b)
+        {
+            IsDisplayControlUI = b;
+            _nextIsDisplayControlUI = null;
+        }
     }
 
     public MovieViewerPage()
@@ -316,7 +327,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var _this = s.Item1;
                 _this.ShowMouseCursor();
-                if (s.insideWindowRp.CurrentValue && s.Item1.PlayerState == MediaPlaybackState.Playing)
+                if (s.insideWindowRp.CurrentValue 
+                && s.Item1.PlayerState == MediaPlaybackState.Playing
+                && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
                 {
                     _this.IsDisplayControlUI = true;
 
@@ -531,6 +544,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _videoPositionChangingFromCode = true;
         VideoPosition = ts;
         MediaPlayer.PlaybackSession.Position = ts;
+
+        // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
+        MediaPlayer.StepForwardOneFrame();
     }
 
     bool _prevPlaying;
@@ -552,16 +568,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MediaPlayer.Play();
         }
     }
-
-
-
-    [RelayCommand]
-    void SetPlaybackRate(double d)
-    {
-        SetPlaybackRateFromCode(d);
-        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
-    }
-
 
     [RelayCommand]
     void BackwordOneFrame()
@@ -591,8 +597,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
     {
+        _nextIsDisplayControlUI = null;
+
         var ts = TimeSpan.FromSeconds(args.X);
         MediaPlayer.PlaybackSession.Position = VideoPosition + ts;
+
+        // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
+        MediaPlayer.StepForwardOneFrame();
     }
 
     string ProgressXToTimeText(double progressX)
@@ -648,6 +659,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
     }
 
+
+    [RelayCommand]
+    void SetPlaybackRate(double d)
+    {
+        SetPlaybackRateFromCode(d);
+        MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+    }
 
     [RelayCommand]
     void SetPlaybackRateToNext()

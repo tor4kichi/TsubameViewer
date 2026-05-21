@@ -650,7 +650,7 @@
       </animation:Implicit.ShowAnimations>
       <animation:Implicit.HideAnimations>
         <animation:OpacityAnimation To="0"
-                                    Duration="0:0:0.275" />
+                                    Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
       <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
