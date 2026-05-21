@@ -228,10 +228,7 @@
             <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="FullScreenExitButtonContainer.Opacity"
-                    Value="1" />
-            <Setter Target="FullScreenExitButtonContainer.IsHitTestVisible"
-                    Value="True" />
+            
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -592,29 +589,6 @@
 
     </Border>
 
-    <Grid HorizontalAlignment="Center"
-          VerticalAlignment="Top"
-          Opacity="0"
-          IsHitTestVisible="False"
-          x:Name="FullScreenExitButtonContainer"
-          Background="{ThemeResource ApplicationContentBackgroundBrush}"
-          CornerRadius="24"
-          BorderBrush="{ThemeResource SystemBaseMediumColor}"
-          BorderThickness="1"
-          Margin="48">
-      <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
-              Width="60"
-              Height="60"
-              RenderTransformOrigin="0.5, 0.5"
-              FontWeight="Thin"
-              Padding="1 1 0 0">
-        <UIElement.RenderTransform>
-          <ScaleTransform ScaleX="1.5"
-                          ScaleY="1.5" />
-        </UIElement.RenderTransform>
-        <SymbolIcon Symbol="Clear" />
-      </Button>
-    </Grid>
     <ProgressBar Minimum="0"
                       Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
                       Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
