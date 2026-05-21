@@ -113,7 +113,7 @@
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <ContentControl Content="{x:Bind Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+        <ContentControl Content="{x:Bind Type, Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
                       Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
                       />
         <TextBlock Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource FolderItemTextBlockStyle}" />

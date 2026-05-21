@@ -47,7 +47,24 @@ namespace TsubameViewer.Views.FolderListup
         {
             if (item == null) { return base.SelectTemplateCore(item, container); }
 
-            if (item is IStorageItemViewModel itemVM)
+
+            if (item is StorageItemTypes type)
+            {
+                return type switch
+                {
+                    StorageItemTypes.Folder => FolderIcon,
+                    StorageItemTypes.Archive => ArchiveIcon,
+                    StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                    StorageItemTypes.AlbamImage => AlbamImageIcon,
+                    StorageItemTypes.EBook => EBookIcon,
+                    StorageItemTypes.Image => ImageIcon,
+                    StorageItemTypes.AddFolder => AddFolderIcon,
+                    StorageItemTypes.AddAlbam => AddAlbamIcon,
+                    StorageItemTypes.Movie => MovieIcon,
+                    var otherType => ImageIcon,
+                };
+            }
+            else if (item is IStorageItemViewModel itemVM)
             {
                 return itemVM.Type switch
                 {
@@ -61,7 +78,7 @@ namespace TsubameViewer.Views.FolderListup
                     StorageItemTypes.AddFolder => AddFolderIcon,
                     StorageItemTypes.AddAlbam => AddAlbamIcon,
                     StorageItemTypes.Movie => MovieIcon,
-                    var type => ImageIcon,
+                    var otherType => ImageIcon,
                 };
             }
 
