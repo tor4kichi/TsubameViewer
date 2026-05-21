@@ -255,7 +255,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var _this = s.Item1;
                 if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
-                _this.VideoPosition = _this.VideoDuration * bkmk.ReadPosition.Value;
+                var ts = _this.VideoDuration * bkmk.ReadPosition.Value;
+                if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+                {
+                    ts = TimeSpan.Zero;
+                }
+                _this.MediaPlayer.PlaybackSession.Position = ts;
                 if (_this._nowRequestPlayStart)
                 {
                     _this._nowRequestPlayStart = false;
@@ -375,6 +380,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (MediaPlayer == null) { return; }
         if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Paused)
         {
+            var ps = MediaPlayer.PlaybackSession;
+            if (ps.Position > ps.NaturalDuration - TimeSpan.FromSeconds(1))
+            {
+                ps.Position = TimeSpan.Zero;
+            }
             MediaPlayer.Play();
         }
         else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
