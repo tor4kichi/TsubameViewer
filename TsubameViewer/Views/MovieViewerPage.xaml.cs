@@ -134,6 +134,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+
+
+    private void ControlUIInteractionWall_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        var pt = e.GetCurrentPoint(null);
+        VolumeChange(pt.Properties.MouseWheelDelta > 0 ? 0.05 : -0.05);
+    }
+
     public MovieViewerPage()
     {
         this.InitializeComponent();

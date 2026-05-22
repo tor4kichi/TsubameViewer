@@ -458,6 +458,7 @@
                   Opacity="0"
           PointerPressed="ControlUIInteractionWall_PointerPressed"
           PointerReleased="ControlUIInteractionWall_PointerReleased"
+          PointerWheelChanged="ControlUIInteractionWall_PointerWheelChanged"
           x:Name="ControlUIInteractionWall"
                   HorizontalAlignment="Stretch"
                   VerticalAlignment="Stretch"
