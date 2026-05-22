@@ -160,9 +160,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
         
-        MediaPlayer.Source = null;
         _playbackResources?.Dispose();
         _playbackResources = null;
+        MediaPlayer.Source = null;
     }
 
     internal class DisplayRequestFacade : IDisposable
@@ -305,24 +305,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
+            .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
+            .ToReadOnlyReactiveProperty()
+            .AddTo(ref db);
+
+
         playerPositionChanged
             .ObserveOnCurrentSynchronizationContext()
             .Debounce(TimeSpan.FromSeconds(0.1))            
-            .Subscribe(this, (e, s) => 
+            .Subscribe((this, bookmarkRp), (e, s) => 
             {
                 if (_videoPositionChangingFromCode)
                 {
                     _videoPositionChangingFromCode = false;
                     return;
                 }
-                var ts = e.Sender?.Position ?? default;
-                s.SetVideoPositionFromCode(ts);
-            });
 
-        var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
-            .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
-            .ToReadOnlyReactiveProperty()
-            .AddTo(ref db);
+                if (e.Sender == null) { return; }
+                var ts = e.Sender.Position;
+                s.Item1.SetVideoPositionFromCode(ts);                
+
+                if (e.Sender.CanSeek 
+                    && e.Sender.NaturalDuration != TimeSpan.Zero)
+                {
+                    var pos = e.Sender.Position;
+                    var duration = e.Sender.NaturalDuration;
+                    s.bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));
+                    Debug.WriteLine(s.bookmarkRp.CurrentValue?.ReadPosition.Value);
+                }
+            });
 
         this.ObservePropertyChanged(x => x.PlayerState)
             .Subscribe(new DisplayRequestFacade(), (state, s)  => 
@@ -362,9 +374,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var _this = s.Item1;
                 if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
 
-                if (_this.IsDurationAvairable)
+                if (_this.MediaPlayer.PlaybackSession.CanSeek)
                 {
-                    var ts = _this.VideoDuration * bkmk.ReadPosition.Value;
+                    if (float.IsNaN(bkmk.ReadPosition.Value))
+                    {
+                        bkmk.ReadPosition = new Core.Models.FolderItemListing.NormalizedPagePosition();
+                    }
+                    var ts = _this.MediaPlayer.PlaybackSession.NaturalDuration * bkmk.ReadPosition.Value;
                     if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
                     {
                         ts = TimeSpan.Zero;
@@ -381,13 +397,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
                 _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
             });
-
-        this.ObservePropertyChanged(x => x.VideoPosition)
-            .Debounce(TimeSpan.FromSeconds(1))
-            .Where(this, (x, s) => s.IsDurationAvairable)
-            .Where((this, bookmarkRp), (x, s) => !s.Item1._nowRequestPlayStart && s.Item1.VideoDuration > TimeSpan.FromSeconds(5) && s.Item1._vm.MovieFile != null && s.bookmarkRp.CurrentValue != null)
-            .Subscribe((this, bookmarkRp), (x, s) =>   s.bookmarkRp.CurrentValue?.ReadPosition = new ((float)(s.Item1.VideoPosition.TotalSeconds / s.Item1.VideoDuration.TotalSeconds)))
-            .AddTo(ref db);
 
         _vm.PageSettings.ObservePropertyChanged(x => x.IsPlayerStretchEnabled)
             .SubscribeAwait(this, static async (x, s, ct) => 
@@ -588,17 +597,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Observable.NextFrame()
             .Subscribe((this, sender), (_, s) =>
             {
-                s.Item1.VideoDuration = s.sender.NaturalDuration;
-                if (s.Item1.VideoDuration.TotalDays < 1)
+                if (s.sender.NaturalDuration.TotalDays < 1)
                 {
-                    VideoPositionSlider.Maximum = s.Item1.VideoDuration.TotalSeconds;
                     s.Item1.IsDurationAvairable = true;
+                    VideoPositionSlider.Maximum = s.sender.NaturalDuration.TotalSeconds;
                 }
                 else
                 {
-                    VideoPositionSlider.Maximum = TimeSpan.FromDays(1).TotalSeconds;
                     s.Item1.IsDurationAvairable = false;
+                    VideoPositionSlider.Maximum = TimeSpan.FromDays(1).TotalSeconds;
                 }
+                s.Item1.VideoDuration = s.sender.NaturalDuration;
             });
     }
 
