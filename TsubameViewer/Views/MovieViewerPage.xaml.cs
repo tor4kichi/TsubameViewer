@@ -331,8 +331,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     var pos = e.Sender.Position;
                     var duration = e.Sender.NaturalDuration;
-                    s.bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));
-                    Debug.WriteLine(s.bookmarkRp.CurrentValue?.ReadPosition.Value);
+                    s.bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));                    
                 }
             });
 
@@ -719,7 +718,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void SeekPlaybackPosition(TimeSpan relativeTime)
     {
-        SetVideoPositionFromCode(VideoPosition + relativeTime);
+        MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + relativeTime;
     }
 
     private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
@@ -730,7 +729,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         var ts = TimeSpan.FromSeconds(args.X);
-        MediaPlayer.PlaybackSession.Position = VideoPosition + ts;
+        MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + ts;
 
         // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
         if (!isPlaying)
