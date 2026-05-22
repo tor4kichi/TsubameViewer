@@ -735,20 +735,43 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _nextIsDisplayControlUI = null;
 
-        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        var ts = TimeSpan.FromSeconds(args.X);
-        MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + ts;
-
-        // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
-        if (!isPlaying)
+        if (args.X != 0)
         {
-            MediaPlayer.StepForwardOneFrame();
+            bool isPlaying = PlayerState == MediaPlaybackState.Playing;
+            var ts = TimeSpan.FromSeconds(args.X);
+            MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + ts;
+
+            // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
+            if (!isPlaying)
+            {
+                MediaPlayer.StepForwardOneFrame();
+            }
+        }
+        if (args.Y != 0)
+        {
+            VolumeChange(args.Y * -0.05);
         }
     }
 
-    string ProgressXToTimeText(double progressX)
+    string ProgressXToTimeText(double progressX, double progressY)
     {
-        return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
+        if (progressX != 0)
+        {
+            return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
+        }
+        else if (progressY != 0)
+        {
+            return $"{-progressY * 5}%";
+        }
+        else { return ""; }
+    }
+
+    double EmptyProgressAsOpacity(double progressX, double progressY, bool isEnabled)
+    {
+        if (!isEnabled) { return 0; }
+        if (Math.Abs(progressX) < 1 && Math.Abs(progressY) < 1) { return 0; }
+        
+        return 1;
     }
 
     TimeSpan PlaybackPositionChangeBackward { get; } = TimeSpan.FromSeconds(-5);

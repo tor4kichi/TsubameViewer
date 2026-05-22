@@ -467,7 +467,8 @@
         <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
                                            IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                                            Invoked="MySwipeDistanceBehavior_Invoked"                                           
-                                           XPixelsToOneUnit="8" />
+                                           XPixelsToOneUnit="8"
+                                           YPixelsToOneUnit="16"/>
       </i:Interaction.Behaviors>
     </Grid>
 
@@ -937,7 +938,8 @@
           Margin="32 48 32 32"
           Padding="16 8 16 8"
           HorizontalAlignment="Center"
-          VerticalAlignment="Top">
+          VerticalAlignment="Top"
+          Opacity="{x:Bind EmptyProgressAsOpacity(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY, MySwipeDistanceBehavior.NowManipulation), Mode=OneWay}">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1" Duration="0:0:0.125" />
       </animation:Implicit.ShowAnimations>
@@ -946,8 +948,7 @@
                                     Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
-      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
-                 
+      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY), Mode=OneWay}" 
                  FontSize="24"/>
     </Grid>
 
