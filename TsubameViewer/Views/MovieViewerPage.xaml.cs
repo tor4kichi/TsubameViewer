@@ -212,7 +212,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 ImageSelectorContainer.ObservePointerExited().Select(x => false))
             .Do(x => Debug.WriteLine($"inside ControlUI: {x}"))
             .ToReadOnlyReactiveProperty(false)
-            .AddTo(ref db);
+            .AddTo(ref db);        
 
         Window.Current.ObserveActivated()
             .Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
@@ -513,12 +513,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s.Item1.VideoDuration = s.sender.NaturalDuration;
                 if (s.Item1.VideoDuration.TotalDays < 1)
                 {
-                    PageSelector.Maximum = s.Item1.VideoDuration.TotalSeconds;
+                    VideoPositionSlider.Maximum = s.Item1.VideoDuration.TotalSeconds;
                     s.Item1.IsDurationAvairable = true;
                 }
                 else
                 {
-                    PageSelector.Maximum = TimeSpan.FromDays(1).TotalSeconds;
+                    VideoPositionSlider.Maximum = TimeSpan.FromDays(1).TotalSeconds;
                     s.Item1.IsDurationAvairable = false;
                 }
             });
@@ -559,7 +559,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             VideoPosition = ts;
             if (IsDurationAvairable)
             {
-                PageSelector.Value = ToTotalSeconds(ts);
+                VideoPositionSlider.Value = ToTotalSeconds(ts);
             }
         }
         finally
@@ -578,14 +578,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         var ts = TimeSpan.FromSeconds((double)e.NewValue);
         _videoPositionChangingFromCode = true;
-        VideoPosition = ts;
         MediaPlayer.PlaybackSession.Position = ts;
     }
 
     bool _prevPlaying;
     private void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(PageSelector, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
         {
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
@@ -595,7 +594,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     private void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(PageSelector, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
         {
             if (_prevPlaying)
             {
@@ -611,7 +610,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     [RelayCommand]
-    void BackwordOneFrame()
+    void BackwardOneFrame()
     {
         if (PlayerState == MediaPlaybackState.Playing)
         {
@@ -621,7 +620,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     }
 
     [RelayCommand]
-    void ForwordOneFrame()
+    void ForwardOneFrame()
     {
         if (PlayerState == MediaPlaybackState.Playing)
         {
@@ -658,6 +657,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
     }
 
+    TimeSpan PlaybackPositionChangeBackward { get; } = TimeSpan.FromSeconds(-5);
+    TimeSpan PlaybackPositionChangeForward { get; } = TimeSpan.FromSeconds(5);
+
+    [RelayCommand]
+    void PlaybackPositionChange(TimeSpan relativeTime)
+    {
+        SeekPlaybackPosition(relativeTime);
+    }
+
+
+    [RelayCommand]
+    void SetPlaybackPositionWithPercent(double videoPositionInPercent)
+    {
+        if (!IsDurationAvairable) { return; }
+        MediaPlayer.PlaybackSession.Position = (VideoDuration * (videoPositionInPercent * 0.01));        
+    }
+
+
     #endregion
 
     #region Playback Rate
@@ -670,7 +687,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     string ToPlaybackRateString(double rate)
     {
-        return $"x{rate:F1}";
+        return $"x{rate:F2}";
     }
 
     readonly double MinPlaybackRate = 0.1;
@@ -718,9 +735,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackRateToNext()
     {
         var rate = MediaPlayer.PlaybackSession.PlaybackRate;
-        float roundedRate = Math.DivRem((int)(rate*10), 5, out var _) / 10f;
-
-        var nextRate = Math.Min(roundedRate + 0.5f, MaxPlaybackRate);
+        float roundedRate = Math.DivRem((int)(rate*100), 25, out var _) * 0.25f;
+        var nextRate = Math.Min(roundedRate + 0.25f, MaxPlaybackRate);
         SetPlaybackRateFromCode(nextRate);
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
     }
@@ -729,9 +745,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackRateToPrev()
     {
         var rate = MediaPlayer.PlaybackSession.PlaybackRate;
-        float roundedRate = Math.DivRem((int)(rate * 10), 5, out var _) / 10f;
-
-        var prevRate = Math.Min(roundedRate - 0.5f, MinPlaybackRate);
+        float roundedRate = Math.DivRem((int)(rate * 100), 25, out var _) * 0.25f;
+        var prevRate = Math.Max(roundedRate - 0.25f, MinPlaybackRate);
         SetPlaybackRateFromCode(prevRate);
         MediaPlayer.PlaybackSession.PlaybackRate = prevRate;
     }
@@ -832,6 +847,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             _vm.PageSettings.SoundVolume = SoundVolume_Display;
         }
+    }
+
+    [RelayCommand]
+    void VolumeChange(double normalizedRelativeValue)
+    {
+        double vol = SoundVolume_Display == 0 ? _vm.PageSettings.SoundVolume : SoundVolume_Display + normalizedRelativeValue;
+        SetSoundVolumeFromCode(Math.Clamp(vol, 0.0, 1.0));
     }
 
 
@@ -1274,6 +1296,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    [RelayCommand]
+    void TogglePlayerMirror()
+    {
+        _vm.PageSettings.IsHorizontalMirror = !_vm.PageSettings.IsHorizontalMirror;
+    }
+
     async Task SetPlayerStretch_Internal(Stretch stretch)
     {
         if (MediaPlayer == null) { return; }
@@ -1303,6 +1331,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _vm.PageSettings.IsPlayerStretchEnabled = false;
         }
         await SetPlayerStretch_Internal(stretch);
+    }
+
+
+    [RelayCommand]
+    void TogglePlayerStretch()
+    {
+        _vm.PageSettings.IsPlayerStretchEnabled = !_vm.PageSettings.IsPlayerStretchEnabled;
     }
 
     Windows.Media.MediaProperties.MediaRotation GetNextRotate(Windows.Media.MediaProperties.MediaRotation rotate)
@@ -1347,6 +1382,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         await SetPlayerRotate_Internal(rotate);
     }
+
+    [RelayCommand]
+    void TogglePlayerRotate()
+    {
+        _vm.PageSettings.IsPlayerRotateEnabled = !_vm.PageSettings.IsPlayerRotateEnabled;
+    }
+
 
     [RelayCommand]
     async Task SetThumbnailImageAsync()

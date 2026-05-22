@@ -72,4 +72,21 @@ public static class ObservableEventExtensions
 
 
 
+    public static Observable<EventPattern<UIElement, AccessKeyDisplayRequestedEventArgs>> ObserveAccessKeyDisplayRequested(this UIElement elem)
+    {
+        return FromTypedEvent<UIElement, AccessKeyDisplayRequestedEventArgs>(
+            h => elem.AccessKeyDisplayRequested += h,
+            h => elem.AccessKeyDisplayRequested -= h
+            );
+    }
+
+    public static Observable<EventPattern<UIElement, AccessKeyDisplayDismissedEventArgs>> ObserveAccessKeyDisplayDismissed(this UIElement elem)
+    {
+        return FromTypedEvent<UIElement, AccessKeyDisplayDismissedEventArgs>(
+            h => elem.AccessKeyDisplayDismissed += h,
+            h => elem.AccessKeyDisplayDismissed -= h
+            );
+    }
+
+
 }

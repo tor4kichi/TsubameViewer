@@ -56,21 +56,24 @@
 
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
-                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"
+                        AccessKey="A">
             <SymbolIcon Symbol="ZoomIn"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </ToggleButton>
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerRotateEnabled, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
-                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}"
+                        AccessKey="R">
             <SymbolIcon Symbol="Orientation"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </ToggleButton>
           <ToggleButton IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
-                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}">
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}"
+                        AccessKey="H">
             <SymbolIcon Symbol="Sort"
                         Style="{StaticResource TitlebarSymbolIcon}">
               <SymbolIcon.RenderTransform>
@@ -79,7 +82,8 @@
             </SymbolIcon>
           </ToggleButton>
           <Button Command="{x:Bind ToggleFullScreenCommand}"
-                  Style="{StaticResource TitlebarButton}">
+                  Style="{StaticResource TitlebarButton}"
+                  AccessKey="F">
             <SymbolIcon Symbol="FullScreen"
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
@@ -133,7 +137,7 @@
     <local:SecondsToVideoTimeConverter x:Key="SecondsToVideoTimeConverter" />
     <local:ToPlaybackRateConverter x:Key="ToPlaybackRateConverter" />
   </Page.Resources>
-  <Grid>
+  <Grid x:Name="PageRoot">
 
     <VisualStateManager.VisualStateGroups>
 
@@ -231,6 +235,182 @@
 
     </VisualStateManager.VisualStateGroups>
 
+    <!-- KeyboardAccelarator用のダミー -->
+    <Grid Opacity="0"
+          IsHitTestVisible="False"
+          >
+      <Button Command="{x:Bind TogglePlayPauseCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Space" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind BackwardOneFrameCommand}"
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="J" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ForwardOneFrameCommand}"
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="K" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ToggleIsMutedCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="M" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind TogglePlayerStretchCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="A" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind TogglePlayerRotateCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="R" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind TogglePlayerMirrorCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="H" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind ToggleFullScreenCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind VolumeChangeCommand}">
+        <Button.CommandParameter>
+          <x:Double>0.05</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Up" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind VolumeChangeCommand}">
+        <Button.CommandParameter>
+          <x:Double>-0.05</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Down" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind PlaybackPositionChangeCommand}"
+              CommandParameter="{x:Bind PlaybackPositionChangeBackward}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Left" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind PlaybackPositionChangeCommand}"
+              CommandParameter="{x:Bind PlaybackPositionChangeForward}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Right" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind SaveCurrentFrameCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="S" Modifiers="Control" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind SetPlaybackRateToPrevCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackRateToNextCommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="X" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter><x:Double>0</x:Double></Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number0" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>10</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number1" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>20</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number2" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>30</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number3" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>40</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number4" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>50</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number5" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>60</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number6" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>70</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number7" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>80</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number8" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+        <Button.CommandParameter>
+          <x:Double>90</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number9" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
+    
     <MediaPlayerElement AutoPlay="False"
                         Stretch="Uniform"
                         x:Name="MyMediaPlayerElement"
@@ -267,7 +447,7 @@
             Margin="0 0 0 0"
             Padding="0 8 0 24"
             Visibility="Collapsed"
-            Background="{ThemeResource SystemAltMediumHighColor}"
+            Background="{ThemeResource SystemAltMediumHighColor}"            
             >
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1"
@@ -299,7 +479,7 @@
                                HorizontalContentAlignment="Stretch"
                                Margin="0 0 0 0"
                                IsAccessKeyScope="True"
-                               AccessKey="2">
+                               AccessKey="I">
             <muxc:DropDownButton.KeyboardAccelerators>
               <KeyboardAccelerator Key="Number1" />
             </muxc:DropDownButton.KeyboardAccelerators>
@@ -465,7 +645,12 @@
             <ToggleButton x:Name="ControlUI_RepeatButton"
                           IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
                           Height="40"
-                          Width="48">
+                          Width="48"
+                          AccessKey="R">
+              <ToggleButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="R" />
+              </ToggleButton.KeyboardAccelerators>
+
               <SymbolIcon Symbol="RepeatAll" />
             </ToggleButton>
 
@@ -517,7 +702,9 @@
             <Button x:Name="ControlUI_PlayPauseButton"
                     Command="{x:Bind TogglePlayPauseCommand}"
                     Height="40"
-                    Width="48">
+                    Width="48"
+                    AccessKey="P"
+                    >
               <SymbolIcon Symbol="Play" />
             </Button>
 
@@ -527,7 +714,8 @@
                     Height="40"
                     Width="48" Margin="16 0 0 0"
                           HorizontalContentAlignment="Stretch"
-                          VerticalContentAlignment="Stretch">
+                          VerticalContentAlignment="Stretch"
+                          AccessKey="J">
               <Grid>
                 <TextBlock Text="1" HorizontalAlignment="Left" VerticalAlignment="Top"
                            Style="{StaticResource CaptionTextBlockStyle}"/>
@@ -546,7 +734,11 @@
                     Height="40"
                     Width="48"                          
                           HorizontalContentAlignment="Stretch"
-                          VerticalContentAlignment="Stretch">
+                          VerticalContentAlignment="Stretch"
+                          AccessKey="K">
+              <RepeatButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Right" />
+              </RepeatButton.KeyboardAccelerators>
               <Grid>
                 <TextBlock Text="1"
                            HorizontalAlignment="Right"
@@ -565,7 +757,8 @@
             <Button x:Name="ToggleIsMutedButton"
                     Command="{x:Bind ToggleIsMutedCommand}"
                     Height="40"
-                    Width="48">
+                    Width="48"
+                    AccessKey="M">
               <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
             </Button>
             <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
@@ -611,7 +804,7 @@
         </ComboBox>
 -->
         <Grid>
-          <Slider x:Name="PageSelector"
+          <Slider x:Name="VideoPositionSlider"
                   uwpControls:DockPanel.Dock="Bottom"
                   Minimum="0"
                   Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
@@ -623,7 +816,7 @@
                   Padding="0"
                   Margin="0 0"
                   FlowDirection="LeftToRight"
-                  AccessKey="4"
+                  AccessKey="B"
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
