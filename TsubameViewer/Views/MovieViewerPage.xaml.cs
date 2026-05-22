@@ -7,6 +7,7 @@ using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using Microsoft.VisualBasic;
 using PDFtoImage;
 using R3;
 using R3.Extensions;
@@ -54,6 +55,25 @@ using ZLinq;
 #nullable enable
 namespace TsubameViewer.Views;
 
+public sealed class ShortcutKeyInfo
+{
+    public string Label { get; set; } = "";
+    public VirtualKey Key { get; set; }
+    public VirtualKeyModifiers Modifier { get; set; }
+
+    public string ToText(VirtualKey key, VirtualKeyModifiers mod)
+    {
+        if (mod != VirtualKeyModifiers.None)
+        {
+            return $"{Modifier} + {Key}";
+        }
+        else
+        {
+            return key.ToString();
+        }
+    }
+}
+
 [ObservableObject]
 public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 {
@@ -72,6 +92,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool _isDisplayControlUI;
 
     bool? _nextIsDisplayControlUI;
+    DispatcherQueueTimer _mouseCursorAutoHideTimer;
+
     private void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -82,6 +104,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         if (pt.Properties.IsLeftButtonPressed)
         {
+            if (ShortcutKeyGuideUIContainer.Visibility == Visibility.Visible)
+            {
+                ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+                return;
+            }
             if (PlayerState == MediaPlaybackState.Paused)
             {
                 _nextIsDisplayControlUI = !IsDisplayControlUI;
@@ -118,6 +145,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
+
+
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
@@ -227,14 +256,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (insideWindowRp.CurrentValue
                 && PlayerState == MediaPlaybackState.Playing
                 && !insideControlUIRp.CurrentValue
-                && !IsFlyoutOpen)
+                && !IsFlyoutOpen
+                && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed)
             {
                 HideMouseCursor();                
             }
 
             if (PlayerState == MediaPlaybackState.Playing
                 && !insideControlUIRp.CurrentValue
-                && !IsFlyoutOpen)
+                && !IsFlyoutOpen
+                && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed )
             {
                 IsDisplayControlUI = false;
             }
@@ -380,7 +411,54 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
-    DispatcherQueueTimer _mouseCursorAutoHideTimer;
+    [RelayCommand]
+    void ExitPlayer()
+    {
+        if (ShortcutKeyGuideUIContainer.Visibility == Visibility.Visible)
+        {
+            ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+            return;
+        }
+        else
+        {
+            _messenger.Send(new BackNavigationRequestMessage());
+        }
+    }
+
+    #region ShortcutKey
+
+    [ObservableProperty]
+    ArraySegment<ShortcutKeyInfo>? _shortcutKeys;
+
+    [RelayCommand]
+    void ToggleDisplayShortcutKeyGuideUI()
+    {
+        if (ShortcutKeys == null)
+        {
+            var shortcuts = ShortcutKeyButtonsContainer.Children
+                .AsValueEnumerable()
+                .Cast<Button>()
+                .Where(x => x.Tag is string s && !string.IsNullOrEmpty(s))
+                .Select(static x => new ShortcutKeyInfo
+                {
+                    Label = (string)x.Tag,
+                    Key = x.KeyboardAccelerators[0].Key,
+                    Modifier = x.KeyboardAccelerators[0].Modifiers
+                })
+                .ToArrayPool();
+            shortcuts
+                .RegisterTo(this.GetCancellationTokenOnUnloaded());
+            ShortcutKeys = shortcuts.ArraySegment;
+        }
+        ShortcutKeyGuideUIContainer.Visibility = (ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed).TrueToVisible();
+    }
+
+    private void CloseButton_ShortcutKeyGuideUIContainer_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        ShortcutKeyGuideUIContainer.Visibility = Visibility.Collapsed;
+    }
+
+    #endregion
 
     #region Display Style
 

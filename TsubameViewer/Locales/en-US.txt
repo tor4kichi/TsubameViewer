@@ -231,9 +231,25 @@ MediaRotation.Clockwise270Degrees = 270 degrees
 MovieViewer_SaveCurrentFrame_Saved = The video frame has been saved.
 MovieViewer_SeekNotSupported = Seeking is not supported in this video.
 
-
-
-
+MovieViewer_SC = Keyboard Shortcuts Guide
+MovieViewer_DisplayShortcutKeysGuide = Show Keyboard Shortcuts Guide
+MovieViewer_SC_ExitPlayer = Close the video viewer
+MovieViewer_SC_TogglePlayPause = Toggle Play/Pause
+MovieViewer_SC_BackwardOneFrame = Go Back One Frame
+MovieViewer_SC_ForwardOneFrame = Skip Forward One Frame
+MovieViewer_SC_ToggleIsMuted = Toggle Mute
+MovieViewer_SC_TogglePlayerStretch = Toggle Player Resize
+MovieViewer_SC_TogglePlayerRotate = Toggle Player Rotation
+MovieViewer_SC_TogglePlayerMirror = Toggle Horizontal Flip
+MovieViewer_SC_ToggleFullScreen = Toggle Full Screen
+MovieViewer_SC_VolumeChangeUp = Increase Volume
+MovieViewer_SC_VolumeChangeDown = Decrease Volume
+MovieViewer_SC_PlaybackPositionChangeBackward = Rewind {0} Seconds
+MovieViewer_SC_PlaybackPositionChangeForward = Fast-Forward {0} Seconds
+MovieViewer_SC_SaveCurrentFrame = Save Current Frame
+MovieViewer_SC_SetPlaybackRateToPrev = Decrease Playback Speed
+MovieViewer_SC_SetPlaybackRateToNext = Increase Playback Speed
+MovieViewer_SC_SetPlaybackPositionWithPercent = Play from {0}%
 
 
 #### SearchResult

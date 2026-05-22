@@ -238,53 +238,70 @@
     <!-- KeyboardAccelarator用のダミー -->
     <Grid Opacity="0"
           IsHitTestVisible="False"
+          x:Name="ShortcutKeyButtonsContainer"
           >
-      <Button Command="{x:Bind TogglePlayPauseCommand}">
+      <Button Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F1" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ExitPlayerCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ExitPlayer}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Escape" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind TogglePlayPauseCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayPause}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Space" />
         </Button.KeyboardAccelerators>
       </Button>
-
       <Button Command="{x:Bind BackwardOneFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_BackwardOneFrame}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="J" />
         </Button.KeyboardAccelerators>
       </Button>
       <Button Command="{x:Bind ForwardOneFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ForwardOneFrame}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="K" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind ToggleIsMutedCommand}">
+      <Button Command="{x:Bind ToggleIsMutedCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleIsMuted}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="M" />
         </Button.KeyboardAccelerators>
       </Button>
 
-      <Button Command="{x:Bind TogglePlayerStretchCommand}">
+      <Button Command="{x:Bind TogglePlayerStretchCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerStretch}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="A" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind TogglePlayerRotateCommand}">
+      <Button Command="{x:Bind TogglePlayerRotateCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerRotate}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="R" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind TogglePlayerMirrorCommand}">
+      <Button Command="{x:Bind TogglePlayerMirrorCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerMirror}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="H" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind ToggleFullScreenCommand}">
+      <Button Command="{x:Bind ToggleFullScreenCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="F" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind VolumeChangeCommand}">
+      <Button Command="{x:Bind VolumeChangeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_VolumeChangeUp}">
         <Button.CommandParameter>
           <x:Double>0.05</x:Double>
         </Button.CommandParameter>
@@ -292,7 +309,8 @@
           <KeyboardAccelerator Key="Up" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind VolumeChangeCommand}">
+      <Button Command="{x:Bind VolumeChangeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_VolumeChangeDown}">
         <Button.CommandParameter>
           <x:Double>-0.05</x:Double>
         </Button.CommandParameter>
@@ -300,44 +318,47 @@
           <KeyboardAccelerator Key="Down" />
         </Button.KeyboardAccelerators>
       </Button>
-
       <Button Command="{x:Bind PlaybackPositionChangeCommand}"
-              CommandParameter="{x:Bind PlaybackPositionChangeBackward}">
+              CommandParameter="{x:Bind PlaybackPositionChangeBackward}"
+              Tag="{Binding Source='5', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_PlaybackPositionChangeBackward'}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Left" />
         </Button.KeyboardAccelerators>
       </Button>
       <Button Command="{x:Bind PlaybackPositionChangeCommand}"
-              CommandParameter="{x:Bind PlaybackPositionChangeForward}">
+              CommandParameter="{x:Bind PlaybackPositionChangeForward}"
+              Tag="{Binding Source='5', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_PlaybackPositionChangeForward'}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Right" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind SaveCurrentFrameCommand}">
+      <Button Command="{x:Bind SaveCurrentFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SaveCurrentFrame}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="S" Modifiers="Control" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind SetPlaybackRateToPrevCommand}">
+      <Button Command="{x:Bind SetPlaybackRateToPrevCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToPrev}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Z" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackRateToNextCommand}">
+      <Button Command="{x:Bind SetPlaybackRateToNextCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToNext}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="X" />
         </Button.KeyboardAccelerators>
       </Button>
-
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='0', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter><x:Double>0</x:Double></Button.CommandParameter>
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="Number0" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='10', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>10</x:Double>
         </Button.CommandParameter>
@@ -345,7 +366,8 @@
           <KeyboardAccelerator Key="Number1" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='20', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>20</x:Double>
         </Button.CommandParameter>
@@ -353,7 +375,8 @@
           <KeyboardAccelerator Key="Number2" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='30', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>30</x:Double>
         </Button.CommandParameter>
@@ -361,7 +384,8 @@
           <KeyboardAccelerator Key="Number3" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='40', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>40</x:Double>
         </Button.CommandParameter>
@@ -369,7 +393,8 @@
           <KeyboardAccelerator Key="Number4" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='50', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>50</x:Double>
         </Button.CommandParameter>
@@ -377,7 +402,8 @@
           <KeyboardAccelerator Key="Number5" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='60', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>60</x:Double>
         </Button.CommandParameter>
@@ -385,7 +411,8 @@
           <KeyboardAccelerator Key="Number6" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='70', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>70</x:Double>
         </Button.CommandParameter>
@@ -393,7 +420,8 @@
           <KeyboardAccelerator Key="Number7" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='80', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>80</x:Double>
         </Button.CommandParameter>
@@ -401,7 +429,8 @@
           <KeyboardAccelerator Key="Number8" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}">
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='90', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
         <Button.CommandParameter>
           <x:Double>90</x:Double>
         </Button.CommandParameter>
@@ -660,8 +689,12 @@
               <Button.Flyout>
                 <MenuFlyout Opened="MenuFlyout_Opened"
                             Closed="MenuFlyout_Closed">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_DisplayShortcutKeysGuide}"
+                                  Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}" />
+                  <MenuFlyoutSeparator />
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
                                   Command="{x:Bind SaveCurrentFrameCommand}" />
+                  <MenuFlyoutSeparator />
                   <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.None}"
                                     Command="{x:Bind SetPlayerStretchCommand}"
@@ -708,8 +741,8 @@
               <SymbolIcon Symbol="Play" />
             </Button>
 
-            <RepeatButton x:Name="ControlUI_BackwordOneFrameButton"
-                    Command="{x:Bind BackwordOneFrameCommand}"
+            <RepeatButton x:Name="ControlUI_BackwardOneFrameButton"
+                    Command="{x:Bind BackwardOneFrameCommand}"
                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                     Height="40"
                     Width="48" Margin="16 0 0 0"
@@ -728,8 +761,8 @@
                 </SymbolIcon>
               </Grid>
             </RepeatButton>
-            <RepeatButton x:Name="ControlUI_ForwordOneFrameButton"
-                    Command="{x:Bind ForwordOneFrameCommand}"
+            <RepeatButton x:Name="ControlUI_ForwardOneFrameButton"
+                    Command="{x:Bind ForwardOneFrameCommand}"
                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                     Height="40"
                     Width="48"                          
@@ -772,37 +805,7 @@
                     PointerReleased="ControlUI_SoundVolumeSlider_PointerReleased" />
           </StackPanel>
         </uwpControls:DockPanel>
-        <!-- ComboBox に対するフォーカス移動が意図どおり出来ないので
-         XYFocus*を使って強制的に移動先を指定している 
-    -->
-        <!--
-        <ComboBox x:Name="PageFolderNamesSelector"
-                  uwpControls:DockPanel.Dock="Top"
-                  ItemsSource="{Binding PageFolderNames}"
-                  SelectedItem="{Binding PageFolderName, Mode=TwoWay}"
-                  SelectionChangedTrigger="Committed"
-                  ToolTipService.ToolTip="{i18nExt:Localize Key=CurrentFolder_InArchive}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Margin="0 4"
-                  AccessKey="3">
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="SelectionChanged">
-              <core:InvokeCommandAction Command="{Binding ChangePageFolderCommand}">
-                <core:InvokeCommandAction.InputConverter>
-                  <local:SelectorSelectedChangedToStringConverter />
-                </core:InvokeCommandAction.InputConverter>
-              </core:InvokeCommandAction>
-              <core:CallMethodAction TargetObject="{Binding ElementName=PageFlyout}"
-                                     MethodName="Hide" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-          <ComboBox.KeyboardAccelerators>
-            <KeyboardAccelerator Key="3" />
-          </ComboBox.KeyboardAccelerators>
-        </ComboBox>
--->
+        
         <Grid>
           <Slider x:Name="VideoPositionSlider"
                   uwpControls:DockPanel.Dock="Bottom"
@@ -854,6 +857,77 @@
       </StackPanel>
 
     </Border>
+
+    <Grid x:Name="ShortcutKeyGuideUIContainer"
+          Visibility="Collapsed"
+          Margin="16"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6"
+          MaxWidth="500">
+      <uwpControls:DockPanel>
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SC}"
+                   Style="{StaticResource SubtitleTextBlockStyle}"
+                   Margin="32 32 32 16"
+                   VerticalAlignment="Bottom"
+                   uwpControls:DockPanel.Dock="Top" />
+
+        <Border Height="1"
+                Background="{ThemeResource SystemBaseLowColor}" 
+                uwpControls:DockPanel.Dock="Top"/>
+        <ScrollViewer>
+
+          <ItemsControl x:Name="ShortcutKeyItemsControl"
+                        ItemsSource="{x:Bind ShortcutKeys, Mode=OneWay}"
+                        DataContext="{x:Null}"
+                        Margin="32 24 32 48"
+                        >
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8"
+                                       Orientation="Vertical" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:ShortcutKeyInfo">
+                <Grid MinHeight="32">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}"
+                             Grid.Column="0"
+                             TextWrapping="Wrap"
+                             MaxWidth="320"
+                             VerticalAlignment="Center"/>
+
+                  <Border Background="{ThemeResource SystemBaseLowColor}"
+                          Height="1"
+                          Grid.Column="1"
+                          Margin="8" />
+
+                  <TextBlock Text="{x:Bind ToText(Key, Modifier)}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             Grid.Column="2" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </uwpControls:DockPanel>
+      <Button x:Name="CloseButton_ShortcutKeyGuideUIContainer"
+              Tapped="CloseButton_ShortcutKeyGuideUIContainer_Tapped"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              Height="48"
+              Width="48"
+              Margin="16">
+        <SymbolIcon Symbol="Clear" />
+      </Button>
+    </Grid>
 
     <Grid x:Name="SeekingTimeUIContainer"
           Visibility="{x:Bind MySwipeDistanceBehavior.NowManipulation, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"

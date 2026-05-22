@@ -231,9 +231,25 @@ MediaRotation.Clockwise270Degrees = ２７０度
 MovieViewer_SaveCurrentFrame_Saved = 動画フレームを保存しました
 MovieViewer_SeekNotSupported = この動画はシークがサポートされていません
 
-
-
-
+MovieViewer_SC = ショートカットキーガイド
+MovieViewer_DisplayShortcutKeysGuide = ショートカットキーガイドを表示
+MovieViewer_SC_ExitPlayer = 動画ビューアを閉じる
+MovieViewer_SC_TogglePlayPause = 再生・一時停止の切替
+MovieViewer_SC_BackwardOneFrame = １フレーム戻る
+MovieViewer_SC_ForwardOneFrame = １フレーム進む
+MovieViewer_SC_ToggleIsMuted = ミュート切替
+MovieViewer_SC_TogglePlayerStretch = プレイヤー伸縮の切替
+MovieViewer_SC_TogglePlayerRotate = プレイヤー回転の切替
+MovieViewer_SC_TogglePlayerMirror = 左右反転の切替
+MovieViewer_SC_ToggleFullScreen = 全画面表示の切替
+MovieViewer_SC_VolumeChangeUp = 音量を上げる
+MovieViewer_SC_VolumeChangeDown = 音量を下げる
+MovieViewer_SC_PlaybackPositionChangeBackward = {0}秒戻る
+MovieViewer_SC_PlaybackPositionChangeForward = {0}秒進む
+MovieViewer_SC_SaveCurrentFrame = 現在フレームを保存
+MovieViewer_SC_SetPlaybackRateToPrev = 再生速度を下げる
+MovieViewer_SC_SetPlaybackRateToNext = 再生速度を上げる
+MovieViewer_SC_SetPlaybackPositionWithPercent = {0}%の位置から再生
 
 
 #### SearchResult

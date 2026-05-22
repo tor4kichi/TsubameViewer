@@ -231,9 +231,25 @@ MediaRotation.Clockwise270Degrees = 270 degrés
 MovieViewer_SaveCurrentFrame_Saved = L'image vidéo a été enregistrée.
 MovieViewer_SeekNotSupported = La fonction de recherche n'est pas prise en charge dans cette vidéo.
 
-
-
-
+MovieViewer_SC = Guide des raccourcis clavier
+MovieViewer_DisplayShortcutKeysGuide = Afficher le guide des raccourcis clavier
+MovieViewer_SC_ExitPlayer = Fermer la visionneuse vidéo
+MovieViewer_SC_TogglePlayPause = Basculer entre lecture et pause
+MovieViewer_SC_BackwardOneFrame = Reculer d'une image
+MovieViewer_SC_ForwardOneFrame = Avance d'une image
+MovieViewer_SC_ToggleIsMuted = Activer/désactiver le son
+MovieViewer_SC_TogglePlayerStretch = Activer/désactiver le redimensionnement du lecteur
+MovieViewer_SC_TogglePlayerRotate = Activer/désactiver la rotation du lecteur
+MovieViewer_SC_TogglePlayerMirror = Activer/désactiver le retournement horizontal
+MovieViewer_SC_ToggleFullScreen = Activer/désactiver le mode plein écran
+MovieViewer_SC_VolumeChangeUp = Augmenter le volume
+MovieViewer_SC_VolumeChangeDown = Réduire le volume
+MovieViewer_SC_PlaybackPositionChangeBackward = Retour de {0} secondes
+MovieViewer_SC_PlaybackPositionChangeForward = Avance de {0} secondes
+MovieViewer_SC_SaveCurrentFrame = Enregistrer l'image actuelle
+MovieViewer_SC_SetPlaybackRateToPrev = Réduire la vitesse de lecture
+MovieViewer_SC_SetPlaybackRateToNext = Augmenter la vitesse de lecture
+MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
 
 
 #### SearchResult
