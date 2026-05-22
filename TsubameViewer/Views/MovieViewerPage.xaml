@@ -324,7 +324,9 @@
             </uwpControls:DockPanel>
 
             <muxc:DropDownButton.Flyout>
-              <MenuFlyout Opening="Page2MenuFlyout_Opening">
+              <MenuFlyout Opening="Page2MenuFlyout_Opening"
+                          Opened="MenuFlyout_Opened"
+                          Closed="MenuFlyout_Closed">
                 <!--
                 <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton"
                                    Text="{i18nExt:Localize Key=AlbamItemAdd}"
@@ -373,7 +375,8 @@
                     MinWidth="60"
                     Height="40">
               <Button.Flyout>
-                <Flyout>
+                <Flyout Opened="MenuFlyout_Opened"
+                        Closed="MenuFlyout_Closed">
                   <StackPanel Spacing="8">
                     <StackPanel.Resources>
                       <Style TargetType="Button">
@@ -470,7 +473,8 @@
               <SymbolIcon Symbol="Setting" />
 
               <Button.Flyout>
-                <MenuFlyout>
+                <MenuFlyout Opened="MenuFlyout_Opened"
+                            Closed="MenuFlyout_Closed">
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
                                   Command="{x:Bind SaveCurrentFrameCommand}" />
                   <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">

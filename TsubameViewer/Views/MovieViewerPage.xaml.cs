@@ -226,13 +226,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             if (insideWindowRp.CurrentValue
                 && PlayerState == MediaPlaybackState.Playing
-                && !insideControlUIRp.CurrentValue)
+                && !insideControlUIRp.CurrentValue
+                && !IsFlyoutOpen)
             {
                 HideMouseCursor();                
             }
 
             if (PlayerState == MediaPlaybackState.Playing
-                && !insideControlUIRp.CurrentValue)
+                && !insideControlUIRp.CurrentValue
+                && !IsFlyoutOpen)
             {
                 IsDisplayControlUI = false;
             }
@@ -426,6 +428,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         NowFullScreenMode = appView.IsFullScreenMode;
     }
 
+    [ObservableProperty]
+    bool _isFlyoutOpen;
+
+    // フライアウトが開いている間は自動非表示を止める
+    private void MenuFlyout_Opened(object sender, object e)
+    {
+        IsFlyoutOpen = true;
+    }
+
+    private void MenuFlyout_Closed(object sender, object e)
+    {
+        IsFlyoutOpen = false;
+        _mouseCursorAutoHideTimer.Stop();
+        _mouseCursorAutoHideTimer.Start();
+    }
 
     #endregion
 
