@@ -881,15 +881,18 @@ return JSON.stringify([...set]);
 
             // ページ最後尾にスクロール用の余白を作る
             // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
-            await WebView.InvokeScriptAsync("eval", new[]
+            if (_innerPageCount >= 2)
             {
-                $@"
-                    for (var i = 0; i < 100; i++)
-                    {{
-                        document.body.appendChild(document.createElement('p'));
-                    }}
-                    "
-            });
+                await WebView.InvokeScriptAsync("eval", new[]
+                {
+                    $@"
+                        for (var i = 0; i < 100; i++)
+                        {{
+                            document.body.appendChild(document.createElement('p'));
+                        }}
+                        "
+                });
+            }
 
             sw.ElapsedWrite("add padding at last page.");
         }

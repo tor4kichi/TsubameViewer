@@ -561,7 +561,7 @@
                         HorizontalAlignment="Stretch">
                 <ListView.ItemTemplate>
                   <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
-                    <TextBlock Text="{x:Bind Key}"/>
+                    <TextBlock Text="{x:Bind Key}" />
                   </DataTemplate>
                 </ListView.ItemTemplate>
               </ListView>

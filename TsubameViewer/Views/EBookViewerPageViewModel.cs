@@ -301,16 +301,17 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
         try
         {
-            if (requestPage == CurrentImageIndex && PageHtml != null) { return; }
-            CurrentImageIndex = requestPage;
-            var currentPage = CurrentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
-            if (currentPage == null) { throw new IndexOutOfRangeException(); }
-            CurrentPage = currentPage;
-            Debug.WriteLine(currentPage.FilePath);
-            SelectedTocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
-            CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
             using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))
             {
+                if (requestPage == CurrentImageIndex && PageHtml != null) { return; }
+                CurrentImageIndex = requestPage;
+                var currentPage = CurrentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                if (currentPage == null) { throw new IndexOutOfRangeException(); }
+                CurrentPage = currentPage;
+                Debug.WriteLine(currentPage.FilePath);
+                SelectedTocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
+                CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
+
                 ApplicationTheme theme = _applicationSettings.Theme;
                 if (theme == ApplicationTheme.Default)
                 {
