@@ -66,6 +66,8 @@ AdvancedSettings = Paramètres avancés
 OverrideLocale = 🌏Langage
 RequireRestartApplicationToRefrectSettings = Redémarrer l'application pour appliquer les changements
 
+IsFullScreenOnAppLaunch = Lancez l'application en mode plein écran.
+
 SourceFoldersSettings = Dossiers importés dans l'application
 RemoveSourceFolderFromApp = Supprimer de l'application
 ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer {0} de l'application ?

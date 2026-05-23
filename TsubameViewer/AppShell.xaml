@@ -103,6 +103,16 @@
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
         x:Name="RootGrid"
         >
+
+    <Grid Opacity="0"
+          IsHitTestVisible="False">
+      <Button>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11"
+                               Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
     <muxc:NavigationView 
       x:Name="MyNavigtionView"     
       uwpControls:DockPanel.Dock="Top" 

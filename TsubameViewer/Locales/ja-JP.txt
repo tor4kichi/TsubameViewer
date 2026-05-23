@@ -66,6 +66,8 @@ AdvancedSettings = 詳細設定
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = アプリを再起動して設定を反映する
 
+IsFullScreenOnAppLaunch = 全画面表示でアプリを起動する
+
 SourceFoldersSettings = アプリに取り込んだフォルダ
 RemoveSourceFolderFromApp = アプリから取り除く
 ConfirmRemoveSourceFolderFromAppWithFolderName = {0} をアプリから取り除いてもよろしいですか？

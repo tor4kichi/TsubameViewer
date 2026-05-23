@@ -103,6 +103,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
 #if DEBUG
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #endif
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsFullScreenOnAppLaunch".Translate(), _applicationSettings, x => x.IsFullScreenOnAppLaunch) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
                 }
             },
             new SettingsGroupViewModel
@@ -183,6 +184,16 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         foreach (var group in AdvancedSettingGroups)
         {
             (group as IDisposable)?.Dispose();
+        }
+
+        if (_applicationSettings.IsFullScreenOnAppLaunch)
+        {
+            ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.FullScreen;
+            ApplicationView.GetForCurrentView().TryEnterFullScreenMode();
+        }
+        else
+        {
+            ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.Auto;
         }
 
         base.OnNavigatedFrom(parameters);

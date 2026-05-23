@@ -66,6 +66,8 @@ AdvancedSettings = 高级设置
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = 重启应用以完成设置
 
+IsFullScreenOnAppLaunch = 以全屏模式启动应用程序。
+
 SourceFoldersSettings = 已导入的文件夹
 RemoveSourceFolderFromApp = 从应用中移除
 ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{0}吗？

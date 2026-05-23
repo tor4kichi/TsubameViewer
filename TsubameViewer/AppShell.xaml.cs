@@ -1428,6 +1428,23 @@ public sealed partial class AppShell : UserControl
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
     }
+
+    private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        try
+        {
+            var appView = ApplicationView.GetForCurrentView();
+            if (appView.IsFullScreenMode)
+            {
+                appView.ExitFullScreenMode();
+            }
+            else
+            {
+                appView.TryEnterFullScreenMode();
+            }
+        }
+        catch { }
+    }
 }
 
 

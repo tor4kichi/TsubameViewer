@@ -37,6 +37,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -419,8 +420,8 @@ sealed partial class App : Application
 
         await MaintenanceAsync();
 
-        Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
-
+        var appView = Windows.UI.ViewManagement.ApplicationView.GetForCurrentView();
+        appView.SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
         Resources["Strings"] = I18NPortable.I18N.Current;
 

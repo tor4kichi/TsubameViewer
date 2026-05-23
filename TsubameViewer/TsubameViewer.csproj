@@ -209,7 +209,7 @@
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
     <Compile Include="ViewModels\AppShellViewModel.cs" />
     <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
-    <Compile Include="ViewModels\SettingsPageViewModel.cs" />
+    <Compile Include="Views\SettingsPageViewModel.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
