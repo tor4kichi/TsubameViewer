@@ -40,6 +40,7 @@ public sealed class BookmarkEntry
     [BsonField]
     public string Path { get; set; }
 
+    // Note: 動画のDurationにも使ってます
     [BsonField]
     public string PageName { get; set; }
 
@@ -238,5 +239,13 @@ public sealed class BookmarkFacade : DeferSaveAwareObservableObject
     {
         get => _entry.Position;
         set => SetProperty(_entry.Position, value, _entry, (m, v) => m.Position = v);
+    }
+
+
+    // Note: 動画のDurationにも使ってます
+    public string PageName
+    {
+        get => _entry.PageName;
+        set => SetProperty(_entry.PageName, value, _entry, (m, v) => m.PageName = v);
     }
 }

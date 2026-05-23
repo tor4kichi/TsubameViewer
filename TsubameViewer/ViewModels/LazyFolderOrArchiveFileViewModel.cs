@@ -15,6 +15,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 
 #nullable enable
@@ -103,6 +104,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     }
 
+    BookmarkFacade? _bookmark;
+    BookmarkFacade Bookmark => _bookmark ??= _bookmarkManager.GetBookmarkFacade(Path);
+
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
     LoadingStatus _status = LoadingStatus.None;
     public LoadingStatus Status
@@ -170,8 +174,24 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     if (Type == StorageItemTypes.Movie
                         && Item.StorageItem is Windows.Storage.StorageFile file)
                     {
-                        var movieProps = await file.Properties.GetVideoPropertiesAsync();
-                        Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
+                        if (Bookmark.PageName is string duration
+                            && duration != null)
+                        {
+                            Duration = duration;
+                        }
+                        else
+                        {
+                            var movieProps = await file.Properties.GetVideoPropertiesAsync();
+                            if (movieProps?.Duration is { } d && d != TimeSpan.Zero)
+                            {
+                                Duration = TimeSpanHelper.FormatTimeSpan(d);
+                                Bookmark.PageName = Duration;
+                            }
+                            else
+                            {
+                                Bookmark.PageName = "";
+                            }
+                        }
                     }
                 }
 
@@ -210,8 +230,10 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void UpdateLastReadPosition()
     {
-        var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
+        // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
+        _bookmark = null;
+        var parcentage = Bookmark.ReadPosition.Value;
+        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;        
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
