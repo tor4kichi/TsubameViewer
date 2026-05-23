@@ -169,7 +169,7 @@
     <Compile Include="ViewModels\AlbamListupPageViewModel.cs" />
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
-    <Compile Include="ViewModels\EBookReaderPageViewModel.cs" />
+    <Compile Include="Views\EBookViewerPageViewModel.cs" />
     <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />
     <Compile Include="Views\Behaviors\SwipeDistanceBehavior.cs" />
     <Compile Include="Views\Converters\EquelsToValueConverter.cs" />
@@ -260,8 +260,8 @@
     <Compile Include="Views\EBookControls\EPubRenderer.xaml.cs">
       <DependentUpon>EPubRenderer.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\EBookReaderPage.xaml.cs">
-      <DependentUpon>EBookReaderPage.xaml</DependentUpon>
+    <Compile Include="Views\EBookViewerPage.xaml.cs">
+      <DependentUpon>EBookViewerPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
@@ -498,7 +498,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Views\EBookReaderPage.xaml">
+    <Page Include="Views\EBookViewerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

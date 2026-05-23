@@ -264,7 +264,7 @@ public sealed partial class AppShell : UserControl
     private readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
     {
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
@@ -275,7 +275,7 @@ public sealed partial class AppShell : UserControl
         typeof(FolderListupPage),
         typeof(ImageListupPage),
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(SettingsPage),
@@ -285,7 +285,7 @@ public sealed partial class AppShell : UserControl
     private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
     {
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
         typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(FolderOrArchiveRestructurePage),
@@ -1278,7 +1278,7 @@ public sealed partial class AppShell : UserControl
                     }
                     else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                     {
-                        await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        await _messenger.NavigateAsync(nameof(Views.EBookViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                     }
                     else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(fileItem.FileType))
                     {

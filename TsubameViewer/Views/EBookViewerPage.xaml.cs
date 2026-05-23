@@ -27,7 +27,7 @@ using Windows.Web.Http;
 #nullable enable
 namespace TsubameViewer.Views;
 
-public sealed partial class EBookReaderPage : Page, ITitlebarContentAware
+public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetHeader()
     {
@@ -39,7 +39,7 @@ public sealed partial class EBookReaderPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
-    internal readonly EBookReaderPageViewModel _vm;
+    internal readonly EBookViewerPageViewModel _vm;
     private readonly IMessenger _messenger;
 
     private readonly Core.AsyncLock _movePageLock = new();
@@ -50,11 +50,11 @@ public sealed partial class EBookReaderPage : Page, ITitlebarContentAware
     internal readonly RelayCommand _OpenTocPaneCommand;
 
 
-    public EBookReaderPage()
+    public EBookViewerPage()
     {
         this.InitializeComponent();
         
-        DataContext = _vm = Ioc.Default.GetRequiredService<EBookReaderPageViewModel>();
+        DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
 
 #if DEBUG
@@ -342,7 +342,7 @@ public sealed partial class EBookReaderPage : Page, ITitlebarContentAware
 
     // Using a DependencyProperty as the backing store for NowRefreshingEPubRenderer.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty NowEnablePageMoveProperty =
-        DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookReaderPage), new PropertyMetadata(true));
+        DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(true));
 
     private readonly AnimationBuilder _ShowAnimationAb = AnimationBuilder.Create()
         .Opacity(1.0, duration: TimeSpan.FromMilliseconds(75));

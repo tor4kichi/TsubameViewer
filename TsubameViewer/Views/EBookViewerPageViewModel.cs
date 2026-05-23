@@ -43,7 +43,7 @@ public sealed class TocItemViewModel
     public string Id { get; set; }
 }
 
-public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
+public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 {
     string _LightThemeCss;
     string _DarkThemeCss;
@@ -159,7 +159,7 @@ public sealed class EBookReaderPageViewModel : NavigationAwareViewModelBase
 
     Windows.UI.ViewManagement.ApplicationView _applicationView;
 
-    public EBookReaderPageViewModel(
+    public EBookViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,

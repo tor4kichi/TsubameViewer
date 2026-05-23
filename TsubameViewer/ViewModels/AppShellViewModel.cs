@@ -301,7 +301,7 @@ public sealed class AppShellViewModel
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
             {
-                await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
+                await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
             }
             else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
             {

@@ -148,7 +148,7 @@ sealed partial class App : Application
         container.Register<ImageListupPage>();
         container.Register<FolderListupPage>();
         container.Register<ImageViewerPage>();
-        container.Register<EBookReaderPage>();
+        container.Register<EBookViewerPage>();
         container.Register<MovieViewerPage>();
         container.Register<SettingsPage>();
         container.Register<SearchResultPage>();
@@ -193,7 +193,7 @@ sealed partial class App : Application
         //container.Register<ImageListupPageViewModel>(reuse: new SingletonReuse());
         //container.Register<FolderListupPageViewModel>(reuse: new SingletonReuse());
         container.Register<ImageViewerPageViewModel>(reuse: new SingletonReuse());
-        container.Register<EBookReaderPageViewModel>(reuse: new SingletonReuse());
+        container.Register<EBookViewerPageViewModel>(reuse: new SingletonReuse());
         //container.Register<SearchResultPageViewModel>(reuse: new SingletonReuse());
 
         // Services
@@ -507,7 +507,7 @@ sealed partial class App : Application
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
             {
-                return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
+                return await messenger.NavigateAsync(nameof(Views.EBookViewerPage), parameters, isForgetNavigation: true);
             }
             else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
             {
@@ -548,7 +548,7 @@ sealed partial class App : Application
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
             {
-                return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
+                return await messenger.NavigateAsync(nameof(Views.EBookViewerPage), parameters, isForgetNavigation: true);
             }
             else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
             {

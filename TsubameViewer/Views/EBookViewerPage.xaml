@@ -1,6 +1,6 @@
 ﻿<Page
   x:Name="PageRoot"
-    x:Class="TsubameViewer.Views.EBookReaderPage"
+    x:Class="TsubameViewer.Views.EBookViewerPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Views"
@@ -30,7 +30,7 @@
   
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
-                  x:DataType="vm:EBookReaderPageViewModel">
+                  x:DataType="vm:EBookViewerPageViewModel">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1*" />
