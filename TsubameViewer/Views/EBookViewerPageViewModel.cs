@@ -165,7 +165,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             CurrentBookReadingOrder = null;
             CoverImage = null;
             CurrentImageIndex = -1;
-
+            InnerCurrentImageIndex = -1;
             _readingSessionDisposer?.Dispose();
             _readingSessionDisposer = null;
 
@@ -238,6 +238,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             }
 
             int firstRequestIndex = 0;
+            InnerCurrentImageIndex = 0;
             // 表示する画像を決める
             if (mode == NavigationMode.Forward
                 || parameters.ContainsKey(PageNavigationConstants.Restored)
@@ -277,18 +278,24 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             }
 
             // 最初のページを表示
-            await UpdateCurrentPage(firstRequestIndex, ct);
+            await UpdateCurrentPage(firstRequestIndex, _navigationCt);
 
             // ブックマーク更新
-            this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
-                .Subscribe(innerPageIndex =>
+            R3.Observable.Merge(
+                this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, false).AsUnitObservable(),
+                this.ObservePropertyChanged(x => x.CurrentPage, false).AsUnitObservable()
+                )            
+                .Subscribe(this, static (_, s) =>
                 {
-                    var currentPage = CurrentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    if (s.CurrentBookReadingOrder == null) { return; }
+                    if (s._currentFolderItem == null) { return; }
+                    if (s.InnerCurrentImageIndex == -1) { return; }
+                    var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
                     if (currentPage == null) { return; }
 
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, innerPageIndex, new NormalizedPagePosition(CurrentBookReadingOrder.Count, _currentImageIndex));
+                    s._bookmarkManager.AddBookmark(s._currentFolderItem.Path, currentPage.FilePath, s.InnerCurrentImageIndex, new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex));
                 })
-                .RegisterTo(ct);
+                .RegisterTo(_navigationCt);
         }, ct);
 
         await base.OnNavigatedToAsync(parameters, ct);
@@ -406,15 +413,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                     return xmlDoc;
                 }, ct);
-
-                // ブックマークに登録
-                if (_currentFolderItem != null 
-                    && CurrentBookReadingOrder != null)
-                {
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, 
-                        currentPage.FilePath, 
-                        new NormalizedPagePosition(CurrentBookReadingOrder.Count, CurrentImageIndex));
-                }
             }
         }
         catch (OperationCanceledException)
