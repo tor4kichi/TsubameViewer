@@ -214,6 +214,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
             .AddTo(ref db);
 
+        foreach (var item in _realizedItems)
+        {
+            if (item.DataContext is IStorageItemViewModel itemVM)
+            {
+                itemVM.RestoreThumbnailLoadingTask(ct);
+            }
+        }
+
         _lodingTaskMonitor = db.Build();
     }
 
