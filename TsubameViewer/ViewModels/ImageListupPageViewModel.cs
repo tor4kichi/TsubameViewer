@@ -146,7 +146,7 @@ public sealed partial class ImageListupPageViewModel
     [ObservableProperty]
     FileSortType _selectedFileSortType;
    
-    private readonly FileSortType DefaultFileSortType = FileSortType.UpdateTimeDecending;
+    private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
 
     private string _DisplaySortTypeInheritancePath;
     public string DisplaySortTypeInheritancePath
