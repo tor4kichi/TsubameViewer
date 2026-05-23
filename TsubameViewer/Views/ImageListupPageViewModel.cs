@@ -75,6 +75,7 @@ public sealed class SelectionContext : ObservableObject
 public sealed partial class ImageListupPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
+    , IRecipient<StorageItemNotFoundMessage>
 {
 
     public void Receive(InPageSearchRequestMessage message)
@@ -90,6 +91,18 @@ public sealed partial class ImageListupPageViewModel
 
     [ObservableProperty]
     string _filterText = "";
+
+
+    public void Receive(StorageItemNotFoundMessage message)
+    {
+        var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
+        if (item != null)
+        {
+            ImageFileItems.Remove(item);
+
+        }
+    }
+
 
     private readonly IMessenger _messenger;
     private readonly LocalBookmarkRepository _bookmarkManager;
@@ -317,6 +330,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
+        _messenger.Unregister<StorageItemNotFoundMessage>(this);
 
         _navigationCts?.Cancel();
         _navigationCts = null;
@@ -438,7 +452,7 @@ public sealed partial class ImageListupPageViewModel
             });
 
             _messenger.Register<InPageSearchRequestMessage>(this);
-
+            _messenger.Register<StorageItemNotFoundMessage>(this);
 
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
@@ -460,6 +474,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<AlbamItemAddedMessage>(this); 
             _messenger.Unregister<AlbamItemRemovedMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
+            _messenger.Unregister<StorageItemNotFoundMessage>(this);
             throw;
         }
 
@@ -694,7 +709,6 @@ public sealed partial class ImageListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                await col.Context.UpdateCacheIfCountNotSameAsync(ct);
                 using (FileItemsView.DeferRefresh())
                 {
                     ImageFileItems.Clear();
@@ -707,6 +721,16 @@ public sealed partial class ImageListupPageViewModel
                             _albamRepository,
                             Selection);
                         ImageFileItems.Add(itemVM);
+                    }
+
+                    if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
+                    {
+                        await col.Context.HandleDiffItems(
+                                FileItemsView.Source as ObservableCollection<IStorageItemViewModel>,
+                                FileItemsView.DeferRefresh,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
                     }
                 }
             }

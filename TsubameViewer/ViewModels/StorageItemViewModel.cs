@@ -192,6 +192,16 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
             IsInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
         }
+        catch (DirectoryNotFoundException)
+        {
+            IsInitialized = true;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            IsInitialized = true;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
         finally
         {
             _initializeCts = null;

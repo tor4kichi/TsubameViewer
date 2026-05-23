@@ -226,6 +226,16 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         {
             Status = LoadingStatus.LoadFailed;
         }
+        catch (DirectoryNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }        
     }
 
     public void UpdateLastReadPosition()

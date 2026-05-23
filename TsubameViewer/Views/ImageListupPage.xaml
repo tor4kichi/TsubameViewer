@@ -658,7 +658,7 @@
             <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
                           Label="{i18nExt:Localize Key=Delete}"
                           Command="{x:Bind _vm.FileDeleteCommand}"
-                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
+                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>
@@ -669,7 +669,7 @@
             <AppBarButton x:Name="SelectAction_OpenWithExplorerButton"
                           Label="{i18nExt:Localize Key=OpenWithExplorer}"
                           Command="{x:Bind _vm.OpenWithExplorerCommand}"
-                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
+                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <fluentIcon:FluentIconElement Symbol="Open24" />
               </AppBarButton.Icon>
@@ -990,8 +990,8 @@
             <Setter Target="FileDisplayModeItemsListView.IsEnabled"
                     Value="True" />
 
-            <Setter Target="ContentViewTypeSelector.IsEnabled"
-                    Value="False" />
+            <!--<Setter Target="ContentViewTypeSelector.IsEnabled"
+                    Value="False" />-->
             <Setter Target="OptionalActionsButton.IsEnabled"
                     Value="False" />
           </VisualState.Setters>

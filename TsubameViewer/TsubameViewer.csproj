@@ -169,6 +169,7 @@
     <Compile Include="ViewModels\AlbamListupPageViewModel.cs" />
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\IfImageSourceNotExistSendMessage.cs" />
     <Compile Include="Views\EBookViewerPageViewModel.cs" />
     <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />
     <Compile Include="Views\Behaviors\SwipeDistanceBehavior.cs" />
@@ -177,7 +178,7 @@
     <Compile Include="Views\Converters\TimeSpanToSimpleTextConverter.cs" />
     <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
-    <Compile Include="ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="Views\ImageListupPageViewModel.cs" />
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
     <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
@@ -218,7 +219,7 @@
     <Compile Include="ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
-    <Compile Include="ViewModels\SourceStorageItemsPageViewModel.cs" />
+    <Compile Include="Views\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="ViewModels\StorageItemViewModel.cs" />
     <Compile Include="ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="Views\AlbamListupPage.xaml.cs">

@@ -597,7 +597,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     [ObservableProperty]
-    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<StorageItemViewModel>();
+    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
 
 
     private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -633,6 +633,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+
+            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
         }
 
         _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);

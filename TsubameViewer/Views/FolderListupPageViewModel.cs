@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
@@ -39,27 +40,17 @@ using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.ViewModels;
 
-public class CachedFolderListupItems
+public sealed class StorageItemNotFoundMessage : ValueChangedMessage<string>
 {
-    public ObservableCollection<StorageItemViewModel> FolderItems { get; set; }
-    public int GetTotalCount()
+    public StorageItemNotFoundMessage(string value) : base(value)
     {
-        return FolderItems.Count;
-    }
-
-    public void DisposeItems()
-    {
-        foreach (var itemVM in FolderItems)
-        {
-            itemVM.Dispose();
-        }
     }
 }
-
 
 public sealed partial class FolderListupPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
+    , IRecipient<StorageItemNotFoundMessage>
 {
     public void Receive(InPageSearchRequestMessage message)
     {
@@ -76,12 +67,25 @@ public sealed partial class FolderListupPageViewModel
     }
 
 
+    public void Receive(StorageItemNotFoundMessage message)
+    {
+        var item = FolderItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
+        if (item != null)
+        {
+            FolderItems.Remove(item);
+        }
+    }
+
+
+
     private bool _NowProcessing;
     public bool NowProcessing
     {
         get { return _NowProcessing; }
         set { SetProperty(ref _NowProcessing, value); }
     }
+
+
 
     private readonly IMessenger _messenger;
     private readonly LocalBookmarkRepository _bookmarkManager;
@@ -253,6 +257,7 @@ public sealed partial class FolderListupPageViewModel
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             _messenger.Unregister<StartMultiSelectionMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
+            _messenger.Unregister<StorageItemNotFoundMessage>(this);
 
             base.OnNavigatedFrom(parameters);
         }
@@ -486,6 +491,8 @@ public sealed partial class FolderListupPageViewModel
         db.Build().RegisterTo(ct);
 
         _messenger.Register<InPageSearchRequestMessage>(this);
+        _messenger.Register<StorageItemNotFoundMessage>(this);
+
         await base.OnNavigatedToAsync(parameters, ct);
     }
 

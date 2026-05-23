@@ -82,6 +82,8 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
             if (parameter is IImageSource imageSource)
             {
+                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.AlbamImage)
                 {

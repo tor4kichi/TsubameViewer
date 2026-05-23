@@ -523,6 +523,13 @@ public sealed class FolderStructureCacheContext : IDisposable
         return _repo.GetFolderItemsCount(Folder.Path);
     }
 
+    public async Task<bool> CheckIsNotSameCacheCountAndExactCountAsync(CancellationToken ct)
+    {
+        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
+        return _repo.GetFolderItemsCount(Folder.Path) != await query.GetItemCountAsync().AsTask(ct);
+    }
+
+
     public async Task<bool> UpdateCacheIfCountNotSameAsync(CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);

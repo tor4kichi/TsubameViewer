@@ -136,15 +136,28 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
     {
-        if (Item == null)
+        try
         {
-            Item = await _imageCollectionContext.GetImageFileAtAsync(Index, _fileSortType, ct);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            if (Item == null)
+            {
+                Item = await _imageCollectionContext.GetImageFileAtAsync(Index, _fileSortType, ct);
+                Name = Item.Name;
+                Path = Item.Path;
+                DateCreated = Item.DateCreated;
+                Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+                UpdateLastReadPosition();
+                IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
         }
     }
 
@@ -198,7 +211,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         catch (NotSupportedException)
         {
             Status = LoadingStatus.LoadFailed;
-        }
+        }       
     }
 
     public void UpdateLastReadPosition()
@@ -371,14 +384,24 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     }
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
-    {
+    {        
         if (Item == null)
         {
-            var file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.GetFileName()).AsTask(ct);
-            if (file == null)
+            StorageFile file;
+            try
             {
-                // TODO: ファイルが無い場合の表示
+                file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.GetFileName()).AsTask(ct);
             }
+            catch (DirectoryNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                throw;
+            }
+            catch (FileNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                throw;
+            }            
             Item = new StorageItemImageSource(file);
             Name = Item.Name;
             Path = Item.Path;
@@ -447,7 +470,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         catch (NotSupportedException)
         {
             Status = LoadingStatus.LoadFailed;
-        }
+        }        
     }
 
     public void UpdateLastReadPosition()
