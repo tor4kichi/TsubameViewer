@@ -461,6 +461,19 @@
             Opacity="0" />
     </Grid>
 
+    <!-- 読了率表示 -->
+    <winUI:ProgressBar Value="{x:Bind _vm.CurrentReadingItemPosition, Mode=OneWay}"
+                       Minimum="0"
+                       Maximum="{x:Bind _vm.TotalReadingItemContentSize, Mode=OneWay}"
+                       VerticalAlignment="Bottom"                       
+                       Opacity="0.5"
+                       FlowDirection="RightToLeft"
+                       x:Name="ReadCompleteRateProgressBar"
+                       RenderTransformOrigin="1, 0">
+      <UIElement.RenderTransform>
+        <RotateTransform x:Name="ReadCompleteRateProgressBarRotate" Angle="0" />
+      </UIElement.RenderTransform>
+    </winUI:ProgressBar>
 
     <!-- Toc -->
     <Grid x:Name="TocContainer" Visibility="Collapsed">
@@ -712,6 +725,11 @@
             <Setter Target="ToggleTocMenuButton_Touch.(Grid.ColumnSpan)" Value="3" />
             <Setter Target="ToggleTocMenuButton_Touch.(Grid.Row)" Value="2" />
             <Setter Target="ToggleTocMenuButton_Touch.(Grid.RowSpan)" Value="1" />
+
+            <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
+                    Value="LeftToRight" />
+            <Setter Target="ReadCompleteRateProgressBarRotate.Angle"
+                    Value="90" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

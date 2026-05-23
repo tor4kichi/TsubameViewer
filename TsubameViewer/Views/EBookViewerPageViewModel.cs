@@ -87,7 +87,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     string _currentPageTitle = "";
     [ObservableProperty]
-    private BitmapImage? _coverImage;
+    BitmapImage? _coverImage;
+    [ObservableProperty]
+    double _totalReadingItemContentSize = 0;
+    [ObservableProperty]
+    double _currentReadingItemPosition = 0;
+
 
 
     [RelayCommand]
@@ -279,24 +284,53 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
             // 最初のページを表示
             await UpdateCurrentPage(firstRequestIndex, _navigationCt);
-
-            // ブックマーク更新
-            R3.Observable.Merge(
-                this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, false).AsUnitObservable(),
-                this.ObservePropertyChanged(x => x.CurrentPage, false).AsUnitObservable()
-                )            
-                .Subscribe(this, static (_, s) =>
-                {
-                    if (s.CurrentBookReadingOrder == null) { return; }
-                    if (s._currentFolderItem == null) { return; }
-                    if (s.InnerCurrentImageIndex == -1) { return; }
-                    var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
-                    if (currentPage == null) { return; }
-
-                    s._bookmarkManager.AddBookmark(s._currentFolderItem.Path, currentPage.FilePath, s.InnerCurrentImageIndex, new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex));
-                })
-                .RegisterTo(_navigationCt);
         }, ct);
+
+        var db = new DisposableBuilder();
+
+        // ブックマーク更新
+        R3.Observable.Merge(
+            this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, false).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.CurrentPage, false).AsUnitObservable()
+            )
+            .Debounce(TimeSpan.FromMilliseconds(300))
+            .Subscribe(this, static (_, s) =>
+            {
+                if (s.CurrentBookReadingOrder == null) { return; }
+                if (s._currentFolderItem == null) { return; }
+                if (s.InnerCurrentImageIndex == -1) { return; }
+                var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
+                if (currentPage == null) { return; }
+
+                s._bookmarkManager.AddBookmark(s._currentFolderItem.Path, currentPage.FilePath, s.InnerCurrentImageIndex, new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex));
+            })
+            .AddTo(ref db);
+
+        R3.Observable.Merge(
+            this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
+            this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
+            )
+            .Debounce(TimeSpan.FromMilliseconds(300))
+            .Subscribe(this, static (_, s) =>
+            {
+                if (s.CurrentBookReadingOrder == null) { return; }
+                if (s._currentFolderItem == null) { return; }
+                if (s.InnerCurrentImageIndex == -1) { return; }
+                var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
+                long totalSize = 0;
+                foreach (var item in s.CurrentBookReadingOrder.Take(s.CurrentImageIndex))
+                {
+                    totalSize += item.ContentFileEntry?.Length ?? 0;
+                }
+                var currentItem = s.CurrentBookReadingOrder[s.CurrentImageIndex];
+                var partialPageUnit = currentItem.ContentFileEntry!.Length / s.InnerImageTotalCount;
+
+                s.CurrentReadingItemPosition = totalSize + partialPageUnit * s._innerCurrentImageIndex;
+                Debug.WriteLine($"{s.CurrentReadingItemPosition / s.TotalReadingItemContentSize * 100:F1}%");
+            })
+            .AddTo(ref db);
+
+        db.Build().RegisterTo(ct);
 
         await base.OnNavigatedToAsync(parameters, ct);
     }
@@ -506,7 +540,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly EpubReaderOptions _readerOptions = new EpubReaderOptions()
     {
         XmlReaderOptions = new XmlReaderOptions() { SkipXmlHeaders = true },
-        PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },
+        PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },        
     };
     private async Task RefreshItems(CancellationToken ct)
     {
@@ -514,6 +548,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _readingSessionDisposer = null;
         TocItems = null;
         CurrentBookReadingOrder = null;
+        TotalReadingItemContentSize = -1;
 
         var fileStream = await _currentFolderItem.OpenStreamForReadAsync();        
         var epubBook = await EpubReader.OpenBookAsync(fileStream, _readerOptions);
@@ -558,6 +593,14 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 CoverImage = image;
             }
         }
+        long totalSize = 0;
+        foreach (var item in CurrentBookReadingOrder)
+        {
+            totalSize += item.ContentFileEntry?.Length ?? 0;
+        }
+
+        TotalReadingItemContentSize = totalSize;
+        Debug.WriteLine(totalSize);
 
         // タイトルを更新
         Title = _currentBook.Title;
@@ -565,8 +608,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _recentlyAccessRepository.AddWatched(_currentPath, DateTimeOffset.Now);
 
         Debug.WriteLine(epubBook.Title);
-    }
-
+    }    
 
     // call from View
     public async void UpdateFromCurrentTocItem()

@@ -229,7 +229,7 @@
       <Version>5.0.2</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
-      <Version>3.3.2</Version>
+      <Version>3.3.6</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
       <Version>1.25.0</Version>
