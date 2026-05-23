@@ -120,7 +120,11 @@ public static class SupportedFileTypesHelper
 
     public static IEnumerable<string> GetAllSupportedFileExtensions()
     {
-        return SupportedArchiveFileExtensions.Concat(SupportedImageFileExtensions).Concat(SupportedEBookFileExtensions);
+        return [..SupportedArchiveFileExtensions,
+            .. SupportedImageFileExtensions,
+            .. SupportedEBookFileExtensions,
+            .. SupportedMovieFileExtensions,
+            ];
     }
 
     public static bool IsSupportedFileExtension(string fileType)
