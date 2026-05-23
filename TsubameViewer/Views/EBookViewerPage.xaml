@@ -19,6 +19,7 @@
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:epub="using:VersOne.Epub"
       mc:Ignorable="d"
   NavigationCacheMode="Enabled"
   >
@@ -266,18 +267,18 @@
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
@@ -288,14 +289,14 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+        <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+        <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
-        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind _OpenTocPaneCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
 
@@ -367,13 +368,13 @@
             <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" />
           </TextBlock>
           <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
-           <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+           <Run Text="{x:Bind _vm.ToImageIndexStartWithOne(_vm.InnerCurrentImageIndex), Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
           </TextBlock>
         </StackPanel>
       </Grid>
       
       <Button x:Name="LeftPageMoveButton"
-        Command="{x:Bind _InnerGoNextImageCommand}"
+        Command="{x:Bind InnerGoNextImageCommand}"
               Grid.Column="0"
               Grid.ColumnSpan="1"
               Grid.Row="0"
@@ -400,7 +401,7 @@
       </Button>
 
       <Button x:Name="ToggleTocMenuButton_Touch"
-              Command="{x:Bind _OpenTocPaneCommand}" 
+              Command="{x:Bind OpenTocPaneCommand}" 
               Grid.Column="1"
               Grid.ColumnSpan="1"
               Grid.Row="0"
@@ -415,7 +416,7 @@
               />
 
       <Button x:Name="RightPageMoveButton"
-        Command="{x:Bind _InnerGoPrevImageCommand}"
+        Command="{x:Bind InnerGoPrevImageCommand}"
               Grid.Column="2"
               Grid.ColumnSpan="1"
               Grid.Row="0"
@@ -487,6 +488,8 @@
       </Grid>
       <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            Background="{ThemeResource ApplicationContentBackgroundBrush}"
+            Translation="0, 0, 16"
             >
         
         <animation:Implicit.ShowAnimations>
@@ -495,57 +498,76 @@
         <animation:Implicit.HideAnimations>
           <animation:TranslationAnimation To="-320, 0" Duration="0:0:0.25" />
         </animation:Implicit.HideAnimations>
-        
-        <ListView x:Name="TocItemsListView"
-                  ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
-                  SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
-                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                  SelectionMode="Single"
-                  SingleSelectionFollowsFocus="False"
-                  Padding="0 32 4 27"
-                  >
-          <ListView.ItemContainerTransitions>
-            <TransitionCollection />
-          </ListView.ItemContainerTransitions>
-          <ListView.Header>
-            <StackPanel>
 
-              <Button x:Name="TocContainerUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Width="60" Visibility="Collapsed" Margin="0 8">
-                <SymbolIcon Symbol="Back">
-                  <SymbolIcon.RenderTransform>
-                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-                  </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-              </Button>
+        <Grid.Shadow>
+          <ThemeShadow />
+        </Grid.Shadow>
+        <uwpControls:DockPanel>
+          <ContentControl Tapped="CoverImage_Tapped"
+                          IsTabStop="False"
+                          uwpControls:DockPanel.Dock="Top"
+                          HorizontalAlignment="Center">
+            <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}"
+                   Margin="0 8"
+                   MaxHeight="320"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Stretch="Uniform"
+                   Translation="0, 0, 8">
+              <UIElement.Shadow>
+                <ThemeShadow />
+              </UIElement.Shadow>
+            </Image>
+          </ContentControl>
+          <Pivot Padding="0"
+                 Margin="0"
+                 Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                 FlowDirection="RightToLeft">
+            <PivotItem Header="{i18nExt:Localize Key=Toc}"                        
+                       Padding="0" Margin="0">
+              <ListView x:Name="TocItemsListView"
+                        ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
+                        SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
+                        SelectionMode="Single"
+                        SingleSelectionFollowsFocus="False"
+                        Padding="0 32 4 27">
+                <ListView.ItemContainerTransitions>
+                  <TransitionCollection />
+                </ListView.ItemContainerTransitions>
+                <ListView.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="Wrap"
+                               Margin="0 4" />
+                  </DataTemplate>
+                </ListView.ItemTemplate>
 
-              <Button x:Name="TocContainerSettingsButton" Flyout="{StaticResource SettingsFlyout}" Visibility="Collapsed" Margin="0 0 0 8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <SymbolIcon Symbol="Setting" />
-                  <TextBlock Text="{i18nExt:Localize Key=DisplaySettings}" />
-                </StackPanel> 
-              </Button>
-              
-              <ContentControl Tapped="CoverImage_Tapped" IsTabStop="False">
-                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}" MaxHeight="160" Margin="0 8" VerticalAlignment="Top" Stretch="UniformToFill" />
-              </ContentControl>
+                <i:Interaction.Behaviors>
+                  <core:EventTriggerBehavior EventName="Tapped">
+                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}"
+                                           MethodName="PrepareTocSelectionChange" />
+                    <core:CallMethodAction TargetObject="{Binding}"
+                                           MethodName="UpdateFromCurrentTocItem" />
+                  </core:EventTriggerBehavior>
+                </i:Interaction.Behaviors>
 
-              <TextBlock Text="{i18nExt:Localize Key=Toc}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0" />
-            </StackPanel>
-          </ListView.Header>
-          <ListView.ItemTemplate>
-            <DataTemplate >
-              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="0 4" />
-            </DataTemplate>
-          </ListView.ItemTemplate>
-
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="Tapped">
-              <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}" MethodName="PrepareTocSelectionChange" />
-              <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-        </ListView>
+              </ListView>
+            </PivotItem>
+            <PivotItem Header="Files" Margin="0">
+              <ListView ItemsSource="{x:Bind _vm.CurrentBookReadingOrder, Mode=OneWay}"
+                        SelectedItem="{x:Bind _vm.CurrentPage, Mode=OneWay}"
+                        SelectionChanged="CurrentBookReadingOrder_SelectionChanged"
+                        HorizontalAlignment="Stretch">
+                <ListView.ItemTemplate>
+                  <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
+                    <TextBlock Text="{x:Bind Key}"/>
+                  </DataTemplate>
+                </ListView.ItemTemplate>
+              </ListView>
+            </PivotItem>
+          </Pivot>
+        </uwpControls:DockPanel>
       </Grid>
     </Grid>
 

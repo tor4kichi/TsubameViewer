@@ -1,4 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.IO;
+using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -9,127 +14,84 @@ using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
+using TsubameViewer.Views;
 using TsubameViewer.Views.Helpers;
 using VersOne.Epub;
+using VersOne.Epub.Options;
+using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
-using CommunityToolkit.Mvvm.Messaging;
-using TsubameViewer.ViewModels.PageNavigation;
-using I18NPortable;
-using TsubameViewer.Contracts.Notification;
-using TsubameViewer.Views;
-using VersOne.Epub.Options;
-using R3;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 public sealed class TocItemViewModel
 {
-    public string Label { get; set; }
-    public string Id { get; set; }
+    private readonly EpubNavigationItemRef _navItemRef;
+
+    public TocItemViewModel(EpubNavigationItemRef navItemRef)
+    {
+        _navItemRef = navItemRef;
+    }
+    public string Label => _navItemRef.Title;
+    public string FilePath => _navItemRef.HtmlContentFileRef.FilePath;
+    
 }
 
-public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
+public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelBase
 {
-    string _LightThemeCss;
-    string _DarkThemeCss;
+    string? _lightThemeCss;
+    string? _darkThemeCss;
 
-    private string _currentPath;
-    private StorageFile _currentFolderItem;
+    string? _currentPath;
+    StorageFile? _currentFolderItem;
 
+    [ObservableProperty]
+    int _currentImageIndex;
 
-    private int _CurrentImageIndex;
-    public int CurrentImageIndex
-    {
-        get => _CurrentImageIndex;
-        set => SetProperty(ref _CurrentImageIndex, value);
-    }
+    [ObservableProperty]
+    int _innerCurrentImageIndex;
+    [ObservableProperty]
+    int _innerImageTotalCount;
 
-    public IReadOnlyReactiveProperty<int> DisplayInnerCurrentImageIndex { get; }
+    EpubBookRef? _currentBook;
 
+    [ObservableProperty]
+    EpubLocalTextContentFileRef? _currentPage;
 
-    private int _InnerCurrentImageIndex;
-    public int InnerCurrentImageIndex
-    {
-        get => _InnerCurrentImageIndex;
-        set => SetProperty(ref _InnerCurrentImageIndex, value);
-    }
-
-    private int _InnerImageTotalCount;
-    public int InnerImageTotalCount
-    {
-        get => _InnerImageTotalCount;
-        set => SetProperty(ref _InnerImageTotalCount, value);
-    }
-
-
-
-    EpubBookRef _currentBook;
-    EpubLocalTextContentFileRef _currentPage;
-    List<EpubLocalTextContentFileRef> _currentBookReadingOrder;
-    
-    private IReadOnlyList<TocItemViewModel> _TocItems;
-    public IReadOnlyList<TocItemViewModel> TocItems
-    {
-        get { return _TocItems; }
-        set { SetProperty(ref _TocItems, value); }
-    }
-
-    private TocItemViewModel _selectedTocItem;
-    public TocItemViewModel SelectedTocItem
-    {
-        get { return _selectedTocItem; }
-        set { SetProperty(ref _selectedTocItem, value); }
-    }
-
-    private XmlDocument? _PageHtml;
-    public XmlDocument? PageHtml
-    {
-        get { return _PageHtml; }
-        set { SetProperty(ref _PageHtml, value); }
-    }
-
-    private string _title;
-    public string Title
-    {
-        get { return _title; }
-        set { SetProperty(ref _title, value); }
-    }
-
-    private string _currentPageTitle;
-    public string CurrentPageTitle
-    {
-        get { return _currentPageTitle; }
-        set { SetProperty(ref _currentPageTitle, value); }
-    }
-
-    private BitmapImage _CoverImage;
-    public BitmapImage CoverImage
-    {
-        get { return _CoverImage; }
-        set { SetProperty(ref _CoverImage, value); }
-    }
+    [ObservableProperty]
+    List<EpubLocalTextContentFileRef>? _currentBookReadingOrder;    
+    [ObservableProperty]
+    IReadOnlyList<TocItemViewModel>? _tocItems;
+    [ObservableProperty]
+    TocItemViewModel? _selectedTocItem;
+    [ObservableProperty]
+    XmlDocument? _pageHtml = null;
+    [ObservableProperty]
+    string _title = "";
+    [ObservableProperty]
+    string _currentPageTitle = "";
+    [ObservableProperty]
+    private BitmapImage? _coverImage;
 
 
-    private RelayCommand _ResetEBookReaderSettingsCommand;
-    public RelayCommand ResetEBookReaderSettingsCommand =>
-        _ResetEBookReaderSettingsCommand ?? (_ResetEBookReaderSettingsCommand = new RelayCommand(ExecuteResetEBookReaderSettingsCommand));
-
-    void ExecuteResetEBookReaderSettingsCommand()
+    [RelayCommand]
+    void ResetEBookReaderSettings()
     {
         EBookReaderSettings.RootFontSizeInPixel = EBookReaderSettings.DefaultRootFontSizeInPixel;
         EBookReaderSettings.LetterSpacingInPixel = EBookReaderSettings.DefaultLetterSpacingInPixel;
@@ -146,7 +108,8 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly ThumbnailImageManager _thumbnailManager;
     private readonly RecentlyAccessRepository _recentlyAccessRepository;
-    private readonly ApplicationSettings _applicationSettings;    
+    private readonly ApplicationSettings _applicationSettings;
+    private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
 
     public EBookReaderSettings EBookReaderSettings { get; }
     public IReadOnlyList<double> RootFontSizeItems { get; } = Enumerable.Range(10, 50).Select(x => (double)x).ToList();
@@ -168,7 +131,8 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
         ApplicationSettings applicationSettings,
         EBookReaderSettings themeSettings,
         ToggleFullScreenCommand toggleFullScreenCommand,
-        BackNavigationCommand backNavigationCommand
+        BackNavigationCommand backNavigationCommand,
+        RecyclableMemoryStreamManager recyclableMemoryStreamManager
         )
     {
         _messenger = messenger;
@@ -179,15 +143,16 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
         _applicationSettings = applicationSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
+        _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         EBookReaderSettings = themeSettings;        
-
-        DisplayInnerCurrentImageIndex = this.ObserveProperty(x => x.InnerCurrentImageIndex)
-            .Select(x => x + 1)
-            .ToReadOnlyReactivePropertySlim();
 
         _applicationView = ApplicationView.GetForCurrentView();
     }
 
+    public string ToImageIndexStartWithOne(int bindFor_InnerCurrentImageIndex)
+    {
+        return (bindFor_InnerCurrentImageIndex + 1).ToString();
+    }
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
@@ -196,11 +161,12 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
             PageHtml = null;
 
             _currentBook = null;
-            _currentPage = null;
-            _currentBookReadingOrder = null;
+            CurrentPage = null;
+            CurrentBookReadingOrder = null;
             CoverImage = null;
+            CurrentImageIndex = -1;
 
-            _readingSessionDisposer.Dispose();
+            _readingSessionDisposer?.Dispose();
             _readingSessionDisposer = null;
 
             _applicationView.Title = string.Empty;
@@ -220,10 +186,10 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
         _navigationCt = ct;
 
-        _DarkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
-        _LightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
+        _darkThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/DarkTheme.css")));
+        _lightThemeCss ??= await FileIO.ReadTextAsync(await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///Assets/EPub/LightTheme.css")));
 
-        string parsedPageName = null;
+        string? parsedPageName = null;
 
         if (mode == NavigationMode.New
             || mode == NavigationMode.Forward
@@ -260,11 +226,18 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
         await _messenger.WorkWithBusyWallAsync(async (ct) =>
         {
-            if (_currentFolderItem != null)
+            if (_currentFolderItem == null)
             {
-                await RefreshItems(ct);
+                ThrowHelper.ThrowInvalidOperationException();
+            }
+            await RefreshItems(ct);
+
+            if (CurrentBookReadingOrder == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException();
             }
 
+            int firstRequestIndex = 0;
             // 表示する画像を決める
             if (mode == NavigationMode.Forward
                 || parameters.ContainsKey(PageNavigationConstants.Restored)
@@ -274,13 +247,12 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
                 var bookmark = _bookmarkManager.GetBookmarkedPageNameAndIndex(_currentFolderItem.Path);
                 if (bookmark.pageName != null)
                 {
-                    for (var i = 0; i < _currentBookReadingOrder.Count; i++)
+                    for (var i = 0; i < CurrentBookReadingOrder.Count; i++)
                     {
-                        if (_currentBookReadingOrder[i].FilePath == bookmark.pageName)
+                        if (CurrentBookReadingOrder[i].FilePath == bookmark.pageName)
                         {
-                            CurrentImageIndex = i;
+                            firstRequestIndex = i;
                             InnerCurrentImageIndex = bookmark.innerPageIndex;
-                            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(bookmark.pageName));
                             break;
                         }
                     }
@@ -289,29 +261,34 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
             else if (mode == NavigationMode.New && !string.IsNullOrEmpty(parsedPageName))
             {
                 var unescapedPageName = parsedPageName;
-                var firstSelectItem = _currentBookReadingOrder.FirstOrDefault(x => x.FilePath == unescapedPageName);
+                var firstSelectItem = CurrentBookReadingOrder.FirstOrDefault(x => x.FilePath == unescapedPageName);
                 if (firstSelectItem != null)
                 {
-                    CurrentImageIndex = _currentBookReadingOrder.IndexOf(firstSelectItem);
+                    firstRequestIndex = CurrentBookReadingOrder.IndexOf(firstSelectItem);                    
                 }
-
-                SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(firstSelectItem.FilePath));
+                else
+                {
+                    firstRequestIndex = 0;                    
+                }
+            }
+            else
+            {
+                firstRequestIndex = 0;                
             }
 
             // 最初のページを表示
-            await UpdateCurrentPage(CurrentImageIndex, ct);
+            await UpdateCurrentPage(firstRequestIndex, ct);
 
             // ブックマーク更新
             this.ObserveProperty(x => x.InnerCurrentImageIndex, isPushCurrentValueAtFirst: false)
                 .Subscribe(innerPageIndex =>
                 {
-                    var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+                    var currentPage = CurrentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
                     if (currentPage == null) { return; }
 
-                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, innerPageIndex, new NormalizedPagePosition(_currentBookReadingOrder.Count, _CurrentImageIndex));
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, innerPageIndex, new NormalizedPagePosition(CurrentBookReadingOrder.Count, _currentImageIndex));
                 })
                 .RegisterTo(ct);
-
         }, ct);
 
         await base.OnNavigatedToAsync(parameters, ct);
@@ -320,26 +297,19 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
     private async Task UpdateCurrentPage(int requestPage, CancellationToken ct)
     {
-        _InnerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
+        _innerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
 
         try
         {
+            if (requestPage == CurrentImageIndex && PageHtml != null) { return; }
             CurrentImageIndex = requestPage;
-
-            var currentPage = _currentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
+            var currentPage = CurrentBookReadingOrder.ElementAtOrDefault(CurrentImageIndex);
             if (currentPage == null) { throw new IndexOutOfRangeException(); }
-
-            _currentPage = currentPage;
-
+            CurrentPage = currentPage;
             Debug.WriteLine(currentPage.FilePath);
-
-            // Tocを更新
-            SelectedTocItem = TocItems.FirstOrDefault(x => x.Id.StartsWith(currentPage.FilePath));
-
-            // ページ名更新
+            SelectedTocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
             CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
-
-            using (var lockReleaser = await _PageUpdateLock.LockAsync(ct))
+            using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))
             {
                 ApplicationTheme theme = _applicationSettings.Theme;
                 if (theme == ApplicationTheme.Default)
@@ -349,6 +319,8 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
                 PageHtml = await Task.Run(async () =>
                 {
+                    Guard.IsNotNull(_currentBook);
+
                     var xmlDoc = new XmlDocument();
                     var pageContentText = await currentPage.ReadContentAsync();
                     xmlDoc.LoadXml(pageContentText);
@@ -363,7 +335,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
                         if (node.Name == "head")
                         {
-                            var cssItems = new[] { theme == ApplicationTheme.Light ? _LightThemeCss : _DarkThemeCss };
+                            var cssItems = new[] { theme == ApplicationTheme.Light ? _lightThemeCss : _darkThemeCss };
                             foreach (var css in cssItems)
                             {
                                 var cssNode = xmlDoc.CreateElement("style");
@@ -377,7 +349,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
                         // 画像リソースの埋め込み
                         {
-                            XmlAttribute imageSourceAttr = null;
+                            XmlAttribute? imageSourceAttr = null;
                             if (node.Name == "img")
                             {
                                 imageSourceAttr = node.Attributes["src"];
@@ -427,7 +399,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
                         foreach (var child in node.ChildNodes)
                         {
-                            _nodes.Push(child as XmlNode);
+                            _nodes.Push((XmlNode)child);
                         }
                     }
 
@@ -435,12 +407,18 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
                 }, ct);
 
                 // ブックマークに登録
-                _bookmarkManager.AddBookmark(_currentFolderItem.Path, currentPage.FilePath, new NormalizedPagePosition(_currentBookReadingOrder.Count, CurrentImageIndex));
+                if (_currentFolderItem != null 
+                    && CurrentBookReadingOrder != null)
+                {
+                    _bookmarkManager.AddBookmark(_currentFolderItem.Path, 
+                        currentPage.FilePath, 
+                        new NormalizedPagePosition(CurrentBookReadingOrder.Count, CurrentImageIndex));
+                }
             }
         }
         catch (OperationCanceledException)
         {
-            _InnerPageTotalCountChangedTcs = null;
+            _innerPageTotalCountChangedTcs = null;
             throw;
         }
 
@@ -454,35 +432,41 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
             {
                 using (timeoutCts.Token.Register(() =>
                 {
-                    _InnerPageTotalCountChangedTcs.TrySetCanceled(timeoutCts.Token);
+                    _innerPageTotalCountChangedTcs.TrySetCanceled(timeoutCts.Token);
                 }))
                 {
-                    await _InnerPageTotalCountChangedTcs.Task.ConfigureAwait(false);
+                    await _innerPageTotalCountChangedTcs.Task.ConfigureAwait(false);
                 }
             }
         }
         catch (OperationCanceledException)
         {
             // TODO: EBookReaderページのページ更新に失敗した場合の表示
+            if (_currentFolderItem != null)
+            {
+                _bookmarkManager.RemoveBookmark(_currentFolderItem.Path);
+            }
             throw;
         }
         finally
         {
-            _InnerPageTotalCountChangedTcs = null;
+            _innerPageTotalCountChangedTcs = null;
         }
     }
 
     public void CompletePageLoading()
     {
-        _InnerPageTotalCountChangedTcs?.SetResult(0);
+        _innerPageTotalCountChangedTcs?.SetResult(0);
     }
 
 
 
     private const string _dummyReosurceRequestDomain = "https://dummy.com/";
     private readonly object _lock = new object();
-    public Stream ResolveWebResourceRequest(Uri requestUri)
+    StringBuilder _resourceSb = new();    
+    public Stream? ResolveWebResourceRequest(Uri requestUri)
     {
+        Guard.IsNotNull(_currentBook);
         // 注意: EPubReader側の非同期処理に２つのセンシティブな挙動がある
         // 1. 同時呼び出し不可。lockによる順列処理化が必要
         // 2. EPubContentFileRef.ReadContentAsBytesAsync()などのAsync系は呼び出し後は
@@ -494,41 +478,50 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
             // ページが表示されていない状態の場合はnullを返す
             if (PageHtml == null) { throw new InvalidOperationException(); }
 
-            var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
+            _resourceSb.Clear();
+            _resourceSb.Append(requestUri.OriginalString);
+            _resourceSb.Remove(0, _dummyReosurceRequestDomain.Length);
+            var key = _resourceSb.ToString();
             foreach (var image in _currentBook.Content.Images.Local)
             {
                 if (image.Key == key)
                 {
-                    return new MemoryStream(image.ReadContentAsBytes());
+                    var stream = _recyclableMemoryStreamManager.GetStream();
+                    using (var imageStream = image.GetContentStream())
+                    {
+                        imageStream.CopyTo(stream);
+                    }
+                    stream.Seek(0, SeekOrigin.Begin);
+                    return stream;
                 }
-            }            
+            }
 
-            throw new NotSupportedException();
+            return Stream.Null;
         }
     }
 
-
-
-    TaskCompletionSource<int> _InnerPageTotalCountChangedTcs;
-
-    Core.AsyncLock _PageUpdateLock = new ();
-
+    TaskCompletionSource<int>? _innerPageTotalCountChangedTcs;
+    Core.AsyncLock _pageUpdateLock = new ();
     IDisposable? _readingSessionDisposer;
 
-
+    readonly EpubReaderOptions _readerOptions = new EpubReaderOptions()
+    {
+        XmlReaderOptions = new XmlReaderOptions() { SkipXmlHeaders = true },
+        PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },
+    };
     private async Task RefreshItems(CancellationToken ct)
     {
         _readingSessionDisposer?.Dispose();
         _readingSessionDisposer = null;
+        TocItems = null;
+        CurrentBookReadingOrder = null;
 
-        var fileStream = await _currentFolderItem.OpenStreamForReadAsync();
-
-        var readOptions = new EpubReaderOptions() 
+        var fileStream = await _currentFolderItem.OpenStreamForReadAsync();        
+        var epubBook = await EpubReader.OpenBookAsync(fileStream, _readerOptions);
+        if (epubBook == null)
         {
-            XmlReaderOptions = new XmlReaderOptions() { SkipXmlHeaders = true },
-            PackageReaderOptions = new PackageReaderOptions() { IgnoreMissingToc = true },
-        };
-        var epubBook = await EpubReader.OpenBookAsync(fileStream, readOptions);
+            return;
+        }
 
         var db = new DisposableBuilder();
         db.Add(fileStream);
@@ -536,25 +529,25 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
         _readingSessionDisposer = db.Build();
 
         _currentBook = epubBook;
-        _currentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
+        CurrentBookReadingOrder = await _currentBook.GetReadingOrderAsync();
 
-        if (_currentBook.Schema.Epub2Ncx != null)
+        List<EpubNavigationItemRef>? navigations = _currentBook.GetNavigation();
+        if (navigations != null)
         {
-            TocItems = _currentBook.Schema.Epub2Ncx.NavMap.Items.Select(x => new TocItemViewModel() { Id = x.Content.Source, Label = x.NavigationLabels[0].Text }).ToList();
+            TocItems = navigations.SelectMany(x =>
+            {
+                if (x.Type == EpubNavigationItemType.HEADER)
+                {
+                    return x.NestedItems;
+                }
+                else
+                {
+                    return [x];
+                }
+            })
+                .Select(x => new TocItemViewModel(x)).ToList();
         }
-        else if (_currentBook.Schema.Epub3NavDocument != null)
-        {
-            var toc = _currentBook.Schema.Epub3NavDocument.Navs.FirstOrDefault(x => x.Type == VersOne.Epub.Schema.Epub3StructuralSemanticsProperty.TOC);
-            TocItems = toc.Ol.Lis.Select(x => new TocItemViewModel() { Id = x.Anchor.Href, Label = x.Anchor.Text }).ToList();
-        }
-        else
-        {
 
-        }
-
-        SelectedTocItem = TocItems.FirstOrDefault();
-
-        
         var thumbnailImageStream = await Task.Run(async () => await _thumbnailManager.GetFileThumbnailImageStreamAsync(_currentFolderItem, ct));
         if (thumbnailImageStream != null)
         {
@@ -567,14 +560,12 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
             }
         }
 
-        Debug.WriteLine(epubBook.Title);
-
         // タイトルを更新
         Title = _currentBook.Title;
         _applicationView.Title = _currentBook.Title;
-
-
         _recentlyAccessRepository.AddWatched(_currentPath, DateTimeOffset.Now);
+
+        Debug.WriteLine(epubBook.Title);
     }
 
 
@@ -582,20 +573,29 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
     public async void UpdateFromCurrentTocItem()
     {
         if (SelectedTocItem == null) { return; }
+        if (CurrentBookReadingOrder == null) { return; }
 
-        var selectedBook = _currentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.Id.StartsWith(x.FilePath));
+        var selectedBook = CurrentBookReadingOrder.FirstOrDefault(x => SelectedTocItem.FilePath == x.FilePath);
         if (selectedBook == null)
         {
             throw new Exception();
         }
 
-        if (selectedBook == _currentPage) 
+        if (selectedBook == CurrentPage) 
         {
             return; 
         }
 
-        await UpdateCurrentPage(_currentBookReadingOrder.IndexOf(selectedBook), _navigationCt);
+        await UpdateCurrentPage(CurrentBookReadingOrder.IndexOf(selectedBook), _navigationCt);
     }
+
+    public async Task SetPageAsync(EpubLocalTextContentFileRef pageRef)
+    {
+        if (CurrentBookReadingOrder == null) { return; }
+        await UpdateCurrentPage(CurrentBookReadingOrder.IndexOf(pageRef), _navigationCt);
+    }
+
+
 
 
     #region Commands
@@ -605,13 +605,13 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
     public async Task GoNextImageAsync()
     {
-        await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, _currentBookReadingOrder.Count - 1), _navigationCt);
+        await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, CurrentBookReadingOrder.Count - 1), _navigationCt);
     }
 
 
     public bool CanGoNext()
     {
-        return _currentBookReadingOrder?.Count > CurrentImageIndex + 1;
+        return CurrentBookReadingOrder?.Count > CurrentImageIndex + 1;
     }
 
     public async Task GoPrevImageAsync()
@@ -621,7 +621,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
 
     public bool CanGoPrev()
     {
-        return _currentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
+        return CurrentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
     }
 
     #endregion

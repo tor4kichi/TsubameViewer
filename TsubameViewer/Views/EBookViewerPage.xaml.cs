@@ -2,16 +2,19 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
+using VersOne.Epub;
 using Windows.ApplicationModel.Core;
 using Windows.UI;
 using Windows.UI.ViewManagement;
@@ -44,12 +47,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     private readonly Core.AsyncLock _movePageLock = new();
 
-    private readonly RelayCommand _InnerGoNextImageCommand;
-    private readonly RelayCommand _InnerGoPrevImageCommand;
-
-    internal readonly RelayCommand _OpenTocPaneCommand;
-
-
     public EBookViewerPage()
     {
         this.InitializeComponent();
@@ -61,9 +58,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         DebugPanel.Visibility = Visibility.Visible;
 #endif
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
-
         Loaded += ResetAnimationUIContainer_Loaded1;
-        Unloaded += TapAndController_Unloaded;
 
         EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
         EPubRenderer.ContentRefreshComplete += WebView_ContentRefreshComplete;
@@ -72,34 +67,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer.Unloaded += WebView_Unloaded;
 
         EPubRenderer.WebResourceRequested += WebView_WebResourceRequested;
-
-        this.Loaded += PageNavigationCommandInitialize_Loaded;
-        this.Unloaded += PageNavigationCommandDispose_Unloaded;
-
-        _InnerGoPrevImageCommand = new RelayCommand(() =>
-        {
-            if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
-            {
-                ExecuteGoNextCommand();
-            }
-            else
-            {
-                ExecuteGoPrevCommand();
-            }
-        });
-        _InnerGoNextImageCommand = new RelayCommand(() =>
-        {
-            if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
-            {
-                ExecuteGoPrevCommand();
-            }
-            else
-            {
-                ExecuteGoNextCommand();
-            }
-        });
-
-        _OpenTocPaneCommand = new RelayCommand(ExecuteOpenTocPaneCommand);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -138,21 +105,20 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
         base.OnNavigatingFrom(e);
     }
-
-    private void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+    Core.AsyncLock _resourceReadLock = new Core.AsyncLock();
+    private async void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
     {
         var reqesutUri = e.Request.RequestUri;
-
         using (var defferral = e.GetDeferral())
         {
             try
-            {
+            {                
                 var stream = _vm.ResolveWebResourceRequest(reqesutUri);
                 if (stream != null)
                 {
                     e.Response = new Windows.Web.Http.HttpResponseMessage(statusCode: Windows.Web.Http.HttpStatusCode.Ok);
                     e.Response.Content = new HttpStreamContent(stream.AsInputStream());
-                }
+                }                
             }
             finally
             {
@@ -169,24 +135,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     // デバッグあり実行だと動くが、デバッグ無し実行だと動かなかった。（リリースビルドでも同様）
     //
 
-    private void PageNavigationCommandDispose_Unloaded(object sender, RoutedEventArgs e)
-    {
-        _disposables.Dispose();
-    }
-
-    private void PageNavigationCommandInitialize_Loaded(object sender, RoutedEventArgs e)
-    {
-        _disposables = new CompositeDisposable();
-    }
-
-    CompositeDisposable _disposables;
-
     #region Bottom UI Menu
 
-
-    private void TapAndController_Unloaded(object sender, RoutedEventArgs e)
-    {
-    }
 
     private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
     {
@@ -205,12 +155,9 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     {
         var pt = e.GetPosition(RootGrid);
 
-        if (isOnceSkipTapped)
+        if (_isOnceSkipTapped)
         {
-            //var bottomUIItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, AnimationUICommandBar);
-            //if (bottomUIItems.Any()) { return; }
-
-            isOnceSkipTapped = false;
+            _isOnceSkipTapped = false;
             e.Handled = true;
             return;
         }
@@ -255,13 +202,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     }
 
 
-    bool isOnceSkipTapped = false;
+    bool _isOnceSkipTapped = false;
     private void SwipeProcessScreen_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
     {
         if (AnimationUIContainer.Opacity == 1.0)
         {
             e.Handled = true;
-            isOnceSkipTapped = true;
+            _isOnceSkipTapped = true;
             return;
         }
     }
@@ -303,32 +250,35 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
 
 
-    CompositeDisposable _RendererObserveDisposer;
+    IDisposable? _rendererObserveDisposer;
 
     private void WebView_Loaded(object sender, RoutedEventArgs e)
     {
-        _RendererObserveDisposer = new CompositeDisposable();
-
+        _rendererObserveDisposer?.Dispose();
+        _rendererObserveDisposer = null;
+        var db = new DisposableBuilder();
         EPubRenderer.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
             .Subscribe(_ =>
             {
                 _vm.InnerCurrentImageIndex = EPubRenderer.CurrentInnerPage;
             })
-            .AddTo(_RendererObserveDisposer);
+            .AddTo(ref db);
 
         EPubRenderer.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
             .Subscribe(_ =>
             {
                 _vm.InnerImageTotalCount = EPubRenderer.TotalInnerPageCount;
             })
-            .AddTo(_RendererObserveDisposer);
+            .AddTo(ref db);
 
+        _rendererObserveDisposer = db.Build();
         NowEnablePageMove = false;
     }
 
     private void WebView_Unloaded(object sender, RoutedEventArgs e)
     {
-        _RendererObserveDisposer.Dispose();            
+        _rendererObserveDisposer?.Dispose();
+        _rendererObserveDisposer = null;
     }
 
 
@@ -340,15 +290,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         set { SetValue(NowEnablePageMoveProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for NowRefreshingEPubRenderer.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty NowEnablePageMoveProperty =
         DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(true));
-
-    private readonly AnimationBuilder _ShowAnimationAb = AnimationBuilder.Create()
-        .Opacity(1.0, duration: TimeSpan.FromMilliseconds(75));
-
-    private readonly AnimationBuilder _HideAnimationAb = AnimationBuilder.Create()
-        .Opacity(0.0, duration: TimeSpan.FromMilliseconds(75));
 
     private void WebView_ContentRefreshStarting(object sender, EventArgs e)
     {            
@@ -362,12 +305,39 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         if (_vm.PageHtml != null)
         {
             _vm.CompletePageLoading();
-            _ShowAnimationAb
-                .Start(EPubRenderer);
         }
     }
 
-    async void ExecuteGoNextCommand()
+
+    [RelayCommand]
+    async Task InnerGoPrevImage()
+    {
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        {
+            await ExecuteGoNextCommand();
+        }
+        else
+        {
+            await ExecuteGoPrevCommand();
+        }
+    }
+
+
+    [RelayCommand]
+    async Task InnerGoNextImage()
+    {
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        {
+            await ExecuteGoPrevCommand();
+        }
+        else
+        {
+            await ExecuteGoNextCommand();
+        }
+
+    }
+
+    async Task ExecuteGoNextCommand()
     {
         if (NowEnablePageMove is false) { return; }
 
@@ -381,9 +351,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             {
                 if (_vm.CanGoNext())
                 {
-                    await _HideAnimationAb
-                        .StartAsync(EPubRenderer);
-
                     EPubRenderer.PrepareGoNext();
                     await _vm.GoNextImageAsync();
                 }
@@ -391,7 +358,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    async void ExecuteGoPrevCommand()
+    [RelayCommand]
+    async Task ExecuteGoPrevCommand()
     {
         if (NowEnablePageMove is false) { return; }
 
@@ -405,9 +373,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             {
                 if (_vm.CanGoPrev())
                 {
-                    await _HideAnimationAb
-                        .StartAsync(EPubRenderer);
-
                     EPubRenderer.PrepareGoPreview();
                     await _vm.GoPrevImageAsync();
                 }
@@ -415,7 +380,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    async void ExecuteOpenTocPaneCommand()
+    [RelayCommand]
+    async Task ExecuteOpenTocPane()
     {
         if (NowEnablePageMove is false) { return; }
 
@@ -431,12 +397,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    [RelayCommand]
+    void OpenTocPane()
+    {
+        TocContainer.Visibility = Visibility.Visible;
+    }
 
-    private RelayCommand _CloseTocPaneCommand;
-    public RelayCommand CloseTocPaneCommand =>
-        _CloseTocPaneCommand ?? (_CloseTocPaneCommand = new RelayCommand(ExecuteCloseTocPaneCommand));
-
-    void ExecuteCloseTocPaneCommand()
+    [RelayCommand]
+    void CloseTocPane()
     {
         TocContainer.Visibility = Visibility.Collapsed;
     }
@@ -449,5 +417,15 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     public void RefreshPage()
     {
         EPubRenderer.Refresh();
+    }
+
+    private void CurrentBookReadingOrder_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (((FrameworkElement)sender).IsLoaded == false) { return; }
+
+        if (e.AddedItems.ElementAtOrDefault(0) is EpubLocalTextContentFileRef pageRef)
+        {
+            _ = _vm.SetPageAsync(pageRef);
+        }
     }
 }

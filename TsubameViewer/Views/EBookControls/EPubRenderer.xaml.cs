@@ -258,6 +258,8 @@ public sealed partial class EPubRenderer : UserControl
         _this._sw.Restart();
         if (e.NewValue is XmlDocument newPageHtml)
         {
+            _this._innerCurrentPage = 0;
+            _this._innerPageCount = 0;
             _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
             _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
         }
@@ -429,7 +431,7 @@ public sealed partial class EPubRenderer : UserControl
 
         using (var stringWriter = new StringWriter())
         using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-        {            
+        {
             xmlDoc.WriteTo(xmlTextWriter);
             xmlTextWriter.Flush();
             return stringWriter.GetStringBuilder().ToString();
@@ -522,6 +524,10 @@ public sealed partial class EPubRenderer : UserControl
         WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
 
         _compositeDisposable?.Dispose();
+
+        WebView.NavigateToString(string.Empty);
+        _innerPageCount = 0;
+        _innerCurrentPage = 0;
     }
 
 
@@ -738,7 +744,6 @@ return JSON.stringify([...set]);
 
         var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
         var oldCurrentPageIndex = _innerCurrentPage;
-        double oldPageInPercentage = _innerCurrentPage / (double)_innerPageCount;
 
 
         //
@@ -900,6 +905,7 @@ return JSON.stringify([...set]);
             var newPageCount = _innerPageCount;
             var newCurrentPageIndex = _innerCurrentPage;
 
+            double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
             _innerCurrentPage = (int)Math.Round(_innerPageCount * oldPageInPercentage);
 
             Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
