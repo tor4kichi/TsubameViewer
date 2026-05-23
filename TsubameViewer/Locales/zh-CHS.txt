@@ -73,7 +73,7 @@ RemoveSourceFolderFromApp = 从应用中移除
 ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{0}吗？
 ConfirmRemoveSourceFolderFromAppDescription = 此操作不会删除在硬盘上的文件。 \ n从应用中移除的文件夹可以再次被导入。
 
-ThumbnailImageSettings = 封面显示设置
+FolderItemListingSettings = 文件夹项目显示设置
 IsGenerateImageFileThumbnail = 生成文件封面
 IsGenerateFolderThumbnail = 生成文件夹封面
 IsGenerateArchiveFileThumbnail = 生成压缩包封面
@@ -132,7 +132,7 @@ FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
 DefaultFolderOrArchiveOpenMode = 默认文件夹打开行为
-DefaultFolderOrArchiveOpenMode.Viewer = 在阅读器中打开
+DefaultFolderOrArchiveOpenMode.Viewer = 在查看器中打开
 DefaultFolderOrArchiveOpenMode.Listup = 在列表视图中打开
 
 Sort_InheritancePath = 排序继承源
@@ -140,7 +140,7 @@ Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序
 
 
-OpenImageViewer = 在阅读器中打开
+OpenImageViewer = 在查看器中打开
 OpenFolderListup = 列出档案
 OpenWithExplorer = 在资源管理器中打开
 OpenWithExternalApplication = 在另一个应用程序中打开

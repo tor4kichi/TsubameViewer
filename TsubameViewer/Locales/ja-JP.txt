@@ -73,7 +73,7 @@ RemoveSourceFolderFromApp = アプリから取り除く
 ConfirmRemoveSourceFolderFromAppWithFolderName = {0} をアプリから取り除いてもよろしいですか？
 ConfirmRemoveSourceFolderFromAppDescription = この除去操作によって指定フォルダやフォルダ内アイテムが削除されることはありません。\nアプリから取り除いたフォルダは、いつでもアプリに再登録できます。
 
-ThumbnailImageSettings = サムネイル設定
+FolderItemListingSettings = フォルダアイテム表示設定
 IsGenerateImageFileThumbnail = 画像ファイルのサムネイルを生成
 IsGenerateFolderThumbnail = フォルダのサムネイルを生成
 IsGenerateArchiveFileThumbnail = 圧縮ファイルのサムネイルを生成
@@ -132,7 +132,7 @@ FileSortType.UpdateTimeAscending = 古い順
 FileSortType.UpdateTimeDecending = 新しい順
 
 DefaultFolderOrArchiveOpenMode = 既定のフォルダを開く動作
-DefaultFolderOrArchiveOpenMode.Viewer = リーダーで開く
+DefaultFolderOrArchiveOpenMode.Viewer = ビューアで開く
 DefaultFolderOrArchiveOpenMode.Listup = 一覧表示で開く
 
 Sort_InheritancePath = 並び替え継承元
@@ -140,7 +140,7 @@ Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダの画像並び替え
 
 
-OpenImageViewer = リーダーで開く
+OpenImageViewer = ビューアで開く
 OpenFolderListup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
 OpenWithExternalApplication = 別アプリで開く

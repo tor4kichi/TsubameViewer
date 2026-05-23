@@ -12,6 +12,7 @@
   
   
   <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
+  <MenuFlyoutItem x:Name="OpenViewerItem" Text="{i18nExt:Localize Key=OpenImageViewer}" />
 
   <MenuFlyoutSubItem x:Name="SelectItemsSubItem" Text="{i18nExt:Localize Key=SelectItems_ActionAs}">
     <MenuFlyoutItem x:Name="SelectedItems_AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />

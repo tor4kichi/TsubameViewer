@@ -73,7 +73,7 @@ RemoveSourceFolderFromApp = Remove from app
 ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove {0} from the app?
 ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
 
-ThumbnailImageSettings = Thumbnail display settings
+FolderItemListingSettings = Folder item display settings
 IsGenerateImageFileThumbnail = Generate thumbnails of image files
 IsGenerateFolderThumbnail = Generate thumbnails for folders
 IsGenerateArchiveFileThumbnail = Generate thumbnails of compressed files
@@ -132,7 +132,7 @@ FileSortType.UpdateTimeAscending = Recent
 FileSortType.UpdateTimeDecending = Latest
 
 DefaultFolderOrArchiveOpenMode = Default folder opening behavior
-DefaultFolderOrArchiveOpenMode.Viewer = Open in reader
+DefaultFolderOrArchiveOpenMode.Viewer = Open in viewer
 DefaultFolderOrArchiveOpenMode.Listup = Open in list view
 
 Sort_InheritancePath = Sort inheritance source
@@ -140,7 +140,7 @@ Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
 
 
-OpenImageViewer = Open in reader
+OpenImageViewer = Open in viewer
 OpenFolderListup = List files
 OpenWithExplorer = Open in explorer
 OpenWithExternalApplication = Open with
