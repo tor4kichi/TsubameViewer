@@ -15,10 +15,11 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Views.Converters;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 
@@ -50,7 +51,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -62,7 +63,10 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
+
+    [ObservableProperty]
+    string? _duration;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
@@ -267,7 +271,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -279,10 +283,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
+    [ObservableProperty]
+    string? _duration;
 
     public LazyCacheImageFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
@@ -380,6 +386,14 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+        }
+
+        if (Type == StorageItemTypes.Movie
+            && Duration == null
+            &&  Item.StorageItem is StorageFile movieFile)
+        {
+            var videoProps = await movieFile.Properties.GetVideoPropertiesAsync();
+            Duration = TimeSpanHelper.FormatTimeSpan(videoProps?.Duration ?? TimeSpan.Zero);
         }
     }
 

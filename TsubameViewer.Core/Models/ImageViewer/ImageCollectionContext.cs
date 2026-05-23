@@ -187,8 +187,11 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static QueryOptions CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType sort)
     {
         var query = new QueryOptions(CommonFileQuery.DefaultQuery,
-            Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)
-            )
+            [
+                .. SupportedFileTypesHelper.SupportedArchiveFileExtensions,
+                .. SupportedFileTypesHelper.SupportedEBookFileExtensions,
+                .. SupportedFileTypesHelper.SupportedMovieFileExtensions                
+            ])
         {
             FolderDepth = FolderDepth.Shallow
         };

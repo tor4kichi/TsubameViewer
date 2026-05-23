@@ -129,6 +129,11 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
                 }
+                else if (type == StorageItemTypes.Movie)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+                }
                 else if (type == StorageItemTypes.AddFolder)
                 {
                     ((ICommand)_sourceChoiceCommand).Execute(null);

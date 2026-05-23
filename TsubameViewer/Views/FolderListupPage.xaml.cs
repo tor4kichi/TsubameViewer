@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading;
@@ -55,7 +56,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var selector = (Selector)sender;
         if (selector.IsLoaded && selector.SelectedIndex == 1 && _vm?.CurrentFolderItem != null)
         {
-            _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item), isForgetNavigation: true);
+            _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
         }
     }
 
@@ -73,7 +74,22 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             await itemVM.InitializeAsync(_ct);
             if (itemVM.Item != null)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                if (size.Y == 0)
+                {
+                    size = new Vector2(120, 200);
+                }
+                ToolTipService.SetToolTip(args.ItemContainer, 
+                    new ToolTip()
+                    { 
+                        Content = new TextBlock() 
+                        { 
+                            Text = itemVM.Name, 
+                            TextWrapping = TextWrapping.Wrap 
+                        },
+                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                        Placement = PlacementMode.Bottom
+                    });
             }
         }
     }

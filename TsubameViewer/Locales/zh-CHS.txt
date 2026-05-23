@@ -66,6 +66,8 @@ AdvancedSettings = 高级设置
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = 重启应用以完成设置
 
+IsFullScreenOnAppLaunch = 以全屏模式启动应用程序。
+
 SourceFoldersSettings = 已导入的文件夹
 RemoveSourceFolderFromApp = 从应用中移除
 ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{0}吗？
@@ -211,6 +213,46 @@ ResetEBookSettings = 重新设置
 
 DisplaySettings = 显示设置
 Toc = 目录
+
+#### Movie Viewer Page
+MovieViewer_SaveCurrentFrame = 保存帧图像
+MovieViewer_ResetPlayerTransform = 重置玩家变身
+MovieViewer_PlayerStretch = 球员拉伸
+Stretch.None = 原尺寸
+Stretch.Fill = 请忽略比例，填写完整。
+Stretch.Uniform = 适合窗户尺寸
+Stretch.UniformToFill = 在保持比例的前提下将其填满
+
+MovieViewer_IsHorizontalMirror = 水平翻转
+MovieViewer_PlayerRotate = 旋转（顺时针）
+MediaRotation.None = 无旋转
+MediaRotation.Clockwise90Degrees = 90度
+MediaRotation.Clockwise180Degrees = 180度
+MediaRotation.Clockwise270Degrees = 270度
+
+MovieViewer_SaveCurrentFrame_Saved = 视频帧已保存。
+MovieViewer_SeekNotSupported = 此视频不支持搜索功能。
+
+MovieViewer_SC = 快捷键指南
+MovieViewer_DisplayShortcutKeysGuide = 显示快捷键指南
+MovieViewer_SC_ExitPlayer = 关闭视频播放器
+MovieViewer_SC_TogglePlayPause = 播放/暂停切换
+MovieViewer_SC_BackwardOneFrame = 回退一帧
+MovieViewer_SC_ForwardOneFrame = 前进一帧
+MovieViewer_SC_ToggleIsMuted = 静音切换
+MovieViewer_SC_TogglePlayerStretch = 播放器缩放切换
+MovieViewer_SC_TogglePlayerRotate = 播放器旋转切换
+MovieViewer_SC_TogglePlayerMirror = 左右翻转切换
+MovieViewer_SC_ToggleFullScreen = 全屏显示切换
+MovieViewer_SC_VolumeChangeUp = 调高音量
+MovieViewer_SC_VolumeChangeDown = 调低音量
+MovieViewer_SC_PlaybackPositionChangeBackward = 回退 {0} 秒
+MovieViewer_SC_PlaybackPositionChangeForward = 前进 {0} 秒
+MovieViewer_SC_SaveCurrentFrame = 保存当前帧
+MovieViewer_SC_SetPlaybackRateToPrev = 降低播放速度
+MovieViewer_SC_SetPlaybackRateToNext = 提高播放速度
+MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
+
 
 #### SearchResult
 

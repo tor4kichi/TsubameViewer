@@ -37,6 +37,7 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Storage;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -148,6 +149,7 @@ sealed partial class App : Application
         container.Register<FolderListupPage>();
         container.Register<ImageViewerPage>();
         container.Register<EBookReaderPage>();
+        container.Register<MovieViewerPage>();
         container.Register<SettingsPage>();
         container.Register<SearchResultPage>();
         container.Register<AlbamListupPage>();
@@ -418,8 +420,8 @@ sealed partial class App : Application
 
         await MaintenanceAsync();
 
-        Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
-
+        var appView = Windows.UI.ViewManagement.ApplicationView.GetForCurrentView();
+        appView.SetDesiredBoundsMode(Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
 
         Resources["Strings"] = I18NPortable.I18N.Current;
 
@@ -507,6 +509,10 @@ sealed partial class App : Application
             {
                 return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
             }
+            else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
+            {
+                return await messenger.NavigateAsync(nameof(Views.MovieViewerPage), parameters, isForgetNavigation: true);
+            }
         }
 
         return null;
@@ -544,6 +550,10 @@ sealed partial class App : Application
             {
                 return await messenger.NavigateAsync(nameof(Views.EBookReaderPage), parameters, isForgetNavigation: true);
             }
+            else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
+            {
+                return await messenger.NavigateAsync(nameof(Views.MovieViewerPage), parameters, isForgetNavigation: true);
+            }
         }
         
         return null;
@@ -565,21 +575,11 @@ sealed partial class App : Application
         {
             if (item is StorageFile file)
             {
-                if (string.IsNullOrEmpty(file.Path))
+                if (string.IsNullOrEmpty(file.Path)
+                    || !SupportedFileTypesHelper.IsSupportedFileExtension(file.FileType))
                 {
                     continue;
                 }
-                else if (SupportedFileTypesHelper.IsSupportedArchiveFileExtension(file.FileType))
-                {
-                }
-                else if (SupportedFileTypesHelper.IsSupportedImageFileExtension(file.FileType))
-                {
-                    
-                }
-                else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
-                {
-                }
-                else { continue; }
 
                 await sourceStroageItemsRepo.AddFileTemporaryAsync(file, SourceOriginConstants.FileActivation);
                 firstItem ??= file;

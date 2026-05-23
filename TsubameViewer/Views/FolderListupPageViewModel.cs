@@ -137,7 +137,6 @@ public sealed partial class FolderListupPageViewModel
    
     private static readonly Core.AsyncLock _NavigationLock = new ();
     private IImageSource? _currentImageSource;
-    private CancellationTokenSource _leavePageCancellationTokenSource;
 
     private string _DisplayCurrentPath;
     public string DisplayCurrentPath
@@ -172,8 +171,6 @@ public sealed partial class FolderListupPageViewModel
         get { return _DisplayCurrentArchiveFolderName; }
         private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
     }
-
-    IDisposable? _navigationDisposables;
 
     DateTimeOffset _sourceItemLastUpdatedTime;
 
@@ -241,13 +238,6 @@ public sealed partial class FolderListupPageViewModel
         Selection.EndSelection();
         using (await _NavigationLock.LockAsync(default))
         {
-            _leavePageCancellationTokenSource?.Cancel();
-            _leavePageCancellationTokenSource?.Dispose();
-            _leavePageCancellationTokenSource = null;
-
-            _navigationDisposables?.Dispose();
-            _navigationDisposables = null;
-
             foreach (var itemVM in FolderItems)
             {
                 itemVM.StopImageLoading();
@@ -330,16 +320,9 @@ public sealed partial class FolderListupPageViewModel
         return false;
     }
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
-        // ナビゲーション全体をカバーしてロックしていないと_leavePageCancellationTokenSourceが先にキャンセルされているケースがある
-        using var lockReleaser = await _NavigationLock.LockAsync(default);
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
-
         var mode = parameters.GetNavigationMode();
-        _leavePageCancellationTokenSource = new CancellationTokenSource();
-        var ct = _leavePageCancellationTokenSource.Token;
         var res = _messenger.Send(new CurrentInPageSearchTextRequestMessage());
         FilterText = res.Response;
 
@@ -434,7 +417,7 @@ public sealed partial class FolderListupPageViewModel
                     if (Window.Current.Visible)
                     {
                         requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
                     }
                     else
                     {
@@ -451,7 +434,7 @@ public sealed partial class FolderListupPageViewModel
                     if (visible && requireRefresh && _imageCollectionContext is not null)
                     {
                         requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
                         Debug.WriteLine("Folder/Archive Updated. " + _currentImageSource?.Name ?? string.Empty);
                     }
                 })
@@ -461,7 +444,7 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
         {
             // TODO: 現在のフォルダ名、ないしアーカイブ名が変わっていないかチェック
-            _ = ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? default);
+            _ = ReloadItemsAsync(_imageCollectionContext, ct);
         });
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
@@ -500,10 +483,10 @@ public sealed partial class FolderListupPageViewModel
             })
             .AddTo(ref db);
 
-        _navigationDisposables = db.Build();
+        db.Build().RegisterTo(ct);
 
         _messenger.Register<InPageSearchRequestMessage>(this);
-        await base.OnNavigatedToAsync(parameters);
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
     bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListingSettings.ShowWithIndexedFolderItemAccess;
@@ -621,6 +604,7 @@ public sealed partial class FolderListupPageViewModel
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
+
         if (!IsIndexAccessListingEnabled)
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>

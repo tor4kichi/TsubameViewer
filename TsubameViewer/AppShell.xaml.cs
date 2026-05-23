@@ -85,7 +85,8 @@ public sealed partial class AppShell : UserControl
         if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
         {
             var info = await service.GetCheerAddonInfoAsync();
-            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
+            if (info == null) { return; }
+            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description ?? "";
             IsStoreAvairable = info != null;
         }
     }
@@ -264,6 +265,7 @@ public sealed partial class AppShell : UserControl
     {
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
@@ -274,6 +276,7 @@ public sealed partial class AppShell : UserControl
         typeof(ImageListupPage),
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
@@ -283,6 +286,7 @@ public sealed partial class AppShell : UserControl
     {
         typeof(ImageViewerPage),
         typeof(EBookReaderPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
@@ -533,7 +537,6 @@ public sealed partial class AppShell : UserControl
                     rememberBackStack = false;
                 }
 
-
                 if (e.NavigationMode is not Windows.UI.Xaml.Navigation.NavigationMode.New)
                 {
                     rememberBackStack = false;
@@ -568,10 +571,10 @@ public sealed partial class AppShell : UserControl
             {
                 if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
                     && frame.BackStack.Count >= 3
-                    && e.SourcePageType == typeof(FolderListupPage)
-                    && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                    && (e.SourcePageType == typeof(FolderListupPage) || e.SourcePageType == typeof(ImageListupPage))
+                    && frame.BackStack.TakeLast(3).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
                     && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.GeneralPathKey, out string currentNavigationPathParameter)
-                    && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                    && BackParametersStack.TakeLast(3).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                     )
                 {
                     foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
@@ -613,8 +616,13 @@ public sealed partial class AppShell : UserControl
         return handleResult;
     }
 
+    CancellationTokenSource? _navigateCts;
     private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
     {
+        _navigateCts?.Cancel();
+        _navigateCts?.Dispose();
+        _navigateCts = new CancellationTokenSource();
+        var ct = _navigateCts.Token;
         if (fromPageVM != null)
         {
             fromPageVM.OnNavigatedFrom(parameters);
@@ -623,7 +631,7 @@ public sealed partial class AppShell : UserControl
         if (toPageVM != null)
         {
             toPageVM.OnNavigatedTo(parameters);
-            await toPageVM.OnNavigatedToAsync(parameters);
+            await toPageVM.OnNavigatedToAsync(parameters, ct);
         }
 
         return new NavigationResult() { IsSuccess = true };
@@ -1272,6 +1280,10 @@ public sealed partial class AppShell : UserControl
                     {
                         await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                     }
+                    else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(fileItem.FileType))
+                    {
+                        await _messenger.NavigateAsync(nameof(Views.MovieViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                    }
                 }
             }
         }
@@ -1415,6 +1427,23 @@ public sealed partial class AppShell : UserControl
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
+    }
+
+    private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        try
+        {
+            var appView = ApplicationView.GetForCurrentView();
+            if (appView.IsFullScreenMode)
+            {
+                appView.ExitFullScreenMode();
+            }
+            else
+            {
+                appView.TryEnterFullScreenMode();
+            }
+        }
+        catch { }
     }
 }
 

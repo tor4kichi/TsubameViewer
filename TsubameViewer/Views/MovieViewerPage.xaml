@@ -1,0 +1,995 @@
+﻿<Page
+    x:Class="TsubameViewer.Views.MovieViewerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TsubameViewer.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:i="using:Microsoft.Xaml.Interactivity"
+      xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+      xmlns:myConv="using:TsubameViewer.Views.Converters"
+      xmlns:wst="using:Microsoft.Toolkit.Uwp.UI.Triggers"
+      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:myBehaviour="using:TsubameViewer.Views.Behaviors"
+      xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+      xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
+      xmlns:domainModels="using:TsubameViewer.Core.Models"
+      xmlns:myStateTriggers="using:TsubameViewer.Views.StateTrigger"
+      xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+      xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+      xmlns:models="using:TsubameViewer.Core.Models.FolderItemListing"
+      xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
+      xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:mediaProps="using:Windows.Media.MediaProperties"
+      xmlns:media="using:Windows.UI.Xaml.Media"
+      mc:Ignorable="d"
+    >
+
+  <Page.Resources>
+    <Style TargetType="fluentIcon:FluentSymbolIcon">
+      <Setter Property="IsTabStop"
+              Value="False" />
+    </Style>
+
+    <DataTemplate x:Name="TitlebarContent"
+                  x:DataType="vm:MovieViewerPageViewModel">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" MinWidth="0" />
+          <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Style="{StaticResource TitlebarTextBlock}">
+            <Run Text="{x:Bind Title, Mode=OneWay}" />
+          </TextBlock>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal"
+                    Grid.Column="1"
+                    Spacing="8"
+                    HorizontalAlignment="Right">
+          <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
+                     Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Opacity="0"
+                     Style="{StaticResource TitlebarTextBlock}" />
+
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"
+                        AccessKey="A">
+            <SymbolIcon Symbol="ZoomIn"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </ToggleButton>
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerRotateEnabled, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerRotate}"
+                        AccessKey="R">
+            <SymbolIcon Symbol="Orientation"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </ToggleButton>
+          <ToggleButton IsChecked="{x:Bind PageSettings.IsHorizontalMirror, Mode=TwoWay}"
+                        Style="{StaticResource TitlebarToggleButton}"
+                        ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}"
+                        AccessKey="H">
+            <SymbolIcon Symbol="Sort"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+              <SymbolIcon.RenderTransform>
+                <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7" />
+              </SymbolIcon.RenderTransform>
+            </SymbolIcon>
+          </ToggleButton>
+          <Button Command="{x:Bind ToggleFullScreenCommand}"
+                  Style="{StaticResource TitlebarButton}"
+                  AccessKey="F">
+            <SymbolIcon Symbol="FullScreen"
+                        Style="{StaticResource TitlebarSymbolIcon}">
+            </SymbolIcon>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </DataTemplate>
+
+    <!--
+    <XamlUICommand x:Key="ZoomResetUICommand"
+                   Command="{x:Bind ZoomResetCommand}"
+                   Label="{i18nExt:Localize Key=ZoomReset}"
+                   Description="{i18nExt:Localize Key=ZoomReset}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomIn" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="X" />
+        <KeyboardAccelerator Key="R" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="ZoomInUICommand"
+                   Command="{x:Bind ZoomUpWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomIn}"
+                   Description="{i18nExt:Localize Key=ZoomIn}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomIn" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Add" />
+        <KeyboardAccelerator Key="W" />
+        <KeyboardAccelerator Key="T" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>
+
+    <XamlUICommand x:Key="ZoomOutUICommand"
+                   Command="{x:Bind ZoomDownWithControllerCommand}"
+                   Label="{i18nExt:Localize Key=ZoomOut}"
+                   Description="{i18nExt:Localize Key=ZoomOut}">
+      <XamlUICommand.IconSource>
+        <SymbolIconSource Symbol="ZoomOut" />
+      </XamlUICommand.IconSource>
+      <XamlUICommand.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Subtract" />
+        <KeyboardAccelerator Key="S" />
+        <KeyboardAccelerator Key="Y" />
+      </XamlUICommand.KeyboardAccelerators>
+    </XamlUICommand>-->
+
+    <local:SecondsToVideoTimeConverter x:Key="SecondsToVideoTimeConverter" />
+    <local:ToPlaybackRateConverter x:Key="ToPlaybackRateConverter" />
+  </Page.Resources>
+  <Grid x:Name="PageRoot">
+
+    <VisualStateManager.VisualStateGroups>
+
+      <!-- プレイヤーコントロールUIの表示状態 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Visible" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ImageSelectorContainer.Visibility"
+                    Value="Collapsed" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.PageSettings.IsMuted, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ToggleIsMutedButton.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="SpeakerMute24" />
+              </Setter.Value>
+            </Setter>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:IsEqualStateTrigger Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+                                     To="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ToggleIsMutedButton.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="SpeakerMute24" />
+              </Setter.Value>
+            </Setter>
+          </VisualState.Setters>
+        </VisualState>
+
+      </VisualStateGroup>
+
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind TrueToPlayerPlaying(PlayerState), Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ControlUI_PlayPauseButton.Content">
+              <Setter.Value>
+                <SymbolIcon Symbol="Pause" />
+              </Setter.Value>
+            </Setter>
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MirrorScaleTransform.ScaleX"
+                    Value="-1" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <!-- 全画面表示 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+    </VisualStateManager.VisualStateGroups>
+
+    <!-- KeyboardAccelarator用のダミー -->
+    <Grid Opacity="0"
+          IsHitTestVisible="False"
+          x:Name="ShortcutKeyButtonsContainer"
+          >
+      <Button Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F1" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ExitPlayerCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ExitPlayer}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Escape" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind TogglePlayPauseCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayPause}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Space" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind BackwardOneFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_BackwardOneFrame}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="J" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ForwardOneFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ForwardOneFrame}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="K" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ToggleIsMutedCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleIsMuted}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="M" />
+        </Button.KeyboardAccelerators>
+      </Button>
+
+      <Button Command="{x:Bind TogglePlayerStretchCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerStretch}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="A" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind TogglePlayerRotateCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerRotate}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="R" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind TogglePlayerMirrorCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayerMirror}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="H" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind ToggleFullScreenCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind VolumeChangeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_VolumeChangeUp}">
+        <Button.CommandParameter>
+          <x:Double>0.05</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Up" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind VolumeChangeCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_VolumeChangeDown}">
+        <Button.CommandParameter>
+          <x:Double>-0.05</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Down" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind PlaybackPositionChangeCommand}"
+              CommandParameter="{x:Bind PlaybackPositionChangeBackward}"
+              Tag="{Binding Source='5', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_PlaybackPositionChangeBackward'}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Left" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind PlaybackPositionChangeCommand}"
+              CommandParameter="{x:Bind PlaybackPositionChangeForward}"
+              Tag="{Binding Source='5', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_PlaybackPositionChangeForward'}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Right" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SaveCurrentFrameCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SaveCurrentFrame}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="S" Modifiers="Control" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackRateToPrevCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToPrev}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Z" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackRateToNextCommand}"
+              Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToNext}">
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="X" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='0', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter><x:Double>0</x:Double></Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number0" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='10', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>10</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number1" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='20', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>20</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number2" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='30', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>30</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number3" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='40', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>40</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number4" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='50', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>50</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number5" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='60', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>60</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number6" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='70', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>70</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number7" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='80', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>80</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number8" />
+        </Button.KeyboardAccelerators>
+      </Button>
+      <Button Command="{x:Bind SetPlaybackPositionWithPercentCommand}"
+              Tag="{Binding Source='90', Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='MovieViewer_SC_SetPlaybackPositionWithPercent'}">
+        <Button.CommandParameter>
+          <x:Double>90</x:Double>
+        </Button.CommandParameter>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="Number9" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
+    
+    <MediaPlayerElement AutoPlay="False"
+                        Stretch="Uniform"
+                        x:Name="MyMediaPlayerElement"
+                        RenderTransformOrigin="0.5, 0.5">
+      <UIElement.RenderTransform>
+        <TransformGroup>
+          <TranslateTransform x:Name="PlayerTransform" />
+
+          <ScaleTransform x:Name="MirrorScaleTransform" />
+        </TransformGroup>
+      </UIElement.RenderTransform>
+    </MediaPlayerElement>
+
+    <Grid IsHitTestVisible="True"
+          Background="Transparent"
+                  Opacity="0"
+          PointerPressed="ControlUIInteractionWall_PointerPressed"
+          PointerReleased="ControlUIInteractionWall_PointerReleased"
+          PointerWheelChanged="ControlUIInteractionWall_PointerWheelChanged"
+          x:Name="ControlUIInteractionWall"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+          >
+      <i:Interaction.Behaviors>
+        <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
+                                           IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+                                           Invoked="MySwipeDistanceBehavior_Invoked"                                           
+                                           XPixelsToOneUnit="8"
+                                           YPixelsToOneUnit="16"/>
+      </i:Interaction.Behaviors>
+    </Grid>
+
+    <Border x:Name="ImageSelectorContainer"
+            Grid.ColumnSpan="3"
+            VerticalAlignment="Bottom"
+            Margin="0 0 0 0"
+            Padding="0 8 0 24"
+            Visibility="Collapsed"
+            Background="{ThemeResource SystemAltMediumHighColor}"            
+            >
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1"
+                                    Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.225" />
+      </animation:Implicit.HideAnimations>
+
+      <StackPanel Margin="8 0"
+                  Spacing="6"
+                  MaxWidth="720"
+                  >
+
+        <Grid Margin="0 0 0 8">
+          <Grid.Resources>
+            <ScaleTransform x:Key="FavoriteIconTransform"
+                            ScaleX="0.9"
+                            ScaleY="0.9" />
+          </Grid.Resources>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+          </Grid.ColumnDefinitions>
+
+          <muxc:DropDownButton x:Name="Page2ActionButton"
+                               Grid.Column="0"
+                               HorizontalAlignment="Stretch"
+                               HorizontalContentAlignment="Stretch"
+                               Margin="0 0 0 0"
+                               IsAccessKeyScope="True"
+                               AccessKey="I">
+            <muxc:DropDownButton.KeyboardAccelerators>
+              <KeyboardAccelerator Key="Number1" />
+            </muxc:DropDownButton.KeyboardAccelerators>
+
+            <uwpControls:DockPanel>
+              <SymbolIcon Symbol="Favorite"
+                          
+                          uwpControls:DockPanel.Dock="Left"
+                          Margin="0 0 4 0"
+                          RenderTransform="{StaticResource FavoriteIconTransform}"
+                          RenderTransformOrigin="0.5, 0.5" />
+              <TextBlock x:Name="Page2NameTextBlock"
+                         VerticalAlignment="Center"
+                         FontSize="12"
+                         Margin="0 0 0 0"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap"
+                         MaxLines="1"
+                         TextTrimming="CharacterEllipsis">
+          <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+              </TextBlock>
+            </uwpControls:DockPanel>
+
+            <muxc:DropDownButton.Flyout>
+              <MenuFlyout Opening="Page2MenuFlyout_Opening"
+                          Opened="MenuFlyout_Opened"
+                          Closed="MenuFlyout_Closed">
+                <!--
+                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton"
+                                   Text="{i18nExt:Localize Key=AlbamItemAdd}"
+                                   >
+
+                </MenuFlyoutSubItem>
+                -->
+                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton"
+                                AccessKey="T"
+                                Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                Command="{x:Bind SetThumbnailImageCommand}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="T" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
+                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton"
+                                AccessKey="G"
+                                Text="{i18nExt:Localize Key=OpenWithExplorer}"
+                                Command="{x:Bind OpenMovieFileWithExplorerCommand}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="G" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton"
+                                AccessKey="B"
+                                Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
+                                Command="{x:Bind LaunchMovieFileCommand}"
+                                >
+                  <MenuFlyoutItem.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="B" />
+                  </MenuFlyoutItem.KeyboardAccelerators>
+                </MenuFlyoutItem>
+              </MenuFlyout>
+            </muxc:DropDownButton.Flyout>
+          </muxc:DropDownButton>
+        </Grid>
+
+        <uwpControls:DockPanel>
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Right"
+                      Spacing="8">
+            <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
+                    MinWidth="60"
+                    Height="40">
+              <Button.Flyout>
+                <Flyout Opened="MenuFlyout_Opened"
+                        Closed="MenuFlyout_Closed">
+                  <StackPanel Spacing="8">
+                    <StackPanel.Resources>
+                      <Style TargetType="Button">
+                        <Setter Property="Padding"
+                                Value="8 4" />
+                        <Setter Property="CornerRadius"
+                                Value="4" />
+                        <Setter Property="MinWidth"
+                                Value="52" />
+                      </Style>
+                    </StackPanel.Resources>
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="4">
+                      <Button Content="x0.5"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>0.5</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x0.75"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>0.75</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.0"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.0</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.25"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.25</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.5"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.5</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x1.75"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>1.75</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                      <Button Content="x2.0"
+                              Command="{x:Bind SetPlaybackRateCommand}">
+                        <Button.CommandParameter>
+                          <x:Double>2.0</x:Double>
+                        </Button.CommandParameter>
+                      </Button>
+                    </StackPanel>
+
+                    <Slider HorizontalAlignment="Stretch"
+                            Maximum="{x:Bind MaxPlaybackRate}"
+                            Minimum="{x:Bind MinPlaybackRate}"
+                            Value="{x:Bind _vm.PageSettings.PlaybackRate, Mode=OneWay}"
+                            ValueChanged="PlaybackRateSlider_ValueChanged"
+                            StepFrequency="0.1"
+                            x:Name="PlaybackRateSlider"
+                            IsThumbToolTipEnabled="True"
+                            ThumbToolTipValueConverter="{StaticResource ToPlaybackRateConverter}" />
+                    <Grid>
+                      <TextBlock Text="x0.1"
+                                 HorizontalAlignment="Left" />
+                      <TextBlock Text="x1.0"
+                                 HorizontalAlignment="Center"
+                                 Margin="0 0 198 0" />
+                      <TextBlock Text="x2.0"
+                                 HorizontalAlignment="Center"
+                                 Margin="0 0 12 0" />
+                      <TextBlock Text="x3.0"
+                                 HorizontalAlignment="Center"
+                                 Margin="180 0 0 0" />
+                      <TextBlock Text="x4.0"
+                                 HorizontalAlignment="Right" />
+                    </Grid>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <ToggleButton x:Name="ControlUI_RepeatButton"
+                          IsChecked="{x:Bind _vm.PageSettings.IsRepeat, Mode=TwoWay}"
+                          Height="40"
+                          Width="48"
+                          AccessKey="R">
+              <ToggleButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="R" />
+              </ToggleButton.KeyboardAccelerators>
+
+              <SymbolIcon Symbol="RepeatAll" />
+            </ToggleButton>
+
+            <Button Height="40" Width="48">
+              <SymbolIcon Symbol="Setting" />
+
+              <Button.Flyout>
+                <MenuFlyout Opened="MenuFlyout_Opened"
+                            Closed="MenuFlyout_Closed">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_DisplayShortcutKeysGuide}"
+                                  Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}" />
+                  <MenuFlyoutSeparator />
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
+                                  Command="{x:Bind SaveCurrentFrameCommand}" />
+                  <MenuFlyoutSeparator />
+                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerStretch}">
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.None}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.None}"/>
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Fill}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.Fill}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.Uniform}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.Uniform}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Stretch.UniformToFill}"
+                                    Command="{x:Bind SetPlayerStretchCommand}"
+                                    CommandParameter="{x:Bind media:Stretch.UniformToFill}" />
+                  </MenuFlyoutSubItem>
+                  <MenuFlyoutSubItem Text="{i18nExt:Localize Key=MovieViewer_PlayerRotate}">
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.None}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.None}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise90Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise90Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise180Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise180Degrees}" />
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=MediaRotation.Clockwise270Degrees}"
+                                    Command="{x:Bind SetPlayerRotateCommand}"
+                                    CommandParameter="{x:Bind mediaProps:MediaRotation.Clockwise270Degrees}" />
+                  </MenuFlyoutSubItem>
+                  <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
+                                        IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal"
+                      uwpControls:DockPanel.Dock="Left"
+                      Spacing="8">
+            <Button x:Name="ControlUI_PlayPauseButton"
+                    Command="{x:Bind TogglePlayPauseCommand}"
+                    Height="40"
+                    Width="48"
+                    AccessKey="P"
+                    >
+              <SymbolIcon Symbol="Play" />
+            </Button>
+
+            <RepeatButton x:Name="ControlUI_BackwardOneFrameButton"
+                    Command="{x:Bind BackwardOneFrameCommand}"
+                          IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+                    Height="40"
+                    Width="48" Margin="16 0 0 0"
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Stretch"
+                          AccessKey="J">
+              <Grid>
+                <TextBlock Text="1" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           Style="{StaticResource CaptionTextBlockStyle}"/>
+                <SymbolIcon Symbol="Undo"
+                            RenderTransformOrigin="1, 1">
+                  <SymbolIcon.RenderTransform>
+                    <CompositeTransform ScaleX="0.8"
+                                        ScaleY="0.8" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Grid>
+            </RepeatButton>
+            <RepeatButton x:Name="ControlUI_ForwardOneFrameButton"
+                    Command="{x:Bind ForwardOneFrameCommand}"
+                          IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+                    Height="40"
+                    Width="48"                          
+                          HorizontalContentAlignment="Stretch"
+                          VerticalContentAlignment="Stretch"
+                          AccessKey="K">
+              <RepeatButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Right" />
+              </RepeatButton.KeyboardAccelerators>
+              <Grid>
+                <TextBlock Text="1"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Top"
+                           Style="{StaticResource CaptionTextBlockStyle}" />
+                <SymbolIcon Symbol="Redo"
+                            RenderTransformOrigin="0, 1">
+                  <SymbolIcon.RenderTransform>
+                    <CompositeTransform ScaleX="0.8" ScaleY="0.8" />
+                  </SymbolIcon.RenderTransform>
+                </SymbolIcon>
+              </Grid>
+            </RepeatButton>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Button x:Name="ToggleIsMutedButton"
+                    Command="{x:Bind ToggleIsMutedCommand}"
+                    Height="40"
+                    Width="48"
+                    AccessKey="M">
+              <fluentIcon:FluentSymbolIcon Symbol="Speaker224" />
+            </Button>
+            <Slider Value="{x:Bind SoundVolume_Display, Mode=OneWay}"
+                    Maximum="1"
+                    Minimum="0"
+                    StepFrequency="0.01"
+                    x:Name="ControlUI_SoundVolumeSlider"
+                    MinWidth="120"
+                    Margin="0 4 0 0"
+                    ThumbToolTipValueConverter="{StaticResource DoubleToPercentTextConverter}"
+                    PointerReleased="ControlUI_SoundVolumeSlider_PointerReleased" />
+          </StackPanel>
+        </uwpControls:DockPanel>
+        
+        <Grid>
+          <Slider x:Name="VideoPositionSlider"
+                  uwpControls:DockPanel.Dock="Bottom"
+                  Minimum="0"
+                  Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                  Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                  ValueChanged="VideoPositionSlider_ValueChanged"
+                  ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                  TickFrequency="1"
+                  StepFrequency="1"
+                  Padding="0"
+                  Margin="0 0"
+                  FlowDirection="LeftToRight"
+                  AccessKey="B"
+                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
+            <Slider.KeyboardAccelerators>
+              <KeyboardAccelerator Key="4" />
+            </Slider.KeyboardAccelerators>
+          </Slider>
+          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SeekNotSupported}"
+                     VerticalAlignment="Bottom"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}" />
+          <TextBlock VerticalAlignment="Bottom"
+                     FontSize="12"
+                     Margin="0 32 8 0"                     
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
+          <TextBlock VerticalAlignment="Bottom"
+                     FontSize="12"
+                     Margin="0 32 8 0"
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
+
+        </Grid>
+      </StackPanel>
+
+    </Border>
+
+    <Grid x:Name="ShortcutKeyGuideUIContainer"
+          Visibility="Collapsed"
+          Margin="16"
+          Background="{ThemeResource SystemControlAcrylicElementBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource SystemBaseLowColor}"
+          CornerRadius="6"
+          MaxWidth="500">
+      <uwpControls:DockPanel>
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SC}"
+                   Style="{StaticResource SubtitleTextBlockStyle}"
+                   Margin="32 32 32 16"
+                   VerticalAlignment="Bottom"
+                   uwpControls:DockPanel.Dock="Top" />
+
+        <Border Height="1"
+                Background="{ThemeResource SystemBaseLowColor}" 
+                uwpControls:DockPanel.Dock="Top"/>
+        <ScrollViewer>
+
+          <ItemsControl x:Name="ShortcutKeyItemsControl"
+                        ItemsSource="{x:Bind ShortcutKeys, Mode=OneWay}"
+                        DataContext="{x:Null}"
+                        Margin="32 24 32 48"
+                        >
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8"
+                                       Orientation="Vertical" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:ShortcutKeyInfo">
+                <Grid MinHeight="32">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}"
+                             Grid.Column="0"
+                             TextWrapping="Wrap"
+                             MaxWidth="320"
+                             VerticalAlignment="Center"/>
+
+                  <Border Background="{ThemeResource SystemBaseLowColor}"
+                          Height="1"
+                          Grid.Column="1"
+                          Margin="8" />
+
+                  <TextBlock Text="{x:Bind ToText(Key, Modifier)}"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             Grid.Column="2" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </uwpControls:DockPanel>
+      <Button x:Name="CloseButton_ShortcutKeyGuideUIContainer"
+              Tapped="CloseButton_ShortcutKeyGuideUIContainer_Tapped"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              Height="48"
+              Width="48"
+              Margin="16">
+        <SymbolIcon Symbol="Clear" />
+      </Button>
+    </Grid>
+
+    <Grid x:Name="SeekingTimeUIContainer"
+          Visibility="{x:Bind MySwipeDistanceBehavior.NowManipulation, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          CornerRadius="6"
+          Margin="32 48 32 32"
+          Padding="16 8 16 8"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Opacity="{x:Bind EmptyProgressAsOpacity(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY, MySwipeDistanceBehavior.NowManipulation), Mode=OneWay}">
+      <animation:Implicit.ShowAnimations>
+        <animation:OpacityAnimation To="1" Duration="0:0:0.125" />
+      </animation:Implicit.ShowAnimations>
+      <animation:Implicit.HideAnimations>
+        <animation:OpacityAnimation To="0"
+                                    Duration="0:0:0.175" />
+      </animation:Implicit.HideAnimations>
+
+      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY), Mode=OneWay}" 
+                 FontSize="24"/>
+    </Grid>
+
+    <ProgressBar Minimum="0"
+                      Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                      Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Bottom"
+                      IsHitTestVisible="False"
+                      Opacity="0.3"           
+                 Visibility="{x:Bind IsDisplayControlUI, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}"
+                      />
+
+    <muxc:ProgressBar IsIndeterminate="True"
+                  Opacity="1"
+                      Visibility="{x:Bind IsPalyerPreparing(PlayerState), Mode=OneWay}"
+                  IsHitTestVisible="False"
+                  Foreground="{ThemeResource SystemAccentColor}"
+                  x:Name="LoadingProgressRing"
+                  VerticalAlignment="Bottom"
+                      HorizontalAlignment="Stretch"
+                  />
+
+    <uwpControls:InAppNotification x:Name="FrameSavedNotification"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0 0 0 94"
+                                   >
+      <uwpControls:DockPanel>
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SavedCurrentFrame}" 
+                   uwpControls:DockPanel.Dock="Left" VerticalAlignment="Center" 
+                   Margin="0 0 8 0"/>
+
+        <uwpControls:WrapPanel Orientation="Horizontal" HorizontalSpacing="8" VerticalSpacing="8">
+          <Button Content="{i18nExt:Localize Key=OpenWithExternalApplication}" 
+                  MinWidth="80"
+                  Command="{x:Bind OpenSavedFrameImageFileCommand}"/>
+          <Button Content="{i18nExt:Localize Key=OpenWithExplorer}" MinWidth="80"
+                  Command="{x:Bind OpenSavedFrameImageFileWithExplorerCommand}"/>
+        </uwpControls:WrapPanel>
+      </uwpControls:DockPanel>
+    </uwpControls:InAppNotification>
+  </Grid>
+</Page>

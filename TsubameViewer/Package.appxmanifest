@@ -4,7 +4,8 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  IgnorableNamespaces="uap mp">
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  IgnorableNamespaces="uap mp uap3">
 
   <Identity
     Name="18803tor4kichi.TsubameViewer"
@@ -66,6 +67,9 @@
               <uap:FileType ContentType="application/x-cb7">.cb7</uap:FileType>
               <uap:FileType ContentType="image/avif">.avif</uap:FileType>
               <uap:FileType ContentType="image/webp">.webp</uap:FileType>
+              <uap:FileType ContentType="video/mp4">.mp4</uap:FileType>
+              <uap:FileType ContentType="video/hevc">.hevc</uap:FileType>
+              <uap:FileType ContentType="video/webm">.webm</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
@@ -74,4 +78,7 @@
       </Extensions>
     </Application>
   </Applications>
+
+  <Capabilities>
+    <uap3:Capability Name="backgroundMediaPlayback"/></Capabilities>
 </Package>

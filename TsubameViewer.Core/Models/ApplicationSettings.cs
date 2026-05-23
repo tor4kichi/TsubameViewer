@@ -12,6 +12,7 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     {
         _Theme = Read(ApplicationTheme.Default, nameof(Theme));
         _Locale = Read(default(string), nameof(Locale));
+        _isFullScreenOnAppLaunch = Read(false, nameof(IsFullScreenOnAppLaunch));
         _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
     }
@@ -30,6 +31,14 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     {
         get { return _Locale; }
         set { SetProperty(ref _Locale, value); }
+    }
+
+
+    private bool _isFullScreenOnAppLaunch;
+    public bool IsFullScreenOnAppLaunch
+    {
+        get => _isFullScreenOnAppLaunch;
+        set => SetProperty(ref _isFullScreenOnAppLaunch, value);
     }
 
 

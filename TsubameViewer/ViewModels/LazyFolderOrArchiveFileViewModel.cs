@@ -2,19 +2,20 @@
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Models;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Views.Converters;
 using Windows.UI.Xaml.Media.Imaging;
-using System.Diagnostics;
-using System.IO;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -57,7 +58,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -69,10 +70,12 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
+    [ObservableProperty]
+    string? _duration;
 
     public LazyFolderOrArchiveFileViewModel(
         IImageCollectionContext imageCollectionContext,
@@ -164,6 +167,12 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
                     UpdateLastReadPosition();
                     IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+                    if (Type == StorageItemTypes.Movie
+                        && Item.StorageItem is Windows.Storage.StorageFile file)
+                    {
+                        var movieProps = await file.Properties.GetVideoPropertiesAsync();
+                        Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
+                    }
                 }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))

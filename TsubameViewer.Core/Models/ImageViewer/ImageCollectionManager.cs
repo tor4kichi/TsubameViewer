@@ -140,6 +140,11 @@ public sealed class ImageCollectionManager
                     throw new NotImplementedException();
                 }
             }
+            else if (file.IsSupportedMovieFile())
+            {
+                // TODO: 動画列挙のコレクションコンテキスト対応
+                return (new StorageItemImageSource(file), new OnlyOneFileImageCollectionContext(file));
+            }
             else
             {
                 // 非対応なファイル

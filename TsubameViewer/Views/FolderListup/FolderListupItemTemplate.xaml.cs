@@ -36,6 +36,7 @@ namespace TsubameViewer.Views.FolderListup
         public DataTemplate AlbamIcon { get; set; }
         public DataTemplate AlbamImageIcon { get; set; }
         public DataTemplate EBookIcon { get; set; }
+        public DataTemplate MovieIcon { get; set; }
         public DataTemplate ImageIcon { get; set; }
 
         public DataTemplate AddFolderIcon { get; set; }
@@ -46,20 +47,38 @@ namespace TsubameViewer.Views.FolderListup
         {
             if (item == null) { return base.SelectTemplateCore(item, container); }
 
-            if (item is IStorageItemViewModel itemVM)
+
+            if (item is StorageItemTypes type)
+            {
+                return type switch
+                {
+                    StorageItemTypes.Folder => FolderIcon,
+                    StorageItemTypes.Archive => ArchiveIcon,
+                    StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                    StorageItemTypes.AlbamImage => AlbamImageIcon,
+                    StorageItemTypes.EBook => EBookIcon,
+                    StorageItemTypes.Image => ImageIcon,
+                    StorageItemTypes.AddFolder => AddFolderIcon,
+                    StorageItemTypes.AddAlbam => AddAlbamIcon,
+                    StorageItemTypes.Movie => MovieIcon,
+                    var otherType => ImageIcon,
+                };
+            }
+            else if (item is IStorageItemViewModel itemVM)
             {
                 return itemVM.Type switch
                 {
-                    Core.Models.StorageItemTypes.Folder => FolderIcon,
-                    Core.Models.StorageItemTypes.Archive => ArchiveIcon,
-                    Core.Models.StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
-                    Core.Models.StorageItemTypes.Albam => (itemVM.Item as AlbamImageSource).AlbamId == FavoriteAlbam.FavoriteAlbamId ? FavoriteIcon : AlbamIcon,
-                    Core.Models.StorageItemTypes.AlbamImage => AlbamImageIcon,
-                    Core.Models.StorageItemTypes.EBook => EBookIcon,
-                    Core.Models.StorageItemTypes.Image => ImageIcon,
-                    Core.Models.StorageItemTypes.AddFolder => AddFolderIcon,
-                    Core.Models.StorageItemTypes.AddAlbam => AddAlbamIcon,
-                    var type => throw new NotSupportedException(type.ToString()),
+                    StorageItemTypes.Folder => FolderIcon,
+                    StorageItemTypes.Archive => ArchiveIcon,
+                    StorageItemTypes.ArchiveFolder => ArchiveFolderIcon,
+                    StorageItemTypes.Albam => (itemVM.Item as AlbamImageSource).AlbamId == FavoriteAlbam.FavoriteAlbamId ? FavoriteIcon : AlbamIcon,
+                    StorageItemTypes.AlbamImage => AlbamImageIcon,
+                    StorageItemTypes.EBook => EBookIcon,
+                    StorageItemTypes.Image => ImageIcon,
+                    StorageItemTypes.AddFolder => AddFolderIcon,
+                    StorageItemTypes.AddAlbam => AddAlbamIcon,
+                    StorageItemTypes.Movie => MovieIcon,
+                    var otherType => ImageIcon,
                 };
             }
 
