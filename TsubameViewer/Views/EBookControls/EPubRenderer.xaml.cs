@@ -228,14 +228,14 @@ public sealed partial class EPubRenderer : UserControl
     public static readonly DependencyProperty OverrideWritingModeProperty =
         DependencyProperty.Register("OverrideWritingMode", typeof(WritingMode), typeof(EPubRenderer), new PropertyMetadata(WritingMode.Inherit, OnSomeStylePropertyChanged));
 
-    public string PageHtml
+    public XmlDocument PageHtml
     {
-        get { return (string)GetValue(PageHtmlProperty); }
+        get { return (XmlDocument)GetValue(PageHtmlProperty); }
         set { SetValue(PageHtmlProperty, value); }
     }
 
     public static readonly DependencyProperty PageHtmlProperty =
-        DependencyProperty.Register("PageHtml", typeof(string), typeof(EPubRenderer), new PropertyMetadata(null, OnPageHtmlPropertyChanged ));
+        DependencyProperty.Register("PageHtml", typeof(XmlDocument), typeof(EPubRenderer), new PropertyMetadata(null, OnPageHtmlPropertyChanged ));
 
     private static async void OnPageHtmlPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
@@ -256,7 +256,7 @@ public sealed partial class EPubRenderer : UserControl
         }
         
         _this._sw.Restart();
-        if (e.NewValue is string newPageHtml && !string.IsNullOrEmpty(newPageHtml))
+        if (e.NewValue is XmlDocument newPageHtml)
         {
             _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
             _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
@@ -377,15 +377,16 @@ public sealed partial class EPubRenderer : UserControl
         return sb.ToString();
     }
 
+    StringBuilder htmlSb = new();
     // evalでdocument.headにstyleタグを追加しても反映されないため
     // html文字列に直接埋め込む
-    string ToStyleEmbedHtml(string pageHtml)
+    string ToStyleEmbedHtml(XmlDocument pageHtml)
     {
         string ePubRendererCss = GetOrCreateEmbedStyleText();
 
-        var xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(pageHtml);
-
+        //var xmlDoc = new XmlDocument();
+        var xmlDoc = pageHtml;
+        
         var head = xmlDoc.DocumentElement["head"];
         var cssItems = new[] { ePubRendererCss };
         foreach (var css in cssItems)
@@ -428,7 +429,7 @@ public sealed partial class EPubRenderer : UserControl
 
         using (var stringWriter = new StringWriter())
         using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-        {
+        {            
             xmlDoc.WriteTo(xmlTextWriter);
             xmlTextWriter.Flush();
             return stringWriter.GetStringBuilder().ToString();
@@ -729,7 +730,7 @@ return JSON.stringify([...set]);
 
     private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
     {
-        if (string.IsNullOrEmpty(PageHtml)) { return; }
+        if (PageHtml == null) { return; }
 
         PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("DOMContentLoaded");
         using var _ = await _domUpdateLock.LockAsync(default);

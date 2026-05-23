@@ -10,7 +10,6 @@
     d:DesignWidth="400">
 
   <Grid>
-
     <WebView x:Name="WebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
              IsTapEnabled="False"
              IsHitTestVisible="False"

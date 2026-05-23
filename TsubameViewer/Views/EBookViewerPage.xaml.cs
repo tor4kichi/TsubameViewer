@@ -359,7 +359,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     {
         NowEnablePageMove = true;
 
-        if (string.IsNullOrEmpty(_vm.PageHtml) is false)
+        if (_vm.PageHtml != null)
         {
             _vm.CompletePageLoading();
             _ShowAnimationAb

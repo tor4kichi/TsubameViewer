@@ -96,8 +96,8 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
         set { SetProperty(ref _selectedTocItem, value); }
     }
 
-    private string _PageHtml;
-    public string PageHtml
+    private XmlDocument? _PageHtml;
+    public XmlDocument? PageHtml
     {
         get { return _PageHtml; }
         set { SetProperty(ref _PageHtml, value); }
@@ -193,7 +193,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
     {
         lock (_lock)
         {
-            PageHtml = String.Empty;
+            PageHtml = null;
 
             _currentBook = null;
             _currentPage = null;
@@ -431,13 +431,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
                         }
                     }
 
-                    using (var stringWriter = new StringWriter())
-                    using (var xmlTextWriter = XmlWriter.Create(stringWriter))
-                    {
-                        xmlDoc.WriteTo(xmlTextWriter);
-                        xmlTextWriter.Flush();
-                        return stringWriter.GetStringBuilder().ToString();
-                    }
+                    return xmlDoc;
                 }, ct);
 
                 // ブックマークに登録
@@ -498,7 +492,7 @@ public sealed class EBookViewerPageViewModel : NavigationAwareViewModelBase
         lock (_lock)
         {
             // ページが表示されていない状態の場合はnullを返す
-            if (string.IsNullOrEmpty(PageHtml)) { throw new InvalidOperationException(); }
+            if (PageHtml == null) { throw new InvalidOperationException(); }
 
             var key = requestUri.OriginalString.Remove(0, _dummyReosurceRequestDomain.Length);
             foreach (var image in _currentBook.Content.Images.Local)
