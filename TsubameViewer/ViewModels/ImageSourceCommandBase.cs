@@ -26,7 +26,7 @@ public abstract class ImageSourceCommandBase : CommandBase
             if (imagesSources.Count() == 1) { return CanExecute(imagesSources.First()); }
             return CanExecute(imagesSources);
         }
-        else if (parameter is IEnumerable<StorageItemViewModel> itemVMs)
+        else if (parameter is IEnumerable<IStorageItemViewModel> itemVMs)
         {
             if (itemVMs.Any() is false) { return false; }
             if (itemVMs.Count() == 1) { return CanExecute(itemVMs.First().Item); }
@@ -63,7 +63,7 @@ public abstract class ImageSourceCommandBase : CommandBase
                 Execute(imagesSources);
             }
         }
-        else if (parameter is IEnumerable<StorageItemViewModel> itemVMs)
+        else if (parameter is IEnumerable<IStorageItemViewModel> itemVMs)
         {
             if (itemVMs.Count() == 1)
             {

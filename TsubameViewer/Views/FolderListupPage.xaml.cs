@@ -217,7 +217,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         if (e.AddedItems?.Any() ?? false)
         {
-            foreach (var itemVM in e.AddedItems.Cast<StorageItemViewModel>())
+            foreach (var itemVM in e.AddedItems.Cast<IStorageItemViewModel>())
             {
                 _vm.Selection.SelectedItems.Add(itemVM);
             }
@@ -226,7 +226,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         if (e.RemovedItems?.Any() ?? false)
         {                
             var prevCount = FoldersAdaptiveGridView.SelectedItems.Count;
-            foreach (var itemVM in e.RemovedItems.Cast<StorageItemViewModel>())
+            foreach (var itemVM in e.RemovedItems.Cast<IStorageItemViewModel>())
             {
                 _vm.Selection.SelectedItems.Remove(itemVM);
             }
