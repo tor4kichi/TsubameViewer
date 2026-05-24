@@ -263,7 +263,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();
-        foreach (var item in _realizedItems)
+
+        using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+        foreach (var item in items.Span)
         {
             if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
             if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
