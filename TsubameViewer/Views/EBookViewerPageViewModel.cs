@@ -316,6 +316,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (s.CurrentBookReadingOrder == null) { return; }
                 if (s._currentFolderItem == null) { return; }
                 if (s.InnerCurrentImageIndex == -1) { return; }
+                if (s.InnerImageTotalCount == -1) { return; }
                 var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
                 long totalSize = 0;
                 foreach (var item in s.CurrentBookReadingOrder.Take(s.CurrentImageIndex))
@@ -350,6 +351,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (currentPage == null) { throw new IndexOutOfRangeException(); }
                 CurrentPage = currentPage;
                 Debug.WriteLine(currentPage.FilePath);
+                _innerImageTotalCount = -1; // 読了率計算のためあえて変更通知を出さない
                 SelectedTocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
                 CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
 
