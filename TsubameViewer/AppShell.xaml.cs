@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
+using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
@@ -69,7 +70,7 @@ public sealed partial class AppShell : UserControl
 
         if (result is Windows.Services.Store.StorePurchaseStatus.Succeeded or Windows.Services.Store.StorePurchaseStatus.AlreadyPurchased)
         {
-            PurchaseThanksMassageFlyout.ShowAt(PurchaseConfirmButton);
+            PurchaseThanksMassageFlyout.ShowAt(FeedbackButton);
         }
     }
 
@@ -91,6 +92,11 @@ public sealed partial class AppShell : UserControl
         }
     }
 
+    private void ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        PurchaseConfirmFlyout.ShowAt(FeedbackButton);
+    }
+
     #endregion
 
     private readonly AppShellViewModel _vm;
@@ -100,7 +106,15 @@ public sealed partial class AppShell : UserControl
     private readonly IViewLocator _viewLocator;
     private readonly DispatcherQueueTimer _AnimationCancelTimer;
     private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
+    private readonly List<object> _footerItemsForTop;
+    private readonly List<object> _footerItemsForLeft;
 
+    Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode ToPaneDisplayMode(bool isAppMenuShowWithLeft)
+    {
+        return isAppMenuShowWithLeft 
+            ? Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode.Left 
+            : Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode.Top;
+    }
 
     public AppShell(
         AppShellViewModel viewModel, 
@@ -138,6 +152,50 @@ public sealed partial class AppShell : UserControl
         Loaded += AppShell_Loaded;
 
         InitialziePurchase();
+
+        _footerItemsForTop = new()
+        {
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "StartMultiSelection".Translate(),
+                Invoked = () => _vm.StartSelectionCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "AddNewFolder".Translate(),
+                Invoked = () => _vm.SourceChoiceCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "RefreshLatest".Translate(),
+                Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            }
+        };
+
+        _footerItemsForLeft = new()
+        {
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "StartMultiSelection".Translate(),
+                Invoked = () => _vm.StartSelectionCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "AddNewFolder".Translate(),
+                Invoked = () => _vm.SourceChoiceCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "RefreshLatest".Translate(),
+                Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            }
+        };
     }
 
     private void AppShell_Loaded(object sender, RoutedEventArgs e)
@@ -388,8 +446,8 @@ public sealed partial class AppShell : UserControl
         Window.Current.SetTitleBar(TitlebarBG);
 
         // アプリメニュー表示の切替
-        MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
-        if (MyNavigtionView.IsPaneVisible)
+        MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
+        if (MyNavigationView.IsPaneVisible)
         {
             var sourcePageTypeName = e.SourcePageType.Name;
             var currentParameters = GetCurrentNavigationParameter();
@@ -416,7 +474,7 @@ public sealed partial class AppShell : UserControl
 
             // 幅優先探索でMenuItemsを走査する
             // 
-            Queue<MenuItemViewModel> queue = new((MyNavigtionView.MenuItemsSource as IList<object>).Cast<MenuItemViewModel>());
+            Queue<MenuItemViewModel> queue = new((MyNavigationView.MenuItemsSource as IList<object>).Cast<MenuItemViewModel>());
             string? parameterPathEscaped = null;
             bool hasParameters = currentParameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out parameterPathEscaped) ?? false;
             (string? parametersPath, _) = hasParameters ? PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(parameterPathEscaped)) : (null, null);
@@ -426,7 +484,7 @@ public sealed partial class AppShell : UserControl
                     && (!hasParameters || IsCurrentPageMatchMenuItem(menuItemVM, parametersPath))
                     )
                 {
-                    MyNavigtionView.SelectedItem = menuItemVM;
+                    MyNavigationView.SelectedItem = menuItemVM;
                     break;
                 }
                 
@@ -435,7 +493,7 @@ public sealed partial class AppShell : UserControl
                     && IsCurrentPageMatchMenuItem(menuItemVM, parametersPath)
                     )
                 {
-                    MyNavigtionView.SelectedItem = menuItemVM;
+                    MyNavigationView.SelectedItem = menuItemVM;
                     break;
                 }
 
@@ -445,7 +503,10 @@ public sealed partial class AppShell : UserControl
                 {
                     foreach (var childMenuItem in subItemVM.Items)
                     {
-                        queue.Enqueue(childMenuItem);
+                        if (childMenuItem is MenuItemViewModel childMenuItemVM)
+                        {
+                            queue.Enqueue(childMenuItemVM);
+                        }
                     }
                 }
             }            
@@ -455,11 +516,9 @@ public sealed partial class AppShell : UserControl
         if (e.SourcePageType == typeof(SearchResultPage)
             || frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
         {
-            MyNavigtionView.SelectedItem = null;
+            MyNavigationView.SelectedItem = null;
         }
 
-        // 複数選択ボタンの有効無効
-        SelectionStartButton.IsEnabled = SelectionAvairablePageTypes.Contains(e.SourcePageType);
 
         // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
         var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
@@ -1241,7 +1300,7 @@ public sealed partial class AppShell : UserControl
     {
         _messenger.Register<MenuDisplayMessage>(this, (r, m) => 
         {
-            MyNavigtionView.IsPaneVisible = m.Value == Visibility.Visible;
+            MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
         });
     }
 
@@ -1337,11 +1396,16 @@ public sealed partial class AppShell : UserControl
 
     private void NavigationViewItem_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        if (sender is Microsoft.UI.Xaml.Controls.NavigationViewItemBase menuItem
-            && menuItem.DataContext is MenuItemViewModel itemVM
-            )
+        if (sender is Microsoft.UI.Xaml.Controls.NavigationViewItemBase menuItem)
         {
-            _vm.OpenMenuItemCommand.Execute(itemVM);
+            if (menuItem.DataContext is MenuItemViewModel itemVM)
+            {
+                _vm.OpenMenuItemCommand.Execute(itemVM);
+            }
+            else if(menuItem.DataContext is MenuItemInvokeActionViewModel invokedItemVM)
+            {
+                invokedItemVM.Invoked();
+            }
         }
     }
 
@@ -1361,6 +1425,14 @@ public sealed partial class AppShell : UserControl
             }
         }
         catch { }
+    }
+
+    private void MyNavigationView_ItemInvoked(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args)
+    {
+        if (args.IsSettingsInvoked)
+        {
+            _vm.OpenPageCommand.Execute(nameof(SettingsPage));
+        }
     }
 }
 
@@ -1382,7 +1454,9 @@ public static class NavigationParametersExtensions
 public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
 {
     public DataTemplate Item { get; set; }
+    public DataTemplate ItemInvoke { get; set; }
     public DataTemplate SubItem { get; set; }
+    public DataTemplate Separator { get; set; }
 
     protected override DataTemplate SelectTemplateCore(object item)
     {
@@ -1397,6 +1471,14 @@ public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
         else if (item is MenuItemViewModel)
         {
             return Item ?? base.SelectTemplateCore(item, container);
+        }
+        else if (item is MenuItemInvokeActionViewModel)
+        {
+            return ItemInvoke ?? base.SelectTemplateCore(item, container);
+        }
+        else if (item is MenuSeparatorViewModel)
+        {
+            return Separator ?? base.SelectTemplateCore(item, container);
         }
         else
         {

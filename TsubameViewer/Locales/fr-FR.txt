@@ -66,6 +66,8 @@ AdvancedSettings = Paramètres avancés
 OverrideLocale = 🌏Langage
 RequireRestartApplicationToRefrectSettings = Redémarrer l'application pour appliquer les changements
 
+IsAppMenuShowWithLeft = Afficher le menu à gauche.
+
 IsFullScreenOnAppLaunch = Lancez l'application en mode plein écran.
 
 SourceFoldersSettings = Dossiers importés dans l'application

@@ -66,6 +66,8 @@ AdvancedSettings = Advanced Setting
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = Restart the application to reflect the setting
 
+IsAppMenuShowWithLeft = Display the menu on the left.
+
 IsFullScreenOnAppLaunch = Launch the app in full-screen mode.
 
 SourceFoldersSettings = Folder imported to the application

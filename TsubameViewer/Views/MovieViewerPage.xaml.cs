@@ -176,7 +176,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
-        
+        MediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
+
         _playbackResources?.Dispose();
         _playbackResources = null;
         MediaPlayer.Source = null;
@@ -231,7 +232,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         //MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
         
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;                
+        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
+        MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
@@ -434,6 +436,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         HandlePlaybackRateChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
+    }
+
+    private void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
+    {
+        Debug.WriteLine(args.Error);
+        Debug.WriteLine(args.ErrorMessage);
+        Debug.WriteLine(args.ExtendedErrorCode.ToString());
     }
 
     [RelayCommand]

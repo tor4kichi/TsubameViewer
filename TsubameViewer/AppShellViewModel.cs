@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.Helpers;
 using R3;
@@ -93,6 +94,7 @@ public sealed class AppShellViewModel
         RefreshFolderSubItems();    
         IsActive= true;
     }
+
 
 
     void IRecipient<SourceStorageItemRemovedMessage>.Receive(SourceStorageItemRemovedMessage message)
@@ -410,8 +412,18 @@ public class MenuItemViewModel
     public VirtualKey KeyboardAceseralator { get; set; }
 }
 
+public class MenuItemInvokeActionViewModel
+{
+    public string Title { get; set; }
+    public string Tooltip { get; set; }
+    public Action Invoked { get; set; }
+    public object Icon { get; set; }
+    public string AccessKey { get; set; }
+    public VirtualKey KeyboardAceseralator { get; set; }
+}
 
 public class MenuSubItemViewModel : MenuItemViewModel
 {
-    public ObservableCollection<MenuItemViewModel> Items { get; } = new();
+    public ObservableCollection<object> Items { get; } = new();
+    public object Icon { get; set; }
 }

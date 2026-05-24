@@ -99,6 +99,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                 {
                     new ThemeSelectSettingItemViewModel("ApplicationTheme".Translate(), _applicationSettings, _messenger),
                     new LocaleSelectSettingItemViewModel("OverrideLocale".Translate(), _applicationSettings),
+                    new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsAppMenuShowWithLeft".Translate(), _applicationSettings, x => x.IsAppMenuShowWithLeft),
+
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("IsForceEnableXYNavigation".Translate(), _applicationSettings, x => x.IsUINavigationFocusAssistanceEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
 #if DEBUG
                     new ToggleSwitchSettingItemViewModel<ApplicationSettings>("ForceXboxAppearanceModeEnabled".Translate(), _applicationSettings, x => x.ForceXboxAppearanceModeEnabled) { IsVisible = (Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance.DeviceFamily == "Windows.Xbox") is false },
