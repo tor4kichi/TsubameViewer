@@ -43,7 +43,14 @@
             <Run Text="{Binding Title, Mode=OneWay}" />
           </TextBlock>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+          <Button Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
+                  ToolTipService.Placement="Bottom"
+                  Command="{Binding ToggleFullScreenCommand}">
+            <SymbolIcon Symbol="FullScreen"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </Button>
           <Button Flyout="{StaticResource SettingsFlyout}"
                   Style="{StaticResource TitlebarButton}">
             <SymbolIcon Symbol="Setting"
@@ -246,21 +253,11 @@
     </Flyout>
 
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
-      <MenuFlyoutItem Text="{Binding Source=SwitchFullScreen, Converter={StaticResource LocalizeConverter}}" Command="{x:Bind _vm.ToggleFullScreenCommand}"
-                      x:Name="SwitchFullScreeMenuItem"
-                      Visibility="Collapsed"
-                      >
-        <MenuFlyoutItem.KeyboardAccelerators>
-          <KeyboardAccelerator Key="F11" IsEnabled="False" />
-        </MenuFlyoutItem.KeyboardAccelerators>
-      </MenuFlyoutItem>
+      
     </MenuFlyout>
   </Page.Resources>
 
-  <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
-        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
-        
-        >
+  <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}">
 
     <i:Interaction.Behaviors>
       
