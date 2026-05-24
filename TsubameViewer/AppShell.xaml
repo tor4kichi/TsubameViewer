@@ -85,7 +85,8 @@
                                      AccessKey="{x:Bind AccessKey}"
                                      DataContext="{x:Bind}"
                                      Tag="{x:Bind}"
-                                     Tapped="NavigationViewItem_Tapped">
+                                     Tapped="NavigationViewItem_Tapped"
+                                     IsExpanded="True">
             </muxc:NavigationViewItem>
           </DataTemplate>
         </local:MenuItemDateTemplateSelector.SubItem>
@@ -113,17 +114,17 @@
         </Button.KeyboardAccelerators>
       </Button>
     </Grid>
-    <muxc:NavigationView 
-      x:Name="MyNavigtionView"     
-      uwpControls:DockPanel.Dock="Top" 
-      MenuItemsSource="{Binding MenuItems}" 
-      MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
-      PaneDisplayMode="Top"
-      IsBackButtonVisible="Collapsed"
-      IsSettingsVisible="False"
-      XYFocusDownNavigationStrategy="Projection"
-      SelectionFollowsFocus="Disabled"      
-      >
+    <muxc:NavigationView x:Name="MyNavigtionView"
+                         uwpControls:DockPanel.Dock="Top"
+                         MenuItemsSource="{Binding MenuItems}"
+                         MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
+                         PaneDisplayMode="Top"
+                         OpenPaneLength="200"
+                         IsBackButtonVisible="Collapsed"
+                         IsSettingsVisible="False"
+                         XYFocusDownNavigationStrategy="Projection"
+                         SelectionFollowsFocus="Disabled"
+                         IsPaneToggleButtonVisible="False">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
@@ -139,48 +140,6 @@
         </core:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
-
-      <muxc:NavigationView.AutoSuggestBox>
-        <AutoSuggestBox PlaceholderText="{i18Ext:Localize Key=SearchPlaceholder}" 
-                        QueryIcon="Find"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        x:Name="AutoSuggestBox"
-                        Padding="0"
-                        Width="196"                        
-                        TextMemberPath="Title"
-                        UpdateTextOnSelect="False"
-                        AutoMaximizeSuggestionArea="True"
-                        IsSuggestionListOpen="True"   
-                        IsFocusEngagementEnabled="True"
-                        UseSystemFocusVisuals="True"
-                        TextChanged="AutoSuggestBox_TextChanged"
-                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
-                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                        AccessKey="F"
-                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
-                        QuerySubmitted="AutoSuggestBox_QuerySubmitted"
-                        >
-          <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-              <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-            </core:EventTriggerBehavior>-->
-            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
-            </uiNavigation:UINavigationTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-          <AutoSuggestBox.KeyboardAccelerators>
-            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="KeyboardAccelerator_Invoked" />
-          </AutoSuggestBox.KeyboardAccelerators>
-          
-          <AutoSuggestBox.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Name}" FontSize="12" TextWrapping="Wrap" />
-            </DataTemplate>
-          </AutoSuggestBox.ItemTemplate>
-        </AutoSuggestBox>
-      </muxc:NavigationView.AutoSuggestBox>
 
       <muxc:NavigationView.PaneFooter>
         <CommandBar x:Name="MenuRightCommandBar"
@@ -235,31 +194,52 @@
       </Frame>
     </muxc:NavigationView>
 
-    <uwpControls:DockPanel x:Name="TitlebarArea"
-                           Background="Transparent"
+    <Border x:Name="TitlebarBG"
                            VerticalAlignment="Top"
-                           Height="32">
+                           Height="48"
+                           Background="{ThemeResource SystemChromeMediumColor}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
 
-    </uwpControls:DockPanel>
+      <Border VerticalAlignment="Bottom"
+              Height="1"
+              Background="{ThemeResource SystemBaseLowColor}"
+              Opacity="0.2"/>
+    </Border>
 
-    <uwpControls:DockPanel>
+    <uwpControls:DockPanel x:Name="TitlebarUIContainer"
+                           VerticalAlignment="Top"
+                           Height="48">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+
+      <Button Command="{x:Bind _vm.BackNavigationCommand}"
+              x:Name="GoBackButton"
+              uwpControls:DockPanel.Dock="Left"
+              Margin="8 4"
+              VerticalAlignment="Center">
+        <SymbolIcon Symbol="Back"
+                    Style="{StaticResource TitlebarSymbolIcon}">
+          
+        </SymbolIcon>
+      </Button>
+
+      <Image Source="/Assets/Square44x44Logo.png" Width="24"
+             VerticalAlignment="Center"
+             />
 
       <Button Margin="16 0 184 0"
               HorizontalAlignment="Right"
               VerticalAlignment="Top"
               uwpControls:DockPanel.Dock="Right"
               Style="{StaticResource TitlebarButton}"
-              Height="32"
+              Height="48"
               Width="NaN"
               Padding="8 0"
               x:Name="PurchaseConfirmButton"
               IsEnabled="{x:Bind IsStoreAvairable, Mode=OneWay}">
-        <UIElement.RenderTransform>
-          <TranslateTransform />
-        </UIElement.RenderTransform>
         <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
                    Style="{StaticResource CaptionTextBlockStyle}"
                    TextWrapping="Wrap"
@@ -293,10 +273,10 @@
       </Button>
       <ContentControl x:Name="TitlebarContent"
                       HorizontalContentAlignment="Stretch"
-                      Margin="56 1 0 0"
+                      Margin="8 1 0 0"
                       VerticalAlignment="Top"
-                      Height="32"
-                      VerticalContentAlignment="Stretch"
+                      Height="48"
+                      VerticalContentAlignment="Stretch"                      
                       >
         <UIElement.RenderTransform>
           <TranslateTransform />
@@ -469,6 +449,12 @@
           <VisualState.Setters>
             <Setter Target="MenuRightCommandBar.MaxWidth" Value="48" />
             <Setter Target="MenuRightCommandBar.Margin" Value="0 0 0 0" />
+
+            <Setter Target="PurchaseConfirmButton.Content">
+              <Setter.Value>
+                <SymbolIcon Symbol="OutlineStar" Opacity="0.8" />
+              </Setter.Value>
+            </Setter>
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -502,15 +488,11 @@
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
                                To="-1"
-                               Storyboard.TargetName="TitlebarArea"
+                               Storyboard.TargetName="TitlebarBG"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
                                To="-1"
-                               Storyboard.TargetName="TitlebarContent"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
-                               Storyboard.TargetName="PurchaseConfirmButton"
+                               Storyboard.TargetName="TitlebarUIContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
                                To="32"
@@ -526,19 +508,15 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="TitlebarArea"
+                               To="-48"
+                               Storyboard.TargetName="TitlebarBG"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="TitlebarContent"
+                               To="-48"
+                               Storyboard.TargetName="TitlebarUIContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="PurchaseConfirmButton"
-                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
-              <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
+                               To="0"
                                Storyboard.TargetName="MyNavigtionView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
@@ -554,13 +532,11 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="MyNavigtionView.Margin"
-                    Value="0 32 0 0" />
-            <Setter Target="TitlebarArea.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
-            <Setter Target="TitlebarContent.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
-            <Setter Target="PurchaseConfirmButton.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
+                    Value="0 48 0 0" />
+            <Setter Target="TitlebarBG.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="TitlebarUIContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
             <Setter Target="MyNavigtionView.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
           </VisualState.Setters>

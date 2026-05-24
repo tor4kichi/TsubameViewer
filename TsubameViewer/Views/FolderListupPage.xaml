@@ -27,27 +27,14 @@
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:FolderListupPageViewModel">
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="1*" />
-          <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
+      <uwpControls:DockPanel>
         <StackPanel Orientation="Horizontal"
-                    Grid.Column="1">
-          <Border Visibility="{x:Bind HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                  uwpControls:DockPanel.Dock="Right">
-            <winUIControls:Segmented uwpControls:DockPanel.Dock="Right"
-                                     SelectionMode="Single"
-                                     SelectionChanged="ContentViewTypeSelector_SelectionChanged"
-                                     x:Name="ContentViewTypeSelector"
-                                     AccessKey="L">
-              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                                           IsSelected="True" />
-              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}" />
-            </winUIControls:Segmented>
-          </Border>
+                    Grid.Column="1"
+                    uwpControls:DockPanel.Dock="Right">
+          
         </StackPanel>
-        <StackPanel Orientation="Horizontal">
+        <StackPanel Orientation="Horizontal"
+                    uwpControls:DockPanel.Dock="Left">
           <TextBlock Style="{StaticResource TitlebarTextBlock}">
             <Run Text="{x:Bind DisplayCurrentPath, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
           </TextBlock>
@@ -55,7 +42,54 @@
             <Run Text="{x:Bind DisplayCurrentArchiveFolderName, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
           </TextBlock>
         </StackPanel>
-      </Grid>
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
+                        QueryIcon="Find"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        x:Name="AutoSuggestBox"
+                        Padding="0"                        
+                        Width="196"
+                        TextMemberPath="Title"
+                        UpdateTextOnSelect="False"
+                        AutoMaximizeSuggestionArea="True"
+                        IsSuggestionListOpen="True"
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        TextChanged="AutoSuggestBox_TextChanged"
+                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
+                        Loaded="PrimaryWindowCoreLayout_Loaded"
+                        Unloaded="AutoSuggestBox_Unloaded"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                        AccessKey="F"
+                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted">
+          <i:Interaction.Behaviors>
+            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
+              <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+            </core:EventTriggerBehavior>-->
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
+                                                      IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+                                     MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <AutoSuggestBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F"
+                                 Modifiers="Control"
+                                 Invoked="KeyboardAccelerator_Invoked" />
+          </AutoSuggestBox.KeyboardAccelerators>
+
+          <AutoSuggestBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+            </DataTemplate>
+          </AutoSuggestBox.ItemTemplate>
+        </AutoSuggestBox>
+
+      </uwpControls:DockPanel>
     </DataTemplate>
   </Page.Resources>
   <Grid >
@@ -162,14 +196,28 @@
             </DropDownButton.KeyboardAccelerators>
           </DropDownButton>
 
-          <StackPanel Orientation="Horizontal"
-                      Opacity="0.7"
+          <StackPanel Orientation="Horizontal"                      
                       Margin="8 0"
                       uwpControls:DockPanel.Dock="Right">
+
+            <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                    uwpControls:DockPanel.Dock="Right"
+                    Margin="8 0 16 0">
+              <winUIControls:Segmented uwpControls:DockPanel.Dock="Right"
+                                       SelectionMode="Single"
+                                       SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                       x:Name="ContentViewTypeSelector"
+                                       AccessKey="L">
+                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
+                                             IsSelected="True" />
+                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}" />
+              </winUIControls:Segmented>
+            </Border>
             
             <TextBlock VerticalAlignment="Center"
                        Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
-                       Margin="0 0 8 0">
+                       Margin="0 0 8 0"
+                       Opacity="0.7">
               <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
             </TextBlock>
             <TextBlock Margin="0 0 0 0"

@@ -115,7 +115,6 @@ public sealed partial class AppShell : UserControl
         _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
         InitializeNavigation();
         InitializeThemeChangeRequest();
-        InitializeSearchBox();
         InitializeSelection();
 
         _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
@@ -127,19 +126,16 @@ public sealed partial class AppShell : UserControl
 
         InitializeInAppNotification();
 
+        SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = AppViewBackButtonVisibility.Collapsed;
+
         var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
         coreTitleBar.ExtendViewIntoTitleBar = true;
-        coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
+        coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;        
 
         var appView = ApplicationView.GetForCurrentView();
         appView.VisibleBoundsChanged += AppView_VisibleBoundsChanged;
 
         Loaded += AppShell_Loaded;
-
-        _messenger.Register<CurrentInPageSearchTextRequestMessage>(this, (r, m) => 
-        {
-            m.Reply(AutoSuggestBox.Text);
-        });
 
         InitialziePurchase();
     }
@@ -389,7 +385,7 @@ public sealed partial class AppShell : UserControl
             TitlebarContent.Content = null;
         }
 
-        Window.Current.SetTitleBar(TitlebarArea);
+        Window.Current.SetTitleBar(TitlebarBG);
 
         // アプリメニュー表示の切替
         MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -467,12 +463,7 @@ public sealed partial class AppShell : UserControl
 
         // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
         var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
-        SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
-            isCanGoBackPage
-            ? AppViewBackButtonVisibility.Visible
-            : AppViewBackButtonVisibility.Collapsed
-            ;
-        
+        GoBackButton.IsEnabled = isCanGoBackPage;
         //BackCommand.NotifyCanExecuteChanged();
 
 
@@ -1039,59 +1030,6 @@ public sealed partial class AppShell : UserControl
 
     #endregion
 
-    #region Search Box
-
-    private void InitializeSearchBox()
-    {
-        AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
-    }
-
-
-    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
-    {
-        var textBox = AutoSuggestBox.FindDescendant<TextBox>();
-        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-        textBox.TextChanged += TextBox_TextChanged;
-    }
-
-    bool _isInputIncomplete;
-
-    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
-    {
-        _isInputIncomplete = true;
-    }
-
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (_isInputIncomplete == false)
-        {
-            (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-        }
-    }
-
-    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
-    {
-        _isInputIncomplete = false;
-        (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-    }
-
-
-
-    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
-    {
-        (sender as Control).Focus(FocusState.Keyboard);
-        args.Handled = true;
-    }
-
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        (args.Element as Control).Focus(FocusState.Keyboard);
-        args.Handled = true;
-    }
-
-    #endregion
-
     #region Busy Work
 
     private void InitializeBusyWorkUI()
@@ -1407,28 +1345,7 @@ public sealed partial class AppShell : UserControl
         }
     }
 
-    InPageSearchRequestMessage? _searchMessage;
-    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-    {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        if (!sender.Items.Any())
-        {
-            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
-        }
-        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
-    }
-
-    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
-    {
-        _vm.SearchQuerySubmitCommand.Execute(sender.Text);
-    }
-
-    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
-    {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
-    }
-
+    
     private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         try

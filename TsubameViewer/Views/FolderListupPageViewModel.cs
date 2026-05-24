@@ -328,8 +328,6 @@ public sealed partial class FolderListupPageViewModel
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         var mode = parameters.GetNavigationMode();
-        var res = _messenger.Send(new CurrentInPageSearchTextRequestMessage());
-        FilterText = res.Response;
 
         NowProcessing = true;
         try

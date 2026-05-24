@@ -42,9 +42,9 @@
       <Style TargetType="Button"
              x:Key="TitlebarButton">
         <Setter Property="Width"
-                Value="40" />
+                Value="48" />
         <Setter Property="Height"
-                Value="32" />
+                Value="40" />
         <Setter Property="CornerRadius"
                 Value="4" />
         <Setter Property="Margin"
@@ -59,9 +59,9 @@
       <Style TargetType="ToggleButton"
              x:Key="TitlebarToggleButton">
         <Setter Property="Width"
-                Value="40" />
+                Value="48" />
         <Setter Property="Height"
-                Value="32" />
+                Value="40" />
         <Setter Property="CornerRadius"
                 Value="4" />
         <Setter Property="Margin"
@@ -76,11 +76,11 @@
       <Style TargetType="TextBlock"
              x:Key="TitlebarTextBlock">
         <Setter Property="FontSize"
-                Value="12" />
+                Value="13" />
         <Setter Property="VerticalAlignment"
                 Value="Center" />
         <Setter Property="TextLineBounds"
-                Value="Tight" />
+                Value="TrimToCapHeight" />
         <Setter Property="IsHitTestVisible"
                 Value="False" />
         <Setter Property="TextTrimming"
@@ -92,8 +92,8 @@
                 Value="0.5, 0.5" />
         <Setter Property="RenderTransform">
           <Setter.Value>
-            <CompositeTransform ScaleX="0.70"
-                                ScaleY="0.70" />
+            <CompositeTransform ScaleX="0.75"
+                                ScaleY="0.75" />
           </Setter.Value>
         </Setter>
       </Style>
