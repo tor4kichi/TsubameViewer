@@ -524,15 +524,15 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
+                               To="0"
                                Storyboard.TargetName="TitlebarBG"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
+                               To="0"
                                Storyboard.TargetName="TitlebarUIContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="32"
+                               To="48"
                                Storyboard.TargetName="MyNavigationView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
