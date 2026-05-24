@@ -590,7 +590,7 @@
 
 
     <VisualStateManager.VisualStateGroups>
-
+      
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
         <VisualState>

@@ -31,6 +31,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Views.EBookControls;
@@ -242,18 +243,6 @@ public sealed partial class EPubRenderer : UserControl
         var _this = (EPubRenderer)d;
 
         using var _ = await _this._domUpdateLock.LockAsync(default);
-
-        if (_this.isFirstContent)
-        {
-            await Task.Delay(100);
-            //await Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
-            //    h => _this.SizeChanged += h,
-            //    h => _this.SizeChanged -= h
-            //    )
-            //    .Take(1)
-            //    .ToAsyncAction()
-            //    .AsTask();
-        }
         
         _this._sw.Restart();
         if (e.NewValue is XmlDocument newPageHtml)
@@ -642,6 +631,10 @@ public sealed partial class EPubRenderer : UserControl
         AppendSetVerticalBodyStyleScript,
         AppendSetHorizontalBodyStyleScript,
         AppendGetSizeListScript,
+        PushEmptyParagraphScript,
+        GetWindowWidthScript,
+        GetWindowHeightScript,
+        SetScrollPositionScript
     };
 
     private StringBuilder AppendAllScript(StringBuilder sb)
@@ -705,27 +698,73 @@ document.body.style = `overflow: hidden; width: ${webViewWidth}; max-height: ${w
 let isVertical = JSON.parse(isVerticalString.toLowerCase()) == true;
 var heightArray = [];
 var count = 0;    
-let pList = document.body.getElementsByTagName(`p`);
-let divList = document.body.getElementsByTagName(`div`);
-let spanList = document.body.getElementsByTagName(`span`);
-let imgList = document.body.getElementsByTagName(`img`);
-let tdList = document.body.getElementsByTagName(`td`);
-let allElmeentList = [...pList, ...divList, ...spanList, ...imgList, ...tdList];
 let set = new Set();
-for (var item of allElmeentList)
-{
-    var elementScrollTop = isVertical ? item.offsetTop : item.offsetLeft;
-    if (elementScrollTop == null) { continue; }
+// Inline ExtractCommonHeight for all element types
+let elements = [
+    document.body.getElementsByTagName('p'),
+    document.body.getElementsByTagName('div'),
+    document.body.getElementsByTagName('span'),
+    document.body.getElementsByTagName('img'),
+    document.body.getElementsByTagName('td')
+];
 
-    if (!set.has(elementScrollTop))
-    {
+for (let elemList of elements) {
+    for (let item of elemList) {
+        let elementScrollTop = isVertical ? item.offsetTop : item.offsetLeft;
+        if (elementScrollTop == null) { continue; }
         set.add(elementScrollTop);
     }
 }
-return JSON.stringify([...set]);
+return JSON.stringify(Array.from(set));
 };");
     }
+    private static void PushEmptyParagraphScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function PushEmptyParagraph()
+            {
+                for (var i = 0; i != 100; i++)
+                {
+                    document.body.appendChild(document.createElement(`p`));
+                }
+            }
+            """);
+    }
 
+    private static void GetWindowWidthScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function GetWindowWidth()
+            {
+                return window.innerWidth.toString();
+            }
+            """);
+    }
+
+    private static void GetWindowHeightScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function GetWindowHeight()
+            {
+                return window.innerHeight.toString();
+            }
+            """);
+    }
+
+    private static void SetScrollPositionScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function SetScrollPosition(scrollPositionString)
+            {
+                let pos = parseInt(scrollPositionString);
+                window.scrollTo(pos, 0);
+            }
+            """);
+    }
     private async Task<int[]> GetSizeListAsync(bool isVertical)
     {
         var sizeList = await WebView.InvokeScriptAsync("GetSizeList", new[] { isVertical.ToString() });
@@ -737,8 +776,9 @@ return JSON.stringify([...set]);
     private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
     {
         if (PageHtml == null) { return; }
-
+#if DEBUG
         PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("DOMContentLoaded");
+#endif
         using var _ = await _domUpdateLock.LockAsync(default);
 
 
@@ -771,8 +811,9 @@ return JSON.stringify([...set]);
             Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
         }
 
+#if DEBUG
         sw.ElapsedWrite("check vertical writting");
-
+#endif
         var columnCount = ColumnCount;
         if (IsVerticalLayout)
         {
@@ -790,7 +831,9 @@ return JSON.stringify([...set]);
             await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 8, columnCount, FontSize);
         }
 
+#if DEBUG
         sw.ElapsedWrite("check content width/height limitation.");
+#endif
         //
         // １ページの高さを求める
         // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
@@ -800,7 +843,7 @@ return JSON.stringify([...set]);
         // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
         // 
         {
-            string offsetText = IsVerticalLayout ? "offsetTop" : "offsetLeft";
+            //string offsetText = IsVerticalLayout ? "offsetTop" : "offsetLeft";
             //var sizeList = await WebView.InvokeScriptAsync("eval", new[]
             //{
             //    $@"
@@ -833,18 +876,22 @@ return JSON.stringify([...set]);
             // ページ数を求める
             // 現状は重すぎる、特にquerySelectorAllが激重、eval関係なくこれが原因
 
-            var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.Distinct().OrderBy(x => x).ToArray();
+            using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Order().ToArrayPool();
+            var sizeItemsSpan = sizeItems.ArraySegment;
+#if DEBUG
             sw.ElapsedWrite("check page sizeList.");
-            var first = sizeItems.ElementAtOrDefault(0);
-            sizeItems = sizeItems.Select(x => x - first).ToArray();
+#endif
+            var first = sizeItemsSpan.ElementAtOrDefault(0);
+            using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - first).ToArrayPool();
+            var relSizeItemsSpan = relSizeItems.ArraySegment;
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
             const int candidateSampleCount = 5;
             const int compareSampleCount = 10;
             int heroPageHeight = -1;
             int heroHitCount = -1;
-            foreach (var candidatePageSize in sizeItems.Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount))
+            foreach (var candidatePageSize in relSizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount))
             {
-                var hitCount = sizeItems.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
+                var hitCount = relSizeItemsSpan.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
                 if (hitCount > heroHitCount)
                 {
                     heroPageHeight = candidatePageSize;
@@ -852,7 +899,9 @@ return JSON.stringify([...set]);
                 }
             }
 
+#if DEBUG
             sw.ElapsedWrite("culc hero page size.");
+#endif
 
             if (pageRealSize > heroPageHeight)
             {
@@ -862,16 +911,16 @@ return JSON.stringify([...set]);
 
                 // 1ページに収まってる場合は画像のみのページかどうかをチェックする
                 var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
-                NowOnlyImageView = pCount == 0;
+                NowOnlyImageView = pCount <= 2;
                 Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
             }
             else
             {
-                var pageScrollPositions = sizeItems.Where(x => x % heroPageHeight == 0).ToArray();
+                using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x => x % heroPageHeight == 0).ToArrayPool();
 
-                _innerPageCount = pageScrollPositions.Length;
+                _innerPageCount = pageScrollPositions.Size;
                 _onePageScrollSize = heroPageHeight;
-                _webViewScrollableSize = pageScrollPositions.Last() + heroPageHeight;
+                _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
 
                 NowOnlyImageView = false;
             }
@@ -879,24 +928,20 @@ return JSON.stringify([...set]);
             TotalInnerPageCount = _innerPageCount;
 
             Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
+#if DEBUG
             sw.ElapsedWrite("culc page counts.");
+#endif
 
             // ページ最後尾にスクロール用の余白を作る
             // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
             if (_innerPageCount >= 2)
             {
-                await WebView.InvokeScriptAsync("eval", new[]
-                {
-                    $@"
-                        for (var i = 0; i < 100; i++)
-                        {{
-                            document.body.appendChild(document.createElement('p'));
-                        }}
-                        "
-                });
+                await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
             }
 
+#if DEBUG
             sw.ElapsedWrite("add padding at last page.");
+#endif
         }
 
         if (isFirstContent)
@@ -924,12 +969,15 @@ return JSON.stringify([...set]);
         CurrentInnerPage = _innerCurrentPage;
 
 
+#if DEBUG
         sw.ElapsedWrite("set innerCurrentPage");
+#endif
 
         await SetScrollPositionAsync();
 
-        sw.ElapsedWrite("set scroll position");        
-
+#if DEBUG
+        sw.ElapsedWrite("set scroll position");
+#endif
         _sw.Stop();
         Debug.WriteLine($"EPub loading time: {_sw.Elapsed.TotalSeconds:F3}");
     }
@@ -942,7 +990,7 @@ return JSON.stringify([...set]);
         double position = _innerCurrentPage * _onePageScrollSize;
 
         // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
-        await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({position:F3}, 0);" });
+        await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position:F0}" });
 
 #if DEBUG
         //if (IsVerticalLayout)
@@ -970,13 +1018,13 @@ return JSON.stringify([...set]);
 
     private async Task<double> GetPageWidth()
     {
-        var widthText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerWidth.toString()" });
+        var widthText = await WebView.InvokeScriptAsync("GetWindowWidth", []);
         return double.TryParse(widthText, out var value) ? value : 0;
     }
 
     private async Task<double> GetPageHeight()
     {
-        var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerHeight.toString()" });
+        var heightText = await WebView.InvokeScriptAsync("GetWindowHeight", []);
         return double.TryParse(heightText, out var value) ? value : 0;
     }
 

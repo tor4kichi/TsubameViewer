@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -885,8 +886,12 @@ public sealed partial class AppShell : UserControl
             return false;
         }
 
-        var currentPageType = ContentFrame.Content?.GetType();
-        if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
+        if (ContentFrame.Content == null)
+        {
+            ThrowHelper.ThrowInvalidOperationException();
+        }
+        var currentPageType = ContentFrame.Content.GetType();
+        if (!CanGoBackPageTypes.Contains(currentPageType))
         {
             Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
             return false;
@@ -896,7 +901,7 @@ public sealed partial class AppShell : UserControl
         _messenger.Send<BackNavigationRequestingMessage>(new(data));            
         if (data.IsHandled) { return false; }
 
-        return ContentFrame.CanGoBack;
+        return true;
     }
 
     async Task HandleBackRequestAsync()
@@ -943,6 +948,10 @@ public sealed partial class AppShell : UserControl
                     {
                         isRequestReset = true;
                     }
+                }
+                else
+                {
+                    isRequestReset = true;
                 }
             }
             catch
