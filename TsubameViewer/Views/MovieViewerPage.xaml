@@ -34,24 +34,15 @@
 
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:MovieViewerPageViewModel">
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto" MinWidth="0" />
-          <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{x:Bind Title, Mode=OneWay}" />
-          </TextBlock>
-        </StackPanel>
+      <uwpControls:DockPanel>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="4"
-                    HorizontalAlignment="Right">
+                    uwpControls:DockPanel.Dock="Right">
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
                      Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
                      Foreground="{ThemeResource SystemErrorTextColor}"
-                     Opacity="0"
+                     Visibility="Collapsed"
                      Style="{StaticResource TitlebarTextBlock}" />
 
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
@@ -89,7 +80,13 @@
             </SymbolIcon>
           </Button>
         </StackPanel>
-      </Grid>
+
+        <TextBlock Style="{StaticResource TitlebarTextBlock}"                   
+                   >
+          <Run Text="{x:Bind Title, Mode=OneWay}" />
+        </TextBlock>
+
+      </uwpControls:DockPanel>
     </DataTemplate>
 
     <!--
@@ -528,9 +525,9 @@
                          Margin="0 0 0 0"
                          HorizontalAlignment="Center"
                          TextWrapping="Wrap"
-                         MaxLines="1"
+                         MaxLines="3"
                          TextTrimming="CharacterEllipsis">
-          <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
+                <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
               </TextBlock>
             </uwpControls:DockPanel>
 

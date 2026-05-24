@@ -295,7 +295,7 @@
                       HorizontalContentAlignment="Stretch"
                       Margin="56 1 0 0"
                       VerticalAlignment="Top"
-                      MaxHeight="32"
+                      Height="32"
                       VerticalContentAlignment="Stretch"
                       >
         <UIElement.RenderTransform>
