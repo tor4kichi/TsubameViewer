@@ -336,11 +336,14 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         await base.OnNavigatedToAsync(parameters, ct);
     }
 
+    [ObservableProperty]
+    bool _nowLoadingPage;
 
     private async Task UpdateCurrentPage(int requestPage, CancellationToken ct)
     {
         _innerPageTotalCountChangedTcs = new TaskCompletionSource<int>();
 
+        NowLoadingPage = true;
         try
         {
             using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))
@@ -454,6 +457,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         catch (OperationCanceledException)
         {
             _innerPageTotalCountChangedTcs = null;
+            NowLoadingPage = false;
             throw;
         }
 
@@ -470,7 +474,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     _innerPageTotalCountChangedTcs.TrySetCanceled(timeoutCts.Token);
                 }))
                 {
-                    await _innerPageTotalCountChangedTcs.Task.ConfigureAwait(false);
+                    await _innerPageTotalCountChangedTcs.Task;
                 }
             }
         }
@@ -486,6 +490,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         finally
         {
             _innerPageTotalCountChangedTcs = null;
+            NowLoadingPage = false;
         }
     }
 

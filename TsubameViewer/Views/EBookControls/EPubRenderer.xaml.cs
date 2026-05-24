@@ -876,6 +876,8 @@ return JSON.stringify([...set]);
                 NowOnlyImageView = false;
             }
 
+            TotalInnerPageCount = _innerPageCount;
+
             Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
             sw.ElapsedWrite("culc page counts.");
 
@@ -919,14 +921,12 @@ return JSON.stringify([...set]);
         }
 
         _isGoNextOrPreview = false;
+        CurrentInnerPage = _innerCurrentPage;
 
 
         sw.ElapsedWrite("set innerCurrentPage");
 
         await SetScrollPositionAsync();
-
-        TotalInnerPageCount = _innerPageCount;
-        CurrentInnerPage = _innerCurrentPage;
 
         sw.ElapsedWrite("set scroll position");        
 

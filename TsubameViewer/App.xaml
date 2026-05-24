@@ -228,6 +228,23 @@
           <Visibility>Visible</Visibility>
         </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
       </uwpConv:EmptyObjectToObjectConverter>
+
+      <uwpConv:BoolToObjectConverter x:Key="TrueToDouble1Converter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
+          <x:Double>1</x:Double>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
+          <x:Double>0</x:Double>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
+      <uwpConv:BoolToObjectConverter x:Key="FalseToDouble1Converter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
+          <x:Double>0</x:Double>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
+          <x:Double>1</x:Double>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
     </ResourceDictionary>
   </Application.Resources>
 </Application>
