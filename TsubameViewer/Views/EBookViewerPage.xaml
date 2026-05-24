@@ -70,8 +70,8 @@
       <StackPanel Spacing="16" HorizontalAlignment="Right">
 
 
-        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
-                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=OverrideWritingMode}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -115,8 +115,8 @@
           <TextBlock Text="px" VerticalAlignment="Bottom" Margin="4 0 0 8" />
         </StackPanel>
 
-        <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=FontSize}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -128,8 +128,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.LeffterSpacingItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=LetterSpacing, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.LeffterSpacingItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=LetterSpacing}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -141,8 +141,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.LineHeightItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
-                  Header="{Binding Source=LineHeight, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.LineHeightItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=LineHeight}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -153,8 +153,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.RubySizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=RubyFontSize, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.RubySizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=RubyFontSize}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -168,32 +168,24 @@
           </ToolTipService.ToolTip>
         </ComboBox>
 
-        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=TwoWay}" 
-                  Header="{Binding Source=FontFamily, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" 
+                  SelectedItem="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=FontFamily}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
-          <ToolTipService.ToolTip>
-            <ToolTip >
-              <TextBlock Text="" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
         </ComboBox>
 
-        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
-                  Header="{Binding Source=RubyFontFamily, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" 
+                  SelectedItem="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=RubyFontFamily}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
-          <ToolTipService.ToolTip>
-            <ToolTip >
-              <TextBlock Text="" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
         </ComboBox>
 
 
@@ -201,7 +193,7 @@
           <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="{Binding Source=ChangeBackgroundColor, Converter={StaticResource LocalizeConverter}}" />
+              <TextBlock Text="{i18nExt:Localize Key=ChangeBackgroundColor}" />
             </Grid>
 
             <Button.Flyout>
@@ -220,7 +212,7 @@
           <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="{Binding Source=ChangeForegroundColor, Converter={StaticResource LocalizeConverter}}" />
+              <TextBlock Text="{i18nExt:Localize Key=ChangeForegroundColor}" />
             </Grid>
             <Button.Flyout>
               <Flyout Placement="Left">
@@ -235,20 +227,22 @@
         </StackPanel>
 
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Scroll}"                      
                       />
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Button}"
                       />
 
-
-
-        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
-
-        <Button Content="{Binding Source=ResetEBookSettings, Converter={StaticResource LocalizeConverter}}" 
-                HorizontalAlignment="Stretch"
-                Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}"
-                />
+        <Button Content="{i18nExt:Localize Key=ResetEBookSettings}"
+                HorizontalAlignment="Stretch">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}">
+                
+              </MenuFlyoutItem>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
       </StackPanel>
     </Flyout>
 
