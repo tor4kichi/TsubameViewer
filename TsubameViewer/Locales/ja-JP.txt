@@ -74,6 +74,7 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = {0} をアプリから取り除
 ConfirmRemoveSourceFolderFromAppDescription = この除去操作によって指定フォルダやフォルダ内アイテムが削除されることはありません。\nアプリから取り除いたフォルダは、いつでもアプリに再登録できます。
 
 FolderItemListingSettings = フォルダアイテム表示設定
+IsOpenFolderContentListingAsDefault = 「一覧表示で開く」をデフォルトに
 IsGenerateImageFileThumbnail = 画像ファイルのサムネイルを生成
 IsGenerateFolderThumbnail = フォルダのサムネイルを生成
 IsGenerateArchiveFileThumbnail = 圧縮ファイルのサムネイルを生成
@@ -213,6 +214,7 @@ ResetEBookSettings = 設定をリセットする
 
 DisplaySettings = 表示設定
 Toc = 目次
+ReadingItemsTitle = ファイル
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = フレーム画像を保存

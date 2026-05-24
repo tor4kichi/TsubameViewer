@@ -74,6 +74,7 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{
 ConfirmRemoveSourceFolderFromAppDescription = 此操作不会删除在硬盘上的文件。 \ n从应用中移除的文件夹可以再次被导入。
 
 FolderItemListingSettings = 文件夹项目显示设置
+IsOpenFolderContentListingAsDefault = 将“在图像列表中打开”设置为默认值。
 IsGenerateImageFileThumbnail = 生成文件封面
 IsGenerateFolderThumbnail = 生成文件夹封面
 IsGenerateArchiveFileThumbnail = 生成压缩包封面
@@ -213,6 +214,7 @@ ResetEBookSettings = 重新设置
 
 DisplaySettings = 显示设置
 Toc = 目录
+ReadingItemsTitle = 文件
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = 保存帧图像

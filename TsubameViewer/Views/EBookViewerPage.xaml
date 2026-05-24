@@ -580,7 +580,7 @@
 
               </ListView>
             </PivotItem>
-            <PivotItem Header="Files" Margin="0">
+            <PivotItem Header="{i18nExt:Localize Key=ReadingItemsTitle}" Margin="0">
               <ListView ItemsSource="{x:Bind _vm.CurrentBookReadingOrder, Mode=OneWay}"
                         SelectedItem="{x:Bind _vm.CurrentPage, Mode=OneWay}"
                         SelectionChanged="CurrentBookReadingOrder_SelectionChanged"

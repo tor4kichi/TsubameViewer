@@ -74,6 +74,7 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove
 ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
 
 FolderItemListingSettings = Folder item display settings
+IsOpenFolderContentListingAsDefault = Set "Open in image list" as the default.
 IsGenerateImageFileThumbnail = Generate thumbnails of image files
 IsGenerateFolderThumbnail = Generate thumbnails for folders
 IsGenerateArchiveFileThumbnail = Generate thumbnails of compressed files
@@ -213,6 +214,7 @@ ResetEBookSettings = Reset settings
 
 DisplaySettings = Display settings
 Toc = Table of contents
+ReadingItemsTitle = File
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = Save frame image

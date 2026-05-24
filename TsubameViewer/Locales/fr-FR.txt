@@ -74,6 +74,7 @@ ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer 
 ConfirmRemoveSourceFolderFromAppDescription = Cette opération ne supprime pas le dossier spécifié ou les éléments contenus à l'intérieur. \nLe dossier supprimer peut-être réinscrit dans l'application à n'importe quel moment.
 
 FolderItemListingSettings = Paramètres d'affichage des éléments de dossier
+IsOpenFolderContentListingAsDefault = Définissez « Ouvrir dans la liste des images » comme option par défaut.
 IsGenerateImageFileThumbnail = Générer les miniatures des images
 IsGenerateFolderThumbnail = Générer les miniatures pour les dossier
 IsGenerateArchiveFileThumbnail = Générer les miniatures des fichiers compressés
@@ -213,6 +214,7 @@ ResetEBookSettings = Réinitialiser les paramètres
 
 DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
+ReadingItemsTitle = déposer
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = Enregistrer l'image du cadre
