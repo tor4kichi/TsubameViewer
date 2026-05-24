@@ -251,7 +251,10 @@
               HorizontalAlignment="Right"
               VerticalAlignment="Top"
               uwpControls:DockPanel.Dock="Right"
+              Style="{StaticResource TitlebarButton}"
               Height="32"
+              Width="NaN"
+              Padding="8 0"
               x:Name="PurchaseConfirmButton"
               IsEnabled="{x:Bind IsStoreAvairable, Mode=OneWay}">
         <UIElement.RenderTransform>
@@ -290,9 +293,9 @@
       </Button>
       <ContentControl x:Name="TitlebarContent"
                       HorizontalContentAlignment="Stretch"
-                      Margin="56 0 0 0"
+                      Margin="56 1 0 0"
                       VerticalAlignment="Top"
-                      Height="32"
+                      MaxHeight="32"
                       VerticalContentAlignment="Stretch"
                       >
         <UIElement.RenderTransform>

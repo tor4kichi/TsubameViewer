@@ -46,7 +46,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
-                    Spacing="8"
+                    Spacing="4"
                     HorizontalAlignment="Right">
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
                      Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"

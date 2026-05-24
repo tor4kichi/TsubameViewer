@@ -52,7 +52,9 @@
         <Setter Property="Padding"
                 Value="0 0 0 0 " />
         <Setter Property="BorderThickness"
-                Value="0" />
+                Value="1 0 1 0" />
+        <Setter Property="Background"
+                Value="Transparent" />
       </Style>
       <Style TargetType="ToggleButton"
              x:Key="TitlebarToggleButton">
@@ -67,7 +69,9 @@
         <Setter Property="Padding"
                 Value="0 0 0 0 " />
         <Setter Property="BorderThickness"
-                Value="0" />
+                Value="1 0 1 0" />
+        <Setter Property="Background"
+                Value="Transparent" />
       </Style>
       <Style TargetType="TextBlock"
              x:Key="TitlebarTextBlock">
