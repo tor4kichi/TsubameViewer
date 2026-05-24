@@ -152,12 +152,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Unloaded += MovieViewerPage_Unloaded;
 
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
+
+        _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+        {
+            _mouseCursorAutoHideTimer?.Stop();
+            ShowMouseCursor();
+            MediaPlayer.Pause();
+        });
     }
 
 
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+
         MediaPlayer.Pause();
         _mouseCursorAutoHideTimer.Stop();
         ShowMouseCursor();
