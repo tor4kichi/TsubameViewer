@@ -236,17 +236,44 @@
       <StackPanel Orientation="Horizontal"
                   Margin="8 0 8 0"
                   uwpControls:DockPanel.Dock="Left"
-                  Spacing="8">
+                  Spacing="8"
+                  x:Name="TitleIconAndTextContainer_Wide">
         <Image Source="/Assets/Square44x44Logo.png"
                Width="24"
                VerticalAlignment="Center"
                uwpControls:DockPanel.Dock="Left" />
         <TextBlock x:Name="WindowTitleTextBlock"
                    VerticalAlignment="Center"
-                   TextLineBounds="Tight"
+                   TextLineBounds="Tight"                   
                    TextTrimming="CharacterEllipsis"
                    Style="{StaticResource TitlebarTextBlock}"
-                   MaxWidth="300"/>
+                   MaxWidth="300"
+                   ToolTipService.ToolTip="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                   ToolTipService.Placement="Bottom" />
+      </StackPanel>
+
+      <StackPanel x:Name="TitleIconAndTextContainer_Nallow"
+                  Visibility="Collapsed"
+                  VerticalAlignment="Center">
+        <muxc:DropDownButton Height="40" Background="Transparent"
+                             BorderThickness="1 0 1 0">
+          <Image Source="/Assets/Square44x44Logo.png"
+                 Width="24"
+                 VerticalAlignment="Center"
+                 uwpControls:DockPanel.Dock="Left" />
+
+          <muxc:DropDownButton.Flyout>
+            <Flyout>
+              <TextBlock x:Name="WindowTitleTextBlock_Nallow"
+                         Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                         VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis"
+                         Style="{StaticResource TitlebarTextBlock}"
+                         TextWrapping="Wrap"
+                         MaxWidth="300"/>
+            </Flyout>
+          </muxc:DropDownButton.Flyout>
+        </muxc:DropDownButton>
       </StackPanel>
 
       <StackPanel Orientation="Horizontal"
@@ -480,6 +507,11 @@
           <VisualState.Setters>
             <Setter Target="MyNavigationView.PaneDisplayMode"
                     Value="Top" />
+            <Setter Target="TitleIconAndTextContainer_Wide.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="TitleIconAndTextContainer_Nallow.Visibility"
+                    Value="Visible" />
+
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

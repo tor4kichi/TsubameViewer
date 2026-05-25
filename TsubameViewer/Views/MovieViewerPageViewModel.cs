@@ -193,52 +193,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 if (imageSource.StorageItem is StorageFile file)
                 {
                     MovieFile = file;
+                    Title = MovieFile.Name;
                 }
-                else
-                {
-                    
-                }
-
-                //_currentImageSource = imageSource;
-                //_imageCollectionContext = imageCollectionContext;
-
-                //DisplaySortTypeInheritancePath = null;
-
-                //var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
-                //if (settings != null)
-                //{
-                //    SelectedFileSortType = settings.Sort;
-                //}
-                //else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort && parentSort.ChildItemDefaultSort != null)
-                //{
-                //    DisplaySortTypeInheritancePath = parentSort.Path;
-                //    SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
-                //}
-                //else
-                //{
-                //    SelectedFileSortType = DefaultFileSortType;
-                //}
-
-                //_CurrentImageIndex = 0;
-
-                //if (string.IsNullOrEmpty(firstDisplayPageName)
-                //    && SupportedFileTypesHelper.IsSupportedImageFileExtension(newPath)
-                //    )
-                //{
-                //    firstDisplayPageName = Path.GetFileName(newPath);
-                //}
-
-                //if (imageCollectionContext is OnlyOneFileImageCollectionContext)
-                //{
-                //    IfAllFilesWannaWatchThenRegistrationFolderAtApp = true;
-                //}
-                //else
-                //{
-                //    IfAllFilesWannaWatchThenRegistrationFolderAtApp = false;
-                //}
-
-                //await RefreshItems(imageSource, imageCollectionContext, ct);
-
             }, ct);
         }
         else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
