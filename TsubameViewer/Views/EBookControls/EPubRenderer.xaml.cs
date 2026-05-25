@@ -934,10 +934,7 @@ return JSON.stringify(Array.from(set));
 
             // ページ最後尾にスクロール用の余白を作る
             // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
-            if (_innerPageCount >= 2)
-            {
-                await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
-            }
+            await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
 
 #if DEBUG
             sw.ElapsedWrite("add padding at last page.");
