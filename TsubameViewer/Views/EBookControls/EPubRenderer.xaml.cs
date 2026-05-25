@@ -1,6 +1,7 @@
 ﻿using ColorCode.Compilation.Languages;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
+using R3.Collections;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -768,7 +769,7 @@ return JSON.stringify(Array.from(set));
     private async Task<int[]> GetSizeListAsync(bool isVertical)
     {
         var sizeList = await WebView.InvokeScriptAsync("GetSizeList", new[] { isVertical.ToString() });
-        Debug.WriteLine(sizeList);
+        //Debug.WriteLine(sizeList);
         return JsonSerializer.Deserialize<int[]>(sizeList)!;        
     }
 
@@ -881,31 +882,47 @@ return JSON.stringify(Array.from(set));
 #if DEBUG
             sw.ElapsedWrite("check page sizeList.");
 #endif
-            var first = sizeItemsSpan.ElementAtOrDefault(0);
-            using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - first).ToArrayPool();
+            var offset = sizeItemsSpan.ElementAtOrDefault(0);
+            using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - offset).ToArrayPool();
             var relSizeItemsSpan = relSizeItems.ArraySegment;
+            Debug.WriteLine($"offset: {offset}");
+            Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
             const int candidateSampleCount = 5;
             const int compareSampleCount = 10;
             int heroPageHeight = -1;
             int heroHitCount = -1;
-            foreach (var candidatePageSize in relSizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount))
+            foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
             {
-                var hitCount = relSizeItemsSpan.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
+                var hitCount = relSizeItemsSpan.TakeLast(compareSampleCount).Count(x => 
+                {
+                    // レイアウト計算が端末ごとに異なる
+                    // 切りのいい数字が来ることが期待できないため端数を許容したい
+                    // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
+                    // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
+                    var div = x / (double)candidatePageSize;
+                    var small = div % 1;
+                    return small > 0.95 || small < 0.05;
+                });
                 if (hitCount > heroHitCount)
                 {
                     heroPageHeight = candidatePageSize;
                     heroHitCount = hitCount;
                 }
+
+                Debug.WriteLine($"candidatePageSize: {candidatePageSize} hitCount: {hitCount}");
             }
 
 #if DEBUG
             sw.ElapsedWrite("culc hero page size.");
 #endif
-
-            if (pageRealSize > heroPageHeight)
+            if (heroPageHeight == -1)
             {
-                _innerPageCount = 1;
+                heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
+            }
+            if (pageRealSize > relSizeItemsSpan[^1])
+            {
+                _innerPageCount = relSizeItemsSpan.Count;
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = heroPageHeight;
 
@@ -913,11 +930,32 @@ return JSON.stringify(Array.from(set));
                 var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
                 NowOnlyImageView = pCount <= 2;
                 Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
+                _innerPageScrollPositions.Clear();
+                _innerPageScrollPositions.AddRange(relSizeItemsSpan);
             }
             else
             {
-                using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x => x % heroPageHeight == 0).ToArrayPool();
+                double _lastSize = -1;
+                using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
+                    {
+                        // 端数
+                        var div = x / (double)heroPageHeight;
+                        var small = div % 1;
+                        return small > 0.95 || small < 0.05; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
+                    })
+                    .Where(x => 
+                    {
+                        if (x == 0) { return true; }
+                        // ページサイズより小さいページ位置はスキップ
+                        var lastSize = _lastSize;
+                        _lastSize = x;
+                        return x - lastSize > heroPageHeight / 2;
+                    }).ToArrayPool();
 
+                Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
+
+                _innerPageScrollPositions.Clear();
+                _innerPageScrollPositions.AddRange(pageScrollPositions.ArraySegment);
                 _innerPageCount = pageScrollPositions.Size;
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
@@ -980,12 +1018,12 @@ return JSON.stringify(Array.from(set));
     }
 
 
-
+    List<int> _innerPageScrollPositions = [];
 
     private async Task SetScrollPositionAsync()
     {
-        double position = _innerCurrentPage * _onePageScrollSize;
-
+        double position = _innerPageScrollPositions[_innerCurrentPage];
+        Debug.WriteLine(position);
         // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
         await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position:F0}" });
 
