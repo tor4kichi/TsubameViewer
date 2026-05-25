@@ -725,7 +725,7 @@ return JSON.stringify(Array.from(set));
 """            
             function PushEmptyParagraph()
             {
-                for (var i = 0; i != 100; i++)
+                for (var i = 0; i != 200; i++)
                 {
                     document.body.appendChild(document.createElement(`p`));
                 }
@@ -877,7 +877,7 @@ return JSON.stringify(Array.from(set));
             // ページ数を求める
             // 現状は重すぎる、特にquerySelectorAllが激重、eval関係なくこれが原因
 
-            using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Order().ToArrayPool();
+            using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Distinct().Order().ToArrayPool();
             var sizeItemsSpan = sizeItems.ArraySegment;
 #if DEBUG
             sw.ElapsedWrite("check page sizeList.");
@@ -889,7 +889,7 @@ return JSON.stringify(Array.from(set));
             Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
             const int candidateSampleCount = 5;
-            const int compareSampleCount = 10;
+            const int compareSampleCount = 30; // サンプル少ないと誤検出が増える
             int heroPageHeight = -1;
             int heroHitCount = -1;
             foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
@@ -922,7 +922,7 @@ return JSON.stringify(Array.from(set));
             }
             if (pageRealSize > relSizeItemsSpan[^1])
             {
-                _innerPageCount = relSizeItemsSpan.Count;
+                _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize).Count();
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = heroPageHeight;
 
@@ -931,14 +931,14 @@ return JSON.stringify(Array.from(set));
                 NowOnlyImageView = pCount <= 2;
                 Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
                 _innerPageScrollPositions.Clear();
-                _innerPageScrollPositions.AddRange(relSizeItemsSpan);
+                _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize));
             }
             else
             {
-                double _lastSize = -1;
+                int _lastSize = -1;
+                float _allowableError = heroPageHeight / 1.05f;
                 using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
                     {
-                        // 端数
                         var div = x / (double)heroPageHeight;
                         var small = div % 1;
                         return small > 0.95 || small < 0.05; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
@@ -949,7 +949,8 @@ return JSON.stringify(Array.from(set));
                         // ページサイズより小さいページ位置はスキップ
                         var lastSize = _lastSize;
                         _lastSize = x;
-                        return x - lastSize > heroPageHeight / 2;
+                        Debug.WriteLine(x - lastSize);
+                        return x - lastSize > _allowableError;
                     }).ToArrayPool();
 
                 Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
@@ -972,7 +973,10 @@ return JSON.stringify(Array.from(set));
 
             // ページ最後尾にスクロール用の余白を作る
             // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
-            await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
+            if (!NowOnlyImageView)
+            {
+                await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
+            }
 
 #if DEBUG
             sw.ElapsedWrite("add padding at last page.");
