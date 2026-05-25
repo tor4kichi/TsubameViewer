@@ -32,14 +32,14 @@ namespace TsubameViewer.Views;
 
 public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 {
-    public DataTemplate? GetHeader()
-    {
-        return null;
-    }
-
     public DataTemplate? GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.CurrentFolderItem).Select(x => x?.Name ?? "");
     }
 
     internal readonly EBookViewerPageViewModel _vm;

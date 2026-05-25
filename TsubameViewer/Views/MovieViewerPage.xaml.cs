@@ -82,6 +82,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.MovieFile).Select(x => x?.Name ?? "");
+    }
 
     internal readonly MovieViewerPageViewModel _vm;
     private readonly IMessenger _messenger;

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI.Controls;
+using R3;
 using System;
 using System.Linq;
 using TsubameViewer.ViewModels;
@@ -17,6 +18,11 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
     public DataTemplate? GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return R3.Observable.Return("FolderOrArchiveRestructure".Translate());
     }
 
     public FolderOrArchiveRestructurePage()

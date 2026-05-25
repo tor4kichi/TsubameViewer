@@ -26,6 +26,11 @@ public sealed partial class SettingsPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return R3.Observable.Return("Settings".Translate());
+    }
+
     public SettingsPage()
     {
         this.InitializeComponent();

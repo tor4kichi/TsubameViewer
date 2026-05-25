@@ -81,9 +81,7 @@
           </Button>
         </StackPanel>
 
-        <TextBlock Style="{StaticResource TitlebarTextBlock}">
-          <Run Text="{x:Bind Title, Mode=OneWay}" />
-        </TextBlock>
+        <Border />
 
       </uwpControls:DockPanel>
     </DataTemplate>

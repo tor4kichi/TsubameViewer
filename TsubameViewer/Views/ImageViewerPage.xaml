@@ -55,9 +55,6 @@
           </Button>
         </StackPanel>
         <StackPanel Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-              <Run Text="{Binding Title, Mode=OneWay}" />
-          </TextBlock>
         </StackPanel>
       </Grid>
     </DataTemplate>

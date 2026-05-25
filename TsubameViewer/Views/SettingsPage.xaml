@@ -20,9 +20,6 @@
                   x:DataType="vm:SettingsPageViewModel">
       <StackPanel Orientation="Horizontal"
                   Spacing="8">
-        <TextBlock Style="{StaticResource TitlebarTextBlock}">
-        <Run Text="TsubameViewer" />
-        </TextBlock>
       </StackPanel>
     </DataTemplate>
     

@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -34,6 +35,11 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     public DataTemplate? GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return Observable.Return(nameof(TsubameViewer));
     }
 
     public SourceStorageItemsPage()

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +19,7 @@ using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -25,6 +27,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
 
 #nullable enable
 namespace TsubameViewer.Views;
@@ -34,6 +37,12 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     public DataTemplate? GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+            .Select(x => UriHelper.ToHumanReadable(x));
     }
 
     public FolderListupPage()

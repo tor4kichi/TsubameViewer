@@ -139,8 +139,6 @@ public sealed class SourceStorageItemsPageViewModel
             return;
         }
 
-        ApplicationView.GetForCurrentView().Title = nameof(TsubameViewer);
-
         if (!_foldersInitialized)
         {
             _foldersInitialized = true;

@@ -27,11 +27,6 @@
 
         </StackPanel>
         <StackPanel Orientation="Horizontal">
-          <TextBlock TextTrimming="CharacterEllipsis"
-                     FontSize="12"
-                     IsHitTestVisible="False">
-      <Run Text="{Binding Title, Mode=OneWay}" />
-          </TextBlock>
         </StackPanel>
       </Grid>
     </DataTemplate>

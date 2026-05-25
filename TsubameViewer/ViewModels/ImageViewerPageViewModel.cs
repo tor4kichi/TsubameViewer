@@ -196,8 +196,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
-    private ApplicationView _appView;    
-
     public ApplicationSettings ApplicationSettings { get; }
     public ImageViewerSettings ImageViewerSettings { get; }
 
@@ -278,8 +276,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _DisplayImages_0 = _displayImagesSingle[0];
         _DisplayImages_1 = _displayImagesSingle[1];
         _DisplayImages_2 = _displayImagesSingle[2];
-
-        _appView = ApplicationView.GetForCurrentView();
 
         SelectedFileSortType = DefaultFileSortType;
        
@@ -414,11 +410,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     Images = default;
 
-                    _appView.Title = Title = imageCollectionContext.Name;
-
                     _currentImageSource = imageSource;
                     _imageCollectionContext = imageCollectionContext;
 
+                    Title = _imageCollectionContext.Name;
                     DisplaySortTypeInheritancePath = null;
 
                     var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
@@ -481,7 +476,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         Images = default;
                         _CurrentImageIndex = 0;
 
-                        _appView.Title = albam.Name;
                         Title = albam.Name;
 
                         DisplaySortTypeInheritancePath = null;

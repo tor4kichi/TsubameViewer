@@ -233,10 +233,21 @@
         </SymbolIcon>
       </Button>
 
-      
-      <Image Source="/Assets/Square44x44Logo.png" Width="24"
-             VerticalAlignment="Center"
-             />
+      <StackPanel Orientation="Horizontal"
+                  Margin="8 0 8 0"
+                  uwpControls:DockPanel.Dock="Left"
+                  Spacing="8">
+        <Image Source="/Assets/Square44x44Logo.png"
+               Width="24"
+               VerticalAlignment="Center"
+               uwpControls:DockPanel.Dock="Left" />
+        <TextBlock x:Name="WindowTitleTextBlock"
+                   VerticalAlignment="Center"
+                   TextLineBounds="Tight"
+                   TextTrimming="CharacterEllipsis"
+                   Style="{StaticResource TitlebarTextBlock}"
+                   MaxWidth="300"/>
+      </StackPanel>
 
       <StackPanel Orientation="Horizontal"
                   Margin="16 0 184 0"

@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
 using I18NPortable;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -29,6 +30,11 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
     public DataTemplate GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {        
+        return _vm.ObservePropertyChanged(x => x.SearchText).Select(x => "SearchResultWith".Translate(x));
     }
 
     private readonly SearchResultPageViewModel _vm;

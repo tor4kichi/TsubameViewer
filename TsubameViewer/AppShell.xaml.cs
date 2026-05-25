@@ -10,6 +10,7 @@ using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using R3;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,7 @@ namespace TsubameViewer.Views;
 public interface ITitlebarContentAware
 {
     DataTemplate? GetContent();
+    R3.Observable<string> ObserveTitleChanged();
 }
 
 [ObservableObject]
@@ -432,11 +434,25 @@ public sealed partial class AppShell : UserControl
         var frame = (Frame)sender;
         Window.Current.SetTitleBar(null);
 
-        if (frame.Content is ITitlebarContentAware tbContent
-            && tbContent.GetContent() is { } content)
+        if (frame.Content is ITitlebarContentAware tbContent)
         {
-            TitlebarContent.ContentTemplate = content;
-            TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+            if (tbContent.GetContent() is { } content)
+            {
+                TitlebarContent.ContentTemplate = content;
+                TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+            }
+
+            if (tbContent.ObserveTitleChanged() is { } observe)
+            {
+                var page = (Page)frame.Content;
+                observe.Subscribe(title => 
+                {
+                    title ??= "";
+                    WindowTitleTextBlock.Text = title;
+                    ApplicationView.GetForCurrentView().Title = title;
+                })  
+                .RegisterTo(page.GetCancellationTokenOnNavigatingFrom());
+            }
         }
         else
         {

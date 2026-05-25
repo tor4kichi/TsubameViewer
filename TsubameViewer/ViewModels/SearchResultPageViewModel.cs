@@ -148,7 +148,6 @@ public sealed partial class SearchResultPageViewModel
     async Task ProcessSearchQueryAsync(string q, CancellationToken ct)
     {
         SearchText = q;
-        ApplicationView.GetForCurrentView().Title = "SearchResultWith".Translate($"\"{q}\"");
         Dictionary<string, ItemsGroupedByFolderViewModel> groupByDir = [];
         SearchResultItems.Clear();
         try

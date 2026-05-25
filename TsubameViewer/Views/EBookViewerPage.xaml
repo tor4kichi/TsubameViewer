@@ -39,9 +39,6 @@
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0"
                     Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{Binding Title, Mode=OneWay}" />
-          </TextBlock>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
           <Button Style="{StaticResource TitlebarButton}"

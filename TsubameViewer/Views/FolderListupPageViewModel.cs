@@ -385,8 +385,6 @@ public sealed partial class FolderListupPageViewModel
                     FolderLastIntractItem  = null;
                 }
             }
-
-            ApplicationView.GetForCurrentView().Title = _imageCollectionContext.Name;
         }
         finally
         {

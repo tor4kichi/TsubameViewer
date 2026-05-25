@@ -51,12 +51,6 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" 
                     uwpControls:DockPanel.Dock="Left">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{x:Bind DisplayCurrentPath, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
-          </TextBlock>
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-             <Run Text="{x:Bind DisplayCurrentArchiveFolderName, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
-          </TextBlock>
         </StackPanel>
 
         <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"

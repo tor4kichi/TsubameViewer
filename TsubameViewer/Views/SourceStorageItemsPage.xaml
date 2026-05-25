@@ -25,10 +25,6 @@
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SourceStorageItemsPageViewModel">
       <uwpControls:DockPanel>
-        <TextBlock Style="{StaticResource TitlebarTextBlock}"
-                   uwpControls:DockPanel.Dock="Left">
-            <Run Text="TsubameViewer" />
-        </TextBlock>
 
         <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
                         QueryIcon="Find"

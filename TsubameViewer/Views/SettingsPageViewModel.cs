@@ -226,7 +226,6 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         }
 
         _IsThumbnailDeleteButtonActive.Value = true;
-        ApplicationView.GetForCurrentView().Title = "Settings".Translate();
         _ = RefreshThumbnailFilesSizeAsync(ct);
         // base.OnNavigatedToAsync(parameters, ct);
 

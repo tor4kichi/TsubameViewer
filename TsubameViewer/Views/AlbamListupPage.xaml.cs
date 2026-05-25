@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using I18NPortable;
+using R3;
 using System.Threading;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -12,14 +14,14 @@ namespace TsubameViewer.Views;
 
 public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
 {
-    public DataTemplate? GetHeader()
+    public DataTemplate? GetContent()
     {
         return null;
     }
 
-    public DataTemplate? GetContent()
+    public R3.Observable<string> ObserveTitleChanged()
     {
-        return null;
+        return R3.Observable.Return("Albam".Translate());
     }
 
     private readonly AlbamListupPageViewModel _vm;

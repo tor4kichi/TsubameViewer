@@ -27,6 +27,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
 using Windows.System;
@@ -74,6 +75,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public DataTemplate? GetContent()
     {
         return TitlebarContent;
+    }
+
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+            .Select(x => UriHelper.ToHumanReadable(x));
     }
 
     private readonly ImageListupPageViewModel _vm;

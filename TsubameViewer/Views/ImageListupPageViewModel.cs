@@ -419,8 +419,6 @@ public sealed partial class ImageListupPageViewModel
                     ImageLastIntractItem = 0;
                 }
             }
-
-            ApplicationView.GetForCurrentView().Title = _imageCollectionContext?.Name ?? CurrentFolderItem?.Name ?? nameof(TsubameViewer);
         }
         finally
         {
@@ -508,6 +506,7 @@ public sealed partial class ImageListupPageViewModel
         using var lockReleaser = await _NavigationLock.LockAsync(ct);
 
         HasFileItem = false;
+        DisplayCurrentPath = ""; 
 
         // 表示情報の解決
         ClearContent();
@@ -573,6 +572,7 @@ public sealed partial class ImageListupPageViewModel
         using var lockReleaser = await _NavigationLock.LockAsync(ct);
 
         HasFileItem = false;
+        DisplayCurrentPath = "";
         ClearContent();
         if (Guid.TryParse(albamIdString, out Guid albamId) is false)
         {

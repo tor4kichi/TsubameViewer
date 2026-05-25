@@ -193,7 +193,6 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 if (imageSource.StorageItem is StorageFile file)
                 {
                     MovieFile = file;
-                    ApplicationView.GetForCurrentView().Title = Title = file.Name;
                 }
                 else
                 {

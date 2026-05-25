@@ -28,12 +28,6 @@
 
         </StackPanel>
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
-          <TextBlock TextTrimming="CharacterEllipsis"
-                     FontSize="12"
-                     IsHitTestVisible="False"
-                     VerticalAlignment="Center">
-            <Run Text="{x:Bind SearchText, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='SearchResultWith'}" />
-          </TextBlock>
         </StackPanel>
 
         <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
