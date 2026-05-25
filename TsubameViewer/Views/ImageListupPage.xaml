@@ -54,6 +54,7 @@
         </StackPanel>
 
         <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
+                        Text="{x:Bind FilterText, Mode=TwoWay}"
                         QueryIcon="Find"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"

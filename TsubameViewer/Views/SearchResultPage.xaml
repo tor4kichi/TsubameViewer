@@ -30,7 +30,8 @@
         <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
         </StackPanel>
 
-        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=Search_FromAll}"
+                        Text="{x:Bind FilterText, Mode=TwoWay}"
                         QueryIcon="Find"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"

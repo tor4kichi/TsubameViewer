@@ -26,7 +26,7 @@
                   x:DataType="vm:SourceStorageItemsPageViewModel">
       <uwpControls:DockPanel>
 
-        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=Search_FromAll}"
                         QueryIcon="Find"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center"

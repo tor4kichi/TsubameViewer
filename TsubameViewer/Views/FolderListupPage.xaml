@@ -44,6 +44,7 @@
                         Padding="0"                        
                         Width="196"
                         TextMemberPath="Title"
+                        Text="{x:Bind FilterText, Mode=TwoWay}"
                         UpdateTextOnSelect="False"
                         AutoMaximizeSuggestionArea="True"
                         IsSuggestionListOpen="True"

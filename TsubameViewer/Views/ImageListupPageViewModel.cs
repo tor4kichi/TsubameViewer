@@ -80,8 +80,8 @@ public sealed partial class ImageListupPageViewModel
 
     public void Receive(InPageSearchRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     public Visibility NotEmptyToVisible(string s)

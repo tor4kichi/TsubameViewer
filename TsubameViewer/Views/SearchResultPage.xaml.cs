@@ -145,23 +145,22 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
     InPageSearchRequestMessage? _searchMessage;
     private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        if (!sender.Items.Any())
-        {
-            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
-        }
-        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        //if (!sender.Items.Any())
+        //{
+        //    sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        //}
+        //sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
     }
 
     private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
-        _searchContext.SearchQuerySubmitCommand.Execute(sender.Text);
+        //_searchContext.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
     private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));
+        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
 

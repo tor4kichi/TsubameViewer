@@ -34,8 +34,8 @@ public sealed partial class SearchResultPageViewModel
 
     public void Receive(SearchQuerySubmitedRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     public Visibility NotEmptyToVisible(string s)
@@ -131,13 +131,7 @@ public sealed partial class SearchResultPageViewModel
             throw new Exception();
         }
 
-        this.ObservePropertyChanged(x => x.FilterText)
-            .ThrottleLast(TimeSpan.FromSeconds(0.25))
-            .SubscribeAwait(this, async (s, state, ct) => 
-            {
-                await state.ProcessSearchQueryAsync(s, ct);
-            }, awaitOperation: AwaitOperation.Switch)
-            .RegisterTo(ct);
+        _ = ProcessSearchQueryAsync(q, ct);
 
         _messenger.Register<SearchQuerySubmitedRequestMessage>(this);
 

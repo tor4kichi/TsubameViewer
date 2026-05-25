@@ -54,8 +54,8 @@ public sealed partial class FolderListupPageViewModel
 {
     public void Receive(InPageSearchRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     [ObservableProperty]
