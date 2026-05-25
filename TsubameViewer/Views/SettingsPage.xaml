@@ -1,25 +1,43 @@
-﻿<Page
-    x:Class="TsubameViewer.Views.SettingsPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:TsubameViewer.Views"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-  xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
-  xmlns:tt="using:TsubameViewer.Views.TemplateSelector" 
-  xmlns:wst="using:WindowsStateTriggers"
-  xmlns:vm="using:TsubameViewer.ViewModels"
-  xmlns:i18Ext="using:I18NPortable.Xaml.Extensions" xmlns:winui="using:Microsoft.UI.Xaml.Controls" xmlns:sss="using:Windows.Globalization.NumberFormatting"
+﻿<Page x:Class="TsubameViewer.Views.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="using:TsubameViewer.Views"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:tt="using:TsubameViewer.Views.TemplateSelector"
+      xmlns:wst="using:WindowsStateTriggers"
+      xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:i18Ext="using:I18NPortable.Xaml.Extensions"
+      xmlns:winui="using:Microsoft.UI.Xaml.Controls"
+      xmlns:sss="using:Windows.Globalization.NumberFormatting"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       mc:Ignorable="d"
-    Background="{ThemeResource ApplicationContentBackgroundBrush}">
-  
+      Background="{ThemeResource ApplicationContentBackgroundBrush}">
   <Page.Resources>
-
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SettingsPageViewModel">
       <StackPanel Orientation="Horizontal"
-                  Spacing="8">
+                  Spacing="8"                   
+                  HorizontalAlignment="Right">
+        <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyToClipboard}"
+                Command="{x:Bind AppInfoCopyToClipboard}"
+                Style="{StaticResource TitlebarButton}">
+          <SymbolIcon Symbol="Copy" />
+        </Button>
+        <TextBlock Text="{x:Bind ReportUserEnvString}"
+                   IsTextSelectionEnabled="True"
+                   HorizontalAlignment="Right"
+                   TextAlignment="Right"
+                   Opacity="0.7"                   >
+          <TextBlock.ContextFlyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}"
+                              Command="{x:Bind AppInfoCopyToClipboard}" />
+            </MenuFlyout>
+          </TextBlock.ContextFlyout>
+        </TextBlock>
+
       </StackPanel>
     </DataTemplate>
     
@@ -175,27 +193,6 @@
   </Page.Resources>
   <Grid>
     <uwpControls:DockPanel>
-      <Grid uwpControls:DockPanel.Dock="Top"
-            Padding="0 16 0 8"
-            Width="600"
-            BorderBrush="{ThemeResource SystemBaseLowColor}"
-            BorderThickness="0 0 0 1">
-        <TextBlock Text="{Binding Source=SettingsPageTitle, Converter={StaticResource LocalizeConverter}}"
-                   Style="{StaticResource SubtitleTextBlockStyle}"
-                   IsTextSelectionEnabled="True" />
-
-        <TextBlock Text="{x:Bind _vm.ReportUserEnvString}" IsTextSelectionEnabled="True" HorizontalAlignment="Right"
-                   TextAlignment="Right"
-                   Opacity="0.7"
-                   FontSize="15"
-                   >
-          <TextBlock.ContextFlyout>
-            <MenuFlyout>
-              <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}" Command="{x:Bind _vm.AppInfoCopyToClipboard}" />
-            </MenuFlyout>
-          </TextBlock.ContextFlyout>
-        </TextBlock>
-      </Grid>
 
       <ScrollViewer>
         <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
@@ -203,8 +200,8 @@
                         ItemTemplate="{StaticResource SettingsGroupTemplate}"
                       Margin="32 16"
                         IsTabStop="False"
-                        HorizontalAlignment="Center"
-                        Width="600"                        
+                        HorizontalAlignment="Stretch"
+                        MaxWidth="600"                        
                       >
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
