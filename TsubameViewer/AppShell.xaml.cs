@@ -839,6 +839,13 @@ public sealed partial class AppShell : UserControl
                     return;
                 }
 
+                if (OpenWithViewerFramePageTypes.Any(x => x.Name == currentEntry.PageName))
+                {
+                    Debug.WriteLine("[NavigationRestore] skip restore page.");
+                    await ResetNavigationAsync();
+                    return;
+                }
+
                 var backStack = await navigationManager.GetBackNavigationEntriesAsync();
                 if (CanGoBackPageTypes.Any(x => x.Name == currentEntry.PageName)
                     && (backStack == null || backStack.Length == 0))
