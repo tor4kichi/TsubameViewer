@@ -175,6 +175,12 @@ public sealed partial class AppShell : UserControl
                 Tooltip = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "Settings".Translate(),
+                Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
+                Icon = new FluentIconElement(FluentSymbol.Settings24),
             }
         };
 
@@ -197,6 +203,12 @@ public sealed partial class AppShell : UserControl
                 Title = "RefreshLatest".Translate(),
                 Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
                 Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "Settings".Translate(),
+                Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
+                Icon = new FluentIconElement(FluentSymbol.Settings24),
             }
         };
     }

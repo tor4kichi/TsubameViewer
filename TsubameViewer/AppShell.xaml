@@ -171,7 +171,7 @@
                          FooterMenuItemsSource="{x:Bind _footerItemsForTop}"
                          PaneDisplayMode="{x:Bind ToPaneDisplayMode(_vm.ApplicationSettings.IsAppMenuShowWithLeft), Mode=OneWay}"
                          OpenPaneLength="200"
-                         IsSettingsVisible="True"
+                         IsSettingsVisible="False"
                          ItemInvoked="MyNavigationView_ItemInvoked"
                          IsBackButtonVisible="Collapsed"
                          XYFocusDownNavigationStrategy="Projection"
