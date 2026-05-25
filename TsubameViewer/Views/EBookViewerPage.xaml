@@ -516,34 +516,33 @@
           <ThemeShadow />
         </Grid.Shadow>
         <uwpControls:DockPanel>
-          <ContentControl Tapped="CoverImage_Tapped"
-                          IsTabStop="False"
-                          uwpControls:DockPanel.Dock="Top"
-                          HorizontalAlignment="Center">
-            <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}"
-                   Margin="0 8"
-                   MaxHeight="320"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Top"
-                   Stretch="Uniform"
-                   Translation="0, 0, 8">
-              <UIElement.Shadow>
-                <ThemeShadow />
-              </UIElement.Shadow>
-            </Image>
-          </ContentControl>
-          <Pivot Padding="0"
+          <ScrollViewer Padding="0"
                  Margin="0"
-                 Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-                 FlowDirection="RightToLeft">
-            <PivotItem Header="{i18nExt:Localize Key=Toc}"                        
-                       Padding="0" Margin="0">
+                 FlowDirection="RightToLeft"
+                        x:Name="TocItemsContainer">
+            <StackPanel Padding="0 0 0 32">
+              <Border uwpControls:DockPanel.Dock="Top"
+                      Translation="0, 0, 16"
+                      Margin="0 16 0 0">
+                <Border.Shadow>
+                  <ThemeShadow />
+                </Border.Shadow>
+                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}"
+                       Stretch="Uniform"
+                       Height="240">
+                </Image>
+              </Border>
               <ListView x:Name="TocItemsListView"
                         ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
                         SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
                         SelectionMode="Single"
                         SingleSelectionFollowsFocus="False"
-                        Padding="0 32 4 27">
+                        Padding="0 16 4 27"                        
+                        FlowDirection="RightToLeft">
+                <ListView.Header>
+                  <TextBlock Text="{i18nExt:Localize Key=Toc}"
+                             Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0 0 0"/>
+                </ListView.Header>
                 <ListView.ItemContainerTransitions>
                   <TransitionCollection />
                 </ListView.ItemContainerTransitions>
@@ -566,20 +565,24 @@
                 </i:Interaction.Behaviors>
 
               </ListView>
-            </PivotItem>
-            <PivotItem Header="{i18nExt:Localize Key=ReadingItemsTitle}" Margin="0">
               <ListView ItemsSource="{x:Bind _vm.CurrentBookReadingOrder, Mode=OneWay}"
                         SelectedItem="{x:Bind _vm.CurrentPage, Mode=OneWay}"
                         SelectionChanged="CurrentBookReadingOrder_SelectionChanged"
-                        HorizontalAlignment="Stretch">
+                        HorizontalAlignment="Stretch"
+                        FlowDirection="RightToLeft">
+                <ListView.Header>
+                  <TextBlock Text="{i18nExt:Localize Key=ReadingItemsTitle}"
+                             Style="{StaticResource SubtitleTextBlockStyle}"
+                             Margin="16 0 0 0" />
+                </ListView.Header>
                 <ListView.ItemTemplate>
                   <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
                     <TextBlock Text="{x:Bind Key}" />
                   </DataTemplate>
                 </ListView.ItemTemplate>
               </ListView>
-            </PivotItem>
-          </Pivot>
+            </StackPanel>
+          </ScrollViewer>
         </uwpControls:DockPanel>
       </Grid>
     </Grid>
