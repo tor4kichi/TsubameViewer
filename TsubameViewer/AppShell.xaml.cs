@@ -379,8 +379,9 @@ public sealed partial class AppShell : UserControl
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
 
-    bool IsOpenWithViewerPageType(Type pageType)
+    bool IsOpenWithViewerPageType(Type? pageType)
     {
+        if (pageType == null) { return false; }
         return OpenWithViewerFramePageTypes.Contains(pageType);
     }
 
@@ -455,6 +456,10 @@ public sealed partial class AppShell : UserControl
         });        
     }
 
+    void RefreshBackButton()
+    {
+
+    }
 
     private void InitializeViewerFrameNavigation()
     {
@@ -471,7 +476,24 @@ public sealed partial class AppShell : UserControl
             else
             {
                 frame.Visibility = Visibility.Collapsed;
-                SetTitleContentForPrimary(ContentFrame);
+                SetTitleContentForPrimary(ContentFrame);                
+            }
+
+            GoBackButton.IsEnabled = CanHandleBackRequest();
+
+            if (ViewerFrame.Content is Page viewerPage
+                && viewerPage.GetType() is { } viewerPageType
+                && IsOpenWithViewerPageType(viewerPageType)
+                && _viewerNavigationParameters != null)
+            {
+                _vm.RestoreNavigationManager.SetViewerNavigationEntry(
+                    MakePageEnetry(viewerPageType, _viewerNavigationParameters));
+                Debug.WriteLine($"Save viewer page state: {viewerPageType.Name}");
+            }
+            else
+            {
+                _vm.RestoreNavigationManager.ClearViewerNavigationEntry();
+                Debug.WriteLine($"Clear viewer page state");
             }
         };
     }
@@ -514,7 +536,11 @@ public sealed partial class AppShell : UserControl
         if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
         var frame = (Frame)sender;
-        SetTitleContentForPrimary(frame);
+
+        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+        {
+            SetTitleContentForPrimary(frame);
+        }
 
         // アプリメニュー表示の切替
         //MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
@@ -592,10 +618,8 @@ public sealed partial class AppShell : UserControl
 
 
         // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
-        var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
-        GoBackButton.IsEnabled = isCanGoBackPage;
-        //BackCommand.NotifyCanExecuteChanged();
-
+        GoBackButton.IsEnabled = CanHandleBackRequest();
+        
 
         // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
         if (_isForgetNavigationRequested)
@@ -618,7 +642,7 @@ public sealed partial class AppShell : UserControl
 
             SaveNaviagtionParameters();
         }
-        else if (!isCanGoBackPage)
+        else if (!GoBackButton.IsEnabled)
         {
             ContentFrame.BackStack.Clear();
             BackParametersStack.Clear();
@@ -720,11 +744,12 @@ public sealed partial class AppShell : UserControl
         {
             frame = ViewerFrame;
             ViewerFrame.Visibility = Visibility.Visible;
+            _viewerNavigationParameters = parameters;
         }
         else
         {
             frame = ContentFrame;
-            SetCurrentNavigationParameters(parameters);
+            SetCurrentNavigationParameters(parameters);            
         }
 
         var prevPage = frame.Content as Page;
@@ -786,6 +811,24 @@ public sealed partial class AppShell : UserControl
 
         try
         {
+            if (navigationManager.GetViewerNavigationEntry() is { } viewerEntry)
+            {
+                var viewerNavigationParameters = MakeNavigationParameter(viewerEntry.Parameters);
+                if (!viewerNavigationParameters.ContainsKey(PageNavigationConstants.Restored))
+                {
+                    viewerNavigationParameters.Add(PageNavigationConstants.Restored, string.Empty);
+                }
+
+                var viewerResult = await _messenger.NavigateAsync(viewerEntry.PageName, viewerNavigationParameters);
+                if (!viewerResult.IsSuccess)
+                {
+                    await Task.Delay(50);
+                    Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + viewerEntry.PageName);
+                    await ResetNavigationAsync();
+                    return;
+                }
+            }
+
             //using (await _navigationLock.LockAsync(CancellationToken.None))
             {
                 var currentEntry = navigationManager.GetCurrentNavigationEntry();
@@ -900,6 +943,7 @@ public sealed partial class AppShell : UserControl
                 }
                 await _vm.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
+
             /*
             {
                 PageEntry[] forwardNavigationPageEntries = new PageEntry[ForwardParametersStack.Count];
@@ -915,6 +959,7 @@ public sealed partial class AppShell : UserControl
             */
         }
     }
+
 
 
     static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
@@ -942,6 +987,8 @@ public sealed partial class AppShell : UserControl
         return (_currentNavigationParameters, _prevNavigationParameters);
     }
 
+    INavigationParameters? _viewerNavigationParameters;
+
 
     INavigationParameters _prevNavigationParameters;
     INavigationParameters _currentNavigationParameters;
@@ -967,7 +1014,7 @@ public sealed partial class AppShell : UserControl
 
         if (ContentFrame.Content == null)
         {
-            ThrowHelper.ThrowInvalidOperationException();
+            return false;
         }
 
         if (ViewerFrame.Content?.GetType() is { } viewerPageType

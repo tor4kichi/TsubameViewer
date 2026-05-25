@@ -67,6 +67,21 @@ public sealed class NavigationStackRepository
     }
 
 
+    public void SetViewerNavigationEntry(PageEntry pageEntry)
+    {
+        _navigationStackRepository.SetViewerNavigationEntry(pageEntry);
+    }
+
+    public PageEntry GetViewerNavigationEntry()
+    {
+        return _navigationStackRepository.GetViewerNavigationEntry();
+    }
+
+    public void ClearViewerNavigationEntry()
+    {
+        _navigationStackRepository.ClearViewerNavigationEntry();
+    }
+
 
     internal class NavigationStackRepository_Internal : FlagsRepositoryBase
     {
@@ -78,7 +93,6 @@ public sealed class NavigationStackRepository
         public const string CurrentNavigationEntryName = "CurrentNavigationEntry";
         public const string BackNavigationEntriesName = "BackNavigationEntries";
         public const string ForwardNavigationEntriesName = "ForwardNavigationEntries";
-
 
         public PageEntry GetCurrentNavigationEntry()
         {
@@ -108,6 +122,25 @@ public sealed class NavigationStackRepository
         public Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
         {
             return SaveFileAsync(entries, ForwardNavigationEntriesName);
+        }
+
+
+        public const string ViewerNavigationEntryName = "ViewerNavigationEntry";
+
+
+        public PageEntry? GetViewerNavigationEntry()
+        {
+            return Read<PageEntry>(null, ViewerNavigationEntryName);
+        }
+
+        public void SetViewerNavigationEntry(PageEntry entry)
+        {
+            Save(entry, ViewerNavigationEntryName);
+        }
+
+        public void ClearViewerNavigationEntry()
+        {
+            TryDelete(ViewerNavigationEntryName);
         }
     }
 }
