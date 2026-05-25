@@ -131,6 +131,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             _nextIsDisplayControlUI = null;
         }
+
+        var pt = e.GetCurrentPoint(null);        
         if (_nextIsDisplayControlUI is { } b)
         {
             IsDisplayControlUI = b;
@@ -159,6 +161,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
         {
+            IsDisplayControlUI = false;
             _mouseCursorAutoHideTimer?.Stop();
             ShowMouseCursor();
             MediaPlayer.Pause();

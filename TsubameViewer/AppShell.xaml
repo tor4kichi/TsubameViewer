@@ -201,6 +201,17 @@
       </Frame>
     </muxc:NavigationView>
 
+    <Frame x:Name="ViewerFrame"
+           DataContext="{x:Null}"
+           CacheSize="0"
+           Visibility="Collapsed"
+           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+           >
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+    </Frame>
+
     <Border x:Name="TitlebarBG"
                            VerticalAlignment="Top"
                            Height="48"
@@ -581,6 +592,10 @@
                                To="48"
                                Storyboard.TargetName="MyNavigationView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="48"
+                               Storyboard.TargetName="ViewerFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -602,6 +617,10 @@
                                To="0"
                                Storyboard.TargetName="MyNavigationView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
+              <DoubleAnimation Duration="0:0:0.175"
+                               To="0"
+                               Storyboard.TargetName="ViewerFrame"
+                               Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
         </VisualState>
@@ -616,11 +635,15 @@
           <VisualState.Setters>
             <Setter Target="MyNavigationView.Margin"
                     Value="0 48 0 0" />
+            <Setter Target="ViewerFrame.Margin"
+                    Value="0 48 0 0" />
             <Setter Target="TitlebarBG.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="TitlebarUIContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
             <Setter Target="MyNavigationView.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="ViewerFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
           </VisualState.Setters>
         </VisualState>

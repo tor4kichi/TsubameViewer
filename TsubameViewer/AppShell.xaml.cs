@@ -131,6 +131,7 @@ public sealed partial class AppShell : UserControl
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
         InitializeNavigation();
+        InitializeViewerFrameNavigation();
         InitializeThemeChangeRequest();
         InitializeSelection();
 
@@ -368,6 +369,21 @@ public sealed partial class AppShell : UserControl
         typeof(FolderListupPage),
     }.ToImmutableHashSet();
 
+
+    private readonly static ImmutableHashSet<Type> OpenWithViewerFramePageTypes = new Type[]
+    {
+        typeof(ImageViewerPage),
+        typeof(EBookViewerPage),
+        typeof(MovieViewerPage),
+        typeof(SettingsPage),
+        typeof(FolderOrArchiveRestructurePage),
+    }.ToImmutableHashSet();
+
+    bool IsOpenWithViewerPageType(Type pageType)
+    {
+        return OpenWithViewerFramePageTypes.Contains(pageType);
+    }
+
     private readonly Core.AsyncLock _navigationLock = new ();
     private bool _isForgetNavigationRequested = false;
     private List<INavigationParameters> BackParametersStack = new List<INavigationParameters>();
@@ -439,13 +455,33 @@ public sealed partial class AppShell : UserControl
         });        
     }
 
-    private void Frame_Navigated(object sender, NavigationEventArgs e)
+
+    private void InitializeViewerFrameNavigation()
     {
-        if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
+        ViewerFrame.Navigate(typeof(EmptyPage));
+        ViewerFrame.Navigated += (s, e) =>
+        {
+            Debug.WriteLine($"ViewerFrame Navigate to : {e.SourcePageType.Name}");
+            var frame = (Frame)s;
+            if (IsOpenWithViewerPageType(e.SourcePageType))
+            {
+                frame.Visibility = Visibility.Visible;
+                SetTitleContentForPrimary(frame);
+            }
+            else
+            {
+                frame.Visibility = Visibility.Collapsed;
+                SetTitleContentForPrimary(ContentFrame);
+            }
+        };
+    }
 
-        var frame = (Frame)sender;
+    IDisposable? _titlebarContentDisposable;
+    void SetTitleContentForPrimary(Frame frame)
+    {
+        _titlebarContentDisposable?.Dispose();
+        _titlebarContentDisposable = null;
         Window.Current.SetTitleBar(null);
-
         if (frame.Content is ITitlebarContentAware tbContent)
         {
             if (tbContent.GetContent() is { } content)
@@ -457,13 +493,12 @@ public sealed partial class AppShell : UserControl
             if (tbContent.ObserveTitleChanged() is { } observe)
             {
                 var page = (Page)frame.Content;
-                observe.Subscribe(title => 
+                _titlebarContentDisposable = observe.Subscribe(title =>
                 {
                     title ??= "";
                     WindowTitleTextBlock.Text = title;
                     ApplicationView.GetForCurrentView().Title = title;
-                })  
-                .RegisterTo(page.GetCancellationTokenOnNavigatingFrom());
+                });
             }
         }
         else
@@ -471,11 +506,18 @@ public sealed partial class AppShell : UserControl
             TitlebarContent.ContentTemplate = null;
             TitlebarContent.Content = null;
         }
-
         Window.Current.SetTitleBar(TitlebarBG);
+    }
+
+    private void Frame_Navigated(object sender, NavigationEventArgs e)
+    {
+        if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
+
+        var frame = (Frame)sender;
+        SetTitleContentForPrimary(frame);
 
         // アプリメニュー表示の切替
-        MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
+        //MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
         if (MyNavigationView.IsPaneVisible)
         {
             var sourcePageTypeName = e.SourcePageType.Name;
@@ -673,23 +715,32 @@ public sealed partial class AppShell : UserControl
     private async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, bool isNavigationStackEnabled = true)
     {
         var viewType = _viewLocator.ResolveView(pageName);
+        Frame frame;
+        if (IsOpenWithViewerPageType(viewType))
+        {
+            frame = ViewerFrame;
+            ViewerFrame.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            frame = ContentFrame;
+            SetCurrentNavigationParameters(parameters);
+        }
 
-        SetCurrentNavigationParameters(parameters);
-
-        var prevPage = ContentFrame.Content as Page;
+        var prevPage = frame.Content as Page;
         var options = new FrameNavigationOptions() 
         {
             IsNavigationStackEnabled = isNavigationStackEnabled, 
             TransitionInfoOverride = isNavigationStackEnabled ? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) : new SuppressNavigationTransitionInfo() 
         };
-        var result = ContentFrame.Navigate(viewType, parameters, options.TransitionInfoOverride);
+        var result = frame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 
         if (result is false)
         {
             throw new InvalidOperationException($"Failed ContentFrame navigate to {pageName}.");
         }
 
-        var page = ContentFrame.Content;
+        var page = frame.Content;
         var currentPage = page as Page;        
         var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
         return handleResult;
@@ -918,18 +969,27 @@ public sealed partial class AppShell : UserControl
         {
             ThrowHelper.ThrowInvalidOperationException();
         }
-        var currentPageType = ContentFrame.Content.GetType();
-        if (!CanGoBackPageTypes.Contains(currentPageType))
+
+        if (ViewerFrame.Content?.GetType() is { } viewerPageType
+            && IsOpenWithViewerPageType(viewerPageType))
         {
-            Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
-            return false;
+            return true;
         }
+        else
+        {
+            var currentPageType = ContentFrame.Content.GetType();
+            if (!CanGoBackPageTypes.Contains(currentPageType))
+            {
+                Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
+                return false;
+            }
 
-        var data = new BackNavigationRequestingMessageData();
-        _messenger.Send<BackNavigationRequestingMessage>(new(data));            
-        if (data.IsHandled) { return false; }
+            var data = new BackNavigationRequestingMessageData();
+            _messenger.Send<BackNavigationRequestingMessage>(new(data));
+            if (data.IsHandled) { return false; }
 
-        return true;
+            return true;
+        }
     }
 
     async Task HandleBackRequestAsync()
@@ -939,7 +999,24 @@ public sealed partial class AppShell : UserControl
             var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
             try
             {
-                if (ContentFrame.CanGoBack)
+                if (ViewerFrame.Content?.GetType() is { } viewerPageType
+                    && IsOpenWithViewerPageType(viewerPageType))
+                {
+                    var prevPage = ViewerFrame.Content as Page;
+                    try
+                    {
+                        ViewerFrame.GoBack();
+                        var currentPage = ViewerFrame.Content as Page;
+                        var np = new NavigationParameters();
+                        np.SetNavigationMode(NavigationMode.Back);
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, np);
+                    }
+                    catch
+                    {
+                        isRequestReset = true;
+                    }
+                }
+                else if (ContentFrame.CanGoBack)
                 {
                     if (_isForgetNavigationRequested)
                     {

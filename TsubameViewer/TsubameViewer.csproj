@@ -176,6 +176,9 @@
     <Compile Include="Views\Converters\EquelsToValueConverter.cs" />
     <Compile Include="Views\Converters\DoubleToPercentTextConverter.cs" />
     <Compile Include="Views\Converters\TimeSpanToSimpleTextConverter.cs" />
+    <Compile Include="Views\EmptyPage.xaml.cs">
+      <DependentUpon>EmptyPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="Views\ImageListupPageViewModel.cs" />
@@ -502,6 +505,10 @@
     <Page Include="Views\EBookViewerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\EmptyPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Flyouts\StorageItemMenuFlyout.xaml">
       <Generator>MSBuild:Compile</Generator>

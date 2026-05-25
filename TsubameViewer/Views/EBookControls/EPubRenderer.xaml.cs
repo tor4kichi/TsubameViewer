@@ -725,7 +725,7 @@ return JSON.stringify(Array.from(set));
 """            
             function PushEmptyParagraph()
             {
-                for (var i = 0; i != 200; i++)
+                for (var i = 0; i != 50; i++)
                 {
                     document.body.appendChild(document.createElement(`p`));
                 }
@@ -949,7 +949,6 @@ return JSON.stringify(Array.from(set));
                         // ページサイズより小さいページ位置はスキップ
                         var lastSize = _lastSize;
                         _lastSize = x;
-                        Debug.WriteLine(x - lastSize);
                         return x - lastSize > _allowableError;
                     }).ToArrayPool();
 
