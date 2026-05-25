@@ -739,19 +739,21 @@ public sealed partial class AppShell : UserControl
     private async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, bool isNavigationStackEnabled = true)
     {
         var viewType = _viewLocator.ResolveView(pageName);
-        Frame frame;
+        Frame frame;        
         if (IsOpenWithViewerPageType(viewType))
         {
             frame = ViewerFrame;
             ViewerFrame.Visibility = Visibility.Visible;
             _viewerNavigationParameters = parameters;
+
         }
         else
         {
             frame = ContentFrame;
-            SetCurrentNavigationParameters(parameters);            
+            SetCurrentNavigationParameters(parameters);
         }
 
+        var ct = RotationNextCancellationTokenSource(viewType);
         var prevPage = frame.Content as Page;
         var options = new FrameNavigationOptions() 
         {
@@ -767,17 +769,33 @@ public sealed partial class AppShell : UserControl
 
         var page = frame.Content;
         var currentPage = page as Page;        
-        var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+        var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
         return handleResult;
     }
 
-    CancellationTokenSource? _navigateCts;
-    private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
+
+    CancellationToken RotationNextCancellationTokenSource(Type? pageType)
     {
-        _navigateCts?.Cancel();
-        _navigateCts?.Dispose();
-        _navigateCts = new CancellationTokenSource();
-        var ct = _navigateCts.Token;
+        if (IsOpenWithViewerPageType(pageType))
+        {
+            _viewerNavigateCts?.Cancel();
+            _viewerNavigateCts?.Dispose();
+            _viewerNavigateCts = new CancellationTokenSource();
+            return _viewerNavigateCts.Token;
+        }
+        else
+        {
+            _navigateCts?.Cancel();
+            _navigateCts?.Dispose();
+            _navigateCts = new CancellationTokenSource();
+            return _navigateCts.Token;
+        }
+    }
+
+    CancellationTokenSource? _viewerNavigateCts;
+    CancellationTokenSource? _navigateCts;
+    private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters, CancellationToken ct)
+    {
         if (fromPageVM != null)
         {
             fromPageVM.OnNavigatedFrom(parameters);
@@ -1063,7 +1081,8 @@ public sealed partial class AppShell : UserControl
                         var currentPage = ViewerFrame.Content as Page;
                         var np = new NavigationParameters();
                         np.SetNavigationMode(NavigationMode.Back);
-                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, np);
+                        var ct = RotationNextCancellationTokenSource(viewerPageType);
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, np, ct);
                     }
                     catch
                     {
@@ -1094,7 +1113,8 @@ public sealed partial class AppShell : UserControl
                             ContentFrame.GoBack();
                             lastNavigationParameters.SetNavigationMode(NavigationMode.Back);
                             var currentPage = ContentFrame.Content as Page;
-                            await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
+                            var ct = RotationNextCancellationTokenSource(null);
+                            await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters, ct);
                         }
                         catch
                         {
@@ -1164,7 +1184,8 @@ public sealed partial class AppShell : UserControl
                 ContentFrame.GoForward();
                 forwardNavigationParameters.SetNavigationMode(NavigationMode.Forward);
                 var currentPage = ContentFrame.Content as Page;
-                await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters);
+                var ct = RotationNextCancellationTokenSource(null);
+                await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters, ct);
             }
             catch
             {
@@ -1183,7 +1204,8 @@ public sealed partial class AppShell : UserControl
         parameters.SetNavigationMode(NavigationMode.Refresh);
         var currentPage = ContentFrame.Content as Page;
         var pageViewModel = currentPage?.DataContext as INavigationAware;
-        await HandleViewModelNavigation(pageViewModel, pageViewModel, parameters);
+        var ct = RotationNextCancellationTokenSource(null);
+        await HandleViewModelNavigation(pageViewModel, pageViewModel, parameters, ct);
     }
 
     private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
