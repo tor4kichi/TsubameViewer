@@ -47,7 +47,8 @@ public sealed class AppShellViewModel
     private readonly IMessenger _messenger;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
 
-    public List<object> MenuItems { get;  }
+    public List<object> HeaderMenuItems { get; }
+    public ObservableCollection<object> MenuItems { get;  }
 
     R3.CompositeDisposable _disposables = new R3.CompositeDisposable();
 
@@ -77,20 +78,12 @@ public sealed class AppShellViewModel
         OpenPageCommand = openPageCommand;
         StartSelectionCommand = startSelectionCommand;
         BackNavigationCommand = backNavigationCommand;
-        _foldersMenuSubItem = new MenuSubItemViewModel()
-        {
-            PageType = nameof(Views.SourceStorageItemsPage),
-            Title = "SourceStorageItemsPage".Translate(),
-            AccessKey = "1",
-            KeyboardAceseralator = VirtualKey.Number1
-        };
 
-        MenuItems = new List<object>
-        {
-            _foldersMenuSubItem,
-            new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "3", KeyboardAceseralator = VirtualKey.Number3 },
-        };
-
+        HeaderMenuItems = [
+            new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "Folders".Translate(), AccessKey = "1", KeyboardAceseralator = VirtualKey.Number1 },
+            new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "2", KeyboardAceseralator = VirtualKey.Number2 },
+        ];
+        MenuItems = [];
         RefreshFolderSubItems();    
         IsActive= true;
     }
@@ -123,10 +116,15 @@ public sealed class AppShellViewModel
 
     public void RefreshFolderSubItems()
     {
-        _foldersMenuSubItem.Items.Clear();
+        MenuItems.Clear();
+        foreach (var headerItem in HeaderMenuItems)
+        {
+            MenuItems.Add(headerItem);
+        }
+
         foreach (var folderPath in SourceStorageItemsRepository.GetParsistantItemsFromCache())
         {
-            _foldersMenuSubItem.Items.Add(new MenuItemViewModel()
+            MenuItems.Add(new MenuItemViewModel()
             {
                 PageType = nameof(Views.FolderListupPage),
                 Parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(folderPath))),
@@ -137,9 +135,6 @@ public sealed class AppShellViewModel
 
 
 
-    MenuSubItemViewModel _foldersMenuSubItem;
-
-
     private bool _IsDisplayMenu = true;
     public bool IsDisplayMenu
     {
@@ -147,16 +142,6 @@ public sealed class AppShellViewModel
         set { SetProperty(ref _IsDisplayMenu, value); }
     }
 
-
-    RelayCommand<object> _OpenMenuItemCommand;
-    public RelayCommand<object> OpenMenuItemCommand =>
-        _OpenMenuItemCommand ??= new RelayCommand<object>(item => 
-        {
-            if (item is MenuItemViewModel menuItem)
-            {
-                _messenger.NavigateAsync(menuItem.PageType, menuItem.Parameters);
-            }            
-        });
 
     public ApplicationSettings ApplicationSettings { get; }
     public NavigationStackRepository RestoreNavigationManager { get; }

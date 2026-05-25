@@ -1409,7 +1409,7 @@ public sealed partial class AppShell : UserControl
         {
             if (menuItem.DataContext is MenuItemViewModel itemVM)
             {
-                _vm.OpenMenuItemCommand.Execute(itemVM);
+                _ = OpenMenuItemAsync(itemVM);
             }
             else if(menuItem.DataContext is MenuItemInvokeActionViewModel invokedItemVM)
             {
@@ -1418,7 +1418,24 @@ public sealed partial class AppShell : UserControl
         }
     }
 
-    
+
+
+    [RelayCommand]
+    async Task OpenMenuItemAsync(object item)
+    {
+        if (item is MenuItemViewModel menuItem)
+        {
+            // Note: メニューから選択したページはフォルダ管理ページに戻るようにしたい
+            // Note: ハック気味で壊れやすそう。
+            _isForgetNavigationRequested = true;
+            if (await _messenger.NavigateAsync(menuItem.PageType, menuItem.Parameters) is { } result
+            && result.IsSuccess)
+            {
+                
+            }
+        }
+    }
+
     private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         try

@@ -70,7 +70,8 @@
                                      AccessKey="{x:Bind AccessKey}"
                                      DataContext="{x:Bind}"
                                      Tag="{x:Bind}"
-                                     Tapped="NavigationViewItem_Tapped">
+                                     Tapped="NavigationViewItem_Tapped"
+                                     FlowDirection="RightToLeft">
               <muxc:NavigationViewItem.KeyboardAccelerators>
                 <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
                                      Modifiers="Control" />
@@ -87,7 +88,8 @@
                                      Tapped="NavigationViewItem_Tapped"
                                      ToolTipService.ToolTip="{x:Bind Tooltip}"
                                      Icon="{Binding Icon}"
-                                     IsSelected="False">
+                                     IsSelected="False"
+                                     FlowDirection="RightToLeft">
               <muxc:NavigationViewItem.KeyboardAccelerators>
                 <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
                                      Modifiers="Control" />
@@ -104,7 +106,8 @@
                                      Tag="{x:Bind}"
                                      Tapped="NavigationViewItem_Tapped"
                                      IsExpanded="False"
-                                     Icon="{Binding Icon}">
+                                     Icon="{Binding Icon}"
+                                     FlowDirection="RightToLeft">
             </muxc:NavigationViewItem>
           </DataTemplate>
         </local:MenuItemDateTemplateSelector.SubItem>
@@ -162,7 +165,7 @@
       </Button>
     </Grid>
     <muxc:NavigationView x:Name="MyNavigationView"
-                         uwpControls:DockPanel.Dock="Top"
+                         uwpControls:DockPanel.Dock="Top"                         
                          MenuItemsSource="{Binding MenuItems}"
                          MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
                          FooterMenuItemsSource="{x:Bind _footerItemsForTop}"
