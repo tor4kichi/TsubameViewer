@@ -648,6 +648,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
     public async Task GoNextImageAsync()
     {
+        if (CurrentBookReadingOrder == null) { return; }
         await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, CurrentBookReadingOrder.Count - 1), _navigationCt);
     }
 
