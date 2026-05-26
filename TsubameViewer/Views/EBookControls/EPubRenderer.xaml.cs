@@ -894,16 +894,19 @@ return JSON.stringify(Array.from(set));
             int heroHitCount = -1;
             foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
             {
-                var hitCount = relSizeItemsSpan.TakeLast(compareSampleCount).Count(x => 
-                {
-                    // レイアウト計算が端末ごとに異なる
-                    // 切りのいい数字が来ることが期待できないため端数を許容したい
-                    // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
-                    // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
-                    var div = x / (double)candidatePageSize;
-                    var small = div % 1;
-                    return small > 0.95 || small < 0.05;
-                });
+                float invCandidatePageSize = 1 / (float)candidatePageSize;
+                var hitCount = relSizeItemsSpan.AsValueEnumerable()
+                    .TakeLast(compareSampleCount)
+                    .Count(x => 
+                    {
+                        // レイアウト計算が端末ごとに異なる
+                        // 切りのいい数字が来ることが期待できないため端数を許容したい
+                        // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
+                        // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
+                        var div = x * invCandidatePageSize;
+                        var small = div - (long)div;
+                        return small > 0.95f || small < 0.05f;
+                    });
                 if (hitCount > heroHitCount)
                 {
                     heroPageHeight = candidatePageSize;
@@ -937,10 +940,11 @@ return JSON.stringify(Array.from(set));
             {
                 int _lastSize = -1;
                 float _allowableError = heroPageHeight / 1.05f;
+                float invHeroPageHeight = 1 / (float)heroPageHeight;
                 using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
                     {
-                        var div = x / (double)heroPageHeight;
-                        var small = div % 1;
+                        var div = x * invHeroPageHeight;
+                        var small = div - (long)div;
                         return small > 0.95 || small < 0.05; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
                     })
                     .Where(x => 
