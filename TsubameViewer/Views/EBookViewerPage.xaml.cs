@@ -135,6 +135,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     // デバッグあり実行だと動くが、デバッグ無し実行だと動かなかった。（リリースビルドでも同様）
     //
 
+
+
+
+
+
+
     #region Bottom UI Menu
 
 
@@ -242,6 +248,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
     {
+        //ControlHeight = EPubRendererContainer.ActualHeight - 64;
         // Note: WebViewにフォーカスがあるとWebViewより前面にあるボタンが押せないバグのワークアラウンド
         this.LeftPageMoveButton.Focus(FocusState.Programmatic);
     }

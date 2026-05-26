@@ -1,6 +1,7 @@
 ﻿using ColorCode.Compilation.Languages;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
+using R3;
 using R3.Collections;
 using Reactive.Bindings.Extensions;
 using System;
@@ -438,7 +439,7 @@ public sealed partial class EPubRenderer : UserControl
 
 
 
-    CompositeDisposable? _compositeDisposable;
+    IDisposable? _compositeDisposable;
 
     private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
     {
@@ -449,45 +450,38 @@ public sealed partial class EPubRenderer : UserControl
         WebView.NavigationCompleted += WebView_NavigationCompleted;
         WebView.DOMContentLoaded += WebView_DOMContentLoaded;
 
-        _compositeDisposable = new CompositeDisposable();
+        DisposableBuilder db = new();
         var dispatcher = Dispatcher;
         
         isFirstContent = true;
 
-        Observable.Merge(
-            Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+        R3.Observable.Merge(
+            System.Reactive.Linq.Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
                 h => Window.Current.SizeChanged += h,
                 h => Window.Current.SizeChanged -= h
-                ).ToUnit()
-            , Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                ).ToObservable().AsUnitObservable()
+            , System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
                 h => SizeChanged += h,
                 h => SizeChanged -= h
-                ).ToUnit()
+                ).ToObservable().AsUnitObservable()            
             )
             .Where(x => !isFirstContent)
-            .Throttle(TimeSpan.FromMilliseconds(100), CurrentThreadScheduler.Instance)
+            .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
+            .ThrottleLast(TimeSpan.FromMilliseconds(500))
             .Where(x => !isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .Subscribe(async args =>
             {
-                await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+                using (await _domUpdateLock.LockAsync(default))
                 {
-                    await Task.Delay(50);
-                    if (IsLoaded is false) { return; }
-                    
-                    ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
+                    // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
+                    //await Task.Delay(50);
 
-                    using (await _domUpdateLock.LockAsync(default))
-                    {
-                        // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                        //await Task.Delay(50);
-
-                        // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-                        WebView.Refresh();
-                    }
-                });
+                    // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+                    WebView.Refresh();
+                }
             })
-            .AddTo(_compositeDisposable);
+            .AddTo(ref db);
 
         new[]
         {
@@ -502,9 +496,13 @@ public sealed partial class EPubRenderer : UserControl
             this.ObserveDependencyProperty(ColumnCountProperty),
         }
         .Merge()
-        .Throttle(TimeSpan.FromMilliseconds(50))
-        .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
-        .AddTo(_compositeDisposable);
+        .ToObservable()
+        .ThrottleFirstLast(TimeSpan.FromMilliseconds(50))
+        .Subscribe(_ => ReloadPageHtml())
+        .AddTo(ref db);
+
+        _compositeDisposable = db.Build();
+
     }
 
     private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
@@ -680,7 +678,7 @@ document.body.style = `width: 100vw; overflow: hidden; max-height: ${webViewHeig
     {
         sb.AppendLine(
 @"function SetHorizontalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize){
-document.body.style = `overflow: hidden; width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:${fontSize}px;`;
+document.body.style = `overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:${fontSize}px; margin-bottom:48px;`;
 };"
 );
     }
@@ -823,13 +821,13 @@ return JSON.stringify(Array.from(set));
             // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
             // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(WebView.ActualHeight, columnCount, FontSize);
+            await SetVerticalBodyStyleAsync(WebView.ActualHeight - 8, columnCount, FontSize);
         }
         else
         {
             // Note: -8は下側と右側の見切れ対策
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 8, columnCount, FontSize);
+            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 96, columnCount, FontSize);
         }
 
 #if DEBUG
@@ -889,33 +887,34 @@ return JSON.stringify(Array.from(set));
             Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
             const int candidateSampleCount = 5;
-            const int compareSampleCount = 30; // サンプル少ないと誤検出が増える
+            const int compareSampleCount = 50; // サンプル少ないと誤検出が増える
             int heroPageHeight = -1;
             int heroHitCount = -1;
-            foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
-            {
-                float invCandidatePageSize = 1 / (float)candidatePageSize;
-                var hitCount = relSizeItemsSpan.AsValueEnumerable()
-                    .TakeLast(compareSampleCount)
-                    .Count(x => 
-                    {
-                        // レイアウト計算が端末ごとに異なる
-                        // 切りのいい数字が来ることが期待できないため端数を許容したい
-                        // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
-                        // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
-                        var div = x * invCandidatePageSize;
-                        var small = div - (long)div;
-                        return small > 0.95f || small < 0.05f;
-                    });
-                if (hitCount > heroHitCount)
-                {
-                    heroPageHeight = candidatePageSize;
-                    heroHitCount = hitCount;
-                }
+            //foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
+            //{
+            //    float invCandidatePageSize = 1 / (float)candidatePageSize;
+            //    var hitCount = relSizeItemsSpan.AsValueEnumerable()
+            //        .TakeLast(compareSampleCount)
+            //        .Count(x => 
+            //        {
+            //            // レイアウト計算が端末ごとに異なる
+            //            // 切りのいい数字が来ることが期待できないため端数を許容したい
+            //            // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
+            //            // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
+            //            var div = x * invCandidatePageSize;
+            //            var small = div - (long)div;
+            //            return small > 0.90f || small < 0.10f;
+            //        });
+            //    if (hitCount > heroHitCount)
+            //    {
+            //        heroPageHeight = candidatePageSize;
+            //        heroHitCount = hitCount;
+            //    }
 
-                Debug.WriteLine($"candidatePageSize: {candidatePageSize} hitCount: {hitCount}");
-            }
+            //    Debug.WriteLine($"candidatePageSize: {candidatePageSize} hitCount: {hitCount}");
+            //}
 
+            heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
 #if DEBUG
             sw.ElapsedWrite("culc hero page size.");
 #endif
@@ -923,18 +922,22 @@ return JSON.stringify(Array.from(set));
             {
                 heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
             }
-            if (pageRealSize > relSizeItemsSpan[^1])
+            if (pageRealSize * 2 > relSizeItemsSpan[^1])
             {
-                _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize).Count();
+                _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8).Count();
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = heroPageHeight;
 
                 // 1ページに収まってる場合は画像のみのページかどうかをチェックする
                 var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
                 NowOnlyImageView = pCount <= 2;
-                Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
+                if (NowOnlyImageView)
+                {
+                    _innerPageCount = 1;
+                }
+
                 _innerPageScrollPositions.Clear();
-                _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize));
+                _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8));
             }
             else
             {
@@ -943,29 +946,33 @@ return JSON.stringify(Array.from(set));
                 float invHeroPageHeight = 1 / (float)heroPageHeight;
                 using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
                     {
+                        if (x != 0 && x < heroPageHeight) { return false; }
                         var div = x * invHeroPageHeight;
                         var small = div - (long)div;
-                        return small > 0.95 || small < 0.05; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
+                        return small > 0.90 || small < 0.10; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
                     })
                     .Where(x => 
                     {
-                        if (x == 0) { return true; }
                         // ページサイズより小さいページ位置はスキップ
-                        var lastSize = _lastSize;
-                        _lastSize = x;
-                        return x - lastSize > _allowableError;
+                        if (x == 0 || x - _lastSize > _allowableError)
+                        {
+                            _lastSize = x;
+                            return true;
+                        }
+                        else { return false; }
                     }).ToArrayPool();
 
                 Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
 
                 _innerPageScrollPositions.Clear();
                 _innerPageScrollPositions.AddRange(pageScrollPositions.ArraySegment);
-                _innerPageCount = pageScrollPositions.Size;
+                _innerPageCount = _innerPageScrollPositions.Count;
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
 
                 NowOnlyImageView = false;
             }
+            Debug.WriteLine($"NowOnlyImageView: {NowOnlyImageView}");
 
             TotalInnerPageCount = _innerPageCount;
 
@@ -998,7 +1005,7 @@ return JSON.stringify(Array.from(set));
             var newCurrentPageIndex = _innerCurrentPage;
 
             double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
-            _innerCurrentPage = (int)Math.Round(_innerPageCount * oldPageInPercentage);
+            _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
 
             Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
         }

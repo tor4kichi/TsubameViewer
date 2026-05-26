@@ -478,7 +478,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         // ページ内ページ（InnerCurrentImageIndex） の+1/-1ページ単位での遷移を確実にする
         try
         {
-            using (var timeoutCts = new CancellationTokenSource(3000))
+            using (var timeoutCts = new CancellationTokenSource(10000))
             {
                 using (timeoutCts.Token.Register(() =>
                 {
