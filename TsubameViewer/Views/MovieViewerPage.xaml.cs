@@ -379,13 +379,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 var _this = s.Item1;
                 _this.ShowMouseCursor();
+                _this._mouseCursorAutoHideTimer.Stop();
                 if (s.insideWindowRp.CurrentValue 
                 && s.Item1.PlayerState == MediaPlaybackState.Playing
                 && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
                 {
                     _this.IsDisplayControlUI = true;
 
-                    _this._mouseCursorAutoHideTimer.Stop();
                     _this._mouseCursorAutoHideTimer.Start();
                 }
             })
@@ -909,7 +909,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SoundVolume_Display, false)
-            .Subscribe((this), (x, s) => 
+            .Subscribe((this), (x, s) =>
             {
                 s.MediaPlayer.Volume = x;
                 s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);
@@ -917,7 +917,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
     }
 
-   
+
     [ObservableProperty]
     double _soundVolume_Display = 0.5;
 
