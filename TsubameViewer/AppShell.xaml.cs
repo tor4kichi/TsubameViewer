@@ -408,6 +408,12 @@ public sealed partial class AppShell : UserControl
                     _isForgetNavigationRequested = true;
                 }
 
+                if (IsOpenWithViewerPageType(ViewerFrame.Content.GetType())
+                    && OpenWithViewerFramePageTypes.Any(x => x.Name.Equals(m.PageName, StringComparison.Ordinal)))
+                {
+                    throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
+                }
+
                 var parameters = m.Parameters ?? new NavigationParameters();
                 parameters.SetNavigationMode(NavigationMode.New);
                 return await NavigateAsync(m.PageName, parameters, m.IsForgetNavigaiton is false);
@@ -472,11 +478,17 @@ public sealed partial class AppShell : UserControl
             {
                 frame.Visibility = Visibility.Visible;
                 SetTitleContentForPrimary(frame);
+                MyNavigationView.Visibility = Visibility.Collapsed;
+                if (e.Content is Page page)
+                {
+                    page.Focus(FocusState.Programmatic);
+                }
             }
             else
             {
                 frame.Visibility = Visibility.Collapsed;
-                SetTitleContentForPrimary(ContentFrame);                
+                SetTitleContentForPrimary(ContentFrame);
+                MyNavigationView.Visibility = Visibility.Visible;
             }
 
             GoBackButton.IsEnabled = CanHandleBackRequest();
