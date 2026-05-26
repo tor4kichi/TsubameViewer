@@ -90,6 +90,7 @@ ProcessingThumbnailCache = Processing delete operation
 ImageViewerSettings = Image viewer settings
 IsReverseImageFliping_MouseWheel = Reverse scrolling pagination
 IsReverseImageFliping_Button = Reverse left/right page feed
+IsReversePageFliping_Swipe = Reverse the swipe direction for page navigation
 
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)

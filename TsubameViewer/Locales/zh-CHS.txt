@@ -90,6 +90,7 @@ ProcessingThumbnailCache = 正在删除
 ImageViewerSettings = 图像查看器设置
 IsReverseImageFliping_MouseWheel = 反向滚动分页
 IsReverseImageFliping_Button = 反向左/右翻页
+IsReversePageFliping_Swipe = 将滑动翻页的方向反转
 
 GeneralUISettings = 操作设定
 IsForceEnableXYNavigation = 在页面打开时自动聚焦内容\ n（箭头键/游戏板）

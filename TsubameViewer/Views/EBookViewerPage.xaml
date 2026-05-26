@@ -230,6 +230,9 @@
                       Header="{i18nExt:Localize Key=IsReversePageFliping_Button}"
                       />
 
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Swipe, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Swipe}" />
+
         <Button Content="{i18nExt:Localize Key=ResetEBookSettings}"
                 HorizontalAlignment="Stretch">
           <Button.Flyout>
@@ -287,18 +290,29 @@
         <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
+      <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
+                                         Invoked="MySwipeDistanceBehavior_Invoked"
+                                         XPixelsToOneUnit="4"
+                                         YPixelsToOneUnit="20"
+                                         />
 
     </i:Interaction.Behaviors>
 
     <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
          そのため、非表示のButtonのKeyboardAcceleratorsを利用する
     -->
-    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
+    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
+            Width="0"
+            Height="0"
+            MinHeight="0"
+            MinWidth="0"
+            Opacity="0.0"
+            IsTabStop="False">
       <Button.KeyboardAccelerators>
         <KeyboardAccelerator Key="F11" />
       </Button.KeyboardAccelerators>
     </Button>
-    
+
     <!-- 電子書籍ビューワー -->
     <Grid Margin="48 24 48 64">
       <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}"
@@ -651,7 +665,20 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-            
+
+      <!-- スワイプのページ送りを逆にする -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Swipe, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.XPixelsToOneUnit"
+                    Value="-4" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 左右移動を抑止する -->
       <VisualStateGroup>
         <VisualState>
@@ -680,8 +707,6 @@
             <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
             <Setter Target="TocItemsListView.Padding" Value="48 27 8 27" />
             <Setter Target="PageTitleLayout.Margin" Value="0 0 0 18" />
-            <Setter Target="TocContainerUIBackNavigationButton.Visibility" Value="Visible" />
-            <Setter Target="TocContainerSettingsButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
@@ -690,9 +715,6 @@
             <wst:UserInteractionModeTrigger InteractionMode="Touch" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
-            <Setter Target="Toolbar_Touch.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
@@ -701,8 +723,6 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

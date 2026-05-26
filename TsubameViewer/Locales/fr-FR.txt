@@ -90,6 +90,7 @@ ProcessingThumbnailCache = Traitement de l'opération de suppression
 ImageViewerSettings = Paramètres de la visionneuse d'images
 IsReverseImageFliping_MouseWheel = Pagination à défilement inversée
 IsReverseImageFliping_Button = Inverser la page gauche et droite
+IsReversePageFliping_Swipe = Inverser le sens de défilement par glissement
 
 GeneralUISettings = Paramètres de fonctionnement
 IsForceEnableXYNavigation = Mise au point automatique du contenu lors de l'ouverture de la page\n (Touches directionnelles/Manette)

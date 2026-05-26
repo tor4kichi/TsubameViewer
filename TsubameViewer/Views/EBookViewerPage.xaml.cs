@@ -58,7 +58,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         DebugPanel.Visibility = Visibility.Visible;
 #endif
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
-        Loaded += ResetAnimationUIContainer_Loaded1;
 
         EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
         EPubRenderer.ContentRefreshComplete += WebView_ContentRefreshComplete;
@@ -134,117 +133,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     // コードビハインドで切り替える形にした。
     // デバッグあり実行だと動くが、デバッグ無し実行だと動かなかった。（リリースビルドでも同様）
     //
-
-
-
-
-
-
-
-    #region Bottom UI Menu
-
-
-    private void ResetAnimationUIContainer_Loaded1(object sender, RoutedEventArgs e)
-    {
-        SwipeProcessScreen.Tapped -= SwipeProcessScreen_Tapped;
-        SwipeProcessScreen.Tapped += SwipeProcessScreen_Tapped;
-        SwipeProcessScreen.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.TranslateX;
-        SwipeProcessScreen.ManipulationStarting -= SwipeProcessScreen_ManipulationStarting;
-        SwipeProcessScreen.ManipulationStarted -= SwipeProcessScreen_ManipulationStarted;
-        SwipeProcessScreen.ManipulationCompleted -= SwipeProcessScreen_ManipulationCompleted;
-        SwipeProcessScreen.ManipulationStarting += SwipeProcessScreen_ManipulationStarting;
-        SwipeProcessScreen.ManipulationStarted += SwipeProcessScreen_ManipulationStarted;
-        SwipeProcessScreen.ManipulationCompleted += SwipeProcessScreen_ManipulationCompleted;
-    }
-
-    private void SwipeProcessScreen_Tapped(object sender, TappedRoutedEventArgs e)
-    {
-        var pt = e.GetPosition(RootGrid);
-
-        if (_isOnceSkipTapped)
-        {
-            _isOnceSkipTapped = false;
-            e.Handled = true;
-            return;
-        }
-
-        var uiItems = VisualTreeHelper.FindElementsInHostCoordinates(pt, UIContainer);
-        foreach (var item in uiItems)
-        {
-            if (item == RightPageMoveButton)
-            {
-                if (RightPageMoveButton.Command?.CanExecute(null) ?? false)
-                {
-                    RightPageMoveButton.Command.Execute(null);
-                }
-            }
-            else if (item == LeftPageMoveButton)
-            {
-                if (LeftPageMoveButton.Command?.CanExecute(null) ?? false)
-                {
-                    LeftPageMoveButton.Command.Execute(null);
-                }
-            }
-            else if (item is Button button)
-            {
-                var command = button.Command;
-                var parameter = button.CommandParameter;
-                if (command is not null)
-                {
-                    if (parameter is not null
-                        && command.CanExecute(parameter)
-                        )
-                    {
-                        command.Execute(parameter);
-                    }
-                }
-            }
-        }
-    }
-
-    private void SwipeProcessScreen_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-    {
-        Debug.WriteLine(e.Cumulative.Translation.Y);
-    }
-
-
-    bool _isOnceSkipTapped = false;
-    private void SwipeProcessScreen_ManipulationStarting(object sender, ManipulationStartingRoutedEventArgs e)
-    {
-        if (AnimationUIContainer.Opacity == 1.0)
-        {
-            e.Handled = true;
-            _isOnceSkipTapped = true;
-            return;
-        }
-    }
-
-
-    private void SwipeProcessScreen_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-    {
-        if (e.Cumulative.Translation.X > 1
-            || e.Velocities.Linear.X > 0.01
-            )
-        {
-            // 右スワイプ
-            LeftPageMoveButton.Command.Execute(null);
-        }
-        else if (e.Cumulative.Translation.X < -1
-            || e.Velocities.Linear.X < -0.01
-            )
-        {
-            // 左スワイプ
-            RightPageMoveButton.Command.Execute(null);
-        }
-        else
-        {
-            e.Handled = true;
-        }
-    }
-
-    #endregion
-
-
 
     private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
     {
@@ -444,5 +332,31 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         {
             _ = _vm.SetPageAsync(pageRef);
         }
+    }
+
+    private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
+    {
+        if (args.X > 1)
+        {
+            LeftPageMoveButton.Command.Execute(null);
+        }
+        else if (args.X < -1)
+        {
+            RightPageMoveButton.Command.Execute(null);
+        }
+
+        if (args.Y > 1)
+        {
+            // 下スワイプ
+            OpenTocPane();
+        }
+        else if (args.Y < -7.5)
+        {
+            // 上スワイプ
+            _vm.BackNavigationCommand.Execute(null);
+        }
+
+
+        Debug.WriteLine(args.Y);
     }
 }

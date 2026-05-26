@@ -18,6 +18,7 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
         _IsReversePageFliping_Scroll = Read(false, nameof(IsReversePageFliping_Scroll));
         _IsReversePageFliping_Button = Read(false, nameof(IsReversePageFliping_Button));
+        _isReversePageFliping_Swipe = Read(false, nameof(IsReversePageFliping_Swipe));
         _RootFontSizeInPixel = Read(DefaultRootFontSizeInPixel, nameof(RootFontSizeInPixel));
         _LetterSpacingInPixel = Read(DefaultLetterSpacingInPixel, nameof(LetterSpacingInPixel));
         _LineHeightInNoUnit = Read(DefaultLineHeightInNoUnit, nameof(LineHeightInNoUnit));
@@ -45,6 +46,13 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
         get { return _IsReversePageFliping_Button; }
         set { SetProperty(ref _IsReversePageFliping_Button, value); }
+    }
+
+    bool _isReversePageFliping_Swipe;
+    public bool IsReversePageFliping_Swipe
+    {
+        get { return _isReversePageFliping_Swipe; }
+        set { SetProperty(ref _isReversePageFliping_Swipe, value); }
     }
 
     private double _RootFontSizeInPixel;
