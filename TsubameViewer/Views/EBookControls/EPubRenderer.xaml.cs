@@ -827,7 +827,7 @@ return JSON.stringify(Array.from(set));
         {
             // Note: -8は下側と右側の見切れ対策
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 96, columnCount, FontSize);
+            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 128, columnCount, FontSize);
         }
 
 #if DEBUG
