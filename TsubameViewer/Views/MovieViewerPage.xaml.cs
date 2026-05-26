@@ -1020,6 +1020,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger.Send(new BackNavigationRequestMessage());
     }
 
+    [RelayCommand]
+    void BackNavigationRequest()
+    {
+        MediaPlayer.Pause();
+        _messenger.Send(new BackNavigationRequestMessage());
+    }
 
 
     #region ZoomInOut

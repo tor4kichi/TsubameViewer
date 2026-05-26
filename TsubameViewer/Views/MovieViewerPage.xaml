@@ -222,7 +222,8 @@
             <StateTrigger IsActive="{x:Bind NowFullScreenMode, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            
+            <Setter Target="CloseButtonForFullScreen.Visibility"
+                    Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -965,6 +966,19 @@
                   VerticalAlignment="Bottom"
                       HorizontalAlignment="Stretch"
                   />
+
+    <Grid x:Name="CloseButtonForFullScreen"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Margin="16"
+          Visibility="Collapsed">
+      <Button Command="{x:Bind BackNavigationRequestCommand}"
+              CornerRadius="32"
+              Height="48"
+              Width="48">
+        <SymbolIcon Symbol="Clear" />
+      </Button>
+    </Grid>
 
     <Grid x:Name="SoundVolumeNotifier"
           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
