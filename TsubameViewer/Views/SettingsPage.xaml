@@ -20,23 +20,6 @@
       <StackPanel Orientation="Horizontal"
                   Spacing="8"                   
                   HorizontalAlignment="Right">
-        <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyToClipboard}"
-                Command="{x:Bind AppInfoCopyToClipboard}"
-                Style="{StaticResource TitlebarButton}">
-          <SymbolIcon Symbol="Copy" />
-        </Button>
-        <TextBlock Text="{x:Bind ReportUserEnvString}"
-                   IsTextSelectionEnabled="True"
-                   HorizontalAlignment="Right"
-                   TextAlignment="Right"
-                   Opacity="0.7"                   >
-          <TextBlock.ContextFlyout>
-            <MenuFlyout>
-              <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}"
-                              Command="{x:Bind AppInfoCopyToClipboard}" />
-            </MenuFlyout>
-          </TextBlock.ContextFlyout>
-        </TextBlock>
 
       </StackPanel>
     </DataTemplate>
@@ -194,6 +177,52 @@
   <Grid>
     <uwpControls:DockPanel>
 
+      <Grid MaxWidth="600"
+            uwpControls:DockPanel.Dock="Top"
+            Padding="0 32 0 0">
+        <Border Height="1"
+                VerticalAlignment="Bottom"
+                Background="{ThemeResource SystemBaseLowColor}" 
+                Opacity="0.3"/>
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 16">
+          <Button Command="{x:Bind BackNavigationRequestCommand}"
+                  HorizontalAlignment="Left">
+            <SymbolIcon Symbol="Back" />
+          </Button>
+
+          <TextBlock Text="{i18Ext:Localize Key=Settings}" 
+                     VerticalAlignment="Center"
+                     TextLineBounds="TrimToCapHeight"
+                     Style="{StaticResource TitleTextBlockStyle}"
+                     Margin="16 0 0 0"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                    Margin="0 0 0 8">
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      HorizontalAlignment="Right">
+            <Button ToolTipService.ToolTip="{i18Ext:Localize Key=CopyToClipboard}"
+                    Command="{x:Bind _vm.AppInfoCopyToClipboard}"
+                    Style="{StaticResource TitlebarButton}">
+              <SymbolIcon Symbol="Copy" />
+            </Button>
+            <TextBlock Text="{x:Bind _vm.ReportUserEnvString}"
+                       IsTextSelectionEnabled="True"
+                       HorizontalAlignment="Right"
+                       TextAlignment="Right"
+                       Opacity="0.7">
+              <TextBlock.ContextFlyout>
+                <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18Ext:Localize Key=CopyToClipboard}"
+                                  Command="{x:Bind _vm.AppInfoCopyToClipboard}" />
+                </MenuFlyout>
+              </TextBlock.ContextFlyout>
+            </TextBlock>
+
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+      
       <ScrollViewer>
         <StackPanel x:Name="ScrollViewerRootPanel" Padding="0 0 0 64">
           <ItemsControl ItemsSource="{x:Bind _vm.SettingGroups, Mode=OneWay}"

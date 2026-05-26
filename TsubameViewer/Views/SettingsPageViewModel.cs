@@ -122,7 +122,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
             },
             new SettingsGroupViewModel
             {
-                Label = "ThumbnailImageSettings".Translate(),
+                Label = "FolderItemListingSettings".Translate(),
                 Items =
                 {
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateImageFileThumbnail".Translate(), _folderListingSettings, x => x.IsImageFileGenerateThumbnailEnabled),
@@ -226,7 +226,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         }
 
         _IsThumbnailDeleteButtonActive.Value = true;
-        _ = RefreshThumbnailFilesSizeAsync(ct);
+        //_ = RefreshThumbnailFilesSizeAsync(ct);
         // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;

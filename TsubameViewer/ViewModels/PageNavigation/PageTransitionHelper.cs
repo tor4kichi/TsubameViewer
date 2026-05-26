@@ -18,8 +18,8 @@ namespace TsubameViewer.ViewModels.PageNavigation
 
         private readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
         private readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
-        private readonly static SlideNavigationTransitionInfo _searchTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
-        private readonly static SlideNavigationTransitionInfo _settingsTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromBottom };
+        private readonly static DrillInNavigationTransitionInfo _searchTransison = new DrillInNavigationTransitionInfo();
+        private readonly static DrillInNavigationTransitionInfo _settingsTransison = new DrillInNavigationTransitionInfo();
         private readonly static SuppressNavigationTransitionInfo _otherTransison = new SuppressNavigationTransitionInfo();
         
         public static NavigationTransitionInfo MakeNavigationTransitionInfoFromPageName(string pageName)
