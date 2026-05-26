@@ -971,11 +971,16 @@
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
           Margin="16"
-          Visibility="Collapsed">
+          Visibility="Collapsed"
+          CornerRadius="12"
+          Height="54"
+          Width="54"
+          Background="{ThemeResource SystemChromeLowColor}">
       <Button Command="{x:Bind BackNavigationRequestCommand}"
-              CornerRadius="32"
-              Height="48"
-              Width="48">
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              Margin="1 1 0 0"
+              CornerRadius="12">
         <SymbolIcon Symbol="Clear" />
       </Button>
     </Grid>
