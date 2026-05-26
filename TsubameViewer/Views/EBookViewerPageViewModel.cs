@@ -77,10 +77,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     int _innerImageTotalCount;
 
-    partial void OnInnerImageTotalCountChanged(int value)
-    {
-        
-    }
     [ObservableProperty]
     EpubBookRef? _currentBook;
 
@@ -321,7 +317,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
             )
-            .Debounce(TimeSpan.FromMilliseconds(500))
+            .ThrottleLast(TimeSpan.FromMilliseconds(250))
             .Subscribe(this, static (_, s) =>
             {
                 if (s.CurrentBookReadingOrder == null) { return; }

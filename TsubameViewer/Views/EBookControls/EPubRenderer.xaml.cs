@@ -842,34 +842,6 @@ return JSON.stringify(Array.from(set));
         // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
         // 
         {
-            //string offsetText = IsVerticalLayout ? "offsetTop" : "offsetLeft";
-            //var sizeList = await WebView.InvokeScriptAsync("eval", new[]
-            //{
-            //    $@"
-            //        const pList = document.querySelectorAll('p, div, img, span');
-            //        const heightArray = [];
-            //        var count = 0;
-            //        for (var [i, item] of pList.entries())
-            //        {{
-            //            const elementScrollTop = item.{offsetText};
-            //            if (elementScrollTop == null) {{ continue; }}
-
-            //            if (heightArray.length == 0)
-            //            {{
-            //                heightArray.push(elementScrollTop);
-            //            }}
-            //            else if (heightArray[count] != elementScrollTop)
-            //            {{
-            //                heightArray.push(elementScrollTop);
-            //                count++;
-            //            }}                        
-            //        }}
-            //        JSON.stringify(heightArray);
-            //        "
-            //});
-            //Debug.WriteLine(sizeList);
-            //var sizeItems = JsonSerializer.Deserialize<int[]>(sizeList)!.Distinct().ToArray();
-
             // 1ページの高さを求める
             // ページ全体の高さを求める
             // ページ数を求める
@@ -886,35 +858,8 @@ return JSON.stringify(Array.from(set));
             Debug.WriteLine($"offset: {offset}");
             Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
-            const int candidateSampleCount = 5;
-            const int compareSampleCount = 50; // サンプル少ないと誤検出が増える
-            int heroPageHeight = -1;
-            int heroHitCount = -1;
-            //foreach (var candidatePageSize in sizeItemsSpan.AsValueEnumerable().Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount).Select(x => x - offset))
-            //{
-            //    float invCandidatePageSize = 1 / (float)candidatePageSize;
-            //    var hitCount = relSizeItemsSpan.AsValueEnumerable()
-            //        .TakeLast(compareSampleCount)
-            //        .Count(x => 
-            //        {
-            //            // レイアウト計算が端末ごとに異なる
-            //            // 切りのいい数字が来ることが期待できないため端数を許容したい
-            //            // スクロール量が大きくなるほど端数も積算していき大きくなる（10000pxに対して+1~+2px程度）
-            //            // この処理をしない場合、ページが飛び飛びに表示されるケースがでてくる
-            //            var div = x * invCandidatePageSize;
-            //            var small = div - (long)div;
-            //            return small > 0.90f || small < 0.10f;
-            //        });
-            //    if (hitCount > heroHitCount)
-            //    {
-            //        heroPageHeight = candidatePageSize;
-            //        heroHitCount = hitCount;
-            //    }
 
-            //    Debug.WriteLine($"candidatePageSize: {candidatePageSize} hitCount: {hitCount}");
-            //}
-
-            heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
+            int heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
 #if DEBUG
             sw.ElapsedWrite("culc hero page size.");
 #endif
