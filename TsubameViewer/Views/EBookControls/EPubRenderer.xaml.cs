@@ -663,15 +663,15 @@ public sealed partial class EPubRenderer : UserControl
     private static void AppendSetVerticalBodyStyleScript(StringBuilder sb)
     {
         sb.AppendLine(
-@"function SetVerticalBodyStyle(webViewHeight, columnCount, fontSize) {
-document.body.style = `width: 100vw; overflow: hidden; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
+@"function SetVerticalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize) {
+document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
 }"
 );        
     }
 
-    private async Task SetVerticalBodyStyleAsync(double height, int columnCount, double fontSize)
+    private async Task SetVerticalBodyStyleAsync(double webViewWidth, double height, int columnCount, double fontSize)
     {
-        await WebView.InvokeScriptAsync("SetVerticalBodyStyle", new [] { height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
+        await WebView.InvokeScriptAsync("SetVerticalBodyStyle", new [] { webViewWidth.ToString("F0"), height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
     }
 
     private static void AppendSetHorizontalBodyStyleScript(StringBuilder sb)
@@ -821,7 +821,7 @@ return JSON.stringify(Array.from(set));
             // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
             // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(WebView.ActualHeight - 8, columnCount, FontSize);
+            await SetVerticalBodyStyleAsync(WebView.ActualWidth - 16, WebView.ActualHeight - 8, columnCount, FontSize);
         }
         else
         {
