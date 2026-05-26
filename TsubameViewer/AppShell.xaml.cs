@@ -1074,6 +1074,7 @@ public sealed partial class AppShell : UserControl
                 if (ViewerFrame.Content?.GetType() is { } viewerPageType
                     && IsOpenWithViewerPageType(viewerPageType))
                 {
+                    ViewerFrame.Visibility = Visibility.Collapsed;
                     var prevPage = ViewerFrame.Content as Page;
                     try
                     {
