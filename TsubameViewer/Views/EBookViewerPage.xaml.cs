@@ -293,9 +293,18 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     public static readonly DependencyProperty NowEnablePageMoveProperty =
         DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(true));
 
+
+    AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
+            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(75));
+    AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
+            .Opacity(1, delay: TimeSpan.FromMilliseconds(50),
+            duration: TimeSpan.FromMilliseconds(125));
+
     private void WebView_ContentRefreshStarting(object sender, EventArgs e)
     {            
         NowEnablePageMove = false;
+        _fadeOutAnim
+            .Start(EPubRenderer);
     }
 
     private void WebView_ContentRefreshComplete(object sender, EventArgs e)
@@ -306,6 +315,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         {
             _vm.CompletePageLoading();
         }
+        _fadeInAnim.Start(EPubRenderer);
     }
 
 

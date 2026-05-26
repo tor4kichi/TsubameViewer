@@ -66,11 +66,22 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     int _currentImageIndex;
 
+    partial void OnCurrentImageIndexChanging(int value)
+    {
+        InnerCurrentImageIndex = 0;
+        InnerImageTotalCount = 1;
+    }
+
     [ObservableProperty]
     int _innerCurrentImageIndex;
     [ObservableProperty]
     int _innerImageTotalCount;
 
+    partial void OnInnerImageTotalCountChanged(int value)
+    {
+        
+    }
+    [ObservableProperty]
     EpubBookRef? _currentBook;
 
     [ObservableProperty]
@@ -95,7 +106,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     double _currentReadingItemPosition = 0;
 
-
+    [ObservableProperty]
+    bool _nowFirstLoadingProgress;
 
     [RelayCommand]
     void ResetEBookReaderSettings()
@@ -222,6 +234,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                         throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
                     }
                 }
+
+                NowFirstLoadingProgress = true;
             }
         }
 
@@ -303,10 +317,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             .AddTo(ref db);
 
         R3.Observable.Merge(
+            this.ObservePropertyChanged(x => x.NowLoadingPage, false).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
             )
-            .Debounce(TimeSpan.FromMilliseconds(300))
+            .Debounce(TimeSpan.FromMilliseconds(500))
             .Subscribe(this, static (_, s) =>
             {
                 if (s.CurrentBookReadingOrder == null) { return; }
@@ -350,7 +365,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (currentPage == null) { throw new IndexOutOfRangeException(); }
                 CurrentPage = currentPage;
                 Debug.WriteLine(currentPage.FilePath);
-                _innerImageTotalCount = -1; // 読了率計算のためあえて変更通知を出さない
                 SelectedTocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
                 CurrentPageTitle = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
 
@@ -454,6 +468,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         {
             _innerPageTotalCountChangedTcs = null;
             NowLoadingPage = false;
+            NowFirstLoadingProgress = false;
             throw;
         }
 
@@ -487,12 +502,13 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         {
             _innerPageTotalCountChangedTcs = null;
             NowLoadingPage = false;
+            NowFirstLoadingProgress = false;
         }
     }
 
     public void CompletePageLoading()
     {
-        _innerPageTotalCountChangedTcs?.SetResult(0);
+        _innerPageTotalCountChangedTcs?.SetResult(0);        
     }
 
 
