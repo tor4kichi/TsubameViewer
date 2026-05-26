@@ -161,6 +161,8 @@
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="F11"
                                Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
+          <KeyboardAccelerator Key="Escape"
+                               Invoked="ExitViewerKeyboardAccelerator_Invoked" />
         </Button.KeyboardAccelerators>
       </Button>
     </Grid>

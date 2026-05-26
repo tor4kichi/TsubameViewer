@@ -240,12 +240,6 @@
           <KeyboardAccelerator Key="F1" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind ExitPlayerCommand}"
-              Tag="{i18nExt:Localize Key=MovieViewer_SC_ExitPlayer}">
-        <Button.KeyboardAccelerators>
-          <KeyboardAccelerator Key="Escape" />
-        </Button.KeyboardAccelerators>
-      </Button>
       <Button Command="{x:Bind TogglePlayPauseCommand}"
               Tag="{i18nExt:Localize Key=MovieViewer_SC_TogglePlayPause}">
         <Button.KeyboardAccelerators>

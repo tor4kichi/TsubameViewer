@@ -1635,6 +1635,18 @@ public sealed partial class AppShell : UserControl
         catch { }
     }
 
+    private void ExitViewerKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        try
+        {
+            if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+            {
+                _messenger.Send<BackNavigationRequestMessage>();
+            }
+        }
+        catch { }
+    }
+
     private void MyNavigationView_ItemInvoked(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args)
     {
         if (args.IsSettingsInvoked)
