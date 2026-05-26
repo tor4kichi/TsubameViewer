@@ -778,23 +778,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    string ProgressXToTimeText(double progressX, double progressY)
+    string ProgressXToTimeText(double progressX)
     {
         if (progressX != 0)
         {
             return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
         }
-        else if (progressY != 0)
-        {
-            return $"{-progressY * 5}%";
-        }
         else { return ""; }
     }
 
-    double EmptyProgressAsOpacity(double progressX, double progressY, bool isEnabled)
+    double EmptyProgressAsOpacity(double progressX, bool isEnabled)
     {
         if (!isEnabled) { return 0; }
-        if (Math.Abs(progressX) < 1 && Math.Abs(progressY) < 1) { return 0; }
+        if (Math.Abs(progressX) < 1) { return 0; }
         
         return 1;
     }
@@ -898,17 +894,26 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     #region Sound Volume
 
+    AnimationBuilder _soundVolumeNotificationAnimation = AnimationBuilder.Create()
+        .TimedKeyFrames<double>("Opacity",
+            d => d.KeyFrame(TimeSpan.FromSeconds(0.125), 1)
+            .KeyFrame(TimeSpan.FromSeconds(1.80), 1)
+            .KeyFrame(TimeSpan.FromSeconds(1.925), 0));
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
-        this.ObservePropertyChanged(x => x.SoundVolume_Display)
-            .Subscribe((this), (x, s) => s.MediaPlayer.Volume = x)
-            .AddTo(ref db);
-
         SetSoundVolume(_vm.PageSettings.SoundVolume, _vm.PageSettings.IsMuted);
 
         ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
         ControlUI_SoundVolumeSlider.ValueChanged += ControlUI_SoundVolumeSlider_ValueChanged;
         Disposable.Create(this, s => s.ControlUI_SoundVolumeSlider.ValueChanged -= s.ControlUI_SoundVolumeSlider_ValueChanged)
+            .AddTo(ref db);
+
+        this.ObservePropertyChanged(x => x.SoundVolume_Display, false)
+            .Subscribe((this), (x, s) => 
+            {
+                s.MediaPlayer.Volume = x;
+                s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);
+            })
             .AddTo(ref db);
     }
 

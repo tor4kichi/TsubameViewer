@@ -933,7 +933,7 @@
           Padding="16 8 16 8"
           HorizontalAlignment="Center"
           VerticalAlignment="Top"
-          Opacity="{x:Bind EmptyProgressAsOpacity(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY, MySwipeDistanceBehavior.NowManipulation), Mode=OneWay}">
+          Opacity="{x:Bind EmptyProgressAsOpacity(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.NowManipulation), Mode=OneWay}">
       <animation:Implicit.ShowAnimations>
         <animation:OpacityAnimation To="1" Duration="0:0:0.125" />
       </animation:Implicit.ShowAnimations>
@@ -942,7 +942,7 @@
                                     Duration="0:0:0.175" />
       </animation:Implicit.HideAnimations>
 
-      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.ProgressY), Mode=OneWay}" 
+      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
                  FontSize="24"/>
     </Grid>
 
@@ -966,6 +966,19 @@
                       HorizontalAlignment="Stretch"
                   />
 
+    <Grid x:Name="SoundVolumeNotifier"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          CornerRadius="6"
+          Margin="32 48 32 32"
+          Padding="16 8 16 8"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Top"
+          Opacity="0">
+      <TextBlock FontSize="24">
+        <Run Text="{i18nExt:Localize Key=MovieViewer_SoundVolume}" />: <Run Text="{x:Bind SoundVolume_Display, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
+      </TextBlock>
+    </Grid>
+    
     <uwpControls:InAppNotification x:Name="FrameSavedNotification"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Bottom"

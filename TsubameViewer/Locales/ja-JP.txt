@@ -257,6 +257,7 @@ MovieViewer_SC_SetPlaybackRateToPrev = 再生速度を下げる
 MovieViewer_SC_SetPlaybackRateToNext = 再生速度を上げる
 MovieViewer_SC_SetPlaybackPositionWithPercent = {0}%の位置から再生
 
+MovieViewer_SoundVolume = 音量
 
 #### SearchResult
 

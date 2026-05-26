@@ -257,6 +257,7 @@ MovieViewer_SC_SetPlaybackRateToPrev = 降低播放速度
 MovieViewer_SC_SetPlaybackRateToNext = 提高播放速度
 MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
 
+MovieViewer_SoundVolume = 体积
 
 #### SearchResult
 

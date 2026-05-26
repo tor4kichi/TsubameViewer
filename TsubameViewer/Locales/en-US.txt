@@ -257,6 +257,7 @@ MovieViewer_SC_SetPlaybackRateToPrev = Decrease Playback Speed
 MovieViewer_SC_SetPlaybackRateToNext = Increase Playback Speed
 MovieViewer_SC_SetPlaybackPositionWithPercent = Play from {0}%
 
+MovieViewer_SoundVolume = Volume
 
 #### SearchResult
 
