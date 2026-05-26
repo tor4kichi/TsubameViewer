@@ -467,14 +467,12 @@
     <winUI:ProgressBar Value="{x:Bind _vm.CurrentReadingItemPosition, Mode=OneWay}"
                        Minimum="0"
                        Maximum="{x:Bind _vm.TotalReadingItemContentSize, Mode=OneWay}"
-                       VerticalAlignment="Bottom"                       
-                       Opacity="0.5"
-                       FlowDirection="RightToLeft"
+                       VerticalAlignment="Bottom"
+                       Opacity="0.3"                       
                        x:Name="ReadCompleteRateProgressBar"
-                       RenderTransformOrigin="1, 0">
-      <UIElement.RenderTransform>
-        <RotateTransform x:Name="ReadCompleteRateProgressBarRotate" Angle="0" />
-      </UIElement.RenderTransform>
+                       RenderTransformOrigin="1, 0"
+                       FlowDirection="RightToLeft"
+                       Background="Transparent">
     </winUI:ProgressBar>
 
     <!-- Toc -->
@@ -713,7 +711,8 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />
+            <!--<wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />-->
+            <StateTrigger IsActive="{Binding ElementName=EPubRenderer, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.(Grid.Column)" Value="0" />
@@ -733,8 +732,6 @@
 
             <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
                     Value="LeftToRight" />
-            <Setter Target="ReadCompleteRateProgressBarRotate.Angle"
-                    Value="90" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
