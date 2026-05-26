@@ -35,6 +35,7 @@ using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Windows.System;
 using Windows.System.Display;
 using Windows.UI.Composition;
@@ -250,6 +251,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _lastHideDisplayControlUIWithAutoHide = false;
 
         var mediaPlayer = MyMediaPlayerElement.MediaPlayer;
+        mediaPlayer.CommandManager.IsEnabled = true;
+
         var playerPositionChanged = ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
             h => mediaPlayer.PlaybackSession.PositionChanged += h,
             h => mediaPlayer.PlaybackSession.PositionChanged -= h
@@ -313,8 +316,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     s._nowRequestPlayStart = true;
                     var mediaSource = MediaSource.CreateFromStorageFile(x);                    
                     db.Add(mediaSource);
-                    s.MediaPlayer.Source = mediaSource;
+                    var playbackItem = new MediaPlaybackItem(mediaSource);
+                    s.MediaPlayer.Source = playbackItem;
                     ct.ThrowIfCancellationRequested();
+
+                    var props = playbackItem.GetDisplayProperties();
+                    props.Type = Windows.Media.MediaPlaybackType.Video;
+                    props.VideoProperties.Title = x.DisplayName;
+
+                    try
+                    {
+                        var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
+                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(stream.AsRandomAccessStream());
+                    }
+                    catch { }
+                    playbackItem.ApplyDisplayProperties(props);
                 }
                 catch
                 {
