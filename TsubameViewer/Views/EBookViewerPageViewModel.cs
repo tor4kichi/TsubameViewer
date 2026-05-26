@@ -69,7 +69,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     partial void OnCurrentImageIndexChanging(int value)
     {
         InnerCurrentImageIndex = 0;
-        InnerImageTotalCount = 1;
     }
 
     [ObservableProperty]
