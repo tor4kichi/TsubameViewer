@@ -188,7 +188,6 @@ ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
 #### EBookReaderPage
 
 IsForceResetStylingInHeadElement = 强制清除样式
-IsForceSetDirectionRightToLeft = 强制执行“从右到左”的书写方向。
 IsReversePageFliping_Scroll = 反向滚动分页
 IsReversePageFliping_Button = 反向左/右翻页
 
@@ -213,8 +212,8 @@ ChangeForegroundColor = 更改文字颜色
 OverrideWritingMode = 垂直/水平书写
 WritingMode.Inherit = 不会改变
 WritingMode.Horizontal_TopToBottom = 横向写作
-WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）
-WritingMode.Vertical_LeftToRight = 垂直书写（从左到右）
+WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）⬅️
+WritingMode.Vertical_LeftToRight = 垂直书写（从左到右） ➡️
 
 ResetEBookSettings = 重新设置
 

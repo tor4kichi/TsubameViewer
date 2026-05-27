@@ -188,7 +188,6 @@ ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 #### EBookReaderPage
 
 IsForceResetStylingInHeadElement = Clear the style by force
-IsForceSetDirectionRightToLeft = Enforce writing direction to "right to left".
 IsReversePageFliping_Scroll = Reverse scrolling pagination
 IsReversePageFliping_Button = Reverse left/right page feed
 
@@ -213,8 +212,8 @@ ChangeForegroundColor = Change text color
 OverrideWritingMode = Vertical/Horizontal writing
 WritingMode.Inherit = Not going to change
 WritingMode.Horizontal_TopToBottom = Horizontal writing
-WritingMode.Vertical_RightToLeft = Vertical writing (right to left)
-WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
+WritingMode.Vertical_RightToLeft = Vertical writing (right to left) ⬅️
+WritingMode.Vertical_LeftToRight = Vertical writing (left to right) ➡️
 
 ResetEBookSettings = Reset settings
 

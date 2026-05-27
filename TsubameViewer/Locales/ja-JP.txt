@@ -188,7 +188,6 @@ ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 #### EBookReaderPage
 
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア
-IsForceSetDirectionRightToLeft = 書字方向を「右から左へ」に強制する
 IsReversePageFliping_Scroll = スクロールのページ送りを逆にする
 IsReversePageFliping_Button = 左右のページ送りを逆にする
 
@@ -213,8 +212,8 @@ ChangeForegroundColor = 文字色を変更
 OverrideWritingMode = 縦書き・横書き
 WritingMode.Inherit = 変更しない
 WritingMode.Horizontal_TopToBottom = 横書き
-WritingMode.Vertical_RightToLeft = 縦書き（右から左）
-WritingMode.Vertical_LeftToRight = 縦書き（左から右）
+WritingMode.Vertical_RightToLeft = 縦書き（右から左）⬅️
+WritingMode.Vertical_LeftToRight = 縦書き（左から右）➡️
 
 ResetEBookSettings = 設定をリセットする
 
