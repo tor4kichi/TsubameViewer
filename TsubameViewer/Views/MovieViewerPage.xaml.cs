@@ -915,10 +915,32 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             d => d.KeyFrame(TimeSpan.FromSeconds(0.125), 1)
             .KeyFrame(TimeSpan.FromSeconds(1.80), 1)
             .KeyFrame(TimeSpan.FromSeconds(1.925), 0));
+
     void HandleSoundVolumeChanged(ref DisposableBuilder db)
     {
         SetSoundVolume(_vm.PageSettings.SoundVolume, _vm.PageSettings.IsMuted);
+        MediaPlayer.Volume = 0;
+        float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
+        var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(16);
+        timer.Tick += (s, e) => 
+        {
+            var nextVolume = MediaPlayer.Volume + increaseVolumeUnit;
+            if (nextVolume > _vm.PageSettings.SoundVolume)
+            {
+                MediaPlayer.Volume = _vm.PageSettings.SoundVolume;
+                s.Stop();                
+            }
+            else
+            {                
+                MediaPlayer.Volume += increaseVolumeUnit;
+            }
 
+            Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
+        };
+        timer.Start();
+        Disposable.Create(timer, s => s.Stop())
+            .AddTo(ref db);
         ControlUI_SoundVolumeSlider.ValueChanged -= ControlUI_SoundVolumeSlider_ValueChanged;
         ControlUI_SoundVolumeSlider.ValueChanged += ControlUI_SoundVolumeSlider_ValueChanged;
         Disposable.Create(this, s => s.ControlUI_SoundVolumeSlider.ValueChanged -= s.ControlUI_SoundVolumeSlider_ValueChanged)
@@ -984,6 +1006,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         double volume = Math.Clamp((double)e.NewValue, 0.0, 1.0);
         SetSoundVolumeFromCode(volume);
+        if (SoundVolume_Display != 0)
+        {
+            _vm.PageSettings.SoundVolume = SoundVolume_Display;
+        }
 
     }
 
