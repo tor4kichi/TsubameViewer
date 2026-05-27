@@ -66,7 +66,8 @@
     <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True" Placement="BottomEdgeAlignedLeft" ScrollViewer.IsVerticalScrollChainingEnabled="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
 
-
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsForceResetStylingInHeadElement, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsForceResetStylingInHeadElement}" />
         <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}"
                   Header="{i18nExt:Localize Key=OverrideWritingMode}"
                   HorizontalAlignment="Stretch"
@@ -80,7 +81,7 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
-        
+
         <winUI:NumberBox Value="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=TwoWay}"
                          Minimum="1"
                          Maximum="10"

@@ -187,8 +187,11 @@ ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = Effacer le style par la force
+IsForceSetDirectionRightToLeft = Imposer le sens d'écriture « de droite à gauche ».
 IsReversePageFliping_Scroll = Pagination à défilement inversée
 IsReversePageFliping_Button = Inverser la page gauche et droite
+
 
 DefaultWithParameter = Par défaut : {0}
 FontSize = Taille de la police d'écriture

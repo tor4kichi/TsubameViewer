@@ -187,8 +187,11 @@ ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = 强制清除样式
+IsForceSetDirectionRightToLeft = 强制执行“从右到左”的书写方向。
 IsReversePageFliping_Scroll = 反向滚动分页
 IsReversePageFliping_Button = 反向左/右翻页
+
 
 DefaultWithParameter = 默认值：{0}
 FontSize = 字体大小

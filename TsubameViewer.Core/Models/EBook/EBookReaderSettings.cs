@@ -31,6 +31,7 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
         _ColumnCount = Read(MinColumnCount, nameof(ColumnCount));
         _MaxWidth = Read(1280.0d, nameof(MaxWidth));
         _MaxHeight = Read(720.0d, nameof(MaxHeight));
+        _isForceResetStylingInHeadElement = Read(false, nameof(IsForceResetStylingInHeadElement));
     }
 
     private bool _IsReversePageFliping_Scroll;
@@ -144,6 +145,13 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
         get => _MaxHeight;
         set => SetProperty(ref _MaxHeight, double.IsNaN(value) ? value : Math.Clamp(value, 0.0, 100000.0));
     }
+
+    bool _isForceResetStylingInHeadElement;
+    public bool IsForceResetStylingInHeadElement
+    {
+        get { return _isForceResetStylingInHeadElement; }
+        set { SetProperty(ref _isForceResetStylingInHeadElement, value); }
+    }
 }
 
 
@@ -152,5 +160,5 @@ public enum WritingMode
     Inherit,
     Horizontal_TopToBottom,
     Vertical_RightToLeft,
-    Vertical_LeftToRight,
+    Vertical_LeftToRight,    
 }

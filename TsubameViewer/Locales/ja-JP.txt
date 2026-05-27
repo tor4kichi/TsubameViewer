@@ -187,8 +187,11 @@ ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = スタイルを強制的にクリア
+IsForceSetDirectionRightToLeft = 書字方向を「右から左へ」に強制する
 IsReversePageFliping_Scroll = スクロールのページ送りを逆にする
 IsReversePageFliping_Button = 左右のページ送りを逆にする
+
 
 DefaultWithParameter = デフォルト：{0}
 FontSize = 文字の大きさ

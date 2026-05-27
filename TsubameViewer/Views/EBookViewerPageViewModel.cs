@@ -133,7 +133,18 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     public IReadOnlyList<double> RubySizeItems { get; } = Enumerable.Range(0, 51).Select(x => (double)x).ToList();
     public IReadOnlyList<string> SystemFontFamilies { get; } = Microsoft.Graphics.Canvas.Text.CanvasTextFormat.GetSystemFontFamilies();
     public IReadOnlyList<ApplicationTheme> ThemeItems { get; } = new[] { ApplicationTheme.Default, ApplicationTheme.Light, ApplicationTheme.Dark };
-    public IReadOnlyList<WritingMode> WritingModeItems { get; } = new[] { WritingMode.Inherit, WritingMode.Horizontal_TopToBottom, WritingMode.Vertical_RightToLeft, /*WritingMode.Vertical_LeftToRight*/ };
+    public IReadOnlyList<WritingMode> WritingModeItems { get; } = new[]
+    {
+        WritingMode.Inherit,
+        WritingMode.Horizontal_TopToBottom,
+        WritingMode.Vertical_RightToLeft, 
+        WritingMode.Vertical_LeftToRight 
+    };
+
+
+
+    [ObservableProperty]
+    WritingMode _defaultWritingMode;
 
     public EBookViewerPageViewModel(
         IMessenger messenger,
@@ -338,6 +349,14 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             })
             .AddTo(ref db);
 
+        EBookReaderSettings.ObservePropertyChanged(x => x.IsForceResetStylingInHeadElement)
+            .Subscribe(x => 
+            {
+                PageHtml = null;
+                _ = UpdateCurrentPage(CurrentImageIndex, _navigationCt);
+            })
+            .AddTo(ref db);
+
         db.Build().RegisterTo(ct);
 
         await base.OnNavigatedToAsync(parameters, ct);
@@ -387,9 +406,13 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                         var node = _nodes.Pop();
 
                         if (node.Name == "head")
-                        {
-                            // ヘッダー要素を全削除してカスタムなスタイルを表示させない
-                            node.InnerText = "";
+                        {                            
+                            if (EBookReaderSettings.IsForceResetStylingInHeadElement)
+                            {
+                                // ヘッダー要素を全削除してカスタムなスタイルを表示させない
+                                node.InnerText = "";
+                            }
+
                             var cssItems = new[] { theme == ApplicationTheme.Light ? _lightThemeCss : _darkThemeCss };
                             foreach (var css in cssItems)
                             {

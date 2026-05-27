@@ -187,8 +187,11 @@ ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = Clear the style by force
+IsForceSetDirectionRightToLeft = Enforce writing direction to "right to left".
 IsReversePageFliping_Scroll = Reverse scrolling pagination
 IsReversePageFliping_Button = Reverse left/right page feed
+
 
 DefaultWithParameter = Default: {0}
 FontSize = Font size
