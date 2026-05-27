@@ -1,8 +1,10 @@
-﻿using I18NPortable;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Fluent.Icons;
+using I18NPortable;
 using Microsoft.Toolkit.Uwp.Helpers;
+using R3;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using System;
@@ -19,16 +21,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
-using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.System;
-using Windows.ApplicationModel.DataTransfer;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
 
 
@@ -45,9 +47,10 @@ public sealed class AppShellViewModel
     private readonly IMessenger _messenger;
     private readonly FolderContainerTypeManager _folderContainerTypeManager;
 
-    public List<object> MenuItems { get;  }
+    public List<object> HeaderMenuItems { get; }
+    public ObservableCollection<object> MenuItems { get;  }
 
-    CompositeDisposable _disposables = new CompositeDisposable();
+    R3.CompositeDisposable _disposables = new R3.CompositeDisposable();
 
     public AppShellViewModel(
         IScheduler scheduler,
@@ -59,7 +62,8 @@ public sealed class AppShellViewModel
         SourceChoiceCommand sourceChoiceCommand,
         RefreshNavigationCommand refreshNavigationCommand,
         OpenPageCommand openPageCommand,
-        StartSelectionCommand startSelectionCommand
+        StartSelectionCommand startSelectionCommand,
+        BackNavigationCommand backNavigationCommand
         )
     {                        
         _scheduler = scheduler;
@@ -73,36 +77,17 @@ public sealed class AppShellViewModel
         RefreshNavigationCommand = refreshNavigationCommand;
         OpenPageCommand = openPageCommand;
         StartSelectionCommand = startSelectionCommand;
-        UpdateAutoSuggestCommand = new ReactiveCommand<string>();
+        BackNavigationCommand = backNavigationCommand;
 
-        UpdateAutoSuggestCommand
-            .Throttle(TimeSpan.FromSeconds(0.250), _scheduler)
-            .Where(_ => _onceSkipSuggestUpdate is false)
-            .Subscribe(ExecuteUpdateAutoSuggestCommand)
-            .AddTo(_disposables);
-
-        AutoSuggestBoxItems = new[]
-        {
-            _AutoSuggestItemsGroup,
-        };
-
-        _foldersMenuSubItem = new MenuSubItemViewModel()
-        {
-            PageType = nameof(Views.SourceStorageItemsPage),
-            Title = "SourceStorageItemsPage".Translate(),
-            AccessKey = "1",
-            KeyboardAceseralator = VirtualKey.Number1
-        };
-
-        MenuItems = new List<object>
-        {
-            _foldersMenuSubItem,
-            new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "3", KeyboardAceseralator = VirtualKey.Number3 },
-        };
-
+        HeaderMenuItems = [
+            new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "Folders".Translate(), AccessKey = "1", KeyboardAceseralator = VirtualKey.Number1 },
+            new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "2", KeyboardAceseralator = VirtualKey.Number2 },
+        ];
+        MenuItems = [];
         RefreshFolderSubItems();    
         IsActive= true;
     }
+
 
 
     void IRecipient<SourceStorageItemRemovedMessage>.Receive(SourceStorageItemRemovedMessage message)
@@ -131,10 +116,15 @@ public sealed class AppShellViewModel
 
     public void RefreshFolderSubItems()
     {
-        _foldersMenuSubItem.Items.Clear();
+        MenuItems.Clear();
+        foreach (var headerItem in HeaderMenuItems)
+        {
+            MenuItems.Add(headerItem);
+        }
+
         foreach (var folderPath in SourceStorageItemsRepository.GetParsistantItemsFromCache())
         {
-            _foldersMenuSubItem.Items.Add(new MenuItemViewModel()
+            MenuItems.Add(new MenuItemViewModel()
             {
                 PageType = nameof(Views.FolderListupPage),
                 Parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(folderPath))),
@@ -145,12 +135,6 @@ public sealed class AppShellViewModel
 
 
 
-    MenuSubItemViewModel _foldersMenuSubItem;
-
-    AutoSuggestBoxGroupBase _AutoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
-
-    public object[] AutoSuggestBoxItems { get; }
-
     private bool _IsDisplayMenu = true;
     public bool IsDisplayMenu
     {
@@ -159,21 +143,12 @@ public sealed class AppShellViewModel
     }
 
 
-    RelayCommand<object> _OpenMenuItemCommand;
-    public RelayCommand<object> OpenMenuItemCommand =>
-        _OpenMenuItemCommand ??= new RelayCommand<object>(item => 
-        {
-            if (item is MenuItemViewModel menuItem)
-            {
-                _messenger.NavigateAsync(menuItem.PageType, menuItem.Parameters);
-            }            
-        });
-
     public ApplicationSettings ApplicationSettings { get; }
     public NavigationStackRepository RestoreNavigationManager { get; }
     public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
     public SourceChoiceCommand SourceChoiceCommand { get; }
     public RefreshNavigationCommand RefreshNavigationCommand { get; }
+    public BackNavigationCommand BackNavigationCommand { get; }
     public OpenPageCommand OpenPageCommand { get; }
     public StartSelectionCommand StartSelectionCommand { get; }
 
@@ -205,29 +180,78 @@ public sealed class AppShellViewModel
 
 
 
+}
+
+public class InPageSearchContext : IDisposable
+{
+    public InPageSearchContext(
+        IMessenger messenger,
+        SourceStorageItemsRepository sourceStorageItemsRepository,
+        FolderContainerTypeManager folderContainerTypeManager)
+    {
+        _messenger = messenger;
+        SourceStorageItemsRepository = sourceStorageItemsRepository;
+        _folderContainerTypeManager = folderContainerTypeManager;
+
+        DisposableBuilder db = new();
+        UpdateAutoSuggestCommand = new R3.ReactiveCommand<string>()
+            .AddTo(ref db);
+
+        UpdateAutoSuggestCommand
+            .AsObservable()
+            .Debounce(TimeSpan.FromSeconds(0.250))
+            .Where(_ => _onceSkipSuggestUpdate is false)
+            .Subscribe(ExecuteUpdateAutoSuggestCommand)
+            .AddTo(ref db);
+
+        _disposable = db.Build();
+
+        AutoSuggestBoxItems = new[]
+        {
+            _AutoSuggestItemsGroup,
+        };
+    }
+
+
+    public void Dispose()
+    {
+        _disposable.Dispose();
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
 
     #region Search
 
-    public ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
+    IDisposable _disposable;
+
+    AutoSuggestBoxGroupBase _AutoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
+
+    public object[] AutoSuggestBoxItems { get; }
+
+    public R3.ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
 
     private bool _onceSkipSuggestUpdate = false;
-    private readonly Core.AsyncLock _suggestUpdateLock = new ();
-    private CancellationTokenSource _cts;
+    private readonly Core.AsyncLock _suggestUpdateLock = new();
+    private readonly IMessenger _messenger;
+    private readonly FolderContainerTypeManager _folderContainerTypeManager;
+    private CancellationTokenSource? _cts;
     private async void ExecuteUpdateAutoSuggestCommand(string parameter)
-    {            
+    {
         CancellationTokenSource cts;
         CancellationToken ct = default;
         using (await _suggestUpdateLock.LockAsync(default))
         {
             _cts?.Cancel();
+            _cts?.Dispose();
             _cts = null;
 
             _AutoSuggestItemsGroup.Items.Clear();
 
-            if (_onceSkipSuggestUpdate) 
+            if (_onceSkipSuggestUpdate)
             {
                 _onceSkipSuggestUpdate = false;
-                return; 
+                return;
             }
             if (string.IsNullOrWhiteSpace(parameter)) { return; }
 
@@ -236,7 +260,7 @@ public sealed class AppShellViewModel
         }
 
         object recipentObject = new object();
-        
+
         try
         {
             List<IStorageItem> result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
@@ -301,12 +325,16 @@ public sealed class AppShellViewModel
             }
             else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(file.FileType))
             {
-                await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
+                await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+            }
+            else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(file.FileType))
+            {
+                await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
             }
         }
 
         using (await _suggestUpdateLock.LockAsync(default))
-        { 
+        {
             _onceSkipSuggestUpdate = false;
         }
     }
@@ -315,7 +343,9 @@ public sealed class AppShellViewModel
     private RelayCommand<object> _SearchQuerySubmitCommand;
     public RelayCommand<object> SearchQuerySubmitCommand =>
         _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new RelayCommand<object>(ExecuteSearchQuerySubmitCommand));
-    
+
+    public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
+
     async void ExecuteSearchQuerySubmitCommand(object parameter)
     {
         if (parameter is string q)
@@ -333,7 +363,7 @@ public sealed class AppShellViewModel
             await _messenger.NavigateAsync(nameof(Views.SearchResultPage), isForgetNavigation: true, ("q", q));
             using (await _suggestUpdateLock.LockAsync(default))
             {
-                _onceSkipSuggestUpdate = false;                
+                _onceSkipSuggestUpdate = false;
             }
         }
         else if (parameter is IStorageItem entry)
@@ -367,8 +397,18 @@ public class MenuItemViewModel
     public VirtualKey KeyboardAceseralator { get; set; }
 }
 
+public class MenuItemInvokeActionViewModel
+{
+    public string Title { get; set; }
+    public string Tooltip { get; set; }
+    public Action Invoked { get; set; }
+    public object Icon { get; set; }
+    public string AccessKey { get; set; }
+    public VirtualKey KeyboardAceseralator { get; set; }
+}
 
 public class MenuSubItemViewModel : MenuItemViewModel
 {
-    public ObservableCollection<MenuItemViewModel> Items { get; } = new();
+    public ObservableCollection<object> Items { get; } = new();
+    public object Icon { get; set; }
 }

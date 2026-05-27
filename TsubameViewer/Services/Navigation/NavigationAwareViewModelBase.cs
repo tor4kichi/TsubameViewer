@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TsubameViewer.Services.Navigation;
@@ -64,7 +65,7 @@ public interface INavigationAware
 {
     void OnNavigatedFrom(INavigationParameters parameters);
     void OnNavigatedTo(INavigationParameters parameters);
-    Task OnNavigatedToAsync(INavigationParameters parameters);
+    Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct);
 }
 
 public abstract class NavigationAwareViewModelBase : ObservableObject, INavigationAware
@@ -79,7 +80,7 @@ public abstract class NavigationAwareViewModelBase : ObservableObject, INavigati
 
     }
 
-    public virtual Task OnNavigatedToAsync(INavigationParameters parameters)
+    public virtual Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         return Task.CompletedTask;
     }

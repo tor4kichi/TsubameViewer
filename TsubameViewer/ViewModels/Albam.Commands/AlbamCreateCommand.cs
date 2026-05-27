@@ -25,12 +25,12 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             _albamDialogService = albamDialogService;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             return true;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             var (isSuccess, albamName) = await _albamDialogService.GetNewAlbamNameAsync();
             if (isSuccess && string.IsNullOrEmpty(albamName) is false)

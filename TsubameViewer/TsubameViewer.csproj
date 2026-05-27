@@ -140,6 +140,7 @@
     <Compile Include="Contracts\Services\ISplitImageInputDialogService.cs" />
     <Compile Include="Contracts\Services\IImageCodecService.cs" />
     <Compile Include="R3\DispatcherQueueTimerProvider.cs" />
+    <Compile Include="R3\ObservableTypedEventHandler.cs" />
     <Compile Include="R3\WinRTProviderInitializer.cs" />
     <Compile Include="R3\XamlCancellationHelper.cs" />
     <Compile Include="Services\BinaryObjectSerializer.cs" />
@@ -165,15 +166,24 @@
     <Compile Include="ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
-    <Compile Include="ViewModels\AlbamListupPageViewModel.cs" />
+    <Compile Include="Views\AlbamListupPageViewModel.cs" />
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
-    <Compile Include="ViewModels\EBookReaderPageViewModel.cs" />
-    <Compile Include="ViewModels\FolderListupPageViewModel.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\IfImageSourceNotExistSendMessage.cs" />
+    <Compile Include="Views\EBookViewerPageViewModel.cs" />
+    <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />
+    <Compile Include="Views\Behaviors\SwipeDistanceBehavior.cs" />
+    <Compile Include="Views\Converters\EquelsToValueConverter.cs" />
+    <Compile Include="Views\Converters\DoubleToPercentTextConverter.cs" />
+    <Compile Include="Views\Converters\TimeSpanToSimpleTextConverter.cs" />
+    <Compile Include="Views\EmptyPage.xaml.cs">
+      <DependentUpon>EmptyPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
-    <Compile Include="ViewModels\ImageListupPageViewModel.cs" />
+    <Compile Include="Views\ImageListupPageViewModel.cs" />
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
-    <Compile Include="ViewModels\ImageViewerPageViewModel.cs" />
+    <Compile Include="Views\ImageViewerPageViewModel.cs" />
     <Compile Include="Contracts\Notification\InAppNotificationRequestMessage.cs" />
     <Compile Include="ViewModels\IStorageItemViewModel.cs" />
     <Compile Include="ViewModels\LazyFolderOrArchiveFileViewModel.cs" />
@@ -201,9 +211,9 @@
     <Compile Include="ViewModels\PageNavigation\RefreshNavigationRequestMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\StartMultiSelectionMessage.cs" />
     <Compile Include="ViewModels\PageNavigation\ThemeChangeRequestMessage.cs" />
-    <Compile Include="ViewModels\AppShellViewModel.cs" />
-    <Compile Include="ViewModels\SearchResultPageViewModel.cs" />
-    <Compile Include="ViewModels\SettingsPageViewModel.cs" />
+    <Compile Include="AppShellViewModel.cs" />
+    <Compile Include="Views\SearchResultPageViewModel.cs" />
+    <Compile Include="Views\SettingsPageViewModel.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ArchiveFileEntryTitleDigitCompletionCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\ChangeStorageItemThumbnailImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\FileDeleteCommand.cs" />
@@ -212,7 +222,7 @@
     <Compile Include="ViewModels\SourceFolders.Commands\SourceChoiceCommand.cs" />
     <Compile Include="ViewModels\SourceFolders.Commands\SplitImageCommand.cs" />
     <Compile Include="ViewModels\SourceFolders\RequireInstallImageCodecExtensionMessage.cs" />
-    <Compile Include="ViewModels\SourceStorageItemsPageViewModel.cs" />
+    <Compile Include="Views\SourceStorageItemsPageViewModel.cs" />
     <Compile Include="ViewModels\StorageItemViewModel.cs" />
     <Compile Include="ViewModels\ViewManagement.Commands\ToggleFullScreenCommand.cs" />
     <Compile Include="Views\AlbamListupPage.xaml.cs">
@@ -236,6 +246,7 @@
     <Compile Include="Views\Converters\PointToRectConverter.cs" />
     <Compile Include="Views\Converters\RoutedEventOriginalSourceConverter.cs" />
     <Compile Include="Views\Converters\SliderValueChangedEventArgsConverter.cs" />
+    <Compile Include="Views\Converters\TimeSpanToStringConverter.cs" />
     <Compile Include="Views\Converters\ToKMGTPEZYConverter.cs" />
     <Compile Include="Views\Converters\UriHumanReadableConverter.cs" />
     <Compile Include="Views\Dialogs\SplitImageInputDialog.xaml.cs">
@@ -253,8 +264,8 @@
     <Compile Include="Views\EBookControls\EPubRenderer.xaml.cs">
       <DependentUpon>EPubRenderer.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\EBookReaderPage.xaml.cs">
-      <DependentUpon>EBookReaderPage.xaml</DependentUpon>
+    <Compile Include="Views\EBookViewerPage.xaml.cs">
+      <DependentUpon>EBookViewerPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Flyouts\StorageItemMenuFlyout.xaml.cs">
       <DependentUpon>StorageItemMenuFlyout.xaml</DependentUpon>
@@ -270,6 +281,8 @@
       <DependentUpon>FolderListupItemTemplate.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\Helpers\CodeBehindExtensions.cs" />
+    <Compile Include="Views\Helpers\ObserveDependencyPropertyExtensions.cs" />
+    <Compile Include="Views\Helpers\PointerRoutedEventArgsExtensions.cs" />
     <Compile Include="Views\Helpers\SystemThemeHelper.cs" />
     <Compile Include="Views\Helpers\VisualTreeExtensions.cs" />
     <Compile Include="Views\ImageListupPage.xaml.cs">
@@ -282,6 +295,10 @@
       <DependentUpon>AppShell.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\KeyIndexMappedAdvancedCollectionView.cs" />
+    <Compile Include="Views\MovieViewerPage.xaml.cs">
+      <DependentUpon>MovieViewerPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\MovieViewerPageViewModel.cs" />
     <Compile Include="Views\SearchResultPage.xaml.cs">
       <DependentUpon>SearchResultPage.xaml</DependentUpon>
     </Compile>
@@ -374,6 +391,9 @@
     <PackageReference Include="CommunityToolkit.Mvvm">
       <Version>8.0.0</Version>
     </PackageReference>
+    <PackageReference Include="CommunityToolkit.Uwp.Controls.Segmented">
+      <Version>8.2.251219</Version>
+    </PackageReference>
     <PackageReference Include="CommunityToolkit.Uwp.Controls.SettingsControls">
       <Version>8.2.251219</Version>
     </PackageReference>
@@ -431,7 +451,7 @@
       <Version>1.1.0</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
-      <Version>3.3.2</Version>
+      <Version>3.3.6</Version>
     </PackageReference>
     <PackageReference Include="WindowsStateTriggers">
       <Version>1.1.0</Version>
@@ -482,9 +502,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="Views\EBookReaderPage.xaml">
+    <Page Include="Views\EBookViewerPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\EmptyPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\Flyouts\StorageItemMenuFlyout.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -513,6 +537,10 @@
     <Page Include="AppShell.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Views\MovieViewerPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Views\SearchResultPage.xaml">
       <Generator>MSBuild:Compile</Generator>

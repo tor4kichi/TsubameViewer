@@ -8,7 +8,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public sealed class FavoriteToggleCommand : CommandBase
     {
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -18,7 +18,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             return parameter is IImageSource;
         }
 
-        protected override void Execute(object parameter)
+        public override void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {

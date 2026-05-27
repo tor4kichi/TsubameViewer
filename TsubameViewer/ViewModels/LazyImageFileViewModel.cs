@@ -15,10 +15,11 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Views.Converters;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 
@@ -50,7 +51,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -62,7 +63,10 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
+
+    [ObservableProperty]
+    string? _duration;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
@@ -132,15 +136,28 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
     {
-        if (Item == null)
+        try
         {
-            Item = await _imageCollectionContext.GetImageFileAtAsync(Index, _fileSortType, ct);
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            if (Item == null)
+            {
+                Item = await _imageCollectionContext.GetImageFileAtAsync(Index, _fileSortType, ct);
+                Name = Item.Name;
+                Path = Item.Path;
+                DateCreated = Item.DateCreated;
+                Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+                UpdateLastReadPosition();
+                IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            }
+        }
+        catch (DirectoryNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
         }
     }
 
@@ -194,7 +211,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         catch (NotSupportedException)
         {
             Status = LoadingStatus.LoadFailed;
-        }
+        }       
     }
 
     public void UpdateLastReadPosition()
@@ -267,7 +284,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -279,10 +296,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
+    [ObservableProperty]
+    string? _duration;
 
     public LazyCacheImageFileViewModel(
         FolderImageCollectionContext imageCollectionContext,
@@ -365,14 +384,24 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     }
 
     async ValueTask EnsureStorageItemAsync(CancellationToken ct)
-    {
+    {        
         if (Item == null)
         {
-            var file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.GetFileName()).AsTask(ct);
-            if (file == null)
+            StorageFile file;
+            try
             {
-                // TODO: ファイルが無い場合の表示
+                file = await _imageCollectionContext.Folder.GetFileAsync(_cacheEntry.GetFileName()).AsTask(ct);
             }
+            catch (DirectoryNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                throw;
+            }
+            catch (FileNotFoundException)
+            {
+                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                throw;
+            }            
             Item = new StorageItemImageSource(file);
             Name = Item.Name;
             Path = Item.Path;
@@ -380,6 +409,14 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+        }
+
+        if (Type == StorageItemTypes.Movie
+            && Duration == null
+            &&  Item.StorageItem is StorageFile movieFile)
+        {
+            var videoProps = await movieFile.Properties.GetVideoPropertiesAsync();
+            Duration = TimeSpanHelper.FormatTimeSpan(videoProps?.Duration ?? TimeSpan.Zero);
         }
     }
 
@@ -433,7 +470,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         catch (NotSupportedException)
         {
             Status = LoadingStatus.LoadFailed;
-        }
+        }        
     }
 
     public void UpdateLastReadPosition()

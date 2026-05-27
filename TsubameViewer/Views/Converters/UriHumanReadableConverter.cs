@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.UI.Xaml.Data;
 using ZLinq;
+using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
 
 namespace TsubameViewer.Views.Converters;
 
@@ -26,11 +27,20 @@ internal class UriHumanReadableConverter : IValueConverter
             target = "";
         }
 
-        return target.Split('\\', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).AsValueEnumerable().JoinToString('/');
+        return UriHelper.ToHumanReadable(target);
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)
     {
         throw new NotImplementedException();
+    }
+}
+
+public static class UriHelper
+{
+    public static string ToHumanReadable(string s)
+    {
+        if (s == null) { return ""; }
+        return s.Split('\\', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).AsValueEnumerable().JoinToString('/');
     }
 }

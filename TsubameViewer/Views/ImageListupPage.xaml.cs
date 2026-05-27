@@ -27,6 +27,7 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
 using Windows.System;
@@ -36,6 +37,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
@@ -75,6 +77,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.DisplayCurrentPath)
+            .Select(x => UriHelper.ToHumanReadable(x));
+    }
+
     private readonly ImageListupPageViewModel _vm;
     private readonly IMessenger _messenger;
     private readonly FocusHelper _focusHelper;
@@ -101,12 +109,23 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
+        ContentViewTypeSelector.SelectedIndex = 1;
     }
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         StopLoadingTaskMonitor();
     }
+
+    private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selector = (Selector)sender;
+        if (selector.IsLoaded && selector.SelectedIndex == 0 && _vm?.CurrentFolderItem != null)
+        {
+            _messenger.NavigateAsync(nameof(FolderListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
+        }
+    }
+
 
     #region Image Loading
 
@@ -202,6 +221,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
             .AddTo(ref db);
 
+        foreach (var item in _realizedItems)
+        {
+            if (item.DataContext is IStorageItemViewModel itemVM)
+            {
+                itemVM.RestoreThumbnailLoadingTask(ct);
+            }
+        }
+
         _lodingTaskMonitor = db.Build();
     }
 
@@ -243,7 +270,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _priorityLoadPendingItems.Clear();
         _loadPendingItems.Clear();
-        foreach (var item in _realizedItems)
+
+        using var items = _realizedItems.AsValueEnumerable().ToArrayPool();
+        foreach (var item in items.Span)
         {
             if (item.DataContext is not IStorageItemViewModel itemVM) { continue; }
             if (itemVM.IsRequestImageLoading || itemVM.IsInitialized) { continue; }
@@ -577,7 +606,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     [ObservableProperty]
-    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<StorageItemViewModel>();
+    IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
 
 
     private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
@@ -613,6 +642,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+
+            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
         }
 
         _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
@@ -764,6 +796,91 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
+    #region Search Box
+
+    InPageSearchContext? _searchContext;
+    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+        textBox.TextChanged += TextBox_TextChanged;
+        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+    }
+
+
+    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+        textBox.TextChanged -= TextBox_TextChanged;
+        _searchContext?.Dispose();
+        _searchContext = null;
+    }
+
+
+    bool _isInputIncomplete;
+
+    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    {
+        _isInputIncomplete = true;
+    }
+
+    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInputIncomplete == false)
+        {
+            var textBox = (TextBox)sender;
+            //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+        }
+    }
+
+    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    {
+        _isInputIncomplete = false;
+        var textBox = (TextBox)sender;
+        //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+    }
+
+
+
+    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    {
+        //(sender as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        //(args.Element as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    InPageSearchRequestMessage? _searchMessage;
+    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        if (!sender.Items.Any())
+        {
+            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        }
+        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+    }
+
+    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));
+    }
+
+
+    #endregion
 }
 
 

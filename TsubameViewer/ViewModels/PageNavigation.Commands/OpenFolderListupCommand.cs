@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -20,7 +21,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _messenger = messenger;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -30,7 +31,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             return parameter is IImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -39,7 +40,8 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
             if (parameter is IImageSource imageSource)
             {
-                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);                
                 if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);

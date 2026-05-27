@@ -32,7 +32,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _folderContainerTypeManager = folderContainerTypeManager;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -42,7 +42,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             return parameter is IImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             var listUpAnimationFactory = () => new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
             var imageViewerAnimationFactory = () => new DrillInNavigationTransitionInfo();
@@ -54,6 +54,8 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
             if (parameter is IImageSource imageSource)
             {
+                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type == StorageItemTypes.Archive)
                 {

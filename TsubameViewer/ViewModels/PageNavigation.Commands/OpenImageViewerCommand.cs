@@ -20,7 +20,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _messenger = messenger;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -30,7 +30,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             return parameter is IImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -39,6 +39,8 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
             if (parameter is IImageSource imageSource)
             {
+                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.Albam or StorageItemTypes.AlbamImage)
                 {
@@ -48,7 +50,12 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
                 else if (type == StorageItemTypes.EBook)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+                }
+                else if (type == StorageItemTypes.Movie)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
                 }
             }
         }

@@ -2,19 +2,21 @@
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
-using TsubameViewer.Core.Models;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Views.Converters;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
-using System.Diagnostics;
-using System.IO;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -57,7 +59,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     private BitmapImage? _image;
 
     [ObservableProperty]
-    private float? _ImageAspectRatioWH;
+    private float? _imageAspectRatioWH;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -69,10 +71,12 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     StorageItemTypes _type;
 
     [ObservableProperty]
-    private double _ReadParcentage;
+    private double _readParcentage;
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
+    [ObservableProperty]
+    string? _duration;
 
     public LazyFolderOrArchiveFileViewModel(
         IImageCollectionContext imageCollectionContext,
@@ -99,6 +103,9 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _type = StorageItemTypes.Archive;
 
     }
+
+    BookmarkFacade? _bookmark;
+    BookmarkFacade Bookmark => _bookmark ??= _bookmarkManager.GetBookmarkFacade(Path);
 
     public bool IsRequestImageLoading => Status == LoadingStatus.NowLoading;
     LoadingStatus _status = LoadingStatus.None;
@@ -164,6 +171,28 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
                     UpdateLastReadPosition();
                     IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+                    if (Type == StorageItemTypes.Movie
+                        && Item.StorageItem is Windows.Storage.StorageFile file)
+                    {
+                        if (Bookmark.PageName is string duration
+                            && duration != null)
+                        {
+                            Duration = duration;
+                        }
+                        else
+                        {
+                            var movieProps = await file.Properties.GetVideoPropertiesAsync();
+                            if (movieProps?.Duration is { } d && d != TimeSpan.Zero)
+                            {
+                                Duration = TimeSpanHelper.FormatTimeSpan(d);
+                                Bookmark.PageName = Duration;
+                            }
+                            else
+                            {
+                                Bookmark.PageName = "";
+                            }
+                        }
+                    }
                 }
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
@@ -197,12 +226,24 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         {
             Status = LoadingStatus.LoadFailed;
         }
+        catch (DirectoryNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            Status = LoadingStatus.LoadFailed;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }        
     }
 
     public void UpdateLastReadPosition()
     {
-        var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
+        // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
+        _bookmark = null;
+        var parcentage = Bookmark.ReadPosition.Value;
+        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;        
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)

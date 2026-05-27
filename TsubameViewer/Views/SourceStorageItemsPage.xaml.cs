@@ -1,13 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
+using I18NPortable;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
@@ -32,6 +37,11 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return Observable.Return(nameof(TsubameViewer));
+    }
+
     public SourceStorageItemsPage()
     {
         this.InitializeComponent();
@@ -39,10 +49,12 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
         DataContext = _vm = Ioc.Default.GetRequiredService<SourceStorageItemsPageViewModel>();
         _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
+        _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
     private readonly SourceStorageItemsPageViewModel _vm;
     private readonly FocusHelper _focusHelper;
+    private readonly IMessenger _messenger;
 
     private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
@@ -50,7 +62,22 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         {
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts.IsCancellationRequested is false)
             {
-                ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
+                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                if (size.Y == 0)
+                {
+                    size = new Vector2(120, 200);
+                }
+                ToolTipService.SetToolTip(args.ItemContainer, 
+                    new ToolTip() 
+                    { 
+                        Content = new TextBlock() 
+                        { 
+                            Text = itemVM.Name, 
+                            TextWrapping = TextWrapping.Wrap 
+                        },
+                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                        Placement = PlacementMode.Bottom 
+                    });
             }
 
             itemVM.InitializeAsync(_ct);
@@ -86,4 +113,93 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         _ct = _navigationCts.Token;
         _isFirstItem = true;
     }
+
+
+
+    #region Search Box
+
+    InPageSearchContext? _searchContext;
+    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+        textBox.TextChanged += TextBox_TextChanged;
+        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+    }
+
+
+    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+        textBox.TextChanged -= TextBox_TextChanged;
+        _searchContext?.Dispose();
+        _searchContext = null;
+    }
+
+
+    bool _isInputIncomplete;
+
+    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    {
+        _isInputIncomplete = true;
+    }
+
+    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInputIncomplete == false)
+        {
+            var textBox = (TextBox)sender;
+            //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+        }
+    }
+
+    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    {
+        _isInputIncomplete = false;
+        var textBox = (TextBox)sender;
+        //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+    }
+
+
+
+    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    {
+        //(sender as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        //(args.Element as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    InPageSearchRequestMessage? _searchMessage;
+    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        //if (!sender.Items.Any())
+        //{
+        //    sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        //}
+        //sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+    }
+
+    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        //_searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        //_messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));
+        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+
+    #endregion
 }

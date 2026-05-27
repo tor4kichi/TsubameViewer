@@ -83,5 +83,9 @@ namespace TsubameViewer.Core.Infrastructure
             }
         }
 
+        protected bool TryDelete(string propertyName)
+        {
+            return _LocalStorageHelper.TryDelete(propertyName);
+        }
     }    
 }

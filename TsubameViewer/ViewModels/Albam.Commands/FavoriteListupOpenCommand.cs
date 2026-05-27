@@ -13,12 +13,12 @@ namespace TsubameViewer.ViewModels.Albam.Commands
             _messenger = messenger;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             return true;
         }
 
-        protected override void Execute(object parameter)
+        public override void Execute(object parameter)
         {
             _messenger.NavigateAsync(nameof(Views.ImageListupPage), parameters: (Albam.AlbamNavigationConstants.Key_AlbamId, FavoriteAlbam.FavoriteAlbamId));
         }

@@ -66,12 +66,17 @@ AdvancedSettings = 高级设置
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = 重启应用以完成设置
 
+IsAppMenuShowWithLeft = 在左侧显示菜单。
+
+IsFullScreenOnAppLaunch = 以全屏模式启动应用程序。
+
 SourceFoldersSettings = 已导入的文件夹
 RemoveSourceFolderFromApp = 从应用中移除
 ConfirmRemoveSourceFolderFromAppWithFolderName = 您确定要从应用中移除{0}吗？
 ConfirmRemoveSourceFolderFromAppDescription = 此操作不会删除在硬盘上的文件。 \ n从应用中移除的文件夹可以再次被导入。
 
-ThumbnailImageSettings = 封面显示设置
+FolderItemListingSettings = 文件夹项目显示设置
+IsOpenFolderContentListingAsDefault = 将“在图像列表中打开”设置为默认值。
 IsGenerateImageFileThumbnail = 生成文件封面
 IsGenerateFolderThumbnail = 生成文件夹封面
 IsGenerateArchiveFileThumbnail = 生成压缩包封面
@@ -85,6 +90,7 @@ ProcessingThumbnailCache = 正在删除
 ImageViewerSettings = 图像查看器设置
 IsReverseImageFliping_MouseWheel = 反向滚动分页
 IsReverseImageFliping_Button = 反向左/右翻页
+IsReversePageFliping_Swipe = 将滑动翻页的方向反转
 
 GeneralUISettings = 操作设定
 IsForceEnableXYNavigation = 在页面打开时自动聚焦内容\ n（箭头键/游戏板）
@@ -117,9 +123,8 @@ SelectSourceFolder = 将文件夹添加到TsubameViewer
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = 返回原始文件夹
-ChangeViewToFolderListupPage = 切换到文件夹视图
-ChangeViewToImageListupPage = 切换到图像列表视图
+ChangeViewToFolderListupPage = 文件夹视图
+ChangeViewToImageListupPage = 图片视图
 
 
 
@@ -131,7 +136,7 @@ FileSortType.UpdateTimeAscending = 最旧的优先
 FileSortType.UpdateTimeDecending = 新命令
 
 DefaultFolderOrArchiveOpenMode = 默认文件夹打开行为
-DefaultFolderOrArchiveOpenMode.Viewer = 在阅读器中打开
+DefaultFolderOrArchiveOpenMode.Viewer = 在查看器中打开
 DefaultFolderOrArchiveOpenMode.Listup = 在列表视图中打开
 
 Sort_InheritancePath = 排序继承源
@@ -139,7 +144,7 @@ Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 对子文件夹中的图像进行排序
 
 
-OpenImageViewer = 在阅读器中打开
+OpenImageViewer = 在查看器中打开
 OpenFolderListup = 列出档案
 OpenWithExplorer = 在资源管理器中打开
 OpenWithExternalApplication = 在另一个应用程序中打开
@@ -182,8 +187,10 @@ ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = 强制清除样式
 IsReversePageFliping_Scroll = 反向滚动分页
 IsReversePageFliping_Button = 反向左/右翻页
+
 
 DefaultWithParameter = 默认值：{0}
 FontSize = 字体大小
@@ -205,13 +212,55 @@ ChangeForegroundColor = 更改文字颜色
 OverrideWritingMode = 垂直/水平书写
 WritingMode.Inherit = 不会改变
 WritingMode.Horizontal_TopToBottom = 横向写作
-WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）
-WritingMode.Vertical_LeftToRight = 垂直书写（从左到右）
+WritingMode.Vertical_RightToLeft = 垂直书写（从右到左）⬅️
+WritingMode.Vertical_LeftToRight = 垂直书写（从左到右） ➡️
 
 ResetEBookSettings = 重新设置
 
 DisplaySettings = 显示设置
 Toc = 目录
+ReadingItemsTitle = 文件
+
+#### Movie Viewer Page
+MovieViewer_SaveCurrentFrame = 保存帧图像
+MovieViewer_ResetPlayerTransform = 重置玩家变身
+MovieViewer_PlayerStretch = 球员拉伸
+Stretch.None = 原尺寸
+Stretch.Fill = 请忽略比例，填写完整。
+Stretch.Uniform = 适合窗户尺寸
+Stretch.UniformToFill = 在保持比例的前提下将其填满
+
+MovieViewer_IsHorizontalMirror = 水平翻转
+MovieViewer_PlayerRotate = 旋转（顺时针）
+MediaRotation.None = 无旋转
+MediaRotation.Clockwise90Degrees = 90度
+MediaRotation.Clockwise180Degrees = 180度
+MediaRotation.Clockwise270Degrees = 270度
+
+MovieViewer_SaveCurrentFrame_Saved = 视频帧已保存。
+MovieViewer_SeekNotSupported = 此视频不支持搜索功能。
+
+MovieViewer_SC = 快捷键指南
+MovieViewer_DisplayShortcutKeysGuide = 显示快捷键指南
+MovieViewer_SC_ExitPlayer = 关闭视频播放器
+MovieViewer_SC_TogglePlayPause = 播放/暂停切换
+MovieViewer_SC_BackwardOneFrame = 回退一帧
+MovieViewer_SC_ForwardOneFrame = 前进一帧
+MovieViewer_SC_ToggleIsMuted = 静音切换
+MovieViewer_SC_TogglePlayerStretch = 播放器缩放切换
+MovieViewer_SC_TogglePlayerRotate = 播放器旋转切换
+MovieViewer_SC_TogglePlayerMirror = 左右翻转切换
+MovieViewer_SC_ToggleFullScreen = 全屏显示切换
+MovieViewer_SC_VolumeChangeUp = 调高音量
+MovieViewer_SC_VolumeChangeDown = 调低音量
+MovieViewer_SC_PlaybackPositionChangeBackward = 回退 {0} 秒
+MovieViewer_SC_PlaybackPositionChangeForward = 前进 {0} 秒
+MovieViewer_SC_SaveCurrentFrame = 保存当前帧
+MovieViewer_SC_SetPlaybackRateToPrev = 降低播放速度
+MovieViewer_SC_SetPlaybackRateToNext = 提高播放速度
+MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
+
+MovieViewer_SoundVolume = 体积
 
 #### SearchResult
 

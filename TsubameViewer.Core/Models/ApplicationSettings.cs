@@ -12,8 +12,10 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     {
         _Theme = Read(ApplicationTheme.Default, nameof(Theme));
         _Locale = Read(default(string), nameof(Locale));
+        _isFullScreenOnAppLaunch = Read(false, nameof(IsFullScreenOnAppLaunch));
         _ForceXboxAppearanceModeEnabled = Read(false, nameof(ForceXboxAppearanceModeEnabled));
         _IsUINavigationFocusAssistanceEnabled = Read(false, nameof(IsUINavigationFocusAssistanceEnabled));
+        _isAppMenuShowWithLeft = Read(false, nameof(IsAppMenuShowWithLeft));
     }
 
     private ApplicationTheme _Theme;
@@ -33,6 +35,14 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     }
 
 
+    private bool _isFullScreenOnAppLaunch;
+    public bool IsFullScreenOnAppLaunch
+    {
+        get => _isFullScreenOnAppLaunch;
+        set => SetProperty(ref _isFullScreenOnAppLaunch, value);
+    }
+
+
     private bool _ForceXboxAppearanceModeEnabled;
     public bool ForceXboxAppearanceModeEnabled
     {
@@ -45,6 +55,13 @@ public sealed class ApplicationSettings : FlagsRepositoryBase
     {
         get => _IsUINavigationFocusAssistanceEnabled;
         set => SetProperty(ref _IsUINavigationFocusAssistanceEnabled, value);
+    }
+
+    private bool _isAppMenuShowWithLeft;
+    public bool IsAppMenuShowWithLeft
+    {
+        get => _isAppMenuShowWithLeft;
+        set => SetProperty(ref _isAppMenuShowWithLeft, value);
     }
 }
 

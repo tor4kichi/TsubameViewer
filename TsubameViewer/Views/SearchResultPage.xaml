@@ -12,32 +12,72 @@
   xmlns:core="using:Microsoft.Xaml.Interactions.Core" 
   xmlns:wst="using:WindowsStateTriggers"
   xmlns:uwpUIExtensions="using:Microsoft.Toolkit.Uwp.UI"
+      xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
       mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}">
 
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SearchResultPageViewModel">
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="1*" />
-          <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-
+      <uwpControls:DockPanel>
         <StackPanel Orientation="Horizontal"
-                    Grid.Column="1">
+                    Grid.Column="1"
+                    uwpControls:DockPanel.Dock="Right">
 
         </StackPanel>
-        <StackPanel Orientation="Horizontal">
-          <TextBlock TextTrimming="CharacterEllipsis"
-                     FontSize="12"
-                     IsHitTestVisible="False"
-                     VerticalAlignment="Center">
-            <Run Text="{x:Bind SearchText, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='SearchResultWith'}" />
-          </TextBlock>
+        <StackPanel Orientation="Horizontal" uwpControls:DockPanel.Dock="Left">
         </StackPanel>
-      </Grid>
+
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=Search_FromAll}"
+                        Text="{x:Bind FilterText, Mode=TwoWay}"
+                        QueryIcon="Find"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        x:Name="AutoSuggestBox"
+                        Padding="0"
+                        Width="196"
+                        TextMemberPath="Title"
+                        UpdateTextOnSelect="False"
+                        AutoMaximizeSuggestionArea="True"
+                        IsSuggestionListOpen="True"
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        TextChanged="AutoSuggestBox_TextChanged"
+                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
+                        Loaded="PrimaryWindowCoreLayout_Loaded"
+                        Unloaded="AutoSuggestBox_Unloaded"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                        AccessKey="F"
+                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted">
+          <i:Interaction.Behaviors>
+            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
+      <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+    </core:EventTriggerBehavior>-->
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
+                                                      IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+                                     MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <AutoSuggestBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F"
+                                 Modifiers="Control"
+                                 Invoked="KeyboardAccelerator_Invoked" />
+          </AutoSuggestBox.KeyboardAccelerators>
+
+          <AutoSuggestBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+            </DataTemplate>
+          </AutoSuggestBox.ItemTemplate>
+        </AutoSuggestBox>
+      </uwpControls:DockPanel>
     </DataTemplate>
 
     <CollectionViewSource x:Key="SearchResultItemsViewSource"

@@ -18,6 +18,7 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
         _IsReversePageFliping_Scroll = Read(false, nameof(IsReversePageFliping_Scroll));
         _IsReversePageFliping_Button = Read(false, nameof(IsReversePageFliping_Button));
+        _isReversePageFliping_Swipe = Read(false, nameof(IsReversePageFliping_Swipe));
         _RootFontSizeInPixel = Read(DefaultRootFontSizeInPixel, nameof(RootFontSizeInPixel));
         _LetterSpacingInPixel = Read(DefaultLetterSpacingInPixel, nameof(LetterSpacingInPixel));
         _LineHeightInNoUnit = Read(DefaultLineHeightInNoUnit, nameof(LineHeightInNoUnit));
@@ -30,6 +31,7 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
         _ColumnCount = Read(MinColumnCount, nameof(ColumnCount));
         _MaxWidth = Read(1280.0d, nameof(MaxWidth));
         _MaxHeight = Read(720.0d, nameof(MaxHeight));
+        _isForceResetStylingInHeadElement = Read(false, nameof(IsForceResetStylingInHeadElement));
     }
 
     private bool _IsReversePageFliping_Scroll;
@@ -45,6 +47,13 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
         get { return _IsReversePageFliping_Button; }
         set { SetProperty(ref _IsReversePageFliping_Button, value); }
+    }
+
+    bool _isReversePageFliping_Swipe;
+    public bool IsReversePageFliping_Swipe
+    {
+        get { return _isReversePageFliping_Swipe; }
+        set { SetProperty(ref _isReversePageFliping_Swipe, value); }
     }
 
     private double _RootFontSizeInPixel;
@@ -136,6 +145,13 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
         get => _MaxHeight;
         set => SetProperty(ref _MaxHeight, double.IsNaN(value) ? value : Math.Clamp(value, 0.0, 100000.0));
     }
+
+    bool _isForceResetStylingInHeadElement;
+    public bool IsForceResetStylingInHeadElement
+    {
+        get { return _isForceResetStylingInHeadElement; }
+        set { SetProperty(ref _isForceResetStylingInHeadElement, value); }
+    }
 }
 
 
@@ -144,5 +160,5 @@ public enum WritingMode
     Inherit,
     Horizontal_TopToBottom,
     Vertical_RightToLeft,
-    Vertical_LeftToRight,
+    Vertical_LeftToRight,    
 }

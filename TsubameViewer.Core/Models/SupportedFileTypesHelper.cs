@@ -51,6 +51,15 @@ public static class SupportedFileTypesHelper
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
         .ToHashSet();
+
+        SupportedMovieFileExtensions = new string[]
+        {
+            Movie_Mp4FileType,
+            Movie_WebPFileType,
+            Movie_HevcFileType,
+        }
+        .SelectMany(x => new[] { x, x.ToUpper() })
+        .ToHashSet();
     }
 
     public const string ZipFileType = ".zip";
@@ -77,20 +86,18 @@ public static class SupportedFileTypesHelper
 
     public const string EPubFileType = ".epub";
 
+    public const string Movie_Mp4FileType = ".mp4";
+    public const string Movie_WebPFileType = ".webm";
+    public const string Movie_HevcFileType = ".hevc";
 
     public static readonly HashSet<string> SupportedArchiveFileExtensions;
     public static readonly HashSet<string> SupportedImageFileExtensions;
     public static readonly HashSet<string> SupportedEBookFileExtensions;
+    public static readonly HashSet<string> SupportedMovieFileExtensions;
 
     public static bool IsSupportedImageFile(this StorageFile file)
     {
         return IsSupportedImageFileExtension(file.FileType);
-    }
-
-    public static bool IsSupportedMangaOrEBookFile(this StorageFile file)
-    {
-        return IsSupportedArchiveFileExtension(file.FileType)
-            || IsSupportedEBookFileExtension(file.FileType);
     }
 
     public static bool IsSupportedMangaFile(this StorageFile file)
@@ -103,12 +110,21 @@ public static class SupportedFileTypesHelper
         return IsSupportedEBookFileExtension(file.FileType);
     }
 
+    public static bool IsSupportedMovieFile(this StorageFile file)
+    {
+        return IsSupportedMovieFileExtension(file.FileType);
+    }
+
 
 
 
     public static IEnumerable<string> GetAllSupportedFileExtensions()
     {
-        return SupportedArchiveFileExtensions.Concat(SupportedImageFileExtensions).Concat(SupportedEBookFileExtensions);
+        return [..SupportedArchiveFileExtensions,
+            .. SupportedImageFileExtensions,
+            .. SupportedEBookFileExtensions,
+            .. SupportedMovieFileExtensions,
+            ];
     }
 
     public static bool IsSupportedFileExtension(string fileType)
@@ -116,6 +132,7 @@ public static class SupportedFileTypesHelper
         return SupportedImageFileExtensions.Contains(fileType) 
             || SupportedArchiveFileExtensions.Contains(fileType)
             || SupportedEBookFileExtensions.Contains(fileType)
+            || SupportedMovieFileExtensions.Contains(fileType)
             ;
     }
 
@@ -136,11 +153,17 @@ public static class SupportedFileTypesHelper
         else { return SupportedEBookFileExtensions.Any(x => fileNameOrExtension.EndsWith(x)); }
     }
 
+    public static bool IsSupportedMovieFileExtension(string fileType)
+    {
+        return SupportedMovieFileExtensions.Contains(fileType);
+    }
+
     private static StorageItemTypes FileExtensionToStorageItemType(string fileType)
     {
         if (IsSupportedArchiveFileExtension(fileType)) { return StorageItemTypes.Archive; }
         else if (IsSupportedImageFileExtension(fileType)) { return StorageItemTypes.Image; }
         else if (IsSupportedEBookFileExtension(fileType)) { return StorageItemTypes.EBook; }
+        else if (IsSupportedMovieFileExtension(fileType)) { return StorageItemTypes.Movie; }
         else { return StorageItemTypes.None; }
     }
 

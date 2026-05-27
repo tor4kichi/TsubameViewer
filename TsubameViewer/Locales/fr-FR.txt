@@ -66,12 +66,17 @@ AdvancedSettings = Paramètres avancés
 OverrideLocale = 🌏Langage
 RequireRestartApplicationToRefrectSettings = Redémarrer l'application pour appliquer les changements
 
+IsAppMenuShowWithLeft = Afficher le menu à gauche.
+
+IsFullScreenOnAppLaunch = Lancez l'application en mode plein écran.
+
 SourceFoldersSettings = Dossiers importés dans l'application
 RemoveSourceFolderFromApp = Supprimer de l'application
 ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer {0} de l'application ?
 ConfirmRemoveSourceFolderFromAppDescription = Cette opération ne supprime pas le dossier spécifié ou les éléments contenus à l'intérieur. \nLe dossier supprimer peut-être réinscrit dans l'application à n'importe quel moment.
 
-ThumbnailImageSettings = Paramètres d'affichage de la miniature
+FolderItemListingSettings = Paramètres d'affichage des éléments de dossier
+IsOpenFolderContentListingAsDefault = Définissez « Ouvrir dans la liste des images » comme option par défaut.
 IsGenerateImageFileThumbnail = Générer les miniatures des images
 IsGenerateFolderThumbnail = Générer les miniatures pour les dossier
 IsGenerateArchiveFileThumbnail = Générer les miniatures des fichiers compressés
@@ -85,6 +90,7 @@ ProcessingThumbnailCache = Traitement de l'opération de suppression
 ImageViewerSettings = Paramètres de la visionneuse d'images
 IsReverseImageFliping_MouseWheel = Pagination à défilement inversée
 IsReverseImageFliping_Button = Inverser la page gauche et droite
+IsReversePageFliping_Swipe = Inverser le sens de défilement par glissement
 
 GeneralUISettings = Paramètres de fonctionnement
 IsForceEnableXYNavigation = Mise au point automatique du contenu lors de l'ouverture de la page\n (Touches directionnelles/Manette)
@@ -117,9 +123,8 @@ SelectSourceFolder = Ajouter un dossier dans TsubameViewer
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = Revenir au dossier d'origine
-ChangeViewToFolderListupPage = Passer à l'affichage par dossiers
-ChangeViewToImageListupPage = Passer à l'affichage par liste d'images
+ChangeViewToFolderListupPage = Affichage des dossiers
+ChangeViewToImageListupPage = Affichage des images
 
 
 
@@ -131,7 +136,7 @@ FileSortType.UpdateTimeAscending = Date d'ajout (Du plus vieux au plus récent)
 FileSortType.UpdateTimeDecending = Date d'ajout (Du plus récent au plus vieux)
 
 DefaultFolderOrArchiveOpenMode = Comportement d'ouverture de dossier par défaut
-DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le lecteur
+DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le visualiseur
 DefaultFolderOrArchiveOpenMode.Listup = Ouvrir en mode liste
 
 Sort_InheritancePath = Tri des sources d'héritage
@@ -139,7 +144,7 @@ Sort_Unselected = Non spécifier
 Sort_DefaultChildItemSort = Trier les images dans les dossiers enfants
 
 
-OpenImageViewer = Ouvrir le lecteur
+OpenImageViewer = Ouvrir dans le visualiseur
 OpenFolderListup = Lister les fichiers
 OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
 OpenWithExternalApplication = Ouvrir avec
@@ -182,8 +187,10 @@ ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = Effacer le style par la force
 IsReversePageFliping_Scroll = Pagination à défilement inversée
 IsReversePageFliping_Button = Inverser la page gauche et droite
+
 
 DefaultWithParameter = Par défaut : {0}
 FontSize = Taille de la police d'écriture
@@ -205,13 +212,55 @@ ChangeForegroundColor = Changer la couleur du texte
 OverrideWritingMode = Écriture horizontal/vertical
 WritingMode.Inherit = Ne changera pas
 WritingMode.Horizontal_TopToBottom = Écriture horizontale
-WritingMode.Vertical_RightToLeft = Écriture verticale (de droite à gauche)
-WritingMode.Vertical_LeftToRight = Écriture verticale (de gauche à droite)
+WritingMode.Vertical_RightToLeft = Écriture verticale (de droite à gauche) ⬅️
+WritingMode.Vertical_LeftToRight = Écriture verticale (de gauche à droite) ➡️
 
 ResetEBookSettings = Réinitialiser les paramètres
 
 DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
+ReadingItemsTitle = déposer
+
+#### Movie Viewer Page
+MovieViewer_SaveCurrentFrame = Enregistrer l'image du cadre
+MovieViewer_ResetPlayerTransform = Réinitialiser la transformation du joueur
+MovieViewer_PlayerStretch = Étirements des joueurs
+Stretch.None = Taille originale
+Stretch.Fill = Remplissez-le en ignorant les proportions.
+Stretch.Uniform = Adapté aux dimensions de la fenêtre
+Stretch.UniformToFill = Remplissez-le tout en maintenant les proportions
+
+MovieViewer_IsHorizontalMirror = Retourner horizontalement
+MovieViewer_PlayerRotate = Rotation (dans le sens horaire)
+MediaRotation.None = Pas de rotation
+MediaRotation.Clockwise90Degrees = 90 degrés
+MediaRotation.Clockwise180Degrees = 180 degrés
+MediaRotation.Clockwise270Degrees = 270 degrés
+
+MovieViewer_SaveCurrentFrame_Saved = L'image vidéo a été enregistrée.
+MovieViewer_SeekNotSupported = La fonction de recherche n'est pas prise en charge dans cette vidéo.
+
+MovieViewer_SC = Guide des raccourcis clavier
+MovieViewer_DisplayShortcutKeysGuide = Afficher le guide des raccourcis clavier
+MovieViewer_SC_ExitPlayer = Fermer la visionneuse vidéo
+MovieViewer_SC_TogglePlayPause = Basculer entre lecture et pause
+MovieViewer_SC_BackwardOneFrame = Reculer d'une image
+MovieViewer_SC_ForwardOneFrame = Avance d'une image
+MovieViewer_SC_ToggleIsMuted = Activer/désactiver le son
+MovieViewer_SC_TogglePlayerStretch = Activer/désactiver le redimensionnement du lecteur
+MovieViewer_SC_TogglePlayerRotate = Activer/désactiver la rotation du lecteur
+MovieViewer_SC_TogglePlayerMirror = Activer/désactiver le retournement horizontal
+MovieViewer_SC_ToggleFullScreen = Activer/désactiver le mode plein écran
+MovieViewer_SC_VolumeChangeUp = Augmenter le volume
+MovieViewer_SC_VolumeChangeDown = Réduire le volume
+MovieViewer_SC_PlaybackPositionChangeBackward = Retour de {0} secondes
+MovieViewer_SC_PlaybackPositionChangeForward = Avance de {0} secondes
+MovieViewer_SC_SaveCurrentFrame = Enregistrer l'image actuelle
+MovieViewer_SC_SetPlaybackRateToPrev = Réduire la vitesse de lecture
+MovieViewer_SC_SetPlaybackRateToNext = Augmenter la vitesse de lecture
+MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
+
+MovieViewer_SoundVolume = Volume
 
 #### SearchResult
 

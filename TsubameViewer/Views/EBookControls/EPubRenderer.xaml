@@ -10,7 +10,6 @@
     d:DesignWidth="400">
 
   <Grid>
-
     <WebView x:Name="WebView" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
              IsTapEnabled="False"
              IsHitTestVisible="False"
@@ -18,7 +17,7 @@
              AllowFocusOnInteraction="False"
              DefaultBackgroundColor="{x:Bind PageBackgroundColor, Mode=OneWay}"
              WebResourceRequested="WebView_WebResourceRequested"
-             GettingFocus="WebView_GettingFocus"
+             GettingFocus="WebView_GettingFocus"             
              >
     </WebView>
 

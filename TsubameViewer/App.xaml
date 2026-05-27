@@ -42,9 +42,9 @@
       <Style TargetType="Button"
              x:Key="TitlebarButton">
         <Setter Property="Width"
-                Value="40" />
+                Value="48" />
         <Setter Property="Height"
-                Value="32" />
+                Value="40" />
         <Setter Property="CornerRadius"
                 Value="4" />
         <Setter Property="Margin"
@@ -52,16 +52,35 @@
         <Setter Property="Padding"
                 Value="0 0 0 0 " />
         <Setter Property="BorderThickness"
-                Value="0" />
+                Value="1 0 1 0" />
+        <Setter Property="Background"
+                Value="Transparent" />
+      </Style>
+      <Style TargetType="ToggleButton"
+             x:Key="TitlebarToggleButton">
+        <Setter Property="Width"
+                Value="48" />
+        <Setter Property="Height"
+                Value="40" />
+        <Setter Property="CornerRadius"
+                Value="4" />
+        <Setter Property="Margin"
+                Value="0 0 0 0" />
+        <Setter Property="Padding"
+                Value="0 0 0 0 " />
+        <Setter Property="BorderThickness"
+                Value="1 0 1 0" />
+        <Setter Property="Background"
+                Value="Transparent" />
       </Style>
       <Style TargetType="TextBlock"
              x:Key="TitlebarTextBlock">
         <Setter Property="FontSize"
-                Value="12" />
+                Value="13" />
         <Setter Property="VerticalAlignment"
                 Value="Center" />
         <Setter Property="TextLineBounds"
-                Value="Tight" />
+                Value="TrimToCapHeight" />
         <Setter Property="IsHitTestVisible"
                 Value="False" />
         <Setter Property="TextTrimming"
@@ -86,13 +105,25 @@
       <locale:LocalizeKeyAsParametersConverter x:Key="LocalizeKeyAsParametersConverter" />
       <locale:LocaleToDisplayNameConverter x:Key="LocaleToDisplayNameConverter" />
 
+      <DataTemplate x:Key="LocalizeTextTemplate">
+        <TextBlock Text="{Binding Converter={StaticResource LocalizeConverter}}" />
+      </DataTemplate>
+      
       <myConv:ItemClickEventArgsConverter x:Key="ItemClickEventArgsConverter" />
       <myConv:RoutedEventOriginalSourceConverter x:Key="RoutedEventOriginalSourceConverter" />
       <myConv:NavigationViewItemInvokedEventArgsConverter x:Key="NavigationViewItemInvokedEventArgsConverter" />
       <myConv:DateTimeToStringConverter x:Key="DateTimeToStringConverter" />
 
       <uwpConv:BoolNegationConverter x:Key="BoolNegationConverter" />
-      <uwpConv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+      <uwpConv:BoolToVisibilityConverter x:Key="TrueToVisibleConverter" />
+      <uwpConv:BoolToObjectConverter x:Key="FalseToVisibleConverter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
       <uwpConv:EmptyCollectionToObjectConverter x:Key="EmptyCollectionToBooleanConverter">
         <uwpConv:EmptyCollectionToObjectConverter.EmptyValue>
           <x:Boolean>True</x:Boolean>
@@ -110,7 +141,7 @@
           <x:Boolean>True</x:Boolean>
         </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyStringToObjectConverter>
-
+           
       <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToBooleanConverter">
         <uwpConv:EmptyStringToObjectConverter.EmptyValue>
           <x:Boolean>True</x:Boolean>
@@ -120,14 +151,34 @@
         </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
       </uwpConv:EmptyStringToObjectConverter>
 
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringNotEmptyToVisibleConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+
+      <uwpConv:EmptyStringToObjectConverter x:Key="StringEmptyToVisibleConverter">
+        <uwpConv:EmptyStringToObjectConverter.EmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.EmptyValue>
+        <uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:EmptyStringToObjectConverter.NotEmptyValue>
+      </uwpConv:EmptyStringToObjectConverter>
+      
       <myConv:ColorToBrush x:Key="ColorToBrush" />
       <myConv:NotTransparentColorToBooleanConverter x:Key="NotTransparentColorToBooleanConverter" />
       <myConv:NullableColorConverter x:Key="NullableColorConverter" />
       <myConv:NumberStartFrom1Converter x:Key="NumberStartFrom1Converter" />
       <myConv:NumberMinus1Converter x:Key="NumberMinus1Converter" />
       <myConv:UriHumanReadableConverter x:Key="UriHumanReadableConverter" />
+      <myConv:DoubleToPercentTextConverter x:Key="DoubleToPercentTextConverter" />
+      <myConv:TimeSpanToSimpleTextConverter x:Key="TimeSpanToSimpleTextConverter" />
 
-      <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToBooleanConverter">
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToTrueConverter">
         <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
           <x:Boolean>True</x:Boolean>
         </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
@@ -135,6 +186,65 @@
           <x:Boolean>False</x:Boolean>
         </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
       </uwpConv:EmptyObjectToObjectConverter>
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NullToTrueConverter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <x:Boolean>False</x:Boolean>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <x:Boolean>True</x:Boolean>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
+      
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToDouble1Converter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <x:Double>1</x:Double>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <x:Double>0</x:Double>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NullToDouble1Converter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <x:Double>0</x:Double>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <x:Double>1</x:Double>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
+      
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToVisibleConverter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
+      <uwpConv:EmptyObjectToObjectConverter x:Key="NullToVisibleConverter">
+        <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+          <Visibility>Collapsed</Visibility>
+        </uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>
+        <uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+          <Visibility>Visible</Visibility>
+        </uwpConv:EmptyObjectToObjectConverter.EmptyValue>
+      </uwpConv:EmptyObjectToObjectConverter>
+
+      <uwpConv:BoolToObjectConverter x:Key="TrueToDouble1Converter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
+          <x:Double>1</x:Double>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
+          <x:Double>0</x:Double>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
+      <uwpConv:BoolToObjectConverter x:Key="FalseToDouble1Converter">
+        <uwpConv:BoolToObjectConverter.TrueValue>
+          <x:Double>0</x:Double>
+        </uwpConv:BoolToObjectConverter.TrueValue>
+        <uwpConv:BoolToObjectConverter.FalseValue>
+          <x:Double>1</x:Double>
+        </uwpConv:BoolToObjectConverter.FalseValue>
+      </uwpConv:BoolToObjectConverter>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

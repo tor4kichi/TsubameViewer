@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
+using static TsubameViewer.Core.Models.FolderItemListing.LocalBookmarkRepository;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
@@ -39,6 +40,7 @@ public sealed class BookmarkEntry
     [BsonField]
     public string Path { get; set; }
 
+    // Note: 動画のDurationにも使ってます
     [BsonField]
     public string PageName { get; set; }
 
@@ -105,6 +107,12 @@ public sealed class LocalBookmarkRepository
     public void FolderChanged(string oldPath, string newPath)
     {
         _bookmarkRepository.FolderChanged(oldPath, newPath);
+    }
+
+    public BookmarkFacade GetBookmarkFacade(string path)
+    {
+        var entry = _bookmarkRepository.GetEnsureEntryByPath(path);
+        return new BookmarkFacade(_bookmarkRepository, entry);
     }
 
     public sealed class BookmarkRepository : LiteDBServiceBase<BookmarkEntry>
@@ -192,7 +200,52 @@ public sealed class LocalBookmarkRepository
                 Debug.WriteLine($"Bookmark path {prevPath} ===> {entry.Path}");
             }
         }
+
+        internal BookmarkEntry GetEnsureEntryByPath(string path)
+        {
+            var entry = _collection.FindOne(x => x.Path == path);
+            if (entry == null)
+            {
+                entry = new BookmarkEntry() { Path = path };
+                var id = _collection.Insert(entry);
+                entry.Id = id;                
+            }
+
+            return entry;
+        }
     }
 
 }
 
+
+public sealed class BookmarkFacade : DeferSaveAwareObservableObject
+{
+    private readonly BookmarkRepository _repo;
+    private readonly BookmarkEntry _entry;
+
+    public BookmarkFacade(BookmarkRepository repo, BookmarkEntry entry)
+    {
+        _repo = repo;
+        _entry = entry;
+    }
+
+    protected override void OnSave()
+    {
+        _repo.UpdateItem(_entry);
+    }
+
+
+    public NormalizedPagePosition ReadPosition
+    {
+        get => _entry.Position;
+        set => SetProperty(_entry.Position, value, _entry, (m, v) => m.Position = v);
+    }
+
+
+    // Note: 動画のDurationにも使ってます
+    public string PageName
+    {
+        get => _entry.PageName;
+        set => SetProperty(_entry.PageName, value, _entry, (m, v) => m.PageName = v);
+    }
+}

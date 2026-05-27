@@ -1,4 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.WinUI;
+using I18NPortable;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,7 +32,13 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
+    public R3.Observable<string> ObserveTitleChanged()
+    {        
+        return _vm.ObservePropertyChanged(x => x.SearchText).Select(x => "SearchResultWith".Translate(x));
+    }
+
     private readonly SearchResultPageViewModel _vm;
+    private readonly IMessenger _messenger;
 
     public SearchResultPage()
     {
@@ -37,6 +47,7 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
 
         DataContext = _vm = Ioc.Default.GetRequiredService<SearchResultPageViewModel>();
+        _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
     private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -67,4 +78,91 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         _navigationCts.Dispose();            
         base.OnNavigatingFrom(e);
     }
+
+
+    #region Search Box
+
+    InPageSearchContext? _searchContext;
+    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+        textBox.TextChanged += TextBox_TextChanged;
+        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+    }
+
+
+    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    {
+        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
+        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+        textBox.TextChanged -= TextBox_TextChanged;
+        _searchContext?.Dispose();
+        _searchContext = null;
+    }
+
+
+
+    bool _isInputIncomplete;
+
+    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    {
+        _isInputIncomplete = true;
+    }
+
+    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isInputIncomplete == false)
+        {
+            var textBox = (TextBox)sender;
+            //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+        }
+    }
+
+    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    {
+        _isInputIncomplete = false;
+        var textBox = (TextBox)sender;
+        //(DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(textBox.Text);
+    }
+
+
+
+    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    {
+        //(sender as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        //(args.Element as Control).Focus(FocusState.Keyboard);
+        args.Handled = true;
+    }
+
+    InPageSearchRequestMessage? _searchMessage;
+    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        //if (!sender.Items.Any())
+        //{
+        //    sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        //}
+        //sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+    }
+
+    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        //_searchContext.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+    }
+
+
+    #endregion
 }

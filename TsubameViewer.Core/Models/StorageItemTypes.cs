@@ -17,4 +17,6 @@ public enum StorageItemTypes
     AddAlbam,
     Albam,
     AlbamImage,
+    
+    Movie,
 }

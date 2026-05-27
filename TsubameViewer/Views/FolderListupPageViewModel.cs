@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
@@ -39,32 +40,22 @@ using Windows.UI.Xaml.Navigation;
 
 namespace TsubameViewer.ViewModels;
 
-public class CachedFolderListupItems
+public sealed class StorageItemNotFoundMessage : ValueChangedMessage<string>
 {
-    public ObservableCollection<StorageItemViewModel> FolderItems { get; set; }
-    public int GetTotalCount()
+    public StorageItemNotFoundMessage(string value) : base(value)
     {
-        return FolderItems.Count;
-    }
-
-    public void DisposeItems()
-    {
-        foreach (var itemVM in FolderItems)
-        {
-            itemVM.Dispose();
-        }
     }
 }
-
 
 public sealed partial class FolderListupPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
+    , IRecipient<StorageItemNotFoundMessage>
 {
     public void Receive(InPageSearchRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     [ObservableProperty]
@@ -76,12 +67,25 @@ public sealed partial class FolderListupPageViewModel
     }
 
 
+    public void Receive(StorageItemNotFoundMessage message)
+    {
+        var item = FolderItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
+        if (item != null)
+        {
+            FolderItems.Remove(item);
+        }
+    }
+
+
+
     private bool _NowProcessing;
     public bool NowProcessing
     {
         get { return _NowProcessing; }
         set { SetProperty(ref _NowProcessing, value); }
     }
+
+
 
     private readonly IMessenger _messenger;
     private readonly LocalBookmarkRepository _bookmarkManager;
@@ -137,7 +141,6 @@ public sealed partial class FolderListupPageViewModel
    
     private static readonly Core.AsyncLock _NavigationLock = new ();
     private IImageSource? _currentImageSource;
-    private CancellationTokenSource _leavePageCancellationTokenSource;
 
     private string _DisplayCurrentPath;
     public string DisplayCurrentPath
@@ -172,8 +175,6 @@ public sealed partial class FolderListupPageViewModel
         get { return _DisplayCurrentArchiveFolderName; }
         private set { SetProperty(ref _DisplayCurrentArchiveFolderName, value); }
     }
-
-    IDisposable? _navigationDisposables;
 
     DateTimeOffset _sourceItemLastUpdatedTime;
 
@@ -241,13 +242,6 @@ public sealed partial class FolderListupPageViewModel
         Selection.EndSelection();
         using (await _NavigationLock.LockAsync(default))
         {
-            _leavePageCancellationTokenSource?.Cancel();
-            _leavePageCancellationTokenSource?.Dispose();
-            _leavePageCancellationTokenSource = null;
-
-            _navigationDisposables?.Dispose();
-            _navigationDisposables = null;
-
             foreach (var itemVM in FolderItems)
             {
                 itemVM.StopImageLoading();
@@ -263,6 +257,7 @@ public sealed partial class FolderListupPageViewModel
             _messenger.Unregister<BackNavigationRequestingMessage>(this);
             _messenger.Unregister<StartMultiSelectionMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
+            _messenger.Unregister<StorageItemNotFoundMessage>(this);
 
             base.OnNavigatedFrom(parameters);
         }
@@ -330,18 +325,9 @@ public sealed partial class FolderListupPageViewModel
         return false;
     }
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
-        // ナビゲーション全体をカバーしてロックしていないと_leavePageCancellationTokenSourceが先にキャンセルされているケースがある
-        using var lockReleaser = await _NavigationLock.LockAsync(default);
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
-
         var mode = parameters.GetNavigationMode();
-        _leavePageCancellationTokenSource = new CancellationTokenSource();
-        var ct = _leavePageCancellationTokenSource.Token;
-        var res = _messenger.Send(new CurrentInPageSearchTextRequestMessage());
-        FilterText = res.Response;
 
         NowProcessing = true;
         try
@@ -399,8 +385,6 @@ public sealed partial class FolderListupPageViewModel
                     FolderLastIntractItem  = null;
                 }
             }
-
-            ApplicationView.GetForCurrentView().Title = _imageCollectionContext.Name;
         }
         finally
         {
@@ -434,7 +418,7 @@ public sealed partial class FolderListupPageViewModel
                     if (Window.Current.Visible)
                     {
                         requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
                     }
                     else
                     {
@@ -451,7 +435,7 @@ public sealed partial class FolderListupPageViewModel
                     if (visible && requireRefresh && _imageCollectionContext is not null)
                     {
                         requireRefresh = false;
-                        await ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? CancellationToken.None);
+                        await ReloadItemsAsync(_imageCollectionContext, ct);
                         Debug.WriteLine("Folder/Archive Updated. " + _currentImageSource?.Name ?? string.Empty);
                     }
                 })
@@ -461,7 +445,7 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
         {
             // TODO: 現在のフォルダ名、ないしアーカイブ名が変わっていないかチェック
-            _ = ReloadItemsAsync(_imageCollectionContext, _leavePageCancellationTokenSource?.Token ?? default);
+            _ = ReloadItemsAsync(_imageCollectionContext, ct);
         });
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
@@ -500,10 +484,12 @@ public sealed partial class FolderListupPageViewModel
             })
             .AddTo(ref db);
 
-        _navigationDisposables = db.Build();
+        db.Build().RegisterTo(ct);
 
         _messenger.Register<InPageSearchRequestMessage>(this);
-        await base.OnNavigatedToAsync(parameters);
+        _messenger.Register<StorageItemNotFoundMessage>(this);
+
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
     bool IsIndexAccessListingEnabled => _imageCollectionContext.IsSupportFolderOrArchiveFilesIndexAccess && _folderListingSettings.ShowWithIndexedFolderItemAccess;
@@ -621,6 +607,7 @@ public sealed partial class FolderListupPageViewModel
     private async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
+
         if (!IsIndexAccessListingEnabled)
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>

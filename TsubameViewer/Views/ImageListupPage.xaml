@@ -9,6 +9,7 @@
       xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:ts="using:TsubameViewer.Views.TemplateSelector"
       xmlns:uwpControls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+      xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
       xmlns:i="using:Microsoft.Xaml.Interactivity"
       xmlns:core="using:Microsoft.Xaml.Interactions.Core"
       xmlns:myBehaior="using:TsubameViewer.Views.Behaviors"
@@ -43,25 +44,63 @@
 
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:ImageListupPageViewModel">
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="1*" />
-          <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-
+      <uwpControls:DockPanel>
         <StackPanel Orientation="Horizontal"
-                    Grid.Column="1">
+                    uwpControls:DockPanel.Dock="Right">
+         
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" 
+                    uwpControls:DockPanel.Dock="Left">
+        </StackPanel>
 
-        </StackPanel>
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{x:Bind DisplayCurrentPath, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
-          </TextBlock>
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-             <Run Text="{x:Bind DisplayCurrentArchiveFolderName, Mode=OneWay, Converter={StaticResource UriHumanReadableConverter}}" />
-          </TextBlock>
-        </StackPanel>
-      </Grid>
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=SearchPlaceholder}"
+                        Text="{x:Bind FilterText, Mode=TwoWay}"
+                        QueryIcon="Find"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        x:Name="AutoSuggestBox"
+                        Padding="0"
+                        Width="196"
+                        TextMemberPath="Title"
+                        UpdateTextOnSelect="False"
+                        AutoMaximizeSuggestionArea="True"
+                        IsSuggestionListOpen="True"
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        TextChanged="AutoSuggestBox_TextChanged"
+                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
+                        Loaded="PrimaryWindowCoreLayout_Loaded"
+                        Unloaded="AutoSuggestBox_Unloaded"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                        AccessKey="F"
+                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted">
+          <i:Interaction.Behaviors>
+            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
+      <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+    </core:EventTriggerBehavior>-->
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
+                                                      IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+                                     MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <AutoSuggestBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F"
+                                 Modifiers="Control"
+                                 Invoked="KeyboardAccelerator_Invoked" />
+          </AutoSuggestBox.KeyboardAccelerators>
+
+          <AutoSuggestBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+            </DataTemplate>
+          </AutoSuggestBox.ItemTemplate>
+        </AutoSuggestBox>
+      </uwpControls:DockPanel>
     </DataTemplate>
 
     <myConv:PointToRectConverter x:Key="PointToRectConverter" />
@@ -646,7 +685,7 @@
             <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
                           Label="{i18nExt:Localize Key=Delete}"
                           Command="{x:Bind _vm.FileDeleteCommand}"
-                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
+                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>
@@ -657,7 +696,7 @@
             <AppBarButton x:Name="SelectAction_OpenWithExplorerButton"
                           Label="{i18nExt:Localize Key=OpenWithExplorer}"
                           Command="{x:Bind _vm.OpenWithExplorerCommand}"
-                          CommandParameter="{x:Bind _selectedItems, Mode=OneWay}">
+                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
               <AppBarButton.Icon>
                 <fluentIcon:FluentIconElement Symbol="Open24" />
               </AppBarButton.Icon>
@@ -683,17 +722,6 @@
                   Padding="48 8 48 0"
                   Background="{ThemeResource ApplicationContentBackgroundBrush}"
                   Spacing="8">
-        <uwpControls:DockPanel>
-          <Border uwpControls:DockPanel.Dock="Right"
-                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-            <Button x:Name="ChangeViewtoFolderListupPageButton"
-                    Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                    Command="{x:Bind _vm.OpenFolderListupCommand}"
-                    CommandParameter="{x:Bind _vm.CurrentFolderItem, Mode=OneWay}"
-                    AccessKey="L" />
-          </Border>
-          <Border />
-        </uwpControls:DockPanel>
         <uwpControls:DockPanel x:Name="FilesActionLayout"
                                Margin="0 0 0 0">
           <StackPanel uwpControls:DockPanel.Dock="Bottom"
@@ -821,6 +849,19 @@
               </ItemsPanelTemplate>
             </ListView.ItemsPanel>
           </ListView>
+
+          <Border uwpControls:DockPanel.Dock="Right"
+                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                  Margin="8 0 16 0">
+            <winUIControls:Segmented SelectionMode="Single"
+                                     SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                     x:Name="ContentViewTypeSelector"
+                                     AccessKey="L">
+              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}" />
+              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
+                                           IsSelected="True" />
+            </winUIControls:Segmented>
+          </Border>
 
           <Border />
         </uwpControls:DockPanel>
@@ -989,8 +1030,8 @@
             <Setter Target="FileDisplayModeItemsListView.IsEnabled"
                     Value="True" />
 
-            <Setter Target="ChangeViewtoFolderListupPageButton.IsEnabled"
-                    Value="False" />
+            <!--<Setter Target="ContentViewTypeSelector.IsEnabled"
+                    Value="False" />-->
             <Setter Target="OptionalActionsButton.IsEnabled"
                     Value="False" />
           </VisualState.Setters>

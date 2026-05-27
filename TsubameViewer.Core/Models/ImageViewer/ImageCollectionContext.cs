@@ -187,8 +187,11 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static QueryOptions CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType sort)
     {
         var query = new QueryOptions(CommonFileQuery.DefaultQuery,
-            Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions)
-            )
+            [
+                .. SupportedFileTypesHelper.SupportedArchiveFileExtensions,
+                .. SupportedFileTypesHelper.SupportedEBookFileExtensions,
+                .. SupportedFileTypesHelper.SupportedMovieFileExtensions                
+            ])
         {
             FolderDepth = FolderDepth.Shallow
         };
@@ -519,6 +522,13 @@ public sealed class FolderStructureCacheContext : IDisposable
     {
         return _repo.GetFolderItemsCount(Folder.Path);
     }
+
+    public async Task<bool> CheckIsNotSameCacheCountAndExactCountAsync(CancellationToken ct)
+    {
+        var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
+        return _repo.GetFolderItemsCount(Folder.Path) != await query.GetItemCountAsync().AsTask(ct);
+    }
+
 
     public async Task<bool> UpdateCacheIfCountNotSameAsync(CancellationToken ct)
     {

@@ -91,21 +91,59 @@
         <SymbolIcon Symbol="Favorite" />
       </DataTemplate>
     </local:StorageItemIconTemplateSelector.FavoriteIcon>
+    <local:StorageItemIconTemplateSelector.MovieIcon>
+      <DataTemplate>
+        <SymbolIcon Symbol="Video" />
+      </DataTemplate>
+    </local:StorageItemIconTemplateSelector.MovieIcon>
   </local:StorageItemIconTemplateSelector>
 
   <DataTemplate x:Key="LazyStorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
-    <Grid Background="Transparent" IsHitTestVisible="True">
+    <Grid Background="{ThemeResource SystemAltLowColor}" IsHitTestVisible="True">
+      <Image Source="{x:Bind Image, Mode=OneWay}"             
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="UniformToFill"
+             Opacity="0.2"/>
       <Image Source="{x:Bind Image, Mode=OneWay}"
            x:Name="ImageControl"
            Style="{StaticResource FolderItemImageStyle}"
+             Stretch="Uniform"
+             VerticalAlignment="Center"
            />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
-        <ContentControl Content="{x:Bind Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
+        <ContentControl Content="{x:Bind Type, Mode=OneWay}" ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}" IsTabStop="False" VerticalAlignment="Center" HorizontalAlignment="Right"
                       Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
                       />
         <TextBlock Text="{x:Bind Name, Mode=OneWay}" Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            >
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0 0 0 0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+        
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+          
+        </Border>
       </Grid>
     </Grid>
   </DataTemplate>
@@ -113,9 +151,14 @@
   <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
     <Grid Background="Transparent" IsHitTestVisible="True">
       <Image Source="{x:Bind Image, Mode=OneWay}"
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="UniformToFill"
+             Opacity="0.2" />
+      <Image Source="{x:Bind Image, Mode=OneWay}"
              x:Name="ImageControl"
              Style="{StaticResource FolderItemImageStyle}"
-             />
+             Stretch="Uniform"
+             VerticalAlignment="Center" />
       <Grid Height="{StaticResource FolderItemTitleHeight}" VerticalAlignment="Bottom">
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}" Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}" VerticalAlignment="Bottom" Style="{StaticResource ReadParcentageProgressBarStyle}" />
@@ -123,6 +166,96 @@
                         Margin="0 0 16 0" UseLayoutRounding="True" Opacity="0.35" uwpControls:DockPanel.Dock="Right"
                         />
         <TextBlock Text="{x:Bind Name}" Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+
+        </Border>
+      </Grid>
+
+    </Grid>
+  </DataTemplate>
+
+  <DataTemplate x:Key="MovieStorageItemCardTemplate"
+                x:DataType="vm:IStorageItemViewModel">
+    <Grid Background="Transparent"
+          IsHitTestVisible="True">
+      <Image Source="{x:Bind Image, Mode=OneWay}"
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="UniformToFill"
+             Opacity="0.2" />
+      <Image Source="{x:Bind Image, Mode=OneWay}"
+             x:Name="ImageControl"
+             Style="{StaticResource FolderItemImageStyle}"
+             Stretch="Uniform"
+             VerticalAlignment="Center" />
+      <Grid Height="{StaticResource FolderItemTitleHeight}"
+            VerticalAlignment="Bottom">
+        <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                Opacity="0.8" />
+        <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
+                     VerticalAlignment="Bottom"
+                     Style="{StaticResource ReadParcentageProgressBarStyle}" />
+        <ContentControl Content="{x:Bind}"
+                        ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
+                        IsTabStop="False"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        Margin="0 0 16 0"
+                        UseLayoutRounding="True"
+                        Opacity="0.35"
+                        uwpControls:DockPanel.Dock="Right" />
+        <TextBlock Text="{x:Bind Name}"
+                   Style="{StaticResource FolderItemTextBlockStyle}" />
+      </Grid>
+
+      <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0">
+          <Border VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                  CornerRadius="4 4 0 4"
+                  Margin="0"
+                  Padding="6 2"
+                  Opacity="0.8">
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
+          </Border>
+        </Border>
+
+        <Border Height="{StaticResource FolderItemTitleHeight}"
+                Grid.Row="1">
+
+        </Border>
       </Grid>
     </Grid>
   </DataTemplate>
@@ -156,6 +289,7 @@
                                  AlbamImage="{StaticResource StorageItemCardTemplate}"
                                  Image="{StaticResource StorageItemCardTemplate}"
                                  EBook="{StaticResource StorageItemCardTemplate}"
+                                 Movie="{StaticResource MovieStorageItemCardTemplate}"
                                      >
   </ts:FolderItemTemplateSelector>
 
@@ -186,6 +320,7 @@
                               Albam="{StaticResource FolderStyle}"
                               AlbamImage="{StaticResource FolderStyle}"
                               EBook="{StaticResource FolderStyle}"
+                              Movie="{StaticResource FolderStyle}"
                               >
   </ss:FolderItemStyleSelector>
 

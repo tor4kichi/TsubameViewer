@@ -12,13 +12,14 @@ using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
+using TsubameViewer.Views.Converters;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace TsubameViewer.ViewModels;
 
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
-public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
+public sealed partial class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
 {
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -76,6 +77,9 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
+
+    [ObservableProperty]
+    string? _duration;
 
     public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)
     {
@@ -147,6 +151,13 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
 
             using var d = await _asyncLock.LockAsync(rootCt);
 
+            if (Type == StorageItemTypes.Movie
+                && Item.StorageItem is Windows.Storage.StorageFile file)
+            {
+                var movieProps = await file.Properties.GetVideoPropertiesAsync();
+                Duration = TimeSpanHelper.FormatTimeSpan(movieProps?.Duration ?? TimeSpan.Zero);
+            }
+
             using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: rootCt)))
             {
                 if (stream is null || stream.Length == 0) { return; }
@@ -180,6 +191,16 @@ public sealed class StorageItemViewModel : ObservableObject, IDisposable, IStora
             _isRequireLoadImageWhenRestored = true;
             IsInitialized = false;
             _messenger.Send<RequireInstallImageCodecExtensionMessage>(new(ex.FileType));
+        }
+        catch (DirectoryNotFoundException)
+        {
+            IsInitialized = true;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
+        }
+        catch (FileNotFoundException)
+        {
+            IsInitialized = true;
+            _messenger.Send(new StorageItemNotFoundMessage(Path));
         }
         finally
         {

@@ -14,7 +14,9 @@
   xmlns:ss="using:TsubameViewer.Views.StyleSelector"
       xmlns:vm="using:TsubameViewer.ViewModels" 
   xmlns:myFlyouts="using:TsubameViewer.Views.Flyouts"
-  mc:Ignorable="d"
+      xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
+      xmlns:uiNavigation="using:TsubameViewer.Views.UINavigation"
+      mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
   >
@@ -22,12 +24,55 @@
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:SourceStorageItemsPageViewModel">
-      <StackPanel Orientation="Horizontal"
-                  Spacing="8">
-        <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="TsubameViewer" />
-        </TextBlock>
-      </StackPanel>
+      <uwpControls:DockPanel>
+
+        <AutoSuggestBox PlaceholderText="{i18nExt:Localize Key=Search_FromAll}"
+                        QueryIcon="Find"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        x:Name="AutoSuggestBox"
+                        Padding="0"
+                        MinWidth="176"
+                        TextMemberPath="Title"
+                        UpdateTextOnSelect="False"
+                        AutoMaximizeSuggestionArea="True"
+                        IsSuggestionListOpen="True"
+                        IsFocusEngagementEnabled="True"
+                        UseSystemFocusVisuals="True"
+                        TextChanged="AutoSuggestBox_TextChanged"
+                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
+                        Loaded="PrimaryWindowCoreLayout_Loaded"
+                        Unloaded="AutoSuggestBox_Unloaded"
+                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                        AccessKey="F"
+                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
+                        QuerySubmitted="AutoSuggestBox_QuerySubmitted">
+          <i:Interaction.Behaviors>
+            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
+  <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
+</core:EventTriggerBehavior>-->
+            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel"
+                                                      IsRequireFocus="True">
+              <core:CallMethodAction TargetObject="{Binding ElementName=AutoSuggestBox}"
+                                     MethodName="RemoveFocusEngagement" />
+            </uiNavigation:UINavigationTriggerBehavior>
+          </i:Interaction.Behaviors>
+
+          <AutoSuggestBox.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F"
+                                 Modifiers="Control"
+                                 Invoked="KeyboardAccelerator_Invoked" />
+          </AutoSuggestBox.KeyboardAccelerators>
+
+          <AutoSuggestBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding Name}"
+                         FontSize="12"
+                         TextWrapping="Wrap" />
+            </DataTemplate>
+          </AutoSuggestBox.ItemTemplate>
+        </AutoSuggestBox>
+      </uwpControls:DockPanel>
     </DataTemplate>
     
     <CollectionViewSource x:Key="ItemsCollectionViewSource" 

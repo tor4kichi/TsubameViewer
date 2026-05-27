@@ -22,6 +22,8 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
     SelectionContext Selection { get; }
     StorageItemTypes Type { get; }
 
+    string? Duration { get; }
+
     void Dispose();
     bool IsRequestImageLoading { get; }
     bool IsInitialized { get; }

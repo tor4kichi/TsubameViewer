@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using R3;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -46,7 +47,10 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return TitlebarContent;
     }
 
-
+    public R3.Observable<string> ObserveTitleChanged()
+    {
+        return _vm.ObservePropertyChanged(x => x.ParentFolderOrArchiveName);
+    }
 
     internal readonly ImageViewerPageViewModel _vm;
 
@@ -136,12 +140,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         (_vm.BackNavigationCommand as ICommand).Execute(null);
     }
 
-    CompositeDisposable _navigationDisposables;
+    R3.CompositeDisposable _navigationDisposables;
     CancellationTokenSource _navigaitonCts;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
-        _navigationDisposables = new CompositeDisposable();
+        _navigationDisposables = new R3.CompositeDisposable();
 
         _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) => 
         {
@@ -527,9 +531,9 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         var scheduler = CoreDispatcherScheduler.Current;
 
-        var disposables = new CompositeDisposable(new[]
+        var disposables = new R3.CompositeDisposable(new[]
         {
-            Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+            System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
                 h => ImagesContainer.SizeChanged += h,
                 h => ImagesContainer.SizeChanged -= h
                 )

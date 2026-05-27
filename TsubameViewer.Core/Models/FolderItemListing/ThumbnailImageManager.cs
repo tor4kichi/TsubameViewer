@@ -35,7 +35,10 @@ using VersOne.Epub;
 using Windows.Foundation;
 using Windows.Graphics.Display;
 using Windows.Graphics.Imaging;
+using Windows.Media.Core;
+using Windows.Media.Editing;
 using Windows.Storage;
+using Windows.Storage.FileProperties;
 using Windows.Storage.Search;
 using Windows.Storage.Streams;
 using Windows.System;
@@ -267,7 +270,8 @@ public sealed class ThumbnailImageManager
                 }
             }
         }
-        else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file && file.IsSupportedMangaOrEBookFile())
+        else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file 
+            && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
         {
             using (await _fileReadWriteLock.LockAsync(ct))
             {
@@ -917,6 +921,9 @@ public sealed class ThumbnailImageManager
             SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_Mp4FileType=> MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_WebPFileType => MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_HevcFileType => MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             _ => throw new NotSupportedException(file.FileType)
         });
     }
@@ -1230,6 +1237,41 @@ public sealed class ThumbnailImageManager
             return false;
         }
     }
+
+    private async ValueTask<bool> MovieFileThubnailImageWriteToStreamAsync(StorageFile file, Stream outputStream, CancellationToken ct)
+    {
+        // 1. サムネイルの取得設定
+        // ThumbnailMode.Videos を指定することで、動画に最適なサムネイルを取得します
+        uint requestedSize = 200; // 要求するピクセルサイズ（長辺）
+
+        try
+        {
+            var videoProps = await file.Properties.GetVideoPropertiesAsync();
+            
+            var clip = await MediaClip.CreateFromFileAsync(file);
+            var mc = new MediaComposition();
+            mc.Clips.Add(clip);            
+            
+            await TranscodeThumbnailImageToStreamAsync(file.Path, async () => 
+            {
+                return (await mc.GetThumbnailAsync(TimeSpan.FromSeconds(0.5), (int)videoProps.Width, (int)videoProps.Height, VideoFramePrecision.NearestFrame)).AsStreamForRead();
+            }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+            return true;
+        }
+        catch
+        {
+            ThumbnailOptions options = ThumbnailOptions.None;
+            {                
+                await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
+                {
+                    return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
+                }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                return true;
+            }
+        }
+    }
+
+
 
     #region Thumbnail Size
 

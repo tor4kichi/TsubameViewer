@@ -55,8 +55,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
 
-    private CancellationTokenSource _navigationCts;
-
     CancellationTokenSource _imageLoadingCts;
     Core.AsyncLock _imageLoadingLock = new();
 
@@ -196,13 +194,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         set { SetProperty(ref _nowImageLoadingLongRunning, value); }
     }
 
-    
-
     readonly static char[] SeparateChars = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
-
-    private ApplicationView _appView;
-    IDisposable _navigationDisposables;
-    private readonly DispatcherQueue _dispatcherQueue;
 
     public ApplicationSettings ApplicationSettings { get; }
     public ImageViewerSettings ImageViewerSettings { get; }
@@ -280,14 +272,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
 
-        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-
         ClearDisplayImages();
         _DisplayImages_0 = _displayImagesSingle[0];
         _DisplayImages_1 = _displayImagesSingle[1];
         _DisplayImages_2 = _displayImagesSingle[2];
-
-        _appView = ApplicationView.GetForCurrentView();
 
         SelectedFileSortType = DefaultFileSortType;
        
@@ -355,15 +343,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             _nowCurrenImageIndexChanging = false;
         }
 
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
-        _navigationDisposables.Dispose();
         (_currentImageSource as IDisposable)?.Dispose();
         _currentImageSource = null;
         (_imageCollectionContext as IDisposable)?.Dispose();
         _imageCollectionContext = null;
         _imageLoadingCts?.Cancel();
         _imageLoadingCts?.Dispose();
+        _imageLoadingCts = null;
 
         ParentFolderOrArchiveName = String.Empty;
 
@@ -372,17 +358,17 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         base.OnNavigatedFrom(parameters);
     }
+
+    CancellationToken _navigationCt;
     
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
 #if DEBUG
         long time = TimeProvider.System.GetTimestamp();
 #endif
         var mode = parameters.GetNavigationMode();
 
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-        var cts = new CancellationTokenSource();
         _imageLoadingCts = new CancellationTokenSource();
         ClearDisplayImages();
 
@@ -390,7 +376,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         GoNextImageCommand.NotifyCanExecuteChanged();
         GoPrevImageCommand.NotifyCanExecuteChanged();
 
-        var ct = cts.Token;
         string firstDisplayPageName = null;
         if (mode is NavigationMode.New or NavigationMode.Back or NavigationMode.Forward or NavigationMode.Refresh)
         {
@@ -425,11 +410,10 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
                     Images = default;
 
-                    _appView.Title = Title = imageCollectionContext.Name;
-
                     _currentImageSource = imageSource;
                     _imageCollectionContext = imageCollectionContext;
 
+                    Title = _imageCollectionContext.Name;
                     DisplaySortTypeInheritancePath = null;
 
                     var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(_pathForSettings);
@@ -492,7 +476,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         Images = default;
                         _CurrentImageIndex = 0;
 
-                        _appView.Title = albam.Name;
                         Title = albam.Name;
 
                         DisplaySortTypeInheritancePath = null;
@@ -757,14 +740,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
 
 
-        _navigationDisposables = db.Build();
+        db.Build().RegisterTo(ct);
 #if DEBUG
         Debug.WriteLine($"Complete: {TimeProvider.System.GetElapsedTime(time)}");
         time = TimeProvider.System.GetTimestamp();
 #endif
-        _navigationCts = cts;
-
-        await base.OnNavigatedToAsync(parameters);
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
 
@@ -1937,7 +1918,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         if (string.IsNullOrEmpty(pageName)) { return; }
         if (_nowPageFolderNameChanging) { return; }
 
-        var ct = _navigationCts.Token;
+        var ct = _navigationCt;
         //using (_imageLoadingLock.LockAsync(ct))
         {
             var folders = await _imageCollectionContext.GetLeafFoldersAsync(ct).ToListAsync(ct);

@@ -123,6 +123,7 @@
   <ItemGroup>
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
     <Compile Include="Contracts\Maintenance\IThumbnailImageMaintenanceService.cs" />
+    <Compile Include="Helpers\DeferSaveAwareObservableObject.cs" />
     <Compile Include="Helpers\PerfomanceStopWatch.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Migrate\IAsyncMigrater.cs" />
@@ -228,7 +229,7 @@
       <Version>5.0.2</Version>
     </PackageReference>
     <PackageReference Include="VersOne.Epub">
-      <Version>3.3.2</Version>
+      <Version>3.3.6</Version>
     </PackageReference>
     <PackageReference Include="Win2D.uwp">
       <Version>1.25.0</Version>

@@ -70,7 +70,8 @@
                                      AccessKey="{x:Bind AccessKey}"
                                      DataContext="{x:Bind}"
                                      Tag="{x:Bind}"
-                                     Tapped="NavigationViewItem_Tapped">
+                                     Tapped="NavigationViewItem_Tapped"
+                                     FlowDirection="RightToLeft">
               <muxc:NavigationViewItem.KeyboardAccelerators>
                 <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
                                      Modifiers="Control" />
@@ -78,6 +79,24 @@
             </muxc:NavigationViewItem>
           </DataTemplate>
         </local:MenuItemDateTemplateSelector.Item>
+        <local:MenuItemDateTemplateSelector.ItemInvoke>
+          <DataTemplate x:DataType="viewModel:MenuItemInvokeActionViewModel">
+            <muxc:NavigationViewItem Content="{x:Bind Title}" 
+                                     AccessKey="{x:Bind AccessKey}"
+                                     DataContext="{x:Bind}"
+                                     Tag="{x:Bind}"
+                                     Tapped="NavigationViewItem_Tapped"
+                                     ToolTipService.ToolTip="{x:Bind Tooltip}"
+                                     Icon="{Binding Icon}"
+                                     IsSelected="False"
+                                     FlowDirection="RightToLeft">
+              <muxc:NavigationViewItem.KeyboardAccelerators>
+                <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
+                                     Modifiers="Control" />
+              </muxc:NavigationViewItem.KeyboardAccelerators>
+            </muxc:NavigationViewItem>
+          </DataTemplate>
+        </local:MenuItemDateTemplateSelector.ItemInvoke>
         <local:MenuItemDateTemplateSelector.SubItem>
           <DataTemplate x:DataType="viewModel:MenuSubItemViewModel">
             <muxc:NavigationViewItem Content="{x:Bind Title}"
@@ -85,10 +104,18 @@
                                      AccessKey="{x:Bind AccessKey}"
                                      DataContext="{x:Bind}"
                                      Tag="{x:Bind}"
-                                     Tapped="NavigationViewItem_Tapped">
+                                     Tapped="NavigationViewItem_Tapped"
+                                     IsExpanded="False"
+                                     Icon="{Binding Icon}"
+                                     FlowDirection="RightToLeft">
             </muxc:NavigationViewItem>
           </DataTemplate>
         </local:MenuItemDateTemplateSelector.SubItem>
+        <local:MenuItemDateTemplateSelector.Separator>
+          <DataTemplate x:DataType="viewModel:MenuSeparatorViewModel">
+            <muxc:NavigationViewItemSeparator />
+          </DataTemplate>
+        </local:MenuItemDateTemplateSelector.Separator>
       </local:MenuItemDateTemplateSelector>
 
       <Flyout x:Name="PurchaseThanksMassageFlyout">
@@ -97,23 +124,61 @@
                    MaxWidth="320" />
       </Flyout>
 
+      <Flyout x:Name="PurchaseConfirmFlyout">
+        <StackPanel Spacing="16"
+                    MaxWidth="300">
+
+          <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                     Style="{StaticResource SubtitleTextBlockStyle}" />
+
+          <TextBlock x:Name="PurchaseConfirmFlyout_DescTextBlock"
+                     Text=""
+                     TextWrapping="Wrap"
+                     MinHeight="60"
+                     Margin="0 0 0 0" />
+
+          <Button Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseUI}"
+                  Command="{x:Bind PurchaseAddonCommand}"
+                  HorizontalAlignment="Stretch"
+                  Style="{StaticResource AccentButtonStyle}" />
+
+          <HyperlinkButton Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseHistory}"
+                           NavigateUri="https://account.microsoft.com/billing/orders"
+                           HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </Flyout>
+
     </ResourceDictionary>
   </UserControl.Resources>
   <Grid AllowDrop="True" DragEnter="Grid_DragEnter" Drop="Grid_Drop"
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
         x:Name="RootGrid"
         >
-    <muxc:NavigationView 
-      x:Name="MyNavigtionView"     
-      uwpControls:DockPanel.Dock="Top" 
-      MenuItemsSource="{Binding MenuItems}" 
-      MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
-      PaneDisplayMode="Top"
-      IsBackButtonVisible="Collapsed"
-      IsSettingsVisible="False"
-      XYFocusDownNavigationStrategy="Projection"
-      SelectionFollowsFocus="Disabled"      
-      >
+
+    <Grid Opacity="0"
+          IsHitTestVisible="False">
+      <Button>
+        <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F11"
+                               Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
+          <KeyboardAccelerator Key="Escape"
+                               Invoked="ExitViewerKeyboardAccelerator_Invoked" />
+        </Button.KeyboardAccelerators>
+      </Button>
+    </Grid>
+    <muxc:NavigationView x:Name="MyNavigationView"
+                         uwpControls:DockPanel.Dock="Top"                         
+                         MenuItemsSource="{Binding MenuItems}"
+                         MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
+                         FooterMenuItemsSource="{x:Bind _footerItemsForTop}"
+                         PaneDisplayMode="{x:Bind ToPaneDisplayMode(_vm.ApplicationSettings.IsAppMenuShowWithLeft), Mode=OneWay}"
+                         OpenPaneLength="200"
+                         IsSettingsVisible="False"
+                         ItemInvoked="MyNavigationView_ItemInvoked"
+                         IsBackButtonVisible="Collapsed"
+                         XYFocusDownNavigationStrategy="Projection"
+                         SelectionFollowsFocus="Disabled"
+                         IsPaneToggleButtonVisible="False">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
@@ -129,94 +194,7 @@
         </core:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
-
-      <muxc:NavigationView.AutoSuggestBox>
-        <AutoSuggestBox PlaceholderText="{i18Ext:Localize Key=SearchPlaceholder}" 
-                        QueryIcon="Find"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        x:Name="AutoSuggestBox"
-                        Padding="0"
-                        Width="196"                        
-                        TextMemberPath="Title"
-                        UpdateTextOnSelect="False"
-                        AutoMaximizeSuggestionArea="True"
-                        IsSuggestionListOpen="True"   
-                        IsFocusEngagementEnabled="True"
-                        UseSystemFocusVisuals="True"
-                        TextChanged="AutoSuggestBox_TextChanged"
-                        SuggestionChosen="AutoSuggestBox_SuggestionChosen"
-                        FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                        AccessKey="F"
-                        AccessKeyInvoked="AutoSuggestBox_AccessKeyInvoked"
-                        QuerySubmitted="AutoSuggestBox_QuerySubmitted"
-                        >
-          <i:Interaction.Behaviors>
-            <!--<core:EventTriggerBehavior EventName="QuerySubmitted">
-              <core:InvokeCommandAction Command="{x:Bind _vm.SearchQuerySubmitCommand}" InputConverter="{StaticResource AutoSuggestBoxQuerySubmittedEventArgsConverter}" />
-            </core:EventTriggerBehavior>-->
-            <uiNavigation:UINavigationTriggerBehavior Kind="Cancel" IsRequireFocus="True">
-              <core:CallMethodAction TargetObject="{x:Bind AutoSuggestBox}" MethodName="RemoveFocusEngagement" />
-            </uiNavigation:UINavigationTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-          <AutoSuggestBox.KeyboardAccelerators>
-            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="KeyboardAccelerator_Invoked" />
-          </AutoSuggestBox.KeyboardAccelerators>
-          
-          <AutoSuggestBox.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding Name}" FontSize="12" TextWrapping="Wrap" />
-            </DataTemplate>
-          </AutoSuggestBox.ItemTemplate>
-        </AutoSuggestBox>
-      </muxc:NavigationView.AutoSuggestBox>
-
-      <muxc:NavigationView.PaneFooter>
-        <CommandBar x:Name="MenuRightCommandBar"
-                    DefaultLabelPosition="Collapsed"
-                    Background="Transparent"
-                    Width="240"
-                    >
-          <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectionStartButton" Label="{i18Ext:Localize Key=StartMultiSelection}" Command="{x:Bind _vm.StartSelectionCommand}" AccessKey="M" KeyTipPlacementMode="Bottom">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="Multiselect24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=AddNewFolder}" Command="{x:Bind _vm.SourceChoiceCommand}" AccessKey="O" KeyTipPlacementMode="Bottom">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="ImageAdd24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-          </CommandBar.PrimaryCommands>
-          <CommandBar.SecondaryCommands>
-            <AppBarButton Label="{i18Ext:Localize Key=RefreshLatest}" Command="{x:Bind _vm.RefreshNavigationCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=RefreshLatest}">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="ArrowSync24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=Settings}" Command="{x:Bind _vm.OpenPageCommand}" CommandParameter="SettingsPage" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="Settings24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-
-            <AppBarSeparator />
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithMashmallow}" Command="{x:Bind _vm.SendFeedbackWithMashmallowCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="PersonFeedback24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-            <AppBarButton Label="{i18Ext:Localize Key=SendFeedbackWithStoreReview}" Command="{x:Bind _vm.SendFeedbackWithStoreReviewCommand}" ToolTipService.ToolTip="{i18Ext:Localize Key=Settings}">
-              <AppBarButton.Icon>
-                <fi:FluentIconElement Symbol="PersonFeedback24" />
-              </AppBarButton.Icon>
-            </AppBarButton>
-
-          </CommandBar.SecondaryCommands>
-        </CommandBar>
-      </muxc:NavigationView.PaneFooter>
+      
 
       <Frame x:Name="ContentFrame"
              DataContext="{x:Null}"
@@ -225,65 +203,124 @@
       </Frame>
     </muxc:NavigationView>
 
-    <uwpControls:DockPanel x:Name="TitlebarArea"
-                           Background="Transparent"
+    <Frame x:Name="ViewerFrame"
+           DataContext="{x:Null}"
+           CacheSize="0"
+           Visibility="Collapsed"
+           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+           >
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
+    </Frame>
+
+    <Border x:Name="TitlebarBG"
                            VerticalAlignment="Top"
-                           Height="32">
+                           Height="48"
+                           Background="{ThemeResource SystemChromeMediumColor}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
 
-    </uwpControls:DockPanel>
+      <Border VerticalAlignment="Bottom"
+              Height="1"
+              Background="{ThemeResource SystemBaseLowColor}"
+              Opacity="0.2"/>
+    </Border>
 
-    <uwpControls:DockPanel>
+    <uwpControls:DockPanel x:Name="TitlebarUIContainer"
+                           VerticalAlignment="Top"
+                           Height="48">
+      <UIElement.RenderTransform>
+        <TranslateTransform />
+      </UIElement.RenderTransform>
 
-      <Button Margin="16 0 184 0"
-              HorizontalAlignment="Right"
-              VerticalAlignment="Top"
-              uwpControls:DockPanel.Dock="Right"
-              Height="32"
-              x:Name="PurchaseConfirmButton"
-              IsEnabled="{x:Bind IsStoreAvairable, Mode=OneWay}">
-        <UIElement.RenderTransform>
-          <TranslateTransform />
-        </UIElement.RenderTransform>
-        <TextBlock Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
-                   Style="{StaticResource CaptionTextBlockStyle}"
-                   TextWrapping="Wrap"
-                   MaxLines="2"
-                   MaxWidth="200"                   
-                   TextLineBounds="Tight"
-                   />
-
-        <Button.Flyout>
-          <Flyout x:Name="PurchaseConfirmFlyout">
-            <StackPanel Spacing="16">
-              <TextBlock x:Name="PurchaseConfirmFlyout_DescTextBlock"
-                         Text=""
-                         MinWidth="180"
-                         MaxWidth="240" TextWrapping="Wrap"
-                         MinHeight="60"
-                         Margin="0 16 0 0"/>
-
-              <Button Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseUI}"
-                      Command="{x:Bind PurchaseAddonCommand}" 
-                      HorizontalAlignment="Stretch"
-                      Style="{StaticResource AccentButtonStyle}"
-                      />
-
-              <HyperlinkButton Content="{i18Ext:Localize Key=PurchaseAddon_ShowPurchaseHistory}"
-                               NavigateUri="https://account.microsoft.com/billing/orders"
-                               HorizontalAlignment="Stretch"/>
-            </StackPanel>
-          </Flyout>
-        </Button.Flyout>
+      <Button Command="{x:Bind _vm.BackNavigationCommand}"
+              x:Name="GoBackButton"
+              uwpControls:DockPanel.Dock="Left"
+              Margin="8 4"
+              VerticalAlignment="Center">
+        <SymbolIcon Symbol="Back"
+                    Style="{StaticResource TitlebarSymbolIcon}">
+          
+        </SymbolIcon>
       </Button>
+
+      <StackPanel Orientation="Horizontal"
+                  Margin="8 0 8 0"
+                  uwpControls:DockPanel.Dock="Left"
+                  Spacing="8"
+                  x:Name="TitleIconAndTextContainer_Wide">
+        <Image Source="/Assets/Square44x44Logo.png"
+               Width="24"
+               VerticalAlignment="Center"
+               uwpControls:DockPanel.Dock="Left" />
+        <TextBlock x:Name="WindowTitleTextBlock"
+                   VerticalAlignment="Center"
+                   TextLineBounds="Tight"                   
+                   TextTrimming="CharacterEllipsis"
+                   Style="{StaticResource TitlebarTextBlock}"
+                   MaxWidth="300"
+                   ToolTipService.ToolTip="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                   ToolTipService.Placement="Bottom" />
+      </StackPanel>
+
+      <StackPanel x:Name="TitleIconAndTextContainer_Nallow"
+                  Visibility="Collapsed"
+                  VerticalAlignment="Center">
+        <muxc:DropDownButton Height="40" Background="Transparent"
+                             BorderThickness="1 0 1 0">
+          <Image Source="/Assets/Square44x44Logo.png"
+                 Width="24"
+                 VerticalAlignment="Center"
+                 uwpControls:DockPanel.Dock="Left" />
+
+          <muxc:DropDownButton.Flyout>
+            <Flyout>
+              <TextBlock x:Name="WindowTitleTextBlock_Nallow"
+                         Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                         VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis"
+                         Style="{StaticResource TitlebarTextBlock}"
+                         TextWrapping="Wrap"
+                         MaxWidth="300"/>
+            </Flyout>
+          </muxc:DropDownButton.Flyout>
+        </muxc:DropDownButton>
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal"
+                  Margin="16 0 184 0"
+                  HorizontalAlignment="Right"
+                  uwpControls:DockPanel.Dock="Right">
+        <Button uwpControls:DockPanel.Dock="Right"
+                Style="{StaticResource TitlebarButton}"
+                x:Name="FeedbackButton"
+                ToolTipService.ToolTip="{i18Ext:Localize Key=SendFeedbackWithMashmallow}"
+                >
+          <SymbolIcon Symbol="Send" Style="{StaticResource TitlebarSymbolIcon}" />
+
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Text="{i18Ext:Localize Key=SendFeedbackWithMashmallow}"
+                              Command="{x:Bind _vm.SendFeedbackWithMashmallowCommand}" />
+
+              <MenuFlyoutItem Text="{i18Ext:Localize Key=SendFeedbackWithStoreReview}"
+                              Command="{x:Bind _vm.SendFeedbackWithStoreReviewCommand}" />
+
+              <MenuFlyoutItem Text="{i18Ext:Localize Key=PurchaseAddon_ButtonTitle}"
+                              Click="ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+      </StackPanel>
+      
       <ContentControl x:Name="TitlebarContent"
                       HorizontalContentAlignment="Stretch"
-                      Margin="56 0 0 0"
+                      Margin="8 1 0 0"
                       VerticalAlignment="Top"
-                      Height="32"
-                      VerticalContentAlignment="Stretch"
+                      Height="48"
+                      VerticalContentAlignment="Stretch"                      
                       >
         <UIElement.RenderTransform>
           <TranslateTransform />
@@ -368,6 +405,38 @@
 
     <VisualStateManager.VisualStateGroups>
 
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <wst:EqualsStateTrigger Value="{Binding ElementName=MyNavigationView, Path=PaneDisplayMode}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <muxc:NavigationViewPaneDisplayMode>Left</muxc:NavigationViewPaneDisplayMode>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigationView.FooterMenuItemsSource"
+                    Value="{x:Bind _footerItemsForLeft}" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1060" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigationView.FooterMenuItemsSource"
+                    Value="{x:Bind _footerItemsForLeft}" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- ファイルオープンなど時間の掛かる操作時に他アクションを阻害する壁の表示切替 -->
       <VisualStateGroup>
         <VisualState x:Name="VS_HideBusyWall">
@@ -428,8 +497,6 @@
             <AdaptiveTrigger MinWindowWidth="1060" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MinWidth" Value="480" />
-            <Setter Target="MenuRightCommandBar.DefaultLabelPosition" Value="Right" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -437,7 +504,6 @@
             <AdaptiveTrigger MinWindowWidth="820" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MinWidth" Value="320" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -445,8 +511,6 @@
             <AdaptiveTrigger MinWindowWidth="610" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MaxWidth" Value="200" />
-            <Setter Target="MenuRightCommandBar.Margin" Value="0 0 0 0" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -454,17 +518,49 @@
             <AdaptiveTrigger MinWindowWidth="0" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MenuRightCommandBar.MaxWidth" Value="48" />
-            <Setter Target="MenuRightCommandBar.Margin" Value="0 0 0 0" />
+            <Setter Target="MyNavigationView.PaneDisplayMode"
+                    Value="Top" />
+            <Setter Target="TitleIconAndTextContainer_Wide.Visibility"
+                    Value="Collapsed" />
+            <Setter Target="TitleIconAndTextContainer_Nallow.Visibility"
+                    Value="Visible" />
+
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
 
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.ApplicationSettings.IsAppMenuShowWithLeft, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigationView.PaneDisplayMode"
+                    Value="Top" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="610" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MyNavigationView.PaneDisplayMode"
+                    Value="Top" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
 
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:EqualsStateTrigger Value="{x:Bind MyNavigtionView.IsPaneVisible, Mode=OneWay}" EqualTo="False" />
+            <wst:EqualsStateTrigger Value="{x:Bind MyNavigationView.IsPaneVisible, Mode=OneWay}" EqualTo="False" />
           </VisualState.StateTriggers>
         </VisualState>
         <VisualState>
@@ -474,7 +570,6 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="NavigationViewHeader.Padding" Value="48 0 0 0" />
-            <Setter Target="MenuRightCommandBar.Padding" Value="0 0 48 0" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -488,20 +583,20 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
-                               Storyboard.TargetName="TitlebarArea"
+                               To="0"
+                               Storyboard.TargetName="TitlebarBG"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
-                               Storyboard.TargetName="TitlebarContent"
+                               To="0"
+                               Storyboard.TargetName="TitlebarUIContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
-                               Storyboard.TargetName="PurchaseConfirmButton"
+                               To="48"
+                               Storyboard.TargetName="MyNavigationView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="32"
-                               Storyboard.TargetName="MyNavigtionView"
+                               To="48"
+                               Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
@@ -513,20 +608,20 @@
           <VisualState.Storyboard>
             <Storyboard>
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="TitlebarArea"
+                               To="-48"
+                               Storyboard.TargetName="TitlebarBG"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="TitlebarContent"
+                               To="-48"
+                               Storyboard.TargetName="TitlebarUIContainer"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-32"
-                               Storyboard.TargetName="PurchaseConfirmButton"
+                               To="0"
+                               Storyboard.TargetName="MyNavigationView"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
               <DoubleAnimation Duration="0:0:0.175"
-                               To="-1"
-                               Storyboard.TargetName="MyNavigtionView"
+                               To="0"
+                               Storyboard.TargetName="ViewerFrame"
                                Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" />
             </Storyboard>
           </VisualState.Storyboard>
@@ -540,15 +635,17 @@
             </wst:CompositeStateTrigger>
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="MyNavigtionView.Margin"
-                    Value="0 32 0 0" />
-            <Setter Target="TitlebarArea.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
-            <Setter Target="TitlebarContent.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
-            <Setter Target="PurchaseConfirmButton.(UIElement.RenderTransform).(TranslateTransform.Y)"
-                    Value="-1" />
-            <Setter Target="MyNavigtionView.(UIElement.RenderTransform).(TranslateTransform.Y)"
+            <Setter Target="MyNavigationView.Margin"
+                    Value="0 48 0 0" />
+            <Setter Target="ViewerFrame.Margin"
+                    Value="0 48 0 0" />
+            <Setter Target="TitlebarBG.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="TitlebarUIContainer.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="MyNavigationView.(UIElement.RenderTransform).(TranslateTransform.Y)"
+                    Value="0" />
+            <Setter Target="ViewerFrame.(UIElement.RenderTransform).(TranslateTransform.Y)"
                     Value="0" />
           </VisualState.Setters>
         </VisualState>

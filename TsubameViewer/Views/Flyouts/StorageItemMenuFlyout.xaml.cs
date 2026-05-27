@@ -26,6 +26,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         this.InitializeComponent();
 
         OpenListupItem.Command = Ioc.Default.GetService<OpenListupCommand>();
+        OpenViewerItem.Command = Ioc.Default.GetService<OpenImageViewerCommand>();
         SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
         SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
@@ -81,6 +82,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Visibility = (itemVM.Type == Core.Models.StorageItemTypes.Archive || itemVM.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
+            OpenViewerItem.CommandParameter = itemVM;
+            OpenViewerItem.Visibility = (itemVM.Type == Core.Models.StorageItemTypes.Archive || itemVM.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            
             var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
 
             AlbamEditMenuItem.Visibility = Visibility.Collapsed;
@@ -129,6 +133,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         {
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Visibility = Visibility.Visible;
+            OpenViewerItem.CommandParameter = itemVM;
+            OpenViewerItem.Visibility = Visibility.Visible;
 
             var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
 
@@ -162,6 +168,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Visibility = Visibility.Visible;
+            OpenViewerItem.CommandParameter = itemVM;
+            OpenViewerItem.Visibility = Visibility.Visible;
 
             AlbamEditMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
             AlbamEditMenuItem.CommandParameter = itemVM;
@@ -192,6 +200,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(albamItem);
             OpenListupItem.CommandParameter = itemVM;
             OpenListupItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.ArchiveFolder or Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            OpenViewerItem.CommandParameter = itemVM;
+            OpenViewerItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.ArchiveFolder or Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
             AlbamEditMenuItem.Visibility = Visibility.Collapsed;
             AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;

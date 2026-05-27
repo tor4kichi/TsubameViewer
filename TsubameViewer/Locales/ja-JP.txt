@@ -66,12 +66,17 @@ AdvancedSettings = 詳細設定
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = アプリを再起動して設定を反映する
 
+IsAppMenuShowWithLeft = メニューを左側に表示する
+
+IsFullScreenOnAppLaunch = 全画面表示でアプリを起動する
+
 SourceFoldersSettings = アプリに取り込んだフォルダ
 RemoveSourceFolderFromApp = アプリから取り除く
 ConfirmRemoveSourceFolderFromAppWithFolderName = {0} をアプリから取り除いてもよろしいですか？
 ConfirmRemoveSourceFolderFromAppDescription = この除去操作によって指定フォルダやフォルダ内アイテムが削除されることはありません。\nアプリから取り除いたフォルダは、いつでもアプリに再登録できます。
 
-ThumbnailImageSettings = サムネイル設定
+FolderItemListingSettings = フォルダアイテム表示設定
+IsOpenFolderContentListingAsDefault = 「一覧表示で開く」をデフォルトに
 IsGenerateImageFileThumbnail = 画像ファイルのサムネイルを生成
 IsGenerateFolderThumbnail = フォルダのサムネイルを生成
 IsGenerateArchiveFileThumbnail = 圧縮ファイルのサムネイルを生成
@@ -85,6 +90,7 @@ ProcessingThumbnailCache = 削除操作を処理中
 ImageViewerSettings = 画像ビューアの設定
 IsReverseImageFliping_MouseWheel = スクロールのページ送りを逆にする
 IsReverseImageFliping_Button = 左右のページ送りを逆にする
+IsReversePageFliping_Swipe = スワイプのページ送りを逆にする
 
 GeneralUISettings = 操作設定
 IsForceEnableXYNavigation = ページを開いた時にコンテンツを自動フォーカス\n（方向キー/ゲームパッド向け）
@@ -117,9 +123,8 @@ SelectSourceFolder = ツバメビューアにフォルダを追加
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = 元のフォルダへ戻る
-ChangeViewToFolderListupPage = フォルダビューに切替
-ChangeViewToImageListupPage = 画像一覧ビューに切替
+ChangeViewToFolderListupPage = フォルダビュー
+ChangeViewToImageListupPage = 画像ビュー
 
 
 
@@ -131,7 +136,7 @@ FileSortType.UpdateTimeAscending = 古い順
 FileSortType.UpdateTimeDecending = 新しい順
 
 DefaultFolderOrArchiveOpenMode = 既定のフォルダを開く動作
-DefaultFolderOrArchiveOpenMode.Viewer = リーダーで開く
+DefaultFolderOrArchiveOpenMode.Viewer = ビューアで開く
 DefaultFolderOrArchiveOpenMode.Listup = 一覧表示で開く
 
 Sort_InheritancePath = 並び替え継承元
@@ -139,7 +144,7 @@ Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子フォルダの画像並び替え
 
 
-OpenImageViewer = リーダーで開く
+OpenImageViewer = ビューアで開く
 OpenFolderListup = ファイルを一覧表示
 OpenWithExplorer = エクスプローラーで開く
 OpenWithExternalApplication = 別アプリで開く
@@ -182,8 +187,10 @@ ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = スタイルを強制的にクリア
 IsReversePageFliping_Scroll = スクロールのページ送りを逆にする
 IsReversePageFliping_Button = 左右のページ送りを逆にする
+
 
 DefaultWithParameter = デフォルト：{0}
 FontSize = 文字の大きさ
@@ -205,13 +212,55 @@ ChangeForegroundColor = 文字色を変更
 OverrideWritingMode = 縦書き・横書き
 WritingMode.Inherit = 変更しない
 WritingMode.Horizontal_TopToBottom = 横書き
-WritingMode.Vertical_RightToLeft = 縦書き（右から左）
-WritingMode.Vertical_LeftToRight = 縦書き（左から右）
+WritingMode.Vertical_RightToLeft = 縦書き（右から左）⬅️
+WritingMode.Vertical_LeftToRight = 縦書き（左から右）➡️
 
 ResetEBookSettings = 設定をリセットする
 
 DisplaySettings = 表示設定
 Toc = 目次
+ReadingItemsTitle = ファイル
+
+#### Movie Viewer Page
+MovieViewer_SaveCurrentFrame = フレーム画像を保存
+MovieViewer_ResetPlayerTransform = プレイヤー変形をリセット
+MovieViewer_PlayerStretch = プレイヤーの伸縮
+Stretch.None = オリジナルサイズ
+Stretch.Fill = 比率を無視して埋め尽くす
+Stretch.Uniform = ウィンドウサイズに合わせる
+Stretch.UniformToFill = 比率を維持して埋め尽くす
+
+MovieViewer_IsHorizontalMirror = 左右反転
+MovieViewer_PlayerRotate = 回転（時計回り）
+MediaRotation.None = 回転無し
+MediaRotation.Clockwise90Degrees = ９０度
+MediaRotation.Clockwise180Degrees = １８０度
+MediaRotation.Clockwise270Degrees = ２７０度
+
+MovieViewer_SaveCurrentFrame_Saved = 動画フレームを保存しました
+MovieViewer_SeekNotSupported = この動画はシークがサポートされていません
+
+MovieViewer_SC = ショートカットキーガイド
+MovieViewer_DisplayShortcutKeysGuide = ショートカットキーガイドを表示
+MovieViewer_SC_ExitPlayer = 動画ビューアを閉じる
+MovieViewer_SC_TogglePlayPause = 再生・一時停止の切替
+MovieViewer_SC_BackwardOneFrame = １フレーム戻る
+MovieViewer_SC_ForwardOneFrame = １フレーム進む
+MovieViewer_SC_ToggleIsMuted = ミュート切替
+MovieViewer_SC_TogglePlayerStretch = プレイヤー伸縮の切替
+MovieViewer_SC_TogglePlayerRotate = プレイヤー回転の切替
+MovieViewer_SC_TogglePlayerMirror = 左右反転の切替
+MovieViewer_SC_ToggleFullScreen = 全画面表示の切替
+MovieViewer_SC_VolumeChangeUp = 音量を上げる
+MovieViewer_SC_VolumeChangeDown = 音量を下げる
+MovieViewer_SC_PlaybackPositionChangeBackward = {0}秒戻る
+MovieViewer_SC_PlaybackPositionChangeForward = {0}秒進む
+MovieViewer_SC_SaveCurrentFrame = 現在フレームを保存
+MovieViewer_SC_SetPlaybackRateToPrev = 再生速度を下げる
+MovieViewer_SC_SetPlaybackRateToNext = 再生速度を上げる
+MovieViewer_SC_SetPlaybackPositionWithPercent = {0}%の位置から再生
+
+MovieViewer_SoundVolume = 音量
 
 #### SearchResult
 

@@ -1,6 +1,6 @@
 ﻿<Page
   x:Name="PageRoot"
-    x:Class="TsubameViewer.Views.EBookReaderPage"
+    x:Class="TsubameViewer.Views.EBookViewerPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:TsubameViewer.Views"
@@ -19,6 +19,7 @@
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations"
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
+      xmlns:epub="using:VersOne.Epub"
       mc:Ignorable="d"
   NavigationCacheMode="Enabled"
   >
@@ -30,7 +31,7 @@
   
   <Page.Resources>
     <DataTemplate x:Name="TitlebarContent"
-                  x:DataType="vm:EBookReaderPageViewModel">
+                  x:DataType="vm:EBookViewerPageViewModel">
       <Grid>
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="1*" />
@@ -38,11 +39,15 @@
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0"
                     Orientation="Horizontal">
-          <TextBlock Style="{StaticResource TitlebarTextBlock}">
-            <Run Text="{Binding Title, Mode=OneWay}" />
-          </TextBlock>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+          <Button Style="{StaticResource TitlebarButton}"
+                  ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_SC_ToggleFullScreen}"
+                  ToolTipService.Placement="Bottom"
+                  Command="{Binding ToggleFullScreenCommand}">
+            <SymbolIcon Symbol="FullScreen"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </Button>
           <Button Flyout="{StaticResource SettingsFlyout}"
                   Style="{StaticResource TitlebarButton}">
             <SymbolIcon Symbol="Setting"
@@ -61,9 +66,10 @@
     <Flyout x:Key="SettingsFlyout" AllowFocusOnInteraction="True" Placement="BottomEdgeAlignedLeft" ScrollViewer.IsVerticalScrollChainingEnabled="True">
       <StackPanel Spacing="16" HorizontalAlignment="Right">
 
-
-        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}" 
-                  Header="{Binding Source=OverrideWritingMode, Converter={StaticResource LocalizeConverter}}"
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsForceResetStylingInHeadElement, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsForceResetStylingInHeadElement}" />
+        <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=OverrideWritingMode}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -75,7 +81,7 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
-        
+
         <winUI:NumberBox Value="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=TwoWay}"
                          Minimum="1"
                          Maximum="10"
@@ -107,8 +113,8 @@
           <TextBlock Text="px" VerticalAlignment="Bottom" Margin="4 0 0 8" />
         </StackPanel>
 
-        <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=FontSize, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.RootFontSizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=FontSize}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -120,8 +126,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.LeffterSpacingItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=LetterSpacing, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.LeffterSpacingItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=LetterSpacing}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -133,8 +139,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.LineHeightItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}" 
-                  Header="{Binding Source=LineHeight, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.LineHeightItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=LineHeight}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
@@ -145,8 +151,8 @@
             </ToolTip>
           </ToolTipService.ToolTip>
         </ComboBox>
-        <ComboBox ItemsSource="{x:Bind _vm.RubySizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}" 
-                  Header="{Binding Source=RubyFontSize, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.RubySizeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=RubyFontSize}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ItemTemplate="{StaticResource PixelUnitTextTemplate}"
@@ -160,32 +166,24 @@
           </ToolTipService.ToolTip>
         </ComboBox>
 
-        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=TwoWay}" 
-                  Header="{Binding Source=FontFamily, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" 
+                  SelectedItem="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=FontFamily}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
-          <ToolTipService.ToolTip>
-            <ToolTip >
-              <TextBlock Text="" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
         </ComboBox>
 
-        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" SelectedItem="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=TwoWay}" 
-                  Header="{Binding Source=RubyFontFamily, Converter={StaticResource LocalizeConverter}}"
+        <ComboBox ItemsSource="{x:Bind _vm.SystemFontFamilies}" 
+                  SelectedItem="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=TwoWay}"
+                  Header="{i18nExt:Localize Key=RubyFontFamily}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Stretch"
                   ToolTipService.Placement="Right"
                   ToolTipService.PlacementTarget="{Binding RelativeSource={RelativeSource Mode=Self}}"
                 >
-          <ToolTipService.ToolTip>
-            <ToolTip >
-              <TextBlock Text="" />
-            </ToolTip>
-          </ToolTipService.ToolTip>
         </ComboBox>
 
 
@@ -193,7 +191,7 @@
           <TextBlock Text="{Binding Source=BackgroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="{Binding Source=ChangeBackgroundColor, Converter={StaticResource LocalizeConverter}}" />
+              <TextBlock Text="{i18nExt:Localize Key=ChangeBackgroundColor}" />
             </Grid>
 
             <Button.Flyout>
@@ -212,7 +210,7 @@
           <TextBlock Text="{Binding Source=ForegroundColor, Converter={StaticResource LocalizeConverter}}" HorizontalAlignment="Left" />
           <Button HorizontalContentAlignment="Center" HorizontalAlignment="Stretch">
             <Grid>
-              <TextBlock Text="{Binding Source=ChangeForegroundColor, Converter={StaticResource LocalizeConverter}}" />
+              <TextBlock Text="{i18nExt:Localize Key=ChangeForegroundColor}" />
             </Grid>
             <Button.Flyout>
               <Flyout Placement="Left">
@@ -227,57 +225,52 @@
         </StackPanel>
 
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Scroll, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Scroll, Converter={StaticResource LocalizeConverter}}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Scroll}"                      
                       />
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Button, Mode=TwoWay}"
-                      Header="{Binding Source=IsReversePageFliping_Button, Converter={StaticResource LocalizeConverter}}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Button}"
                       />
 
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Swipe, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsReversePageFliping_Swipe}" />
 
-
-        <Border BorderBrush="{ThemeResource SystemAltHighColor}" BorderThickness="0 1 0 0" Margin="16 16" />
-
-        <Button Content="{Binding Source=ResetEBookSettings, Converter={StaticResource LocalizeConverter}}" 
-                HorizontalAlignment="Stretch"
-                Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}"
-                />
+        <Button Content="{i18nExt:Localize Key=ResetEBookSettings}"
+                HorizontalAlignment="Stretch">
+          <Button.Flyout>
+            <MenuFlyout>
+              <MenuFlyoutItem Command="{x:Bind _vm.ResetEBookReaderSettingsCommand}">
+                
+              </MenuFlyoutItem>
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
       </StackPanel>
     </Flyout>
 
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
-      <MenuFlyoutItem Text="{Binding Source=SwitchFullScreen, Converter={StaticResource LocalizeConverter}}" Command="{x:Bind _vm.ToggleFullScreenCommand}"
-                      x:Name="SwitchFullScreeMenuItem"
-                      Visibility="Collapsed"
-                      >
-        <MenuFlyoutItem.KeyboardAccelerators>
-          <KeyboardAccelerator Key="F11" IsEnabled="False" />
-        </MenuFlyoutItem.KeyboardAccelerators>
-      </MenuFlyoutItem>
+      
     </MenuFlyout>
   </Page.Resources>
 
-  <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}"
-        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
-        
-        >
+  <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}">
 
     <i:Interaction.Behaviors>
       
       <!-- Mouse Input-->
       <myBehaviour:MouseWheelTrigger x:Name="DefaultMouseWheelTrigger">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseWheelTrigger x:Name="ReverseMouseWheelTrigger" IsEnabled="False">
         <myBehaviour:MouseWheelTrigger.UpActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
         </myBehaviour:MouseWheelTrigger.UpActions>
         <myBehaviour:MouseWheelTrigger.DownActions>
-          <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+          <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
         </myBehaviour:MouseWheelTrigger.DownActions>
       </myBehaviour:MouseWheelTrigger>
       <myBehaviour:MouseCenterClickTrigger>
@@ -288,53 +281,63 @@
 
       <!-- GamePad Input-->
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadLeftTriggerBehavior" Kind="Left" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _InnerGoNextImageCommand}" />
+        <core:InvokeCommandAction Command="{x:Bind InnerGoNextImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
       <uiNavigation:UINavigationTriggerBehavior x:Name="GamePadRightTriggerBehavior" Kind="Right" IsRequireFocus="True">
-        <core:InvokeCommandAction Command="{x:Bind _InnerGoPrevImageCommand}" />
+        <core:InvokeCommandAction Command="{x:Bind InnerGoPrevImageCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
       <uiNavigation:UINavigationTriggerBehavior Kind="View">
-        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind _OpenTocPaneCommand}" />
+        <core:InvokeCommandAction x:Name="GamePadBottomUIToggleAction" Command="{x:Bind OpenTocPaneCommand}" />
       </uiNavigation:UINavigationTriggerBehavior>
 
+      <myBehaviour:SwipeDistanceBehavior x:Name="MySwipeDistanceBehavior"
+                                         Invoked="MySwipeDistanceBehavior_Invoked"
+                                         XPixelsToOneUnit="4"
+                                         YPixelsToOneUnit="20"
+                                         />
 
     </i:Interaction.Behaviors>
 
     <!-- ContextFlyout のMenuFlyoutItem.KeyboardAccelerators はFlyoutが表示されてからでないと反応しない
          そのため、非表示のButtonのKeyboardAcceleratorsを利用する
     -->
-    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}" Width="0" Height="0" MinHeight="0" MinWidth="0" Opacity="0.0" IsTabStop="False">
+    <Button Command="{x:Bind _vm.ToggleFullScreenCommand}"
+            Width="0"
+            Height="0"
+            MinHeight="0"
+            MinWidth="0"
+            Opacity="0.0"
+            IsTabStop="False">
       <Button.KeyboardAccelerators>
         <KeyboardAccelerator Key="F11" />
       </Button.KeyboardAccelerators>
     </Button>
-    
-    <!-- 電子書籍ビューワー -->
-    <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}" MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"
-          Margin="48 27 48 72"
-          x:Name="EPubRendererContainer"
-          >
-      <eBookControls:EPubRenderer 
-      x:Name="EPubRenderer"
-      PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
-      FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
-      IsTapEnabled="False"
-      IsHitTestVisible="False"
-      IsAccessKeyScope="False"
-      AllowFocusOnInteraction="False"      
-      FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
-      FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
-      LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"
-      LineHeightInNoUnit="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=OneWay}"
-      RubyFontSizeInPixel="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=OneWay}"
-      ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
-      RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
-      OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
-      ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}"                                
-      >
 
-      </eBookControls:EPubRenderer>
+    <!-- 電子書籍ビューワー -->
+    <Grid Margin="40 24 24 64">
+      <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}"
+            MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"            
+            x:Name="EPubRendererContainer"
+            >
+        <eBookControls:EPubRenderer x:Name="EPubRenderer"
+                                    PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
+                                    FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
+                                    IsTapEnabled="False"
+                                    IsHitTestVisible="False"
+                                    IsAccessKeyScope="False"
+                                    AllowFocusOnInteraction="False"
+                                    FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
+                                    FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
+                                    LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"
+                                    LineHeightInNoUnit="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=OneWay}"
+                                    RubyFontSizeInPixel="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=OneWay}"
+                                    ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
+                                    RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
+                                    OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
+                                    ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
+        </eBookControls:EPubRenderer>
+      </Grid>
     </Grid>
     <!-- コントロールUI（共通）-->
     <Grid x:Name="UIContainer"
@@ -343,9 +346,9 @@
           Margin="0 0 0 0" 
           >
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="1.5*" />
-        <ColumnDefinition Width="6*" />
-        <ColumnDefinition Width="1.5*" />
+        <ColumnDefinition Width="1*" />
+        <ColumnDefinition Width="2*" />
+        <ColumnDefinition Width="1*" />
       </Grid.ColumnDefinitions>
 
       <Grid.RowDefinitions>
@@ -361,22 +364,35 @@
             Grid.ColumnSpan="3" 
             Grid.Row="0"
             Grid.RowSpan="3"
-            HorizontalAlignment="Center"              
+            HorizontalAlignment="Center"
             >
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
-                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}"
-                     >
+                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}">
             <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" />
           </TextBlock>
           <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
-           <Run Text="{x:Bind _vm.DisplayInnerCurrentImageIndex.Value, Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+           <Run Text="{x:Bind _vm.ToImageIndexStartWithOne(_vm.InnerCurrentImageIndex), Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
           </TextBlock>
         </StackPanel>
       </Grid>
+
+      <Border BorderBrush="{ThemeResource SystemBaseLowColor}"
+              Grid.Column="1"
+              Grid.ColumnSpan="1"
+              Grid.Row="3"
+              Grid.RowSpan="1"
+              BorderThickness="1 1 1 0"              
+              Height="60"
+              Margin="0 12"
+              VerticalAlignment="Bottom"
+              Opacity="0.3"
+              x:Name="InteractionWallDivisionBorder">
+        
+      </Border>
       
       <Button x:Name="LeftPageMoveButton"
-        Command="{x:Bind _InnerGoNextImageCommand}"
+        Command="{x:Bind InnerGoNextImageCommand}"
               Grid.Column="0"
               Grid.ColumnSpan="1"
               Grid.Row="0"
@@ -403,22 +419,21 @@
       </Button>
 
       <Button x:Name="ToggleTocMenuButton_Touch"
-              Command="{x:Bind _OpenTocPaneCommand}" 
+              Command="{x:Bind OpenTocPaneCommand}" 
               Grid.Column="1"
               Grid.ColumnSpan="1"
-              Grid.Row="0"
-              Grid.RowSpan="3"
-              Opacity="0.0" 
+              Grid.Row="3"
+              Grid.RowSpan="1"
+              Opacity="0"
+              Height="72"
               HorizontalContentAlignment="Stretch"
-              VerticalContentAlignment="Stretch"
               HorizontalAlignment="Stretch"
-              VerticalAlignment="Bottom"
               KeyboardAcceleratorPlacementMode="Hidden"
-              Height="64"
+              VerticalAlignment="Bottom"
               />
 
       <Button x:Name="RightPageMoveButton"
-        Command="{x:Bind _InnerGoPrevImageCommand}"
+        Command="{x:Bind InnerGoPrevImageCommand}"
               Grid.Column="2"
               Grid.ColumnSpan="1"
               Grid.Row="0"
@@ -463,6 +478,17 @@
             Opacity="0" />
     </Grid>
 
+    <!-- 読了率表示 -->
+    <winUI:ProgressBar Value="{x:Bind _vm.CurrentReadingItemPosition, Mode=OneWay}"
+                       Minimum="0"
+                       Maximum="{x:Bind _vm.TotalReadingItemContentSize, Mode=OneWay}"
+                       VerticalAlignment="Bottom"
+                       Opacity="0.3"                       
+                       x:Name="ReadCompleteRateProgressBar"
+                       RenderTransformOrigin="1, 0"
+                       FlowDirection="RightToLeft"
+                       Background="Transparent">
+    </winUI:ProgressBar>
 
     <!-- Toc -->
     <Grid x:Name="TocContainer" Visibility="Collapsed">
@@ -490,6 +516,8 @@
       </Grid>
       <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
+            Background="{ThemeResource ApplicationContentBackgroundBrush}"
+            Translation="0, 0, 16"
             >
         
         <animation:Implicit.ShowAnimations>
@@ -498,64 +526,86 @@
         <animation:Implicit.HideAnimations>
           <animation:TranslationAnimation To="-320, 0" Duration="0:0:0.25" />
         </animation:Implicit.HideAnimations>
-        
-        <ListView x:Name="TocItemsListView"
-                  ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
-                  SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
-                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                  SelectionMode="Single"
-                  SingleSelectionFollowsFocus="False"
-                  Padding="0 32 4 27"
-                  >
-          <ListView.ItemContainerTransitions>
-            <TransitionCollection />
-          </ListView.ItemContainerTransitions>
-          <ListView.Header>
-            <StackPanel>
 
-              <Button x:Name="TocContainerUIBackNavigationButton" Command="{x:Bind _vm.BackNavigationCommand}" Width="60" Visibility="Collapsed" Margin="0 8">
-                <SymbolIcon Symbol="Back">
-                  <SymbolIcon.RenderTransform>
-                    <ScaleTransform ScaleX="0.6" ScaleY="0.6" CenterX="10" CenterY="10" />
-                  </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-              </Button>
+        <Grid.Shadow>
+          <ThemeShadow />
+        </Grid.Shadow>
+        <uwpControls:DockPanel>
+          <ScrollViewer Padding="0"
+                 Margin="0"
+                 FlowDirection="RightToLeft"
+                        x:Name="TocItemsContainer">
+            <StackPanel Padding="0 0 0 32">
+              <Border uwpControls:DockPanel.Dock="Top"
+                      Translation="0, 0, 16"
+                      Margin="0 16 0 0">
+                <Border.Shadow>
+                  <ThemeShadow />
+                </Border.Shadow>
+                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}"
+                       Stretch="Uniform"
+                       Height="240">
+                </Image>
+              </Border>
+              <ListView x:Name="TocItemsListView"
+                        ItemsSource="{x:Bind _vm.TocItems, Mode=OneWay}"
+                        SelectedItem="{x:Bind _vm.SelectedTocItem, Mode=TwoWay}"
+                        SelectionMode="Single"
+                        SingleSelectionFollowsFocus="False"
+                        Padding="0 16 4 27"                        
+                        FlowDirection="RightToLeft">
+                <ListView.Header>
+                  <TextBlock Text="{i18nExt:Localize Key=Toc}"
+                             Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0 0 0"/>
+                </ListView.Header>
+                <ListView.ItemContainerTransitions>
+                  <TransitionCollection />
+                </ListView.ItemContainerTransitions>
+                <ListView.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="Wrap"
+                               Margin="0 4" />
+                  </DataTemplate>
+                </ListView.ItemTemplate>
 
-              <Button x:Name="TocContainerSettingsButton" Flyout="{StaticResource SettingsFlyout}" Visibility="Collapsed" Margin="0 0 0 8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <SymbolIcon Symbol="Setting" />
-                  <TextBlock Text="{i18nExt:Localize Key=DisplaySettings}" />
-                </StackPanel> 
-              </Button>
-              
-              <ContentControl Tapped="CoverImage_Tapped" IsTabStop="False">
-                <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}" MaxHeight="160" Margin="0 8" VerticalAlignment="Top" Stretch="UniformToFill" />
-              </ContentControl>
+                <i:Interaction.Behaviors>
+                  <core:EventTriggerBehavior EventName="Tapped">
+                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}"
+                                           MethodName="PrepareTocSelectionChange" />
+                    <core:CallMethodAction TargetObject="{Binding}"
+                                           MethodName="UpdateFromCurrentTocItem" />
+                  </core:EventTriggerBehavior>
+                </i:Interaction.Behaviors>
 
-              <TextBlock Text="{i18nExt:Localize Key=Toc}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="16 0" />
+              </ListView>
+              <ListView ItemsSource="{x:Bind _vm.CurrentBookReadingOrder, Mode=OneWay}"
+                        SelectedItem="{x:Bind _vm.CurrentPage, Mode=OneWay}"
+                        SelectionChanged="CurrentBookReadingOrder_SelectionChanged"
+                        HorizontalAlignment="Stretch"
+                        FlowDirection="RightToLeft">
+                <ListView.Header>
+                  <TextBlock Text="{i18nExt:Localize Key=ReadingItemsTitle}"
+                             Style="{StaticResource SubtitleTextBlockStyle}"
+                             Margin="16 0 0 0" />
+                </ListView.Header>
+                <ListView.ItemTemplate>
+                  <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
+                    <TextBlock Text="{x:Bind Key}" />
+                  </DataTemplate>
+                </ListView.ItemTemplate>
+              </ListView>
             </StackPanel>
-          </ListView.Header>
-          <ListView.ItemTemplate>
-            <DataTemplate >
-              <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Margin="0 4" />
-            </DataTemplate>
-          </ListView.ItemTemplate>
-
-          <i:Interaction.Behaviors>
-            <core:EventTriggerBehavior EventName="Tapped">
-              <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}" MethodName="PrepareTocSelectionChange" />
-              <core:CallMethodAction TargetObject="{Binding}" MethodName="UpdateFromCurrentTocItem" />
-            </core:EventTriggerBehavior>
-          </i:Interaction.Behaviors>
-
-        </ListView>
+          </ScrollViewer>
+        </uwpControls:DockPanel>
       </Grid>
     </Grid>
 
 
 
     <VisualStateManager.VisualStateGroups>
-
+      
       <!-- マウスカーソルの自動非表示 -->
       <VisualStateGroup>
         <VisualState>
@@ -616,7 +666,20 @@
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
-            
+
+      <!-- スワイプのページ送りを逆にする -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.EBookReaderSettings.IsReversePageFliping_Swipe, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="MySwipeDistanceBehavior.XPixelsToOneUnit"
+                    Value="-4" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
       <!-- 左右移動を抑止する -->
       <VisualStateGroup>
         <VisualState>
@@ -645,8 +708,6 @@
             <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
             <Setter Target="TocItemsListView.Padding" Value="48 27 8 27" />
             <Setter Target="PageTitleLayout.Margin" Value="0 0 0 18" />
-            <Setter Target="TocContainerUIBackNavigationButton.Visibility" Value="Visible" />
-            <Setter Target="TocContainerSettingsButton.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
@@ -655,9 +716,6 @@
             <wst:UserInteractionModeTrigger InteractionMode="Touch" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="SwipeProcessScreen.Visibility" Value="Visible" />
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
-            <Setter Target="Toolbar_Touch.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
 
@@ -666,8 +724,6 @@
             <wst:DeviceFamilyStateTrigger DeviceFamily="Desktop" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Toolbar_Desktop.Visibility" Value="Visible" />
-            <Setter Target="SwitchFullScreeMenuItem.Visibility" Value="Visible" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
@@ -676,7 +732,8 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />
+            <!--<wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />-->
+            <StateTrigger IsActive="{Binding ElementName=EPubRenderer, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="LeftPageMoveButton.(Grid.Column)" Value="0" />
@@ -689,10 +746,13 @@
             <Setter Target="RightPageMoveButton.(Grid.Row)" Value="0" />
             <Setter Target="RightPageMoveButton.(Grid.RowSpan)" Value="1" />
 
-            <Setter Target="ToggleTocMenuButton_Touch.(Grid.Column)" Value="0" />
-            <Setter Target="ToggleTocMenuButton_Touch.(Grid.ColumnSpan)" Value="3" />
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.Column)" Value="1" />
+            <Setter Target="ToggleTocMenuButton_Touch.(Grid.ColumnSpan)" Value="1" />
             <Setter Target="ToggleTocMenuButton_Touch.(Grid.Row)" Value="2" />
             <Setter Target="ToggleTocMenuButton_Touch.(Grid.RowSpan)" Value="1" />
+
+            <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
+                    Value="LeftToRight" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

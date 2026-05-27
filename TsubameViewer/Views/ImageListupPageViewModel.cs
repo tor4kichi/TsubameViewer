@@ -75,12 +75,13 @@ public sealed class SelectionContext : ObservableObject
 public sealed partial class ImageListupPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
+    , IRecipient<StorageItemNotFoundMessage>
 {
 
     public void Receive(InPageSearchRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     public Visibility NotEmptyToVisible(string s)
@@ -90,6 +91,18 @@ public sealed partial class ImageListupPageViewModel
 
     [ObservableProperty]
     string _filterText = "";
+
+
+    public void Receive(StorageItemNotFoundMessage message)
+    {
+        var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
+        if (item != null)
+        {
+            ImageFileItems.Remove(item);
+
+        }
+    }
+
 
     private readonly IMessenger _messenger;
     private readonly LocalBookmarkRepository _bookmarkManager;
@@ -146,7 +159,7 @@ public sealed partial class ImageListupPageViewModel
     [ObservableProperty]
     FileSortType _selectedFileSortType;
    
-    private readonly FileSortType DefaultFileSortType = FileSortType.UpdateTimeDecending;
+    private readonly FileSortType DefaultFileSortType = FileSortType.TitleAscending;
 
     private string _DisplaySortTypeInheritancePath;
     public string DisplaySortTypeInheritancePath
@@ -317,6 +330,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
+        _messenger.Unregister<StorageItemNotFoundMessage>(this);
 
         _navigationCts?.Cancel();
         _navigationCts = null;
@@ -357,14 +371,11 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    CancellationToken _navigationCt;
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
-
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
-        var cts  = new CancellationTokenSource();        
-        var ct = cts.Token;
         NowProcessing = true;
         try
         {
@@ -408,50 +419,45 @@ public sealed partial class ImageListupPageViewModel
                     ImageLastIntractItem = 0;
                 }
             }
-
-            ApplicationView.GetForCurrentView().Title = _imageCollectionContext?.Name ?? CurrentFolderItem?.Name ?? nameof(TsubameViewer);
-        }
-        catch
-        {
-            cts.Dispose();
-            throw;
         }
         finally
         {
             NowProcessing = false;
         }
 
-        _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
-        {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = true;
-            }
-        });
-
-        _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
-        {
-            var (albamId, path, itemType) = m.Value;
-            if (albamId == FavoriteAlbam.FavoriteAlbamId)
-            {
-                var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                itemVM.IsFavorite = false;
-            }
-        });
-
-        _messenger.Register<InPageSearchRequestMessage>(this);
-
+       
         var db = new DisposableBuilder();
         try
         {
+            _messenger.Register<AlbamItemAddedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = true;
+                }
+            });
+
+            _messenger.Register<AlbamItemRemovedMessage>(this, (r, m) =>
+            {
+                var (albamId, path, itemType) = m.Value;
+                if (albamId == FavoriteAlbam.FavoriteAlbamId)
+                {
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
+                    itemVM.IsFavorite = false;
+                }
+            });
+
+            _messenger.Register<InPageSearchRequestMessage>(this);
+            _messenger.Register<StorageItemNotFoundMessage>(this);
+
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
                 {
                     await SetSort(sort, ct);
                 })
-                .AddTo(ref db);            
+                .AddTo(ref db);
 
             this.ObservePropertyChanged(x => x.FilterText)
                 .Debounce(TimeSpan.FromSeconds(1))
@@ -463,10 +469,15 @@ public sealed partial class ImageListupPageViewModel
         catch
         {
             db.Dispose();
+            _messenger.Unregister<AlbamItemAddedMessage>(this); 
+            _messenger.Unregister<AlbamItemRemovedMessage>(this);
+            _messenger.Unregister<InPageSearchRequestMessage>(this);
+            _messenger.Unregister<StorageItemNotFoundMessage>(this);
             throw;
         }
 
-        await base.OnNavigatedToAsync(parameters);
+
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
     #region Refresh Item
@@ -495,6 +506,7 @@ public sealed partial class ImageListupPageViewModel
         using var lockReleaser = await _NavigationLock.LockAsync(ct);
 
         HasFileItem = false;
+        DisplayCurrentPath = ""; 
 
         // 表示情報の解決
         ClearContent();
@@ -560,6 +572,7 @@ public sealed partial class ImageListupPageViewModel
         using var lockReleaser = await _NavigationLock.LockAsync(ct);
 
         HasFileItem = false;
+        DisplayCurrentPath = "";
         ClearContent();
         if (Guid.TryParse(albamIdString, out Guid albamId) is false)
         {
@@ -696,7 +709,6 @@ public sealed partial class ImageListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                await col.Context.UpdateCacheIfCountNotSameAsync(ct);
                 using (FileItemsView.DeferRefresh())
                 {
                     ImageFileItems.Clear();
@@ -709,6 +721,16 @@ public sealed partial class ImageListupPageViewModel
                             _albamRepository,
                             Selection);
                         ImageFileItems.Add(itemVM);
+                    }
+
+                    if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
+                    {
+                        await col.Context.HandleDiffItems(
+                                FileItemsView.Source as ObservableCollection<IStorageItemViewModel>,
+                                FileItemsView.DeferRefresh,
+                                cacheImageViewModelFactory,
+                                (IStorageItemViewModel itemVM) => itemVM.Path,
+                                ct);
                     }
                 }
             }

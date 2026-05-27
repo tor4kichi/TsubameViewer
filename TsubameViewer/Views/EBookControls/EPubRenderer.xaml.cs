@@ -1,6 +1,8 @@
 ﻿using ColorCode.Compilation.Languages;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
+using R3;
+using R3.Collections;
 using Reactive.Bindings.Extensions;
 using System;
 using System.Collections.Generic;
@@ -31,6 +33,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Views.EBookControls;
@@ -228,36 +231,26 @@ public sealed partial class EPubRenderer : UserControl
     public static readonly DependencyProperty OverrideWritingModeProperty =
         DependencyProperty.Register("OverrideWritingMode", typeof(WritingMode), typeof(EPubRenderer), new PropertyMetadata(WritingMode.Inherit, OnSomeStylePropertyChanged));
 
-    public string PageHtml
+    public XmlDocument PageHtml
     {
-        get { return (string)GetValue(PageHtmlProperty); }
+        get { return (XmlDocument)GetValue(PageHtmlProperty); }
         set { SetValue(PageHtmlProperty, value); }
     }
 
     public static readonly DependencyProperty PageHtmlProperty =
-        DependencyProperty.Register("PageHtml", typeof(string), typeof(EPubRenderer), new PropertyMetadata(null, OnPageHtmlPropertyChanged ));
+        DependencyProperty.Register("PageHtml", typeof(XmlDocument), typeof(EPubRenderer), new PropertyMetadata(null, OnPageHtmlPropertyChanged ));
 
     private static async void OnPageHtmlPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var _this = (EPubRenderer)d;
 
         using var _ = await _this._domUpdateLock.LockAsync(default);
-
-        if (_this.isFirstContent)
-        {
-            await Task.Delay(100);
-            //await Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
-            //    h => _this.SizeChanged += h,
-            //    h => _this.SizeChanged -= h
-            //    )
-            //    .Take(1)
-            //    .ToAsyncAction()
-            //    .AsTask();
-        }
         
         _this._sw.Restart();
-        if (e.NewValue is string newPageHtml && !string.IsNullOrEmpty(newPageHtml))
+        if (e.NewValue is XmlDocument newPageHtml)
         {
+            _this._innerCurrentPage = 0;
+            _this._innerPageCount = 0;
             _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
             _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
         }
@@ -377,15 +370,16 @@ public sealed partial class EPubRenderer : UserControl
         return sb.ToString();
     }
 
+    StringBuilder htmlSb = new();
     // evalでdocument.headにstyleタグを追加しても反映されないため
     // html文字列に直接埋め込む
-    string ToStyleEmbedHtml(string pageHtml)
+    string ToStyleEmbedHtml(XmlDocument pageHtml)
     {
         string ePubRendererCss = GetOrCreateEmbedStyleText();
 
-        var xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml(pageHtml);
-
+        //var xmlDoc = new XmlDocument();
+        var xmlDoc = pageHtml;
+        
         var head = xmlDoc.DocumentElement["head"];
         var cssItems = new[] { ePubRendererCss };
         foreach (var css in cssItems)
@@ -445,7 +439,7 @@ public sealed partial class EPubRenderer : UserControl
 
 
 
-    CompositeDisposable? _compositeDisposable;
+    IDisposable? _compositeDisposable;
 
     private void EPubRenderer_Loaded(object sender, RoutedEventArgs e)
     {
@@ -456,45 +450,38 @@ public sealed partial class EPubRenderer : UserControl
         WebView.NavigationCompleted += WebView_NavigationCompleted;
         WebView.DOMContentLoaded += WebView_DOMContentLoaded;
 
-        _compositeDisposable = new CompositeDisposable();
+        DisposableBuilder db = new();
         var dispatcher = Dispatcher;
         
         isFirstContent = true;
 
-        Observable.Merge(
-            Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
+        R3.Observable.Merge(
+            System.Reactive.Linq.Observable.FromEventPattern<WindowSizeChangedEventHandler, WindowSizeChangedEventArgs>(
                 h => Window.Current.SizeChanged += h,
                 h => Window.Current.SizeChanged -= h
-                ).ToUnit()
-            , Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
+                ).ToObservable().AsUnitObservable()
+            , System.Reactive.Linq.Observable.FromEventPattern<SizeChangedEventHandler, SizeChangedEventArgs>(
                 h => SizeChanged += h,
                 h => SizeChanged -= h
-                ).ToUnit()
+                ).ToObservable().AsUnitObservable()            
             )
             .Where(x => !isFirstContent)
-            .Throttle(TimeSpan.FromMilliseconds(100), CurrentThreadScheduler.Instance)
+            .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
+            .ThrottleLast(TimeSpan.FromMilliseconds(500))
             .Where(x => !isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .Subscribe(async args =>
             {
-                await dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+                using (await _domUpdateLock.LockAsync(default))
                 {
-                    await Task.Delay(50);
-                    if (IsLoaded is false) { return; }
-                    
-                    ContentRefreshStarting?.Invoke(this, EventArgs.Empty);
+                    // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
+                    //await Task.Delay(50);
 
-                    using (await _domUpdateLock.LockAsync(default))
-                    {
-                        // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                        //await Task.Delay(50);
-
-                        // リサイズしたら再描画しないとレイアウトが崩れるっぽい
-                        WebView.Refresh();
-                    }
-                });
+                    // リサイズしたら再描画しないとレイアウトが崩れるっぽい
+                    WebView.Refresh();
+                }
             })
-            .AddTo(_compositeDisposable);
+            .AddTo(ref db);
 
         new[]
         {
@@ -509,9 +496,13 @@ public sealed partial class EPubRenderer : UserControl
             this.ObserveDependencyProperty(ColumnCountProperty),
         }
         .Merge()
-        .Throttle(TimeSpan.FromMilliseconds(50))
-        .Subscribe(_ => { var __ = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => ReloadPageHtml()); })
-        .AddTo(_compositeDisposable);
+        .ToObservable()
+        .ThrottleFirstLast(TimeSpan.FromMilliseconds(50))
+        .Subscribe(_ => ReloadPageHtml())
+        .AddTo(ref db);
+
+        _compositeDisposable = db.Build();
+
     }
 
     private void EPubRenderer_Unloaded(object sender, RoutedEventArgs e)
@@ -521,6 +512,10 @@ public sealed partial class EPubRenderer : UserControl
         WebView.DOMContentLoaded -= WebView_DOMContentLoaded;
 
         _compositeDisposable?.Dispose();
+
+        WebView.NavigateToString(string.Empty);
+        _innerPageCount = 0;
+        _innerCurrentPage = 0;
     }
 
 
@@ -635,6 +630,10 @@ public sealed partial class EPubRenderer : UserControl
         AppendSetVerticalBodyStyleScript,
         AppendSetHorizontalBodyStyleScript,
         AppendGetSizeListScript,
+        PushEmptyParagraphScript,
+        GetWindowWidthScript,
+        GetWindowHeightScript,
+        SetScrollPositionScript
     };
 
     private StringBuilder AppendAllScript(StringBuilder sb)
@@ -664,22 +663,22 @@ public sealed partial class EPubRenderer : UserControl
     private static void AppendSetVerticalBodyStyleScript(StringBuilder sb)
     {
         sb.AppendLine(
-@"function SetVerticalBodyStyle(webViewHeight, columnCount, fontSize) {
-document.body.style = `width: 100vw; overflow: hidden; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
+@"function SetVerticalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize) {
+document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
 }"
 );        
     }
 
-    private async Task SetVerticalBodyStyleAsync(double height, int columnCount, double fontSize)
+    private async Task SetVerticalBodyStyleAsync(double webViewWidth, double height, int columnCount, double fontSize)
     {
-        await WebView.InvokeScriptAsync("SetVerticalBodyStyle", new [] { height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
+        await WebView.InvokeScriptAsync("SetVerticalBodyStyle", new [] { webViewWidth.ToString("F0"), height.ToString("F0"), columnCount.ToString(), fontSize.ToString("F0") });
     }
 
     private static void AppendSetHorizontalBodyStyleScript(StringBuilder sb)
     {
         sb.AppendLine(
 @"function SetHorizontalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize){
-document.body.style = `overflow: hidden; width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:${fontSize}px;`;
+document.body.style = `overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:${fontSize}px; margin-bottom:48px;`;
 };"
 );
     }
@@ -698,46 +697,92 @@ document.body.style = `overflow: hidden; width: ${webViewWidth}; max-height: ${w
 let isVertical = JSON.parse(isVerticalString.toLowerCase()) == true;
 var heightArray = [];
 var count = 0;    
-let pList = document.body.getElementsByTagName(`p`);
-let divList = document.body.getElementsByTagName(`div`);
-let spanList = document.body.getElementsByTagName(`span`);
-let imgList = document.body.getElementsByTagName(`img`);
-let tdList = document.body.getElementsByTagName(`td`);
-let allElmeentList = [...pList, ...divList, ...spanList, ...imgList, ...tdList];
 let set = new Set();
-for (var item of allElmeentList)
-{
-    var elementScrollTop = isVertical ? item.offsetTop : item.offsetLeft;
-    if (elementScrollTop == null) { continue; }
+// Inline ExtractCommonHeight for all element types
+let elements = [
+    document.body.getElementsByTagName('p'),
+    document.body.getElementsByTagName('div'),
+    document.body.getElementsByTagName('span'),
+    document.body.getElementsByTagName('img'),
+    document.body.getElementsByTagName('td')
+];
 
-    if (!set.has(elementScrollTop))
-    {
+for (let elemList of elements) {
+    for (let item of elemList) {
+        let elementScrollTop = isVertical ? item.offsetTop : item.offsetLeft;
+        if (elementScrollTop == null) { continue; }
         set.add(elementScrollTop);
     }
 }
-return JSON.stringify([...set]);
+return JSON.stringify(Array.from(set));
 };");
     }
+    private static void PushEmptyParagraphScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function PushEmptyParagraph()
+            {
+                for (var i = 0; i != 50; i++)
+                {
+                    document.body.appendChild(document.createElement(`p`));
+                }
+            }
+            """);
+    }
 
+    private static void GetWindowWidthScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function GetWindowWidth()
+            {
+                return window.innerWidth.toString();
+            }
+            """);
+    }
+
+    private static void GetWindowHeightScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function GetWindowHeight()
+            {
+                return window.innerHeight.toString();
+            }
+            """);
+    }
+
+    private static void SetScrollPositionScript(StringBuilder sb)
+    {
+        sb.AppendLine(
+"""            
+            function SetScrollPosition(scrollPositionString)
+            {
+                let pos = parseInt(scrollPositionString);
+                window.scrollTo(pos, 0);
+            }
+            """);
+    }
     private async Task<int[]> GetSizeListAsync(bool isVertical)
     {
         var sizeList = await WebView.InvokeScriptAsync("GetSizeList", new[] { isVertical.ToString() });
-        Debug.WriteLine(sizeList);
+        //Debug.WriteLine(sizeList);
         return JsonSerializer.Deserialize<int[]>(sizeList)!;        
     }
 
 
     private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
     {
-        if (string.IsNullOrEmpty(PageHtml)) { return; }
-
+        if (PageHtml == null) { return; }
+#if DEBUG
         PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("DOMContentLoaded");
+#endif
         using var _ = await _domUpdateLock.LockAsync(default);
 
 
         var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
         var oldCurrentPageIndex = _innerCurrentPage;
-        double oldPageInPercentage = _innerCurrentPage / (double)_innerPageCount;
 
 
         //
@@ -765,8 +810,9 @@ return JSON.stringify([...set]);
             Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
         }
 
+#if DEBUG
         sw.ElapsedWrite("check vertical writting");
-
+#endif
         var columnCount = ColumnCount;
         if (IsVerticalLayout)
         {
@@ -775,16 +821,18 @@ return JSON.stringify([...set]);
             // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
             // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(WebView.ActualHeight, columnCount, FontSize);
+            await SetVerticalBodyStyleAsync(WebView.ActualWidth - 16, WebView.ActualHeight - 8, columnCount, FontSize);
         }
         else
         {
             // Note: -8は下側と右側の見切れ対策
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 8, columnCount, FontSize);
+            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 128, columnCount, FontSize);
         }
 
+#if DEBUG
         sw.ElapsedWrite("check content width/height limitation.");
+#endif
         //
         // １ページの高さを求める
         // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
@@ -794,98 +842,100 @@ return JSON.stringify([...set]);
         // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
         // 
         {
-            string offsetText = IsVerticalLayout ? "offsetTop" : "offsetLeft";
-            //var sizeList = await WebView.InvokeScriptAsync("eval", new[]
-            //{
-            //    $@"
-            //        const pList = document.querySelectorAll('p, div, img, span');
-            //        const heightArray = [];
-            //        var count = 0;
-            //        for (var [i, item] of pList.entries())
-            //        {{
-            //            const elementScrollTop = item.{offsetText};
-            //            if (elementScrollTop == null) {{ continue; }}
-
-            //            if (heightArray.length == 0)
-            //            {{
-            //                heightArray.push(elementScrollTop);
-            //            }}
-            //            else if (heightArray[count] != elementScrollTop)
-            //            {{
-            //                heightArray.push(elementScrollTop);
-            //                count++;
-            //            }}                        
-            //        }}
-            //        JSON.stringify(heightArray);
-            //        "
-            //});
-            //Debug.WriteLine(sizeList);
-            //var sizeItems = JsonSerializer.Deserialize<int[]>(sizeList)!.Distinct().ToArray();
-
             // 1ページの高さを求める
             // ページ全体の高さを求める
             // ページ数を求める
             // 現状は重すぎる、特にquerySelectorAllが激重、eval関係なくこれが原因
 
-            var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.Distinct().OrderBy(x => x).ToArray();
+            using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Distinct().Order().ToArrayPool();
+            var sizeItemsSpan = sizeItems.ArraySegment;
+#if DEBUG
             sw.ElapsedWrite("check page sizeList.");
-            var first = sizeItems.ElementAtOrDefault(0);
-            sizeItems = sizeItems.Select(x => x - first).ToArray();
+#endif
+            var offset = sizeItemsSpan.ElementAtOrDefault(0);
+            using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - offset).ToArrayPool();
+            var relSizeItemsSpan = relSizeItems.ArraySegment;
+            Debug.WriteLine($"offset: {offset}");
+            Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
             var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
-            const int candidateSampleCount = 5;
-            const int compareSampleCount = 10;
-            int heroPageHeight = -1;
-            int heroHitCount = -1;
-            foreach (var candidatePageSize in sizeItems.Skip(1).Where(x => x > pageRealSize).Take(candidateSampleCount))
-            {
-                var hitCount = sizeItems.TakeLast(compareSampleCount).Count(x => x % candidatePageSize == 0);
-                if (hitCount > heroHitCount)
-                {
-                    heroPageHeight = candidatePageSize;
-                    heroHitCount = hitCount;
-                }
-            }
 
+            int heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
+#if DEBUG
             sw.ElapsedWrite("culc hero page size.");
-
-            if (pageRealSize > heroPageHeight)
+#endif
+            if (heroPageHeight == -1)
             {
-                _innerPageCount = 1;
+                heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
+            }
+            if (pageRealSize * 2 > relSizeItemsSpan[^1])
+            {
+                _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8).Count();
                 _onePageScrollSize = heroPageHeight;
                 _webViewScrollableSize = heroPageHeight;
 
                 // 1ページに収まってる場合は画像のみのページかどうかをチェックする
                 var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
-                NowOnlyImageView = pCount == 0;
-                Debug.WriteLine("NowOnlyImageView: " + NowOnlyImageView);
+                NowOnlyImageView = pCount <= 2;
+                if (NowOnlyImageView)
+                {
+                    _innerPageCount = 1;
+                }
+
+                _innerPageScrollPositions.Clear();
+                _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8));
             }
             else
             {
-                var pageScrollPositions = sizeItems.Where(x => x % heroPageHeight == 0).ToArray();
+                int _lastSize = -1;
+                float _allowableError = heroPageHeight / 1.05f;
+                float invHeroPageHeight = 1 / (float)heroPageHeight;
+                using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
+                    {
+                        if (x != 0 && x < heroPageHeight) { return false; }
+                        var div = x * invHeroPageHeight;
+                        var small = div - (long)div;
+                        return small > 0.90 || small < 0.10; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
+                    })
+                    .Where(x => 
+                    {
+                        // ページサイズより小さいページ位置はスキップ
+                        if (x == 0 || x - _lastSize > _allowableError)
+                        {
+                            _lastSize = x;
+                            return true;
+                        }
+                        else { return false; }
+                    }).ToArrayPool();
 
-                _innerPageCount = pageScrollPositions.Length;
+                Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
+
+                _innerPageScrollPositions.Clear();
+                _innerPageScrollPositions.AddRange(pageScrollPositions.ArraySegment);
+                _innerPageCount = _innerPageScrollPositions.Count;
                 _onePageScrollSize = heroPageHeight;
-                _webViewScrollableSize = pageScrollPositions.Last() + heroPageHeight;
+                _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
 
                 NowOnlyImageView = false;
             }
+            Debug.WriteLine($"NowOnlyImageView: {NowOnlyImageView}");
+
+            TotalInnerPageCount = _innerPageCount;
 
             Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
+#if DEBUG
             sw.ElapsedWrite("culc page counts.");
+#endif
 
             // ページ最後尾にスクロール用の余白を作る
             // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
-            await WebView.InvokeScriptAsync("eval", new[]
+            if (!NowOnlyImageView)
             {
-                $@"
-                    for (var i = 0; i < 100; i++)
-                    {{
-                        document.body.appendChild(document.createElement('p'));
-                    }}
-                    "
-            });
+                await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
+            }
 
+#if DEBUG
             sw.ElapsedWrite("add padding at last page.");
+#endif
         }
 
         if (isFirstContent)
@@ -899,7 +949,8 @@ return JSON.stringify([...set]);
             var newPageCount = _innerPageCount;
             var newCurrentPageIndex = _innerCurrentPage;
 
-            _innerCurrentPage = (int)Math.Round(_innerPageCount * oldPageInPercentage);
+            double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
+            _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
 
             Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
         }
@@ -909,30 +960,31 @@ return JSON.stringify([...set]);
         }
 
         _isGoNextOrPreview = false;
+        CurrentInnerPage = _innerCurrentPage;
 
 
+#if DEBUG
         sw.ElapsedWrite("set innerCurrentPage");
+#endif
 
         await SetScrollPositionAsync();
 
-        TotalInnerPageCount = _innerPageCount;
-        CurrentInnerPage = _innerCurrentPage;
-
-        sw.ElapsedWrite("set scroll position");        
-
+#if DEBUG
+        sw.ElapsedWrite("set scroll position");
+#endif
         _sw.Stop();
         Debug.WriteLine($"EPub loading time: {_sw.Elapsed.TotalSeconds:F3}");
     }
 
 
-
+    List<int> _innerPageScrollPositions = [];
 
     private async Task SetScrollPositionAsync()
     {
-        double position = _innerCurrentPage * _onePageScrollSize;
-
+        double position = _innerPageScrollPositions[_innerCurrentPage];
+        Debug.WriteLine(position);
         // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
-        await WebView.InvokeScriptAsync("eval", new[] { $"window.scrollTo({position:F3}, 0);" });
+        await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position:F0}" });
 
 #if DEBUG
         //if (IsVerticalLayout)
@@ -960,13 +1012,13 @@ return JSON.stringify([...set]);
 
     private async Task<double> GetPageWidth()
     {
-        var widthText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerWidth.toString()" });
+        var widthText = await WebView.InvokeScriptAsync("GetWindowWidth", []);
         return double.TryParse(widthText, out var value) ? value : 0;
     }
 
     private async Task<double> GetPageHeight()
     {
-        var heightText = await WebView.InvokeScriptAsync("eval", new[] { "window.innerHeight.toString()" });
+        var heightText = await WebView.InvokeScriptAsync("GetWindowHeight", []);
         return double.TryParse(heightText, out var value) ? value : 0;
     }
 

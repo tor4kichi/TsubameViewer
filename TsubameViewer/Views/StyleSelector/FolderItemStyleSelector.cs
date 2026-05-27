@@ -17,6 +17,7 @@ namespace TsubameViewer.Views.StyleSelector
         public Style Albam { get; set; }
         public Style AlbamImage { get; set; }
         public Style EBook { get; set; }
+        public Style Movie { get; set; }
 
 
         protected override Style SelectStyleCore(object item, DependencyObject container)
@@ -33,7 +34,8 @@ namespace TsubameViewer.Views.StyleSelector
                     StorageItemTypes.Albam => Albam,
                     StorageItemTypes.AlbamImage => AlbamImage,
                     StorageItemTypes.EBook => EBook,
-                    _ => throw new NotSupportedException()
+                    StorageItemTypes.Movie => Movie,
+                    _ => Image
                 };
             }
             return base.SelectStyleCore(item, container);

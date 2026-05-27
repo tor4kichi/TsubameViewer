@@ -2,6 +2,7 @@
 using Microsoft.Xaml.Interactivity;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Input;
@@ -38,7 +39,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _albamCreateCommand = albamCreateCommand;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -48,7 +49,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             return parameter is IImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -57,6 +58,8 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
             if (parameter is IImageSource imageSource)
             {
+                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+
                 var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
                 if (type is StorageItemTypes.Image or StorageItemTypes.Archive)
                 {
@@ -80,7 +83,12 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
                 else if (type is StorageItemTypes.EBook)
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(EBookReaderPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+                }
+                else if (type is StorageItemTypes.Movie)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
                 }
                 else if (type is StorageItemTypes.AddFolder)
                 {

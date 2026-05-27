@@ -34,8 +34,8 @@ public sealed partial class SearchResultPageViewModel
 
     public void Receive(SearchQuerySubmitedRequestMessage message)
     {
-        _filterText = message.Value;
-        OnPropertyChanged(nameof(FilterText));
+        //_filterText = message.Value;
+        //OnPropertyChanged(nameof(FilterText));
     }
 
     public Visibility NotEmptyToVisible(string s)
@@ -109,21 +109,19 @@ public sealed partial class SearchResultPageViewModel
         SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
     }
 
-    CancellationTokenSource _navigationCts;
 
+    CancellationToken _navigationCt;
 
-    public override async Task OnNavigatedToAsync(INavigationParameters parameters)
+    public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
         if (mode == NavigationMode.Refresh)
         {
             return;
         }
 
-        SearchResultItems.Clear();
-        _navigationCts = new CancellationTokenSource();
-        var ct = _navigationCts.Token;
-        
+        SearchResultItems.Clear();        
         if (parameters.TryGetValue("q", out string q))
         {
             FilterText = q;
@@ -133,24 +131,17 @@ public sealed partial class SearchResultPageViewModel
             throw new Exception();
         }
 
-        this.ObservePropertyChanged(x => x.FilterText)
-            .ThrottleLast(TimeSpan.FromSeconds(0.25))
-            .SubscribeAwait(this, async (s, state, ct) => 
-            {
-                await state.ProcessSearchQueryAsync(s, ct);
-            }, awaitOperation: AwaitOperation.Switch)
-            .RegisterTo(ct);
+        _ = ProcessSearchQueryAsync(q, ct);
 
         _messenger.Register<SearchQuerySubmitedRequestMessage>(this);
 
-        await base.OnNavigatedToAsync(parameters);
+        await base.OnNavigatedToAsync(parameters, ct);
     }
 
 
     async Task ProcessSearchQueryAsync(string q, CancellationToken ct)
     {
         SearchText = q;
-        ApplicationView.GetForCurrentView().Title = "SearchResultWith".Translate($"\"{q}\"");
         Dictionary<string, ItemsGroupedByFolderViewModel> groupByDir = [];
         SearchResultItems.Clear();
         try
@@ -186,10 +177,6 @@ public sealed partial class SearchResultPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-        _navigationCts?.Cancel();
-        _navigationCts?.Dispose();
-        _navigationCts = null;
-
         _messenger.Unregister<SearchQuerySubmitedRequestMessage>(this);
 
         base.OnNavigatedFrom(parameters);

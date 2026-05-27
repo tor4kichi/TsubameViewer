@@ -17,7 +17,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             _secondaryTileManager = secondaryTileManager;
         }
 
-        protected override bool CanExecute(object parameter)
+        public override bool CanExecute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {
@@ -27,7 +27,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
             return parameter is IImageSource;
         }
 
-        protected override async void Execute(object parameter)
+        public override async void Execute(object parameter)
         {
             if (parameter is IStorageItemViewModel itemVM)
             {

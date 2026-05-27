@@ -1,13 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
+using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using R3;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -44,6 +47,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 #nullable enable
@@ -52,6 +56,7 @@ namespace TsubameViewer.Views;
 public interface ITitlebarContentAware
 {
     DataTemplate? GetContent();
+    R3.Observable<string> ObserveTitleChanged();
 }
 
 [ObservableObject]
@@ -69,7 +74,7 @@ public sealed partial class AppShell : UserControl
 
         if (result is Windows.Services.Store.StorePurchaseStatus.Succeeded or Windows.Services.Store.StorePurchaseStatus.AlreadyPurchased)
         {
-            PurchaseThanksMassageFlyout.ShowAt(PurchaseConfirmButton);
+            PurchaseThanksMassageFlyout.ShowAt(FeedbackButton);
         }
     }
 
@@ -85,9 +90,15 @@ public sealed partial class AppShell : UserControl
         if (string.IsNullOrEmpty(PurchaseConfirmFlyout_DescTextBlock.Text))
         {
             var info = await service.GetCheerAddonInfoAsync();
-            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description;
+            if (info == null) { return; }
+            PurchaseConfirmFlyout_DescTextBlock.Text = info?.Description ?? "";
             IsStoreAvairable = info != null;
         }
+    }
+
+    private void ShowPurchaseConfirmFlyoutMenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        PurchaseConfirmFlyout.ShowAt(FeedbackButton);
     }
 
     #endregion
@@ -99,7 +110,15 @@ public sealed partial class AppShell : UserControl
     private readonly IViewLocator _viewLocator;
     private readonly DispatcherQueueTimer _AnimationCancelTimer;
     private readonly TimeSpan _BusyWallDisplayDelayTime = PageNavigationConstants.BusyWallDisplayDelayTime;
+    private readonly List<object> _footerItemsForTop;
+    private readonly List<object> _footerItemsForLeft;
 
+    Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode ToPaneDisplayMode(bool isAppMenuShowWithLeft)
+    {
+        return isAppMenuShowWithLeft 
+            ? Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode.Left 
+            : Microsoft.UI.Xaml.Controls.NavigationViewPaneDisplayMode.Top;
+    }
 
     public AppShell(
         AppShellViewModel viewModel, 
@@ -113,8 +132,8 @@ public sealed partial class AppShell : UserControl
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _viewLocator = Ioc.Default.GetRequiredService<IViewLocator>();
         InitializeNavigation();
+        InitializeViewerFrameNavigation();
         InitializeThemeChangeRequest();
-        InitializeSearchBox();
         InitializeSelection();
 
         _AnimationCancelTimer = _dispatcherQueue.CreateTimer();
@@ -126,21 +145,74 @@ public sealed partial class AppShell : UserControl
 
         InitializeInAppNotification();
 
+        SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility = AppViewBackButtonVisibility.Collapsed;
+
         var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
         coreTitleBar.ExtendViewIntoTitleBar = true;
-        coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
+        coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;        
 
         var appView = ApplicationView.GetForCurrentView();
         appView.VisibleBoundsChanged += AppView_VisibleBoundsChanged;
 
         Loaded += AppShell_Loaded;
 
-        _messenger.Register<CurrentInPageSearchTextRequestMessage>(this, (r, m) => 
-        {
-            m.Reply(AutoSuggestBox.Text);
-        });
-
         InitialziePurchase();
+
+        _footerItemsForTop = new()
+        {
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "StartMultiSelection".Translate(),
+                Invoked = () => _vm.StartSelectionCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "AddNewFolder".Translate(),
+                Invoked = () => _vm.SourceChoiceCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "RefreshLatest".Translate(),
+                Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Tooltip = "Settings".Translate(),
+                Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
+                Icon = new FluentIconElement(FluentSymbol.Settings24),
+            }
+        };
+
+        _footerItemsForLeft = new()
+        {
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "StartMultiSelection".Translate(),
+                Invoked = () => _vm.StartSelectionCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.Multiselect24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "AddNewFolder".Translate(),
+                Invoked = () => _vm.SourceChoiceCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ImageAdd24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "RefreshLatest".Translate(),
+                Invoked = () => _vm.RefreshNavigationCommand.Execute(null),
+                Icon = new FluentIconElement(FluentSymbol.ArrowSync24),
+            },
+            new MenuItemInvokeActionViewModel()
+            {
+                Title = "Settings".Translate(),
+                Invoked = () => _vm.OpenPageCommand.Execute(nameof(SettingsPage)),
+                Icon = new FluentIconElement(FluentSymbol.Settings24),
+            }
+        };
     }
 
     private void AppShell_Loaded(object sender, RoutedEventArgs e)
@@ -263,7 +335,8 @@ public sealed partial class AppShell : UserControl
     private readonly static ImmutableHashSet<Type> MenuPaneHiddenPageTypes = new Type[]
     {
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
+        typeof(MovieViewerPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
@@ -273,7 +346,8 @@ public sealed partial class AppShell : UserControl
         typeof(FolderListupPage),
         typeof(ImageListupPage),
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(SettingsPage),
         typeof(FolderOrArchiveRestructurePage),
@@ -282,7 +356,8 @@ public sealed partial class AppShell : UserControl
     private readonly static ImmutableHashSet<Type> UniqueOnNavigtionStackPageTypes = new Type[]
     {
         typeof(ImageViewerPage),
-        typeof(EBookReaderPage),
+        typeof(EBookViewerPage),
+        typeof(MovieViewerPage),
         typeof(SearchResultPage),
         typeof(FolderOrArchiveRestructurePage),
     }.ToImmutableHashSet();
@@ -294,6 +369,22 @@ public sealed partial class AppShell : UserControl
         typeof(ImageListupPage),
         typeof(FolderListupPage),
     }.ToImmutableHashSet();
+
+
+    private readonly static ImmutableHashSet<Type> OpenWithViewerFramePageTypes = new Type[]
+    {
+        typeof(ImageViewerPage),
+        typeof(EBookViewerPage),
+        typeof(MovieViewerPage),
+        typeof(SettingsPage),
+        typeof(FolderOrArchiveRestructurePage),
+    }.ToImmutableHashSet();
+
+    bool IsOpenWithViewerPageType(Type? pageType)
+    {
+        if (pageType == null) { return false; }
+        return OpenWithViewerFramePageTypes.Contains(pageType);
+    }
 
     private readonly Core.AsyncLock _navigationLock = new ();
     private bool _isForgetNavigationRequested = false;
@@ -316,6 +407,12 @@ public sealed partial class AppShell : UserControl
                 if (m.IsForgetNavigaiton)
                 {
                     _isForgetNavigationRequested = true;
+                }
+
+                if (IsOpenWithViewerPageType(ViewerFrame.Content.GetType())
+                    && OpenWithViewerFramePageTypes.Any(x => x.Name.Equals(m.PageName, StringComparison.Ordinal)))
+                {
+                    throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
                 }
 
                 var parameters = m.Parameters ?? new NavigationParameters();
@@ -366,30 +463,101 @@ public sealed partial class AppShell : UserControl
         });        
     }
 
-    private void Frame_Navigated(object sender, NavigationEventArgs e)
+    void RefreshBackButton()
     {
-        if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
 
-        var frame = (Frame)sender;
-        Window.Current.SetTitleBar(null);
+    }
 
-        if (frame.Content is ITitlebarContentAware tbContent
-            && tbContent.GetContent() is { } content)
+    private void InitializeViewerFrameNavigation()
+    {
+        ViewerFrame.Navigate(typeof(EmptyPage));
+        ViewerFrame.Navigated += (s, e) =>
         {
-            TitlebarContent.ContentTemplate = content;
-            TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+            Debug.WriteLine($"ViewerFrame Navigate to : {e.SourcePageType.Name}");
+            var frame = (Frame)s;
+            if (IsOpenWithViewerPageType(e.SourcePageType))
+            {
+                frame.Visibility = Visibility.Visible;
+                SetTitleContentForPrimary(frame);
+                MyNavigationView.Visibility = Visibility.Collapsed;
+                if (e.Content is Page page)
+                {
+                    page.Focus(FocusState.Programmatic);
+                }
+            }
+            else
+            {
+                frame.Visibility = Visibility.Collapsed;
+                SetTitleContentForPrimary(ContentFrame);
+                MyNavigationView.Visibility = Visibility.Visible;
+            }
+
+            GoBackButton.IsEnabled = CanHandleBackRequest();
+
+            if (ViewerFrame.Content is Page viewerPage
+                && viewerPage.GetType() is { } viewerPageType
+                && IsOpenWithViewerPageType(viewerPageType)
+                && _viewerNavigationParameters != null)
+            {
+                _vm.RestoreNavigationManager.SetViewerNavigationEntry(
+                    MakePageEnetry(viewerPageType, _viewerNavigationParameters));
+                Debug.WriteLine($"Save viewer page state: {viewerPageType.Name}");
+            }
+            else
+            {
+                _vm.RestoreNavigationManager.ClearViewerNavigationEntry();
+                Debug.WriteLine($"Clear viewer page state");
+            }
+        };
+    }
+
+    IDisposable? _titlebarContentDisposable;
+    void SetTitleContentForPrimary(Frame frame)
+    {
+        _titlebarContentDisposable?.Dispose();
+        _titlebarContentDisposable = null;
+        Window.Current.SetTitleBar(null);
+        if (frame.Content is ITitlebarContentAware tbContent)
+        {
+            if (tbContent.GetContent() is { } content)
+            {
+                TitlebarContent.ContentTemplate = content;
+                TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+            }
+
+            if (tbContent.ObserveTitleChanged() is { } observe)
+            {
+                var page = (Page)frame.Content;
+                _titlebarContentDisposable = observe.Subscribe(title =>
+                {
+                    title ??= "";
+                    WindowTitleTextBlock.Text = title;
+                    ApplicationView.GetForCurrentView().Title = title;
+                });
+            }
         }
         else
         {
             TitlebarContent.ContentTemplate = null;
             TitlebarContent.Content = null;
         }
+        Window.Current.SetTitleBar(TitlebarBG);
+    }
 
-        Window.Current.SetTitleBar(TitlebarArea);
+    private void Frame_Navigated(object sender, NavigationEventArgs e)
+    {
+        if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.Refresh) { return; }
+
+        var frame = (Frame)sender;
+
+        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+        {
+            SetTitleContentForPrimary(frame);
+        }
 
         // アプリメニュー表示の切替
-        MyNavigtionView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
-        if (MyNavigtionView.IsPaneVisible)
+        //MyNavigationView.IsPaneVisible = !MenuPaneHiddenPageTypes.Contains(e.SourcePageType);
+        if (MyNavigationView.IsPaneVisible)
         {
             var sourcePageTypeName = e.SourcePageType.Name;
             var currentParameters = GetCurrentNavigationParameter();
@@ -416,7 +584,7 @@ public sealed partial class AppShell : UserControl
 
             // 幅優先探索でMenuItemsを走査する
             // 
-            Queue<MenuItemViewModel> queue = new((MyNavigtionView.MenuItemsSource as IList<object>).Cast<MenuItemViewModel>());
+            Queue<MenuItemViewModel> queue = new((MyNavigationView.MenuItemsSource as IList<object>).Cast<MenuItemViewModel>());
             string? parameterPathEscaped = null;
             bool hasParameters = currentParameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out parameterPathEscaped) ?? false;
             (string? parametersPath, _) = hasParameters ? PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(parameterPathEscaped)) : (null, null);
@@ -426,7 +594,7 @@ public sealed partial class AppShell : UserControl
                     && (!hasParameters || IsCurrentPageMatchMenuItem(menuItemVM, parametersPath))
                     )
                 {
-                    MyNavigtionView.SelectedItem = menuItemVM;
+                    MyNavigationView.SelectedItem = menuItemVM;
                     break;
                 }
                 
@@ -435,7 +603,7 @@ public sealed partial class AppShell : UserControl
                     && IsCurrentPageMatchMenuItem(menuItemVM, parametersPath)
                     )
                 {
-                    MyNavigtionView.SelectedItem = menuItemVM;
+                    MyNavigationView.SelectedItem = menuItemVM;
                     break;
                 }
 
@@ -445,7 +613,10 @@ public sealed partial class AppShell : UserControl
                 {
                     foreach (var childMenuItem in subItemVM.Items)
                     {
-                        queue.Enqueue(childMenuItem);
+                        if (childMenuItem is MenuItemViewModel childMenuItemVM)
+                        {
+                            queue.Enqueue(childMenuItemVM);
+                        }
                     }
                 }
             }            
@@ -455,22 +626,13 @@ public sealed partial class AppShell : UserControl
         if (e.SourcePageType == typeof(SearchResultPage)
             || frame.BackStack.Any(x => x.SourcePageType == typeof(SearchResultPage)))
         {
-            MyNavigtionView.SelectedItem = null;
+            MyNavigationView.SelectedItem = null;
         }
 
-        // 複数選択ボタンの有効無効
-        SelectionStartButton.IsEnabled = SelectionAvairablePageTypes.Contains(e.SourcePageType);
 
         // 戻れない設定のページではバックナビゲーションボタンを非表示に切り替え
-        var isCanGoBackPage = CanGoBackPageTypes.Contains(e.SourcePageType);
-        SystemNavigationManager.GetForCurrentView().AppViewBackButtonVisibility =
-            isCanGoBackPage
-            ? AppViewBackButtonVisibility.Visible
-            : AppViewBackButtonVisibility.Collapsed
-            ;
+        GoBackButton.IsEnabled = CanHandleBackRequest();
         
-        //BackCommand.NotifyCanExecuteChanged();
-
 
         // 戻れない設定のページに到達したら Frame.BackStack から不要なPageEntryを削除する
         if (_isForgetNavigationRequested)
@@ -493,7 +655,7 @@ public sealed partial class AppShell : UserControl
 
             SaveNaviagtionParameters();
         }
-        else if (!isCanGoBackPage)
+        else if (!GoBackButton.IsEnabled)
         {
             ContentFrame.BackStack.Clear();
             BackParametersStack.Clear();
@@ -533,7 +695,6 @@ public sealed partial class AppShell : UserControl
                     rememberBackStack = false;
                 }
 
-
                 if (e.NavigationMode is not Windows.UI.Xaml.Navigation.NavigationMode.New)
                 {
                     rememberBackStack = false;
@@ -568,10 +729,10 @@ public sealed partial class AppShell : UserControl
             {
                 if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
                     && frame.BackStack.Count >= 3
-                    && e.SourcePageType == typeof(FolderListupPage)
-                    && frame.BackStack.TakeLast(2).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                    && (e.SourcePageType == typeof(FolderListupPage) || e.SourcePageType == typeof(ImageListupPage))
+                    && frame.BackStack.TakeLast(3).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
                     && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.GeneralPathKey, out string currentNavigationPathParameter)
-                    && BackParametersStack.TakeLast(2).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                    && BackParametersStack.TakeLast(3).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                     )
                 {
                     foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
@@ -591,25 +752,62 @@ public sealed partial class AppShell : UserControl
     private async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, bool isNavigationStackEnabled = true)
     {
         var viewType = _viewLocator.ResolveView(pageName);
+        Frame frame;        
+        if (IsOpenWithViewerPageType(viewType))
+        {
+            frame = ViewerFrame;
+            ViewerFrame.Visibility = Visibility.Visible;
+            _viewerNavigationParameters = parameters;
 
-        SetCurrentNavigationParameters(parameters);
+        }
+        else
+        {
+            frame = ContentFrame;
+            SetCurrentNavigationParameters(parameters);
+        }
 
-        var prevPage = ContentFrame.Content as Page;
-        var options = new FrameNavigationOptions() { IsNavigationStackEnabled = isNavigationStackEnabled, TransitionInfoOverride = PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) };
-        var result = ContentFrame.Navigate(viewType, parameters, options.TransitionInfoOverride);
+        var ct = RotationNextCancellationTokenSource(viewType);
+        var prevPage = frame.Content as Page;
+        var options = new FrameNavigationOptions() 
+        {
+            IsNavigationStackEnabled = isNavigationStackEnabled, 
+            TransitionInfoOverride = isNavigationStackEnabled ? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) : new SuppressNavigationTransitionInfo() 
+        };
+        var result = frame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 
         if (result is false)
         {
             throw new InvalidOperationException($"Failed ContentFrame navigate to {pageName}.");
         }
 
-        var page = ContentFrame.Content;
+        var page = frame.Content;
         var currentPage = page as Page;        
-        var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters);
+        var handleResult = await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, parameters, ct);
         return handleResult;
     }
 
-    private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters)
+
+    CancellationToken RotationNextCancellationTokenSource(Type? pageType)
+    {
+        if (IsOpenWithViewerPageType(pageType))
+        {
+            _viewerNavigateCts?.Cancel();
+            _viewerNavigateCts?.Dispose();
+            _viewerNavigateCts = new CancellationTokenSource();
+            return _viewerNavigateCts.Token;
+        }
+        else
+        {
+            _navigateCts?.Cancel();
+            _navigateCts?.Dispose();
+            _navigateCts = new CancellationTokenSource();
+            return _navigateCts.Token;
+        }
+    }
+
+    CancellationTokenSource? _viewerNavigateCts;
+    CancellationTokenSource? _navigateCts;
+    private async Task<NavigationResult> HandleViewModelNavigation(INavigationAware fromPageVM, INavigationAware toPageVM, INavigationParameters parameters, CancellationToken ct)
     {
         if (fromPageVM != null)
         {
@@ -619,7 +817,7 @@ public sealed partial class AppShell : UserControl
         if (toPageVM != null)
         {
             toPageVM.OnNavigatedTo(parameters);
-            await toPageVM.OnNavigatedToAsync(parameters);
+            await toPageVM.OnNavigatedToAsync(parameters, ct);
         }
 
         return new NavigationResult() { IsSuccess = true };
@@ -644,10 +842,35 @@ public sealed partial class AppShell : UserControl
 
         try
         {
+            if (navigationManager.GetViewerNavigationEntry() is { } viewerEntry)
+            {
+                var viewerNavigationParameters = MakeNavigationParameter(viewerEntry.Parameters);
+                if (!viewerNavigationParameters.ContainsKey(PageNavigationConstants.Restored))
+                {
+                    viewerNavigationParameters.Add(PageNavigationConstants.Restored, string.Empty);
+                }
+
+                var viewerResult = await _messenger.NavigateAsync(viewerEntry.PageName, viewerNavigationParameters);
+                if (!viewerResult.IsSuccess)
+                {
+                    await Task.Delay(50);
+                    Debug.WriteLine("[NavigationRestore] Failed restore CurrentPage: " + viewerEntry.PageName);
+                    await ResetNavigationAsync();
+                    return;
+                }
+            }
+
             //using (await _navigationLock.LockAsync(CancellationToken.None))
             {
                 var currentEntry = navigationManager.GetCurrentNavigationEntry();
                 if (currentEntry == null)
+                {
+                    Debug.WriteLine("[NavigationRestore] skip restore page.");
+                    await ResetNavigationAsync();
+                    return;
+                }
+
+                if (OpenWithViewerFramePageTypes.Any(x => x.Name == currentEntry.PageName))
                 {
                     Debug.WriteLine("[NavigationRestore] skip restore page.");
                     await ResetNavigationAsync();
@@ -719,6 +942,8 @@ public sealed partial class AppShell : UserControl
 
     private async Task ResetNavigationAsync()
     {
+        ViewerFrame.Navigate(typeof(EmptyPage));
+
         BackParametersStack.Clear();
         ForwardParametersStack.Clear();
         ContentFrame.BackStack.Clear();
@@ -758,6 +983,7 @@ public sealed partial class AppShell : UserControl
                 }
                 await _vm.RestoreNavigationManager.SetBackNavigationEntriesAsync(backNavigationPageEntries);
             }
+
             /*
             {
                 PageEntry[] forwardNavigationPageEntries = new PageEntry[ForwardParametersStack.Count];
@@ -773,6 +999,7 @@ public sealed partial class AppShell : UserControl
             */
         }
     }
+
 
 
     static INavigationParameters MakeNavigationParameter(IEnumerable<KeyValuePair<string, string>> parameters)
@@ -800,6 +1027,8 @@ public sealed partial class AppShell : UserControl
         return (_currentNavigationParameters, _prevNavigationParameters);
     }
 
+    INavigationParameters? _viewerNavigationParameters;
+
 
     INavigationParameters _prevNavigationParameters;
     INavigationParameters _currentNavigationParameters;
@@ -823,18 +1052,31 @@ public sealed partial class AppShell : UserControl
             return false;
         }
 
-        var currentPageType = ContentFrame.Content?.GetType();
-        if (!CanGoBackPageTypes.Contains(ContentFrame.Content.GetType()))
+        if (ContentFrame.Content == null)
         {
-            Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
             return false;
         }
 
-        var data = new BackNavigationRequestingMessageData();
-        _messenger.Send<BackNavigationRequestingMessage>(new(data));            
-        if (data.IsHandled) { return false; }
+        if (ViewerFrame.Content?.GetType() is { } viewerPageType
+            && IsOpenWithViewerPageType(viewerPageType))
+        {
+            return true;
+        }
+        else
+        {
+            var currentPageType = ContentFrame.Content.GetType();
+            if (!CanGoBackPageTypes.Contains(currentPageType))
+            {
+                Debug.WriteLine($"{currentPageType.Name} からの戻る操作をブロック");
+                return false;
+            }
 
-        return ContentFrame.CanGoBack;
+            var data = new BackNavigationRequestingMessageData();
+            _messenger.Send<BackNavigationRequestingMessage>(new(data));
+            if (data.IsHandled) { return false; }
+
+            return true;
+        }
     }
 
     async Task HandleBackRequestAsync()
@@ -844,7 +1086,26 @@ public sealed partial class AppShell : UserControl
             var lockReleaser = await _navigationLock.LockAsync(CancellationToken.None);
             try
             {
-                if (ContentFrame.CanGoBack)
+                if (ViewerFrame.Content?.GetType() is { } viewerPageType
+                    && IsOpenWithViewerPageType(viewerPageType))
+                {
+                    ViewerFrame.Visibility = Visibility.Collapsed;
+                    var prevPage = ViewerFrame.Content as Page;
+                    try
+                    {
+                        ViewerFrame.GoBack();
+                        var currentPage = ViewerFrame.Content as Page;
+                        var np = new NavigationParameters();
+                        np.SetNavigationMode(NavigationMode.Back);
+                        var ct = RotationNextCancellationTokenSource(viewerPageType);
+                        await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, np, ct);
+                    }
+                    catch
+                    {
+                        isRequestReset = true;
+                    }
+                }
+                else if (ContentFrame.CanGoBack)
                 {
                     if (_isForgetNavigationRequested)
                     {
@@ -868,7 +1129,8 @@ public sealed partial class AppShell : UserControl
                             ContentFrame.GoBack();
                             lastNavigationParameters.SetNavigationMode(NavigationMode.Back);
                             var currentPage = ContentFrame.Content as Page;
-                            await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters);
+                            var ct = RotationNextCancellationTokenSource(null);
+                            await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, lastNavigationParameters, ct);
                         }
                         catch
                         {
@@ -881,6 +1143,10 @@ public sealed partial class AppShell : UserControl
                     {
                         isRequestReset = true;
                     }
+                }
+                else
+                {
+                    isRequestReset = true;
                 }
             }
             catch
@@ -934,7 +1200,8 @@ public sealed partial class AppShell : UserControl
                 ContentFrame.GoForward();
                 forwardNavigationParameters.SetNavigationMode(NavigationMode.Forward);
                 var currentPage = ContentFrame.Content as Page;
-                await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters);
+                var ct = RotationNextCancellationTokenSource(null);
+                await HandleViewModelNavigation(prevPage?.DataContext as INavigationAware, currentPage?.DataContext as INavigationAware, forwardNavigationParameters, ct);
             }
             catch
             {
@@ -953,7 +1220,8 @@ public sealed partial class AppShell : UserControl
         parameters.SetNavigationMode(NavigationMode.Refresh);
         var currentPage = ContentFrame.Content as Page;
         var pageViewModel = currentPage?.DataContext as INavigationAware;
-        await HandleViewModelNavigation(pageViewModel, pageViewModel, parameters);
+        var ct = RotationNextCancellationTokenSource(null);
+        await HandleViewModelNavigation(pageViewModel, pageViewModel, parameters, ct);
     }
 
     private void CoreWindow_PointerPressed(CoreWindow sender, PointerEventArgs args)
@@ -1024,59 +1292,6 @@ public sealed partial class AppShell : UserControl
 
 
 
-
-    #endregion
-
-    #region Search Box
-
-    private void InitializeSearchBox()
-    {
-        AutoSuggestBox.Loaded += PrimaryWindowCoreLayout_Loaded;
-    }
-
-
-    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
-    {
-        var textBox = AutoSuggestBox.FindDescendant<TextBox>();
-        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-        textBox.TextChanged += TextBox_TextChanged;
-    }
-
-    bool _isInputIncomplete;
-
-    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
-    {
-        _isInputIncomplete = true;
-    }
-
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (_isInputIncomplete == false)
-        {
-            (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-        }
-    }
-
-    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
-    {
-        _isInputIncomplete = false;
-        (DataContext as AppShellViewModel).UpdateAutoSuggestCommand.Execute(AutoSuggestBox.Text);
-    }
-
-
-
-    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
-    {
-        (sender as Control).Focus(FocusState.Keyboard);
-        args.Handled = true;
-    }
-
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        (args.Element as Control).Focus(FocusState.Keyboard);
-        args.Handled = true;
-    }
 
     #endregion
 
@@ -1266,7 +1481,11 @@ public sealed partial class AppShell : UserControl
                     }
                     else if (SupportedFileTypesHelper.IsSupportedEBookFileExtension(fileItem.FileType))
                     {
-                        await _messenger.NavigateAsync(nameof(Views.EBookReaderPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                        await _messenger.NavigateAsync(nameof(Views.EBookViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
+                    }
+                    else if (SupportedFileTypesHelper.IsSupportedMovieFileExtension(fileItem.FileType))
+                    {
+                        await _messenger.NavigateAsync(nameof(Views.MovieViewerPage), new NavigationParameters((PageNavigationConstants.GeneralPathKey, openStorageItem.Path)));
                     }
                 }
             }
@@ -1287,7 +1506,7 @@ public sealed partial class AppShell : UserControl
     {
         _messenger.Register<MenuDisplayMessage>(this, (r, m) => 
         {
-            MyNavigtionView.IsPaneVisible = m.Value == Visibility.Visible;
+            MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
         });
     }
 
@@ -1383,34 +1602,72 @@ public sealed partial class AppShell : UserControl
 
     private void NavigationViewItem_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        if (sender is Microsoft.UI.Xaml.Controls.NavigationViewItemBase menuItem
-            && menuItem.DataContext is MenuItemViewModel itemVM
-            )
+        if (sender is Microsoft.UI.Xaml.Controls.NavigationViewItemBase menuItem)
         {
-            _vm.OpenMenuItemCommand.Execute(itemVM);
+            if (menuItem.DataContext is MenuItemViewModel itemVM)
+            {
+                _ = OpenMenuItemAsync(itemVM);
+            }
+            else if(menuItem.DataContext is MenuItemInvokeActionViewModel invokedItemVM)
+            {
+                invokedItemVM.Invoked();
+            }
         }
     }
 
-    InPageSearchRequestMessage? _searchMessage;
-    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+
+
+    [RelayCommand]
+    async Task OpenMenuItemAsync(object item)
     {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        if (!sender.Items.Any())
+        if (item is MenuItemViewModel menuItem)
         {
-            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+            // Note: メニューから選択したページはフォルダ管理ページに戻るようにしたい
+            // Note: ハック気味で壊れやすそう。
+            _isForgetNavigationRequested = true;
+            if (await _messenger.NavigateAsync(menuItem.PageType, menuItem.Parameters) is { } result
+            && result.IsSuccess)
+            {
+                
+            }
         }
-        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
     }
 
-    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        _vm.SearchQuerySubmitCommand.Execute(sender.Text);
+        try
+        {
+            var appView = ApplicationView.GetForCurrentView();
+            if (appView.IsFullScreenMode)
+            {
+                appView.ExitFullScreenMode();
+            }
+            else
+            {
+                appView.TryEnterFullScreenMode();
+            }
+        }
+        catch { }
     }
 
-    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    private void ExitViewerKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));        
+        try
+        {
+            if (IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+            {
+                _messenger.Send<BackNavigationRequestMessage>();
+            }
+        }
+        catch { }
+    }
+
+    private void MyNavigationView_ItemInvoked(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args)
+    {
+        if (args.IsSettingsInvoked)
+        {
+            _vm.OpenPageCommand.Execute(nameof(SettingsPage));
+        }
     }
 }
 
@@ -1432,7 +1689,9 @@ public static class NavigationParametersExtensions
 public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
 {
     public DataTemplate Item { get; set; }
+    public DataTemplate ItemInvoke { get; set; }
     public DataTemplate SubItem { get; set; }
+    public DataTemplate Separator { get; set; }
 
     protected override DataTemplate SelectTemplateCore(object item)
     {
@@ -1447,6 +1706,14 @@ public sealed class MenuItemDateTemplateSelector : DataTemplateSelector
         else if (item is MenuItemViewModel)
         {
             return Item ?? base.SelectTemplateCore(item, container);
+        }
+        else if (item is MenuItemInvokeActionViewModel)
+        {
+            return ItemInvoke ?? base.SelectTemplateCore(item, container);
+        }
+        else if (item is MenuSeparatorViewModel)
+        {
+            return Separator ?? base.SelectTemplateCore(item, container);
         }
         else
         {

@@ -10,7 +10,7 @@ namespace TsubameViewer.ViewModels;
 
 public abstract class ImageSourceCommandBase : CommandBase
 {
-    protected override bool CanExecute(object parameter)
+    public override bool CanExecute(object parameter)
     {
         if (parameter is IImageSource imageSource)
         {
@@ -26,7 +26,7 @@ public abstract class ImageSourceCommandBase : CommandBase
             if (imagesSources.Count() == 1) { return CanExecute(imagesSources.First()); }
             return CanExecute(imagesSources);
         }
-        else if (parameter is IEnumerable<StorageItemViewModel> itemVMs)
+        else if (parameter is IEnumerable<IStorageItemViewModel> itemVMs)
         {
             if (itemVMs.Any() is false) { return false; }
             if (itemVMs.Count() == 1) { return CanExecute(itemVMs.First().Item); }
@@ -42,7 +42,7 @@ public abstract class ImageSourceCommandBase : CommandBase
 
     protected virtual bool CanExecute(IEnumerable<IImageSource> imageSources) => imageSources.All(CanExecute);
 
-    protected override void Execute(object parameter)
+    public override void Execute(object parameter)
     {
         if (parameter is IImageSource imageSource)
         {
@@ -63,7 +63,7 @@ public abstract class ImageSourceCommandBase : CommandBase
                 Execute(imagesSources);
             }
         }
-        else if (parameter is IEnumerable<StorageItemViewModel> itemVMs)
+        else if (parameter is IEnumerable<IStorageItemViewModel> itemVMs)
         {
             if (itemVMs.Count() == 1)
             {

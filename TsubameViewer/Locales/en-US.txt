@@ -66,12 +66,17 @@ AdvancedSettings = Advanced Setting
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = Restart the application to reflect the setting
 
+IsAppMenuShowWithLeft = Display the menu on the left.
+
+IsFullScreenOnAppLaunch = Launch the app in full-screen mode.
+
 SourceFoldersSettings = Folder imported to the application
 RemoveSourceFolderFromApp = Remove from app
 ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove {0} from the app?
 ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
 
-ThumbnailImageSettings = Thumbnail display settings
+FolderItemListingSettings = Folder item display settings
+IsOpenFolderContentListingAsDefault = Set "Open in image list" as the default.
 IsGenerateImageFileThumbnail = Generate thumbnails of image files
 IsGenerateFolderThumbnail = Generate thumbnails for folders
 IsGenerateArchiveFileThumbnail = Generate thumbnails of compressed files
@@ -85,6 +90,7 @@ ProcessingThumbnailCache = Processing delete operation
 ImageViewerSettings = Image viewer settings
 IsReverseImageFliping_MouseWheel = Reverse scrolling pagination
 IsReverseImageFliping_Button = Reverse left/right page feed
+IsReversePageFliping_Swipe = Reverse the swipe direction for page navigation
 
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
@@ -117,9 +123,8 @@ SelectSourceFolder = Add folder to TsubameViewer
 
 #### FolderListupPage
 
-ReturnSourceFolderPageButton = Return to original folder
-ChangeViewToFolderListupPage = Switch to folder view
-ChangeViewToImageListupPage = Switch to image list view
+ChangeViewToFolderListupPage = Folder View
+ChangeViewToImageListupPage = Image View
 
 
 
@@ -131,7 +136,7 @@ FileSortType.UpdateTimeAscending = Recent
 FileSortType.UpdateTimeDecending = Latest
 
 DefaultFolderOrArchiveOpenMode = Default folder opening behavior
-DefaultFolderOrArchiveOpenMode.Viewer = Open in reader
+DefaultFolderOrArchiveOpenMode.Viewer = Open in viewer
 DefaultFolderOrArchiveOpenMode.Listup = Open in list view
 
 Sort_InheritancePath = Sort inheritance source
@@ -139,7 +144,7 @@ Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
 
 
-OpenImageViewer = Open in reader
+OpenImageViewer = Open in viewer
 OpenFolderListup = List files
 OpenWithExplorer = Open in explorer
 OpenWithExternalApplication = Open with
@@ -182,8 +187,10 @@ ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 
 #### EBookReaderPage
 
+IsForceResetStylingInHeadElement = Clear the style by force
 IsReversePageFliping_Scroll = Reverse scrolling pagination
 IsReversePageFliping_Button = Reverse left/right page feed
+
 
 DefaultWithParameter = Default: {0}
 FontSize = Font size
@@ -205,13 +212,55 @@ ChangeForegroundColor = Change text color
 OverrideWritingMode = Vertical/Horizontal writing
 WritingMode.Inherit = Not going to change
 WritingMode.Horizontal_TopToBottom = Horizontal writing
-WritingMode.Vertical_RightToLeft = Vertical writing (right to left)
-WritingMode.Vertical_LeftToRight = Vertical writing (left to right)
+WritingMode.Vertical_RightToLeft = Vertical writing (right to left) ⬅️
+WritingMode.Vertical_LeftToRight = Vertical writing (left to right) ➡️
 
 ResetEBookSettings = Reset settings
 
 DisplaySettings = Display settings
 Toc = Table of contents
+ReadingItemsTitle = File
+
+#### Movie Viewer Page
+MovieViewer_SaveCurrentFrame = Save frame image
+MovieViewer_ResetPlayerTransform = Reset player transformation
+MovieViewer_PlayerStretch = Player stretching
+Stretch.None = Original size
+Stretch.Fill = Fill it in, ignoring the proportions.
+Stretch.Uniform = Fit to window size
+Stretch.UniformToFill = Fill it up while maintaining the ratio
+
+MovieViewer_IsHorizontalMirror = Flip horizontally
+MovieViewer_PlayerRotate = Rotation (clockwise)
+MediaRotation.None = No rotation
+MediaRotation.Clockwise90Degrees = 90 degrees
+MediaRotation.Clockwise180Degrees = 180 degrees
+MediaRotation.Clockwise270Degrees = 270 degrees
+
+MovieViewer_SaveCurrentFrame_Saved = The video frame has been saved.
+MovieViewer_SeekNotSupported = Seeking is not supported in this video.
+
+MovieViewer_SC = Keyboard Shortcuts Guide
+MovieViewer_DisplayShortcutKeysGuide = Show Keyboard Shortcuts Guide
+MovieViewer_SC_ExitPlayer = Close the video viewer
+MovieViewer_SC_TogglePlayPause = Toggle Play/Pause
+MovieViewer_SC_BackwardOneFrame = Go Back One Frame
+MovieViewer_SC_ForwardOneFrame = Skip Forward One Frame
+MovieViewer_SC_ToggleIsMuted = Toggle Mute
+MovieViewer_SC_TogglePlayerStretch = Toggle Player Resize
+MovieViewer_SC_TogglePlayerRotate = Toggle Player Rotation
+MovieViewer_SC_TogglePlayerMirror = Toggle Horizontal Flip
+MovieViewer_SC_ToggleFullScreen = Toggle Full Screen
+MovieViewer_SC_VolumeChangeUp = Increase Volume
+MovieViewer_SC_VolumeChangeDown = Decrease Volume
+MovieViewer_SC_PlaybackPositionChangeBackward = Rewind {0} Seconds
+MovieViewer_SC_PlaybackPositionChangeForward = Fast-Forward {0} Seconds
+MovieViewer_SC_SaveCurrentFrame = Save Current Frame
+MovieViewer_SC_SetPlaybackRateToPrev = Decrease Playback Speed
+MovieViewer_SC_SetPlaybackRateToNext = Increase Playback Speed
+MovieViewer_SC_SetPlaybackPositionWithPercent = Play from {0}%
+
+MovieViewer_SoundVolume = Volume
 
 #### SearchResult
 
