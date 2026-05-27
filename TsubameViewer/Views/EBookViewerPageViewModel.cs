@@ -388,6 +388,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                         if (node.Name == "head")
                         {
+                            // ヘッダー要素を全削除してカスタムなスタイルを表示させない
+                            node.InnerText = "";
                             var cssItems = new[] { theme == ApplicationTheme.Light ? _lightThemeCss : _darkThemeCss };
                             foreach (var css in cssItems)
                             {
