@@ -47,6 +47,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 #nullable enable
@@ -941,6 +942,8 @@ public sealed partial class AppShell : UserControl
 
     private async Task ResetNavigationAsync()
     {
+        ViewerFrame.Navigate(typeof(EmptyPage));
+
         BackParametersStack.Clear();
         ForwardParametersStack.Clear();
         ContentFrame.BackStack.Clear();

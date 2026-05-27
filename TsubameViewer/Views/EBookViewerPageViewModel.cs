@@ -35,6 +35,7 @@ using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.UI;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 #nullable enable
@@ -465,6 +466,13 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             NowLoadingPage = false;
             NowFirstLoadingProgress = false;
             throw;
+        }
+        catch (XamlParseException xmlEx)
+        {
+            _innerPageTotalCountChangedTcs = null;
+            NowLoadingPage = false;
+            NowFirstLoadingProgress = false;
+            throw new FileNotFoundException("", xmlEx);
         }
 
 
