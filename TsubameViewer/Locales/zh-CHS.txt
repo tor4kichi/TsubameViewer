@@ -58,6 +58,23 @@ DoNotDisplayFromNextTime = 下次不再显示
 StorageItemDeleteConfirmTitleWithName = 您要删除以下项目吗？ \n{0}
 
 
+#### App Update
+StorePackageUpdateState = 软件包更新状态
+StorePackageUpdateState.Pending = 加工
+StorePackageUpdateState.Downloading = 下载
+StorePackageUpdateState.Deploying = 部署
+StorePackageUpdateState.Completed = 完成
+StorePackageUpdateState.Canceled = 取消
+StorePackageUpdateState.OtherError = 其他错误
+StorePackageUpdateState.ErrorLowBattery = 低电量错误
+StorePackageUpdateState.ErrorWiFiRecommended = Wi-Fi 推荐错误
+StorePackageUpdateState.ErrorWiFiRequired = 需要 Wi-Fi 错误
+
+NowAvairableUpdate = 应用更新已发布。
+Update = 更新
+OpenUpdateHistoryWithBrowser = 更新信息（在浏览器中打开）
+
+
 #### SettingsPage
 
 SettingsPageTitle = 设置

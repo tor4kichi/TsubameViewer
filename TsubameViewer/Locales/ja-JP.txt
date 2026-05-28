@@ -58,6 +58,23 @@ DoNotDisplayFromNextTime = 次回から表示しない
 StorageItemDeleteConfirmTitleWithName = 以下のアイテムを削除しますか？\n{0}
 
 
+#### App Update
+StorePackageUpdateState = パッケージ更新の状態
+StorePackageUpdateState.Pending = 処理中
+StorePackageUpdateState.Downloading = ダウンロード中
+StorePackageUpdateState.Deploying = デプロイ中
+StorePackageUpdateState.Completed = 完了
+StorePackageUpdateState.Canceled = キャンセル
+StorePackageUpdateState.OtherError = その他エラー
+StorePackageUpdateState.ErrorLowBattery = バッテリー残量不足エラー
+StorePackageUpdateState.ErrorWiFiRecommended = Wi-Fi推奨エラー
+StorePackageUpdateState.ErrorWiFiRequired = Wi-Fi必須エラー
+
+NowAvairableUpdate = アプリの更新が利用できます
+Update = 更新
+OpenUpdateHistoryWithBrowser = 更新情報（ブラウザが開きます）
+
+
 #### SettingsPage
 
 SettingsPageTitle = 設定

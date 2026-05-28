@@ -114,14 +114,16 @@
     
 
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
-      <MenuFlyoutItem Command="{StaticResource FullScreenToggleUICommand}"
+      <MenuFlyoutItem Command="{x:Bind _vm.ToggleFullScreenCommand}"
                       x:Name="SwitchFullScreeMenuItem"
                       Visibility="Collapsed"
                       >
+        
       </MenuFlyoutItem>
     </MenuFlyout>
 
-    <XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
+    <!-- 動画ビューアでXキーが使えない問題が生じるため使わない -->
+    <!--<XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
                    Label="{i18nExt:Localize Key=ZoomReset}"   
                    Description="{i18nExt:Localize Key=ZoomReset}"
                    >
@@ -132,7 +134,7 @@
         <KeyboardAccelerator Key="X" />
         <KeyboardAccelerator Key="R" />
       </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
+    </XamlUICommand>-->
     
     <XamlUICommand x:Key="ZoomInUICommand" Command="{x:Bind ZoomUpWithControllerCommand}"
                    Label="{i18nExt:Localize Key=ZoomIn}"   
@@ -159,19 +161,6 @@
         <KeyboardAccelerator Key="Subtract" />
         <KeyboardAccelerator Key="S" />
         <KeyboardAccelerator Key="Y" />
-      </XamlUICommand.KeyboardAccelerators>
-    </XamlUICommand>
-
-
-    <XamlUICommand x:Key="FullScreenToggleUICommand" Command="{x:Bind _vm.ToggleFullScreenCommand}"
-                   Label="{i18nExt:Localize Key=SwitchFullScreen}"     
-                   >
-      <XamlUICommand.IconSource>
-        <fluentIcon:FluentIconSource Symbol="FullScreenMaximize24" />
-      </XamlUICommand.IconSource>
-
-      <XamlUICommand.KeyboardAccelerators>
-        <KeyboardAccelerator Key="F11" />
       </XamlUICommand.KeyboardAccelerators>
     </XamlUICommand>
 
@@ -471,8 +460,8 @@
               Height="0" Width="0"
               KeyboardAcceleratorPlacementMode="Hidden"
               />
-      <Button x:Name="Hidden_ZoomResetButton" 
-              Command="{StaticResource ZoomResetUICommand}"
+      <Button x:Name="Hidden_ZoomResetButton"
+              Command="{x:Bind ZoomResetCommand}"
               Height="0" Width="0"
               KeyboardAcceleratorPlacementMode="Hidden"
               />
@@ -547,7 +536,9 @@
 
       <Border Width="12" />
 
-      <Button x:Name="ZoomResetButton" Command="{StaticResource ZoomResetUICommand}" AccessKey="R">
+      <Button x:Name="ZoomResetButton"
+              Command="{x:Bind ZoomResetCommand}" AccessKey="R"
+              ToolTipService.ToolTip="{i18nExt:Localize Key=ZoomReset}">
         <SymbolIcon Symbol="Zoom" />
       </Button>
 

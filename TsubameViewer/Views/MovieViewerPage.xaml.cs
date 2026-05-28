@@ -22,8 +22,10 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
@@ -326,8 +328,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                     try
                     {
-                        var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
-                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(stream.AsRandomAccessStream());
+                        using var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
+                        var memoryStream = new MemoryStream((int)stream.Length);
+                        stream.CopyTo(memoryStream);
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(memoryStream.AsRandomAccessStream());
                     }
                     catch { }
                     playbackItem.ApplyDisplayProperties(props);
@@ -894,6 +899,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         SetPlaybackRateFromCode(nextRate);
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
     }
+
+    private void Button_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        SetPlaybackRateToNext();
+    }
+
 
     [RelayCommand]
     void SetPlaybackRateToPrev()
@@ -1589,6 +1600,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task SetThumbnailImageAsync()
     {
         if (MediaPlayer == null) { return; }
+        if (_vm.MovieFile == null) { return; }
 
         try
         {
@@ -1609,6 +1621,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);
                 stream.Seek(0, SeekOrigin.Begin);
                 await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream, true, this.GetCancellationTokenOnNavigatingFrom());
+                _messenger.Send(new ThumbnailImageUpdateRequestMessage(_vm.MovieFile.Path));
             }
 
             _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
