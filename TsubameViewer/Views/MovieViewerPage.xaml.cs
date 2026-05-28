@@ -326,8 +326,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                     try
                     {
-                        var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
-                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(stream.AsRandomAccessStream());
+                        using var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
+                        var memoryStream = new MemoryStream((int)stream.Length);
+                        stream.CopyTo(memoryStream);
+                        memoryStream.Seek(0, SeekOrigin.Begin);
+                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(memoryStream.AsRandomAccessStream());
                     }
                     catch { }
                     playbackItem.ApplyDisplayProperties(props);
