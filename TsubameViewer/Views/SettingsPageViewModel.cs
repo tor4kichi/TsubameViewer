@@ -226,7 +226,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         }
 
         _IsThumbnailDeleteButtonActive.Value = true;
-        //_ = RefreshThumbnailFilesSizeAsync(ct);
+        _ = RefreshThumbnailFilesSizeAsync(ct);
         // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;
