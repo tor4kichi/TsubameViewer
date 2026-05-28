@@ -898,6 +898,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
     }
 
+    private void Button_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        SetPlaybackRateToNext();
+    }
+
+
     [RelayCommand]
     void SetPlaybackRateToPrev()
     {

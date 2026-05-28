@@ -333,8 +333,8 @@
           <KeyboardAccelerator Key="Z" />
         </Button.KeyboardAccelerators>
       </Button>
-      <Button Command="{x:Bind SetPlaybackRateToNextCommand}"
-              Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToNext}">
+      <Button Tag="{i18nExt:Localize Key=MovieViewer_SC_SetPlaybackRateToNext}"
+              Command="{x:Bind SetPlaybackRateToNextCommand}">
         <Button.KeyboardAccelerators>
           <KeyboardAccelerator Key="X" />
         </Button.KeyboardAccelerators>
