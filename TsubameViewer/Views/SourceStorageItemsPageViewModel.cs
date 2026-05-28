@@ -34,12 +34,28 @@ public sealed class SourceStorageItemsPageViewModel
     : NavigationAwareViewModelBase
     , IDisposable
     , IRecipient<RemoveSourceStorageItemFromAppMessage>
+    , IRecipient<ThumbnailImageUpdateRequestMessage>
 {
     public void Receive(RemoveSourceStorageItemFromAppMessage message)
     {
         if (message.Value is StorageItemViewModel itemVM)
         {
             Folders.Remove(itemVM);
+        }
+    }
+
+
+
+    public void Receive(ThumbnailImageUpdateRequestMessage message)
+    {
+        foreach (var item in RecentlyItems)
+        {
+            if (item.Path.Equals(message.Value, StringComparison.Ordinal))
+            {
+                item.ThumbnailChanged();
+                _ = item.InitializeAsync(default);
+                break;
+            }
         }
     }
 
@@ -236,6 +252,7 @@ public sealed class SourceStorageItemsPageViewModel
         }
 
         _messenger.Register<RemoveSourceStorageItemFromAppMessage>(this);
+        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
 
         await base.OnNavigatedToAsync(parameters, ct);
     }
@@ -248,6 +265,7 @@ public sealed class SourceStorageItemsPageViewModel
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
         _messenger.Unregister<RemoveSourceStorageItemFromAppMessage>(this);
+        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
 
         foreach (var itemVM in Enumerable.Concat(Folders, RecentlyItems))
         {

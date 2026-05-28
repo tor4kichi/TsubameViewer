@@ -51,6 +51,7 @@ public sealed partial class FolderListupPageViewModel
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
+    , IRecipient<ThumbnailImageUpdateRequestMessage>
 {
     public void Receive(InPageSearchRequestMessage message)
     {
@@ -77,6 +78,20 @@ public sealed partial class FolderListupPageViewModel
     }
 
 
+
+
+    public void Receive(ThumbnailImageUpdateRequestMessage message)
+    {
+        foreach (var item in FolderItems)
+        {
+            if (item.Path.Equals(message.Value, StringComparison.Ordinal))
+            {
+                item.ThumbnailChanged();
+                item.InitializeAsync(default);
+                break;
+            }
+        }
+    }
 
     private bool _NowProcessing;
     public bool NowProcessing
@@ -258,6 +273,7 @@ public sealed partial class FolderListupPageViewModel
             _messenger.Unregister<StartMultiSelectionMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
+            _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
 
             base.OnNavigatedFrom(parameters);
         }
@@ -488,6 +504,7 @@ public sealed partial class FolderListupPageViewModel
 
         _messenger.Register<InPageSearchRequestMessage>(this);
         _messenger.Register<StorageItemNotFoundMessage>(this);
+        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
 
         await base.OnNavigatedToAsync(parameters, ct);
     }

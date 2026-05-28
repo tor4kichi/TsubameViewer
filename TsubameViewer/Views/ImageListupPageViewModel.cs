@@ -878,6 +878,7 @@ public sealed partial class ImageListupPageViewModel
         catch (COMException) { }
     }
 
+
     private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
     public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
         _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
