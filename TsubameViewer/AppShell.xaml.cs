@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using CommunityToolkit.WinUI.Helpers;
 using DryIoc;
+using DryIoc.ImTools;
 using Fluent.Icons;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp.UI;
@@ -38,6 +39,8 @@ using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel.Core;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
+using Windows.Services.Store;
 using Windows.Storage;
 using Windows.System;
 using Windows.UI;
@@ -221,6 +224,8 @@ public sealed partial class AppShell : UserControl
             CoreApplication.GetCurrentView().TitleBar;
         var appView = ApplicationView.GetForCurrentView();
         UpdateTitleBarDisplay(coreTitleBar.IsVisible, appView.IsFullScreenMode);
+
+        _ = CheckAppPackageUpdateAsync();
     }
 
     public bool NowShowTitlebarInFullScreen
@@ -267,7 +272,7 @@ public sealed partial class AppShell : UserControl
             .Start(NotificationContainer);
 
         TimeSpan animationTuration = TimeSpan.FromSeconds(0.25);
-        TimeSpan showingTime = TimeSpan.FromSeconds(2);
+        TimeSpan showingTime = TimeSpan.FromSeconds(3);
         TimeSpan hideTiming = animationTuration + showingTime + animationTuration;
         _notificationAnimationBuilder = AnimationBuilder.Create()
             .Opacity()
@@ -1669,8 +1674,121 @@ public sealed partial class AppShell : UserControl
             _vm.OpenPageCommand.Execute(nameof(SettingsPage));
         }
     }
+
+
+    #region App PackageUpdate
+
+    [ObservableProperty]
+    bool _nowAvairableUpdate;
+
+
+    async Task CheckAppPackageUpdateAsync()
+    {
+        Update = await CheckUpdateAsync();
+        UpdatedNotify();
+        NowAvairableUpdate = Update.HasAppUpdate;
+    }
+
+    [ObservableProperty]
+    CheckUpdateResult _update;
+
+    public async Task<CheckUpdateResult> CheckUpdateAsync(CancellationToken ct = default)
+    {
+        var storeContext = StoreContext.GetDefault();
+        IReadOnlyList<StorePackageUpdate> updates = await storeContext.GetAppAndOptionalStorePackageUpdatesAsync();
+        return new CheckUpdateResult(storeContext, updates);
+    }
+
+    void UpdatedNotify()
+    {        
+        var systemInfo = Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance;
+        if (systemInfo .IsAppUpdated)
+        {
+            _messenger.SendShowTextNotificationMessage($"{"Update".Translate()}! : v{systemInfo.ApplicationVersion.ToFormattedString(3)}");
+        }
+    }
+
+    [RelayCommand]
+    async Task ShowPackageUpdateUI()
+    {
+        try
+        {
+            PackageUpdateDialogBGWall.Visibility = Visibility.Visible;
+            PackageUpdateProgressRing.IsActive = true;
+            var result= await PackageUpdateDialog.ShowAsync(ContentDialogPlacement.InPlace);
+            if (result == ContentDialogResult.Primary)
+            {
+                var context = StoreContext.GetDefault();
+                IReadOnlyList<StorePackageUpdate> updates =
+                    await context.GetAppAndOptionalStorePackageUpdatesAsync();
+                var dlResult = await Update.DownloadAndInstallAllUpdatesAsync();
+            }
+        }
+        finally
+        {
+            PackageUpdateDialogBGWall.Visibility = Visibility.Collapsed;
+            PackageUpdateProgressRing.IsActive = false;
+        }
+    }
+
+    private void PackageUpdateDialogBGWall_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        PackageUpdateDialog.Hide();
+    }
+
+    #endregion
 }
 
+
+
+public class CheckUpdateResult
+{
+    private readonly StoreContext _storeContext;
+    private readonly IReadOnlyList<StorePackageUpdate> _updates;
+
+    public CheckUpdateResult(StoreContext storeContext, IReadOnlyList<StorePackageUpdate> updates)
+    {
+        _storeContext = storeContext;
+        _updates = updates;
+    }
+
+    public bool HasAppUpdate
+    {
+        get
+        {
+            if (AppUpdate is { } appUpdate)
+            {
+                var currentAppVersion = Windows.ApplicationModel.AppInfo.Current.Package.Id.Version;
+                var updateVer = appUpdate.Package.Id.Version;
+                return currentAppVersion.Major < updateVer.Major
+                || currentAppVersion.Minor < updateVer.Minor
+                || currentAppVersion.Build < updateVer.Build
+                || currentAppVersion.Revision < updateVer.Revision
+                ;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+    public bool CanDownloadSilently => _storeContext.CanSilentlyDownloadStorePackageUpdates;
+
+    public StorePackageUpdate? AppUpdate => _updates.FirstOrDefault(x => x.Package.DisplayName == nameof(TsubameViewer));
+
+    public IAsyncOperationWithProgress<StorePackageUpdateResult, StorePackageUpdateStatus> DownloadAndInstallAllUpdatesAsync()
+    {
+        if (CanDownloadSilently)
+        {
+            return _storeContext.TrySilentDownloadAndInstallStorePackageUpdatesAsync(_updates);
+        }
+        else
+        {
+            return _storeContext.RequestDownloadAndInstallStorePackageUpdatesAsync(_updates);
+        }
+    }
+}
 
 public static class NavigationParametersExtensions
 {

@@ -58,6 +58,23 @@ DoNotDisplayFromNextTime = Do not display from next time
 StorageItemDeleteConfirmTitleWithName = Do you want to delete the following items? \ n {0}
 
 
+#### App Update
+StorePackageUpdateState = Package update status
+StorePackageUpdateState.Pending = Processing
+StorePackageUpdateState.Downloading = Downloading
+StorePackageUpdateState.Deploying = Deploying
+StorePackageUpdateState.Completed = completion
+StorePackageUpdateState.Canceled = cancel
+StorePackageUpdateState.OtherError = Other errors
+StorePackageUpdateState.ErrorLowBattery = Low battery error
+StorePackageUpdateState.ErrorWiFiRecommended = Wi-Fi recommended error
+StorePackageUpdateState.ErrorWiFiRequired = Wi-Fi required error
+
+NowAvairableUpdate = App updates are available.
+Update = update
+OpenUpdateHistoryWithBrowser = Update information (Opens in browser)
+
+
 #### SettingsPage
 
 SettingsPageTitle = Setting

@@ -293,6 +293,13 @@
                   Margin="16 0 184 0"
                   HorizontalAlignment="Right"
                   uwpControls:DockPanel.Dock="Right">
+
+        <Button Command="{x:Bind ShowPackageUpdateUICommand}"
+                Visibility="{x:Bind NowAvairableUpdate, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                ToolTipService.ToolTip="App Update">
+          <SymbolIcon Symbol="Refresh" />
+        </Button>
+
         <Button uwpControls:DockPanel.Dock="Right"
                 Style="{StaticResource TitlebarButton}"
                 x:Name="FeedbackButton"
@@ -364,24 +371,24 @@
     <Border x:Name="NotificationContainer"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"    
-            Padding="16 4"
+            Padding="24 12"
             Background="{ThemeResource SystemChromeMediumLowColor}"
             BorderBrush="{ThemeResource SystemBaseLowColor}"
             BorderThickness="1"
-            CornerRadius="4"
+            CornerRadius="6"
             Margin="16 64 16 16"
-            IsHitTestVisible="False"
+            IsHitTestVisible="False"            
             >
       <ContentControl x:Name="NotificationContentControl"
                       Foreground="{ThemeResource SystemColorButtonFaceBrush}"
                       IsHitTestVisible="False"
                       IsTabStop="False"                      
-                      FontSize="15"
+                      FontSize="18"
                       MaxWidth="320"
                     >
       </ContentControl>
     </Border>
-    
+       
     <!--
     <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
       <Button Content="Show BusyWall">
@@ -400,9 +407,30 @@
       </Button>
     </StackPanel>
     -->
+
+    <Grid Background="{ThemeResource SystemAltMediumColor}"
+          x:Name="PackageUpdateDialogBGWall"
+          Visibility="Collapsed"
+          IsHitTestVisible="True"
+          Tapped="PackageUpdateDialogBGWall_Tapped">
+      <muxc:ProgressRing IsActive="True"
+                         x:Name="PackageUpdateProgressRing" 
+                         HorizontalAlignment="Center" 
+                         VerticalAlignment="Center"
+                         Width="80"
+                         Height="80"/>
+    </Grid>
+    <ContentDialog x:Name="PackageUpdateDialog"
+                   Title="{i18Ext:Localize Key=NowAvairableUpdate}"
+                   PrimaryButtonText="{i18Ext:Localize Key=Update}"
+                   PrimaryButtonStyle="{ThemeResource AccentButtonStyle}"
+                   SecondaryButtonText="{i18Ext:Localize Key=Cancel}"
+                   DefaultButton="Primary">
+      <HyperlinkButton NavigateUri="https://tor4kichi.github.io/tsubame_viewer/updates">
+        <TextBlock Text="{i18Ext:Localize Key=OpenUpdateHistoryWithBrowser}" />
+      </HyperlinkButton>
+    </ContentDialog>
     
-
-
     <VisualStateManager.VisualStateGroups>
 
       <VisualStateGroup>

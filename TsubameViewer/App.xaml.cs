@@ -85,6 +85,8 @@ sealed partial class App : Application
 
         EnsureFavoriteAlbam.FavoriteAlbamTitle = "FavoriteAlbam".Translate();
         RecentlyAccessRepository.MaxRecordCount = 100;
+
+        
     }
 
 
