@@ -44,14 +44,14 @@ namespace TsubameViewer.Views;
 
 public sealed class RequestConnectedAnimationMessage : AsyncRequestMessage<UIElement?>
 {
-    public RequestConnectedAnimationMessage(string targetPageName, IImageSource targetImage)
+    public RequestConnectedAnimationMessage(string targetPageName, string targetItemPath)
     {
         TargetPageName = targetPageName;
-        TargetImage = targetImage;
+        TargetItemPath = targetItemPath;
     }
 
     public string TargetPageName { get; }
-    public IImageSource TargetImage { get; }
+    public string TargetItemPath { get; }
 }
 
 public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
@@ -218,7 +218,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         {
             try
             {
-                var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource));
+                var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
                 if (res is { } target)
                 {
                     var imageContainer = _vm.CurrentDisplayImageIndex switch

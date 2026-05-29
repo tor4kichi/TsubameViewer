@@ -171,6 +171,27 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         });
     }
 
+    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    {
+        base.OnNavigatingFrom(e);
+
+        try
+        {
+            if (_vm.MovieFile == null) { return; }
+            MediaPlayer.Pause();
+            var imageContainer = MyMediaPlayerElement;
+            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+            var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+            var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), _vm.MovieFile.Path));
+            await Task.Delay(200);
+            if (res is { } target)
+            {
+                anim.Configuration = new DirectConnectedAnimationConfiguration();
+                anim.TryStart(target);
+            }
+        }
+        catch { }
+    }
 
 
     private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)

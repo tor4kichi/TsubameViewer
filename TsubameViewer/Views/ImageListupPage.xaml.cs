@@ -113,7 +113,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
         {
-            var image = _realizedItems.FirstOrDefault(x => (x.DataContext as IStorageItemViewModel)?.Path.Equals(m.TargetImage.Path, StringComparison.Ordinal) ?? false);
+            var image = _realizedItems.FirstOrDefault(x => (x.DataContext as IStorageItemViewModel)?.Path.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
             if (image is { } target)
             {
                 m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
@@ -127,54 +127,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
         });
     }
-
-
-
-    public async Task<UIElement?> BringIntoViewLastIntractItem_ForConnectedAnimation(CancellationToken ct)
-    {
-        await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
-
-        if (_vm.DisplayCurrentPath == null)
-        {
-            return null;
-        }
-
-        if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
-        {
-            var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
-            if (lastIntractItemIndex >= 0)
-            {
-                var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
-
-                if (currentItemsRepeater == null) { return null; }
-
-                UIElement? lastIntractItem = currentItemsRepeater.GetOrCreateElement(lastIntractItemIndex);                
-                lastIntractItem.UpdateLayout();
-                if (lastIntractItem is Control control)
-                {
-                    if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset
-                        || ItemsScrollViewer.VerticalOffset + ItemsScrollViewer.ViewportHeight < lastIntractItem.ActualOffset.Y)
-                    {
-                        var targetOffset = lastIntractItem.ActualOffset.Y - (float)ItemsScrollViewer.ViewportHeight * 0.5f;
-                        ItemsScrollViewer.ChangeView(null, targetOffset, null, disableAnimation: true);
-                    }
-                    else
-                    {
-                        control.StartBringIntoView();
-                    }
-
-                    if (_focusHelper.IsRequireSetFocus())
-                    {
-                        control.Focus(FocusState.Keyboard);
-                    }
-                }
-
-                return lastIntractItem;
-            }
-        }
-        return null;
-    }
-
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {

@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
+using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
 using R3;
 using System;
@@ -21,6 +22,7 @@ using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -55,11 +57,37 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
 
         Loaded += FolderListupPage_Loaded;
+        Unloaded += FolderListupPage_Unloaded;
     }
 
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
         ContentViewTypeSelector.SelectedIndex = 0;
+
+        _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
+        {
+            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path.Equals(m.TargetItemPath, StringComparison.Ordinal));
+            if (itemVM != null)
+            {
+                var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
+                if (image is UIElement target)
+                {
+                    m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    {
+                        return (UIElement?)target;
+                    }));
+                }
+                else
+                {
+                    m.Reply(Task.FromResult<UIElement?>(null));
+                }
+            }
+        });
+    }
+
+    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _messenger.Unregister<RequestConnectedAnimationMessage>(this);
     }
 
     private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
