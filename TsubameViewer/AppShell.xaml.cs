@@ -416,8 +416,8 @@ public sealed partial class AppShell : UserControl
 
                 if (IsOpenWithViewerPageType(ViewerFrame.Content.GetType())
                     && OpenWithViewerFramePageTypes.Any(x => x.Name.Equals(m.PageName, StringComparison.Ordinal)))
-                {
-                    throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
+                {                    
+                    //throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
                 }
 
                 var parameters = m.Parameters ?? new NavigationParameters();
@@ -480,6 +480,13 @@ public sealed partial class AppShell : UserControl
         {
             Debug.WriteLine($"ViewerFrame Navigate to : {e.SourcePageType.Name}");
             var frame = (Frame)s;
+            // 常にEmptyPageに戻るように
+            if (e.NavigationMode == NavigationMode.New 
+                && frame.BackStack.Count >= 2)
+            {
+                frame.BackStack.RemoveAt(1);
+            }
+            frame.ForwardStack.Clear();
             if (IsOpenWithViewerPageType(e.SourcePageType))
             {
                 frame.Visibility = Visibility.Visible;
