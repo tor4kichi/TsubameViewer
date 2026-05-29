@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using R3;
 using Reactive.Bindings.Extensions;
@@ -39,6 +40,19 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
 #nullable enable
 namespace TsubameViewer.Views;
+
+
+public sealed class RequestConnectedAnimationMessage : AsyncRequestMessage<UIElement?>
+{
+    public RequestConnectedAnimationMessage(string targetPageName, IImageSource targetImage)
+    {
+        TargetPageName = targetPageName;
+        TargetImage = targetImage;
+    }
+
+    public string TargetPageName { get; }
+    public IImageSource TargetImage { get; }
+}
 
 public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 {
@@ -153,7 +167,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 m.Value.IsHandled = true;
                 ToggleOpenCloseBottomUI();
-            }
+            }            
         });
 
         _navigaitonCts = new CancellationTokenSource();
@@ -188,7 +202,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         base.OnNavigatedTo(e);
     }
 
-    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _navigationDisposables.Dispose();
 
@@ -198,6 +212,30 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
         _messenger.Unregister<ImageLoadedMessage>(this);
+
+        if (!_vm.NowDoubleImageView
+            && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
+        {
+            try
+            {
+                var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource));
+                if (res is { } target)
+                {
+                    var imageContainer = _vm.CurrentDisplayImageIndex switch
+                    {
+                        0 => ImageItemsControl_0,
+                        1 => ImageItemsControl_1,
+                        2 => ImageItemsControl_2,
+                        _ => throw new InvalidOperationException(),
+                    };
+                    var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+                    var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+                    anim.Configuration = new DirectConnectedAnimationConfiguration();
+                    anim.TryStart(target);
+                }
+            }
+            catch { }
+        }
 
         base.OnNavigatingFrom(e);
     }

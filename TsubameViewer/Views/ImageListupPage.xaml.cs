@@ -110,10 +110,76 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
         ContentViewTypeSelector.SelectedIndex = 1;
+
+        _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) => 
+        {
+            var image = _realizedItems.FirstOrDefault(x => (x.DataContext as IStorageItemViewModel)?.Path.Equals(m.TargetImage.Path, StringComparison.Ordinal) ?? false);
+            if (image is { } target)
+            {
+                m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                {
+                    return (UIElement?)image;
+                }));
+            }
+            else
+            {
+                m.Reply(Task.FromResult<UIElement?>(null));
+            }
+        });
     }
+
+
+
+    public async Task<UIElement?> BringIntoViewLastIntractItem_ForConnectedAnimation(CancellationToken ct)
+    {
+        await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
+
+        if (_vm.DisplayCurrentPath == null)
+        {
+            return null;
+        }
+
+        if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
+        {
+            var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
+            if (lastIntractItemIndex >= 0)
+            {
+                var currentItemsRepeater = GetCurrentDisplayItemsRepeater();
+
+                if (currentItemsRepeater == null) { return null; }
+
+                UIElement? lastIntractItem = currentItemsRepeater.GetOrCreateElement(lastIntractItemIndex);                
+                lastIntractItem.UpdateLayout();
+                if (lastIntractItem is Control control)
+                {
+                    if (lastIntractItem.ActualOffset.Y < ItemsScrollViewer.VerticalOffset
+                        || ItemsScrollViewer.VerticalOffset + ItemsScrollViewer.ViewportHeight < lastIntractItem.ActualOffset.Y)
+                    {
+                        var targetOffset = lastIntractItem.ActualOffset.Y - (float)ItemsScrollViewer.ViewportHeight * 0.5f;
+                        ItemsScrollViewer.ChangeView(null, targetOffset, null, disableAnimation: true);
+                    }
+                    else
+                    {
+                        control.StartBringIntoView();
+                    }
+
+                    if (_focusHelper.IsRequireSetFocus())
+                    {
+                        control.Focus(FocusState.Keyboard);
+                    }
+                }
+
+                return lastIntractItem;
+            }
+        }
+        return null;
+    }
+
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
+        _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+
         StopLoadingTaskMonitor();
     }
 
@@ -423,20 +489,20 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         else { return null; }
     }
 
-    public async Task BringIntoViewLastIntractItem(CancellationToken ct)
-    {
+    public async Task<UIElement?> BringIntoViewLastIntractItem(CancellationToken ct)
+    {        
         await this.WaitFillingValue(x => x._vm != null && x._vm.NowProcessing is false, ct);
 
         if (_vm.DisplayCurrentPath == null)
         {
-            return;
+            return null;
         }
 
         if (_vm.GetLastIntractItem() is not null and var lastIntractItemVM)
         {
             var lastIntractItemIndex = _vm.FileItemsView.IndexOf(lastIntractItemVM);
             if (lastIntractItemIndex >= 0)
-            {
+            {                                
                 UIElement? lastIntractItem = await WaitTargetIndexItemLoadingAsync(lastIntractItemIndex, ct);
                 if (lastIntractItem is Control control)
                 {
@@ -452,8 +518,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                         control.Focus(FocusState.Keyboard);
                     }
                 }
+
+                return lastIntractItem;
             }
         }
+
+        return null;
     }
 
     #endregion
