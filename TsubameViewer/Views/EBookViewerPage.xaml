@@ -459,25 +459,6 @@
       </Button>
     </Grid>
     
-    
-    <!-- デバッグ -->
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                Opacity="0.5"
-                x:Name="DebugPanel"
-                Visibility="Collapsed"
-                >
-    </StackPanel>
-    
-    <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
-    <Grid x:Name="SwipeProcessScreen"
-          Background="Transparent"
-          IsHitTestVisible="True"
-          Visibility="Collapsed">
-      <Grid x:Name="AnimationUIContainer"
-            Background="{ThemeResource SystemAltMediumLowColor}"
-            Opacity="0" />
-    </Grid>
-
     <!-- 読了率表示 -->
     <winUI:ProgressBar Value="{x:Bind _vm.CurrentReadingItemPosition, Mode=OneWay}"
                        Minimum="0"

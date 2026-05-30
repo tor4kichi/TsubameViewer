@@ -54,9 +54,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
 
-#if DEBUG
-        DebugPanel.Visibility = Visibility.Visible;
-#endif
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
         EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
