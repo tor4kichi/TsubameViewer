@@ -416,8 +416,8 @@ public sealed partial class AppShell : UserControl
 
                 if (IsOpenWithViewerPageType(ViewerFrame.Content.GetType())
                     && OpenWithViewerFramePageTypes.Any(x => x.Name.Equals(m.PageName, StringComparison.Ordinal)))
-                {
-                    throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
+                {                    
+                    //throw new InvalidOperationException("ViewerPage can only one exist on app navigation stack.");
                 }
 
                 var parameters = m.Parameters ?? new NavigationParameters();
@@ -476,10 +476,17 @@ public sealed partial class AppShell : UserControl
     private void InitializeViewerFrameNavigation()
     {
         ViewerFrame.Navigate(typeof(EmptyPage));
-        ViewerFrame.Navigated += (s, e) =>
+        ViewerFrame.Navigated += async (s, e) =>
         {
             Debug.WriteLine($"ViewerFrame Navigate to : {e.SourcePageType.Name}");
             var frame = (Frame)s;
+            // 常にEmptyPageに戻るように
+            if (e.NavigationMode == NavigationMode.New 
+                && frame.BackStack.Count >= 2)
+            {
+                frame.BackStack.RemoveAt(1);
+            }
+            frame.ForwardStack.Clear();
             if (IsOpenWithViewerPageType(e.SourcePageType))
             {
                 frame.Visibility = Visibility.Visible;
@@ -495,6 +502,10 @@ public sealed partial class AppShell : UserControl
                 frame.Visibility = Visibility.Collapsed;
                 SetTitleContentForPrimary(ContentFrame);
                 MyNavigationView.Visibility = Visibility.Visible;
+                if (ContentFrame.Content == null)
+                {
+                    await _messenger.NavigateAsync(HomePageName);
+                }
             }
 
             GoBackButton.IsEnabled = CanHandleBackRequest();
@@ -1054,11 +1065,6 @@ public sealed partial class AppShell : UserControl
         if (NowShowingBusyWork)
         {
             CancelBusyWorkCommand.Execute(null);
-            return false;
-        }
-
-        if (ContentFrame.Content == null)
-        {
             return false;
         }
 

@@ -15,6 +15,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
     public static class PageTransitionHelper
     {
         public const string ImageJumpConnectedAnimationName = "ImageJumpInAnimation";
+        public const string BackToImageListConnectedAnimationName = "BackToImageList";
 
         private readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
         private readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
