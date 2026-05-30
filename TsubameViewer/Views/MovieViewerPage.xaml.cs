@@ -179,14 +179,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             if (_vm.MovieFile == null) { return; }
             MediaPlayer.Pause();
-            var imageContainer = MyMediaPlayerElement;
-            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-            var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
             var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), _vm.MovieFile.Path));
-            await Task.Delay(200);
             if (res is { } target)
             {
+                var imageContainer = MyMediaPlayerElement;
+                var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
                 anim.Configuration = new DirectConnectedAnimationConfiguration();
+                await Task.Delay(300); // AppShell.ContentFrameが表示されたら開始させたい
                 anim.TryStart(target);
             }
         }
