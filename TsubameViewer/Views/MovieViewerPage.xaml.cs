@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
+using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Toolkit.Uwp.UI.Animations;
@@ -20,8 +21,10 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -99,7 +102,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool _isDisplayControlUI;
 
     bool? _nextIsDisplayControlUI;
-    DispatcherQueueTimer _mouseCursorAutoHideTimer;
+    DispatcherQueueTimer? _mouseCursorAutoHideTimer;
 
     private void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
@@ -199,7 +202,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
 
         MediaPlayer.Pause();
-        _mouseCursorAutoHideTimer.Stop();
+        _mouseCursorAutoHideTimer?.Stop();
+        _mouseCursorAutoHideTimer = null;        
         ShowMouseCursor();
 
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
@@ -258,10 +262,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
-    {
-        //MediaPlayer = new MediaPlayer();
-        //MyMediaPlayerElement.SetMediaPlayer(MediaPlayer);
-        
+    {        
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
@@ -270,28 +271,27 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
 
         DisposableBuilder db = new();
-
+        
         _lastHideDisplayControlUIWithAutoHide = false;
 
         var mediaPlayer = MyMediaPlayerElement.MediaPlayer;
         mediaPlayer.CommandManager.IsEnabled = true;
 
-        var playerPositionChanged = ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
-            h => mediaPlayer.PlaybackSession.PositionChanged += h,
-            h => mediaPlayer.PlaybackSession.PositionChanged -= h
-            );
-
         var insideWindowRp = Observable.Merge(
                 this.ObservePointerEntered().Select(x => true), 
                 this.ObservePointerExited().Select(x => false))
+#if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
+#endif
             .ToReadOnlyReactiveProperty(false)
             .AddTo(ref db);
 
         var insideControlUIRp = Observable.Merge(
                 ImageSelectorContainer.ObservePointerEntered().Select(x => true),
                 ImageSelectorContainer.ObservePointerExited().Select(x => false))
+#if DEBUG
             .Do(x => Debug.WriteLine($"inside ControlUI: {x}"))
+#endif
             .ToReadOnlyReactiveProperty(false)
             .AddTo(ref db);        
 
@@ -299,10 +299,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe(this, static (e, s) => s._isWindowActive = e.WindowActivationState != CoreWindowActivationState.Deactivated)
             .AddTo(ref db);
 
+        _mouseCursorAutoHideTimer?.Stop();
         _mouseCursorAutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _mouseCursorAutoHideTimer.Tick += MouseCursorMonitorTimer_Tick;
         _mouseCursorAutoHideTimer.Interval = TimeSpan.FromSeconds(1.75);
         _mouseCursorAutoHideTimer.IsRepeating = false;
+
+        Disposable.Create(_mouseCursorAutoHideTimer, s => s.Stop());
         void MouseCursorMonitorTimer_Tick(DispatcherQueueTimer sender, object args)
         {
             if (insideWindowRp.CurrentValue
@@ -323,9 +326,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
         }
 
+        var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
+            .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
+            .ToReadOnlyReactiveProperty()
+            .AddTo(ref db);
+
         _vm.ObservePropertyChanged(x => x.MovieFile)
-            .SubscribeAwait(this, static async (x, s, ct) =>
+            .SubscribeAwait((this, bookmarkRp, _mouseCursorAutoHideTimer), static async (x, state, ct) =>
             {
+                var (s, bookmarkRp, mouseHideTimer) = state;
                 s._playbackResources?.Dispose();
 
                 s.MediaPlayer.Source = null;
@@ -337,26 +346,37 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 try
                 {
                     s._nowRequestPlayStart = true;
-                    var mediaSource = MediaSource.CreateFromStorageFile(x);                    
-                    db.Add(mediaSource);
-                    var playbackItem = new MediaPlaybackItem(mediaSource);
-                    s.MediaPlayer.Source = playbackItem;
-                    ct.ThrowIfCancellationRequested();
 
-                    var props = playbackItem.GetDisplayProperties();
-                    props.Type = Windows.Media.MediaPlaybackType.Video;
-                    props.VideoProperties.Title = x.DisplayName;
-
+                    bool firstTryFFmpeg = s._vm.PageSettings.IsFFmpegUseFirstToMediaSourceFactory 
+                        || x.FileType.Equals(SupportedFileTypesHelper.Movie_MkvFileType);
                     try
                     {
-                        using var stream = await s._vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
-                        var memoryStream = new MemoryStream((int)stream.Length);
-                        stream.CopyTo(memoryStream);
-                        memoryStream.Seek(0, SeekOrigin.Begin);
-                        props.Thumbnail = RandomAccessStreamReference.CreateFromStream(memoryStream.AsRandomAccessStream());
+                        if (firstTryFFmpeg)
+                        {
+                            await s.OpenMediaWithFFmpegAsync(x, db, ct);
+                            s.NowPlayingWithFFmpegMediaSource = true;
+                        }
+                        else
+                        {
+                            await s.OpenMediaWithDefaultAsync(x, db, ct);
+                            s.NowPlayingWithFFmpegMediaSource = false;
+                        }
                     }
-                    catch { }
-                    playbackItem.ApplyDisplayProperties(props);
+                    catch
+                    {
+                        db.Dispose();
+                        db = new CompositeDisposable();
+                        if (firstTryFFmpeg)
+                        {
+                            await s.OpenMediaWithDefaultAsync(x, db, ct);
+                            s.NowPlayingWithFFmpegMediaSource = false;
+                        }
+                        else
+                        {
+                            await s.OpenMediaWithFFmpegAsync(x, db, ct);
+                            s.NowPlayingWithFFmpegMediaSource = true;
+                        }
+                    }
                 }
                 catch
                 {
@@ -364,47 +384,88 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     db.Dispose();
                     throw;
                 }
+
+                ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
+                    h => s.MediaPlayer.PlaybackSession.PositionChanged += h,
+                    h => s.MediaPlayer.PlaybackSession.PositionChanged -= h
+                    )
+                    .ObserveOnCurrentSynchronizationContext()
+                    .Debounce(TimeSpan.FromSeconds(0.1))
+                    .Subscribe((s, bookmarkRp), static (e, state) =>
+                    {
+                        var (s, bookmarkRp) = state;
+                        if (s._videoPositionChangingFromCode)
+                        {
+                            s._videoPositionChangingFromCode = false;
+                            return;
+                        }
+
+                        if (e.Sender == null) { return; }
+                        var ts = e.Sender.Position;
+                        s.SetVideoPositionFromCode(ts);
+
+                        if (e.Sender.CanSeek
+                            && e.Sender.NaturalDuration != TimeSpan.Zero)
+                        {
+                            var pos = e.Sender.Position;
+                            var duration = e.Sender.NaturalDuration;
+                            bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));
+                        }
+                    })
+                    .AddTo(db);
+
                 s._playbackResources = db;
 
                 if (x != null)
                 {
-                    s._mouseCursorAutoHideTimer.Start();                    
+                    mouseHideTimer.Start();                    
                 }
+
+                s.ObservePropertyChanged(x => x.PlayerState)
+                    .Where(x => x == MediaPlaybackState.Paused)
+                    .Take(1)
+                    .SubscribeAwait((s, bookmarkRp), static async (x, s, ct) =>
+                    {
+                        var _this = s.Item1;
+                        if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
+
+                        if (_this.MediaPlayer.PlaybackSession.CanSeek)
+                        {
+                            if (float.IsNaN(bkmk.ReadPosition.Value))
+                            {
+                                bkmk.ReadPosition = new Core.Models.FolderItemListing.NormalizedPagePosition();
+                            }
+                            var ts = _this.MediaPlayer.PlaybackSession.NaturalDuration * bkmk.ReadPosition.Value;
+                            if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+                            {
+                                ts = TimeSpan.Zero;
+                            }
+                            _this.MediaPlayer.PlaybackSession.Position = ts;
+                        }
+
+                        if (_this._nowRequestPlayStart)
+                        {
+                            _this._nowRequestPlayStart = false;
+                            // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
+                            _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
+                            await Observable.TimerFrame(5).WaitAsync();
+                        }
+                        _this.MediaPlayer.Play();
+                    });
             })
             .AddTo(ref db);
 
-        var bookmarkRp = _vm.ObservePropertyChanged(x => x.MovieFile)
-            .Select(_vm, (x, vm) => x != null ? vm.BookmarkManager.GetBookmarkFacade(x.Path) : null)
-            .ToReadOnlyReactiveProperty()
-            .AddTo(ref db);
-
-
-        playerPositionChanged
-            .ObserveOnCurrentSynchronizationContext()
-            .Debounce(TimeSpan.FromSeconds(0.1))            
-            .Subscribe((this, bookmarkRp), (e, s) => 
+        _vm.PageSettings.ObservePropertyChanged(x => x.IsFFmpegUseFirstToMediaSourceFactory, false)
+            .Subscribe(this, static (x, s) => 
             {
-                if (_videoPositionChangingFromCode)
-                {
-                    _videoPositionChangingFromCode = false;
-                    return;
-                }
-
-                if (e.Sender == null) { return; }
-                var ts = e.Sender.Position;
-                s.Item1.SetVideoPositionFromCode(ts);                
-
-                if (e.Sender.CanSeek 
-                    && e.Sender.NaturalDuration != TimeSpan.Zero)
-                {
-                    var pos = e.Sender.Position;
-                    var duration = e.Sender.NaturalDuration;
-                    s.bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));                    
-                }
-            });
-
+                var file = s._vm.MovieFile;
+                s._vm.MovieFile = null;
+                s._vm.MovieFile = file;
+            })
+            .AddTo(ref db);
+        
         this.ObservePropertyChanged(x => x.PlayerState)
-            .Subscribe(new DisplayRequestFacade(), (state, s)  => 
+            .Subscribe(new DisplayRequestFacade(), static (state, s)  => 
             {
                 s.IsActive = state == MediaPlaybackState.Playing;
             }, (result, s) => s.Dispose())
@@ -417,53 +478,22 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             insideWindowRp.Where(x => x).AsUnitObservable(),
             Window.Current.ObserveActivated().AsUnitObservable()
             )
-            .Subscribe((this, insideWindowRp), static (x, s) =>
+            .Subscribe((this, insideWindowRp, _mouseCursorAutoHideTimer), static (x, s) =>
             {
-                var _this = s.Item1;
+                var (_this, insideWindowRp, timer) = s;                
                 _this.ShowMouseCursor();
-                _this._mouseCursorAutoHideTimer.Stop();
+                timer.Stop();
                 if (s.insideWindowRp.CurrentValue 
                 && s.Item1.PlayerState == MediaPlaybackState.Playing
                 && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
                 {
                     _this.IsDisplayControlUI = true;
 
-                    _this._mouseCursorAutoHideTimer.Start();
+                    timer.Start();
                 }
             })
             .AddTo(ref db);        
 
-        this.ObservePropertyChanged(x => x.PlayerState)
-            .Where(x => x == MediaPlaybackState.Paused)
-            .Take(1)
-            .SubscribeAwait((this, bookmarkRp), static async (x, s, ct) =>
-            {
-                var _this = s.Item1;
-                if (s.bookmarkRp.CurrentValue is not { } bkmk) { return; }
-
-                if (_this.MediaPlayer.PlaybackSession.CanSeek)
-                {
-                    if (float.IsNaN(bkmk.ReadPosition.Value))
-                    {
-                        bkmk.ReadPosition = new Core.Models.FolderItemListing.NormalizedPagePosition();
-                    }
-                    var ts = _this.MediaPlayer.PlaybackSession.NaturalDuration * bkmk.ReadPosition.Value;
-                    if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
-                    {
-                        ts = TimeSpan.Zero;
-                    }
-                    _this.MediaPlayer.PlaybackSession.Position = ts;
-                }
-
-                if (_this._nowRequestPlayStart)
-                {
-                    _this._nowRequestPlayStart = false;
-                    _this.MediaPlayer.Play();
-                    await Observable.NextFrame().WaitAsync();
-                }
-                // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
-                _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
-            });
 
         _vm.PageSettings.ObservePropertyChanged(x => x.IsPlayerStretchEnabled)
             .SubscribeAwait(this, static async (x, s, ct) => 
@@ -485,6 +515,54 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         HandlePlaybackRateChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
+    }
+
+    async Task OpenMediaWithDefaultAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
+    {
+        var mediaSource = MediaSource.CreateFromStorageFile(x);
+        db.Add(mediaSource);
+        var playbackItem = new MediaPlaybackItem(mediaSource);
+        MediaPlayer.Source = playbackItem;
+        ct.ThrowIfCancellationRequested();
+
+        var props = playbackItem.GetDisplayProperties();
+        props.Type = Windows.Media.MediaPlaybackType.Video;
+        props.VideoProperties.Title = x.DisplayName;
+
+        try
+        {
+            using var stream = await _vm.ThumbnailManager.GetThumbnailImageFromPathAsync(x.Path, ct);
+            var memoryStream = new MemoryStream((int)stream.Length);
+            stream.CopyTo(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            props.Thumbnail = RandomAccessStreamReference.CreateFromStream(memoryStream.AsRandomAccessStream());
+        }
+        catch { }
+        playbackItem.ApplyDisplayProperties(props);
+    }
+
+    [ObservableProperty]
+    bool _nowPlayingWithFFmpegMediaSource;
+
+    TimeSpan _oneFrameTime;
+
+    async Task OpenMediaWithFFmpegAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
+    {
+        var fileStream = await x.OpenReadAsync();
+        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+        // Note: PlaybackSession 設定するとむしろ壊れる
+        //ms.PlaybackSession = MediaPlayer.PlaybackSession;
+        db.Add(ms);
+        await ms.OpenWithMediaPlayerAsync(MediaPlayer);
+        try
+        {
+            var mss = ms.GetMediaStreamSource();
+            mss.BufferTime = TimeSpan.FromSeconds(30);
+            mss.MaxSupportedPlaybackRate = 4.0;
+        }
+        catch { }
+
+        _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);
     }
 
     private void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
@@ -601,8 +679,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void MenuFlyout_Closed(object sender, object e)
     {
         IsFlyoutOpen = false;
-        _mouseCursorAutoHideTimer.Stop();
-        _mouseCursorAutoHideTimer.Start();
+        _mouseCursorAutoHideTimer?.Stop();
+        _mouseCursorAutoHideTimer?.Start();
     }
 
     #endregion
@@ -773,20 +851,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void BackwardOneFrame()
     {
-        if (PlayerState == MediaPlaybackState.Playing)
-        {
-            MediaPlayer.Pause();
-        }
+        if (MediaPlayer == null) { return; }
         MediaPlayer.StepBackwardOneFrame();
+        // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
     }
 
     [RelayCommand]
     void ForwardOneFrame()
     {
-        if (PlayerState == MediaPlaybackState.Playing)
-        {
-            MediaPlayer.Pause();
-        }
         MediaPlayer.StepForwardOneFrame();
     }
 
@@ -879,14 +951,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _nowPlaybackRateChangingFromCode = true;
         try
         {
-            bool prevPlaying = PlayerState == MediaPlaybackState.Playing;
-            MediaPlayer.Pause();
             _vm.PageSettings.PlaybackRate = Math.Clamp(playbackRate, MinPlaybackRate, MaxPlaybackRate);
-            if (prevPlaying)
-            {
-                Observable.NextFrame()
-                    .Subscribe(MediaPlayer, (_, s) => s?.Play());                
-            }
         }
         finally
         {
@@ -968,7 +1033,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 MediaPlayer.Volume += increaseVolumeUnit;
             }
 
-            Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
+            //Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
         };
         timer.Start();
         Disposable.Create(timer, s => s.Stop())
@@ -1504,8 +1569,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task ToggleFullScreen()
     {
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer.Pause();
-        await Observable.NextFrame().WaitAsync();
         var appView = ApplicationView.GetForCurrentView();
         if (appView.IsFullScreenMode)
         {
@@ -1514,12 +1577,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         else
         {
             appView.TryEnterFullScreenMode();
-        }
-
-        await Observable.TimerFrame(10).WaitAsync();
-        if (isPlaying)
-        {
-            MediaPlayer.Play();
         }
     }
 
@@ -1534,15 +1591,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (MediaPlayer == null) { return; }
         if (MyMediaPlayerElement.Stretch == stretch) { return; }
 
-        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer.Pause();
-        await Observable.NextFrame().WaitAsync();
         MyMediaPlayerElement.Stretch = stretch;
-        await Observable.NextFrame().WaitAsync();
-        if (isPlaying)
-        {
-            MediaPlayer.Play();
-        }
     }
 
     [RelayCommand]
@@ -1584,15 +1633,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (MediaPlayer == null) { return; }
         if (MediaPlayer.PlaybackSession.PlaybackRotation == rotate) { return; }
 
-        bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-        MediaPlayer.Pause();
-        await Observable.NextFrame().WaitAsync();
         MediaPlayer.PlaybackSession.PlaybackRotation = rotate;
-        await Observable.NextFrame().WaitAsync();
-        if (isPlaying)
-        {
-            MediaPlayer.Play();
-        }
     }
 
     [RelayCommand]

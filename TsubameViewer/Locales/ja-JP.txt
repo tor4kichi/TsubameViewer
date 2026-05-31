@@ -278,6 +278,11 @@ MovieViewer_SC_SetPlaybackRateToNext = 再生速度を上げる
 MovieViewer_SC_SetPlaybackPositionWithPercent = {0}%の位置から再生
 
 MovieViewer_SoundVolume = 音量
+NowPlayingWithFFmpegMediaSource = FFmpegを利用して再生中
+IsFFmpegUseFirstToMediaSourceFactory = FFmpegを優先して再生する
+
+
+
 
 #### SearchResult
 

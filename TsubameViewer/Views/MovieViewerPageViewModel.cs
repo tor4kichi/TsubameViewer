@@ -39,6 +39,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _mediaRotate = (MediaRotation)Read((int)MediaRotation.Clockwise90Degrees, nameof(PlayerRotate));
         _isPlayerStretchEnabled = Read(false, nameof(IsPlayerStretchEnabled));
         _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
+        _isFFmpegUseFirstToMediaSourceFactory = Read(false, nameof(IsFFmpegUseFirstToMediaSourceFactory));
     }
     
     bool _isRepeat;
@@ -103,6 +104,14 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         get => _playerStretch;
         set => SetProperty(_playerStretch, value, this, (m, v) => m.Save((int)(m._playerStretch = v), nameof(PlayerStretch)));
     }
+
+    bool _isFFmpegUseFirstToMediaSourceFactory;
+    public bool IsFFmpegUseFirstToMediaSourceFactory
+    {
+        get => _isFFmpegUseFirstToMediaSourceFactory;
+        set => SetProperty(ref _isFFmpegUseFirstToMediaSourceFactory, value);
+    }
+
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase

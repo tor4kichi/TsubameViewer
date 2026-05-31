@@ -55,8 +55,9 @@ public static class SupportedFileTypesHelper
         SupportedMovieFileExtensions = new string[]
         {
             Movie_Mp4FileType,
-            Movie_WebPFileType,
+            Movie_WebMFileType,
             Movie_HevcFileType,
+            Movie_MkvFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
         .ToHashSet();
@@ -87,8 +88,9 @@ public static class SupportedFileTypesHelper
     public const string EPubFileType = ".epub";
 
     public const string Movie_Mp4FileType = ".mp4";
-    public const string Movie_WebPFileType = ".webm";
+    public const string Movie_WebMFileType = ".webm";
     public const string Movie_HevcFileType = ".hevc";
+    public const string Movie_MkvFileType = ".mkv";
 
     public static readonly HashSet<string> SupportedArchiveFileExtensions;
     public static readonly HashSet<string> SupportedImageFileExtensions;

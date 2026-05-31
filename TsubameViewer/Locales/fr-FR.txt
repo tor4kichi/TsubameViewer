@@ -278,6 +278,11 @@ MovieViewer_SC_SetPlaybackRateToNext = Augmenter la vitesse de lecture
 MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
 
 MovieViewer_SoundVolume = Volume
+NowPlayingWithFFmpegMediaSource = Lecture avec FFmpeg
+IsFFmpegUseFirstToMediaSourceFactory = Prioriser la lecture à l'aide de FFmpeg.
+
+
+
 
 #### SearchResult
 

@@ -278,6 +278,11 @@ MovieViewer_SC_SetPlaybackRateToNext = 提高播放速度
 MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
 
 MovieViewer_SoundVolume = 体积
+NowPlayingWithFFmpegMediaSource = 使用 FFmpeg 播放
+IsFFmpegUseFirstToMediaSourceFactory = 优先使用 FFmpeg 进行播放。
+
+
+
 
 #### SearchResult
 
