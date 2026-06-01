@@ -51,8 +51,7 @@ public sealed class TocItemViewModel
         _navItemRef = navItemRef;
     }
     public string Label => _navItemRef.Title;
-    public string FilePath => _navItemRef.HtmlContentFileRef.FilePath;
-    
+    public string FilePath => _navItemRef.HtmlContentFileRef?.FilePath ?? "";
 }
 
 public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelBase

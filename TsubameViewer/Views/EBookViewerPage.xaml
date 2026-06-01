@@ -254,6 +254,8 @@
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
       
     </MenuFlyout>
+
+    <local:FilePathToFileNameConverter x:Key="FilePathToFileNameConverter" />
   </Page.Resources>
 
   <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}">
@@ -599,7 +601,7 @@
                 </ListView.Header>
                 <ListView.ItemTemplate>
                   <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
-                    <TextBlock Text="{x:Bind Key}" />
+                    <TextBlock Text="{x:Bind Key, Converter={StaticResource FilePathToFileNameConverter}}" />
                   </DataTemplate>
                 </ListView.ItemTemplate>
               </ListView>
