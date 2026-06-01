@@ -389,6 +389,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
         TocContainer.Visibility = Visibility.Visible;
         await Task.Delay(250);
+        _vm.SelectedTocItem = _vm.CurrentPageInfo?.TocItem;
+        _vm.CurrentPage = _vm.CurrentPageInfo?.EpubFileRef;
         if (TocItemsListView.SelectedItem != null)
         {
             var container = TocItemsListView.ContainerFromItem(TocItemsListView.SelectedItem);
@@ -402,6 +404,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void OpenTocPane()
     {
+        _vm.SelectedTocItem = _vm.CurrentPageInfo?.TocItem;
+        _vm.CurrentPage = _vm.CurrentPageInfo?.EpubFileRef;
         TocContainer.Visibility = Visibility.Visible;
     }
 

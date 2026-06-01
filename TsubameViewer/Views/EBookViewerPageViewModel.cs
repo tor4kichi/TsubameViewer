@@ -38,7 +38,8 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
-using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
+using ZLinq;
+
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
@@ -382,7 +383,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
 
 
-        EBookReaderSettings.ObservePropertyChanged(x => x.IsForceResetStylingInHeadElement)
+        EBookReaderSettings.ObservePropertyChanged(x => x.IsForceResetStylingInHeadElement, false)
             .Subscribe(this, static (x, s) => 
             {
                 var _this = s;
@@ -483,6 +484,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         {
             using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))
             {
+                if (requestPage == CurrentPageInfo?.OuterPageIndex) { return; }
                 // 読み込み済みにスワップできないか試す
                 int nextDisplayPageInfoIndex = NowDisplayRendererIndex == 0 ? 1 : 0;
                 var nextPageInfo = SwapPages[nextDisplayPageInfoIndex];
@@ -568,12 +570,20 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
     void FillPageInfo(int requestPage, EBookPageInfo pageInfo)
     {
+        Guard.IsNotNull(CurrentBookReadingOrder);
         EpubLocalTextContentFileRef currentPage = CurrentBookReadingOrder.ElementAtOrDefault(requestPage);
         if (currentPage == null) { throw new IndexOutOfRangeException(); }
         Debug.WriteLine(currentPage.FilePath);
         pageInfo.OuterPageIndex = requestPage;
         pageInfo.EpubFileRef = currentPage;
-        pageInfo.TocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
+        foreach (var item in CurrentBookReadingOrder.AsValueEnumerable().Take(requestPage+1).Reverse())
+        {
+            if (TocItems.FirstOrDefault(x => x.FilePath.Equals(item.FilePath)) is { } toc)
+            {
+                pageInfo.TocItem = toc;
+                break;
+            }
+        }
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.InnerCurrentPageIndex = 0;

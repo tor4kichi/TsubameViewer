@@ -393,11 +393,16 @@
             HorizontalAlignment="Center"
             >
         <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{x:Bind _vm.CurrentPageInfo.TocItem.Label, Mode=OneWay}"
+                     Opacity="0.7"
+                     VerticalAlignment="Center"/>
           <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
-                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageInfo.Title, Mode=OneWay}">
+                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageInfo.Title, Mode=OneWay}"
+                     VerticalAlignment="Center">
             <Run Text="{x:Bind _vm.CurrentPageInfo.Title, Mode=OneWay}" />
           </TextBlock>
-          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
+          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center"
+                     VerticalAlignment="Center">
            <Run Text="{x:Bind _vm.ToImageIndexStartWithOne(_vm.CurrentPageInfo.InnerCurrentPageIndex), Mode=OneWay}" />/<Run Text="{x:Bind _vm.CurrentPageInfo.InnerTotalPageCount, Mode=OneWay}" />
           </TextBlock>
         </StackPanel>
