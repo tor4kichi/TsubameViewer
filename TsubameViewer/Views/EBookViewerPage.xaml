@@ -326,7 +326,7 @@
             >
         <eBookControls:EPubRenderer x:Name="EPubRenderer_1"
                                     PageHtml="{x:Bind _vm.SwapPages[0].PageHtml, Mode=OneWay}"
-                                    FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
+                                    FirstApproachingPageIndex="{x:Bind _vm.FirstApproachingPageIndex, Mode=OneWay}"
                                     IsTapEnabled="False"
                                     IsHitTestVisible="False"
                                     IsAccessKeyScope="False"
@@ -345,6 +345,7 @@
         <eBookControls:EPubRenderer x:Name="EPubRenderer_2"
                                     Opacity="0"
                                     PageHtml="{x:Bind _vm.SwapPages[1].PageHtml, Mode=OneWay}"
+                                    FirstApproachingPageIndex="{x:Bind _vm.SwapPages[1].InnerCurrentPageIndex, Mode=OneWay}"
                                     IsTapEnabled="False"
                                     IsHitTestVisible="False"
                                     IsAccessKeyScope="False"

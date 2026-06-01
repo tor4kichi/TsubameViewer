@@ -106,6 +106,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     bool _nowFirstLoadingProgress;
 
+    [ObservableProperty]
+    int _firstApproachingPageIndex;
+
+
     [RelayCommand]
     void ResetEBookReaderSettings()
     {
@@ -264,6 +268,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
             int firstRequestIndex = 0;
             InnerCurrentImageIndex = 0;
+            FirstApproachingPageIndex = 0;
             // 表示する画像を決める
             if (mode == NavigationMode.Forward
                 || parameters.ContainsKey(PageNavigationConstants.Restored)
@@ -279,6 +284,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                         {
                             firstRequestIndex = i;
                             InnerCurrentImageIndex = bookmark.innerPageIndex;
+                            FirstApproachingPageIndex = bookmark.innerPageIndex;
                             break;
                         }
                     }
@@ -301,7 +307,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             {
                 firstRequestIndex = 0;                
             }
-
+            
             // 最初のページを表示
             await UpdateCurrentPage(firstRequestIndex, _navigationCt);
         }, ct);
@@ -571,6 +577,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.TocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
+        pageInfo.InnerCurrentPageIndex = 0;
         pageInfo.IsLoaded = false;
     }
 
