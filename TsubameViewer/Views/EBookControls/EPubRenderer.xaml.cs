@@ -244,7 +244,7 @@ public sealed partial class EPubRenderer : UserControl
     {
         var _this = (EPubRenderer)d;
 
-        using var _ = await _this._domUpdateLock.LockAsync(default);
+        using var _ = await _domUpdateLock.LockAsync(default);
         
         _this._sw.Restart();
         if (e.NewValue is XmlDocument newPageHtml)
@@ -467,7 +467,7 @@ public sealed partial class EPubRenderer : UserControl
             )
             .Where(x => !isFirstContent)
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleLast(TimeSpan.FromMilliseconds(500))
+            .ThrottleLast(TimeSpan.FromMilliseconds(1000))
             .Where(x => !isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .Subscribe(async args =>
@@ -544,7 +544,7 @@ public sealed partial class EPubRenderer : UserControl
     public event EventHandler? ContentRefreshStarting;
     public event EventHandler? ContentRefreshComplete;
 
-    Core.AsyncLock _domUpdateLock = new ();
+    static Core.AsyncLock _domUpdateLock = new ();
 
     bool isFirstContent = true;
     int _innerCurrentPage;
@@ -770,7 +770,6 @@ return JSON.stringify(Array.from(set));
         //Debug.WriteLine(sizeList);
         return JsonSerializer.Deserialize<int[]>(sizeList)!;        
     }
-
 
     private async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
     {
