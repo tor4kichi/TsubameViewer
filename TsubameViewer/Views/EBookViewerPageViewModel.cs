@@ -360,15 +360,17 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             SwapPages[1].ObservePropertyChanged(x => x.IsLoaded).AsUnitObservable()            
             )
             .ThrottleLast(TimeSpan.FromSeconds(0.25))
-            .Subscribe(x => 
+            .Subscribe(this, static (x, s) => 
             {
-                if (CurrentPageInfo == null) { return; }
+                var _this = s;
+                if (_this.EBookReaderSettings.IsPrepareNextPageEnabled is false) { return; }
+                if (_this.CurrentPageInfo == null) { return; }
 
-                var altPage = SwapPages[NowDisplayRendererIndex == 0 ? 1 : 0];
-                if (CurrentPageInfo.InnerTotalPageCount - 3 <= InnerCurrentImageIndex
-                    && CurrentPageInfo.OuterPageIndex + 1 != altPage.OuterPageIndex)
+                var altPage = _this.SwapPages[_this.NowDisplayRendererIndex == 0 ? 1 : 0];
+                if (_this.CurrentPageInfo.InnerTotalPageCount - 3 <= _this.InnerCurrentImageIndex
+                    && _this.CurrentPageInfo.OuterPageIndex + 1 != altPage.OuterPageIndex)
                 {
-                    _ = PrepareNextPageAsync();
+                    _ = _this.PrepareNextPageAsync();
                 }
             })
             .AddTo(ref db);
@@ -376,10 +378,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
 
         EBookReaderSettings.ObservePropertyChanged(x => x.IsForceResetStylingInHeadElement)
-            .Subscribe(x => 
+            .Subscribe(this, static (x, s) => 
             {
-                PageHtml = null;
-                _ = UpdateCurrentPage(CurrentImageIndex, _navigationCt);
+                var _this = s;
+                _this.PageHtml = null;
+                _ = _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
             })
             .AddTo(ref db);
 
@@ -497,8 +500,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     Debug.WriteLine($"UpdateCurrentPage {requestPage:000}: Page load to SwapPage[{displayPageInfoIndex}]");
                     var info = SwapPages[displayPageInfoIndex];
                     FillPageInfo(requestPage, info);
-                    CurrentPageInfo = info;
                     await LoadPageAsync(info, ct);
+                    CurrentPageInfo = info;
                     NowDisplayRendererIndex = displayPageInfoIndex;
                 }
             }
@@ -566,7 +569,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.OuterPageIndex = requestPage;
         pageInfo.EpubFileRef = currentPage;
         pageInfo.TocItem = TocItems.FirstOrDefault(x => x.FilePath == currentPage.FilePath);
-        pageInfo.Title = SelectedTocItem?.Label ?? Path.GetFileNameWithoutExtension(currentPage.FilePath);
+        pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.IsLoaded = false;
     }

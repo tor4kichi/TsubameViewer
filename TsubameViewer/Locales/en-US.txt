@@ -207,7 +207,7 @@ ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 IsForceResetStylingInHeadElement = Clear the style by force
 IsReversePageFliping_Scroll = Reverse scrolling pagination
 IsReversePageFliping_Button = Reverse left/right page feed
-
+IsPrepareNextPageEnabled = Enable Preloading
 
 DefaultWithParameter = Default: {0}
 FontSize = Font size

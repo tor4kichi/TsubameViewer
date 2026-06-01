@@ -67,6 +67,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer_2.WebResourceRequested += WebView_WebResourceRequested;
     }
 
+    bool _isFirstDisplay = true;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         AnimationBuilder.Create()
@@ -88,20 +89,23 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             animation.Cancel();                
         }
 
+        EPubRenderer_1.Opacity = 0;
+        EPubRenderer_2.Opacity = 0;
         _vm.ObservePropertyChanged(x => x.NowDisplayRendererIndex)
-            .Subscribe(x =>
+            .Subscribe(this, static (x, s) =>
             {
+                var _this = s;
                 if (x == 0)
                 {
                     Debug.WriteLine("Display EPubRenderer_1");
-                    EPubRenderer_1.Opacity = 1;
-                    EPubRenderer_2.Opacity = 0;
+                    _this.EPubRenderer_1.Opacity = 1;
+                    _this.EPubRenderer_2.Opacity = 0;
                 }
                 else
                 {
                     Debug.WriteLine("Display EPubRenderer_2");
-                    EPubRenderer_1.Opacity = 0;
-                    EPubRenderer_2.Opacity = 1;
+                    _this.EPubRenderer_1.Opacity = 0;
+                    _this.EPubRenderer_2.Opacity = 1;
                 }
             })
             .RegisterTo(this.GetCancellationTokenOnNavigatingFrom());
@@ -118,7 +122,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer_2.Visibility = Visibility.Collapsed;
 
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
-
 
         base.OnNavigatingFrom(e);
     }
@@ -331,6 +334,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 if (_vm.CanGoNext())
                 {
                     altEPubRenderer.PrepareGoNext();
+                    currentEPubRenderer.PrepareGoNext();
                     await _vm.GoNextImageAsync();
                 }
             }

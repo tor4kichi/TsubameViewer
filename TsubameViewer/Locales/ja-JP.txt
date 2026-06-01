@@ -207,7 +207,7 @@ ImageViewer_ReachStartEnd_NotificationText = 終端を越えました
 IsForceResetStylingInHeadElement = スタイルを強制的にクリア
 IsReversePageFliping_Scroll = スクロールのページ送りを逆にする
 IsReversePageFliping_Button = 左右のページ送りを逆にする
-
+IsPrepareNextPageEnabled = 先読みを有効化
 
 DefaultWithParameter = デフォルト：{0}
 FontSize = 文字の大きさ

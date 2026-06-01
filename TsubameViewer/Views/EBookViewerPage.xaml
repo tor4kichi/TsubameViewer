@@ -68,6 +68,10 @@
 
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsForceResetStylingInHeadElement, Mode=TwoWay}"
                       Header="{i18nExt:Localize Key=IsForceResetStylingInHeadElement}" />
+
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsPrepareNextPageEnabled, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsPrepareNextPageEnabled}" />
+
         <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}"
                   Header="{i18nExt:Localize Key=OverrideWritingMode}"
                   HorizontalAlignment="Stretch"

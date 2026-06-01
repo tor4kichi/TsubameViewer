@@ -207,7 +207,7 @@ ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 IsForceResetStylingInHeadElement = Effacer le style par la force
 IsReversePageFliping_Scroll = Pagination à défilement inversée
 IsReversePageFliping_Button = Inverser la page gauche et droite
-
+IsPrepareNextPageEnabled = Activer la lecture prédictive
 
 DefaultWithParameter = Par défaut : {0}
 FontSize = Taille de la police d'écriture

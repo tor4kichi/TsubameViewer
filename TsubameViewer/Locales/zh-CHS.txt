@@ -207,7 +207,7 @@ ImageViewer_ReachStartEnd_NotificationText = 我们已经走到了尽头。
 IsForceResetStylingInHeadElement = 强制清除样式
 IsReversePageFliping_Scroll = 反向滚动分页
 IsReversePageFliping_Button = 反向左/右翻页
-
+IsPrepareNextPageEnabled = 启用预测阅读
 
 DefaultWithParameter = 默认值：{0}
 FontSize = 字体大小
