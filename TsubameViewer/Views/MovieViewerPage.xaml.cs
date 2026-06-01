@@ -265,7 +265,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {        
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
-        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;
+        MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
@@ -759,7 +759,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Observable.NextFrame()
             .Subscribe((this, sender), (_, s) =>
             {
-                if (s.sender.NaturalDuration.TotalDays < 1)
+                if (s.sender.NaturalDuration != default
+                    && s.sender.NaturalDuration.TotalDays < 1)
                 {
                     s.Item1.IsDurationAvairable = true;
                     VideoPositionSlider.Maximum = s.sender.NaturalDuration.TotalSeconds;
@@ -1678,26 +1679,37 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var ct = this.GetCancellationTokenOnUnloaded();
         try
         {
-            bool prevPlaying = false;
-            if (MediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing)
-            {
-                MediaPlayer.Pause();
-                prevPlaying = true;
-            }
-
             var videoPosition = MediaPlayer.PlaybackSession.Position;
-
-            await Task.Run(async () => 
+            using (var stream = _vm.RecyclableMemoryStreamManager.GetStream())
             {
-                using (var stream = _vm.RecyclableMemoryStreamManager.GetStream())
+                if (!IsDurationAvairable)
+                {
+                    var videoSize = new Size(MediaPlayer.PlaybackSession.NaturalVideoWidth, MediaPlayer.PlaybackSession.NaturalVideoHeight);
+                    var renderSize = MyMediaPlayerElement.RenderSize;
+                    double videoAspect = videoSize.Width / videoSize.Height;
+                    double renderAspect = renderSize.Width / renderSize.Height;
+                    Rect sourceRect;
+                    double scaledWidth = renderSize.Height * videoAspect;
+                    double scaledHeight = renderSize.Width / videoAspect;
+                    sourceRect = videoAspect < renderAspect
+                        ? new Rect(0, 0, scaledWidth, renderSize.Height)
+                        : new Rect(0, 0, renderSize.Width, scaledHeight);
+                    using CanvasRenderTarget crt = new(CanvasDevice.GetSharedDevice(), (float)sourceRect.Width, (float)sourceRect.Height, DisplayInformation.GetForCurrentView().LogicalDpi);
+                    MediaPlayer.CopyFrameToVideoSurface(crt, sourceRect);
+                    await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);
+                }
+                else
                 {
                     if (NowPlayingWithFFmpegMediaSource)
                     {
-                        using var movieStream = await movieFile.OpenReadAsync().AsTask(ct);
-                        using var fg = await FrameGrabber.CreateFromStreamAsync(movieStream).AsTask(ct);
-                        fg.DecodePixelHeight = 200;
-                        using var frame = await fg.ExtractVideoFrameAsync(videoPosition, true, 0).AsTask(ct);
-                        await frame.EncodeAsJpegAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        await Task.Run(async () =>
+                        {
+                            using var movieStream = await movieFile.OpenReadAsync().AsTask(ct);
+                            using var fg = await FrameGrabber.CreateFromStreamAsync(movieStream).AsTask(ct);
+                            fg.DecodePixelHeight = 200;
+                            using var frame = await fg.ExtractVideoFrameAsync(videoPosition, true, 0).AsTask(ct);
+                            await frame.EncodeAsJpegAsync(stream.AsRandomAccessStream()).AsTask(ct);
+                        }, ct);
                     }
                     else
                     {
@@ -1710,18 +1722,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), frame);
                         await bitmap.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR);
                     }
-                    stream.Seek(0, SeekOrigin.Begin);
-                    await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream, true, ct);
                 }
-            }, ct);
-
+                stream.Seek(0, SeekOrigin.Begin);
+                await _vm.ThumbnailManager.SetThumbnailAsync(_vm.MovieFile, stream, true, ct);
+            }
+            
+            
             _messenger.Send(new ThumbnailImageUpdateRequestMessage(_vm.MovieFile.Path));
             _messenger.SendShowTextNotificationMessage("ThumbnailImageChanged".Translate());
-
-            if (prevPlaying)
-            {
-                MediaPlayer.Play();
-            }
         }
         catch (Exception ex)
         {
@@ -1785,38 +1793,58 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             };
 
             var videoPosition = MediaPlayer.PlaybackSession.Position;
-            await Task.Run(async () => 
             {
                 using (var fileStream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite))
                 {
-                    if (NowPlayingWithFFmpegMediaSource)
+                    if (!IsDurationAvairable)
                     {
-                        using var movieStream = await movieFile.OpenReadAsync().AsTask(ct);
-                        using var fg = await FrameGrabber.CreateFromStreamAsync(movieStream).AsTask(ct);
-                        using var frame = await fg.ExtractVideoFrameAsync(videoPosition, true, 0).AsTask(ct);
-                        if (outputFormat == CanvasBitmapFileFormat.Png)
-                        {
-                            await frame.EncodeAsPngAsync(fileStream).AsTask(ct);
-                        }
-                        else
-                        {
-                            await frame.EncodeAsJpegAsync(fileStream).AsTask(ct);
-                        }
+                        var videoSize = new Size(MediaPlayer.PlaybackSession.NaturalVideoWidth, MediaPlayer.PlaybackSession.NaturalVideoHeight);
+                        var renderSize = MyMediaPlayerElement.RenderSize;
+                        double videoAspect = videoSize.Width / videoSize.Height;
+                        double renderAspect = renderSize.Width / renderSize.Height;
+                        Rect sourceRect;
+                        double scaledWidth = renderSize.Height * videoAspect;
+                        double scaledHeight = renderSize.Width / videoAspect;
+                        sourceRect = videoAspect < renderAspect
+                            ? new Rect(0, 0, scaledWidth, renderSize.Height)
+                            : new Rect(0, 0, renderSize.Width, scaledHeight);
+                        using CanvasRenderTarget crt = new(CanvasDevice.GetSharedDevice(), (float)sourceRect.Width, (float)sourceRect.Height, DisplayInformation.GetForCurrentView().LogicalDpi);
+                        MediaPlayer.CopyFrameToVideoSurface(crt, sourceRect);
+                        await crt.SaveAsync(fileStream, CanvasBitmapFileFormat.Jpeg);
                     }
                     else
                     {
-                        var clip = await MediaClip.CreateFromFileAsync(movieFile);
-                        var mc = new MediaComposition()
+                        if (NowPlayingWithFFmpegMediaSource)
                         {
-                            Clips = { clip },
-                        };
-                        using var frame = await mc.GetThumbnailAsync(videoPosition, 0, 0, VideoFramePrecision.NearestFrame);
-                        using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), frame);
-                        await bitmap.SaveAsync(fileStream, outputFormat);
-                        
+                            await Task.Run(async () =>
+                            {
+                                using var movieStream = await movieFile.OpenReadAsync().AsTask(ct);
+                                using var fg = await FrameGrabber.CreateFromStreamAsync(movieStream).AsTask(ct);
+                                using var frame = await fg.ExtractVideoFrameAsync(videoPosition, true, 0).AsTask(ct);
+                                if (outputFormat == CanvasBitmapFileFormat.Png)
+                                {
+                                    await frame.EncodeAsPngAsync(fileStream).AsTask(ct);
+                                }
+                                else
+                                {
+                                    await frame.EncodeAsJpegAsync(fileStream).AsTask(ct);
+                                }
+                            }, ct);
+                        }
+                        else
+                        {
+                            var clip = await MediaClip.CreateFromFileAsync(movieFile);
+                            var mc = new MediaComposition()
+                            {
+                                Clips = { clip },
+                            };
+                            using var frame = await mc.GetThumbnailAsync(videoPosition, 0, 0, VideoFramePrecision.NearestFrame);
+                            using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), frame);
+                            await bitmap.SaveAsync(fileStream, outputFormat);
+                        }
                     }
                 }
-            }, ct);
+            }
 
             SavedVideoFrameFile = file;
             FrameSavedNotification.ShowDismissButton = true;

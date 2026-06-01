@@ -923,7 +923,7 @@ public sealed class ThumbnailImageManager
             SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.Movie_Mp4FileType=> MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
-            SupportedFileTypesHelper.Movie_WebMFileType => MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.Movie_HevcFileType => MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             _ => throw new NotSupportedException(file.FileType)

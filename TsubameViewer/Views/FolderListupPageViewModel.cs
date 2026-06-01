@@ -84,7 +84,7 @@ public sealed partial class FolderListupPageViewModel
     {
         foreach (var item in FolderItems)
         {
-            if (item.Path.Equals(message.Value, StringComparison.Ordinal))
+            if (item.Path?.Equals(message.Value, StringComparison.Ordinal) ?? false)
             {
                 item.ThumbnailChanged();
                 item.InitializeAsync(default);
