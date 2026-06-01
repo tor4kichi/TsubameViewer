@@ -284,6 +284,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
 #endif
+            .Do(this, (x, s) => 
+            {
+                s.IsDisplayControlUI = x;
+            })
             .ToReadOnlyReactiveProperty(false)
             .AddTo(ref db);
 
@@ -489,6 +493,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             insideWindowRp.Where(x => x).AsUnitObservable(),
             Window.Current.ObserveActivated().AsUnitObservable()
             )
+            .ThrottleFirstLastFrame(1)
             .Subscribe((this, insideWindowRp, _mouseCursorAutoHideTimer), static (x, s) =>
             {
                 var (_this, insideWindowRp, timer) = s;                
@@ -499,7 +504,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
                 {
                     _this.IsDisplayControlUI = true;
-
                     timer.Start();
                 }
             })
@@ -752,7 +756,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     #region Position and Duration
 
     [ObservableProperty]
-    bool _isDurationAvairable;
+    bool _isDurationAvairable = true;
 
     private void PlaybackSession_NaturalDurationChanged(MediaPlaybackSession sender, object args)
     {
