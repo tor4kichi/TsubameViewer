@@ -339,13 +339,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s._playbackResources?.Dispose();
 
                 var isLastPlaying = s.PlayerState == MediaPlaybackState.Playing;
-
+                var lastPlayPosition = s.VideoPosition;
                 s.MediaPlayer.Source = null;
 
                 if (x == null) { return; }
                 if (s.MediaPlayer == null) { return; }
 
                 bool isFirstPlay = s._playbackResources == null;
+                
                 CompositeDisposable db = new();
                 try
                 {
@@ -426,21 +427,29 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s.ObservePropertyChanged(x => x.PlayerState)
                     .Where(x => x == MediaPlaybackState.Paused)
                     .Take(1)
-                    .SubscribeAwait((s, bookmarkRp), static async (x, s, ct) =>
+                    .SubscribeAwait((s, bookmarkRp, lastPlayPosition, isFirstPlay), static async (x, s, ct) =>
                     {
-                        var (_this, bookmarkRp) = s;
+                        var (_this, bookmarkRp, lastPlayPosition, isFirstPlay) = s;
                         if (bookmarkRp.CurrentValue is not { } bkmk) { return; }
 
                         if (_this.MediaPlayer.PlaybackSession.CanSeek)
                         {
-                            if (float.IsNaN(bkmk.ReadPosition.Value))
+                            TimeSpan ts;
+                            if (isFirstPlay)
                             {
-                                bkmk.ReadPosition = new Core.Models.FolderItemListing.NormalizedPagePosition();
+                                if (float.IsNaN(bkmk.ReadPosition.Value))
+                                {
+                                    bkmk.ReadPosition = new Core.Models.FolderItemListing.NormalizedPagePosition();
+                                }
+                                ts = _this.MediaPlayer.PlaybackSession.NaturalDuration * bkmk.ReadPosition.Value;
+                                if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+                                {
+                                    ts = TimeSpan.Zero;
+                                }
                             }
-                            var ts = _this.MediaPlayer.PlaybackSession.NaturalDuration * bkmk.ReadPosition.Value;
-                            if (ts > _this.MediaPlayer.PlaybackSession.NaturalDuration - TimeSpan.FromSeconds(1))
+                            else
                             {
-                                ts = TimeSpan.Zero;
+                                ts = lastPlayPosition;
                             }
                             _this.MediaPlayer.PlaybackSession.Position = ts;
                         }
