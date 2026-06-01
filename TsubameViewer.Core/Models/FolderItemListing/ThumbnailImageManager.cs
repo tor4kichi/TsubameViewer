@@ -1281,7 +1281,7 @@ public sealed class ThumbnailImageManager
         using var fileStream = await file.OpenReadAsync().AsTask(ct);
         using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
         fg.DecodePixelHeight = (int)requestedSize;
-        using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(3)).AsTask(ct);
+        using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(ct);
         await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(ct);
 
         return true;

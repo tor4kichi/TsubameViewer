@@ -1007,7 +1007,7 @@
                                    Margin="0 0 0 94"
                                    >
       <uwpControls:DockPanel>
-        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SavedCurrentFrame}" 
+        <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame_Saved}" 
                    uwpControls:DockPanel.Dock="Left" VerticalAlignment="Center" 
                    Margin="0 0 8 0"/>
 
