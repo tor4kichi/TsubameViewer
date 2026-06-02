@@ -58,6 +58,12 @@ public static class SupportedFileTypesHelper
             Movie_WebMFileType,
             Movie_HevcFileType,
             Movie_MkvFileType,
+            Movie_MovFileType,
+            Movie_TsFileType,
+            Movie_MTsFileType,
+            Movie_M2TsFileType,
+            Movie_AviFileType,
+            Movie_WmvFileType,
         }
         .SelectMany(x => new[] { x, x.ToUpper() })
         .ToHashSet();
@@ -91,6 +97,13 @@ public static class SupportedFileTypesHelper
     public const string Movie_WebMFileType = ".webm";
     public const string Movie_HevcFileType = ".hevc";
     public const string Movie_MkvFileType = ".mkv";
+    public const string Movie_M4vFileType = ".m4v";
+    public const string Movie_MovFileType = ".mov";
+    public const string Movie_TsFileType = ".ts";
+    public const string Movie_MTsFileType = ".mts";
+    public const string Movie_M2TsFileType = ".m2ts";
+    public const string Movie_AviFileType = ".avi";
+    public const string Movie_WmvFileType = ".wmv";
 
     public static readonly HashSet<string> SupportedArchiveFileExtensions;
     public static readonly HashSet<string> SupportedImageFileExtensions;

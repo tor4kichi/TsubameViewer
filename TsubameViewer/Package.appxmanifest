@@ -71,6 +71,13 @@
               <uap:FileType ContentType="video/hevc">.hevc</uap:FileType>
               <uap:FileType ContentType="video/webm">.webm</uap:FileType>
               <uap:FileType ContentType="video/x-matroska">.mkv</uap:FileType>
+              <uap:FileType ContentType="video/mp4">.m4v</uap:FileType>
+              <uap:FileType ContentType="video/quicktime">.mov</uap:FileType>
+              <uap:FileType ContentType="video/x-msvideo">.avi</uap:FileType>
+              <uap:FileType ContentType="video/x-ms-wmv">.wmv</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.ts</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.mts</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.m2ts</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>

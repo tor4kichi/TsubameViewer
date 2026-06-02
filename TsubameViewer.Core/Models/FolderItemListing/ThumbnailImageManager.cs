@@ -926,6 +926,13 @@ public sealed class ThumbnailImageManager
             SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.Movie_HevcFileType => MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
+            SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct),
             _ => throw new NotSupportedException(file.FileType)
         });
     }

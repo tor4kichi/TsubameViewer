@@ -355,7 +355,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 try
                 {
                     bool firstTryFFmpeg = s._vm.PageSettings.IsFFmpegUseFirstToMediaSourceFactory 
-                        || x.FileType.Equals(SupportedFileTypesHelper.Movie_MkvFileType);
+                        || (!x.FileType.Equals(SupportedFileTypesHelper.Movie_Mp4FileType, StringComparison.Ordinal));
                     try
                     {
                         if (firstTryFFmpeg)
