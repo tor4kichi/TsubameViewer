@@ -214,6 +214,11 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {        
+        if (MovieFile?.Path is { } path)
+        {
+            _messenger.Send(new LatestContentViewUpdateMessage(path));
+        }
+
         base.OnNavigatedFrom(parameters);
     }
 }

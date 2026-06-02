@@ -100,6 +100,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         _navigationCts.Cancel();
         _navigationCts.Dispose();
 
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
     }
 
@@ -112,6 +113,12 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         _navigationCts = new CancellationTokenSource();
         _ct = _navigationCts.Token;
         _isFirstItem = true;
+
+        _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
+        {
+            var itemVM = _vm.RecentlyItems.FirstOrDefault(x => x.Path.Equals(m.Value, StringComparison.Ordinal));
+            itemVM?.UpdateLastReadPosition();
+        });
     }
 
 

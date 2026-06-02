@@ -66,7 +66,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
-            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path.Equals(m.TargetItemPath, StringComparison.Ordinal));
+            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
             if (itemVM != null)
             {
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
@@ -83,11 +83,18 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
             }
         });
+
+        _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) => 
+        {
+            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
+            itemVM?.UpdateLastReadPosition();
+        });
     }
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
     }
 
     private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)

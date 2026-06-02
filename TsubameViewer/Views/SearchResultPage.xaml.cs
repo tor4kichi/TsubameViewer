@@ -69,13 +69,21 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
     {
         _navigationCts = new CancellationTokenSource();
         _ct = _navigationCts.Token;
+
+        _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
+        {
+            var itemVM = _vm.SearchResultItems.SelectMany(x => x.Items).FirstOrDefault(x => x.Path.Equals(m.Value, StringComparison.Ordinal));
+            itemVM?.UpdateLastReadPosition();
+        });
         base.OnNavigatedTo(e);
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _navigationCts.Cancel();
-        _navigationCts.Dispose();            
+        _navigationCts.Dispose();
+
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
     }
 

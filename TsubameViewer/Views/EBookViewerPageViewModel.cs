@@ -185,6 +185,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     {
         lock (_lock)
         {
+            if (_currentBook?.FilePath is { } path)
+            {
+                _messenger.Send(new LatestContentViewUpdateMessage(path));
+            }
+
             PageHtml = null;
 
             _currentBook = null;

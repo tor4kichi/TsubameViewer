@@ -327,6 +327,23 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
+        if (_imageCollectionContext is FolderImageCollectionContext folderContext)
+        {
+            try
+            {
+                _messenger.Send(new LatestContentViewUpdateMessage(folderContext.Folder.Path));
+            }
+            catch { }
+        }
+        else if (_imageCollectionContext is ArchiveImageCollectionContext archiveContext)
+        {
+            try
+            {
+                _messenger.Send(new LatestContentViewUpdateMessage(archiveContext.File.Path));
+            }
+            catch { }
+        }
+
         ClearCachedImages();
         ClearDisplayImages();
         _currentDisplayImageIndex = 0;
