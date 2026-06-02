@@ -500,11 +500,14 @@ public sealed partial class AppShell : UserControl
             else
             {
                 frame.Visibility = Visibility.Collapsed;
-                SetTitleContentForPrimary(ContentFrame);
                 MyNavigationView.Visibility = Visibility.Visible;
                 if (ContentFrame.Content == null)
                 {
                     await _messenger.NavigateAsync(HomePageName);
+                }
+                else
+                {
+                    SetTitleContentForPrimary(ContentFrame);
                 }
             }
 
@@ -1100,7 +1103,6 @@ public sealed partial class AppShell : UserControl
                 if (ViewerFrame.Content?.GetType() is { } viewerPageType
                     && IsOpenWithViewerPageType(viewerPageType))
                 {
-                    ViewerFrame.Visibility = Visibility.Collapsed;
                     var prevPage = ViewerFrame.Content as Page;
                     try
                     {

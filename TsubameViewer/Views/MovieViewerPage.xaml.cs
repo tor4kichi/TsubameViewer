@@ -165,48 +165,42 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Unloaded += MovieViewerPage_Unloaded;
 
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
-
-        _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
-        {
-            IsDisplayControlUI = false;
-            _mouseCursorAutoHideTimer?.Stop();
-            ShowMouseCursor();
-            MediaPlayer.Pause();
-        });
     }
-
+    DirectConnectedAnimationConfiguration _animConfig = new();
     protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        base.OnNavigatingFrom(e);
-
-        try
+        MediaPlayer.Pause();
+        if (_vm.MovieFile?.Path is { } itemPath)
         {
-            if (_vm.MovieFile == null) { return; }
-            MediaPlayer.Pause();
-            var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), _vm.MovieFile.Path));
-            if (res is { } target)
+            var imageContainer = MyMediaPlayerElement;
+            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();            
+            var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+            try
             {
-                var imageContainer = MyMediaPlayerElement;
-                var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
-                anim.Configuration = new DirectConnectedAnimationConfiguration();
-                await Task.Delay(300); // AppShell.ContentFrameが表示されたら開始させたい
-                anim.TryStart(target);
+                var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(FolderListupPage), itemPath));
+                if (res is { } target)
+                {
+                    anim.Configuration = _animConfig;
+                    anim.TryStart(target);
+                }
+                else { anim.Cancel(); }
+            }
+            catch
+            {
+                anim.Cancel();
             }
         }
-        catch { }
+
+        _mouseCursorAutoHideTimer?.Stop();
+        _mouseCursorAutoHideTimer = null;
+        ShowMouseCursor();
+        MediaPlayer.Source = null;
+
+        base.OnNavigatingFrom(e);
     }
 
-
-    private void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
+    private async void MovieViewerPage_Unloaded(object sender, RoutedEventArgs e)
     {
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);
-
-        MediaPlayer.Pause();
-        _mouseCursorAutoHideTimer?.Stop();
-        _mouseCursorAutoHideTimer = null;        
-        ShowMouseCursor();
-
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
 
@@ -216,7 +210,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _playbackResources?.Dispose();
         _playbackResources = null;
-        MediaPlayer.Source = null;
     }
 
     internal class DisplayRequestFacade : IDisposable
@@ -263,7 +256,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
-    {        
+    {
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
@@ -284,10 +277,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
 #endif
-            .Do(this, (x, s) => 
-            {
-                s.IsDisplayControlUI = x;
-            })
             .ToReadOnlyReactiveProperty(false)
             .AddTo(ref db);
 
@@ -505,7 +494,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {
                     _this.IsDisplayControlUI = true;
                     timer.Start();
-                }
+                }                
             })
             .AddTo(ref db);        
 

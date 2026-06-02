@@ -441,6 +441,7 @@
         </TransformGroup>
       </UIElement.RenderTransform>
     </MediaPlayerElement>
+    
 
     <Grid IsHitTestVisible="True"
           Background="Transparent"

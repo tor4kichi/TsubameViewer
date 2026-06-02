@@ -10,11 +10,13 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using System.Threading.Tasks;
 using TsubameViewer.ViewModels;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -57,6 +59,25 @@ public sealed partial class HistoryPage : Page, ITitlebarContentAware
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
+        {
+            var itemVM = _vm.RecentlyItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
+            if (itemVM != null)
+            {
+                var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
+                if (image.FindDescendant<Image>() is UIElement target)
+                {
+                    m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                    {
+                        return (UIElement?)target;
+                    }));
+                }
+                else
+                {
+                    m.Reply(Task.FromResult<UIElement?>(null));
+                }
+            }
+        });
         base.OnNavigatedTo(e);
     }
 

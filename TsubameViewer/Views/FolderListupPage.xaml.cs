@@ -70,7 +70,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (itemVM != null)
             {
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-                if (image is UIElement target)
+                if (image.FindDescendant<Image>() is UIElement target)
                 {
                     m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
@@ -105,8 +105,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
         }
     }
-
-
 
     private readonly FolderListupPageViewModel _vm;
     private readonly IMessenger _messenger;
