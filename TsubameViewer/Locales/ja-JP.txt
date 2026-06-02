@@ -10,6 +10,7 @@ Open = 開く
 Close = 閉じる
 Confirm = 決定
 Refresh = 更新
+NoItems = 表示可能なアイテムはありません
 
 ApplicationTheme = テーマ
 ApplicationTheme.Default = システム設定に従う
@@ -173,6 +174,14 @@ SetThumbnailImage = サムネイル画像に設定
 
 ArchiveOrFolderTransform = 変換
 TitleDigitCompletionTransform = タイトルの桁数補完
+
+
+#### History Page
+HistoryPage_Title = 履歴
+HistoryPage_RemoveAll = 履歴をすべて削除
+
+
+
 
 
 #### ImageListupPage

@@ -10,6 +10,7 @@ Open = Ouvrir
 Close = Fermer
 Confirm = Confirmer
 Refresh = Rafraîchir
+NoItems = Aucun article n'est disponible pour affichage.
 
 ApplicationTheme = Thème
 ApplicationTheme.Default = Suivre les paramètres systèmes
@@ -173,6 +174,14 @@ SetThumbnailImage = Définir en tant que miniature
 
 ArchiveOrFolderTransform = Conversion
 TitleDigitCompletionTransform = Complétion des chiffres du titre
+
+
+#### History Page
+HistoryPage_Title = histoire
+HistoryPage_RemoveAll = Supprimer tout l'historique
+
+
+
 
 
 #### ImageListupPage

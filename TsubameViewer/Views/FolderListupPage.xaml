@@ -320,6 +320,16 @@
         SelectionChanged="OnSelectionChanged"
         >
 
+        <GridView.Header>
+          <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
+                Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
+            <TextBlock Text="{i18nExt:Localize Key=NoItems}"
+                       Style="{StaticResource SubtitleTextBlockStyle}"
+                       Opacity="0.5"
+                       HorizontalAlignment="Center"
+                       Margin="32" />
+          </Grid>
+        </GridView.Header>
         <GridView.ItemContainerTransitions>
           <TransitionCollection />
         </GridView.ItemContainerTransitions>

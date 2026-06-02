@@ -226,8 +226,6 @@ public sealed partial class ImageListupPageViewModel
 
     public string FoldersManagementPageName => AppShell.HomePageName;
     
-    IDisposable _navigationDisposables;
-
     public ImageListupPageViewModel(
         IMessenger messenger,
         LocalBookmarkRepository bookmarkManager,
@@ -332,11 +330,6 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<InPageSearchRequestMessage>(this);
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
 
-        _navigationCts?.Cancel();
-        _navigationCts = null;
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
-
         foreach (var itemVM in ImageFileItems.Reverse())
         {
             itemVM.StopImageLoading();
@@ -371,10 +364,8 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
-    CancellationToken _navigationCt;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
-        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
         NowProcessing = true;
         try
@@ -464,7 +455,7 @@ public sealed partial class ImageListupPageViewModel
                 .Subscribe(_ => FileItemsView.RefreshFilter())
                 .AddTo(ref db);
 
-            _navigationDisposables = db.Build();
+            db.Build().RegisterTo(ct);
         }
         catch
         {
@@ -475,7 +466,6 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
             throw;
         }
-
 
         await base.OnNavigatedToAsync(parameters, ct);
     }

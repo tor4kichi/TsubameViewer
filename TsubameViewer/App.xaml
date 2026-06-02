@@ -177,6 +177,12 @@
       <myConv:UriHumanReadableConverter x:Key="UriHumanReadableConverter" />
       <myConv:DoubleToPercentTextConverter x:Key="DoubleToPercentTextConverter" />
       <myConv:TimeSpanToSimpleTextConverter x:Key="TimeSpanToSimpleTextConverter" />
+      <myConv:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter" />
+      <myConv:NotZeroToVisibleConverter x:Key="NotZeroToVisibleConverter" />
+      <myConv:ZeroToOpacity1Converter x:Key="ZeroToOpacity1Converter" />
+      <myConv:NotZeroToOpacity1Converter x:Key="NotZeroToOpacity1Converter" />
+      <myConv:ZeroToTrueConverter x:Key="ZeroToTrueConverter" />
+      <myConv:NotZeroToTrueConverter x:Key="NotZeroToTrueConverter" />
 
       <uwpConv:EmptyObjectToObjectConverter x:Key="NotNullToTrueConverter">
         <uwpConv:EmptyObjectToObjectConverter.NotEmptyValue>

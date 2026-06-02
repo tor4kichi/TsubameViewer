@@ -10,6 +10,7 @@ Open = 打开
 Close = 关闭
 Confirm = 确定
 Refresh = 更新
+NoItems = 暂无商品可供展示。
 
 ApplicationTheme = 主题
 ApplicationTheme.Default = 遵循系统设置
@@ -173,6 +174,14 @@ SetThumbnailImage = 设置为缩略图
 
 ArchiveOrFolderTransform = 转换
 TitleDigitCompletionTransform = 标题数字完成
+
+
+#### History Page
+HistoryPage_Title = 历史
+HistoryPage_RemoveAll = 删除所有历史记录
+
+
+
 
 
 #### ImageListupPage

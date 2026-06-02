@@ -156,6 +156,7 @@ sealed partial class App : Application
         container.Register<SearchResultPage>();
         container.Register<AlbamListupPage>();
         container.Register<FolderOrArchiveRestructurePage>();
+        container.Register<HistoryPage>();
     }
 
     private void RegisterTypes(Container container)

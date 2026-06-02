@@ -10,15 +10,11 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
-using System.Threading.Tasks;
-using TsubameViewer.Core.Models;
-using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.ViewModels;
-using TsubameViewer.ViewModels.PageNavigation;
+using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -30,7 +26,7 @@ using Windows.UI.Xaml.Navigation;
 #nullable enable
 namespace TsubameViewer.Views;
 
-public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
+public sealed partial class HistoryPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
     {
@@ -39,50 +35,59 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
 
     public R3.Observable<string> ObserveTitleChanged()
     {
-        return Observable.Return(nameof(TsubameViewer));
+        return R3.Observable.Return("HistoryPage_Title".Translate());
     }
 
-    public SourceStorageItemsPage()
+    private readonly HistoryPageViewModel _vm;
+    private readonly IMessenger _messenger;
+    private readonly FocusHelper _focusHelper;
+
+    public HistoryPage()
     {
         this.InitializeComponent();
 
-        this.FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging1;
-        DataContext = _vm = Ioc.Default.GetRequiredService<SourceStorageItemsPageViewModel>();
-        _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
+        DataContext = _vm = Ioc.Default.GetRequiredService<HistoryPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
+        _focusHelper = Ioc.Default.GetRequiredService<FocusHelper>();
+
+        FoldersAdaptiveGridView.ContainerContentChanging += FoldersAdaptiveGridView_ContainerContentChanging;
     }
 
-    private readonly SourceStorageItemsPageViewModel _vm;
-    private readonly FocusHelper _focusHelper;
-    private readonly IMessenger _messenger;
+    CancellationToken _navigationCt;
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        _navigationCt = this.GetCancellationTokenOnNavigatingFrom();
+        base.OnNavigatedTo(e);
+    }
 
-    private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    bool _isFirstItem;
+    private void FoldersAdaptiveGridView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is IStorageItemViewModel itemVM)
         {
-            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCts.IsCancellationRequested is false)
+            if (itemVM.IsSourceStorageItem is false && itemVM.Name != null && _navigationCt.IsCancellationRequested is false)
             {
                 var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
                 if (size.Y == 0)
                 {
                     size = new Vector2(120, 200);
                 }
-                ToolTipService.SetToolTip(args.ItemContainer, 
-                    new ToolTip() 
-                    { 
-                        Content = new TextBlock() 
-                        { 
-                            Text = itemVM.Name, 
-                            TextWrapping = TextWrapping.Wrap 
+                ToolTipService.SetToolTip(args.ItemContainer,
+                    new ToolTip()
+                    {
+                        Content = new TextBlock()
+                        {
+                            Text = itemVM.Name,
+                            TextWrapping = TextWrapping.Wrap
                         },
                         PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                        Placement = PlacementMode.Bottom 
+                        Placement = PlacementMode.Bottom
                     });
             }
 
-            itemVM.InitializeAsync(_ct);
+            itemVM.InitializeAsync(_navigationCt);
 
-            if (_isFirstItem )
+            if (_isFirstItem)
             {
                 _isFirstItem = false;
                 if (_focusHelper.IsRequireSetFocus() && itemVM.Type is not Core.Models.StorageItemTypes.AddFolder)
@@ -92,35 +97,6 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
             }
         }
     }
-
-    CancellationTokenSource _navigationCts;
-    CancellationToken _ct;
-    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
-    {
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
-
-        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
-        base.OnNavigatingFrom(e);
-    }
-
-    bool _isFirstItem = false;
-
-    protected override void OnNavigatedTo(NavigationEventArgs e)
-    {
-        base.OnNavigatedTo(e);
-
-        _navigationCts = new CancellationTokenSource();
-        _ct = _navigationCts.Token;
-        _isFirstItem = true;
-
-        _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
-        {
-            var itemVM = _vm.Folders.FirstOrDefault(x => x.Path.Equals(m.Value, StringComparison.Ordinal));
-            itemVM?.UpdateLastReadPosition();
-        });
-    }
-
 
 
     #region Search Box
@@ -187,26 +163,26 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     InPageSearchRequestMessage? _searchMessage;
     private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
-        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        //if (!sender.Items.Any())
-        //{
-        //    sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
-        //}
-        //sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        if (!sender.Items.Any())
+        {
+            sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
+        }
+        sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
     }
 
     private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
-        //_searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
     private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
-        //_messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));
-        _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
+        _messenger.Send(new InPageSearchRequestMessage(sender.Text));
+        _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));
     }
 
 
     #endregion
+
 }

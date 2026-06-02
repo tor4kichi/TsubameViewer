@@ -10,6 +10,7 @@ Open = Open
 Close = Close
 Confirm = Confirm
 Refresh = Refresh
+NoItems = No items are available to display.
 
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
@@ -173,6 +174,14 @@ SetThumbnailImage = Set as thumbnail image
 
 ArchiveOrFolderTransform = conversion
 TitleDigitCompletionTransform = Title digit completion
+
+
+#### History Page
+HistoryPage_Title = history
+HistoryPage_RemoveAll = Delete all history
+
+
+
 
 
 #### ImageListupPage

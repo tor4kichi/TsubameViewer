@@ -171,6 +171,7 @@
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\IfImageSourceNotExistSendMessage.cs" />
+    <Compile Include="Views\Converters\ZeroToVisibleConverter.cs" />
     <Compile Include="Views\EBookViewerPageViewModel.cs" />
     <Compile Include="Views\Behaviors\ManipulationBehavior.cs" />
     <Compile Include="Views\Behaviors\SwipeDistanceBehavior.cs" />
@@ -182,6 +183,10 @@
     </Compile>
     <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
+    <Compile Include="Views\HistoryPage.xaml.cs">
+      <DependentUpon>HistoryPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\HistoryPageViewModel.cs" />
     <Compile Include="Views\ImageListupPageViewModel.cs" />
     <Compile Include="ViewModels\ImageSourceCommandBase.cs" />
     <Compile Include="Views\ImageViewerPageViewModel.cs" />
@@ -530,6 +535,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Views\FolderOrArchiveRestructurePage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\HistoryPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -82,6 +82,7 @@ public sealed class AppShellViewModel
         HeaderMenuItems = [
             new MenuItemViewModel() { PageType = nameof(Views.SourceStorageItemsPage), Title = "Folders".Translate(), AccessKey = "1", KeyboardAceseralator = VirtualKey.Number1 },
             new MenuItemViewModel() { PageType = nameof(Views.AlbamListupPage), Title = "Albam".Translate(), AccessKey = "2", KeyboardAceseralator = VirtualKey.Number2 },
+            new MenuItemViewModel() { PageType = nameof(Views.HistoryPage), Title = "HistoryPage_Title".Translate(), AccessKey = "3", KeyboardAceseralator = VirtualKey.Number3 },
         ];
         MenuItems = [];
         RefreshFolderSubItems();    

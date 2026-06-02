@@ -54,6 +54,8 @@ public sealed class RecentlyAccessRepository
         _recentlyAccessRepository.MaintenanceRecordLimit(MaxRecordCount);
     }
 
+    public void DeleteAll() { _recentlyAccessRepository.DeleteAll(); }
+
     public sealed class RecentlyAccessRepository_Internal : LiteDBServiceBase<RecentlyAccessEntry>
     {
         public RecentlyAccessRepository_Internal(ILiteDatabase liteDatabase) : base(liteDatabase)
@@ -109,6 +111,11 @@ public sealed class RecentlyAccessRepository
         public void DeleteAllUnderPath(string path)
         {
             _collection.DeleteMany(x => path.StartsWith(x.Path));
+        }
+
+        public void DeleteAll()
+        {
+            _collection.DeleteAll();
         }
     }
 
