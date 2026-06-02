@@ -31,6 +31,7 @@ using TsubameViewer.Views;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.System;
+using ZLinq;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
 
 
@@ -42,6 +43,7 @@ public sealed class AppShellViewModel
     , IRecipient<SourceStorageItemRemovedMessage>
     , IRecipient<SourceStorageItemMovedOrRenameMessage>
     , IRecipient<SourceStorageItemIgnoringRequestMessage>
+    , IRecipient<SourceStorageItemReorderedMessage>
 {
     private readonly IScheduler _scheduler;
     private readonly IMessenger _messenger;
@@ -114,6 +116,11 @@ public sealed class AppShellViewModel
         RefreshFolderSubItems();
     }
 
+    void IRecipient<SourceStorageItemReorderedMessage>.Receive(SourceStorageItemReorderedMessage message)
+    {
+        RefreshFolderSubItems();
+    }
+
 
     public void RefreshFolderSubItems()
     {
@@ -123,13 +130,13 @@ public sealed class AppShellViewModel
             MenuItems.Add(headerItem);
         }
 
-        foreach (var folderPath in SourceStorageItemsRepository.GetParsistantItemsFromCache())
+        foreach (var entry in SourceStorageItemsRepository.GetParsistantItemsFromCache().AsValueEnumerable().OrderBy(x => x.Order))
         {
             MenuItems.Add(new MenuItemViewModel()
             {
                 PageType = nameof(Views.FolderListupPage),
-                Parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(folderPath))),
-                Title = Path.GetFileName(folderPath),
+                Parameters = new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(entry.Path))),
+                Title = Path.GetFileName(entry.Path),
             }); ;
         }
     }

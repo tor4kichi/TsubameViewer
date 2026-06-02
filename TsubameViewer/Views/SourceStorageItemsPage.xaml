@@ -89,6 +89,9 @@
       IsSynchronizedWithCurrentItem="False"
       SelectionMode="None"
       ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
+      AllowDrop="True"
+      ReorderMode="Enabled"
+      CanReorderItems="True"
       >
       
       <!-- 表示がチラつくのでGridViewItemのアニメーションを無効にしている -->
