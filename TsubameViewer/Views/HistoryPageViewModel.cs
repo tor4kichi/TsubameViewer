@@ -20,6 +20,7 @@ using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Views;
+using ZLinq;
 
 namespace TsubameViewer.ViewModels;
 
@@ -90,6 +91,7 @@ public sealed partial class HistoryPageViewModel
 
         try
         {
+            using var deferRefresh = FilteredItems.DeferRefresh();
             NowProcessing = true;
 
             var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(100);
