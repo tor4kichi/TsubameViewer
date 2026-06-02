@@ -369,6 +369,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
         textBox.TextChanged += TextBox_TextChanged;
         _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        
+        _isItemsForceInfoLoaded = false;
     }
 
 
@@ -420,7 +422,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         //(args.Element as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
-
+    bool _isItemsForceInfoLoaded;
     InPageSearchRequestMessage? _searchMessage;
     private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -430,6 +432,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
         }
         sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+
+        if (_isItemsForceInfoLoaded is false)
+        {
+            Debug.WriteLine("強制読み込み EnsureStorageItemAsync");
+            _isItemsForceInfoLoaded = true;
+            foreach (var itemVM in _vm.FolderItems)
+            {
+                _ = (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct);
+            }
+        }
     }
 
     private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
