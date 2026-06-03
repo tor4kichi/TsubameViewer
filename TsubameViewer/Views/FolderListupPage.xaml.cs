@@ -70,7 +70,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (itemVM != null)
             {
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-                if (image.FindDescendant<Image>() is UIElement target)
+                if (image.FindDescendant("ImageControl") is UIElement target)
                 {
                     m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {

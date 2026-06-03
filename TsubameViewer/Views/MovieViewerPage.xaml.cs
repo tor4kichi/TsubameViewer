@@ -170,9 +170,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         MediaPlayer.Pause();
-        if (_vm.MovieFile?.Path is { } itemPath)
+
+        bool isRotate = _vm.PageSettings.IsPlayerRotateEnabled && MediaPlayer.PlaybackSession.PlaybackRotation is MediaRotation.Clockwise90Degrees or MediaRotation.Clockwise270Degrees;
+        bool isStretchAsFill = MyMediaPlayerElement.Stretch is Stretch.Fill or Stretch.UniformToFill;
+        if (_vm.MovieFile?.Path is { } itemPath
+            && !isRotate
+            && !isStretchAsFill)
         {
-            var imageContainer = MyMediaPlayerElement;
+            var imageContainer = PlayerContainer;
+            RefreshPlayerContainerSize(MediaPlayer, PlayerContainer, PageRoot);
             var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();            
             var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
             try
@@ -195,7 +201,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mouseCursorAutoHideTimer = null;
         ShowMouseCursor();
         MediaPlayer.Source = null;
-
+        
         base.OnNavigatingFrom(e);
     }
 
@@ -210,6 +216,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _playbackResources?.Dispose();
         _playbackResources = null;
+
+        PlayerContainer.Width = double.NaN;
+        PlayerContainer.Height = double.NaN;
     }
 
     internal class DisplayRequestFacade : IDisposable
@@ -257,6 +266,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     IDisposable? _playbackResources;
     private void MovieViewerPage_Loaded(object sender, RoutedEventArgs e)
     {
+        PlayerContainer.Width = double.NaN;
+        PlayerContainer.Height = double.NaN;
+
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
@@ -575,6 +587,45 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Debug.WriteLine(args.ExtendedErrorCode.ToString());
     }
 
+    void RefreshPlayerContainerSizeWithCurrentState()
+    {
+        RefreshPlayerContainerSize(
+            MediaPlayer, 
+            PlayerContainer, 
+            PageRoot);
+    }
+
+    void RefreshPlayerContainerSize(MediaPlayer mediaPlayer, 
+        Grid container, 
+        Grid pageRoot)
+    {
+        // 1. 動画の本来の解像度（幅と高さ）を取得
+        double videoWidth = mediaPlayer.PlaybackSession.NaturalVideoWidth;
+        double videoHeight = mediaPlayer.PlaybackSession.NaturalVideoHeight;
+
+        if (videoWidth == 0 || videoHeight == 0) return;
+
+        // 2. アプリ側の表示領域（最大で広げられるサイズ）の基準を決める
+        // 例として、現在のウィンドウサイズ（または親コンテナのサイズ）を取得
+        double maxAllowedWidth = pageRoot.ActualWidth;
+        double maxAllowedHeight = pageRoot.ActualHeight;
+
+        // 3. アスペクト比を維持したまま、最大のサイズを計算
+        double aspectRatio = videoWidth / videoHeight;
+        double targetWidth = maxAllowedWidth;
+        double targetHeight = maxAllowedWidth / aspectRatio;
+
+        if (targetHeight > maxAllowedHeight)
+        {
+            targetHeight = maxAllowedHeight;
+            targetWidth = maxAllowedHeight * aspectRatio;
+        }
+
+        // 4. 親コンテナ（またはプレイヤー自体）のサイズをジャストサイズに変更
+        container.Width = targetWidth;
+        container.Height = targetHeight;
+    }
+
     [RelayCommand]
     void ExitPlayer()
     {
@@ -664,6 +715,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this, appView ), (args, s) => 
             {                
                 s.Item1.NowFullScreenMode = s.appView.IsFullScreenMode;
+            })
+            .AddTo(ref db);
+        observeWindowActivate
+            .ThrottleFirstLastFrame(1)
+            .Subscribe(this, static (e, s) => 
+            {
+                s.RefreshPlayerContainerSizeWithCurrentState(); 
             })
             .AddTo(ref db);
 

@@ -428,19 +428,21 @@
         </Button.KeyboardAccelerators>
       </Button>
     </Grid>
-    
-    <MediaPlayerElement AutoPlay="False"
-                        Stretch="Uniform"
-                        x:Name="MyMediaPlayerElement"
-                        RenderTransformOrigin="0.5, 0.5">
-      <UIElement.RenderTransform>
-        <TransformGroup>
-          <TranslateTransform x:Name="PlayerTransform" />
 
-          <ScaleTransform x:Name="MirrorScaleTransform" />
-        </TransformGroup>
-      </UIElement.RenderTransform>
-    </MediaPlayerElement>
+    <Grid x:Name="PlayerContainer" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <MediaPlayerElement AutoPlay="False"
+                          Stretch="Uniform"
+                          x:Name="MyMediaPlayerElement"
+                          RenderTransformOrigin="0.5, 0.5">
+        <UIElement.RenderTransform>
+          <TransformGroup>
+            <TranslateTransform x:Name="PlayerTransform" />
+
+            <ScaleTransform x:Name="MirrorScaleTransform" />
+          </TransformGroup>
+        </UIElement.RenderTransform>
+      </MediaPlayerElement>
+    </Grid>
     
 
     <Grid IsHitTestVisible="True"
