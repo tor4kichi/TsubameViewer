@@ -184,7 +184,7 @@
       <DependentUpon>EmptyPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Views\FolderListupPageViewModel.cs" />
-    <Compile Include="ViewModels\FolderOrArchiveRestructurePageViewModel.cs" />
+    <Compile Include="Views\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="Views\HistoryPage.xaml.cs">
       <DependentUpon>HistoryPage.xaml</DependentUpon>
     </Compile>
