@@ -268,7 +268,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
-
+        PlayerContainer.Opacity = 0.0001;　// FFmpeg利用時にゼロ位置の映像フレームが表示されないように
         MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged += PlaybackSession_NaturalDurationChanged;        
         MediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
@@ -462,11 +462,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
                         _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
 
+                        // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
+                        if (_this.NowPlayingWithFFmpegMediaSource)
+                        {
+                            await Task.Delay(200);
+                        }
                         if (_this._nowRequestPlayStart)
                         {
                             _this._nowRequestPlayStart = false;
                             _this.MediaPlayer.Play();
                         }
+
+                        // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
+                        _this.PlayerContainer.Opacity = 1;
                     });
             })
             .AddTo(ref db);
