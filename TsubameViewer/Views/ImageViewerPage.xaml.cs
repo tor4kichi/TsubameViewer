@@ -216,25 +216,29 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         if (!_vm.NowDoubleImageView
             && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
         {
+            var imageContainer = _vm.CurrentDisplayImageIndex switch
+            {
+                0 => ImageItemsControl_0,
+                1 => ImageItemsControl_1,
+                2 => ImageItemsControl_2,
+                _ => throw new InvalidOperationException(),
+            };
+            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+            var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
             try
             {
                 var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
                 if (res is { } target)
                 {
-                    var imageContainer = _vm.CurrentDisplayImageIndex switch
-                    {
-                        0 => ImageItemsControl_0,
-                        1 => ImageItemsControl_1,
-                        2 => ImageItemsControl_2,
-                        _ => throw new InvalidOperationException(),
-                    };
-                    var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-                    var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
                     anim.Configuration = new DirectConnectedAnimationConfiguration();
                     anim.TryStart(target);
                 }
+                else { anim.Cancel(); }
             }
-            catch { }
+            catch 
+            {
+                anim.Cancel();
+            }
         }
 
         base.OnNavigatingFrom(e);

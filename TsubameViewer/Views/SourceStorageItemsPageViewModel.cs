@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using I18NPortable;
+using R3;
 using Reactive.Bindings;
 using System;
 using System.Collections.Generic;
@@ -24,15 +25,16 @@ using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
+using TsubameViewer.Views;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Navigation;
+using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
 public sealed class SourceStorageItemsPageViewModel 
     : NavigationAwareViewModelBase
-    , IDisposable
     , IRecipient<RemoveSourceStorageItemFromAppMessage>
     , IRecipient<ThumbnailImageUpdateRequestMessage>
 {
@@ -44,11 +46,9 @@ public sealed class SourceStorageItemsPageViewModel
         }
     }
 
-
-
     public void Receive(ThumbnailImageUpdateRequestMessage message)
     {
-        foreach (var item in RecentlyItems)
+        foreach (var item in Folders)
         {
             if (item.Path.Equals(message.Value, StringComparison.Ordinal))
             {
@@ -60,7 +60,6 @@ public sealed class SourceStorageItemsPageViewModel
     }
 
     public ObservableCollection<StorageItemViewModel> Folders { get; }
-    public ObservableCollection<StorageItemViewModel> RecentlyItems { get; }
 
     private readonly LocalBookmarkRepository _bookmarkManager;
     private readonly AlbamRepository _albamRepository;
@@ -81,9 +80,7 @@ public sealed class SourceStorageItemsPageViewModel
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
     public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-
-    public SourceItemsGroup[] Groups { get; }
-
+   
     bool _foldersInitialized = false;
     public SourceStorageItemsPageViewModel(
         IScheduler scheduler,
@@ -108,7 +105,6 @@ public sealed class SourceStorageItemsPageViewModel
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
-        RecentlyItems = new ObservableCollection<StorageItemViewModel>();
         OpenFolderItemCommand = openFolderItemCommand;
         OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
         SourceChoiceCommand = sourceChoiceCommand;
@@ -128,25 +124,77 @@ public sealed class SourceStorageItemsPageViewModel
         _scheduler = scheduler;
         _messenger = messenger;
 
-        Groups = new[]
+        _comparison = (x, y) =>
         {
-            new SourceItemsGroup
-            {
-                GroupId = "Folders",
-                Items = Folders,
-            },
-            new SourceItemsGroup
-            {
-                GroupId = "RecentlyUsedFiles",
-                Items = RecentlyItems,
-            },
+            return _sourceStorageItemsRepository.GetOrderFromPath(x.Path).CompareTo(_sourceStorageItemsRepository.GetOrderFromPath(y.Path));
         };
 
-        RegisterSourceStorageItemChange();
+        _messenger.Register<RemoveSourceStorageItemFromAppMessage>(this);
+        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Register<SourceStorageItemsRepository.SourceStorageItemAddedMessage>(this, (r, m) =>
+        {
+            var args = m.Value;
+            RemoveItem(args.StorageItem.Path);
+
+            var storageItemImageSource = new StorageItemImageSource(args.StorageItem);
+            if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
+            {
+                // 追加用ボタンの次に配置するための 1
+                Folders.InsertSorted( new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository), _comparison);
+            }
+            else
+            {
+                //                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
+            }
+        });
+
+        _messenger.Register<AccessRemovedValueChangedMessage>(this, (r, m) =>
+        {
+            _scheduler.Schedule(() =>
+            {
+                RemoveItem(m.Value);
+            });
+        });
+        _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) =>
+        {
+            _scheduler.Schedule(() =>
+            {
+                RemoveItem(m.Path);
+            });
+        });
+
+        _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>
+        {
+            _scheduler.Schedule(() =>
+            {
+                RemoveItem(m.Value.Path);
+            });
+        });
     }
 
+    Comparison<StorageItemViewModel> _comparison;
+    public override void OnNavigatedFrom(INavigationParameters parameters)
+    {
+        //_messenger.Unregister<RemoveSourceStorageItemFromAppMessage>(this);
+        //_messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+        //_messenger.Unregister<SourceStorageItemsRepository.SourceStorageItemAddedMessage>(this);
+        //_messenger.Unregister<AccessRemovedValueChangedMessage>(this);
+        //_messenger.Unregister<SourceStorageItemIgnoringRequestMessage>(this);
+        //_messenger.Unregister<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this);
+        foreach (var itemVM in Folders)
+        {
+            itemVM.StopImageLoading();
+        }
 
-    CancellationToken _navigationCt;
+        if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
+        {
+            var (path, pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
+            _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);
+        }
+
+        base.OnNavigatedFrom(parameters);
+    }
+
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         var mode = parameters.GetNavigationMode();
@@ -158,7 +206,6 @@ public sealed class SourceStorageItemsPageViewModel
         if (!_foldersInitialized)
         {
             _foldersInitialized = true;
-
             Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
             try
             {
@@ -169,10 +216,12 @@ public sealed class SourceStorageItemsPageViewModel
                         continue;
                     }
 
+                    int order = _sourceStorageItemsRepository.GetOrderFromPath(item.item.Path);
+                    
                     var storageItemImageSource = new StorageItemImageSource(item.item);
                     if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
                     {
-                        Folders.Add(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
+                        Folders.InsertSorted(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository), _comparison);
                     }
                     else
                     {
@@ -196,143 +245,27 @@ public sealed class SourceStorageItemsPageViewModel
                 if (folderItem.Name == lastIntaractItemPath)
                 {
                     folderItem.ThumbnailChanged();
-                    folderItem.InitializeAsync(ct);
+                    _ = folderItem.InitializeAsync(ct);
                 }
             }
 
             ct.ThrowIfCancellationRequested();
         }
 
-        async Task<StorageItemViewModel> ToStorageItemViewModel((string Path, DateTimeOffset LastAccessTime) entry)
-        {
-            var storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(entry.Path);
-            if (storageItem == null) { throw new FileNotFoundException(entry.Path); }
-
-            var storageItemImageSource = new StorageItemImageSource(storageItem);
-            return new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository);
-        }
-
-        var recentlyAccessItems = _recentlyAccessRepository.GetItemsSortWithRecently(15);
-        if (recentlyAccessItems.Select(x => x.Path).SequenceEqual(RecentlyItems.Select(x => x.Path)) is false)
-        {
-            foreach (var itemVM in RecentlyItems)
+        // 並べ替えを保存する
+        Folders.ToCollectionChanged()
+            .ToObservable()
+            .Debounce(TimeSpan.FromMilliseconds(50))
+            .Subscribe(Folders, (_, s) => 
             {
-                itemVM.Dispose();
-            }
+                _sourceStorageItemsRepository.UpdateOrder(s.Skip(1).Select(x => x.Path));
+                Debug.WriteLine("Source Folders order saved!");
+                _messenger.Send<SourceStorageItemReorderedMessage>();
+            })
+            .RegisterTo(ct);
 
-            RecentlyItems.Clear();
-            foreach (var item in recentlyAccessItems)
-            {
-                try
-                {
-                    var itemVM = await ToStorageItemViewModel(item);
-                    RecentlyItems.Add(itemVM);
-                }
-                catch
-                {
-                    _recentlyAccessRepository.Delete(item.Path);
-                }
-
-                ct.ThrowIfCancellationRequested();
-            }
-
-            _LastUpdatedRecentlyAccessEnties = recentlyAccessItems;
-        }
-        else
-        {
-            var lastIntaractItemPath = _folderLastIntractItemManager.GetLastIntractItemName(nameof(SourceStorageItemsPageViewModel));
-            foreach (var item in RecentlyItems)
-            {
-                if (item.Name == lastIntaractItemPath)
-                {
-                    item.ThumbnailChanged();
-                    _ = item.InitializeAsync(ct);
-                }
-            }
-        }
-
-        _messenger.Register<RemoveSourceStorageItemFromAppMessage>(this);
-        _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
-
+        
         await base.OnNavigatedToAsync(parameters, ct);
-    }
-
-
-
-
-    List<(string Path, DateTimeOffset LastAccessTime)> _LastUpdatedRecentlyAccessEnties;
-
-    public override void OnNavigatedFrom(INavigationParameters parameters)
-    {
-        _messenger.Unregister<RemoveSourceStorageItemFromAppMessage>(this);
-        _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
-
-        foreach (var itemVM in Enumerable.Concat(Folders, RecentlyItems))
-        {
-            itemVM.StopImageLoading();
-        }
-
-        if (parameters.TryGetValue(PageNavigationConstants.GeneralPathKey, out string q))
-        {
-            var (path, pageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(q));
-            _folderLastIntractItemManager.SetLastIntractItemName(nameof(SourceStorageItemsPageViewModel), path);
-        }
-
-        base.OnNavigatedFrom(parameters);
-    }
-
-    public void Dispose()
-    {
-        UnregisterSourceStorageItemChange();
-    }
-
-    void UnregisterSourceStorageItemChange()
-    {
-        _messenger.UnregisterAll(this);
-    }
-
-
-    void RegisterSourceStorageItemChange()
-    {
-        _messenger.Register<SourceStorageItemsRepository.SourceStorageItemAddedMessage>(this, (r, m) =>
-        {
-            var args = m.Value;
-            RemoveItem(args.StorageItem.Path);
-
-            var storageItemImageSource = new StorageItemImageSource(args.StorageItem);
-            if (m.Value.ListType is SourceStorageItemsRepository.TokenListType.FutureAccessList)
-            {
-                // 追加用ボタンの次に配置するための 1
-                Folders.Insert(1, new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository));
-            }
-            else
-            {
-//                    RecentlyItems.Insert(0, new StorageItemViewModel(storageItemImageSource, _sourceStorageItemsRepository, _folderListingSettings, _bookmarkManager));
-            }                
-        });
-
-        _messenger.Register<AccessRemovedValueChangedMessage>(this, (r, m) => 
-        {
-            _scheduler.Schedule(() =>
-            {
-                RemoveItem(m.Value);
-            });
-        });
-        _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this, (r, m) => 
-        {
-            _scheduler.Schedule(() =>
-            {
-                RemoveItem(m.Path);
-            });
-        });
-
-        _messenger.Register<SourceStorageItemsRepository.SourceStorageItemRemovedMessage>(this, (r, m) =>
-        {
-            _scheduler.Schedule(() => 
-            {
-                RemoveItem(m.Value.Path);
-            });
-        });
     }
 
     void RemoveItem(string path)
@@ -342,13 +275,6 @@ public sealed class SourceStorageItemsPageViewModel
         {
             existInFolders.Dispose();
             Folders.Remove(existInFolders);
-        }
-
-        var existInFiles = RecentlyItems.Where(x => x.Path == path).ToList();
-        foreach (var item in existInFiles)
-        {
-            item.Dispose();
-            RecentlyItems.Remove(item);
         }
     }
 }
@@ -363,6 +289,13 @@ public sealed class SourceItemsGroup
 public sealed class RemoveSourceStorageItemFromAppMessage : ValueChangedMessage<IStorageItemViewModel>
 {
     public RemoveSourceStorageItemFromAppMessage(IStorageItemViewModel value) : base(value)
+    {
+    }
+}
+
+public sealed class SourceStorageItemReorderedMessage : ValueChangedMessage<int>
+{
+    public SourceStorageItemReorderedMessage() : base(0)
     {
     }
 }

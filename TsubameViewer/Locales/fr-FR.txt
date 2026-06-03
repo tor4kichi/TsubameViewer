@@ -1,5 +1,4 @@
 ﻿#### General
-
 Copy = Copier
 CopyToClipboard = Copié dans le presse-papier
 Cancel = Annuler
@@ -10,7 +9,8 @@ Open = Ouvrir
 Close = Fermer
 Confirm = Confirmer
 Refresh = Rafraîchir
-
+NoItems = Aucun article n'est disponible pour affichage.
+Overwrite = Écraser
 ApplicationTheme = Thème
 ApplicationTheme.Default = Suivre les paramètres systèmes
 ApplicationTheme.Light = Thème clair
@@ -19,15 +19,12 @@ ApplicationTheme.Dark = Thème sombre
 
 #### Purchase Addon
 PurchaseAddon_ButtonTitle = Envoyez un pourboire au développeur
-
 PurchaseAddon_ShowPurchaseUI = Procéder à l'achat de l'écran
 PurchaseAddon_ShowPurchaseHistory = Consultez votre historique d'achats
 PurchaseAddon_PurchasedThanksMessage = Merci pour votre soutien !
 
 
-
 #### PrimaryWindowCoreLayout
-
 AddNewFolder = Ajouter un dossier
 Import = Importer
 RefreshLatest = Obtenir les dernières informations
@@ -43,14 +40,11 @@ OpenImageCodecExtensionStorePageWithFileType = {0} Une extension est nécessaire
 RefreshAfterCodecExtensionInstalled = Veuillez rafraîchir le contenu après avoir installé l'extension
 
 
-
 #### Notification
-
 FileDeleteFailed = Échec de la suppression de fichier \ n {0}
 FolderDeleteFailed = Échec de la suppression de dossier \ n {0}
 ThumbnailImageChanged = Changer la miniature
 Notification_SourceStorageItemNotFound = Le chemin spécifié a été désenregistré
-
 
 
 #### Dialog
@@ -76,22 +70,16 @@ OpenUpdateHistoryWithBrowser = Informations de mise à jour (ouvre dans le navig
 
 
 #### SettingsPage
-
 SettingsPageTitle = Paramètres
 AdvancedSettings = Paramètres avancés
-
 OverrideLocale = 🌏Langage
 RequireRestartApplicationToRefrectSettings = Redémarrer l'application pour appliquer les changements
-
 IsAppMenuShowWithLeft = Afficher le menu à gauche.
-
 IsFullScreenOnAppLaunch = Lancez l'application en mode plein écran.
-
 SourceFoldersSettings = Dossiers importés dans l'application
 RemoveSourceFolderFromApp = Supprimer de l'application
 ConfirmRemoveSourceFolderFromAppWithFolderName = Voulez-vous vraiment supprimer {0} de l'application ?
 ConfirmRemoveSourceFolderFromAppDescription = Cette opération ne supprime pas le dossier spécifié ou les éléments contenus à l'intérieur. \nLe dossier supprimer peut-être réinscrit dans l'application à n'importe quel moment.
-
 FolderItemListingSettings = Paramètres d'affichage des éléments de dossier
 IsOpenFolderContentListingAsDefault = Définissez « Ouvrir dans la liste des images » comme option par défaut.
 IsGenerateImageFileThumbnail = Générer les miniatures des images
@@ -101,27 +89,19 @@ IsGenerateArchiveEntryThumbnail = Générer les miniatures des éléments des fi
 DeleteThumbnailCache = Supprimer toutes les miniatures du cache
 ThumbnailCacheSize = Montant de mémoire occupé par les images dans le cache
 ProcessingThumbnailCache = Traitement de l'opération de suppression
-
-
-
 ImageViewerSettings = Paramètres de la visionneuse d'images
 IsReverseImageFliping_MouseWheel = Pagination à défilement inversée
 IsReverseImageFliping_Button = Inverser la page gauche et droite
 IsReversePageFliping_Swipe = Inverser le sens de défilement par glissement
-
 GeneralUISettings = Paramètres de fonctionnement
 IsForceEnableXYNavigation = Mise au point automatique du contenu lors de l'ouverture de la page\n (Touches directionnelles/Manette)
 ForceXboxAppearanceModeEnabled = Ajouter des marges autour des fenêtres (pour les grands écrans)
-
 OtherSettings = Autres paramètres
 ShowWithIndexedFolderItemAccess = Utiliser l'affichage rapide des éléments de dossier (fonctionnalité expérimentale)
-
 PrivacyPolicy = Politique de confidentialité
 ThirdPartyLibraryNotice = Affichage des licences de bibliothèques tierces
 AskQuestionWithMashmarrow = Envoyer un marshmallow (rapport de bug/question/suggestion)
-
 ImageCodecExtensions = Extensions des codecs d'image
-
 PdfImageSettings = Paramètres d'images PDF
 PdfImageThresholdWidth = Seuil de largeur alternative
 PdfImageAlternateWidth = Valeur de largeur alternative
@@ -129,50 +109,42 @@ PdfImageThresholdHeight = Seuil de hauteur alternatif
 PdfImageAlternateHeight = Valeur de hauteur alternative
 
 
-
 #### SourceStorageItemsPage
-
 Folders = Dossier
 RecentlyUsedFiles = Fichiers récemment consultés
-
 SelectSourceFolder = Ajouter un dossier dans TsubameViewer
 
 
 #### FolderListupPage
-
 ChangeViewToFolderListupPage = Affichage des dossiers
 ChangeViewToImageListupPage = Affichage des images
-
-
-
-
 FileSortTitle = Trier
 FileSortType.TitleAscending = Titre (Asc)
 FileSortType.TitleDecending = Titre (Desc)
 FileSortType.UpdateTimeAscending = Date d'ajout (Du plus vieux au plus récent)
 FileSortType.UpdateTimeDecending = Date d'ajout (Du plus récent au plus vieux)
-
 DefaultFolderOrArchiveOpenMode = Comportement d'ouverture de dossier par défaut
 DefaultFolderOrArchiveOpenMode.Viewer = Ouvrir dans le visualiseur
 DefaultFolderOrArchiveOpenMode.Listup = Ouvrir en mode liste
-
 Sort_InheritancePath = Tri des sources d'héritage
 Sort_Unselected = Non spécifier
 Sort_DefaultChildItemSort = Trier les images dans les dossiers enfants
-
-
 OpenImageViewer = Ouvrir dans le visualiseur
 OpenFolderListup = Lister les fichiers
 OpenWithExplorer = Ouvrir dans l'explorateur de fichiers
 OpenWithExternalApplication = Ouvrir avec
-
 AddSecondaryTile = Épingler au menu de démarrage
 RemoveSecondaryTile = Désépingler du menu de démarrage
-
 SetThumbnailImage = Définir en tant que miniature
-
 ArchiveOrFolderTransform = Conversion
 TitleDigitCompletionTransform = Complétion des chiffres du titre
+SendToOtherFolder = Se déplacer...
+SendToOtherFolder_ConfirmOverwrite = Est-ce que je peux l'écraser ?
+SendToOtherFolder_MoveItem0to1 = {0} a été déplacé vers {1}.
+
+#### History Page
+HistoryPage_Title = histoire
+HistoryPage_RemoveAll = Supprimer tout l'historique
 
 
 #### ImageListupPage
@@ -182,33 +154,23 @@ StartMultiSelection = Sélection multiple
 
 
 #### ImageViewerPage
-
 CurrentFolder_InArchive = Dossier
 Page = Page
-
 IsEnablePrefetch = Pré-chargement des images
 IsEnableDoubleView = Affichage sur double page
 IsLeftBindingView = Afficher à gauche
-
 SwitchFullScreen = Passage en plein écran
 DoubleViewCorrectPaging = Corriger le désalignement des doubles pages
 IsKeepSingleViewOnFirstPage = Ne pas afficher la première page côte à côte avec une autre page
-
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = Si vous faites glisser le dossier vers l'application, tout sera affiché
-
 ImageViewer_ReachStartEnd_NotificationText = Nous avons dépassé le terminus.
 
 
-
-
-
 #### EBookReaderPage
-
 IsForceResetStylingInHeadElement = Effacer le style par la force
 IsReversePageFliping_Scroll = Pagination à défilement inversée
 IsReversePageFliping_Button = Inverser la page gauche et droite
-
-
+IsPrepareNextPageEnabled = Activer la lecture prédictive
 DefaultWithParameter = Par défaut : {0}
 FontSize = Taille de la police d'écriture
 LetterSpacing = Espacement des caractères
@@ -219,24 +181,20 @@ RubyFontFamily = Police phonétique
 EBookReader_ColumnCount = Nombre de colonnes
 EBookReader_MaxWidth = Largeur maximal d'une page
 EBookReader_MaxHeight = Hauteur maximal d'une page
-
 BackgroundColor = Couleur d'arrière-plan
 ChangeBackgroundColor = Changer la couleur d'arrière-plan
-
 ForegroundColor = Couleur du texte
 ChangeForegroundColor = Changer la couleur du texte
-
 OverrideWritingMode = Écriture horizontal/vertical
 WritingMode.Inherit = Ne changera pas
 WritingMode.Horizontal_TopToBottom = Écriture horizontale
 WritingMode.Vertical_RightToLeft = Écriture verticale (de droite à gauche) ⬅️
 WritingMode.Vertical_LeftToRight = Écriture verticale (de gauche à droite) ➡️
-
 ResetEBookSettings = Réinitialiser les paramètres
-
 DisplaySettings = Paramètres d'affichages
 Toc = Table des matières
 ReadingItemsTitle = déposer
+
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = Enregistrer l'image du cadre
@@ -246,17 +204,14 @@ Stretch.None = Taille originale
 Stretch.Fill = Remplissez-le en ignorant les proportions.
 Stretch.Uniform = Adapté aux dimensions de la fenêtre
 Stretch.UniformToFill = Remplissez-le tout en maintenant les proportions
-
 MovieViewer_IsHorizontalMirror = Retourner horizontalement
 MovieViewer_PlayerRotate = Rotation (dans le sens horaire)
 MediaRotation.None = Pas de rotation
 MediaRotation.Clockwise90Degrees = 90 degrés
 MediaRotation.Clockwise180Degrees = 180 degrés
 MediaRotation.Clockwise270Degrees = 270 degrés
-
 MovieViewer_SaveCurrentFrame_Saved = L'image vidéo a été enregistrée.
 MovieViewer_SeekNotSupported = La fonction de recherche n'est pas prise en charge dans cette vidéo.
-
 MovieViewer_SC = Guide des raccourcis clavier
 MovieViewer_DisplayShortcutKeysGuide = Afficher le guide des raccourcis clavier
 MovieViewer_SC_ExitPlayer = Fermer la visionneuse vidéo
@@ -276,11 +231,12 @@ MovieViewer_SC_SaveCurrentFrame = Enregistrer l'image actuelle
 MovieViewer_SC_SetPlaybackRateToPrev = Réduire la vitesse de lecture
 MovieViewer_SC_SetPlaybackRateToNext = Augmenter la vitesse de lecture
 MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
-
 MovieViewer_SoundVolume = Volume
+NowPlayingWithFFmpegMediaSource = Lecture avec FFmpeg
+IsFFmpegUseFirstToMediaSourceFactory = Prioriser la lecture à l'aide de FFmpeg.
+
 
 #### SearchResult
-
 SearchResultWith = Résultats de la recherche pour {0}
 SearchPlaceholder = Rechercher dans la page
 Search_FromAll = Recherche parmi tous les
@@ -288,30 +244,24 @@ Search_DisplayItemsCount = {0} éléments
 Search_FilteredDisplayItemsCount = Affichage de {0} éléments
 
 
-
 #### Albam
-
 Albam = Album
-
 CreateAlbam = Créer un album
 AlbamName_Placeholder = Entrer le nom d'un album
 AlbamName_Default = Nouvel album
 AlbamEdit = Éditer un album
 AlbamDelete = Supprimer un album
 AlbamDeleteConfirmDialogText = Voulez-vous vraiment supprimer l'album {0} ? (Cette opération est irréversible)
-
 EditAlbamImage = Sélectionner un album à ajouter
 ChoiceTargetAlbam = Sélectionner un album
 AlbamItemRemove = Supprimer de l'album
 AlbamItemAdd = Ajouter à l'album
-
 FavoriteAlbam = Favoris
 AddFavoriteImage = Ajouter aux favoris
 RemoveFavoriteImage = Retirer des favoris
 
 
 #### FolderOrArchiveResturcture
-
 FolderOrArchiveRestructure = Éditer la structure interne
 Output = Sortie
 Find = Rechercher
@@ -346,7 +296,6 @@ RestructurePage_UnavairableOverwriteFile = Le fichier actuel est en lecture seul
 
 
 #### SplitImageInput
-
 SplitImage = Segmentation d'images
 BookBindingDirection.Left = Reliure gauche
 BookBindingDirection.Right = Reliure droite

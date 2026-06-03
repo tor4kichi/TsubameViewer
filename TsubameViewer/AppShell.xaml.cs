@@ -311,10 +311,18 @@ public sealed partial class AppShell : UserControl
     
     private void PushShowingNotificationContent(object content)
     {
-        NotificationContentControl.Content = content;
+        if (content is string str)
+        {
+            NotificationTextBlock.Text = str;
+        }
+        else
+        {
+            NotificationContentControl.Content = content;
+        }
         _notificationAnimationBuilder.Start(NotificationContainer, () => 
         {
             NotificationContentControl.Content = null;
+            NotificationTextBlock.Text = "";
             ShowNextNotificationContent();
         });
     }
@@ -500,11 +508,14 @@ public sealed partial class AppShell : UserControl
             else
             {
                 frame.Visibility = Visibility.Collapsed;
-                SetTitleContentForPrimary(ContentFrame);
                 MyNavigationView.Visibility = Visibility.Visible;
                 if (ContentFrame.Content == null)
                 {
                     await _messenger.NavigateAsync(HomePageName);
+                }
+                else
+                {
+                    SetTitleContentForPrimary(ContentFrame);
                 }
             }
 
@@ -539,6 +550,9 @@ public sealed partial class AppShell : UserControl
             {
                 TitlebarContent.ContentTemplate = content;
                 TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+                TitlebarContent_Nallow.ContentTemplate = content;
+                TitlebarContent_Nallow.Content = (frame.Content as FrameworkElement)?.DataContext;
+
             }
 
             if (tbContent.ObserveTitleChanged() is { } observe)
@@ -556,6 +570,8 @@ public sealed partial class AppShell : UserControl
         {
             TitlebarContent.ContentTemplate = null;
             TitlebarContent.Content = null;
+            TitlebarContent_Nallow.ContentTemplate = null;
+            TitlebarContent_Nallow.Content = null;
         }
         Window.Current.SetTitleBar(TitlebarBG);
     }
@@ -1100,7 +1116,6 @@ public sealed partial class AppShell : UserControl
                 if (ViewerFrame.Content?.GetType() is { } viewerPageType
                     && IsOpenWithViewerPageType(viewerPageType))
                 {
-                    ViewerFrame.Visibility = Visibility.Collapsed;
                     var prevPage = ViewerFrame.Content as Page;
                     try
                     {
@@ -1515,10 +1530,10 @@ public sealed partial class AppShell : UserControl
 
     void InitializeSelection()
     {
-        _messenger.Register<MenuDisplayMessage>(this, (r, m) => 
-        {
-            MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
-        });
+        //_messenger.Register<MenuDisplayMessage>(this, (r, m) => 
+        //{
+        //    MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
+        //});
     }
 
 
@@ -1644,6 +1659,14 @@ public sealed partial class AppShell : UserControl
         }
     }
 
+    private void RefreshPageKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+        {
+            _vm.RefreshNavigationCommand.Execute(null);
+        }
+    }
+
     private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         try
@@ -1743,6 +1766,7 @@ public sealed partial class AppShell : UserControl
     }
 
     #endregion
+
 }
 
 

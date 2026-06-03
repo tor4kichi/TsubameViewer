@@ -68,6 +68,10 @@
 
         <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsForceResetStylingInHeadElement, Mode=TwoWay}"
                       Header="{i18nExt:Localize Key=IsForceResetStylingInHeadElement}" />
+
+        <ToggleSwitch IsOn="{x:Bind _vm.EBookReaderSettings.IsPrepareNextPageEnabled, Mode=TwoWay}"
+                      Header="{i18nExt:Localize Key=IsPrepareNextPageEnabled}" />
+
         <ComboBox ItemsSource="{x:Bind _vm.WritingModeItems}" SelectedItem="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=TwoWay}"
                   Header="{i18nExt:Localize Key=OverrideWritingMode}"
                   HorizontalAlignment="Stretch"
@@ -250,6 +254,8 @@
     <MenuFlyout x:Key="DesktopViewManagementFlyout">
       
     </MenuFlyout>
+
+    <local:FilePathToFileNameConverter x:Key="FilePathToFileNameConverter" />
   </Page.Resources>
 
   <Grid x:Name="RootGrid" Background="{x:Bind _vm.EBookReaderSettings.BackgroundColor, Mode=OneWay, Converter={StaticResource ColorToBrush}}">
@@ -320,9 +326,9 @@
             MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"            
             x:Name="EPubRendererContainer"
             >
-        <eBookControls:EPubRenderer x:Name="EPubRenderer"
-                                    PageHtml="{x:Bind _vm.PageHtml, Mode=OneWay}"
-                                    FirstApproachingPageIndex="{x:Bind _vm.InnerCurrentImageIndex, Mode=OneWay}"
+        <eBookControls:EPubRenderer x:Name="EPubRenderer_1"
+                                    PageHtml="{x:Bind _vm.SwapPages[0].PageHtml, Mode=OneWay}"
+                                    FirstApproachingPageIndex="{x:Bind _vm.FirstApproachingPageIndex, Mode=OneWay}"
                                     IsTapEnabled="False"
                                     IsHitTestVisible="False"
                                     IsAccessKeyScope="False"
@@ -336,6 +342,26 @@
                                     RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                     OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
                                     ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
+        </eBookControls:EPubRenderer>
+
+        <eBookControls:EPubRenderer x:Name="EPubRenderer_2"
+                                    Opacity="0"
+                                    PageHtml="{x:Bind _vm.SwapPages[1].PageHtml, Mode=OneWay}"
+                                    FirstApproachingPageIndex="{x:Bind _vm.SwapPages[1].InnerCurrentPageIndex, Mode=OneWay}"
+                                    IsTapEnabled="False"
+                                    IsHitTestVisible="False"
+                                    IsAccessKeyScope="False"
+                                    AllowFocusOnInteraction="False"
+                                    FontColor="{x:Bind _vm.EBookReaderSettings.ForegroundColor, Mode=OneWay}"
+                                    FontSize="{x:Bind _vm.EBookReaderSettings.RootFontSizeInPixel, Mode=OneWay}"
+                                    LetterSpacingInPixel="{x:Bind _vm.EBookReaderSettings.LetterSpacingInPixel, Mode=OneWay}"
+                                    LineHeightInNoUnit="{x:Bind _vm.EBookReaderSettings.LineHeightInNoUnit, Mode=OneWay}"
+                                    RubyFontSizeInPixel="{x:Bind _vm.EBookReaderSettings.RubySizeInPixel, Mode=OneWay}"
+                                    ContentsFontFamily="{x:Bind _vm.EBookReaderSettings.FontFamily, Mode=OneWay}"
+                                    RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
+                                    OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
+                                    ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
+          
         </eBookControls:EPubRenderer>
       </Grid>
     </Grid>
@@ -367,12 +393,17 @@
             HorizontalAlignment="Center"
             >
         <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{x:Bind _vm.CurrentPageInfo.TocItem.Label, Mode=OneWay}"
+                     Opacity="0.7"
+                     VerticalAlignment="Center"/>
           <TextBlock FontSize="14"  Opacity="0.7" MaxLines="1" TextTrimming="WordEllipsis" MaxWidth="420"
-                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}">
-            <Run Text="{x:Bind _vm.CurrentPageTitle, Mode=OneWay}" />
+                     ToolTipService.ToolTip="{x:Bind _vm.CurrentPageInfo.Title, Mode=OneWay}"
+                     VerticalAlignment="Center">
+            <Run Text="{x:Bind _vm.CurrentPageInfo.Title, Mode=OneWay}" />
           </TextBlock>
-          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center">
-           <Run Text="{x:Bind _vm.ToImageIndexStartWithOne(_vm.InnerCurrentImageIndex), Mode=OneWay}" />/<Run Text="{x:Bind _vm.InnerImageTotalCount, Mode=OneWay}" />
+          <TextBlock FontSize="14"  Opacity="0.7" HorizontalAlignment="Center" HorizontalTextAlignment="Center"
+                     VerticalAlignment="Center">
+           <Run Text="{x:Bind _vm.ToImageIndexStartWithOne(_vm.CurrentPageInfo.InnerCurrentPageIndex), Mode=OneWay}" />/<Run Text="{x:Bind _vm.CurrentPageInfo.InnerTotalPageCount, Mode=OneWay}" />
           </TextBlock>
         </StackPanel>
       </Grid>
@@ -459,25 +490,6 @@
       </Button>
     </Grid>
     
-    
-    <!-- デバッグ -->
-    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                Opacity="0.5"
-                x:Name="DebugPanel"
-                Visibility="Collapsed"
-                >
-    </StackPanel>
-    
-    <!-- 補助コントロールUI（コントローラーとタッチ操作） -->
-    <Grid x:Name="SwipeProcessScreen"
-          Background="Transparent"
-          IsHitTestVisible="True"
-          Visibility="Collapsed">
-      <Grid x:Name="AnimationUIContainer"
-            Background="{ThemeResource SystemAltMediumLowColor}"
-            Opacity="0" />
-    </Grid>
-
     <!-- 読了率表示 -->
     <winUI:ProgressBar Value="{x:Bind _vm.CurrentReadingItemPosition, Mode=OneWay}"
                        Minimum="0"
@@ -572,7 +584,9 @@
 
                 <i:Interaction.Behaviors>
                   <core:EventTriggerBehavior EventName="Tapped">
-                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer}"
+                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer_1}"
+                                           MethodName="PrepareTocSelectionChange" />
+                    <core:CallMethodAction TargetObject="{x:Bind EPubRenderer_2}"
                                            MethodName="PrepareTocSelectionChange" />
                     <core:CallMethodAction TargetObject="{Binding}"
                                            MethodName="UpdateFromCurrentTocItem" />
@@ -592,7 +606,7 @@
                 </ListView.Header>
                 <ListView.ItemTemplate>
                   <DataTemplate x:DataType="epub:EpubLocalTextContentFileRef">
-                    <TextBlock Text="{x:Bind Key}" />
+                    <TextBlock Text="{x:Bind Key, Converter={StaticResource FilePathToFileNameConverter}}" />
                   </DataTemplate>
                 </ListView.ItemTemplate>
               </ListView>

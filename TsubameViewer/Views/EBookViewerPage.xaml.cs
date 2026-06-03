@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Toolkit.Uwp.UI.Animations;
@@ -21,6 +22,7 @@ using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
@@ -54,20 +56,20 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         DataContext = _vm = Ioc.Default.GetRequiredService<EBookViewerPageViewModel>();
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
 
-#if DEBUG
-        DebugPanel.Visibility = Visibility.Visible;
-#endif
         Loaded += MoveButtonEnablingWorkAround_EBookReaderPage_Loaded;
 
-        EPubRenderer.ContentRefreshStarting += WebView_ContentRefreshStarting;
-        EPubRenderer.ContentRefreshComplete += WebView_ContentRefreshComplete;
+        EPubRenderer_1.ContentRefreshStarting += WebView_ContentRefreshStarting_1;
+        EPubRenderer_1.ContentRefreshComplete += WebView_ContentRefreshComplete_1;
+        EPubRenderer_1.Loaded += WebView_Loaded;
+        EPubRenderer_1.WebResourceRequested += WebView_WebResourceRequested;
 
-        EPubRenderer.Loaded += WebView_Loaded;
-        EPubRenderer.Unloaded += WebView_Unloaded;
-
-        EPubRenderer.WebResourceRequested += WebView_WebResourceRequested;
+        EPubRenderer_2.ContentRefreshStarting += WebView_ContentRefreshStarting_2;
+        EPubRenderer_2.ContentRefreshComplete += WebView_ContentRefreshComplete_2;
+        EPubRenderer_2.Loaded += WebView_Loaded;
+        EPubRenderer_2.WebResourceRequested += WebView_WebResourceRequested;
     }
 
+    bool _isFirstDisplay = true;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         AnimationBuilder.Create()
@@ -89,18 +91,39 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             animation.Cancel();                
         }
 
+        EPubRenderer_1.Opacity = 0;
+        EPubRenderer_2.Opacity = 0;
+        _vm.ObservePropertyChanged(x => x.NowDisplayRendererIndex)
+            .Subscribe(this, static (x, s) =>
+            {
+                var _this = s;
+                if (x == 0)
+                {
+                    Debug.WriteLine("Display EPubRenderer_1");
+                    _this.EPubRenderer_1.Opacity = 1;
+                    _this.EPubRenderer_2.Opacity = 0;
+                }
+                else
+                {
+                    Debug.WriteLine("Display EPubRenderer_2");
+                    _this.EPubRenderer_1.Opacity = 0;
+                    _this.EPubRenderer_2.Opacity = 1;
+                }
+            })
+            .RegisterTo(this.GetCancellationTokenOnNavigatingFrom());
 
-        EPubRenderer.Visibility = Visibility.Visible;
+        EPubRenderer_1.Visibility = Visibility.Visible;
+        EPubRenderer_2.Visibility = Visibility.Visible;
 
         base.OnNavigatedTo(e);
     }
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        EPubRenderer.Visibility = Visibility.Collapsed;
+        EPubRenderer_1.Visibility = Visibility.Collapsed;
+        EPubRenderer_2.Visibility = Visibility.Collapsed;
 
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
-
 
         base.OnNavigatingFrom(e);
     }
@@ -141,52 +164,82 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         this.LeftPageMoveButton.Focus(FocusState.Programmatic);
     }
 
-
-
-
-
-    IDisposable? _rendererObserveDisposer;
-
     private void WebView_Loaded(object sender, RoutedEventArgs e)
     {
-        _rendererObserveDisposer?.Dispose();
-        _rendererObserveDisposer = null;
+        var elem = (EPubRenderer)sender;
         var db = new DisposableBuilder();
-        EPubRenderer.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
-            .Subscribe(_ =>
+        elem.ObserveDependencyProperty(EPubRenderer.CurrentInnerPageProperty)
+            .ToObservable()
+            .Subscribe((this, elem), static (_, s) =>
             {
-                _vm.InnerCurrentImageIndex = EPubRenderer.CurrentInnerPage;
+                var (_this, elem) = s;
+                var _vm = _this._vm;
+                if (elem == _this.EPubRenderer_1)
+                {
+                    _vm.SwapPages[0].InnerCurrentPageIndex = elem.CurrentInnerPage;
+                    if (_vm.NowDisplayRendererIndex == 0)
+                    {
+                        _vm.InnerCurrentImageIndex = elem.CurrentInnerPage;
+                    }
+                }
+                else if (elem == _this.EPubRenderer_2)
+                {
+                    _vm.SwapPages[1].InnerCurrentPageIndex = elem.CurrentInnerPage;
+                    if (_vm.NowDisplayRendererIndex == 1)
+                    {
+                        _vm.InnerCurrentImageIndex = elem.CurrentInnerPage;
+                    }
+                }
             })
             .AddTo(ref db);
 
-        EPubRenderer.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
-            .Subscribe(_ =>
+        elem.ObserveDependencyProperty(EPubRenderer.TotalInnerPageCountProperty)
+            .ToObservable()
+            .Subscribe((this, elem), static (_, s) =>
             {
-                _vm.InnerImageTotalCount = EPubRenderer.TotalInnerPageCount;
+                var (_this, elem) = s;
+                var _vm = _this._vm;
+                if (elem == _this.EPubRenderer_1)
+                {
+                    _vm.SwapPages[0].InnerTotalPageCount = elem.TotalInnerPageCount;
+                    _vm.InnerImageTotalCount = elem.TotalInnerPageCount;
+                }
+                else if (elem == _this.EPubRenderer_2)
+                {
+                    _vm.SwapPages[1].InnerTotalPageCount = elem.TotalInnerPageCount;
+                    _vm.InnerImageTotalCount = elem.TotalInnerPageCount;
+                }
             })
             .AddTo(ref db);
 
-        _rendererObserveDisposer = db.Build();
-        NowEnablePageMove = false;
+        db.Build().RegisterTo(elem.GetCancellationTokenOnUnloaded());
+        NowEnablePageMove_1 = false;
+        NowEnablePageMove_2 = false;
     }
 
-    private void WebView_Unloaded(object sender, RoutedEventArgs e)
+
+
+    public bool NowEnablePageMove_1
     {
-        _rendererObserveDisposer?.Dispose();
-        _rendererObserveDisposer = null;
+        get { return (bool)GetValue(NowEnablePageMove_1Property); }
+        set { SetValue(NowEnablePageMove_1Property, value); }
     }
 
+    public static readonly DependencyProperty NowEnablePageMove_1Property =
+        DependencyProperty.Register("NowEnablePageMove_1", typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(false));
 
 
 
-    public bool NowEnablePageMove
+    public bool NowEnablePageMove_2
     {
-        get { return (bool)GetValue(NowEnablePageMoveProperty); }
-        set { SetValue(NowEnablePageMoveProperty, value); }
+        get { return (bool)GetValue(NowEnablePageMove_2Property); }
+        set { SetValue(NowEnablePageMove_2Property, value); }
     }
 
-    public static readonly DependencyProperty NowEnablePageMoveProperty =
-        DependencyProperty.Register("NowEnablePageMove", typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(true));
+    public static readonly DependencyProperty NowEnablePageMove_2Property =
+        DependencyProperty.Register(nameof(NowEnablePageMove_2), typeof(bool), typeof(EBookViewerPage), new PropertyMetadata(false));
+
+
 
 
     AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
@@ -195,22 +248,32 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             .Opacity(1, delay: TimeSpan.FromMilliseconds(50),
             duration: TimeSpan.FromMilliseconds(125));
 
-    private void WebView_ContentRefreshStarting(object sender, EventArgs e)
+    private void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
     {            
-        NowEnablePageMove = false;
-        _fadeOutAnim
-            .Start(EPubRenderer);
+        NowEnablePageMove_1 = false;
     }
 
-    private void WebView_ContentRefreshComplete(object sender, EventArgs e)
+    private void WebView_ContentRefreshComplete_1(object sender, EventArgs e)
     {
-        NowEnablePageMove = true;
-
-        if (_vm.PageHtml != null)
+        NowEnablePageMove_1 = true;
+        if (_vm.SwapPages[0].PageHtml != null)
         {
-            _vm.CompletePageLoading();
+            _vm.CompletePageLoading_1();
         }
-        _fadeInAnim.Start(EPubRenderer);
+    }
+
+    private void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
+    {
+        NowEnablePageMove_2= false;
+    }
+
+    private void WebView_ContentRefreshComplete_2(object sender, EventArgs e)
+    {
+        NowEnablePageMove_2 = true;
+        if (_vm.SwapPages[1].PageHtml != null)
+        {
+            _vm.CompletePageLoading_2();
+        }
     }
 
 
@@ -244,19 +307,36 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     async Task ExecuteGoNextCommand()
     {
-        if (NowEnablePageMove is false) { return; }
-
         using (await _movePageLock.LockAsync(default))
         {
-            if (EPubRenderer.CanGoNext())
+            var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                ? EPubRenderer_1
+                : EPubRenderer_2;
+            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                ? EPubRenderer_2
+                : EPubRenderer_1;
+
+            if (_vm.NowDisplayRendererIndex == 0
+                && NowEnablePageMove_1 is false)
             {
-                EPubRenderer.GoNext();
+                return;
+            }
+            else if (_vm.NowDisplayRendererIndex == 1
+                && NowEnablePageMove_2 is false)
+            {
+                return;
+            }
+
+            if (currentEPubRenderer.CanGoNext())
+            {
+                currentEPubRenderer.GoNext();
             }
             else
             {
                 if (_vm.CanGoNext())
                 {
-                    EPubRenderer.PrepareGoNext();
+                    altEPubRenderer.PrepareGoNext();
+                    currentEPubRenderer.PrepareGoNext();
                     await _vm.GoNextImageAsync();
                 }
             }
@@ -266,19 +346,36 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task ExecuteGoPrevCommand()
     {
-        if (NowEnablePageMove is false) { return; }
-
         using (await _movePageLock.LockAsync(default))
         {
-            if (EPubRenderer.CanGoPreview())
+            var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                ? EPubRenderer_1
+                : EPubRenderer_2;
+            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                ? EPubRenderer_2
+                : EPubRenderer_1;
+
+            if (_vm.NowDisplayRendererIndex == 0
+                && NowEnablePageMove_1 is false)
             {
-                EPubRenderer.GoPreview();
+                return;
+            }
+            else if (_vm.NowDisplayRendererIndex == 1
+                && NowEnablePageMove_2 is false)
+            {
+                return;
+            }
+
+            if (currentEPubRenderer.CanGoPreview())
+            {
+                currentEPubRenderer.GoPreview();
             }
             else
             {
                 if (_vm.CanGoPrev())
                 {
-                    EPubRenderer.PrepareGoPreview();
+                    altEPubRenderer.PrepareGoPreview();
+                    currentEPubRenderer.PrepareGoPreview();
                     await _vm.GoPrevImageAsync();
                 }
             }
@@ -288,10 +385,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task ExecuteOpenTocPane()
     {
-        if (NowEnablePageMove is false) { return; }
+        if (NowEnablePageMove_1 is false) { return; }
 
         TocContainer.Visibility = Visibility.Visible;
         await Task.Delay(250);
+        _vm.SelectedTocItem = _vm.CurrentPageInfo?.TocItem;
+        _vm.CurrentPage = _vm.CurrentPageInfo?.EpubFileRef;
         if (TocItemsListView.SelectedItem != null)
         {
             var container = TocItemsListView.ContainerFromItem(TocItemsListView.SelectedItem);
@@ -305,6 +404,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     void OpenTocPane()
     {
+        _vm.SelectedTocItem = _vm.CurrentPageInfo?.TocItem;
+        _vm.CurrentPage = _vm.CurrentPageInfo?.EpubFileRef;
         TocContainer.Visibility = Visibility.Visible;
     }
 
@@ -321,7 +422,10 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
     public void RefreshPage()
     {
-        EPubRenderer.Refresh();
+        var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                ? EPubRenderer_1
+                : EPubRenderer_2;
+        currentEPubRenderer.Refresh();
     }
 
     private void CurrentBookReadingOrder_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -358,5 +462,18 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
 
         Debug.WriteLine(args.Y);
+    }
+}
+
+public sealed class FilePathToFileNameConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        return Path.GetFileNameWithoutExtension((string)value);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        throw new NotImplementedException();
     }
 }

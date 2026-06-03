@@ -25,6 +25,7 @@ using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.System;
+using CommunityToolkit.WinUI;
 
 namespace TsubameViewer.ViewModels
 {
@@ -87,14 +88,14 @@ namespace TsubameViewer.ViewModels
                 var unescapedPath = Uri.UnescapeDataString(path);
                 var item = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(unescapedPath);
 
-                SourceStorageItem = item;                
-                if (item is StorageFile file 
+                SourceStorageItem = item;
+                if (item is StorageFile file
                     && file.IsSupportedMangaFile()
                     )
-                {                    
+                {
                     using var fileStream = await FileRandomAccessStream.OpenAsync(unescapedPath, FileAccessMode.Read);
                     using var archive = ArchiveFactory.OpenArchive(fileStream.AsStreamForRead());
-                    var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(() => ToPathRestructureItems(archive).ToList()), CancellationToken.None);
+                    var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(() => ToPathRestructureItems(archive).ToList()), ct);
                     foreach (var pathRestructure in items)
                     {
                         pathRestructure.EditPath = pathRestructure.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
@@ -111,20 +112,21 @@ namespace TsubameViewer.ViewModels
                 }
                 else if (item is StorageFolder folder)
                 {
-                    var items = await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () => await ToPathRestructureItemsAsync(folder).ToListAsync()), CancellationToken.None);
-                    foreach (var pathRestructure in items)
+                    await _messenger.WorkWithBusyWallAsync((ct) => DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
-                        pathRestructure.EditPath = pathRestructure.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                    }
-                    using (Items.DeferRefresh())
-                    {
-                        foreach (var itemVM in items)
+                        using (Items.DeferRefresh())
                         {
-                            _RawItems.Add(itemVM);
+                            await foreach (var item in ToPathRestructureItemsAsync(folder).WithCancellation(ct))
+                            {
+                                item.EditPath = item.EditPath.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                                _RawItems.Add(item);
+                                ct.ThrowIfCancellationRequested();
+                            }
                         }
-                    }
-                }
-                else
+                    }), ct);
+
+            }
+            else
                 {
                     throw new InvalidOperationException(unescapedPath);
                 }

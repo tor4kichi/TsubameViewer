@@ -162,38 +162,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                 if (_status is not LoadingStatus.PendingLoad) { return; }
 
                 _status = LoadingStatus.NowLoading;
-                if (Item == null)
-                {
-                    Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
-                    Name = Item.Name;
-                    Path = Item.Path;
-                    DateCreated = Item.DateCreated;
-                    Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-                    UpdateLastReadPosition();
-                    IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
-                    if (Type == StorageItemTypes.Movie
-                        && Item.StorageItem is Windows.Storage.StorageFile file)
-                    {
-                        if (Bookmark.PageName is string duration
-                            && duration != null)
-                        {
-                            Duration = duration;
-                        }
-                        else
-                        {
-                            var movieProps = await file.Properties.GetVideoPropertiesAsync();
-                            if (movieProps?.Duration is { } d && d != TimeSpan.Zero)
-                            {
-                                Duration = TimeSpanHelper.FormatTimeSpan(d);
-                                Bookmark.PageName = Duration;
-                            }
-                            else
-                            {
-                                Bookmark.PageName = "";
-                            }
-                        }
-                    }
-                }
+                await EnsureStorageItemAsync(ct);
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
@@ -236,6 +205,42 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             Status = LoadingStatus.LoadFailed;
             _messenger.Send(new StorageItemNotFoundMessage(Path));
         }        
+    }
+
+    public async Task EnsureStorageItemAsync(CancellationToken ct)
+    {
+        if (Item == null)
+        {
+            Item = await _imageCollectionContext.GetFolderOrArchiveFileAtAsync(_itemIndex, _fileSortType, ct);
+            Name = Item.Name;
+            Path = Item.Path;
+            DateCreated = Item.DateCreated;
+            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            UpdateLastReadPosition();
+            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            if (Type == StorageItemTypes.Movie
+                && Item.StorageItem is Windows.Storage.StorageFile file)
+            {
+                if (Bookmark.PageName is string duration
+                    && duration != null)
+                {
+                    Duration = duration;
+                }
+                else
+                {
+                    var movieProps = await file.Properties.GetVideoPropertiesAsync();
+                    if (movieProps?.Duration is { } d && d != TimeSpan.Zero)
+                    {
+                        Duration = TimeSpanHelper.FormatTimeSpan(d);
+                        Bookmark.PageName = Duration;
+                    }
+                    else
+                    {
+                        Bookmark.PageName = "";
+                    }
+                }
+            }
+        }
     }
 
     public void UpdateLastReadPosition()

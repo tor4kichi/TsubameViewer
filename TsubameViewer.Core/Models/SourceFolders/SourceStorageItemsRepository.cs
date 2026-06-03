@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
 using Windows.Storage.Search;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Core.Models.SourceFolders;
@@ -112,7 +113,7 @@ public sealed class SourceStorageItemsRepository
         }
     }
 
-    private sealed class TokenToPathEntry
+    public sealed class TokenToPathEntry
     {
         [BsonId]
         public string Token { get; set; }
@@ -120,6 +121,8 @@ public sealed class SourceStorageItemsRepository
         public string Path { get; set; }
 
         public TokenListType TokenListType { get; set; }
+
+        public int Order { get; set; } = 0;
     }
 
     public enum TokenListType
@@ -141,12 +144,30 @@ public sealed class SourceStorageItemsRepository
             // 古いトークンは捨てるように
             _collection.DeleteMany(x => x.Path == path && x.TokenListType == tokenListType);
 
+            int order = 0;
+            try
+            {
+                order = _collection.Count();
+            }
+            catch {}
             _collection.Upsert(new TokenToPathEntry() 
             {
                 TokenListType = tokenListType,
                 Path = path,
                 Token = token,
+                Order = order,
             });
+        }
+
+        public void UpdateOrderFromPath(IEnumerable<string> sortedTokens)
+        {
+            foreach (var (i, path) in sortedTokens.AsValueEnumerable().Index())
+            {
+                if (string.IsNullOrEmpty(path)) { return; }
+                var entry = _collection.FindOne(x => x.Path == path);
+                entry.Order = i;
+                _collection.Update(entry);
+            }
         }
 
         internal TokenToPathEntry GetPathFromToken(string token)
@@ -252,11 +273,20 @@ public sealed class SourceStorageItemsRepository
         return (token.Token, await GetItemAsync(token.Token));
     }
 
+    public async Task<IStorageItem> GetSourceStorageItemAsync(TokenToPathEntry entry)
+    {
+        return await GetItemAsync(entry.Token);
+    }
+
     public bool PathIsAccessAvailable(string path)
     {
         return _tokenToPathRepository.IsAvairableAccessPath(path);
     }
 
+    public void UpdateOrder(IEnumerable<string> sortedTokens)
+    {
+        _tokenToPathRepository.UpdateOrderFromPath(sortedTokens);
+    }
     /// <summary>
     /// 指定パスにアクセス可能な登録フォルダへのアクセス権をアプリが保有しているかを検査します。<br />
     /// FutureAccessList と MostRecentlyUsedList のどちらかでアクセス出来ればアクセス可能とします。
@@ -528,6 +558,11 @@ public sealed class SourceStorageItemsRepository
         return _tokenToPathRepository.FindById(token)?.Path;
     }
 
+    public int GetOrderFromPath(string path)
+    {
+        return _tokenToPathRepository.GetTokenFromPath(path)?.Order ?? -1;
+    }
+
     public async IAsyncEnumerable<(IStorageItem? item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
     {
 #if WINDOWS_UWP
@@ -580,10 +615,10 @@ public sealed class SourceStorageItemsRepository
     }
 
 
-    public IEnumerable<string> GetParsistantItemsFromCache()
+    public IEnumerable<TokenToPathEntry> GetParsistantItemsFromCache()
     {
         return _tokenToPathRepository.ReadAllItems()
-            .Where(x => x.TokenListType == TokenListType.FutureAccessList).Select(x => x.Path);
+            .Where(x => x.TokenListType == TokenListType.FutureAccessList);
     }
 
     public async IAsyncEnumerable<IStorageItem> SearchAsync(string keyword, [EnumeratorCancellation] CancellationToken ct)
@@ -600,8 +635,10 @@ public sealed class SourceStorageItemsRepository
             FolderDepth = FolderDepth.Deep,
         };
 
-        await foreach (var (item, token, metadata) in GetParsistantItems(ct).WithCancellation(ct))
+        foreach (var entry in GetParsistantItemsFromCache().OrderBy(x => x.Order))
         {
+            var item = await GetSourceStorageItemAsync(entry);
+            ct.ThrowIfCancellationRequested();
             if (item?.Name.Contains(keyword) ?? false)
             {
                 yield return item;

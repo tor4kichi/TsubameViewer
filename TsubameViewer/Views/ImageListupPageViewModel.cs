@@ -76,7 +76,31 @@ public sealed partial class ImageListupPageViewModel
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
+    , IRecipient<SendToOtherFolderMessage>
 {
+
+    public void Receive(SendToOtherFolderMessage message)
+    {
+        var (destSourceFolderEntry, sourceItemPath) = message.Value;
+        if (CurrentFolderItem.Path == destSourceFolderEntry.Path
+            && _imageCollectionContext != null)
+        {
+            // このフォルダーにアイテムが追加される？
+            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
+        }
+        else
+        {
+            for (int i = ImageFileItems.Count - 1; i >= 0; i--)
+            {
+                var itemVM = ImageFileItems[i];
+                if (itemVM?.Path?.Equals(sourceItemPath) ?? false)
+                {
+                    ImageFileItems.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    }
 
     public void Receive(InPageSearchRequestMessage message)
     {
@@ -177,8 +201,6 @@ public sealed partial class ImageListupPageViewModel
     IImageCollectionContext _imageCollectionContext;
     private static readonly Core.AsyncLock _RefreshLock = new();
 
-    private CancellationTokenSource _navigationCts;
-
     private string _DisplayCurrentPath;
     public string DisplayCurrentPath
     {
@@ -225,8 +247,7 @@ public sealed partial class ImageListupPageViewModel
 
 
     public string FoldersManagementPageName => AppShell.HomePageName;
-    
-    IDisposable _navigationDisposables;
+    private CancellationToken _navigationCt;
 
     public ImageListupPageViewModel(
         IMessenger messenger,
@@ -331,11 +352,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
-
-        _navigationCts?.Cancel();
-        _navigationCts = null;
-        _navigationDisposables?.Dispose();
-        _navigationDisposables = null;
+        _messenger.Unregister<SendToOtherFolderMessage>(this);
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -371,7 +388,6 @@ public sealed partial class ImageListupPageViewModel
         return false;
     }
 
-    CancellationToken _navigationCt;
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
         _navigationCt = ct;
@@ -451,6 +467,7 @@ public sealed partial class ImageListupPageViewModel
 
             _messenger.Register<InPageSearchRequestMessage>(this);
             _messenger.Register<StorageItemNotFoundMessage>(this);
+            _messenger.Register<SendToOtherFolderMessage>(this);
 
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
@@ -464,7 +481,7 @@ public sealed partial class ImageListupPageViewModel
                 .Subscribe(_ => FileItemsView.RefreshFilter())
                 .AddTo(ref db);
 
-            _navigationDisposables = db.Build();
+            db.Build().RegisterTo(ct);
         }
         catch
         {
@@ -473,9 +490,9 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<AlbamItemRemovedMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
+            _messenger.Unregister<SendToOtherFolderMessage>(this);
             throw;
         }
-
 
         await base.OnNavigatedToAsync(parameters, ct);
     }
@@ -879,7 +896,7 @@ public sealed partial class ImageListupPageViewModel
     }
 
 
-    private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
+    private RelayCommand _SetParentFileSortWithCurrentSettingCommand;    
     public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
         _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
         {

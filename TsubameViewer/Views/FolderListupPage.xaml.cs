@@ -66,11 +66,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
         {
-            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path.Equals(m.TargetItemPath, StringComparison.Ordinal));
+            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.TargetItemPath, StringComparison.Ordinal) ?? false);
             if (itemVM != null)
             {
                 var image = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-                if (image is UIElement target)
+                if (image.FindDescendant("ImageControl") is UIElement target)
                 {
                     m.Reply(DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                     {
@@ -83,11 +83,18 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
             }
         });
+
+        _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) => 
+        {
+            var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
+            itemVM?.UpdateLastReadPosition();
+        });
     }
 
     private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
+        _messenger.Unregister<LatestContentViewUpdateMessage>(this);
     }
 
     private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -98,8 +105,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
         }
     }
-
-
 
     private readonly FolderListupPageViewModel _vm;
     private readonly IMessenger _messenger;
@@ -364,6 +369,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
         textBox.TextChanged += TextBox_TextChanged;
         _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        
+        _isItemsForceInfoLoaded = false;
     }
 
 
@@ -415,7 +422,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         //(args.Element as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
-
+    bool _isItemsForceInfoLoaded;
     InPageSearchRequestMessage? _searchMessage;
     private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
@@ -425,6 +432,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             sender.ItemsSource = new object[1] { new { Name = "Search_FromAll".Translate() } };
         }
         sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
+
+        if (_isItemsForceInfoLoaded is false)
+        {
+            Debug.WriteLine("強制読み込み EnsureStorageItemAsync");
+            _isItemsForceInfoLoaded = true;
+            foreach (var itemVM in _vm.FolderItems)
+            {
+                _ = (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct);
+            }
+        }
     }
 
     private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)

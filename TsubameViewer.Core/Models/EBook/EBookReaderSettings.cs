@@ -32,6 +32,7 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
         _MaxWidth = Read(1280.0d, nameof(MaxWidth));
         _MaxHeight = Read(720.0d, nameof(MaxHeight));
         _isForceResetStylingInHeadElement = Read(false, nameof(IsForceResetStylingInHeadElement));
+        _isPrepareNextPageEnabled = Read(true, nameof(IsPrepareNextPageEnabled));
     }
 
     private bool _IsReversePageFliping_Scroll;
@@ -151,6 +152,13 @@ public sealed class EBookReaderSettings : FlagsRepositoryBase
     {
         get { return _isForceResetStylingInHeadElement; }
         set { SetProperty(ref _isForceResetStylingInHeadElement, value); }
+    }
+
+    bool _isPrepareNextPageEnabled;
+    public bool IsPrepareNextPageEnabled
+    {
+        get { return _isPrepareNextPageEnabled; }
+        set { SetProperty(ref _isPrepareNextPageEnabled, value); }
     }
 }
 

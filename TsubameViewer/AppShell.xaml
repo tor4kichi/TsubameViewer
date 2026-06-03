@@ -159,6 +159,8 @@
           IsHitTestVisible="False">
       <Button>
         <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F5"
+                               Invoked="RefreshPageKeyboardAccelerator_Invoked" />
           <KeyboardAccelerator Key="F11"
                                Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
           <KeyboardAccelerator Key="Escape"
@@ -167,7 +169,7 @@
       </Button>
     </Grid>
     <muxc:NavigationView x:Name="MyNavigationView"
-                         uwpControls:DockPanel.Dock="Top"                         
+                         uwpControls:DockPanel.Dock="Top"
                          MenuItemsSource="{Binding MenuItems}"
                          MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
                          FooterMenuItemsSource="{x:Bind _footerItemsForTop}"
@@ -178,11 +180,11 @@
                          IsBackButtonVisible="Collapsed"
                          XYFocusDownNavigationStrategy="Projection"
                          SelectionFollowsFocus="Disabled"
-                         IsPaneToggleButtonVisible="False">
+                         IsPaneToggleButtonVisible="False"
+                         Background="{ThemeResource ApplicationContentBackgroundBrush}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
-
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
       </muxc:NavigationView.PaneHeader>
@@ -277,13 +279,27 @@
 
           <muxc:DropDownButton.Flyout>
             <Flyout>
-              <TextBlock x:Name="WindowTitleTextBlock_Nallow"
-                         Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
-                         VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis"
-                         Style="{StaticResource TitlebarTextBlock}"
-                         TextWrapping="Wrap"
-                         MaxWidth="300"/>
+              <StackPanel>
+                <TextBlock x:Name="WindowTitleTextBlock_Nallow"
+                           Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource TitlebarTextBlock}"
+                           TextWrapping="Wrap"
+                           MaxWidth="300" />
+
+                <ContentControl x:Name="TitlebarContent_Nallow"
+                      HorizontalContentAlignment="Stretch"
+                      Margin="0 8 0 0"
+                      VerticalAlignment="Top"
+                      Height="48"
+                      VerticalContentAlignment="Stretch"                      
+                      >
+                <UIElement.RenderTransform>
+                  <TranslateTransform />
+                </UIElement.RenderTransform>
+                </ContentControl>
+              </StackPanel>
             </Flyout>
           </muxc:DropDownButton.Flyout>
         </muxc:DropDownButton>
@@ -368,7 +384,7 @@
       </StackPanel>
     </Grid>
 
-    <Border x:Name="NotificationContainer"
+    <Grid x:Name="NotificationContainer"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"    
             Padding="24 12"
@@ -383,11 +399,20 @@
                       Foreground="{ThemeResource SystemColorButtonFaceBrush}"
                       IsHitTestVisible="False"
                       IsTabStop="False"                      
-                      FontSize="18"
+                      FontSize="16"
                       MaxWidth="320"
                     >
       </ContentControl>
-    </Border>
+
+      <TextBlock x:Name="NotificationTextBlock"
+                      Foreground="{ThemeResource SystemColorButtonFaceBrush}"
+                      IsHitTestVisible="False"
+                      FontSize="16"
+                      MaxWidth="320"
+                 TextWrapping="Wrap"
+                 MaxLines="3">
+      </TextBlock>
+    </Grid>
        
     <!--
     <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">
@@ -553,6 +578,8 @@
             <Setter Target="TitleIconAndTextContainer_Nallow.Visibility"
                     Value="Visible" />
 
+            <Setter Target="TitlebarContent.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

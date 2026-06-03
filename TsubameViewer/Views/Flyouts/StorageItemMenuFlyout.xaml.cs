@@ -12,6 +12,9 @@ using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using TsubameViewer.Core.Models.SourceFolders;
+using System.IO;
+using CommunityToolkit.Mvvm.Messaging;
 
 // ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
 
@@ -98,7 +101,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             }
 
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
-            SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive).TrueToVisible();
+            SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Movie).TrueToVisible();
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
             RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
 
@@ -121,7 +124,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             StorageItemDeleteMenuItem.Visibility = (IsRootPage is false && itemVM.Item is StorageItemImageSource).TrueToVisible();
 
             FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = (itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder).TrueToVisible();
+            FolderOrArchiveRestructureItem.Visibility = (!IsRootPage && itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
             OpenWithExplorerItem.CommandParameter = itemVM;                
             OpenWithExplorerItem.Visibility = (itemVM.Item is StorageItemImageSource).TrueToVisible();
@@ -161,6 +164,9 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             OpenWithExternalAppMenuItem.CommandParameter = itemVM;
             OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
+
+            SendOtherFolderMenuItem.Visibility = Visibility.Collapsed;
+            FolderOrArchiveRestructureItem.Visibility = Visibility.Collapsed;
         }
         else if (itemVM.Item is AlbamImageSource albamImageSource)
         {
@@ -191,6 +197,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
             OpenWithExternalAppMenuItem.CommandParameter = itemVM;
             OpenWithExternalAppMenuItem.Visibility = Visibility.Collapsed;
+
+            FolderOrArchiveRestructureItem.Visibility = Visibility.Collapsed;
         }
         else if (itemVM.Item is AlbamItemImageSource albamItem)
         {
@@ -223,9 +231,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             StorageItemDeleteMenuItem.CommandParameter = itemVM;
             StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
 
-            var transformMenuItemVisibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource && imageSource.ItemTypes is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder).TrueToVisible();
             FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = transformMenuItemVisibility;
+            FolderOrArchiveRestructureItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource
+                && imageSource.ItemTypes is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
+                .TrueToVisible();
 
             OpenWithExplorerItem.CommandParameter = itemVM;
             OpenWithExplorerItem.Visibility = Visibility.Visible;
@@ -242,12 +251,8 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         AlbamMenuSeparator.Visibility = (
             (OpenListupItem.Visibility == Visibility.Visible || SelectItemsSubItem.Visibility is Visibility.Visible)
             && (AlbamEditMenuItem.Visibility == Visibility.Visible
-                || AlbamDeleteMenuItem.Visibility == Visibility.Visible
-                || AlbamMenuSubItem.Visibility == Visibility.Visible
-                )
+                || AlbamDeleteMenuItem.Visibility == Visibility.Visible)
             ).TrueToVisible();
-
-        ThumbnailMenuSeparator.Visibility = SetThumbnailImageMenuItem.Visibility;
 
         FileControlMenuSeparator.Visibility =
             (StorageItemDeleteMenuItem.Visibility == Visibility.Visible                
@@ -255,10 +260,10 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             .TrueToVisible()
             ;
 
-        FolderAndArchiveMenuSeparator1.Visibility = (
-            AddSecondaryTile.Visibility == Visibility.Visible
-            || RemoveSecondaryTile.Visibility == Visibility.Visible
-            ).TrueToVisible();
+        //FolderAndArchiveMenuSeparator1.Visibility = (
+        //    AddSecondaryTile.Visibility == Visibility.Visible
+        //    || RemoveSecondaryTile.Visibility == Visibility.Visible
+        //    ).TrueToVisible();
 
         FolderAndArchiveMenuSeparator2.Visibility = (
             OpenWithExplorerItem.Visibility == Visibility.Visible
@@ -272,5 +277,35 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
 
         RemoveFromAccessListMenuItem.Visibility = IsRootPage.TrueToVisible();
         RemoveFromAccessListMenuItem.CommandParameter = itemVM;
+
+
+        if (IsRootPage)
+        {
+            SendOtherFolderMenuItem.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            SendOtherFolderMenuItem.Visibility = 
+                (itemVM.Type is not Core.Models.StorageItemTypes.ArchiveFolder
+                && itemVM.Item is not AlbamImageSource).TrueToVisible();
+            if (SendOtherFolderMenuItem.Visibility == Visibility.Visible)
+            {
+                var messenger = Ioc.Default.GetRequiredService<IMessenger>();
+                var sourceFolderRegistrationRepository = Ioc.Default.GetRequiredService<SourceStorageItemsRepository>();
+                SendOtherFolderMenuItem.Items.Clear();
+                var parentFolderPath = Path.GetDirectoryName(itemVM.Path);
+                foreach (SourceStorageItemsRepository.TokenToPathEntry item in sourceFolderRegistrationRepository.GetParsistantItemsFromCache())
+                {
+                    var menuItem = new MenuFlyoutItem()
+                    {
+                        Text = Path.GetFileName(item.Path),
+                        Command = new SendToOtherFolderCommand(item, sourceFolderRegistrationRepository, messenger),
+                        CommandParameter = itemVM,
+                        IsEnabled = !parentFolderPath.Equals(item.Path, System.StringComparison.Ordinal),
+                    };
+                    SendOtherFolderMenuItem.Items.Add(menuItem);
+                }
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using Windows.Storage;
 
@@ -18,6 +19,7 @@ internal static class IfImageSourceNotExistSendMessage
     public static async Task ThrowIfImageSourceStorageItemNotFound(this IImageSource imageSource, IMessenger? messenger = null)
     {
         messenger ??= Ioc.Default.GetRequiredService<IMessenger>();
+        if (imageSource is AlbamImageSource albamImageSource) { return; }
         var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
         if (type == Core.Models.StorageItemTypes.Folder)
         {

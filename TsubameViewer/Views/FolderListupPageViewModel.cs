@@ -52,7 +52,31 @@ public sealed partial class FolderListupPageViewModel
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
     , IRecipient<ThumbnailImageUpdateRequestMessage>
+    , IRecipient<SendToOtherFolderMessage>
 {
+
+    public void Receive(SendToOtherFolderMessage message)
+    {
+        var (destSourceFolderEntry, sourceItemPath) = message.Value;
+        if (CurrentFolderItem.Path == destSourceFolderEntry.Path
+            && _imageCollectionContext != null)
+        {
+            // このフォルダーにアイテムが追加される？
+            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
+        }
+        else
+        {
+            for (int i = FolderItems.Count - 1; i >= 0; i--)
+            {
+                var itemVM = FolderItems[i];
+                if (itemVM?.Path?.Equals(sourceItemPath) ?? false)
+                {
+                    FolderItems.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    }
     public void Receive(InPageSearchRequestMessage message)
     {
         //_filterText = message.Value;
@@ -84,7 +108,7 @@ public sealed partial class FolderListupPageViewModel
     {
         foreach (var item in FolderItems)
         {
-            if (item.Path.Equals(message.Value, StringComparison.Ordinal))
+            if (item.Path?.Equals(message.Value, StringComparison.Ordinal) ?? false)
             {
                 item.ThumbnailChanged();
                 item.InitializeAsync(default);
@@ -192,6 +216,7 @@ public sealed partial class FolderListupPageViewModel
     }
 
     DateTimeOffset _sourceItemLastUpdatedTime;
+    CancellationToken _navigationCt;
 
     public FolderListupPageViewModel(
         IMessenger messenger,        
@@ -274,6 +299,7 @@ public sealed partial class FolderListupPageViewModel
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
             _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
+            _messenger.Unregister<SendToOtherFolderMessage>(this);
 
             base.OnNavigatedFrom(parameters);
         }
@@ -343,6 +369,7 @@ public sealed partial class FolderListupPageViewModel
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
 
         NowProcessing = true;
@@ -466,7 +493,15 @@ public sealed partial class FolderListupPageViewModel
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
-            Selection.StartSelection();
+            if (Selection.IsSelectionModeEnabled)
+            {
+                Selection.EndSelection();
+            }
+            else
+            {
+                Selection.StartSelection();
+            }
+            
             FileDeleteCommand.NotifyCanExecuteChanged();
             OpenWithExplorerCommand.NotifyCanExecuteChanged();
         });
@@ -505,6 +540,7 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Register<InPageSearchRequestMessage>(this);
         _messenger.Register<StorageItemNotFoundMessage>(this);
         _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
+        _messenger.Register<SendToOtherFolderMessage>(this);
 
         await base.OnNavigatedToAsync(parameters, ct);
     }

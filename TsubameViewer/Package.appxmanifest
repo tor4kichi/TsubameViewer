@@ -10,7 +10,7 @@
   <Identity
     Name="18803tor4kichi.TsubameViewer"
     Publisher="CN=DFF1CEA0-5963-4197-8676-6105C5E8CE4B"
-    Version="2.0.3.0" />
+    Version="2.1.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="37bb45e3-5324-4790-b288-51560417bde3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
@@ -70,6 +70,14 @@
               <uap:FileType ContentType="video/mp4">.mp4</uap:FileType>
               <uap:FileType ContentType="video/hevc">.hevc</uap:FileType>
               <uap:FileType ContentType="video/webm">.webm</uap:FileType>
+              <uap:FileType ContentType="video/x-matroska">.mkv</uap:FileType>
+              <uap:FileType ContentType="video/mp4">.m4v</uap:FileType>
+              <uap:FileType ContentType="video/quicktime">.mov</uap:FileType>
+              <uap:FileType ContentType="video/x-msvideo">.avi</uap:FileType>
+              <uap:FileType ContentType="video/x-ms-wmv">.wmv</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.ts</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.mts</uap:FileType>
+              <uap:FileType ContentType="video/mp2t">.m2ts</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DisplayName>TsubameViewer</uap:DisplayName>
             <uap:EditFlags OpenIsSafe="true"/>
