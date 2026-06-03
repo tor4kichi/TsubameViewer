@@ -368,7 +368,7 @@
       </StackPanel>
     </Grid>
 
-    <Border x:Name="NotificationContainer"
+    <Grid x:Name="NotificationContainer"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"    
             Padding="24 12"
@@ -383,11 +383,20 @@
                       Foreground="{ThemeResource SystemColorButtonFaceBrush}"
                       IsHitTestVisible="False"
                       IsTabStop="False"                      
-                      FontSize="18"
+                      FontSize="16"
                       MaxWidth="320"
                     >
       </ContentControl>
-    </Border>
+
+      <TextBlock x:Name="NotificationTextBlock"
+                      Foreground="{ThemeResource SystemColorButtonFaceBrush}"
+                      IsHitTestVisible="False"
+                      FontSize="16"
+                      MaxWidth="320"
+                 TextWrapping="Wrap"
+                 MaxLines="3">
+      </TextBlock>
+    </Grid>
        
     <!--
     <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Bottom">

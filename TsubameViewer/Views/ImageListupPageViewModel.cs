@@ -76,7 +76,31 @@ public sealed partial class ImageListupPageViewModel
     : NavigationAwareViewModelBase
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
+    , IRecipient<SendToOtherFolderMessage>
 {
+
+    public void Receive(SendToOtherFolderMessage message)
+    {
+        var (destSourceFolderEntry, sourceItemPath) = message.Value;
+        if (CurrentFolderItem.Path == destSourceFolderEntry.Path
+            && _imageCollectionContext != null)
+        {
+            // このフォルダーにアイテムが追加される？
+            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
+        }
+        else
+        {
+            for (int i = ImageFileItems.Count - 1; i >= 0; i--)
+            {
+                var itemVM = ImageFileItems[i];
+                if (itemVM?.Path?.Equals(sourceItemPath) ?? false)
+                {
+                    ImageFileItems.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+    }
 
     public void Receive(InPageSearchRequestMessage message)
     {
@@ -177,8 +201,6 @@ public sealed partial class ImageListupPageViewModel
     IImageCollectionContext _imageCollectionContext;
     private static readonly Core.AsyncLock _RefreshLock = new();
 
-    private CancellationTokenSource _navigationCts;
-
     private string _DisplayCurrentPath;
     public string DisplayCurrentPath
     {
@@ -225,7 +247,8 @@ public sealed partial class ImageListupPageViewModel
 
 
     public string FoldersManagementPageName => AppShell.HomePageName;
-    
+    private CancellationToken _navigationCt;
+
     public ImageListupPageViewModel(
         IMessenger messenger,
         LocalBookmarkRepository bookmarkManager,
@@ -329,6 +352,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
         _messenger.Unregister<InPageSearchRequestMessage>(this);
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
+        _messenger.Unregister<SendToOtherFolderMessage>(this);
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -366,6 +390,7 @@ public sealed partial class ImageListupPageViewModel
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
+        _navigationCt = ct;
         var mode = parameters.GetNavigationMode();
         NowProcessing = true;
         try
@@ -442,6 +467,7 @@ public sealed partial class ImageListupPageViewModel
 
             _messenger.Register<InPageSearchRequestMessage>(this);
             _messenger.Register<StorageItemNotFoundMessage>(this);
+            _messenger.Register<SendToOtherFolderMessage>(this);
 
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
@@ -464,6 +490,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<AlbamItemRemovedMessage>(this);
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
+            _messenger.Unregister<SendToOtherFolderMessage>(this);
             throw;
         }
 
@@ -869,7 +896,7 @@ public sealed partial class ImageListupPageViewModel
     }
 
 
-    private RelayCommand _SetParentFileSortWithCurrentSettingCommand;
+    private RelayCommand _SetParentFileSortWithCurrentSettingCommand;    
     public RelayCommand SetParentFileSortWithCurrentSettingCommand =>
         _SetParentFileSortWithCurrentSettingCommand ??= new RelayCommand(() =>
         {

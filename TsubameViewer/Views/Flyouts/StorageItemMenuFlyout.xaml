@@ -13,6 +13,14 @@
   
   <MenuFlyoutItem x:Name="OpenListupItem" Text="{i18nExt:Localize Key=OpenFolderListup}" />
   <MenuFlyoutItem x:Name="OpenViewerItem" Text="{i18nExt:Localize Key=OpenImageViewer}" />
+  <MenuFlyoutSubItem x:Name="SendOtherFolderMenuItem"
+                     Text="{i18nExt:Localize Key=SendToOtherFolder}" />
+  <MenuFlyoutSubItem x:Name="AlbamMenuSubItem"
+                     Text="{i18nExt:Localize Key=AlbamItemAdd}" />
+  <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem"
+                  Text="{i18nExt:Localize Key=SetThumbnailImage}" />
+  <MenuFlyoutItem x:Name="FolderOrArchiveRestructureItem"
+                  Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}" />
 
   <MenuFlyoutSubItem x:Name="SelectItemsSubItem" Text="{i18nExt:Localize Key=SelectItems_ActionAs}">
     <MenuFlyoutItem x:Name="SelectedItems_AddFavariteImageMenuItem" Text="{i18nExt:Localize Key=AddFavoriteImage}" />
@@ -21,24 +29,23 @@
   </MenuFlyoutSubItem>
 
   <MenuFlyoutSeparator x:Name="AlbamMenuSeparator" />
-  <MenuFlyoutSubItem x:Name="AlbamMenuSubItem" Text="{i18nExt:Localize Key=AlbamItemAdd}" />
-  <MenuFlyoutItem x:Name="AlbamEditMenuItem" Text="{i18nExt:Localize Key=AlbamEdit}" />
-  <MenuFlyoutItem x:Name="AlbamDeleteMenuItem" Text="{i18nExt:Localize Key=AlbamDelete}" />
+  <MenuFlyoutItem x:Name="AlbamEditMenuItem"
+                  Text="{i18nExt:Localize Key=AlbamEdit}" />
+  <MenuFlyoutItem x:Name="AlbamDeleteMenuItem"
+                  Text="{i18nExt:Localize Key=AlbamDelete}" />
 
-  <MenuFlyoutSeparator x:Name="ThumbnailMenuSeparator" />
-  <MenuFlyoutItem x:Name="SetThumbnailImageMenuItem" Text="{i18nExt:Localize Key=SetThumbnailImage}" />
+  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
+  <MenuFlyoutItem x:Name="OpenWithExplorerItem"
+                  Text="{i18nExt:Localize Key=OpenWithExplorer}" />
+  <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem"
+                  Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
 
-  <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
-  <MenuFlyoutItem x:Name="FolderOrArchiveRestructureItem" Text="{i18nExt:Localize Key=FolderOrArchiveRestructure}" />
-  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem" Text="{i18nExt:Localize Key=Delete}" />
-
-  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator1" />
   <MenuFlyoutItem x:Name="AddSecondaryTile" Text="{i18nExt:Localize Key=AddSecondaryTile}" />
   <MenuFlyoutItem x:Name="RemoveSecondaryTile" Text="{i18nExt:Localize Key=RemoveSecondaryTile}" />
-  
-  <MenuFlyoutSeparator x:Name="FolderAndArchiveMenuSeparator2" />
-  <MenuFlyoutItem x:Name="OpenWithExplorerItem" Text="{i18nExt:Localize Key=OpenWithExplorer}" />
-  <MenuFlyoutItem x:Name="OpenWithExternalAppMenuItem" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" />
+
+  <MenuFlyoutSeparator x:Name="FileControlMenuSeparator" />
+  <MenuFlyoutItem x:Name="StorageItemDeleteMenuItem"
+                  Text="{i18nExt:Localize Key=Delete}" />
 
   <MenuFlyoutItem x:Name="RemoveFromAccessListMenuItem"
                   Text="{i18nExt:Localize Key=RemoveSourceFolderFromApp}" />

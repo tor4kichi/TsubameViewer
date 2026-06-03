@@ -311,10 +311,18 @@ public sealed partial class AppShell : UserControl
     
     private void PushShowingNotificationContent(object content)
     {
-        NotificationContentControl.Content = content;
+        if (content is string str)
+        {
+            NotificationTextBlock.Text = str;
+        }
+        else
+        {
+            NotificationContentControl.Content = content;
+        }
         _notificationAnimationBuilder.Start(NotificationContainer, () => 
         {
             NotificationContentControl.Content = null;
+            NotificationTextBlock.Text = "";
             ShowNextNotificationContent();
         });
     }

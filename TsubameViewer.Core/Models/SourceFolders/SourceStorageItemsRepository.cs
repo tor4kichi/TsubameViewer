@@ -273,6 +273,11 @@ public sealed class SourceStorageItemsRepository
         return (token.Token, await GetItemAsync(token.Token));
     }
 
+    public async Task<IStorageItem> GetSourceStorageItemAsync(TokenToPathEntry entry)
+    {
+        return await GetItemAsync(entry.Token);
+    }
+
     public bool PathIsAccessAvailable(string path)
     {
         return _tokenToPathRepository.IsAvairableAccessPath(path);

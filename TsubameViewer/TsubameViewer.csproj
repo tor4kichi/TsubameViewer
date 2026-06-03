@@ -131,6 +131,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Contracts\Navigation\IViewLocator.cs" />
+    <Compile Include="Helpers\MoveFolderToOhterFolderHelper.cs" />
     <Compile Include="IsExternalInit.cs" />
     <Compile Include="Locales\LocaleToDisplayNameConverter.cs" />
     <Compile Include="Locales\LocalizeConverter.cs" />
@@ -167,6 +168,7 @@
     <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteToggleCommand.cs" />
     <Compile Include="ViewModels\LatestContentViewUpdateMessage.cs" />
+    <Compile Include="ViewModels\SourceFolders.Commands\SendToOtherFolderCommand.cs" />
     <Compile Include="Views\AlbamListupPageViewModel.cs" />
     <Compile Include="ViewModels\Albam\AlbamNavigationConstants.cs" />
     <Compile Include="ViewModels\CommandBase.cs" />

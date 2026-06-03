@@ -1,5 +1,4 @@
 #### General
-
 Copy = Copy
 CopyToClipboard = Copy to clipboard
 Cancel = Cancel
@@ -11,7 +10,7 @@ Close = Close
 Confirm = Confirm
 Refresh = Refresh
 NoItems = No items are available to display.
-
+Overwrite = Overwrite
 ApplicationTheme = Theme
 ApplicationTheme.Default = Follow system settings
 ApplicationTheme.Light = Light theme
@@ -20,15 +19,12 @@ ApplicationTheme.Dark = Dark theme
 
 #### Purchase Addon
 PurchaseAddon_ButtonTitle = Send a tip to the developer
-
 PurchaseAddon_ShowPurchaseUI = Proceed to purchase screen
 PurchaseAddon_ShowPurchaseHistory = Check your purchase history
 PurchaseAddon_PurchasedThanksMessage = Thank you for your support!
 
 
-
 #### PrimaryWindowCoreLayout
-
 AddNewFolder = Add Folder
 Import = Import
 RefreshLatest = Update to the latest information
@@ -44,14 +40,11 @@ OpenImageCodecExtensionStorePageWithFileType = {0} An extension is required to d
 RefreshAfterCodecExtensionInstalled = Please refresh the display after installing the extension
 
 
-
 #### Notification
-
 FileDeleteFailed = File deletion failed \ n {0}
 FolderDeleteFailed = Failed to delete the folder \ n {0}
 ThumbnailImageChanged = Change thumbnail image
 Notification_SourceStorageItemNotFound = The specified path has been unregistered
-
 
 
 #### Dialog
@@ -77,22 +70,16 @@ OpenUpdateHistoryWithBrowser = Update information (Opens in browser)
 
 
 #### SettingsPage
-
 SettingsPageTitle = Setting
 AdvancedSettings = Advanced Setting
-
 OverrideLocale = 🌏表示言語/显示语言/Display language
 RequireRestartApplicationToRefrectSettings = Restart the application to reflect the setting
-
 IsAppMenuShowWithLeft = Display the menu on the left.
-
 IsFullScreenOnAppLaunch = Launch the app in full-screen mode.
-
 SourceFoldersSettings = Folder imported to the application
 RemoveSourceFolderFromApp = Remove from app
 ConfirmRemoveSourceFolderFromAppWithFolderName = Are you sure you want to remove {0} from the app?
 ConfirmRemoveSourceFolderFromAppDescription = This removal operation does not delete the specified folder or items in the folder. \nThe folder removed from the application can be re-registered in the application at any time.
-
 FolderItemListingSettings = Folder item display settings
 IsOpenFolderContentListingAsDefault = Set "Open in image list" as the default.
 IsGenerateImageFileThumbnail = Generate thumbnails of image files
@@ -102,27 +89,19 @@ IsGenerateArchiveEntryThumbnail = Generate thumbnails of items in compressed fil
 DeleteThumbnailCache = Delete all thumbnail image cache
 ThumbnailCacheSize = Image cached storage capacity
 ProcessingThumbnailCache = Processing delete operation
-
-
-
 ImageViewerSettings = Image viewer settings
 IsReverseImageFliping_MouseWheel = Reverse scrolling pagination
 IsReverseImageFliping_Button = Reverse left/right page feed
 IsReversePageFliping_Swipe = Reverse the swipe direction for page navigation
-
 GeneralUISettings = Operation settings
 IsForceEnableXYNavigation = Auto focus content on page open\n (Arrow key/Gamepad)
 ForceXboxAppearanceModeEnabled = Added margin around the window (for large screens)
-
 OtherSettings = Other settings
 ShowWithIndexedFolderItemAccess = Use fast folder item display (experimental feature)
-
 PrivacyPolicy = Privacy policy
 ThirdPartyLibraryNotice = Third-party library license display
 AskQuestionWithMashmarrow = Send marshmallow (bug report/question/suggestion)
-
 ImageCodecExtensions = Image codec extension
-
 PdfImageSettings = PDF image settings
 PdfImageThresholdWidth = Alternate width threshold
 PdfImageAlternateWidth = Alternate width value
@@ -130,58 +109,42 @@ PdfImageThresholdHeight = Alternate height threshold
 PdfImageAlternateHeight = Alternate height value
 
 
-
 #### SourceStorageItemsPage
-
 Folders = Folder
 RecentlyUsedFiles = Recently viewed files
-
 SelectSourceFolder = Add folder to TsubameViewer
 
 
 #### FolderListupPage
-
 ChangeViewToFolderListupPage = Folder View
 ChangeViewToImageListupPage = Image View
-
-
-
-
 FileSortTitle = Sorting
 FileSortType.TitleAscending = Title Asc
 FileSortType.TitleDecending = Title Desc
 FileSortType.UpdateTimeAscending = Recent
 FileSortType.UpdateTimeDecending = Latest
-
 DefaultFolderOrArchiveOpenMode = Default folder opening behavior
 DefaultFolderOrArchiveOpenMode.Viewer = Open in viewer
 DefaultFolderOrArchiveOpenMode.Listup = Open in list view
-
 Sort_InheritancePath = Sort inheritance source
 Sort_Unselected = Unspecified
 Sort_DefaultChildItemSort = Sorting images in child folders
-
-
 OpenImageViewer = Open in viewer
 OpenFolderListup = List files
 OpenWithExplorer = Open in explorer
 OpenWithExternalApplication = Open with
-
 AddSecondaryTile = Pin to start
 RemoveSecondaryTile = Unpin the start
-
 SetThumbnailImage = Set as thumbnail image
-
 ArchiveOrFolderTransform = conversion
 TitleDigitCompletionTransform = Title digit completion
-
+SendToOtherFolder = Move...
+SendToOtherFolder_ConfirmOverwrite = Is it okay to overwrite it?
+SendToOtherFolder_MoveItem0to1 = {0} was moved to {1}.
 
 #### History Page
 HistoryPage_Title = history
 HistoryPage_RemoveAll = Delete all history
-
-
-
 
 
 #### ImageListupPage
@@ -191,33 +154,23 @@ StartMultiSelection = Multiple selection
 
 
 #### ImageViewerPage
-
 CurrentFolder_InArchive = Folder
 Page = Page
-
 IsEnablePrefetch = Preloading images
 IsEnableDoubleView = Spread display
 IsLeftBindingView = Left open display
-
 SwitchFullScreen = Full screen switching
 DoubleViewCorrectPaging = Correct the page shift of the spread
 IsKeepSingleViewOnFirstPage = Do not spread the first page
-
 IfAllFilesWannaWatchThenRegistrationFolderAtApp = If you D&D the folder to the app, all will be displayed
-
 ImageViewer_ReachStartEnd_NotificationText = We have passed the end of the line.
 
 
-
-
-
 #### EBookReaderPage
-
 IsForceResetStylingInHeadElement = Clear the style by force
 IsReversePageFliping_Scroll = Reverse scrolling pagination
 IsReversePageFliping_Button = Reverse left/right page feed
 IsPrepareNextPageEnabled = Enable Preloading
-
 DefaultWithParameter = Default: {0}
 FontSize = Font size
 LetterSpacing = Character spacing
@@ -228,24 +181,20 @@ RubyFontFamily = Phonetic font
 EBookReader_ColumnCount = Number of columns
 EBookReader_MaxWidth = Maximum page width
 EBookReader_MaxHeight = Maximum page height
-
 BackgroundColor = Background color
 ChangeBackgroundColor = Change background color
-
 ForegroundColor = Text color
 ChangeForegroundColor = Change text color
-
 OverrideWritingMode = Vertical/Horizontal writing
 WritingMode.Inherit = Not going to change
 WritingMode.Horizontal_TopToBottom = Horizontal writing
 WritingMode.Vertical_RightToLeft = Vertical writing (right to left) ⬅️
 WritingMode.Vertical_LeftToRight = Vertical writing (left to right) ➡️
-
 ResetEBookSettings = Reset settings
-
 DisplaySettings = Display settings
 Toc = Table of contents
 ReadingItemsTitle = File
+
 
 #### Movie Viewer Page
 MovieViewer_SaveCurrentFrame = Save frame image
@@ -255,17 +204,14 @@ Stretch.None = Original size
 Stretch.Fill = Fill it in, ignoring the proportions.
 Stretch.Uniform = Fit to window size
 Stretch.UniformToFill = Fill it up while maintaining the ratio
-
 MovieViewer_IsHorizontalMirror = Flip horizontally
 MovieViewer_PlayerRotate = Rotation (clockwise)
 MediaRotation.None = No rotation
 MediaRotation.Clockwise90Degrees = 90 degrees
 MediaRotation.Clockwise180Degrees = 180 degrees
 MediaRotation.Clockwise270Degrees = 270 degrees
-
 MovieViewer_SaveCurrentFrame_Saved = The video frame has been saved.
 MovieViewer_SeekNotSupported = Seeking is not supported in this video.
-
 MovieViewer_SC = Keyboard Shortcuts Guide
 MovieViewer_DisplayShortcutKeysGuide = Show Keyboard Shortcuts Guide
 MovieViewer_SC_ExitPlayer = Close the video viewer
@@ -285,16 +231,12 @@ MovieViewer_SC_SaveCurrentFrame = Save Current Frame
 MovieViewer_SC_SetPlaybackRateToPrev = Decrease Playback Speed
 MovieViewer_SC_SetPlaybackRateToNext = Increase Playback Speed
 MovieViewer_SC_SetPlaybackPositionWithPercent = Play from {0}%
-
 MovieViewer_SoundVolume = Volume
 NowPlayingWithFFmpegMediaSource = Playing using FFmpeg
 IsFFmpegUseFirstToMediaSourceFactory = Prioritize playback using FFmpeg.
 
 
-
-
 #### SearchResult
-
 SearchResultWith = Search results for {0}
 SearchPlaceholder = Search within the page
 Search_FromAll = Search from all
@@ -302,30 +244,24 @@ Search_DisplayItemsCount = {0} items
 Search_FilteredDisplayItemsCount = Showing {0} items
 
 
-
 #### Albam
-
 Albam = Album
-
 CreateAlbam = Create an album
 AlbamName_Placeholder = Enter the name of the album
 AlbamName_Default = New album
 AlbamEdit = Edit album
 AlbamDelete = Delete album
 AlbamDeleteConfirmDialogText = Do you want to delete the album "{0}"? (This operation cannot be undone)
-
 EditAlbamImage = Select the album to add to
 ChoiceTargetAlbam = Select an album
 AlbamItemRemove = Removed from album
 AlbamItemAdd = Add to album
-
 FavoriteAlbam = Favorite
 AddFavoriteImage = Add to Favourites
 RemoveFavoriteImage = Remove from favorites
 
 
 #### FolderOrArchiveResturcture
-
 FolderOrArchiveRestructure = Edit internal structure
 Output = Output
 Find = Search
@@ -361,7 +297,6 @@ RestructurePage_UnavairableOverwriteFile = The current file is read-only and can
 
 
 #### SplitImageInput
-
 SplitImage = Image split
 BookBindingDirection.Left = Left binding
 BookBindingDirection.Right = Right binding
