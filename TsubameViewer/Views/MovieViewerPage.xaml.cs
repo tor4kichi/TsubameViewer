@@ -1748,7 +1748,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         : new Rect(0, 0, renderSize.Width, scaledHeight);
                     using CanvasRenderTarget crt = new(CanvasDevice.GetSharedDevice(), (float)sourceRect.Width, (float)sourceRect.Height, DisplayInformation.GetForCurrentView().LogicalDpi);
                     MediaPlayer.CopyFrameToVideoSurface(crt, sourceRect);
-                    await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);
+                    await crt.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg); // JpegXR is can not decode skiasharp
                 }
                 else
                 {
@@ -1772,7 +1772,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         };
                         using var frame = await mc.GetThumbnailAsync(videoPosition, 0, 200, VideoFramePrecision.NearestFrame);
                         using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), frame);
-                        await bitmap.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.JpegXR);
+                        await bitmap.SaveAsync(stream.AsRandomAccessStream(), CanvasBitmapFileFormat.Jpeg);  // JpegXR is can not decode skiasharp
                     }
                 }
                 stream.Seek(0, SeekOrigin.Begin);
