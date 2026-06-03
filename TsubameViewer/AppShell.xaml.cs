@@ -550,6 +550,9 @@ public sealed partial class AppShell : UserControl
             {
                 TitlebarContent.ContentTemplate = content;
                 TitlebarContent.Content = (frame.Content as FrameworkElement)?.DataContext;
+                TitlebarContent_Nallow.ContentTemplate = content;
+                TitlebarContent_Nallow.Content = (frame.Content as FrameworkElement)?.DataContext;
+
             }
 
             if (tbContent.ObserveTitleChanged() is { } observe)
@@ -567,6 +570,8 @@ public sealed partial class AppShell : UserControl
         {
             TitlebarContent.ContentTemplate = null;
             TitlebarContent.Content = null;
+            TitlebarContent_Nallow.ContentTemplate = null;
+            TitlebarContent_Nallow.Content = null;
         }
         Window.Current.SetTitleBar(TitlebarBG);
     }

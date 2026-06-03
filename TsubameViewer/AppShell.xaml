@@ -277,13 +277,27 @@
 
           <muxc:DropDownButton.Flyout>
             <Flyout>
-              <TextBlock x:Name="WindowTitleTextBlock_Nallow"
-                         Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
-                         VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis"
-                         Style="{StaticResource TitlebarTextBlock}"
-                         TextWrapping="Wrap"
-                         MaxWidth="300"/>
+              <StackPanel>
+                <TextBlock x:Name="WindowTitleTextBlock_Nallow"
+                           Text="{x:Bind WindowTitleTextBlock.Text, Mode=OneWay}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource TitlebarTextBlock}"
+                           TextWrapping="Wrap"
+                           MaxWidth="300" />
+
+                <ContentControl x:Name="TitlebarContent_Nallow"
+                      HorizontalContentAlignment="Stretch"
+                      Margin="0 8 0 0"
+                      VerticalAlignment="Top"
+                      Height="48"
+                      VerticalContentAlignment="Stretch"                      
+                      >
+                <UIElement.RenderTransform>
+                  <TranslateTransform />
+                </UIElement.RenderTransform>
+                </ContentControl>
+              </StackPanel>
             </Flyout>
           </muxc:DropDownButton.Flyout>
         </muxc:DropDownButton>
@@ -562,6 +576,8 @@
             <Setter Target="TitleIconAndTextContainer_Nallow.Visibility"
                     Value="Visible" />
 
+            <Setter Target="TitlebarContent.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

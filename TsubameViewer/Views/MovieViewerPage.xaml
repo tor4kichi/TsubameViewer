@@ -35,16 +35,16 @@
     <DataTemplate x:Name="TitlebarContent"
                   x:DataType="vm:MovieViewerPageViewModel">
       <uwpControls:DockPanel>
+        <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
+                   Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
+                   Foreground="{ThemeResource SystemErrorTextColor}"
+                   Visibility="Collapsed"
+                   Style="{StaticResource TitlebarTextBlock}"
+                   uwpControls:DockPanel.Dock="Left" />
         <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="4"
                     uwpControls:DockPanel.Dock="Right">
-          <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
-                     Text="{i18nExt:Localize Key=IfAllFilesWannaWatchThenRegistrationFolderAtApp}"
-                     Foreground="{ThemeResource SystemErrorTextColor}"
-                     Visibility="Collapsed"
-                     Style="{StaticResource TitlebarTextBlock}" />
-
           <ToggleButton IsChecked="{x:Bind PageSettings.IsPlayerStretchEnabled, Mode=TwoWay}"
                         Style="{StaticResource TitlebarToggleButton}"
                         ToolTipService.ToolTip="{i18nExt:Localize Key=MovieViewer_PlayerStretch}"

@@ -717,13 +717,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 s.Item1.NowFullScreenMode = s.appView.IsFullScreenMode;
             })
             .AddTo(ref db);
-        observeWindowActivate
-            .ThrottleFirstLastFrame(1)
-            .Subscribe(this, static (e, s) => 
-            {
-                s.RefreshPlayerContainerSizeWithCurrentState(); 
-            })
-            .AddTo(ref db);
 
         NowFullScreenMode = appView.IsFullScreenMode;
     }
