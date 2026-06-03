@@ -635,8 +635,10 @@ public sealed class SourceStorageItemsRepository
             FolderDepth = FolderDepth.Deep,
         };
 
-        await foreach (var (item, token, metadata) in GetParsistantItems(ct).WithCancellation(ct))
+        foreach (var entry in GetParsistantItemsFromCache().OrderBy(x => x.Order))
         {
+            var item = await GetSourceStorageItemAsync(entry);
+            ct.ThrowIfCancellationRequested();
             if (item?.Name.Contains(keyword) ?? false)
             {
                 yield return item;
