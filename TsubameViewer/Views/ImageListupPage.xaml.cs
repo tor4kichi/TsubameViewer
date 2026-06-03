@@ -338,7 +338,17 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
         {
-            StartSelection();
+            if (_vm.Selection.IsSelectionModeEnabled)
+            {
+                _vm.Selection.EndSelection();
+            }
+            else
+            {
+                _vm.Selection.StartSelection();
+            }
+
+            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
         });
 
         try

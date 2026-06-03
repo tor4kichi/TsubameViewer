@@ -159,6 +159,8 @@
           IsHitTestVisible="False">
       <Button>
         <Button.KeyboardAccelerators>
+          <KeyboardAccelerator Key="F5"
+                               Invoked="RefreshPageKeyboardAccelerator_Invoked" />
           <KeyboardAccelerator Key="F11"
                                Invoked="ToggleFullScreenKeyboardAccelerator_Invoked" />
           <KeyboardAccelerator Key="Escape"
@@ -182,7 +184,6 @@
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
-
       <muxc:NavigationView.PaneHeader>
         <Border x:Name="NavigationViewHeader" />
       </muxc:NavigationView.PaneHeader>

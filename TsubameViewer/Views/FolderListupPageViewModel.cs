@@ -493,7 +493,15 @@ public sealed partial class FolderListupPageViewModel
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
         {
-            Selection.StartSelection();
+            if (Selection.IsSelectionModeEnabled)
+            {
+                Selection.EndSelection();
+            }
+            else
+            {
+                Selection.StartSelection();
+            }
+            
             FileDeleteCommand.NotifyCanExecuteChanged();
             OpenWithExplorerCommand.NotifyCanExecuteChanged();
         });

@@ -1530,10 +1530,10 @@ public sealed partial class AppShell : UserControl
 
     void InitializeSelection()
     {
-        _messenger.Register<MenuDisplayMessage>(this, (r, m) => 
-        {
-            MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
-        });
+        //_messenger.Register<MenuDisplayMessage>(this, (r, m) => 
+        //{
+        //    MyNavigationView.IsPaneVisible = m.Value == Visibility.Visible;
+        //});
     }
 
 
@@ -1659,6 +1659,14 @@ public sealed partial class AppShell : UserControl
         }
     }
 
+    private void RefreshPageKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (!IsOpenWithViewerPageType(ViewerFrame.Content?.GetType()))
+        {
+            _vm.RefreshNavigationCommand.Execute(null);
+        }
+    }
+
     private void ToggleFullScreenKeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         try
@@ -1758,6 +1766,7 @@ public sealed partial class AppShell : UserControl
     }
 
     #endregion
+
 }
 
 
