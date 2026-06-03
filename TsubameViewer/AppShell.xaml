@@ -169,7 +169,7 @@
       </Button>
     </Grid>
     <muxc:NavigationView x:Name="MyNavigationView"
-                         uwpControls:DockPanel.Dock="Top"                         
+                         uwpControls:DockPanel.Dock="Top"
                          MenuItemsSource="{Binding MenuItems}"
                          MenuItemTemplateSelector="{StaticResource MenuItemDateTemplateSelector}"
                          FooterMenuItemsSource="{x:Bind _footerItemsForTop}"
@@ -180,7 +180,8 @@
                          IsBackButtonVisible="Collapsed"
                          XYFocusDownNavigationStrategy="Projection"
                          SelectionFollowsFocus="Disabled"
-                         IsPaneToggleButtonVisible="False">
+                         IsPaneToggleButtonVisible="False"
+                         Background="{ThemeResource ApplicationContentBackgroundBrush}">
       <UIElement.RenderTransform>
         <TranslateTransform />
       </UIElement.RenderTransform>
