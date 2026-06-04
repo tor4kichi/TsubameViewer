@@ -905,7 +905,9 @@ return JSON.stringify(Array.from(set));
                             return true;
                         }
                         else { return false; }
-                    }).ToArrayPool();
+                    })
+                    .Select(x => x + 4 /* 画面上部に前ページの情報が映らないようにする補正 2pxで足りるが念の為4px */)
+                    .ToArrayPool();
 
                 Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
 
