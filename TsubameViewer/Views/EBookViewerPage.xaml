@@ -342,6 +342,11 @@
                                     RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                     OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
                                     ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
+          <UIElement.RenderTransform>
+            <TranslateTransform x:Name="EPubRenderer_1_Translate"
+                                X="50000"
+                                />
+          </UIElement.RenderTransform>
         </eBookControls:EPubRenderer>
 
         <eBookControls:EPubRenderer x:Name="EPubRenderer_2"
@@ -361,7 +366,10 @@
                                     RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                     OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
                                     ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
-          
+          <UIElement.RenderTransform>
+            <TranslateTransform x:Name="EPubRenderer_2_Translate"
+                                X="50000" />
+          </UIElement.RenderTransform>
         </eBookControls:EPubRenderer>
       </Grid>
     </Grid>

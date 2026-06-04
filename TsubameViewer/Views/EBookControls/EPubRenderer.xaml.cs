@@ -465,9 +465,10 @@ public sealed partial class EPubRenderer : UserControl
                 h => SizeChanged -= h
                 ).ToObservable().AsUnitObservable()            
             )
-            .Where(x => !isFirstContent)
+            .DebounceFrame(1)
+            .Where(x => !isFirstContent)            
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleLast(TimeSpan.FromMilliseconds(1000))
+            .ThrottleLast(TimeSpan.FromMilliseconds(500))
             .Where(x => !isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .Subscribe(async args =>
@@ -475,7 +476,7 @@ public sealed partial class EPubRenderer : UserControl
                 using (await _domUpdateLock.LockAsync(default))
                 {
                     // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                    //await Task.Delay(50);
+                    await Task.Delay(50);
 
                     // リサイズしたら再描画しないとレイアウトが崩れるっぽい
                     WebView.Refresh();
