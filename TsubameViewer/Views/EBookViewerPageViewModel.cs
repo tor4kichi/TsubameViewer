@@ -338,7 +338,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             .AddTo(ref db);
 
         R3.Observable.Merge(
-            this.ObservePropertyChanged(x => x.NowLoadingPage, false).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
             )
@@ -350,16 +349,17 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (s.InnerCurrentImageIndex == -1) { return; }
                 if (s.InnerImageTotalCount <= 0) { return; }
                 if (s.CurrentImageIndex == -1) { return; }
-                var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
+                if (s.CurrentPageInfo == null) { return; }
+                var currentPageIndex = s.CurrentPageInfo.OuterPageIndex;
+                var currentPage = s.CurrentBookReadingOrder[currentPageIndex];
                 long totalSize = 0;
-                foreach (var item in s.CurrentBookReadingOrder.Take(s.CurrentImageIndex))
+                foreach (var item in s.CurrentBookReadingOrder.Take(currentPageIndex))
                 {
                     totalSize += item.ContentFileEntry?.Length ?? 0;
-                }
-                var currentItem = s.CurrentBookReadingOrder[s.CurrentImageIndex];
-                var partialPageUnit = currentItem.ContentFileEntry!.Length / s.InnerImageTotalCount;
+                }                
+                var partialPageUnit = currentPage.ContentFileEntry!.Length / s.CurrentPageInfo.InnerTotalPageCount;
 
-                s.CurrentReadingItemPosition = totalSize + partialPageUnit * s._innerCurrentImageIndex;
+                s.CurrentReadingItemPosition = totalSize + partialPageUnit * s.CurrentPageInfo.InnerCurrentPageIndex;
                 Debug.WriteLine($"{s.CurrentReadingItemPosition / s.TotalReadingItemContentSize * 100:F1}%");
             })
             .AddTo(ref db);
