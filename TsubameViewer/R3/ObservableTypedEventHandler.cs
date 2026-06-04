@@ -38,6 +38,14 @@ public static class ObservableEventExtensions
             );
     }
 
+    public static Observable<TappedRoutedEventArgs> ObserveTapped(this FrameworkElement control)
+    {
+        return Observable.FromEvent<TappedEventHandler, TappedRoutedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => control.Tapped += h,
+            h => control.Tapped -= h);
+    }
+
     public static Observable<WindowActivatedEventArgs> ObserveActivated(this Window window)
     {
         return Observable.FromEvent<WindowActivatedEventHandler, WindowActivatedEventArgs>(

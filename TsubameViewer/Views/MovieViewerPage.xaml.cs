@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.WinUI;
+using DryIoc.ImTools;
 using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
@@ -23,6 +24,7 @@ using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -124,9 +126,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 _nextIsDisplayControlUI = !IsDisplayControlUI;
             }
+            else if (pt.PointerDevice.PointerDeviceType == PointerDeviceType.Touch)
+            {
+                _nextIsDisplayControlUI = !IsDisplayControlUI;
+            }
             else
             {
-                _nextIsDisplayControlUI = true;
+                if (IsDisplayControlUI)
+                {
+                    _nextIsDisplayControlUI = false;
+                }
+                else
+                {
+                    _nextIsDisplayControlUI = true;
+                }
+                _lastTappedTime = TimeProvider.System.GetTimestamp();                
             }
         }
     }
@@ -144,9 +158,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             IsDisplayControlUI = b;
             _nextIsDisplayControlUI = null;
+
+            if (b)
+            {
+                _mouseCursorAutoHideTimer?.Start();
+            }
+            else
+            {
+                _mouseCursorAutoHideTimer?.Stop();                
+            }
         }
     }
 
+    long _lastTappedTime;
 
 
     private void ControlUIInteractionWall_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
@@ -284,7 +308,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         mediaPlayer.CommandManager.IsEnabled = true;
 
         var insideWindowRp = Observable.Merge(
-                this.ObservePointerEntered().Select(x => true), 
+                this.ObservePointerEntered().Select(x => x.Pointer.PointerDeviceType == PointerDeviceType.Mouse), 
                 this.ObservePointerExited().Select(x => false))
 #if DEBUG
             .Do(x => Debug.WriteLine($"inside window: {x}"))
@@ -308,19 +332,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _mouseCursorAutoHideTimer?.Stop();
         _mouseCursorAutoHideTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _mouseCursorAutoHideTimer.Tick += MouseCursorMonitorTimer_Tick;
-        _mouseCursorAutoHideTimer.Interval = TimeSpan.FromSeconds(1.75);
+        _mouseCursorAutoHideTimer.Interval = TimeSpan.FromSeconds(2.25);
         _mouseCursorAutoHideTimer.IsRepeating = false;
 
         Disposable.Create(_mouseCursorAutoHideTimer, s => s.Stop());
         void MouseCursorMonitorTimer_Tick(DispatcherQueueTimer sender, object args)
         {
             if (insideWindowRp.CurrentValue
-                && PlayerState == MediaPlaybackState.Playing
-                && !insideControlUIRp.CurrentValue
+                && PlayerState == MediaPlaybackState.Playing                
                 && !IsFlyoutOpen
                 && ShortcutKeyGuideUIContainer.Visibility == Visibility.Collapsed)
             {
-                HideMouseCursor();                
+                HideMouseCursor();  
             }
 
             if (PlayerState == MediaPlaybackState.Playing
@@ -499,22 +522,40 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         Observable.Merge(
             MouseDevice.GetForCurrentView().ObserveMouseMoved().AsUnitObservable(),
-            insideWindowRp.Where(x => x).AsUnitObservable(),
+            insideWindowRp.AsUnitObservable(),
             Window.Current.ObserveActivated().AsUnitObservable()
             )
-            .ThrottleFirstLastFrame(1)
-            .Subscribe((this, insideWindowRp, _mouseCursorAutoHideTimer), static (x, s) =>
+            .DebounceFrame(1)
+            .Subscribe((this, insideWindowRp, insideControlUIRp, _mouseCursorAutoHideTimer), static (x, s) =>
             {
-                var (_this, insideWindowRp, timer) = s;                
+                var (_this, insideWindowRp, insideControlUIRp, timer) = s;                
                 _this.ShowMouseCursor();
                 timer.Stop();
-                if (s.insideWindowRp.CurrentValue 
-                && s.Item1.PlayerState == MediaPlaybackState.Playing
-                && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
+                if (TimeProvider.System.GetElapsedTime(_this._lastTappedTime) < TimeSpan.FromMilliseconds(250))
+                {
+                    // タップ動作中はスキップ
+                    Debug.WriteLine("skip");
+                    if (_this.IsDisplayControlUI)
+                    {
+                        _this.ShowMouseCursor();
+                    }
+                    else
+                    {
+                        _this.HideMouseCursor();
+                    }
+                    return;
+                }
+                if (!s.insideWindowRp.CurrentValue)
+                {
+                    _this.IsDisplayControlUI = false;
+                }
+                else if (!insideControlUIRp.CurrentValue
+                    && s.Item1.PlayerState == MediaPlaybackState.Playing
+                    && !s.Item1.MySwipeDistanceBehavior.NowManipulation)
                 {
                     _this.IsDisplayControlUI = true;
                     timer.Start();
-                }                
+                }                                
             })
             .AddTo(ref db);        
 
