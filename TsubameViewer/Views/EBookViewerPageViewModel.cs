@@ -348,7 +348,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (s.CurrentBookReadingOrder == null) { return; }
                 if (s.CurrentFolderItem == null) { return; }
                 if (s.InnerCurrentImageIndex == -1) { return; }
-                if (s.InnerImageTotalCount >= 0) { return; }
+                if (s.InnerImageTotalCount <= 0) { return; }
                 if (s.CurrentImageIndex == -1) { return; }
                 var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
                 long totalSize = 0;

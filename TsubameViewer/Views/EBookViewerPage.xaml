@@ -495,7 +495,7 @@
                        Minimum="0"
                        Maximum="{x:Bind _vm.TotalReadingItemContentSize, Mode=OneWay}"
                        VerticalAlignment="Bottom"
-                       Opacity="0.3"                       
+                       Opacity="0.5"                       
                        x:Name="ReadCompleteRateProgressBar"
                        RenderTransformOrigin="1, 0"
                        FlowDirection="RightToLeft"
