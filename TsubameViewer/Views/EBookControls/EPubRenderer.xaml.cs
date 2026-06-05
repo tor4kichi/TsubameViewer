@@ -906,7 +906,7 @@ return JSON.stringify(Array.from(set));
                         }
                         else { return false; }
                     })
-                    .Select(x => x + 4 /* 画面上部に前ページの情報が映らないようにする補正 2pxで足りるが念の為4px */)
+                    .Select(x => x + 2 /* 画面上部に前ページの情報が映らないようにする補正 */)
                     .ToArrayPool();
 
                 Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
