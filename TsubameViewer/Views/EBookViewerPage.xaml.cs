@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
@@ -91,8 +92,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             animation.Cancel();                
         }
 
-        EPubRenderer_1.Opacity = 0;
-        EPubRenderer_2.Opacity = 0;
+        EPubRenderer_1_Translate.X = 50000;
+        EPubRenderer_2_Translate.X = 50000;
         _vm.ObservePropertyChanged(x => x.NowDisplayRendererIndex)
             .Subscribe(this, static (x, s) =>
             {
@@ -100,14 +101,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 if (x == 0)
                 {
                     Debug.WriteLine("Display EPubRenderer_1");
-                    _this.EPubRenderer_1.Opacity = 1;
-                    _this.EPubRenderer_2.Opacity = 0;
+                    s.EPubRenderer_1_Translate.X = 0;
+                    s.EPubRenderer_2_Translate.X = 50000;
                 }
                 else
                 {
                     Debug.WriteLine("Display EPubRenderer_2");
-                    _this.EPubRenderer_1.Opacity = 0;
-                    _this.EPubRenderer_2.Opacity = 1;
+                    s.EPubRenderer_1_Translate.X = 50000;
+                    s.EPubRenderer_2_Translate.X = 0;
                 }
             })
             .RegisterTo(this.GetCancellationTokenOnNavigatingFrom());
@@ -212,6 +213,20 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        _vm.SwapPages[0].ObservePropertyChanged(x => x.IsLoaded)
+            .Where(x => x is false)
+            .Subscribe(this, (_, s) => 
+            {
+                s._fadeOutAnim.Start(s.EPubRenderer_1);
+            })
+            .AddTo(ref db);
+        _vm.SwapPages[1].ObservePropertyChanged(x => x.IsLoaded)
+            .Where(x => x is false)
+            .Subscribe(this, (_, s) =>
+            {
+                s._fadeOutAnim.Start(s.EPubRenderer_2);
+            })
+            .AddTo(ref db);
         db.Build().RegisterTo(elem.GetCancellationTokenOnUnloaded());
         NowEnablePageMove_1 = false;
         NowEnablePageMove_2 = false;
@@ -243,10 +258,9 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
 
     AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
-            .Opacity(0.0, duration: TimeSpan.FromMilliseconds(75));
+            .Opacity(0.00001, duration: TimeSpan.FromMilliseconds(50));
     AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
-            .Opacity(1, delay: TimeSpan.FromMilliseconds(50),
-            duration: TimeSpan.FromMilliseconds(125));
+            .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
 
     private void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
     {            
@@ -260,6 +274,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         {
             _vm.CompletePageLoading_1();
         }
+
+        _fadeInAnim.Start(EPubRenderer_1);
     }
 
     private void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
@@ -274,13 +290,16 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         {
             _vm.CompletePageLoading_2();
         }
+
+        _fadeInAnim.Start(EPubRenderer_2);
     }
 
 
     [RelayCommand]
     async Task InnerGoPrevImage()
     {
-        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button
+            || _vm.EBookReaderSettings.OverrideWritingMode == WritingMode.Vertical_LeftToRight)
         {
             await ExecuteGoNextCommand();
         }
@@ -294,7 +313,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task InnerGoNextImage()
     {
-        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button
+            || _vm.EBookReaderSettings.OverrideWritingMode == WritingMode.Vertical_LeftToRight)
         {
             await ExecuteGoPrevCommand();
         }
@@ -312,31 +332,30 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1
                 : EPubRenderer_2;
-            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
-                ? EPubRenderer_2
-                : EPubRenderer_1;
-
-            if (_vm.NowDisplayRendererIndex == 0
-                && NowEnablePageMove_1 is false)
-            {
-                return;
-            }
-            else if (_vm.NowDisplayRendererIndex == 1
-                && NowEnablePageMove_2 is false)
-            {
-                return;
-            }
-
             if (currentEPubRenderer.CanGoNext())
             {
                 currentEPubRenderer.GoNext();
             }
             else
             {
+                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
+                {
+                    return;
+                }
+
                 if (_vm.CanGoNext())
                 {
+                    var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                        ? EPubRenderer_2
+                        : EPubRenderer_1;
+
                     altEPubRenderer.PrepareGoNext();
                     currentEPubRenderer.PrepareGoNext();
+                    if (_vm.IsNextPageCached() is false)
+                    {
+                        altEPubRenderer.Opacity = 0.00001;
+                        await Task.Delay(75);
+                    }
                     await _vm.GoNextImageAsync();
                 }
             }
@@ -351,31 +370,30 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1
                 : EPubRenderer_2;
-            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
-                ? EPubRenderer_2
-                : EPubRenderer_1;
-
-            if (_vm.NowDisplayRendererIndex == 0
-                && NowEnablePageMove_1 is false)
-            {
-                return;
-            }
-            else if (_vm.NowDisplayRendererIndex == 1
-                && NowEnablePageMove_2 is false)
-            {
-                return;
-            }
-
             if (currentEPubRenderer.CanGoPreview())
             {
                 currentEPubRenderer.GoPreview();
             }
             else
             {
+                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
+                {
+                    return;
+                }
+
                 if (_vm.CanGoPrev())
                 {
+                    var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                        ? EPubRenderer_2
+                        : EPubRenderer_1;
+
                     altEPubRenderer.PrepareGoPreview();
                     currentEPubRenderer.PrepareGoPreview();
+                    if (_vm.IsPrevPageCached() is false)
+                    {
+                        altEPubRenderer.Opacity = 0.00001;
+                        await Task.Delay(75);
+                    }
                     await _vm.GoPrevImageAsync();
                 }
             }

@@ -20,6 +20,7 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:epub="using:VersOne.Epub"
+      xmlns:models="using:TsubameViewer.Core.Models.EBook"
       mc:Ignorable="d"
   NavigationCacheMode="Enabled"
   >
@@ -321,7 +322,7 @@
     </Button>
 
     <!-- 電子書籍ビューワー -->
-    <Grid Margin="40 24 24 64">
+    <Grid Margin="40 24 24 80">
       <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}"
             MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"            
             x:Name="EPubRendererContainer"
@@ -342,6 +343,11 @@
                                     RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                     OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
                                     ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
+          <UIElement.RenderTransform>
+            <TranslateTransform x:Name="EPubRenderer_1_Translate"
+                                X="50000"
+                                />
+          </UIElement.RenderTransform>
         </eBookControls:EPubRenderer>
 
         <eBookControls:EPubRenderer x:Name="EPubRenderer_2"
@@ -361,7 +367,10 @@
                                     RubyFontFamily="{x:Bind _vm.EBookReaderSettings.RubyFontFamily, Mode=OneWay}"
                                     OverrideWritingMode="{x:Bind _vm.EBookReaderSettings.OverrideWritingMode, Mode=OneWay}"
                                     ColumnCount="{x:Bind _vm.EBookReaderSettings.ColumnCount, Mode=OneWay}">
-          
+          <UIElement.RenderTransform>
+            <TranslateTransform x:Name="EPubRenderer_2_Translate"
+                                X="50000" />
+          </UIElement.RenderTransform>
         </eBookControls:EPubRenderer>
       </Grid>
     </Grid>
@@ -495,7 +504,7 @@
                        Minimum="0"
                        Maximum="{x:Bind _vm.TotalReadingItemContentSize, Mode=OneWay}"
                        VerticalAlignment="Bottom"
-                       Opacity="0.3"                       
+                       Opacity="0.5"                       
                        x:Name="ReadCompleteRateProgressBar"
                        RenderTransformOrigin="1, 0"
                        FlowDirection="RightToLeft"
@@ -746,7 +755,19 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <!--<wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />-->
+            <wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}">
+              <wst:CompareStateTrigger.CompareTo>
+                <models:WritingMode>Vertical_LeftToRight</models:WritingMode>
+              </wst:CompareStateTrigger.CompareTo>
+            </wst:CompareStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
+                    Value="LeftToRight" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
             <StateTrigger IsActive="{Binding ElementName=EPubRenderer, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>

@@ -185,7 +185,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     {
         lock (_lock)
         {
-            if (_currentBook?.FilePath is { } path)
+            if (_currentPath is { } path)
             {
                 _messenger.Send(new LatestContentViewUpdateMessage(path));
             }
@@ -338,28 +338,26 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             .AddTo(ref db);
 
         R3.Observable.Merge(
-            this.ObservePropertyChanged(x => x.NowLoadingPage, false).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(250))
             .Subscribe(this, static (_, s) =>
             {
+                if (s.CurrentPageInfo == null) { return; }
                 if (s.CurrentBookReadingOrder == null) { return; }
-                if (s.CurrentFolderItem == null) { return; }
-                if (s.InnerCurrentImageIndex == -1) { return; }
-                if (s.InnerImageTotalCount >= 0) { return; }
-                if (s.CurrentImageIndex == -1) { return; }
-                var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
+                if (s.CurrentPageInfo.InnerCurrentPageIndex == -1) { return; }
+                if (s.CurrentPageInfo.InnerTotalPageCount <= 0) { return; }                
+                var currentPageIndex = s.CurrentPageInfo.OuterPageIndex;
+                var currentPage = s.CurrentBookReadingOrder[currentPageIndex];
                 long totalSize = 0;
-                foreach (var item in s.CurrentBookReadingOrder.Take(s.CurrentImageIndex))
+                foreach (var item in s.CurrentBookReadingOrder.Take(currentPageIndex))
                 {
                     totalSize += item.ContentFileEntry?.Length ?? 0;
-                }
-                var currentItem = s.CurrentBookReadingOrder[s.CurrentImageIndex];
-                var partialPageUnit = currentItem.ContentFileEntry!.Length / s.InnerImageTotalCount;
+                }                
+                var partialPageUnit = currentPage.ContentFileEntry!.Length / s.CurrentPageInfo.InnerTotalPageCount;
 
-                s.CurrentReadingItemPosition = totalSize + partialPageUnit * s._innerCurrentImageIndex;
+                s.CurrentReadingItemPosition = totalSize + partialPageUnit * s.CurrentPageInfo.InnerCurrentPageIndex;
                 Debug.WriteLine($"{s.CurrentReadingItemPosition / s.TotalReadingItemContentSize * 100:F1}%");
             })
             .AddTo(ref db);
@@ -429,7 +427,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
         public TaskCompletionSource<int>? LoadingTcs { get; set; }
 
-        public bool IsLoaded { get; set; } = false;
+        [ObservableProperty]
+        bool _isLoaded = false;
     }
 
     public EBookPageInfo[] SwapPages { get; } = new EBookPageInfo[2] 
@@ -579,6 +578,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EpubLocalTextContentFileRef currentPage = CurrentBookReadingOrder.ElementAtOrDefault(requestPage);
         if (currentPage == null) { throw new IndexOutOfRangeException(); }
         Debug.WriteLine(currentPage.FilePath);
+        pageInfo.IsLoaded = false;
         pageInfo.OuterPageIndex = requestPage;
         pageInfo.EpubFileRef = currentPage;
         foreach (var item in CurrentBookReadingOrder.AsValueEnumerable().Take(requestPage+1).Reverse())
@@ -592,7 +592,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.InnerCurrentPageIndex = 0;
-        pageInfo.IsLoaded = false;
     }
 
     void ClearPageInfo(EBookPageInfo pageInfo)
@@ -878,10 +877,15 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, CurrentBookReadingOrder.Count - 1), _navigationCt);
     }
 
-
     public bool CanGoNext()
     {
         return CurrentBookReadingOrder?.Count > CurrentImageIndex + 1;
+    }
+
+    public bool IsNextPageCached()
+    {
+        var altIndex = NowDisplayRendererIndex == 0 ? 1 : 0;
+        return SwapPages[altIndex].OuterPageIndex == CurrentImageIndex + 1;
     }
 
     public async Task GoPrevImageAsync()
@@ -892,6 +896,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     public bool CanGoPrev()
     {
         return CurrentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
+    }
+
+    public bool IsPrevPageCached()
+    {
+        var altIndex = NowDisplayRendererIndex == 0 ? 1 : 0;
+        return SwapPages[altIndex].OuterPageIndex == CurrentImageIndex - 1;
     }
 
     #endregion

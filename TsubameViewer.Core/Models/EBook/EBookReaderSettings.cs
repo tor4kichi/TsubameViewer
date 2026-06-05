@@ -8,10 +8,10 @@ namespace TsubameViewer.Core.Models.EBook;
 
 public sealed class EBookReaderSettings : FlagsRepositoryBase
 {
-    public static double DefaultRootFontSizeInPixel = 18.0;
+    public static double DefaultRootFontSizeInPixel = 14.0;
     public static double DefaultLetterSpacingInPixel = 0.0;
     public static double DefaultLineHeightInNoUnit = 1.5;
-    public static double DefaultRubySizeInPixel = 12.0;
+    public static double DefaultRubySizeInPixel = 9.0;
 
 
     public EBookReaderSettings()

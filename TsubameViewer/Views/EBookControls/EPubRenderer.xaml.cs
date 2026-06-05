@@ -415,10 +415,22 @@ public sealed partial class EPubRenderer : UserControl
             head.AppendChild(scriptNode);
         }
 
+        // 末尾にスクロール領域を拡張するための空白要素を追加
         var body = xmlDoc.DocumentElement["body"];
-        var tailMarkerElement = xmlDoc.CreateElement("span");
-        tailMarkerElement.SetAttribute("id", "tv_tail_markar");
-        body.AppendChild(tailMarkerElement);
+        var spacer = xmlDoc.CreateElement("strong"); // 各ページの高さ計算に引っかからない要素を利用したい
+        spacer.SetAttribute("id", "tv_tail_spacer");
+        string spacerStyle;
+        float factor = 1.5f;
+        if (OverrideWritingMode == WritingMode.Vertical_RightToLeft || OverrideWritingMode == WritingMode.Vertical_LeftToRight)
+        {
+            spacerStyle = $"display:block; width:calc(100vw * {factor:F1}); height:1px; background:transparent;";
+        }
+        else
+        {
+            spacerStyle = $"display:block; height:calc(100vh * {factor:F1}); width:1px; background:transparent;";
+        }
+        spacer.SetAttribute("style", spacerStyle);
+        body.AppendChild(spacer);
 
         using (var stringWriter = new StringWriter())
         using (var xmlTextWriter = XmlWriter.Create(stringWriter))
@@ -465,9 +477,10 @@ public sealed partial class EPubRenderer : UserControl
                 h => SizeChanged -= h
                 ).ToObservable().AsUnitObservable()            
             )
-            .Where(x => !isFirstContent)
+            .DebounceFrame(1)
+            .Where(x => !isFirstContent)            
             .Do(_ => ContentRefreshStarting?.Invoke(this, EventArgs.Empty))
-            .ThrottleLast(TimeSpan.FromMilliseconds(1000))
+            .ThrottleLast(TimeSpan.FromMilliseconds(500))
             .Where(x => !isFirstContent)
             .Where(x => this.Visibility == Visibility.Visible)
             .Subscribe(async args =>
@@ -475,7 +488,7 @@ public sealed partial class EPubRenderer : UserControl
                 using (await _domUpdateLock.LockAsync(default))
                 {
                     // WebView内部のリサイズが完了してからリサイズさせることで表示崩れを防ぐ
-                    //await Task.Delay(50);
+                    await Task.Delay(50);
 
                     // リサイズしたら再描画しないとレイアウトが崩れるっぽい
                     WebView.Refresh();
@@ -820,7 +833,11 @@ return JSON.stringify(Array.from(set));
             // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
             // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(WebView.ActualWidth - 16, WebView.ActualHeight - 8, columnCount, FontSize);
+            await SetVerticalBodyStyleAsync(
+                WebView.ActualWidth, 
+                WebView.ActualHeight - 4, 
+                columnCount, 
+                FontSize);
         }
         else
         {
@@ -904,7 +921,9 @@ return JSON.stringify(Array.from(set));
                             return true;
                         }
                         else { return false; }
-                    }).ToArrayPool();
+                    })
+                    .Select(x => x + 2 /* 画面上部に前ページの情報が映らないようにする補正 */)
+                    .ToArrayPool();
 
                 Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
 
