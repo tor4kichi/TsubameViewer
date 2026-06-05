@@ -344,12 +344,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             .ThrottleLast(TimeSpan.FromMilliseconds(250))
             .Subscribe(this, static (_, s) =>
             {
-                if (s.CurrentBookReadingOrder == null) { return; }
-                if (s.CurrentFolderItem == null) { return; }
-                if (s.InnerCurrentImageIndex == -1) { return; }
-                if (s.InnerImageTotalCount <= 0) { return; }
-                if (s.CurrentImageIndex == -1) { return; }
                 if (s.CurrentPageInfo == null) { return; }
+                if (s.CurrentBookReadingOrder == null) { return; }
+                if (s.CurrentPageInfo.InnerCurrentPageIndex == -1) { return; }
+                if (s.CurrentPageInfo.InnerTotalPageCount <= 0) { return; }                
                 var currentPageIndex = s.CurrentPageInfo.OuterPageIndex;
                 var currentPage = s.CurrentBookReadingOrder[currentPageIndex];
                 long totalSize = 0;
