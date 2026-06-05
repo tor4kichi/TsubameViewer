@@ -876,10 +876,15 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         await UpdateCurrentPage(Math.Min(CurrentImageIndex + 1, CurrentBookReadingOrder.Count - 1), _navigationCt);
     }
 
-
     public bool CanGoNext()
     {
         return CurrentBookReadingOrder?.Count > CurrentImageIndex + 1;
+    }
+
+    public bool IsNextPageCached()
+    {
+        var altIndex = NowDisplayRendererIndex == 0 ? 1 : 0;
+        return SwapPages[altIndex].OuterPageIndex == CurrentImageIndex + 1;
     }
 
     public async Task GoPrevImageAsync()
@@ -890,6 +895,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     public bool CanGoPrev()
     {
         return CurrentBookReadingOrder?.Count >= 2 && CurrentImageIndex > 0;
+    }
+
+    public bool IsPrevPageCached()
+    {
+        var altIndex = NowDisplayRendererIndex == 0 ? 1 : 0;
+        return SwapPages[altIndex].OuterPageIndex == CurrentImageIndex - 1;
     }
 
     #endregion

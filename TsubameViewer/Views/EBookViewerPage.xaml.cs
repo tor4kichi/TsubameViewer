@@ -324,13 +324,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 ? EPubRenderer_2
                 : EPubRenderer_1;
 
-            if (_vm.NowDisplayRendererIndex == 0
-                && NowEnablePageMove_1 is false)
-            {
-                return;
-            }
-            else if (_vm.NowDisplayRendererIndex == 1
-                && NowEnablePageMove_2 is false)
+            if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
             {
                 return;
             }
@@ -345,6 +339,10 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 {
                     altEPubRenderer.PrepareGoNext();
                     currentEPubRenderer.PrepareGoNext();
+                    if (_vm.IsNextPageCached() is false)
+                    {
+                        altEPubRenderer.Opacity = 0;
+                    }
                     await _vm.GoNextImageAsync();
                 }
             }
@@ -363,13 +361,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 ? EPubRenderer_2
                 : EPubRenderer_1;
 
-            if (_vm.NowDisplayRendererIndex == 0
-                && NowEnablePageMove_1 is false)
-            {
-                return;
-            }
-            else if (_vm.NowDisplayRendererIndex == 1
-                && NowEnablePageMove_2 is false)
+            if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
             {
                 return;
             }
@@ -384,6 +376,10 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                 {
                     altEPubRenderer.PrepareGoPreview();
                     currentEPubRenderer.PrepareGoPreview();
+                    if (_vm.IsPrevPageCached() is false)
+                    {
+                        altEPubRenderer.Opacity = 0;
+                    }
                     await _vm.GoPrevImageAsync();
                 }
             }
