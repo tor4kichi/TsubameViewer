@@ -677,7 +677,7 @@ public sealed partial class EPubRenderer : UserControl
     {
         sb.AppendLine(
 @"function SetVerticalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize) {
-document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px; text-orientation: upright;`;
+document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
 }"
 );        
     }
@@ -736,14 +736,10 @@ return JSON.stringify(Array.from(set));
 """            
             function PushEmptyParagraph()
             {
-                //for (var i = 0; i != 50; i++)
-                //{
-                    //document.body.appendChild(document.createElement(`p`));
-                //}
-                const item = document.createElement(`p`);
-                item.height = 20000;
-                item.width = 20000;
-                document.body.appendChild(item);
+                for (var i = 0; i != 50; i++)
+                {
+                    document.body.appendChild(document.createElement(`p`));
+                }
             }
             """);
     }
