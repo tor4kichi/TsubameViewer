@@ -329,23 +329,23 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1
                 : EPubRenderer_2;
-            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
-                ? EPubRenderer_2
-                : EPubRenderer_1;
-
-            if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
-            {
-                return;
-            }
-
             if (currentEPubRenderer.CanGoNext())
             {
                 currentEPubRenderer.GoNext();
             }
             else
             {
+                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
+                {
+                    return;
+                }
+
                 if (_vm.CanGoNext())
                 {
+                    var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                        ? EPubRenderer_2
+                        : EPubRenderer_1;
+
                     altEPubRenderer.PrepareGoNext();
                     currentEPubRenderer.PrepareGoNext();
                     if (_vm.IsNextPageCached() is false)
@@ -367,23 +367,23 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             var currentEPubRenderer = _vm.NowDisplayRendererIndex == 0
                 ? EPubRenderer_1
                 : EPubRenderer_2;
-            var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
-                ? EPubRenderer_2
-                : EPubRenderer_1;
-
-            if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
-            {
-                return;
-            }
-
             if (currentEPubRenderer.CanGoPreview())
             {
                 currentEPubRenderer.GoPreview();
             }
             else
             {
+                if (NowEnablePageMove_1 is false || NowEnablePageMove_2 is false)
+                {
+                    return;
+                }
+
                 if (_vm.CanGoPrev())
                 {
+                    var altEPubRenderer = _vm.NowDisplayRendererIndex == 0
+                        ? EPubRenderer_2
+                        : EPubRenderer_1;
+
                     altEPubRenderer.PrepareGoPreview();
                     currentEPubRenderer.PrepareGoPreview();
                     if (_vm.IsPrevPageCached() is false)
