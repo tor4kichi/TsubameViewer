@@ -20,6 +20,7 @@
   xmlns:i18nExt="using:I18NPortable.Xaml.Extensions"
       xmlns:vm="using:TsubameViewer.ViewModels"
       xmlns:epub="using:VersOne.Epub"
+      xmlns:models="using:TsubameViewer.Core.Models.EBook"
       mc:Ignorable="d"
   NavigationCacheMode="Enabled"
   >
@@ -754,7 +755,19 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <!--<wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}" CompareTo="Horizontal_TopToBottom" />-->
+            <wst:CompareStateTrigger Value="{Binding EBookReaderSettings.OverrideWritingMode}">
+              <wst:CompareStateTrigger.CompareTo>
+                <models:WritingMode>Vertical_LeftToRight</models:WritingMode>
+              </wst:CompareStateTrigger.CompareTo>
+            </wst:CompareStateTrigger>
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="ReadCompleteRateProgressBar.FlowDirection"
+                    Value="LeftToRight" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
             <StateTrigger IsActive="{Binding ElementName=EPubRenderer, Path=IsVerticalLayout, Converter={StaticResource BoolNegationConverter}}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>

@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.EBookControls;
@@ -297,7 +298,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task InnerGoPrevImage()
     {
-        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button
+            || _vm.EBookReaderSettings.OverrideWritingMode == WritingMode.Vertical_LeftToRight)
         {
             await ExecuteGoNextCommand();
         }
@@ -311,7 +313,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     [RelayCommand]
     async Task InnerGoNextImage()
     {
-        if (_vm.EBookReaderSettings.IsReversePageFliping_Button)
+        if (_vm.EBookReaderSettings.IsReversePageFliping_Button
+            || _vm.EBookReaderSettings.OverrideWritingMode == WritingMode.Vertical_LeftToRight)
         {
             await ExecuteGoPrevCommand();
         }
