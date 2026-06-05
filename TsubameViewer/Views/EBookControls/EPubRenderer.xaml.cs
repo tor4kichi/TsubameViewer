@@ -415,10 +415,22 @@ public sealed partial class EPubRenderer : UserControl
             head.AppendChild(scriptNode);
         }
 
+        // 末尾にスクロール領域を拡張するための空白要素を追加
         var body = xmlDoc.DocumentElement["body"];
-        var tailMarkerElement = xmlDoc.CreateElement("span");
-        tailMarkerElement.SetAttribute("id", "tv_tail_markar");
-        body.AppendChild(tailMarkerElement);
+        var spacer = xmlDoc.CreateElement("strong"); // 各ページの高さ計算に引っかからない要素を利用したい
+        spacer.SetAttribute("id", "tv_tail_spacer");
+        string spacerStyle;
+        float factor = 1.5f;
+        if (OverrideWritingMode == WritingMode.Vertical_RightToLeft || OverrideWritingMode == WritingMode.Vertical_LeftToRight)
+        {
+            spacerStyle = $"display:block; width:calc(100vw * {factor:F1}); height:1px; background:transparent;";
+        }
+        else
+        {
+            spacerStyle = $"display:block; height:calc(100vh * {factor:F1}); width:1px; background:transparent;";
+        }
+        spacer.SetAttribute("style", spacerStyle);
+        body.AppendChild(spacer);
 
         using (var stringWriter = new StringWriter())
         using (var xmlTextWriter = XmlWriter.Create(stringWriter))
@@ -665,7 +677,7 @@ public sealed partial class EPubRenderer : UserControl
     {
         sb.AppendLine(
 @"function SetVerticalBodyStyle(webViewWidth, webViewHeight, columnCount, fontSize) {
-document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px;`;
+document.body.style = `width: 100vw; overflow: hidden; max-width: ${webViewWidth}; max-height: ${webViewHeight}px; column-count: ${columnCount}; column-rule-width: 0px; column-gap: 1em; font-size: ${fontSize}px; text-orientation: upright;`;
 }"
 );        
     }
@@ -724,10 +736,14 @@ return JSON.stringify(Array.from(set));
 """            
             function PushEmptyParagraph()
             {
-                for (var i = 0; i != 50; i++)
-                {
-                    document.body.appendChild(document.createElement(`p`));
-                }
+                //for (var i = 0; i != 50; i++)
+                //{
+                    //document.body.appendChild(document.createElement(`p`));
+                //}
+                const item = document.createElement(`p`);
+                item.height = 20000;
+                item.width = 20000;
+                document.body.appendChild(item);
             }
             """);
     }
@@ -821,7 +837,11 @@ return JSON.stringify(Array.from(set));
             // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
             // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
             //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(WebView.ActualWidth - 16, WebView.ActualHeight - 8, columnCount, FontSize);
+            await SetVerticalBodyStyleAsync(
+                WebView.ActualWidth, 
+                WebView.ActualHeight - 4, 
+                columnCount, 
+                FontSize);
         }
         else
         {
