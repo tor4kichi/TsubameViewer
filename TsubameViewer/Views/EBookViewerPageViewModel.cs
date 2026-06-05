@@ -427,7 +427,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
         public TaskCompletionSource<int>? LoadingTcs { get; set; }
 
-        public bool IsLoaded { get; set; } = false;
+        [ObservableProperty]
+        bool _isLoaded = false;
     }
 
     public EBookPageInfo[] SwapPages { get; } = new EBookPageInfo[2] 
@@ -577,6 +578,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         EpubLocalTextContentFileRef currentPage = CurrentBookReadingOrder.ElementAtOrDefault(requestPage);
         if (currentPage == null) { throw new IndexOutOfRangeException(); }
         Debug.WriteLine(currentPage.FilePath);
+        pageInfo.IsLoaded = false;
         pageInfo.OuterPageIndex = requestPage;
         pageInfo.EpubFileRef = currentPage;
         foreach (var item in CurrentBookReadingOrder.AsValueEnumerable().Take(requestPage+1).Reverse())
@@ -590,7 +592,6 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         pageInfo.Title = Path.GetFileNameWithoutExtension(currentPage.FilePath);
         pageInfo.LoadingTcs = new TaskCompletionSource<int>();
         pageInfo.InnerCurrentPageIndex = 0;
-        pageInfo.IsLoaded = false;
     }
 
     void ClearPageInfo(EBookPageInfo pageInfo)

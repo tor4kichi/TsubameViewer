@@ -212,6 +212,20 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        _vm.SwapPages[0].ObservePropertyChanged(x => x.IsLoaded)
+            .Where(x => x is false)
+            .Subscribe(this, (_, s) => 
+            {
+                s._fadeOutAnim.Start(s.EPubRenderer_1);
+            })
+            .AddTo(ref db);
+        _vm.SwapPages[1].ObservePropertyChanged(x => x.IsLoaded)
+            .Where(x => x is false)
+            .Subscribe(this, (_, s) =>
+            {
+                s._fadeOutAnim.Start(s.EPubRenderer_2);
+            })
+            .AddTo(ref db);
         db.Build().RegisterTo(elem.GetCancellationTokenOnUnloaded());
         NowEnablePageMove_1 = false;
         NowEnablePageMove_2 = false;
@@ -243,16 +257,13 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
 
     AnimationBuilder _fadeOutAnim = AnimationBuilder.Create()
-            .Opacity(0.00001, duration: TimeSpan.FromMilliseconds(75));
+            .Opacity(0.00001, duration: TimeSpan.FromMilliseconds(50));
     AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
-            .Opacity(1, delay: TimeSpan.FromMilliseconds(50),
-            duration: TimeSpan.FromMilliseconds(125));
+            .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
 
     private void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
     {            
         NowEnablePageMove_1 = false;
-        EPubRenderer_1.Opacity = 0.00001;
-        _fadeOutAnim.Start(EPubRenderer_1);
     }
 
     private void WebView_ContentRefreshComplete_1(object sender, EventArgs e)
@@ -269,8 +280,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     private void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
     {
         NowEnablePageMove_2= false;
-        EPubRenderer_2.Opacity = 0.00001;
-        _fadeOutAnim.Start(EPubRenderer_2);
     }
 
     private void WebView_ContentRefreshComplete_2(object sender, EventArgs e)
@@ -341,7 +350,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                     currentEPubRenderer.PrepareGoNext();
                     if (_vm.IsNextPageCached() is false)
                     {
-                        altEPubRenderer.Opacity = 0;
+                        altEPubRenderer.Opacity = 0.00001;
+                        await Task.Delay(75);
                     }
                     await _vm.GoNextImageAsync();
                 }
@@ -378,7 +388,8 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
                     currentEPubRenderer.PrepareGoPreview();
                     if (_vm.IsPrevPageCached() is false)
                     {
-                        altEPubRenderer.Opacity = 0;
+                        altEPubRenderer.Opacity = 0.00001;
+                        await Task.Delay(75);
                     }
                     await _vm.GoPrevImageAsync();
                 }
