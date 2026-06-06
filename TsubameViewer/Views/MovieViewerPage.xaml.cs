@@ -545,7 +545,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     }
                     return;
                 }
-                if (!s.insideWindowRp.CurrentValue)
+                if (!s.insideWindowRp.CurrentValue
+                    && !s.Item1.IsFlyoutOpen
+                    && s.Item1.PlayerState == MediaPlaybackState.Playing)
                 {
                     _this.IsDisplayControlUI = false;
                 }
