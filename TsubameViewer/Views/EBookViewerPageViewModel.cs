@@ -369,7 +369,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             SwapPages[1].ObservePropertyChanged(x => x.IsLoaded).AsUnitObservable()            
             )
             .ThrottleLast(TimeSpan.FromSeconds(0.25))
-            .Subscribe(this, static (x, s) => 
+            .SubscribeAwait(this, static async (x, s, ct) => 
             {
                 var _this = s;
                 if (_this.EBookReaderSettings.IsPrepareNextPageEnabled is false) { return; }
@@ -379,7 +379,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 if (_this.CurrentPageInfo.InnerTotalPageCount - 3 <= _this.InnerCurrentImageIndex
                     && _this.CurrentPageInfo.OuterPageIndex + 1 != altPage.OuterPageIndex)
                 {
-                    _ = _this.PrepareNextPageAsync();
+                    await _this.PrepareNextPageAsync();
                 }
             })
             .AddTo(ref db);
@@ -387,11 +387,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
 
         EBookReaderSettings.ObservePropertyChanged(x => x.IsForceResetStylingInHeadElement, false)
-            .Subscribe(this, static (x, s) => 
+            .SubscribeAwait(this, static async (x, s, ct) => 
             {
                 var _this = s;
                 _this.PageHtml = null;
-                _ = _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
+                await _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
             })
             .AddTo(ref db);
 

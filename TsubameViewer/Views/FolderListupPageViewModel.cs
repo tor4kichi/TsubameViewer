@@ -62,7 +62,7 @@ public sealed partial class FolderListupPageViewModel
             && _imageCollectionContext != null)
         {
             // このフォルダーにアイテムが追加される？
-            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
+            ReloadItemsAsync(_imageCollectionContext, _navigationCt).FireAndForgetSafe();
         }
         else
         {
@@ -420,7 +420,7 @@ public sealed partial class FolderListupPageViewModel
                 {
                     lastIntractItemVM.UpdateLastReadPosition();
                     lastIntractItemVM.ThumbnailChanged();                    
-                    _ = lastIntractItemVM.InitializeAsync(ct);
+                    lastIntractItemVM.InitializeAsync(ct).FireAndForgetSafe();
                     FolderLastIntractItem  = lastIntractItemVM;
                 }
                 else
@@ -488,7 +488,7 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Register<RefreshNavigationRequestMessage>(this, (r, m) => 
         {
             // TODO: 現在のフォルダ名、ないしアーカイブ名が変わっていないかチェック
-            _ = ReloadItemsAsync(_imageCollectionContext, ct);
+            ReloadItemsAsync(_imageCollectionContext, ct).FireAndForgetSafe();
         });
 
         _messenger.Register<StartMultiSelectionMessage>(this, (r, m) => 
@@ -735,7 +735,7 @@ public sealed partial class FolderListupPageViewModel
 
         ct.ThrowIfCancellationRequested();
 
-        _ = DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
             if (_currentImageSource?.StorageItem != null)
             {
@@ -744,7 +744,7 @@ public sealed partial class FolderListupPageViewModel
             }
             bool exist = await imageCollectionContext.IsExistImageFileAsync(ct);
             HasFileItem = exist;
-        });
+        }).FireAndForgetSafe();
     }
 
 #endregion

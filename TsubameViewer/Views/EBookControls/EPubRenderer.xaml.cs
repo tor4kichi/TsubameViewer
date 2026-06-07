@@ -1,4 +1,5 @@
 ﻿using ColorCode.Compilation.Languages;
+using CommunityToolkit.WinUI;
 using Microsoft.Toolkit.Uwp.Helpers;
 using Microsoft.Toolkit.Uwp.UI;
 using R3;
@@ -24,6 +25,7 @@ using TsubameViewer.Core.Helpers;
 using TsubameViewer.Core.Models.EBook;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -242,21 +244,23 @@ public sealed partial class EPubRenderer : UserControl
 
     private static async void OnPageHtmlPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        var _this = (EPubRenderer)d;
+        task((EPubRenderer)d, e).FireAndForgetSafe();
+        async Task task(EPubRenderer _this, DependencyPropertyChangedEventArgs e)
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
 
-        using var _ = await _domUpdateLock.LockAsync(default);
-        
-        _this._sw.Restart();
-        if (e.NewValue is XmlDocument newPageHtml)
-        {
-            _this._innerCurrentPage = 0;
-            _this._innerPageCount = 0;
-            _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
-            _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
-        }
-        else
-        {
-            _this.WebView.NavigateToString(string.Empty);
+            _this._sw.Restart();
+            if (e.NewValue is XmlDocument newPageHtml)
+            {
+                _this._innerCurrentPage = 0;
+                _this._innerPageCount = 0;
+                _this.ContentRefreshStarting?.Invoke(_this, EventArgs.Empty);
+                _this.WebView.NavigateToString(_this.ToStyleEmbedHtml(newPageHtml));
+            }
+            else
+            {
+                _this.WebView.NavigateToString(string.Empty);
+            }
         }
     }
 
@@ -550,8 +554,13 @@ public sealed partial class EPubRenderer : UserControl
 
     private async void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
     {
-        using var _ = await _domUpdateLock.LockAsync(default);
-        ContentRefreshComplete?.Invoke(this, EventArgs.Empty);
+        d().FireAndForgetSafe(); 
+        async Task d()
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
+            ContentRefreshComplete?.Invoke(this, EventArgs.Empty);
+        }
+        
     }
 
     public event EventHandler? ContentRefreshStarting;
@@ -573,14 +582,18 @@ public sealed partial class EPubRenderer : UserControl
 
     public async void GoNext()
     {
-        using var _ = await _domUpdateLock.LockAsync(default);
+        d().FireAndForgetSafe();
+        async Task d()
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
 
-        if (!CanGoNext()) { throw new Exception(); }
+            if (!CanGoNext()) { throw new Exception(); }
 
-        _innerCurrentPage++;
-        CurrentInnerPage = _innerCurrentPage;
-        Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-        await SetScrollPositionAsync();
+            _innerCurrentPage++;
+            CurrentInnerPage = _innerCurrentPage;
+            Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
+            await SetScrollPositionAsync();
+        }
     }
 
 
@@ -790,208 +803,209 @@ return JSON.stringify(Array.from(set));
 #if DEBUG
         PerfomanceStopWatch sw = PerfomanceStopWatch.StartNew("DOMContentLoaded");
 #endif
-        using var _ = await _domUpdateLock.LockAsync(default);
-
-
-        var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
-        var oldCurrentPageIndex = _innerCurrentPage;
-
-
-        //
-        // 段組みレイアウトについて
-        // column-countを1以上に指定してやると単純にそれだけの段に分かれた表示にできるが
-        // 例えば縦書きなら横幅をViewPortサイズに限定することで縦長の段組みを描画できる
-        // 縦に等間隔に並んだページに対してページ高さと同等のスクロール量をページ毎に設定することで
-        // ページ送りを表現している。
-        //
-
+        d().FireAndForgetSafe();
+        async Task d()
         {
-            // 縦書きかをチェック
-            var writingModeString = await GetWritingModeAsync();
-            IsVerticalLayout = writingModeString switch
+            using var _ = await _domUpdateLock.LockAsync(default);
+
+            var oldPageCount = _innerPageCount == 0 ? 1 : _innerPageCount;
+            var oldCurrentPageIndex = _innerCurrentPage;
+            //
+            // 段組みレイアウトについて
+            // column-countを1以上に指定してやると単純にそれだけの段に分かれた表示にできるが
+            // 例えば縦書きなら横幅をViewPortサイズに限定することで縦長の段組みを描画できる
+            // 縦に等間隔に並んだページに対してページ高さと同等のスクロール量をページ毎に設定することで
+            // ページ送りを表現している。
+            //
+
             {
-                "vertical-rl" => true,
-                "vertical-lr" => true,
-                "sideways-rl" => true,
-                "sideways-lr" => true,
-                _ => false,
-            };
+                // 縦書きかをチェック
+                var writingModeString = await GetWritingModeAsync();
+                IsVerticalLayout = writingModeString switch
+                {
+                    "vertical-rl" => true,
+                    "vertical-lr" => true,
+                    "sideways-rl" => true,
+                    "sideways-lr" => true,
+                    _ => false,
+                };
 
-            NowRightToLeftReadingMode = writingModeString.EndsWith("rl");
+                NowRightToLeftReadingMode = writingModeString.EndsWith("rl");
 
-            Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
-        }
+                Debug.WriteLine($"writingModeString: {writingModeString}, IsVerticalLayout: {IsVerticalLayout}");
+            }
 
 #if DEBUG
         sw.ElapsedWrite("check vertical writting");
 #endif
-        var columnCount = ColumnCount;
-        if (IsVerticalLayout)
-        {
-            // heightを指定しないと overflow: hidden; が機能しない
-            // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
-            // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
-            // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
-            //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetVerticalBodyStyleAsync(
-                WebView.ActualWidth, 
-                WebView.ActualHeight - 4, 
-                columnCount, 
-                FontSize);
-        }
-        else
-        {
-            // Note: -8は下側と右側の見切れ対策
-            //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
-            await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 128, columnCount, FontSize);
-        }
+            var columnCount = ColumnCount;
+            if (IsVerticalLayout)
+            {
+                // heightを指定しないと overflow: hidden; が機能しない
+                // width: 100vwとすることで表示領域に幅を限定する。段組みをビューポートの高さを越えて縦長に描画させるために必要。
+                // column-countは表示領域に対して分割数の上限。段組み描画のために必要。
+                // column-rule-widthはデフォルトでmidium。アプリ側での細かい高さ計算の省略ために0pxに指定。
+                //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
+                await SetVerticalBodyStyleAsync(
+                    WebView.ActualWidth,
+                    WebView.ActualHeight - 4,
+                    columnCount,
+                    FontSize);
+            }
+            else
+            {
+                // Note: -8は下側と右側の見切れ対策
+                //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"overflow: hidden; width:{WebView.ActualWidth - 8}; max-height:{WebView.ActualHeight - 8}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
+                await SetHorizontalBodyStyleAsync(WebView.ActualWidth - 8, WebView.ActualHeight - 128, columnCount, FontSize);
+            }
 
 #if DEBUG
         sw.ElapsedWrite("check content width/height limitation.");
 #endif
-        //
-        // １ページの高さを求める
-        // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
-        // 章のタイトルなどズレているものもあるため、
-        // アプリ側でスクロール基準位置として使えない値を切り落とす。
-        // 先頭からいくつか候補の値をピックアップして、
-        // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
-        // 
-        {
-            // 1ページの高さを求める
-            // ページ全体の高さを求める
-            // ページ数を求める
-            // 現状は重すぎる、特にquerySelectorAllが激重、eval関係なくこれが原因
+            //
+            // １ページの高さを求める
+            // ページの各要素のoffsetが各ページごとのスクロール基準位置の候補となる。
+            // 章のタイトルなどズレているものもあるため、
+            // アプリ側でスクロール基準位置として使えない値を切り落とす。
+            // 先頭からいくつか候補の値をピックアップして、
+            // ある値がより多くの他のスクロール基準位置の値を割り切れた(X mod value == 0)場合に１ページの高さとして扱う。
+            // 
+            {
+                // 1ページの高さを求める
+                // ページ全体の高さを求める
+                // ページ数を求める
+                // 現状は重すぎる、特にquerySelectorAllが激重、eval関係なくこれが原因
 
-            using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Distinct().Order().ToArrayPool();
-            var sizeItemsSpan = sizeItems.ArraySegment;
+                using var sizeItems = (await GetSizeListAsync(IsVerticalLayout))!.AsValueEnumerable().Distinct().Order().ToArrayPool();
+                var sizeItemsSpan = sizeItems.ArraySegment;
 #if DEBUG
             sw.ElapsedWrite("check page sizeList.");
 #endif
-            var offset = sizeItemsSpan.ElementAtOrDefault(0);
-            using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - offset).ToArrayPool();
-            var relSizeItemsSpan = relSizeItems.ArraySegment;
-            Debug.WriteLine($"offset: {offset}");
-            Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
-            var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
+                var offset = sizeItemsSpan.ElementAtOrDefault(0);
+                using var relSizeItems = sizeItems.AsValueEnumerable().Select(x => x - offset).ToArrayPool();
+                var relSizeItemsSpan = relSizeItems.ArraySegment;
+                Debug.WriteLine($"offset: {offset}");
+                Debug.WriteLine(relSizeItemsSpan.AsValueEnumerable().JoinToString(','));
+                var pageRealSize = IsVerticalLayout ? await GetPageHeight() : await GetPageWidth();
 
-            int heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
+                int heroPageHeight = relSizeItemsSpan.FirstOrDefault(x => x + 12 > pageRealSize);
 #if DEBUG
             sw.ElapsedWrite("culc hero page size.");
 #endif
-            if (heroPageHeight == -1)
-            {
-                heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
-            }
-            if (pageRealSize * 2 > relSizeItemsSpan[^1])
-            {
-                _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8).Count();
-                _onePageScrollSize = heroPageHeight;
-                _webViewScrollableSize = heroPageHeight;
-
-                // 1ページに収まってる場合は画像のみのページかどうかをチェックする
-                var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
-                NowOnlyImageView = pCount <= 2;
-                if (NowOnlyImageView)
+                if (heroPageHeight == -1)
                 {
-                    _innerPageCount = 1;
+                    heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
                 }
+                if (pageRealSize * 2 > relSizeItemsSpan[^1])
+                {
+                    _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8).Count();
+                    _onePageScrollSize = heroPageHeight;
+                    _webViewScrollableSize = heroPageHeight;
 
-                _innerPageScrollPositions.Clear();
-                _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8));
-            }
-            else
-            {
-                int _lastSize = -1;
-                float _allowableError = heroPageHeight / 1.05f;
-                float invHeroPageHeight = 1 / (float)heroPageHeight;
-                using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
+                    // 1ページに収まってる場合は画像のみのページかどうかをチェックする
+                    var pCount = int.Parse(await WebView.InvokeScriptAsync("eval", new[] { "document.querySelectorAll('p').length.toString();" }));
+                    NowOnlyImageView = pCount <= 2;
+                    if (NowOnlyImageView)
                     {
-                        if (x != 0 && x < heroPageHeight) { return false; }
-                        var div = x * invHeroPageHeight;
-                        var small = div - (long)div;
-                        return small > 0.90 || small < 0.10; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
-                    })
-                    .Where(x => 
-                    {
-                        // ページサイズより小さいページ位置はスキップ
-                        if (x == 0 || x - _lastSize > _allowableError)
+                        _innerPageCount = 1;
+                    }
+
+                    _innerPageScrollPositions.Clear();
+                    _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8));
+                }
+                else
+                {
+                    int _lastSize = -1;
+                    float _allowableError = heroPageHeight / 1.05f;
+                    float invHeroPageHeight = 1 / (float)heroPageHeight;
+                    using var pageScrollPositions = relSizeItemsSpan.AsValueEnumerable().Where(x =>
                         {
-                            _lastSize = x;
-                            return true;
-                        }
-                        else { return false; }
-                    })
-                    .Select(x => x + 2 /* 画面上部に前ページの情報が映らないようにする補正 */)
-                    .ToArrayPool();
+                            if (x != 0 && x < heroPageHeight) { return false; }
+                            var div = x * invHeroPageHeight;
+                            var small = div - (long)div;
+                            return small > 0.90 || small < 0.10; // 緩い分にはOK、誤差0.03にするとむしろ漏れる
+                        })
+                        .Where(x =>
+                        {
+                            // ページサイズより小さいページ位置はスキップ
+                            if (x == 0 || x - _lastSize > _allowableError)
+                            {
+                                _lastSize = x;
+                                return true;
+                            }
+                            else { return false; }
+                        })
+                        .Select(x => x + 2 /* 画面上部に前ページの情報が映らないようにする補正 */)
+                        .ToArrayPool();
 
-                Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
+                    Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
 
-                _innerPageScrollPositions.Clear();
-                _innerPageScrollPositions.AddRange(pageScrollPositions.ArraySegment);
-                _innerPageCount = _innerPageScrollPositions.Count;
-                _onePageScrollSize = heroPageHeight;
-                _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
+                    _innerPageScrollPositions.Clear();
+                    _innerPageScrollPositions.AddRange(pageScrollPositions.ArraySegment);
+                    _innerPageCount = _innerPageScrollPositions.Count;
+                    _onePageScrollSize = heroPageHeight;
+                    _webViewScrollableSize = pageScrollPositions.Span[^1] + heroPageHeight;
 
-                NowOnlyImageView = false;
-            }
-            Debug.WriteLine($"NowOnlyImageView: {NowOnlyImageView}");
+                    NowOnlyImageView = false;
+                }
+                Debug.WriteLine($"NowOnlyImageView: {NowOnlyImageView}");
 
-            TotalInnerPageCount = _innerPageCount;
+                TotalInnerPageCount = _innerPageCount;
 
-            Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
+                Debug.WriteLine($"WebViewSize: {_webViewScrollableSize}, pageCount: {_innerPageCount}, onePageScrollSize: {_onePageScrollSize}");
 #if DEBUG
             sw.ElapsedWrite("culc page counts.");
 #endif
 
-            // ページ最後尾にスクロール用の余白を作る
-            // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
-            if (!NowOnlyImageView)
-            {
-                await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
-            }
+                // ページ最後尾にスクロール用の余白を作る
+                // 最後のページのスクロール位置が前ページを含んだ形になってしまう問題を回避する
+                if (!NowOnlyImageView)
+                {
+                    await WebView.InvokeScriptAsync("PushEmptyParagraph", []);
+                }
 
 #if DEBUG
             sw.ElapsedWrite("add padding at last page.");
 #endif
-        }
+            }
 
-        if (isFirstContent)
-        {
-            isFirstContent = false;
+            if (isFirstContent)
+            {
+                isFirstContent = false;
 
-            _innerCurrentPage = Math.Clamp(FirstApproachingPageIndex, 0, _innerPageCount - 1);
-        }
-        else if (!_isGoNextOrPreview) // Refresh
-        {
-            var newPageCount = _innerPageCount;
-            var newCurrentPageIndex = _innerCurrentPage;
+                _innerCurrentPage = Math.Clamp(FirstApproachingPageIndex, 0, _innerPageCount - 1);
+            }
+            else if (!_isGoNextOrPreview) // Refresh
+            {
+                var newPageCount = _innerPageCount;
+                var newCurrentPageIndex = _innerCurrentPage;
 
-            double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
-            _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
+                double oldPageInPercentage = (_innerCurrentPage) / (double)_innerPageCount;
+                _innerCurrentPage = Math.Min(_innerPageCount - 1, (int)Math.Round(_innerPageCount * oldPageInPercentage));
 
-            Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
-        }
-        else
-        {
-            _innerCurrentPage = Math.Min(PreservedCurrentInnerPageIndex, _innerPageCount - 1);
-        }
+                Debug.WriteLine($"{oldCurrentPageIndex}/{oldPageCount} -> {_innerCurrentPage}/{newPageCount}");
+            }
+            else
+            {
+                _innerCurrentPage = Math.Min(PreservedCurrentInnerPageIndex, _innerPageCount - 1);
+            }
 
-        _isGoNextOrPreview = false;
-        CurrentInnerPage = _innerCurrentPage;
+            _isGoNextOrPreview = false;
+            CurrentInnerPage = _innerCurrentPage;
 
 
 #if DEBUG
         sw.ElapsedWrite("set innerCurrentPage");
 #endif
 
-        await SetScrollPositionAsync();
+            await SetScrollPositionAsync();
 
 #if DEBUG
         sw.ElapsedWrite("set scroll position");
 #endif
-        _sw.Stop();
-        Debug.WriteLine($"EPub loading time: {_sw.Elapsed.TotalSeconds:F3}");
+            _sw.Stop();
+            Debug.WriteLine($"EPub loading time: {_sw.Elapsed.TotalSeconds:F3}");
+        }
     }
 
 

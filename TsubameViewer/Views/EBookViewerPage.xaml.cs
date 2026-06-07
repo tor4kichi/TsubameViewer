@@ -452,7 +452,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
 
         if (e.AddedItems.ElementAtOrDefault(0) is EpubLocalTextContentFileRef pageRef)
         {
-            _ = _vm.SetPageAsync(pageRef);
+            _vm.SetPageAsync(pageRef).FireAndForgetSafe();
         }
     }
 

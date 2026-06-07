@@ -15,6 +15,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
+using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -258,7 +259,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 

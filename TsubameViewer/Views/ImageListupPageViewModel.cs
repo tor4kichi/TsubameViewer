@@ -86,7 +86,7 @@ public sealed partial class ImageListupPageViewModel
             && _imageCollectionContext != null)
         {
             // このフォルダーにアイテムが追加される？
-            _ = ReloadItemsAsync(_imageCollectionContext, _navigationCt);
+            ReloadItemsAsync(_imageCollectionContext, _navigationCt).FireAndForgetSafe();
         }
         else
         {
@@ -777,11 +777,11 @@ public sealed partial class ImageListupPageViewModel
         ct.ThrowIfCancellationRequested();
 
         HasFileItem = ImageFileItems.Any();
-        _ = DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
         {
             bool exist = await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct);
             HasFolderOrBookItem = exist;
-        }, priority: DispatcherQueuePriority.Low);
+        }, priority: DispatcherQueuePriority.Low).FireAndForgetSafe();
     }
 
     #endregion

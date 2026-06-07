@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.WinUI;
 using I18NPortable;
 using LiteDB;
 using Microsoft.IO;
@@ -775,7 +776,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
         await ReloadItemsAsync(imageCollectionContext, ct);
 
-        _ = DispatcherQueue.GetForCurrentThread().TryEnqueue(DispatcherQueuePriority.Low, async () => 
+        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () => 
         {
             if (await imageCollectionContext.IsExistFolderOrArchiveFileAsync(ct))
             {
@@ -803,7 +804,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             {
                 PageFolderNames = new string[0];
             }
-        });
+        }, DispatcherQueuePriority.Low).FireAndForgetSafe();
 
         GoNextImageCommand.NotifyCanExecuteChanged();
         GoPrevImageCommand.NotifyCanExecuteChanged();
@@ -1890,7 +1891,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     private void ExecuteGoNextImageCommand()
     {
-        _ = MoveImageIndex(IndexMoveDirection.Forward);
+        MoveImageIndex(IndexMoveDirection.Forward).FireAndForgetSafe();
     }
 
     private bool CanGoNextCommand()
@@ -1905,7 +1906,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     private void ExecuteGoPrevImageCommand()
     {
-        _ = MoveImageIndex(IndexMoveDirection.Backward);
+        MoveImageIndex(IndexMoveDirection.Backward).FireAndForgetSafe();
     }
 
     private bool CanGoPrevCommand()
@@ -1917,20 +1918,17 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     ReactiveProperty<int> _SizeChangedSubject = new ReactiveProperty<int>(-1);
 
-    private RelayCommand _SizeChangedCommand;
-    public RelayCommand SizeChangedCommand =>
-        _SizeChangedCommand ??= new RelayCommand(() =>
-        {
-            if (!(Images?.Any() ?? false)) { return; }
-            
-            _SizeChangedSubject.OnNext(CurrentImageIndex);
-        });
+    [RelayCommand]
+    void SizeChanged()
+    {
+        if (!(Images?.Any() ?? false)) { return; }
 
-    private RelayCommand<string> _changePageFolderCommand;
-    public RelayCommand<string> ChangePageFolderCommand =>
-        _changePageFolderCommand ?? (_changePageFolderCommand = new RelayCommand<string>(ExecuteChangePageFolderCommand));
+        _SizeChangedSubject.OnNext(CurrentImageIndex);
+    }
 
-    async void ExecuteChangePageFolderCommand(string pageName)
+
+    [RelayCommand]
+    async Task ChangePageFolder(string pageName)
     {
         if (string.IsNullOrEmpty(pageName)) { return; }
         if (_nowPageFolderNameChanging) { return; }
@@ -1953,11 +1951,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
     }
 
-    private RelayCommand<double?> _ChangePageCommand;
-    public RelayCommand<double?> ChangePageCommand =>
-        _ChangePageCommand ?? (_ChangePageCommand = new RelayCommand<double?>(ExecuteChangePageCommand));
-
-    async void ExecuteChangePageCommand(double? parameter)
+    [RelayCommand]
+    async Task ChangePage(double? parameter)
     {
         if (_nowCurrenImageIndexChanging) { return; }
 
@@ -1965,70 +1960,66 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         OnPropertyChanged(nameof(CurrentImageIndex));
     }
 
-    private RelayCommand _DoubleViewCorrectCommand;
-    public RelayCommand DoubleViewCorrectCommand =>
-        _DoubleViewCorrectCommand ?? (_DoubleViewCorrectCommand = new RelayCommand(ExecuteDoubleViewCorrectCommand));
-
-    void ExecuteDoubleViewCorrectCommand()
+    [RelayCommand]
+    async Task DoubleViewCorrect()
     {
         _ = ResetImageIndex(Math.Max(CurrentImageIndex - 1, 0));
     }
 
 
 
-    private RelayCommand<object> _ChangeFileSortCommand;
-    public RelayCommand<object> ChangeFileSortCommand =>
-        _ChangeFileSortCommand ??= new RelayCommand<object>(sort =>
+    [RelayCommand]
+    void ChangeFileSort(object sort)
+    {
+        FileSortType? sortType = null;
+        if (sort is int num)
         {
-            FileSortType? sortType = null;
-            if (sort is int num)
-            {
-                sortType = (FileSortType)num;
-            }
-            else if (sort is FileSortType sortTypeExact)
-            {
-                sortType = sortTypeExact;
-            }
+            sortType = (FileSortType)num;
+        }
+        else if (sort is FileSortType sortTypeExact)
+        {
+            sortType = sortTypeExact;
+        }
 
-            if (sortType.HasValue)
+        if (sortType.HasValue)
+        {
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType = sortType.Value;
+            if (_currentImageSource.StorageItem is IStorageItem)
             {
-                DisplaySortTypeInheritancePath = null;
-                SelectedFileSortType = sortType.Value;
-                if (_currentImageSource.StorageItem is IStorageItem)
-                {
-                    _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType);
-                }
-                else if (_currentImageSource is AlbamImageSource albam)
-                {
-                    _displaySettingsByPathRepository.SetAlbamSettings(albam.AlbamId, SelectedFileSortType);
-                }
+                _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_pathForSettings, SelectedFileSortType);
             }
-            else
+            else if (_currentImageSource is AlbamImageSource albam)
             {
-                if (_currentImageSource.StorageItem is IStorageItem)
+                _displaySettingsByPathRepository.SetAlbamSettings(albam.AlbamId, SelectedFileSortType);
+            }
+        }
+        else
+        {
+            if (_currentImageSource.StorageItem is IStorageItem)
+            {
+                _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_pathForSettings);
+                if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort
+                && parentSort.ChildItemDefaultSort != null
+                )
                 {
-                    _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_pathForSettings);
-                    if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_pathForSettings) is not null and var parentSort
-                    && parentSort.ChildItemDefaultSort != null
-                    )
-                    {
-                        DisplaySortTypeInheritancePath = parentSort.Path;
-                        SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
-                    }
-                    else
-                    {
-                        DisplaySortTypeInheritancePath = null;
-                        SelectedFileSortType = DefaultFileSortType;
-                    }
+                    DisplaySortTypeInheritancePath = parentSort.Path;
+                    SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
                 }
-                else if (_currentImageSource is AlbamImageSource albam)
+                else
                 {
-                    _displaySettingsByPathRepository.ClearAlbamSettings(albam.AlbamId);
                     DisplaySortTypeInheritancePath = null;
                     SelectedFileSortType = DefaultFileSortType;
                 }
             }
-        });
+            else if (_currentImageSource is AlbamImageSource albam)
+            {
+                _displaySettingsByPathRepository.ClearAlbamSettings(albam.AlbamId);
+                DisplaySortTypeInheritancePath = null;
+                SelectedFileSortType = DefaultFileSortType;
+            }
+        }
+    }
 
     #endregion
 

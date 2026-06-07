@@ -33,6 +33,7 @@ using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
 using TsubameViewer.Views.Dialogs;
+using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -67,7 +68,7 @@ sealed partial class App : Application
 
         RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
         WinRTProviderInitializer.SetDefaultObservableSystem(OnTimerProviderException);
-
+        AsyncTaskErrorHandler.OnError += AsyncTaskErrorHandler_OnError;
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
@@ -89,6 +90,9 @@ sealed partial class App : Application
         
     }
 
+    private void AsyncTaskErrorHandler_OnError(object sender, ExceptionEventArgs e)
+    {
+    }
 
     private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {

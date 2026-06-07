@@ -208,7 +208,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _IsThumbnailDeleteButtonActive.Value = false;
         await _thumbnailImageMaintenanceService.DeleteAllThumbnailsAsync();
 
-        _ = RefreshThumbnailFilesSizeAsync(_navigationCt);
+        RefreshThumbnailFilesSizeAsync(_navigationCt).FireAndForgetSafe();
     }
 
     ReactiveProperty<bool> _IsThumbnailDeleteButtonActive;
@@ -226,7 +226,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         }
 
         _IsThumbnailDeleteButtonActive.Value = true;
-        _ = RefreshThumbnailFilesSizeAsync(ct);
+        RefreshThumbnailFilesSizeAsync(ct).FireAndForgetSafe();
         // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;

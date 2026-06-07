@@ -4,16 +4,13 @@ using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using R3;
-using Reactive.Bindings.Extensions;
+using R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reactive;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -583,7 +580,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 _CanvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
             }),
-            _vm.ObserveProperty(x => x.CurrentImageIndex)
+            _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
             .Subscribe(_ =>
             {
                 ZoomFactor = 1.0;
@@ -606,11 +603,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 }
             }),
             this.ObserveDependencyProperty(IsZoomingEnabledProperty)
-            .Subscribe(isEnabledZomming =>
+                .SubscribeAwait(async (isEnabledZomming, ct) =>
             {
                 if (ZoomFactor > 1.0)
                 {
-                    _ = _vm.DisableImageDecodeWhenImageSmallerCanvasSize();
+                    await _vm.DisableImageDecodeWhenImageSmallerCanvasSize();
                 }
             }),
         });

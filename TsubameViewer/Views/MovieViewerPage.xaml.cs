@@ -113,7 +113,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var pt = e.GetCurrentPoint(null);
         if (pt.Properties.IsMiddleButtonPressed)
         {
-            _ = ToggleFullScreen();
+            ToggleFullScreen();
         }
 
         if (pt.Properties.IsLeftButtonPressed)
@@ -1701,7 +1701,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
 
     [RelayCommand]
-    async Task ToggleFullScreen()
+    void ToggleFullScreen()
     {
         bool isPlaying = PlayerState == MediaPlaybackState.Playing;
         var appView = ApplicationView.GetForCurrentView();

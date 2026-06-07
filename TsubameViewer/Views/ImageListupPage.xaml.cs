@@ -508,7 +508,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _realizedItems.Add(fe);
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
-                _ = itemVM.EnsureImageSizeRatioAsync(_ct);
+                itemVM.EnsureImageSizeRatioAsync(_ct).FireAndForgetSafe();
             }
         }
     }

@@ -131,7 +131,7 @@ public sealed partial class SearchResultPageViewModel
             throw new Exception();
         }
 
-        _ = ProcessSearchQueryAsync(q, ct);
+        ProcessSearchQueryAsync(q, ct).FireAndForgetSafe();
 
         _messenger.Register<SearchQuerySubmitedRequestMessage>(this);
 

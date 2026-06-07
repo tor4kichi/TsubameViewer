@@ -85,7 +85,7 @@ public sealed partial class AppShell : UserControl
     [NotifyCanExecuteChangedFor(nameof(PurchaseAddonCommand))]
     bool _isStoreAvairable;
 
-    async void InitialziePurchase()
+    async Task InitialziePurchase()
     {
         var service = Ioc.Default.GetService<PurchaseAddonService>();
         if (service == null) { return; }
@@ -159,7 +159,7 @@ public sealed partial class AppShell : UserControl
 
         Loaded += AppShell_Loaded;
 
-        InitialziePurchase();
+        InitialziePurchase().FireAndForgetSafe();
 
         _footerItemsForTop = new()
         {
@@ -225,7 +225,7 @@ public sealed partial class AppShell : UserControl
         var appView = ApplicationView.GetForCurrentView();
         UpdateTitleBarDisplay(coreTitleBar.IsVisible, appView.IsFullScreenMode);
 
-        _ = CheckAppPackageUpdateAsync();
+        CheckAppPackageUpdateAsync().FireAndForgetSafe();
     }
 
     public bool NowShowTitlebarInFullScreen
@@ -466,7 +466,7 @@ public sealed partial class AppShell : UserControl
         {                
             if (CanHandleBackRequest())
             {
-                _ = HandleBackRequestAsync();
+                HandleBackRequestAsync().FireAndForgetSafe();
             }
         });
 
@@ -858,7 +858,7 @@ public sealed partial class AppShell : UserControl
     private RelayCommand _RefreshCommand;
     public RelayCommand RefreshCommand =>
         _RefreshCommand ??= new RelayCommand(
-            () => _ = HandleRefreshReqest()
+            () => HandleRefreshReqest().FireAndForgetSafe()
             );
 
 
@@ -1261,7 +1261,7 @@ public sealed partial class AppShell : UserControl
                 args.Handled = true;
                 Debug.WriteLine("back navigated with Pointer Back pressed");
 
-                _ = HandleBackRequestAsync();
+                HandleBackRequestAsync().FireAndForgetSafe();
             }
         }
         else if (args.KeyModifiers == Windows.System.VirtualKeyModifiers.None
@@ -1273,7 +1273,7 @@ public sealed partial class AppShell : UserControl
                 args.Handled = true;
                 Debug.WriteLine("forward navigated with Pointer Forward pressed");
 
-                _ = HandleForwardRequest();
+                HandleForwardRequest().FireAndForgetSafe();
             }
         }
     }
@@ -1287,7 +1287,7 @@ public sealed partial class AppShell : UserControl
                 args.Handled = true;
                 Debug.WriteLine("back navigated with VirtualKey.Back pressed");
 
-                _ = HandleBackRequestAsync();
+                HandleBackRequestAsync().FireAndForgetSafe();
             }
         }
         else if (args.VirtualKey == Windows.System.VirtualKey.GoForward)
@@ -1297,7 +1297,7 @@ public sealed partial class AppShell : UserControl
                 args.Handled = true;
                 Debug.WriteLine("forward navigated with VirtualKey.Back pressed");
 
-                _ = HandleForwardRequest();
+                HandleForwardRequest().FireAndForgetSafe();
             }
         }
     }
@@ -1308,7 +1308,7 @@ public sealed partial class AppShell : UserControl
         {
             Debug.WriteLine("back navigated with SystemNavigationManager.BackRequested");
             
-            _ = HandleBackRequestAsync();
+            HandleBackRequestAsync().FireAndForgetSafe();
         }
 
         // Note: 強制的にハンドルしないとXboxOneやタブレットでアプリを閉じる動作に繋がってしまう
@@ -1595,7 +1595,7 @@ public sealed partial class AppShell : UserControl
                     teachTooltip.ActionButtonClick += (s, e) => 
                     {
                         s.IsOpen = false;
-                        _ = HandleRefreshReqest(); 
+                        HandleRefreshReqest().FireAndForgetSafe(); 
                     };
                     teachTooltip.ActionButtonContent = "Refresh".Translate();
                     teachTooltip.CloseButtonContent = "Cancel".Translate();
@@ -1632,7 +1632,7 @@ public sealed partial class AppShell : UserControl
         {
             if (menuItem.DataContext is MenuItemViewModel itemVM)
             {
-                _ = OpenMenuItemAsync(itemVM);
+                OpenMenuItemAsync(itemVM).FireAndForgetSafe();
             }
             else if(menuItem.DataContext is MenuItemInvokeActionViewModel invokedItemVM)
             {

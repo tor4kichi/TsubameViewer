@@ -53,7 +53,7 @@ public sealed class SourceStorageItemsPageViewModel
             if (item.Path.Equals(message.Value, StringComparison.Ordinal))
             {
                 item.ThumbnailChanged();
-                _ = item.InitializeAsync(default);
+                item.InitializeAsync(default).FireAndForgetSafe();
                 break;
             }
         }
@@ -245,7 +245,7 @@ public sealed class SourceStorageItemsPageViewModel
                 if (folderItem.Name == lastIntaractItemPath)
                 {
                     folderItem.ThumbnailChanged();
-                    _ = folderItem.InitializeAsync(ct);
+                    folderItem.InitializeAsync(ct).FireAndForgetSafe();
                 }
             }
 

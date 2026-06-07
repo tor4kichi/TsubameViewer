@@ -4,6 +4,7 @@ using System.Text;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.System;
 
@@ -34,7 +35,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 
                 if (imageSource.StorageItem is StorageFile file)
                 {
-                    _ = Launcher.LaunchFileAsync(file, new LauncherOptions() { DisplayApplicationPicker = true });
+                    Launcher.LaunchFileAsync(file, new LauncherOptions() { DisplayApplicationPicker = true }).FireAndForgetSafe();
                 }
             }
         }

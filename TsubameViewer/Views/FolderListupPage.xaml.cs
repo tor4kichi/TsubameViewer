@@ -439,7 +439,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                _ = (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct);
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct).FireAndForgetSafe();
             }
         }
     }

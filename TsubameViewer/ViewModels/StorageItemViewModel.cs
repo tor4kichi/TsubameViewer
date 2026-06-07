@@ -220,7 +220,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
         if (_isRequireLoadImageWhenRestored && Image == null)
         {
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 

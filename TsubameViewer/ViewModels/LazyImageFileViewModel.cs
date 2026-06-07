@@ -16,6 +16,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
+using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
@@ -227,7 +228,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 
@@ -486,7 +487,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 
