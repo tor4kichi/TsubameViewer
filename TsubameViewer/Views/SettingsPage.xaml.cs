@@ -43,10 +43,10 @@ public sealed partial class SettingsPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
-    private readonly SettingsPageViewModel _vm;
-    private readonly IMessenger _messenger;
+    readonly SettingsPageViewModel _vm;
+    readonly IMessenger _messenger;
 
-    private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
         if (fe.IsLoaded == false) { return; }

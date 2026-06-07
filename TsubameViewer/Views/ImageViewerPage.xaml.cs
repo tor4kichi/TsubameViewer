@@ -65,8 +65,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     internal readonly ImageViewerPageViewModel _vm;
 
-    private readonly IMessenger _messenger;
-    private readonly FocusHelper _focusHelper;
+    readonly IMessenger _messenger;
+    readonly FocusHelper _focusHelper;
 
     public ImageViewerPage()
     {
@@ -80,7 +80,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         Unloaded += OnUnloaded;            
     }
 
-    private void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
+    void ImageViewerPage_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Escape && e.OriginalKey != VirtualKey.GamepadB)
         {
@@ -99,7 +99,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    private void OnUnloaded(object sender, RoutedEventArgs e)
+    void OnUnloaded(object sender, RoutedEventArgs e)
     {
         IntaractionWall.PointerPressed -= IntaractionWall_PointerPressed;
         IntaractionWall.PointerReleased -= IntaractionWall_PointerReleased;
@@ -110,7 +110,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         KeyDown -= ImageViewerPage_KeyDown;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    void OnLoaded(object sender, RoutedEventArgs e)
     {
         CloseBottomUI();
 
@@ -151,8 +151,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         (_vm.BackNavigationCommand as ICommand).Execute(null);
     }
 
-    R3.CompositeDisposable _navigationDisposables;
-    CancellationTokenSource _navigaitonCts;
+    R3.CompositeDisposable? _navigationDisposables;
+    CancellationTokenSource? _navigaitonCts;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         IsReadyToImageDisplay = false;
@@ -201,49 +201,53 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationDisposables.Dispose();
-
-        _navigaitonCts.Cancel();
-        _navigaitonCts.Dispose();
-        _navigaitonCts = null;
-
-        _messenger.Unregister<BackNavigationRequestingMessage>(this);
-        _messenger.Unregister<ImageLoadedMessage>(this);
-
-        if (!_vm.NowDoubleImageView
-            && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
+        d().FireAndForgetSafe();
+        async Task d()
         {
-            var imageContainer = _vm.CurrentDisplayImageIndex switch
-            {
-                0 => ImageItemsControl_0,
-                1 => ImageItemsControl_1,
-                2 => ImageItemsControl_2,
-                _ => throw new InvalidOperationException(),
-            };
-            var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
-            var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
-            try
-            {
-                var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
-                if (res is { } target)
-                {
-                    anim.Configuration = new DirectConnectedAnimationConfiguration();
-                    anim.TryStart(target);
-                }
-                else { anim.Cancel(); }
-            }
-            catch 
-            {
-                anim.Cancel();
-            }
-        }
+            _navigationDisposables?.Dispose();
 
-        base.OnNavigatingFrom(e);
+            _navigaitonCts?.Cancel();
+            _navigaitonCts?.Dispose();
+            _navigaitonCts = null;
+
+            _messenger.Unregister<BackNavigationRequestingMessage>(this);
+            _messenger.Unregister<ImageLoadedMessage>(this);
+
+            if (!_vm.NowDoubleImageView
+                && _vm.CurrentDisplayImageSources.ElementAtOrDefault(0) is { } imageSource)
+            {
+                var imageContainer = _vm.CurrentDisplayImageIndex switch
+                {
+                    0 => ImageItemsControl_0,
+                    1 => ImageItemsControl_1,
+                    2 => ImageItemsControl_2,
+                    _ => throw new InvalidOperationException(),
+                };
+                var connectedAnimationService = ConnectedAnimationService.GetForCurrentView();
+                var anim = connectedAnimationService.PrepareToAnimate(PageTransitionHelper.BackToImageListConnectedAnimationName, imageContainer);
+                try
+                {
+                    var res = await _messenger.Send(new RequestConnectedAnimationMessage(nameof(ImageListupPage), imageSource.Path));
+                    if (res is { } target)
+                    {
+                        anim.Configuration = new DirectConnectedAnimationConfiguration();
+                        anim.TryStart(target);
+                    }
+                    else { anim.Cancel(); }
+                }
+                catch
+                {
+                    anim.Cancel();
+                }
+            }
+
+            base.OnNavigatingFrom(e);
+        }
     }
 
 
 
-    private async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
+    async Task StartNavigatedAnimationAsync(CancellationToken navigationCt)
     {
         IsReadyToImageDisplay = true;
         while (VSG_MouseScrool.CurrentState == VS_MouseScroolNotReadyToDisplay)
@@ -283,7 +287,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         catch (OperationCanceledException) { }
     }
 
-    private async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
+    async Task<bool> TryStartSingleImageAnimationAsync(ConnectedAnimation animation, CancellationToken navigationCt)
     {
         bool isConnectedAnimationDone = false;
         CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(750));
@@ -324,18 +328,18 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return isConnectedAnimationDone;
     }
 
-    private async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
+    async Task<IEnumerable<UIElement>> WaitImageLoadingAsync(CancellationToken ct)
     {
         if (_vm.DisplayImages_0.Length == 1)
         {
-            UIElement image = null;
+            UIElement? image = null;
             await VisualTreeExtentions.WaitFillingValue(() => 
             {
                 image ??= ImageItemsControl_0.TryGetElement(0);
                 if (image == null) { return false; }
                 return image.ActualSize.X is not 0 && image.ActualSize.Y is not 0;
             }, ct);
-            return new[] { image };
+            return new[] { image! };
         }
         else
         {
@@ -357,7 +361,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     #region Page Next/Prev
 
     [RelayCommand]
-    private void ReversableGoNext()
+    void ReversableGoNext()
     {
         if (!_vm.IsLeftBindingEnabled)
         {
@@ -376,7 +380,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
     [RelayCommand]
-    private void ReversableGoPrev()
+    void ReversableGoPrev()
     {
         if (!_vm.IsLeftBindingEnabled)
         {
@@ -399,7 +403,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     #region Touch and Controller UI
 
-    private void IntaractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
+    void IntaractionWall_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         var lastMnipulating = _nowZoomCenterMovingWithPointer;
         _nowZoomCenterMovingWithPointer = false;
@@ -441,7 +445,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                     }
                     else if (item == ToggleMenuButton)
                     {
-                        if (ToggleBottomMenuCommand is ICommand command && command.CanExecute(null))
+                        if (ToggleBottomMenuCommand is IRelayCommand command && command.CanExecute(null))
                         {
                             command.Execute(null);
                             e.Handled = true;
@@ -459,19 +463,19 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
     bool _isLastPointerPressedLeft;
-    private void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
+    void IntaractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pointer = e.GetCurrentPoint(null);
         _isLastPointerPressedLeft = pointer.Properties.IsLeftButtonPressed;
     }
 
 
-    private string ToPercentage(double val)
+    string ToPercentage(double val)
     {
         return (val * 100).ToString("F0");
     }
 
-    private void ShowBottomUI()
+    void ShowBottomUI()
     {
         IsOpenBottomMenu = true;
         ButtonsContainer.Visibility = Visibility.Visible;
@@ -483,7 +487,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }            
     }
 
-    private void CloseBottomUI()
+    void CloseBottomUI()
     {
         IsOpenBottomMenu = false;
         ButtonsContainer.Visibility = Visibility.Collapsed;
@@ -504,11 +508,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    private RelayCommand _toggleBottomMenuCommand;
-    public RelayCommand ToggleBottomMenuCommand =>
-        _toggleBottomMenuCommand ?? (_toggleBottomMenuCommand = new RelayCommand(ExecuteToggleBottomMenuCommand, () => true));
-
-    void ExecuteToggleBottomMenuCommand()
+    [RelayCommand]
+    void ToggleBottomMenu()
     {
         ToggleOpenCloseBottomUI();
     }
@@ -519,7 +520,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         set { SetValue(IsOpenBottomMenuProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for IsOpenBottomMenu.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsOpenBottomMenuProperty =
         DependencyProperty.Register("IsOpenBottomMenu", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
 
@@ -531,42 +531,42 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     #region ZoomInOut
 
 
-    private const float MaxZoomFactor = 8.0f;
-    private const float MinZoomFactor = 0.5f;        
+    const float _maxZoomFactor = 8.0f;
+    const float _minZoomFactor = 0.5f;        
 
-    private static readonly float[] ZoomFactorList = Enumerable.Concat(
+    static readonly float[] _zoomFactorList = Enumerable.Concat(
         new[] { 0.5f, .75f }, 
         new[] { 1.0f, 1.5f, 2.0f, 4.0f, 8f, 16f, 32f }
         ).ToArray();
 
-    private int CurrentZoomFactorIndex;
-    private static readonly TimeSpan DefaultZoomingDuration = TimeSpan.FromMilliseconds(150);
-    private readonly AnimationBuilder ZoomCenterAb = AnimationBuilder.Create();
+    int _currentZoomFactorIndex;
+    static readonly TimeSpan _defaultZoomingDuration = TimeSpan.FromMilliseconds(150);
+    readonly AnimationBuilder _zoomCenterAb = AnimationBuilder.Create();
 
-    private const float ControlerZoomCenterMoveAmount = 100.0f;
+    const float _controlerZoomCenterMoveAmount = 100.0f;
     float GetZoomCenterMoveingFactorForMouseTouch()
     {
-        return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.375f;
+        return (_maxZoomFactor - (float)ZoomFactor) / (_maxZoomFactor) + 0.375f;
     }
 
     float GetZoomCenterMoveingFactorForController()
     {
-        return (MaxZoomFactor - (float)ZoomFactor) / (MaxZoomFactor) + 0.1f;
+        return (_maxZoomFactor - (float)ZoomFactor) / (_maxZoomFactor) + 0.1f;
     }
 
 
-    private Vector2 _CanvasHalfSize;
+    Vector2 _canvasHalfSize;
 
-    private int GetDefaultZoomFactorListIndex()
+    int GetDefaultZoomFactorListIndex()
     {
-        return Array.IndexOf(ZoomFactorList, 1.0f);
+        return Array.IndexOf(_zoomFactorList, 1.0f);
     }
 
-    private IDisposable InitializeZoomReaction()
+    IDisposable InitializeZoomReaction()
     {
-        CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-        _CanvasHalfSize = ImagesContainer.ActualSize * 0.5f;
-        ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_CanvasHalfSize, 0);
+        _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+        _canvasHalfSize = ImagesContainer.ActualSize * 0.5f;
+        ElementCompositionPreview.GetElementVisual(ImagesContainer).CenterPoint = new Vector3(_canvasHalfSize, 0);
 
         var scheduler = CoreDispatcherScheduler.Current;
 
@@ -578,13 +578,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                 )
             .Subscribe(x => 
             {
-                _CanvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
+                _canvasHalfSize = x.EventArgs.NewSize.ToVector2() * 0.5f;
             }),
             _vm.ObservePropertyChanged(x => x.CurrentImageIndex)
             .Subscribe(_ =>
             {
                 ZoomFactor = 1.0;
-                CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+                _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
             }),
             this.ObserveDependencyProperty(ZoomFactorProperty)
             .Select(x => this.ZoomFactor)
@@ -599,7 +599,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 if (_nowZoomCenterMovingWithPointer is false)
                 {
-                    ZoomCenterAb.CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
+                    _zoomCenterAb.CenterPoint(center, duration: ZoomDuration, easingType: EasingType.Quartic, easingMode: EasingMode.EaseOut).Start(ImagesContainer);
                 }
             }),
             this.ObserveDependencyProperty(IsZoomingEnabledProperty)
@@ -612,12 +612,12 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             }),
         });
 
-        ZoomCenter = _CanvasHalfSize;
+        ZoomCenter = _canvasHalfSize;
 
         return disposables;
     }
 
-    private void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+    void IntaractionWall_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
     {
         bool isMoveCenter = _nowZoomCenterMovingWithPointer;
 
@@ -652,7 +652,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     bool _nowZoomCenterMovingWithPointer;
 
-    private void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+    void IntaractionWall_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
     {
         _startZoomFactor = (float)ZoomFactor;
         _nowZoomCenterMovingWithPointer = true;
@@ -660,7 +660,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     float _startZoomFactor;
     float _sumScale;
-    private void ImagesContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+    void ImagesContainer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
     {
         var factor = GetZoomCenterMoveingFactorForMouseTouch();
         if (e.PointerDeviceType is PointerDeviceType.Touch)
@@ -670,7 +670,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             {
                 // 拡縮開始時との差分で計算する
                 _sumScale += (e.Delta.Scale - (e.Delta.Scale * 0.01f) - 1.0f);
-                var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), MinZoomFactor, MaxZoomFactor);
+                var nextZoom = Math.Clamp(_startZoomFactor * (_sumScale + 1.0f), _minZoomFactor, _maxZoomFactor);
                 if (nextZoom < 1.0f)
                 {
                     nextZoom = 1.0f;
@@ -701,78 +701,75 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     }
 
 
-    RelayCommand<PointerRoutedEventArgs> _ZoomUpCommand;
-    public RelayCommand<PointerRoutedEventArgs> ZoomUpCommand => _ZoomUpCommand
-        ??= new RelayCommand<PointerRoutedEventArgs>(args =>
+    [RelayCommand]
+    void ZoomUp(PointerRoutedEventArgs args)
+    {
+        var targetUI = ImagesContainer;
+        var lastZoom = (float)ZoomFactor;
+        var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
+        var nextZoom = _zoomFactorList[_currentZoomFactorIndex + 1 < _zoomFactorList.Length ? ++_currentZoomFactorIndex : _currentZoomFactorIndex];
+        if (lastZoom < 1.0f && nextZoom >= 1.0f)
         {
-            var targetUI = ImagesContainer;
-            var lastZoom = (float)ZoomFactor;
-            var nextCenter = args.GetCurrentPoint(targetUI).Position.ToVector2();
-            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex + 1 < ZoomFactorList.Length ? ++CurrentZoomFactorIndex : CurrentZoomFactorIndex];
-            if (lastZoom < 1.0f && nextZoom >= 1.0f)
-            {
-                nextZoom = 1.0f;
-                nextCenter = _CanvasHalfSize;
-            }
-            else if (nextZoom == lastZoom)
-            {
-                return;
-            }
-            else if (nextZoom <= 1.0f)
-            {
-                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                var imageCenterPos = targetUI.ActualSize;
-                Vector2 lastCenterPos = new Vector2(targetUI.CenterPoint.X, targetUI.CenterPoint.Y);
-                nextCenter = (imageCenterPos - lastCenterPos) * 0.5f + lastCenterPos;
-            }
-
-            ZoomFactor = nextZoom;
-            ZoomCenter = nextCenter;
-            IsZoomingEnabled = nextZoom != 1.0f;
-        });
-
-    RelayCommand<PointerRoutedEventArgs> _ZoomDownCommand;
-    public RelayCommand<PointerRoutedEventArgs> ZoomDownCommand => _ZoomDownCommand
-        ??= new RelayCommand<PointerRoutedEventArgs>(args =>
+            nextZoom = 1.0f;
+            nextCenter = _canvasHalfSize;
+        }
+        else if (nextZoom == lastZoom)
         {
-            var targetUI = ImagesContainer;
-            var lastZoom = (float)ZoomFactor;
-            var lastCenter = ZoomCenter;
-            var nextCenter = Vector2.Zero;
-            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex - 1 >= 0 ? --CurrentZoomFactorIndex : CurrentZoomFactorIndex];
-            if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
-            {
-                nextZoom = 1.0f;
-                nextCenter = lastCenter;
-            }
-            else if (nextZoom == lastZoom)
-            {
-                return;
-            }
-            else if (nextZoom > 1.0f)
-            {
-                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                var imageCenterPos = _CanvasHalfSize;
-                nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
-            }
-            else
-            {
-                nextCenter = _CanvasHalfSize;
-            }
-
-            ZoomFactor = nextZoom;
-            IsZoomingEnabled = nextZoom != 1.0f;
-            ZoomCenter = nextCenter;
-        });
-
-    RelayCommand _ZoomResetCommand;
-    public RelayCommand ZoomResetCommand => _ZoomResetCommand
-        ??= new RelayCommand(() =>
+            return;
+        }
+        else if (nextZoom <= 1.0f)
         {
-            CurrentZoomFactorIndex = GetDefaultZoomFactorListIndex();
-            ZoomCenter = _CanvasHalfSize;
-            ZoomFactor = 1.0;
-        });
+            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+            var imageCenterPos = targetUI.ActualSize;
+            Vector2 lastCenterPos = new Vector2(targetUI.CenterPoint.X, targetUI.CenterPoint.Y);
+            nextCenter = (imageCenterPos - lastCenterPos) * 0.5f + lastCenterPos;
+        }
+
+        ZoomFactor = nextZoom;
+        ZoomCenter = nextCenter;
+        IsZoomingEnabled = nextZoom != 1.0f;
+    }
+
+    [RelayCommand]
+    void ZoomDown(PointerRoutedEventArgs args)
+    {
+        var targetUI = ImagesContainer;
+        var lastZoom = (float)ZoomFactor;
+        var lastCenter = ZoomCenter;
+        var nextCenter = Vector2.Zero;
+        var nextZoom = _zoomFactorList[_currentZoomFactorIndex - 1 >= 0 ? --_currentZoomFactorIndex : _currentZoomFactorIndex];
+        if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
+        {
+            nextZoom = 1.0f;
+            nextCenter = lastCenter;
+        }
+        else if (nextZoom == lastZoom)
+        {
+            return;
+        }
+        else if (nextZoom > 1.0f)
+        {
+            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+            var imageCenterPos = _canvasHalfSize;
+            nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
+        }
+        else
+        {
+            nextCenter = _canvasHalfSize;
+        }
+
+        ZoomFactor = nextZoom;
+        IsZoomingEnabled = nextZoom != 1.0f;
+        ZoomCenter = nextCenter;
+    }
+
+    [RelayCommand]
+    void ZoomReset()
+    {
+        _currentZoomFactorIndex = GetDefaultZoomFactorListIndex();
+        ZoomCenter = _canvasHalfSize;
+        ZoomFactor = 1.0;
+    }
 
     Vector2 ToZoomCenterInsideCanvas(Vector2 center)
     {
@@ -782,105 +779,94 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         return new Vector2(x, y);
     }
 
-    RelayCommand _ZoomUpWithControllerCommand;
-    public RelayCommand ZoomUpWithControllerCommand => _ZoomUpWithControllerCommand
-        ??= new RelayCommand(() =>
+    [RelayCommand]
+    void ZoomUpWithController()
+    {
+        var targetUI = ImagesContainer;
+        var lastZoom = (float)ZoomFactor;
+        var nextZoom = _zoomFactorList[_currentZoomFactorIndex + 1 < _zoomFactorList.Length ? ++_currentZoomFactorIndex : _currentZoomFactorIndex];
+        if (lastZoom < 1.0f && nextZoom >= 1.0f)
         {
-            var targetUI = ImagesContainer;
-            var lastZoom = (float)ZoomFactor;
-            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex + 1 < ZoomFactorList.Length ? ++CurrentZoomFactorIndex : CurrentZoomFactorIndex];
-            if (lastZoom < 1.0f && nextZoom >= 1.0f)
-            {
-                nextZoom = 1.0f;
-            }
-            else if (nextZoom == lastZoom)
-            {
-                return;
-            }
-
-            ZoomFactor = nextZoom;
-            IsZoomingEnabled = nextZoom != 1.0f;
-        });
-
-    RelayCommand _ZoomDownWithControllerCommand;
-    public RelayCommand ZoomDownWithControllerCommand => _ZoomDownWithControllerCommand
-        ??= new RelayCommand(() =>
+            nextZoom = 1.0f;
+        }
+        else if (nextZoom == lastZoom)
         {
-            var targetUI = ImagesContainer;
-            var lastZoom = (float)ZoomFactor;
-            var lastCenter = ZoomCenter;
-            var nextCenter = Vector2.Zero;
-            var nextZoom = ZoomFactorList[CurrentZoomFactorIndex - 1 >= 0 ? --CurrentZoomFactorIndex : CurrentZoomFactorIndex];
-            if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
-            {
-                nextZoom = 1.0f;
-                nextCenter = lastCenter;
-            }
-            else if (nextZoom == lastZoom)
-            {
-                return;
-            }
-            else if (nextZoom > 1.0f)
-            {
-                // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
-                var imageCenterPos = _CanvasHalfSize;
-                nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
-            }
-            else
-            {
-                nextCenter = _CanvasHalfSize;
-            }
+            return;
+        }
 
-            ZoomFactor = nextZoom;
-            IsZoomingEnabled = nextZoom != 1.0f;
-            ZoomCenter = nextCenter;
-        });
+        ZoomFactor = nextZoom;
+        IsZoomingEnabled = nextZoom != 1.0f;
+    }
 
-
-    RelayCommand _ZoomCenterMoveRightCommand;
-    public RelayCommand ZoomCenterMoveRightCommand => _ZoomCenterMoveRightCommand
-        ??= new RelayCommand(() =>
+    [RelayCommand]
+    void ZoomDownWithController()
+    {
+        var targetUI = ImagesContainer;
+        var lastZoom = (float)ZoomFactor;
+        var lastCenter = ZoomCenter;
+        var nextCenter = Vector2.Zero;
+        var nextZoom = _zoomFactorList[_currentZoomFactorIndex - 1 >= 0 ? --_currentZoomFactorIndex : _currentZoomFactorIndex];
+        if (lastZoom - 1.0f > float.Epsilon && nextZoom <= 1.0f)
         {
-            var targetUI = ImagesContainer;
-            if (ZoomFactor > 1.0f)
-            {
-                ZoomCenter += new Vector2(ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
-            }
-        });
-
-    RelayCommand _ZoomCenterMoveLeftCommand;
-    public RelayCommand ZoomCenterMoveLeftCommand => _ZoomCenterMoveLeftCommand
-        ??= new RelayCommand(() =>
+            nextZoom = 1.0f;
+            nextCenter = lastCenter;
+        }
+        else if (nextZoom == lastZoom)
         {
-            var targetUI = ImagesContainer;
-            if (ZoomFactor > 1.0f)
-            {
-                ZoomCenter += new Vector2(-ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
-            }
-        });
-
-    RelayCommand _ZoomCenterMoveUpCommand;
-    public RelayCommand ZoomCenterMoveUpCommand => _ZoomCenterMoveUpCommand
-        ??= new RelayCommand(() =>
+            return;
+        }
+        else if (nextZoom > 1.0f)
         {
-            var targetUI = ImagesContainer;
-            if (ZoomFactor > 1.0f)
-            {
-                ZoomCenter += new Vector2(0, -ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
-            }
-        });
-
-    RelayCommand _ZoomCenterMoveDownCommand;
-
-    public RelayCommand ZoomCenterMoveDownCommand => _ZoomCenterMoveDownCommand
-        ??= new RelayCommand(() =>
+            // マウス位置を無視して画像中央に向かうようにセンター位置を移動させていく
+            var imageCenterPos = _canvasHalfSize;
+            nextCenter = (imageCenterPos - lastCenter) * 0.05f + lastCenter;
+        }
+        else
         {
-            var targetUI = ImagesContainer;
-            if (ZoomFactor > 1.0f)
-            {
-                ZoomCenter += new Vector2(0, ControlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
-            }
-        });
+            nextCenter = _canvasHalfSize;
+        }
+
+        ZoomFactor = nextZoom;
+        IsZoomingEnabled = nextZoom != 1.0f;
+        ZoomCenter = nextCenter;
+    }
+    [RelayCommand]
+    void ZoomCenterMoveRight()
+    {
+        var targetUI = ImagesContainer;
+        if (ZoomFactor > 1.0f)
+        {
+            ZoomCenter += new Vector2(_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+        }
+    }
+    [RelayCommand]
+    void ZoomCenterMoveLeft()
+    {
+        var targetUI = ImagesContainer;
+        if (ZoomFactor > 1.0f)
+        {
+            ZoomCenter += new Vector2(-_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController(), 0);
+        }
+    }
+    [RelayCommand]
+    void ZoomCenterMoveUp()
+    {
+        var targetUI = ImagesContainer;
+        if (ZoomFactor > 1.0f)
+        {
+            ZoomCenter += new Vector2(0, -_controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+        }
+    }
+
+    [RelayCommand]
+    void ZoomCenterMoveDown()
+    {
+        var targetUI = ImagesContainer;
+        if (ZoomFactor > 1.0f)
+        {
+            ZoomCenter += new Vector2(0, _controlerZoomCenterMoveAmount * GetZoomCenterMoveingFactorForController());
+        }
+    }
 
     public bool IsZoomingEnabled
     {
@@ -888,7 +874,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         set { SetValue(IsZoomingEnabledProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for IsZoomingEnabled.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsZoomingEnabledProperty =
         DependencyProperty.Register("IsZoomingEnabled", typeof(bool), typeof(ImageViewerPage), new PropertyMetadata(false));
 
@@ -900,12 +885,11 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         set { SetValue(ZoomDurationProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for ZoomDuration.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty ZoomDurationProperty =
-        DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(DefaultZoomingDuration));
+        DependencyProperty.Register("ZoomDuration", typeof(TimeSpan), typeof(ImageViewerPage), new PropertyMetadata(_defaultZoomingDuration));
 
 
-    private string ToDisplayString(double zoomFactor)
+    string ToDisplayString(double zoomFactor)
     {
         return zoomFactor.ToString("F1");
     }
@@ -916,7 +900,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         set { SetValue(ZoomFactorProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for ZoomFactor.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty ZoomFactorProperty =
         DependencyProperty.Register("ZoomFactor", typeof(double), typeof(ImageViewerPage), new PropertyMetadata(1.0));
 
@@ -929,7 +912,6 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         set { SetValue(ZoomCenterProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for ZoomCenter.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty ZoomCenterProperty =
         DependencyProperty.Register("ZoomCenter", typeof(Vector2), typeof(ImageViewerPage), new PropertyMetadata(Vector2.Zero));
 
@@ -937,7 +919,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     #endregion
 
-    private void Page1MenuFlyout_Opening(object sender, object e)
+    void Page1MenuFlyout_Opening(object sender, object e)
     {
         Page1AlbamAddItemButton.Items.Clear();
         var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
@@ -948,7 +930,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         }
     }
 
-    private void Page2MenuFlyout_Opening(object sender, object e)
+    void Page2MenuFlyout_Opening(object sender, object e)
     {
         Page2AlbamAddItemButton.Items.Clear();
         var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
@@ -962,7 +944,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
 public class SelectorSelectedChangedToStringConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, string language)
+    public object? Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is SelectionChangedEventArgs args)
         {

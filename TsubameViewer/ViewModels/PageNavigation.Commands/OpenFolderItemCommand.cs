@@ -17,133 +17,132 @@ using TsubameViewer.Views;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Animation;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
+#nullable enable
+namespace TsubameViewer.ViewModels.PageNavigation.Commands;
 
-namespace TsubameViewer.ViewModels.PageNavigation.Commands
+public sealed class OpenFolderItemCommand : CommandBase
 {
-    public sealed class OpenFolderItemCommand : CommandBase
+    readonly IMessenger _messenger;
+    readonly FolderContainerTypeManager _folderContainerTypeManager;
+    readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    readonly SourceChoiceCommand _sourceChoiceCommand;
+    readonly AlbamCreateCommand _albamCreateCommand;
+
+    public OpenFolderItemCommand(
+        IMessenger messenger,
+        FolderContainerTypeManager folderContainerTypeManager,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,
+        SourceChoiceCommand sourceChoiceCommand,
+        AlbamCreateCommand albamCreateCommand
+        )
     {
-        private readonly IMessenger _messenger;
-        private readonly FolderContainerTypeManager _folderContainerTypeManager;
-        private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
-        private readonly SourceChoiceCommand _sourceChoiceCommand;
-        private readonly AlbamCreateCommand _albamCreateCommand;
+        _messenger = messenger;
+        _folderContainerTypeManager = folderContainerTypeManager;
+        _displaySettingsByPathRepository = displaySettingsByPathRepository;
+        _sourceChoiceCommand = sourceChoiceCommand;
+        _albamCreateCommand = albamCreateCommand;
+    }
 
-        public OpenFolderItemCommand(
-            IMessenger messenger,
-            FolderContainerTypeManager folderContainerTypeManager,
-            DisplaySettingsByPathRepository displaySettingsByPathRepository,
-            SourceChoiceCommand sourceChoiceCommand,
-            AlbamCreateCommand albamCreateCommand
-            )
+    public override bool CanExecute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
         {
-            _messenger = messenger;
-            _folderContainerTypeManager = folderContainerTypeManager;
-            _displaySettingsByPathRepository = displaySettingsByPathRepository;
-            _sourceChoiceCommand = sourceChoiceCommand;
-            _albamCreateCommand = albamCreateCommand;
+            parameter = itemVM.Item;
+
+            if (itemVM.Type == StorageItemTypes.AddFolder)
+            {
+                return true;
+            }
+            else if (itemVM.Type == StorageItemTypes.AddAlbam)
+            {
+                return true;
+            }
         }
 
-        public override bool CanExecute(object parameter)
+        return parameter is IImageSource;
+    }
+
+    public override async void Execute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
         {
-            if (parameter is IStorageItemViewModel itemVM)
+            parameter = itemVM.Item;
+
+            if (itemVM.Type == StorageItemTypes.AddFolder)
             {
-                parameter = itemVM.Item;
-
-                if (itemVM.Type == StorageItemTypes.AddFolder)
-                {
-                    return true;
-                }
-                else if (itemVM.Type == StorageItemTypes.AddAlbam)
-                {
-                    return true;
-                }
+                ((ICommand)_sourceChoiceCommand).Execute(null);
+                return;
             }
-
-            return parameter is IImageSource;
+            else if (itemVM.Type == StorageItemTypes.AddAlbam)
+            {
+                ((ICommand)_albamCreateCommand).Execute(null);
+                return;
+            }
         }
 
-        public override async void Execute(object parameter)
+        if (parameter is IImageSource imageSource)
         {
-            if (parameter is IStorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
+            await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
-                if (itemVM.Type == StorageItemTypes.AddFolder)
-                {
-                    ((ICommand)_sourceChoiceCommand).Execute(null);
-                    return;
-                }
-                else if (itemVM.Type == StorageItemTypes.AddAlbam)
-                {
-                    ((ICommand)_albamCreateCommand).Execute(null);
-                    return;
-                }
+            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+            if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.AlbamImage)
+            {
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
             }
-
-            if (parameter is IImageSource imageSource)
+            else if (type is StorageItemTypes.Albam)
             {
-                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
-
-                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-                if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.AlbamImage)
+                var albamImageSource = imageSource as AlbamImageSource;
+                if (await albamImageSource.IsExistFolderOrArchiveFileAsync())
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }
-                else if (type is StorageItemTypes.Albam)
+                else
                 {
-                    var albamImageSource = imageSource as AlbamImageSource;
-                    if (await albamImageSource.IsExistFolderOrArchiveFileAsync())
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                    }
-                    else
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                }
+            }
+            else if (type == StorageItemTypes.Folder)
+            {
+                var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
+                if (containerType == FolderContainerType.Other)
+                {
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                }                                        
+                else
+                {
+                    if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode == DefaultFolderOrArchiveOpenMode.Listup)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                     }
-                }
-                else if (type == StorageItemTypes.Folder)
-                {
-                    var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
-                    if (containerType == FolderContainerType.Other)
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                    }                                        
                     else
                     {
-                        if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode == DefaultFolderOrArchiveOpenMode.Listup)
-                        {
-                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                            var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                        }
-                        else
-                        {
-                            var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                            var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
-                        }
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
                     }
                 }
-                else if (type == StorageItemTypes.EBook)
-                {
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
-                }
-                else if (type == StorageItemTypes.Movie)
-                {
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
-                }
-                else if (type == StorageItemTypes.AddFolder)
-                {
-                    ((ICommand)_sourceChoiceCommand).Execute(null);
-                }
-                else if (type == StorageItemTypes.AddAlbam)
-                {
-                    ((ICommand)_albamCreateCommand).Execute(null);
-                }
+            }
+            else if (type == StorageItemTypes.EBook)
+            {
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(EBookViewerPage), parameters);
+            }
+            else if (type == StorageItemTypes.Movie)
+            {
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(MovieViewerPage), parameters);
+            }
+            else if (type == StorageItemTypes.AddFolder)
+            {
+                ((ICommand)_sourceChoiceCommand).Execute(null);
+            }
+            else if (type == StorageItemTypes.AddAlbam)
+            {
+                ((ICommand)_albamCreateCommand).Execute(null);
             }
         }
     }

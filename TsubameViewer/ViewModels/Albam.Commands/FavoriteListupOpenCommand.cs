@@ -6,7 +6,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public sealed class FavoriteListupOpenCommand : CommandBase
     {
-        private readonly IMessenger _messenger;
+        readonly IMessenger _messenger;
 
         public FavoriteListupOpenCommand(IMessenger messenger)
         {

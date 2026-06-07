@@ -301,7 +301,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         return TryRenameItemAsync(Folder, itemPath, newName);
     }
 
-    private async Task<T?> ReadFileAsync<T>(StorageFolder folder, string filePath, T? @default = default)
+    async Task<T?> ReadFileAsync<T>(StorageFolder folder, string filePath, T? @default = default)
     {
         try
         {
@@ -318,7 +318,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         }
     }
 
-    private async Task<IEnumerable<(DirectoryItemType, string)>> ReadFolderAsync(StorageFolder folder, string folderPath)
+    async Task<IEnumerable<(DirectoryItemType, string)>> ReadFolderAsync(StorageFolder folder, string folderPath)
     {
         var targetFolder = await folder.GetFolderAsync(NormalizePath(folderPath));
         var items = await targetFolder.GetItemsAsync();
@@ -333,17 +333,17 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         });
     }
 
-    private async Task<StorageFile> CreateFileAsync<T>(StorageFolder folder, string filePath, T value)
+    async Task<StorageFile> CreateFileAsync<T>(StorageFolder folder, string filePath, T value)
     {
         return await StorageFileHelper.WriteBytesToFileAsync(folder, Serializer.Serialize(value), NormalizePath(filePath), CreationCollisionOption.ReplaceExisting);
     }
 
-    private async Task CreateFolderAsync(StorageFolder folder, string folderPath)
+    async Task CreateFolderAsync(StorageFolder folder, string folderPath)
     {
         await folder.CreateFolderAsync(NormalizePath(folderPath), CreationCollisionOption.OpenIfExists);
     }
 
-    private async Task<bool> TryDeleteItemAsync(StorageFolder folder, string itemPath)
+    async Task<bool> TryDeleteItemAsync(StorageFolder folder, string itemPath)
     {
         try
         {
@@ -357,7 +357,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         }
     }
 
-    private async Task<bool> TryRenameItemAsync(StorageFolder folder, string itemPath, string newName)
+    async Task<bool> TryRenameItemAsync(StorageFolder folder, string itemPath, string newName)
     {
         try
         {
@@ -371,7 +371,7 @@ public partial class BytesApplicationDataStorageHelper : IStorageHelper
         }
     }
 
-    private string NormalizePath(string path)
+    string NormalizePath(string path)
     {
         return Path.Combine(Path.GetDirectoryName(path), Path.GetFileName(path));
     }

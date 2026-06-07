@@ -10,12 +10,11 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using Windows.Storage;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.PageNavigation.Commands;
 
 internal static class IfImageSourceNotExistSendMessage
 {
-    static StringBuilder _sb = new StringBuilder();
     public static async Task ThrowIfImageSourceStorageItemNotFound(this IImageSource imageSource, IMessenger? messenger = null)
     {
         messenger ??= Ioc.Default.GetRequiredService<IMessenger>();

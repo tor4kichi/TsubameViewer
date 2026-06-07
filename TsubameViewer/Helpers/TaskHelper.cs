@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
-
+#nullable enable
 namespace TsubameViewer;
 
 public static class TaskExtensions
@@ -44,6 +44,7 @@ public static class TaskExtensions
         {
             await task;
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             // 現在の同期文脈（UIスレッドなど）があればそこへ、なければThreadPoolへ例外を逃がす
@@ -64,6 +65,7 @@ public static class TaskExtensions
         {
             await task;
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             // 現在の同期文脈（UIスレッドなど）があればそこへ、なければThreadPoolへ例外を逃がす
@@ -81,21 +83,15 @@ public static class TaskExtensions
 
 public static class AsyncTaskErrorHandler
 {
-    // アプリケーション全体で監視できるイベント
-    public static event EventHandler<ExceptionEventArgs>? OnError;
-
     public static async void Handle(Func<Task> taskFactory)
     {
         try
         {
             await taskFactory();
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            // 自前の集約イベントを叩く
-            OnError?.Invoke(null, new ExceptionEventArgs(ex));
-
-            // 最終的にUnhandledExceptionへ強制伝播
             ExceptionDispatchInfo.Throw(ex);
         }
     }
@@ -106,18 +102,10 @@ public static class AsyncTaskErrorHandler
         {
             await taskFactory(state);
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            // 自前の集約イベントを叩く
-            OnError?.Invoke(null, new ExceptionEventArgs(ex));
-
-            // 最終的にUnhandledExceptionへ強制伝播
             ExceptionDispatchInfo.Throw(ex);
         }
     }
-}
-
-public class ExceptionEventArgs(Exception exception) : EventArgs
-{
-    public Exception Exception { get; } = exception;
 }

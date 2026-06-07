@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.Migrate;
 
 public sealed class DropIgnoreStorageItemDbWhenIdNotString : IAsyncMigrater

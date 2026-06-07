@@ -42,12 +42,12 @@ namespace TsubameViewer.Views.StateTrigger
         public static readonly DependencyProperty KeyProperty =
             DependencyProperty.Register("Key", typeof(VirtualKey), typeof(VirualKeyPressingTrigger), new PropertyMetadata(VirtualKey.None, OnKeyPropertyChanged));
 
-        private static void OnKeyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        static void OnKeyPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             (d as VirualKeyPressingTrigger).KeyChanged((VirtualKey)e.NewValue);
         }
 
-        private void KeyChanged(VirtualKey key)
+        void KeyChanged(VirtualKey key)
         {
             Window.Current.CoreWindow.KeyDown -= CoreWindow_KeyDown;
             Window.Current.CoreWindow.KeyUp -= CoreWindow_KeyUp;
@@ -64,7 +64,7 @@ namespace TsubameViewer.Views.StateTrigger
         }
         
 
-        private void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
+        void CoreWindow_KeyDown(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
         {
             if (args.VirtualKey == Key)
             {
@@ -72,7 +72,7 @@ namespace TsubameViewer.Views.StateTrigger
             }
         }
 
-        private void CoreWindow_KeyUp(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
+        void CoreWindow_KeyUp(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.KeyEventArgs args)
         {
             if (args.VirtualKey == Key)
             {
@@ -81,7 +81,7 @@ namespace TsubameViewer.Views.StateTrigger
         }
 
 
-        private void Current_Activated(object sender, Windows.UI.Core.WindowActivatedEventArgs e)
+        void Current_Activated(object sender, Windows.UI.Core.WindowActivatedEventArgs e)
         {
             if (e.WindowActivationState == Windows.UI.Core.CoreWindowActivationState.Deactivated)
             {

@@ -24,8 +24,8 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
         return R3.Observable.Return("Albam".Translate());
     }
 
-    private readonly AlbamListupPageViewModel _vm;
-    private readonly FocusHelper _focusHelper;
+    readonly AlbamListupPageViewModel _vm;
+    readonly FocusHelper _focusHelper;
 
     public AlbamListupPage()
     {
@@ -37,9 +37,9 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
     }
 
     bool _isFirstItem = false;
-    private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM && _navigationCts.IsCancellationRequested is false)
+        if (args.Item is IStorageItemViewModel itemVM && _navigationCts?.IsCancellationRequested is false)
         {
             if (itemVM.IsSourceStorageItem is false && itemVM.Name != null)
             {
@@ -60,7 +60,7 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
     }
 
 
-    CancellationTokenSource _navigationCts;
+    CancellationTokenSource? _navigationCts;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         _navigationCts = new CancellationTokenSource();
@@ -70,8 +70,8 @@ public sealed partial class AlbamListupPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
+        _navigationCts?.Cancel();
+        _navigationCts?.Dispose();
         base.OnNavigatingFrom(e);
     }
 }

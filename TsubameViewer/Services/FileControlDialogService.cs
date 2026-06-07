@@ -15,7 +15,7 @@ public interface IStorageItemDeleteConfirmation
 
 public sealed class FileControlDialogService : IFileControlDialogService
 {
-    private readonly Lazy<IStorageItemDeleteConfirmation> _lazyStorageItemDeleteConfirmDialog;
+    readonly Lazy<IStorageItemDeleteConfirmation> _lazyStorageItemDeleteConfirmDialog;
 
     public FileControlDialogService(Lazy<IStorageItemDeleteConfirmation> lazyStorageItemDeleteConfirmDialog)
     {

@@ -636,8 +636,8 @@
                     </StackPanel>
 
                     <Slider HorizontalAlignment="Stretch"
-                            Maximum="{x:Bind MaxPlaybackRate}"
-                            Minimum="{x:Bind MinPlaybackRate}"
+                            Maximum="{x:Bind _maxPlaybackRate}"
+                            Minimum="{x:Bind _minPlaybackRate}"
                             Value="{x:Bind _vm.PageSettings.PlaybackRate, Mode=OneWay}"
                             ValueChanged="PlaybackRateSlider_ValueChanged"
                             StepFrequency="0.1"

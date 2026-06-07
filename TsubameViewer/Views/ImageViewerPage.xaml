@@ -489,7 +489,7 @@
                 Windows10version1903:Translation="0, 0, 16"
                 >
       <Windows10version1903:StackPanel.Shadow>
-        <ThemeShadow  />
+        <Windows10version1903:ThemeShadow  />
       </Windows10version1903:StackPanel.Shadow>
 
       <animation:Implicit.ShowAnimations>

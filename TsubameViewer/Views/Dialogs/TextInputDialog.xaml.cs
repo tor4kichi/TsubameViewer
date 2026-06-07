@@ -30,7 +30,7 @@ namespace TsubameViewer.Views.Dialogs
             CloseButtonClick += TextInputDialog_CloseButtonClick;
         }
 
-        private void TextInputDialog_CloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+        void TextInputDialog_CloseButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
         {
             MyTextBox.Text = String.Empty;
         }
@@ -40,7 +40,7 @@ namespace TsubameViewer.Views.Dialogs
             return MyTextBox.Text;
         }
         
-        private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         {
             this.Hide();
         }

@@ -13,13 +13,13 @@ using TsubameViewer.Core.Infrastructure;
 using Windows.Storage;
 using Windows.UI.StartScreen;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-
+#nullable enable
 namespace TsubameViewer.Services;
 
 public sealed class SecondaryTileManager : ISecondaryTileManager
 {
-    private readonly ISecondaryTileThumbnailImageService _secondaryTileThumbnailImageService;
-    private readonly SecondaryTileIdRepository _secondaryTileIdRepository;
+    readonly ISecondaryTileThumbnailImageService _secondaryTileThumbnailImageService;
+    readonly SecondaryTileIdRepository _secondaryTileIdRepository;
 
     public sealed class SecondaryTileIdRepository : LiteDBServiceBase<SecondaryTileId>
     {
@@ -28,7 +28,7 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
             _collection.EnsureIndex(x => x.TiteId);
         }
 
-        public string FindPathFromTileId(string tileId)
+        public string? FindPathFromTileId(string tileId)
         {
             return _collection.FindOne(x => x.TiteId == tileId)?.Path;
         }
@@ -58,13 +58,13 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
     public class SecondaryTileId
     {
         [BsonId]
-        public string Path { get; set; }
+        public string Path { get; set; } = "";
 
         [BsonId]
-        public string ThumbnailSubFolderName { get; set; }
+        public string ThumbnailSubFolderName { get; set; } = "";
 
         [BsonField]
-        public string TiteId { get; set; }
+        public string TiteId { get; set; } = "";
     }
 
 
@@ -78,12 +78,15 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
         _secondaryTileIdRepository = secondaryTileIdRepository;
     }
 
-    Dictionary<string, SecondaryTile> Tiles { get; set; }
+    readonly Dictionary<string, SecondaryTile> _tiles = [];
 
     public async Task InitializeAsync()
     {
         var tiles = await SecondaryTile.FindAllAsync();
-        Tiles = tiles.ToDictionary(x => x.TileId);
+        foreach (var tile in tiles)
+        {
+            _tiles.Add(tile.TileId, tile);
+        }
         // tilesに含まれない生成済みのセカンダリタイル用サムネイルを削除する
         await _secondaryTileThumbnailImageService.SecondaryThumbnailDeleteNotExist(tiles.Select(x => x.TileId));
     }
@@ -118,6 +121,11 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
 
         var tileId = _secondaryTileIdRepository.GetTileId(storageItem.Path);
         var tileThubmnails = await Task.Run(async () => await _secondaryTileThumbnailImageService.GenerateSecondaryThumbnailImageAsync(storageItem, tileId, CancellationToken.None));
+        if (tileThubmnails == null) 
+        {
+            return false; 
+        }
+
         var json = JsonSerializer.Serialize(arguments);
         var tile = new SecondaryTile(
             tileId,
@@ -135,8 +143,8 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
         {
             // アプリ起動時には既に追加済みだったが、その後タイルを削除して、またタイルを追加と操作した場合に対応するため
             // 重複のID登録が起きうることを想定
-            Tiles.Remove(tileId);
-            Tiles.Add(tileId, tile);
+            _tiles.Remove(tileId);
+            _tiles.Add(tileId, tile);
         }
         return result;
     }
@@ -148,11 +156,11 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
         {
             try
             {
-                if (Tiles.TryGetValue(tileId, out var tile))
+                if (_tiles.TryGetValue(tileId, out var tile))
                 {
                     if (await tile.RequestDeleteAsync())
                     {
-                        Tiles.Remove(tileId);
+                        _tiles.Remove(tileId);
                         Debug.WriteLine("セカンダリタイルを削除：" + path);
                     }
                 }
@@ -169,6 +177,12 @@ public sealed class SecondaryTileManager : ISecondaryTileManager
 
 public sealed class SecondaryTileArguments : ISecondaryTileArguments
 {
+    public SecondaryTileArguments(string path, string pageName)
+    {
+        Path = path;
+        PageName = pageName;
+    }
+
     public string Path { get; set; }
 
     public string PageName { get; set; }

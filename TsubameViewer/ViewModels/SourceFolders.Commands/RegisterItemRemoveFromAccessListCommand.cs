@@ -11,13 +11,13 @@ using System.Threading.Tasks;
 using TsubameViewer.Contracts.Services;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.PageNavigation;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
 internal class RegisterItemRemoveFromAccessListCommand : IRelayCommand<IStorageItemViewModel>
 {
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly IMessageDialogService _messageDialogService;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly IMessageDialogService _messageDialogService;
 
     public RegisterItemRemoveFromAccessListCommand(
         SourceStorageItemsRepository sourceStorageItemsRepository,

@@ -58,16 +58,7 @@ public sealed class SourceStorageItemsRepository
         }
     }
 
-
-    public sealed class SourceStorageItemAddedMessageData
-    {
-        internal SourceStorageItemAddedMessageData() { }
-
-        public string Token { get; set; }
-        public IStorageItem StorageItem { get; set; }
-        public string Metadata { get; set; }
-        public TokenListType ListType { get; set; }
-    }
+    public sealed record SourceStorageItemAddedMessageData(string Token, IStorageItem StorageItem, string? Metadata, TokenListType ListType);
 
     public sealed class SourceStorageItemAddedMessage : ValueChangedMessage<SourceStorageItemAddedMessageData>
     {
@@ -76,16 +67,7 @@ public sealed class SourceStorageItemsRepository
         }
     }
 
-
-
-    public sealed class SourceStorageItemRemovedMessageData
-    {
-        internal SourceStorageItemRemovedMessageData() { }
-
-        public string Token { get; set; }
-
-        public string Path { get; set; }
-    }
+    public sealed record SourceStorageItemRemovedMessageData(string Token, string Path);
 
     public sealed class SourceStorageItemRemovedMessage : ValueChangedMessage<SourceStorageItemRemovedMessageData>
     {
@@ -94,15 +76,8 @@ public sealed class SourceStorageItemsRepository
         }
     }
 
-
-    public sealed class SourceStorageItemMovedOrRenameMessageData
+    public sealed record SourceStorageItemMovedOrRenameMessageData(string Token, string OldPath, string NewPath)
     {
-        public string Token { get; set; }
-
-        public string OldPath { get; set; }
-
-        public string NewPath { get; set; }
-
         public bool IsRename => Path.GetDirectoryName(OldPath) == Path.GetDirectoryName(NewPath);
     }
 
@@ -116,9 +91,9 @@ public sealed class SourceStorageItemsRepository
     public sealed class TokenToPathEntry
     {
         [BsonId]
-        public string Token { get; set; }
+        public string Token { get; set; } = "";
 
-        public string Path { get; set; }
+        public string Path { get; set; } = "";
 
         public TokenListType TokenListType { get; set; }
 
@@ -191,9 +166,9 @@ public sealed class SourceStorageItemsRepository
             return _collection.Find(x => path.StartsWith(x.Path));
         }
 
-        internal TokenToPathEntry FindTokenToPathFromRoot(string path)
+        internal TokenToPathEntry? FindTokenToPathFromRoot(string path)
         {
-            TokenToPathEntry token = null;
+            TokenToPathEntry? token = null;
             while (Path.GetDirectoryName(path) is not null and var dir && string.IsNullOrEmpty(dir))
             {
                 token = _collection.Find(x => dir == x.Path).FirstOrDefault();
@@ -253,7 +228,7 @@ public sealed class SourceStorageItemsRepository
             if (token is not null)
             {
                 Debug.WriteLine($"システムにより最近使ったファイルからアイテムが削除されました: path {token.Path}");
-                _messenger.Send(new SourceStorageItemRemovedMessage(new() { Token = token.Token, Path = token.Path }));
+                _messenger.Send(new SourceStorageItemRemovedMessage(new(token.Token, token.Path)));
             }
         }
         catch { }
@@ -267,13 +242,13 @@ public sealed class SourceStorageItemsRepository
         return _tokenToPathRepository.IsExistPath(path);
     }
 
-    public async Task<(string Token, IStorageItem Item)> GetSourceStorageItem(string path)
+    public async Task<(string Token, IStorageItem? Item)> GetSourceStorageItem(string path)
     {
         var token = _tokenToPathRepository.GetTokenFromPathExact(path);
         return (token.Token, await GetItemAsync(token.Token));
     }
 
-    public async Task<IStorageItem> GetSourceStorageItemAsync(TokenToPathEntry entry)
+    public async Task<IStorageItem?> GetSourceStorageItemAsync(TokenToPathEntry entry)
     {
         return await GetItemAsync(entry.Token);
     }
@@ -329,7 +304,7 @@ public sealed class SourceStorageItemsRepository
     {
 #if WINDOWS_UWP
         var list = StorageApplicationPermissions.MostRecentlyUsedList;
-        string token = null;
+        string? token = null;
 
         try
         {
@@ -363,13 +338,12 @@ public sealed class SourceStorageItemsRepository
             _tokenToPathRepository.Add(TokenListType.MostRecentlyUsedList, token, storageItem.Path);
         }
 
-        _messenger.Send(new SourceStorageItemAddedMessage(new () 
-        {
-            Token = token,
-            StorageItem = storageItem,
-            Metadata = metadata,
-            ListType = TokenListType.MostRecentlyUsedList,
-        }));
+        _messenger.Send(new SourceStorageItemAddedMessage(new (
+            token,
+            storageItem,
+            metadata,
+            TokenListType.MostRecentlyUsedList
+        )));
 
         return token;
     }
@@ -379,7 +353,7 @@ public sealed class SourceStorageItemsRepository
     {
 
 #if WINDOWS_UWP
-        string token = null;
+        string? token = null;
 
         foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
         {
@@ -406,20 +380,19 @@ public sealed class SourceStorageItemsRepository
 #endif
         _tokenToPathRepository.Add(TokenListType.FutureAccessList, token, storageItem.Path);
 
-        _messenger.Send(new SourceStorageItemAddedMessage(new()
-        {
-            Token = token,
-            StorageItem = storageItem,
-            Metadata = metadata,
-            ListType = TokenListType.FutureAccessList,
-        }));
+        _messenger.Send(new SourceStorageItemAddedMessage(new(
+           token,
+           storageItem,
+           metadata,
+           TokenListType.MostRecentlyUsedList
+       )));
 
         return token;
     }
 
     ConcurrentDictionary<string, IStorageItem> _cached = new ();
     
-    private async Task<IStorageItem> GetItemAsync(string token)
+    private async Task<IStorageItem?> GetItemAsync(string token)
     {
         if (_cached.TryGetValue(token, out var item)) { return item; }
 
@@ -448,10 +421,11 @@ public sealed class SourceStorageItemsRepository
             _cached.TryAdd(token, item);
         }
 
+
         return item;
     }
     
-    private async Task<TokenToPathEntry> CheckAndGetTokenToPathAfterRefreshDb(string targetPath)
+    private async Task<TokenToPathEntry?> CheckAndGetTokenToPathAfterRefreshDb(string targetPath)
     {
         // 一旦全てのトークンとパスの組み合わせをバッファ
         var oldTokenToPathMap = _tokenToPathRepository.ReadAllItems().ToDictionary(x => x.Token, x => x.Path);
@@ -470,13 +444,15 @@ public sealed class SourceStorageItemsRepository
         // トークンに対応するアイテムを取得する（targetPathとトークンが示すアイテムのPathが異なる可能性がある）
         var storageItem = await GetItemAsync(token.Token);
 
+        if (storageItem == null) { return null; }
+
         // トークン、パス、旧パスを元にフォルダ変更イベントをトリガーする
-        _messenger.Send(new SourceStorageItemMovedOrRenameMessage(new() { Token = token.Token, OldPath = oldPath, NewPath = storageItem.Path }));
+        _messenger.Send(new SourceStorageItemMovedOrRenameMessage( new (token.Token, oldPath, storageItem.Path)));
 
         return token;
     }
 
-    public async Task<IStorageItem> TryGetStorageItemFromPath(string path)
+    public async Task<IStorageItem?> TryGetStorageItemFromPath(string path)
     {            
         // .Where() は 例えば「_A_B」と「_A」というフォルダ名を分別するために必要
         var tokenEntries = _tokenToPathRepository.GetAllTokenFromPath(path).ToArray();
@@ -493,7 +469,7 @@ public sealed class SourceStorageItemsRepository
             tokenEntries = new[] { token };
         }
 
-        async Task<IStorageItem> FindStorageItem(TokenToPathEntry tokenEntry)
+        async Task<IStorageItem?> FindStorageItem(TokenToPathEntry tokenEntry)
         {
             try
             {
@@ -549,7 +525,7 @@ public sealed class SourceStorageItemsRepository
         if (isRemoved)
         {
             _tokenToPathRepository.DeleteItem(token);
-            _messenger.Send(new SourceStorageItemRemovedMessage(new () { Token = token, Path = entry.Path }));
+            _messenger.Send(new SourceStorageItemRemovedMessage(new (token, entry.Path)));
         }
     }
 
@@ -593,7 +569,7 @@ public sealed class SourceStorageItemsRepository
         foreach (var item in myItems)
         {
             ct.ThrowIfCancellationRequested();
-            IStorageItem storageItem = null;
+            IStorageItem? storageItem = null;
             try
             {
                 storageItem = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(item.Token);

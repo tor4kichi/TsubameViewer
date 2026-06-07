@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
+#nullable enable
+namespace TsubameViewer.Core.Models.Migrate;
 
-namespace TsubameViewer.Core.Models.Migrate
+public interface IAsyncMigrater
 {
-    public interface IAsyncMigrater
-    {
-        Version? TargetVersion { get; }
-        ValueTask MigrateAsync();
-    }
+    Version? TargetVersion { get; }
+    ValueTask MigrateAsync();
 }

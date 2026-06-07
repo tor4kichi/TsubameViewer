@@ -17,11 +17,11 @@ namespace TsubameViewer.ViewModels.PageNavigation
         public const string ImageJumpConnectedAnimationName = "ImageJumpInAnimation";
         public const string BackToImageListConnectedAnimationName = "BackToImageList";
 
-        private readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
-        private readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
-        private readonly static DrillInNavigationTransitionInfo _searchTransison = new DrillInNavigationTransitionInfo();
-        private readonly static DrillInNavigationTransitionInfo _settingsTransison = new DrillInNavigationTransitionInfo();
-        private readonly static SuppressNavigationTransitionInfo _otherTransison = new SuppressNavigationTransitionInfo();
+        readonly static DrillInNavigationTransitionInfo _viewerTransison = new DrillInNavigationTransitionInfo();
+        readonly static SlideNavigationTransitionInfo _listupTransison = new SlideNavigationTransitionInfo() { Effect = SlideNavigationTransitionEffect.FromRight };
+        readonly static DrillInNavigationTransitionInfo _searchTransison = new DrillInNavigationTransitionInfo();
+        readonly static DrillInNavigationTransitionInfo _settingsTransison = new DrillInNavigationTransitionInfo();
+        readonly static SuppressNavigationTransitionInfo _otherTransison = new SuppressNavigationTransitionInfo();
         
         public static NavigationTransitionInfo MakeNavigationTransitionInfoFromPageName(string pageName)
         {

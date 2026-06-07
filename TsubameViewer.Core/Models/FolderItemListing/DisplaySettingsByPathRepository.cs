@@ -19,7 +19,7 @@ public enum DefaultFolderOrArchiveOpenMode
 public record FolderAndArchiveDisplaySettingEntry
 {
     [BsonId]
-    public string Path { get; init; }
+    public string Path { get; init; } = "";
 
     public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
 
@@ -29,7 +29,7 @@ public record FolderAndArchiveDisplaySettingEntry
 public record FolderAndArchiveChildFileDisplaySettingEntry
 {
     [BsonId]
-    public string Path { get; init; }
+    public string Path { get; init; } = "";
 
     public FileSortType? ChildItemDefaultSort { get; init; }
 }

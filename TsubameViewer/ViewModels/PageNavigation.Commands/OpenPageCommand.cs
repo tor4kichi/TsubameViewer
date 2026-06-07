@@ -8,7 +8,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 {
     public sealed class OpenPageCommand : CommandBase
     {
-        private readonly IMessenger _messenger;
+        readonly IMessenger _messenger;
 
         public OpenPageCommand(IMessenger messenger)
         {

@@ -24,7 +24,7 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
         _toKey = toKey;
     }
 
-    private void KeyIndexMappedAdvancedCollectionView_VectorChanged(Windows.Foundation.Collections.IObservableVector<object> sender, Windows.Foundation.Collections.IVectorChangedEventArgs @event)
+    void KeyIndexMappedAdvancedCollectionView_VectorChanged(Windows.Foundation.Collections.IObservableVector<object> sender, Windows.Foundation.Collections.IVectorChangedEventArgs @event)
     {
         int index = (int)@event.Index;
         switch (@event.CollectionChange)
@@ -56,8 +56,8 @@ public class KeyIndexMappedAdvancedCollectionView<T> : AdvancedCollectionView, I
         }
     }
 
-    private readonly Func<T, string> _toKey;
-    private readonly Dictionary<string, int> _keyIndexMap = [];
+    readonly Func<T, string> _toKey;
+    readonly Dictionary<string, int> _keyIndexMap = [];
 
     public int IndexFromKey(string key)
     {

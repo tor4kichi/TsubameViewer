@@ -14,7 +14,7 @@ namespace TsubameViewer.Services;
 public sealed class ImageCodecService : IImageCodecService
 {
     private IReadOnlyDictionary<string, ImageCodecExtensionInfo> _fileTypeToImageCodecExtension;
-    private readonly Uri _assetUrl;
+    readonly Uri _assetUrl;
 
     public ImageCodecService(Uri assetUrl)
     {
@@ -22,7 +22,7 @@ public sealed class ImageCodecService : IImageCodecService
     }
 
     bool _isInitialize;
-    private async ValueTask EnsureInitialzie()
+    async ValueTask EnsureInitialzie()
     {
         if (_isInitialize) { return; }
 

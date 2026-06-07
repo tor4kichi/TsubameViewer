@@ -26,7 +26,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
     public static readonly DependencyProperty IsEnabledProperty =
         DependencyProperty.Register("IsEnabled", typeof(bool), typeof(ManipulationBehaviorBase), new PropertyMetadata(true, OnIsEnabledPropertyChanged));
 
-    private static void OnIsEnabledPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    static void OnIsEnabledPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var _this = (ManipulationBehaviorBase)d;
         if ((bool)e.NewValue)
@@ -112,7 +112,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private void AssociatedObject_PointerPressed(object sender, PointerRoutedEventArgs e)
+    void AssociatedObject_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var item = (UIElement)sender;
         var pt = e.GetCurrentPoint(null);        
@@ -122,7 +122,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private void AssociatedObject_PointerCanceled(object sender, PointerRoutedEventArgs e)
+    void AssociatedObject_PointerCanceled(object sender, PointerRoutedEventArgs e)
     {
         var item = (UIElement)sender;
         item.ReleasePointerCapture(e.Pointer);
@@ -130,7 +130,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         NowManipulation = false;
     }
 
-    private void AssociatedObject_PointerReleased(object sender, PointerRoutedEventArgs e)
+    void AssociatedObject_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
         var item = (UIElement)sender;
         item.ReleasePointerCapture(e.Pointer);
@@ -145,7 +145,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
     protected virtual bool ManipulationInertiaStarting(object sender, Windows.UI.Xaml.Input.ManipulationInertiaStartingRoutedEventArgs e) => false;
     protected virtual bool ManipulationCompleted(object sender, Windows.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs e) => false;
 
-    private static void AssociatedObject_ManipulationStarting(object sender, Windows.UI.Xaml.Input.ManipulationStartingRoutedEventArgs e)
+    static void AssociatedObject_ManipulationStarting(object sender, Windows.UI.Xaml.Input.ManipulationStartingRoutedEventArgs e)
     {                            
         var item = (UIElement)sender;        
         if (e.Handled) { return; }        
@@ -157,7 +157,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private static void AssociatedObject_ManipulationStarted(object sender, Windows.UI.Xaml.Input.ManipulationStartedRoutedEventArgs e)
+    static void AssociatedObject_ManipulationStarted(object sender, Windows.UI.Xaml.Input.ManipulationStartedRoutedEventArgs e)
     {        
         var item = (UIElement)sender;
         if (!_pointerPressedMap.TryGetValue(item, out bool isPointerPressed) || !isPointerPressed) { return; }
@@ -170,7 +170,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private static void AssociatedObject_ManipulationDelta(object sender, Windows.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs e)
+    static void AssociatedObject_ManipulationDelta(object sender, Windows.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs e)
     {        
         var item = (UIElement)sender;
         if (!_pointerPressedMap.TryGetValue(item, out bool isPointerPressed) || !isPointerPressed) { return; }
@@ -181,7 +181,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private static void AssociatedObject_ManipulationInertiaStarting(object sender, Windows.UI.Xaml.Input.ManipulationInertiaStartingRoutedEventArgs e)
+    static void AssociatedObject_ManipulationInertiaStarting(object sender, Windows.UI.Xaml.Input.ManipulationInertiaStartingRoutedEventArgs e)
     {        
         if (_handlersMap.TryGetValue((UIElement)sender, out var behaviors) is false) { throw new InvalidOperationException(); }
         foreach (var behavior in behaviors)
@@ -190,7 +190,7 @@ public abstract class ManipulationBehaviorBase : Behavior<UIElement>
         }
     }
 
-    private static void AssociatedObject_ManipulationCompleted(object sender, Windows.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs e)
+    static void AssociatedObject_ManipulationCompleted(object sender, Windows.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs e)
     {        
         var item = (UIElement)sender;
         if (!_pointerPressedMap.TryGetValue(item, out bool isPointerPressed) || !isPointerPressed) { return; }

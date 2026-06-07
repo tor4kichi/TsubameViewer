@@ -13,19 +13,19 @@ namespace TsubameViewer.ViewModels;
 
 internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
 {
-    private readonly IMessenger _messenger;
-    private readonly AlbamRepository _albamRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly ImageCollectionManager _imageCollectionManager;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly ThumbnailImageManager _thumbnailManager;
+    readonly IMessenger _messenger;
+    readonly AlbamRepository _albamRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly ImageCollectionManager _imageCollectionManager;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly ThumbnailImageManager _thumbnailManager;
 
     public ObservableCollection<StorageItemViewModel> Albams { get; } = new ();
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
     public OpenImageViewerCommand OpenImageViewerCommand { get; }
     public OpenImageListupCommand OpenImageListupCommand { get; }
 
-    private readonly StorageItemViewModel _createNewAlbamViewModel;
+    readonly StorageItemViewModel _createNewAlbamViewModel;
 
     public AlbamListupPageViewModel(
         IMessenger messenger,

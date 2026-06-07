@@ -24,7 +24,7 @@ using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
 using Windows.Storage.Search;
 
-
+#nullable enable
 namespace TsubameViewer.Core.Models.ImageViewer;
 
 public sealed class ImageCollectionManager
@@ -74,7 +74,7 @@ public sealed class ImageCollectionManager
 
     public async Task<(IImageSource ImageSource, IImageCollectionContext ImageCollectionContext)> GetImageSourceAndContextAsync(string path, string? pageName, CancellationToken ct)
     {
-        IStorageItem storageItem = null;
+        IStorageItem? storageItem = null;
         foreach (var _ in Enumerable.Repeat(0, 10))
         {
             storageItem = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(path);

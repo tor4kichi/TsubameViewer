@@ -4,25 +4,24 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models.Navigation;
+#nullable enable
+namespace TsubameViewer.Core.Models.Migrate;
 
-namespace TsubameViewer.Core.Models.Migrate
+public sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
 {
-    public sealed class MigrateLocalStorageHelperToApplicationDataStorageHelper : IAsyncMigrater
+    public MigrateLocalStorageHelperToApplicationDataStorageHelper(IStorageHelper storageHelper)
     {
-        public MigrateLocalStorageHelperToApplicationDataStorageHelper(IStorageHelper storageHelper)
-        {
-            _storageHelper = storageHelper;
-        }
+        _storageHelper = storageHelper;
+    }
 
-        public  Version? TargetVersion { get; } = new Version(1, 3, 5);
-        private readonly IStorageHelper _storageHelper;
+    public  Version? TargetVersion { get; } = new Version(1, 3, 5);
+    private readonly IStorageHelper _storageHelper;
 
-        public async ValueTask MigrateAsync()
-        {
-            _storageHelper.Clear();
+    public async ValueTask MigrateAsync()
+    {
+        _storageHelper.Clear();
 
-            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.BackNavigationEntriesName);
-            await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.ForwardNavigationEntriesName);
-        }
+        await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.BackNavigationEntriesName);
+        await _storageHelper.TryDeleteItemAsync(NavigationStackRepository.NavigationStackRepository_Internal.ForwardNavigationEntriesName);
     }
 }

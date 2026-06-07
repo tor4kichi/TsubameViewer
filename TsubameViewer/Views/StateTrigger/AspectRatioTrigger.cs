@@ -20,13 +20,13 @@ namespace TsubameViewer.Views.StateTrigger
         public static readonly DependencyProperty TargetProperty =
             DependencyProperty.Register("Target", typeof(FrameworkElement), typeof(AspectRatioTrigger), new PropertyMetadata(null, OnTargetPropertyChnaged));
 
-        private static void OnTargetPropertyChnaged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        static void OnTargetPropertyChnaged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var _this = (AspectRatioTrigger)d;
             _this.Target.SizeChanged += _this.Target_SizeChanged;
         }
 
-        private void Target_SizeChanged(object sender, SizeChangedEventArgs e)
+        void Target_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             var isActive = IsActive;
             var targetRatio = WidthHeightRatio;

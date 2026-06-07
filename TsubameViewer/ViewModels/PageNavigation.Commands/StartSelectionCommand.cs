@@ -7,7 +7,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 {
     public sealed class StartSelectionCommand : CommandBase
     {
-        private readonly IMessenger _messenger;
+        readonly IMessenger _messenger;
 
         public StartSelectionCommand(IMessenger messenger)
         {

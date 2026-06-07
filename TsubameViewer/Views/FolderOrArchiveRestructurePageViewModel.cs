@@ -41,9 +41,9 @@ namespace TsubameViewer.ViewModels
 
     partial class FolderOrArchiveRestructurePageViewModel : NavigationAwareViewModelBase
     {
-        private readonly IMessenger _messenger;
-        private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-        private readonly SplitImageTransform _splitImageTransform;
+        readonly IMessenger _messenger;
+        readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+        readonly SplitImageTransform _splitImageTransform;
 
         public AdvancedCollectionView Items { get; }
 
@@ -144,7 +144,7 @@ namespace TsubameViewer.ViewModels
             }
         }
 
-        private async IAsyncEnumerable<IPathRestructure> ToPathRestructureItemsAsync(StorageFolder folder)
+        async IAsyncEnumerable<IPathRestructure> ToPathRestructureItemsAsync(StorageFolder folder)
         {
             var query = folder.CreateFileQueryWithOptions(new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.OrderByName, fileTypeFilter: SupportedFileTypesHelper.SupportedImageFileExtensions) { FolderDepth = Windows.Storage.Search.FolderDepth.Deep });
             await foreach (var item in query.ToAsyncEnumerable())
@@ -176,22 +176,22 @@ namespace TsubameViewer.ViewModels
 
 
         [ObservableProperty]
-        private string _searchText;
+        string _searchText;
 
         [ObservableProperty]
-        private string _replaceText;
+        string _replaceText;
 
         [ObservableProperty]
         private bool _nowProcessOutput;
 
         [ObservableProperty]
-        private string _outputErrorMessage;
+        string _outputErrorMessage;
 
         [ObservableProperty]
         private bool _isUnavairableOverwrite;
 
         [RelayCommand]
-        private void SearchForward()
+        void SearchForward()
         {
             if (string.IsNullOrEmpty(_searchText))
             {
@@ -223,21 +223,21 @@ namespace TsubameViewer.ViewModels
         /// ファイル名の最初に現れる数値に対して桁数補完をしてリネームする。
         /// </summary>
         [RelayCommand]
-        private void DigitCompletionAll()
+        void DigitCompletionAll()
         {
             ProcessDigitCompletion(Items.Cast<IPathRestructure>());
         }
 
 
         [RelayCommand]
-        private void DigitCompletionSelectedItems()
+        void DigitCompletionSelectedItems()
         {
             ProcessDigitCompletion(SelectedItems);
         }
 
 
 
-        private void ProcessDigitCompletion(IEnumerable<IPathRestructure> sourceItems)
+        void ProcessDigitCompletion(IEnumerable<IPathRestructure> sourceItems)
         {
             // フォルダ毎にアイテムを分ける
             Dictionary<string, List<IPathRestructure>> itemPerFolder = new();
@@ -301,7 +301,7 @@ namespace TsubameViewer.ViewModels
 
 
         [RelayCommand]
-        private void ToggleIsSplitImage()
+        void ToggleIsSplitImage()
         {
             if (SelectedItems.All(x => x.IsSplitImage))
             {
@@ -317,7 +317,7 @@ namespace TsubameViewer.ViewModels
 
 
         [RelayCommand]
-        private void ReplaceAll()
+        void ReplaceAll()
         {
             if (string.IsNullOrEmpty(_searchText)) { return; }
 
@@ -329,7 +329,7 @@ namespace TsubameViewer.ViewModels
         }
 
         [RelayCommand]
-        private void ReplaceNext()
+        void ReplaceNext()
         {
             if (string.IsNullOrEmpty(_searchText)) { return; }
 
@@ -344,7 +344,7 @@ namespace TsubameViewer.ViewModels
         }
 
         [RelayCommand]
-        private void ToggleIsOutputSelectedItems()
+        void ToggleIsOutputSelectedItems()
         {
             if (SelectedItems.Any(x => x.IsOutput is false))
             {
@@ -357,7 +357,7 @@ namespace TsubameViewer.ViewModels
         }
 
         [RelayCommand]
-        private async Task OverwriteSaveAsync()
+        async Task OverwriteSaveAsync()
         {
             if (_sourceStorageItem is StorageFile outputFile)
             {
@@ -422,7 +422,7 @@ namespace TsubameViewer.ViewModels
         }
 
         [RelayCommand]
-        private async Task OutputToArchiveFileAsync()
+        async Task OutputToArchiveFileAsync()
         {
             OutputErrorMessage = null;
             NowProcessOutput = true;
@@ -453,7 +453,7 @@ namespace TsubameViewer.ViewModels
             }
         }
 
-        private async Task OutputToArchiveAsync(StorageFile outputFile)
+        async Task OutputToArchiveAsync(StorageFile outputFile)
         {
             await _messenger.WorkWithBusyWallAsync((ct) => Task.Run(async () =>
             {
@@ -507,7 +507,7 @@ namespace TsubameViewer.ViewModels
 
 
         [RelayCommand]
-        private async Task OutputToFolderAsync()
+        async Task OutputToFolderAsync()
         {
             OutputErrorMessage = null;
             NowProcessOutput = true;
@@ -549,7 +549,7 @@ namespace TsubameViewer.ViewModels
             }
         }
 
-        private async Task OutputToFolderAsync(StorageFolder outputFolder)
+        async Task OutputToFolderAsync(StorageFolder outputFolder)
         {
             var items = GetOutputTargetItems();
 
@@ -770,7 +770,7 @@ namespace TsubameViewer.ViewModels
         }
 
         [RelayCommand]
-        private async Task OutputToArchiveSplitWithPartAsync()
+        async Task OutputToArchiveSplitWithPartAsync()
         {
             OutputErrorMessage = null;
             NowProcessOutput = true;
@@ -916,7 +916,7 @@ namespace TsubameViewer.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsEdited))]
-        private string _EditPath;
+        string _EditPath;
 
         [ObservableProperty]
         private bool _IsOutput = true;
@@ -948,7 +948,7 @@ namespace TsubameViewer.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsEdited))]
-        private string _EditPath;
+        string _EditPath;
 
         [ObservableProperty]
         private bool _IsOutput = true;

@@ -116,7 +116,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
 {
-    public ICommand ToggleFullScreenCommand { get; set; }
+    public ICommand? ToggleFullScreenCommand { get; set; }
 
     public MovieViewerPageViewModel(
         IMessenger messenger,
@@ -147,18 +147,18 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     }
 
     CancellationToken _navigationCt;
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly AlbamRepository _albamRepository;
-    private readonly ImageCollectionManager _imageCollectionManager;
-    private readonly ImageViewerSettings _imageCollectionSettings;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly AlbamRepository _albamRepository;
+    readonly ImageCollectionManager _imageCollectionManager;
+    readonly ImageViewerSettings _imageCollectionSettings;
     public LocalBookmarkRepository BookmarkManager { get; }
     public MovieViewerPageSettings PageSettings { get; }
 
-    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    readonly RecentlyAccessRepository _recentlyAccessRepository;
     public ThumbnailImageManager ThumbnailManager { get; }
-    private readonly LastIntractItemRepository _folderLastIntractItemManager;
-    private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
+    readonly LastIntractItemRepository _folderLastIntractItemManager;
+    readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     public RecyclableMemoryStreamManager RecyclableMemoryStreamManager { get; }
     
     [ObservableProperty]

@@ -4,27 +4,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Services.Store;
-
+#nullable enable
 namespace TsubameViewer.Services;
 
 public sealed class PurchaseAddonService
 {
-    const string CheerAddonStoreId = "9P0WVC37NP3G";
+    const string _cheerAddonStoreId = "9P0WVC37NP3G";
 
 
     public async Task<StorePurchaseStatus> PurchaseCheerAsync()
     {
-        return await PurchaseAndConsumeAddOn(CheerAddonStoreId);
+        return await PurchaseAndConsumeAddOn(_cheerAddonStoreId);
     }
 
     public async Task<StoreProduct?> GetCheerAddonInfoAsync()
     {
         StoreContext context = StoreContext.GetDefault();
         var cons = await context.GetAssociatedStoreProductsAsync(["Consumable"]);
-        return cons.Products.TryGetValue(CheerAddonStoreId, out var sp) ? sp : null;
+        return cons.Products.TryGetValue(_cheerAddonStoreId, out var sp) ? sp : null;
     }
     
-    private async Task<StorePurchaseStatus> PurchaseAndConsumeAddOn(string storeId)
+    async Task<StorePurchaseStatus> PurchaseAndConsumeAddOn(string storeId)
     {
         StoreContext context = StoreContext.GetDefault();
 
@@ -59,7 +59,7 @@ public sealed class PurchaseAddonService
         return result.Status;
     }
 
-    private async Task FulfillAddOn(string storeId)
+    async Task FulfillAddOn(string storeId)
     {
         StoreContext context = StoreContext.GetDefault();
 

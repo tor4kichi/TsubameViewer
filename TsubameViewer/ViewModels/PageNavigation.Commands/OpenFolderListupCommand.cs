@@ -8,45 +8,45 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Views;
 using Windows.UI.Xaml.Media.Animation;
 
-namespace TsubameViewer.ViewModels.PageNavigation.Commands
+#nullable enable
+namespace TsubameViewer.ViewModels.PageNavigation.Commands;
+
+public sealed class OpenFolderListupCommand : CommandBase
 {
-    public sealed class OpenFolderListupCommand : CommandBase
+    readonly IMessenger _messenger;
+
+    public OpenFolderListupCommand(
+        IMessenger messenger
+        )
     {
-        private readonly IMessenger _messenger;
+        _messenger = messenger;
+    }
 
-        public OpenFolderListupCommand(
-            IMessenger messenger
-            )
+    public override bool CanExecute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
         {
-            _messenger = messenger;
+            parameter = itemVM.Item;
         }
 
-        public override bool CanExecute(object parameter)
-        {
-            if (parameter is IStorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
+        return parameter is IImageSource;
+    }
 
-            return parameter is IImageSource;
+    public override async void Execute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
+        {
+            parameter = itemVM.Item;
         }
 
-        public override async void Execute(object parameter)
+        if (parameter is IImageSource imageSource)
         {
-            if (parameter is IStorageItemViewModel itemVM)
+            await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
+            var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);                
+            if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam)
             {
-                parameter = itemVM.Item;
-            }
-
-            if (parameter is IImageSource imageSource)
-            {
-                await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
-                var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);                
-                if (type is StorageItemTypes.Archive or StorageItemTypes.Folder or StorageItemTypes.ArchiveFolder or StorageItemTypes.Albam)
-                {
-                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
-                }
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
             }
         }
     }

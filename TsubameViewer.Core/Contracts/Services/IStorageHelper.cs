@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace TsubameViewer.Core.Contracts.Services;
-
+#nullable enable
 public interface IStorageHelper
 {
     void Clear();

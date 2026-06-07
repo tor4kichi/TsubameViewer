@@ -7,52 +7,51 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using Windows.Storage;
 using Windows.System;
+#nullable enable
+namespace TsubameViewer.ViewModels.PageNavigation.Commands;
 
-namespace TsubameViewer.ViewModels.PageNavigation.Commands
+public sealed class OpenWithExplorerCommand : ImageSourceCommandBase
 {
-    public sealed class OpenWithExplorerCommand : ImageSourceCommandBase
+    protected override bool CanExecute(IImageSource imageSource)
     {
-        protected override bool CanExecute(IImageSource imageSource)
-        {
-            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
-        }
+        return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
+    }
 
-        protected override async void Execute(IImageSource imageSource)
+    protected override async void Execute(IImageSource imageSource)
+    {
+        imageSource = FlattenAlbamItemInnerImageSource(imageSource);
+        if (imageSource is StorageItemImageSource)
         {
-            imageSource = FlattenAlbamItemInnerImageSource(imageSource);
-            if (imageSource is StorageItemImageSource)
+            if (imageSource.StorageItem is StorageFolder folder)
             {
-                if (imageSource.StorageItem is StorageFolder folder)
-                {
-                    await Launcher.LaunchFolderAsync(folder);
-                }
-                else if (imageSource.StorageItem is StorageFile file)
-                {
-                    await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(file.Path), new FolderLauncherOptions() { ItemsToSelect = { file } });
-                    //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
-                }
+                await Launcher.LaunchFolderAsync(folder);
+            }
+            else if (imageSource.StorageItem is StorageFile file)
+            {
+                await Launcher.LaunchFolderPathAsync(Path.GetDirectoryName(file.Path), new FolderLauncherOptions() { ItemsToSelect = { file } });
+                //                        await Launcher.LaunchFolderAsync(await file.GetParentAsync(), new FolderLauncherOptions() { ItemsToSelect = { file } });
             }
         }
+    }
 
-        protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
+    protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
+    {
+        var sample = imageSources.First();
+        var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
+        return FlattenAlbamItemInnerImageSource(imageSources).All(x => x is StorageItemImageSource item && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
+    }
+
+    protected override async void Execute(IEnumerable<IImageSource> imageSources)
+    {
+        var flattenImageSources = FlattenAlbamItemInnerImageSource(imageSources);
+        var sample = flattenImageSources.First();
+        var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
+        var options = new FolderLauncherOptions();
+        foreach (var storageItem in flattenImageSources.Select(x => x.StorageItem))
         {
-            var sample = imageSources.First();
-            var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
-            return FlattenAlbamItemInnerImageSource(imageSources).All(x => x is StorageItemImageSource item && Path.GetDirectoryName(item.Path) == firstItemDirectoryName);
+            options.ItemsToSelect.Add(storageItem);
         }
 
-        protected override async void Execute(IEnumerable<IImageSource> imageSources)
-        {
-            var flattenImageSources = FlattenAlbamItemInnerImageSource(imageSources);
-            var sample = flattenImageSources.First();
-            var firstItemDirectoryName = Path.GetDirectoryName(sample.Path);
-            var options = new FolderLauncherOptions();
-            foreach (var storageItem in flattenImageSources.Select(x => x.StorageItem))
-            {
-                options.ItemsToSelect.Add(storageItem);
-            }
-
-            await Launcher.LaunchFolderPathAsync(firstItemDirectoryName, options);
-        }
+        await Launcher.LaunchFolderPathAsync(firstItemDirectoryName, options);
     }
 }

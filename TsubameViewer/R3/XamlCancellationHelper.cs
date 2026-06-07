@@ -13,7 +13,7 @@ namespace TsubameViewer.Views;
 public static class XamlCancellationHelper
 {
     [ThreadStatic]
-    private static readonly Dictionary<FrameworkElement, CancellationTokenSource> _ctsMap = new();
+    static readonly Dictionary<FrameworkElement, CancellationTokenSource> _ctsMap = new();
 
     public static CancellationToken GetCancellationTokenOnUnloaded(this FrameworkElement element, bool skipIfIsUnaloded = false)
     {

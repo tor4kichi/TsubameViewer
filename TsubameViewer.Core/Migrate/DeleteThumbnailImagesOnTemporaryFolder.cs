@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.Migrate;
 
 public class DeleteThumbnailImagesOnTemporaryFolder : IAsyncMigrater

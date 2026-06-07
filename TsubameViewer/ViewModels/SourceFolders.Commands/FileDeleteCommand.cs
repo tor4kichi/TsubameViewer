@@ -13,114 +13,113 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
 using Windows.UI.Xaml.Media;
+#nullable enable
+namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
-namespace TsubameViewer.ViewModels.SourceFolders.Commands
+public sealed class FileDeleteCommand : ImageSourceCommandBase
 {
-    public sealed class FileDeleteCommand : ImageSourceCommandBase
+    readonly IMessenger _messenger;
+    readonly IFileControlDialogService _fileControlDialogService;
+    readonly FileControlSettings _fileControlSettings;
+
+    public FileDeleteCommand(
+        IMessenger messenger,
+        IFileControlDialogService fileControlDialogService,
+        FileControlSettings fileControlSettings
+        )
     {
-        private readonly IMessenger _messenger;
-        private readonly IFileControlDialogService _fileControlDialogService;
-        private readonly FileControlSettings _fileControlSettings;
+        _messenger = messenger;
+        _fileControlDialogService = fileControlDialogService;
+        _fileControlSettings = fileControlSettings;
+    }
 
-        public FileDeleteCommand(
-            IMessenger messenger,
-            IFileControlDialogService fileControlDialogService,
-            FileControlSettings fileControlSettings
-            )
-        {
-            _messenger = messenger;
-            _fileControlDialogService = fileControlDialogService;
-            _fileControlSettings = fileControlSettings;
-        }
+    protected override bool CanExecute(IImageSource imageSource)
+    {
+        return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
+    }
 
-        protected override bool CanExecute(IImageSource imageSource)
+    protected override async void Execute(IImageSource imageSource)
+    {
+        if (imageSource.StorageItem is IStorageItem item)
         {
-            return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
-        }
-
-        protected override async void Execute(IImageSource imageSource)
-        {
-            if (imageSource.StorageItem is IStorageItem item)
+            bool isDelete;
+            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
             {
-                bool isDelete;
-                if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
+                isDelete = true;
+            }
+            else
+            {
+                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
+                if (doNotAskTwice)
                 {
-                    isDelete = true;
+                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
                 }
-                else
-                {
-                    (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                    if (doNotAskTwice)
-                    {
-                        _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                    }
-                }
+            }
 
-                if (isDelete)
+            if (isDelete)
+            {
+                try
                 {
-                    try
+                    await item.DeleteAsync(StorageDeleteOption.Default);
+                    _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+                catch (FileNotFoundException)
+                {
+                    
+                }
+                catch (Exception)
+                {
+                    if (item is StorageFile)
                     {
-                        await item.DeleteAsync(StorageDeleteOption.Default);
-                        _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                        _messenger.SendShowTextNotificationMessage("FileDeleteFailed".Translate(item.Name));
                     }
-                    catch (FileNotFoundException)
+                    else if (item is StorageFolder)
                     {
-                        
-                    }
-                    catch (Exception ex)
-                    {
-                        if (item is StorageFile)
-                        {
-                            _messenger.SendShowTextNotificationMessage("FileDeleteFailed".Translate(item.Name));
-                        }
-                        else if (item is StorageFolder)
-                        {
-                            _messenger.SendShowTextNotificationMessage("FolderDeleteFailed".Translate(item.Name));
-                        }
+                        _messenger.SendShowTextNotificationMessage("FolderDeleteFailed".Translate(item.Name));
                     }
                 }
             }
         }
+    }
 
-        protected override async void Execute(IEnumerable<IImageSource> imageSources)
+    protected override async void Execute(IEnumerable<IImageSource> imageSources)
+    {
+        if (imageSources.Any(x => x.StorageItem != null))
         {
-            if (imageSources.Any(x => x.StorageItem != null))
+            var item = imageSources.First(x => x.StorageItem != null).StorageItem;
+            bool isDelete;
+            if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
             {
-                var item = imageSources.First(x => x.StorageItem != null).StorageItem;
-                bool isDelete;
-                if (_fileControlSettings.StorageItemDeleteDoNotDisplayNextTime)
+                isDelete = true;
+            }
+            else
+            {
+                (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
+                if (doNotAskTwice)
                 {
-                    isDelete = true;
+                    _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
                 }
-                else
+            }
+
+            if (isDelete)
+            {
+                try
                 {
-                    (isDelete, var doNotAskTwice) = await _fileControlDialogService.ConfirmFileDeletionAsync(item);
-                    if (doNotAskTwice)
-                    {
-                        _fileControlSettings.StorageItemDeleteDoNotDisplayNextTime = true;
-                    }
+                    await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
                 }
-
-                if (isDelete)
+                catch (FileNotFoundException)
                 {
-                    try
-                    {
-                        await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
-                    }
-                    catch (FileNotFoundException)
-                    {
 
-                    }
-                    catch (Exception ex)
+                }
+                catch (Exception)
+                {
+                    if (item is StorageFile)
                     {
-                        if (item is StorageFile)
-                        {
-                            _messenger.SendShowTextNotificationMessage("FileDeleteFailed".Translate(item.Name));
-                        }
-                        else if (item is StorageFolder)
-                        {
-                            _messenger.SendShowTextNotificationMessage("FolderDeleteFailed".Translate(item.Name));
-                        }
+                        _messenger.SendShowTextNotificationMessage("FileDeleteFailed".Translate(item.Name));
+                    }
+                    else if (item is StorageFolder)
+                    {
+                        _messenger.SendShowTextNotificationMessage("FolderDeleteFailed".Translate(item.Name));
                     }
                 }
             }

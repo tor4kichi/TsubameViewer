@@ -3,14 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.Migrate;
 
 public sealed class DropPathReferenceCountDb : IAsyncMigrater
 {
     private readonly ILiteDatabase _liteDatabase;
 
-    const string RemovedSearchIndexCollectionName = "PathReferenceCountEntry";
+    const string _removedSearchIndexCollectionName = "PathReferenceCountEntry";
 
     public DropPathReferenceCountDb(ILiteDatabase liteDatabase)
     {
@@ -21,9 +21,9 @@ public sealed class DropPathReferenceCountDb : IAsyncMigrater
 
     public ValueTask MigrateAsync()
     {        
-        if (_liteDatabase.CollectionExists(RemovedSearchIndexCollectionName))
+        if (_liteDatabase.CollectionExists(_removedSearchIndexCollectionName))
         {
-            _liteDatabase.DropCollection(RemovedSearchIndexCollectionName);
+            _liteDatabase.DropCollection(_removedSearchIndexCollectionName);
         }
 
         return new();

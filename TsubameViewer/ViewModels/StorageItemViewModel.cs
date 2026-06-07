@@ -14,21 +14,21 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
 using Windows.UI.Xaml.Media.Imaging;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
 public sealed partial class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
 {
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly ThumbnailImageManager _thumbnailImageService;
-    private readonly AlbamRepository _albamRepository;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly ThumbnailImageManager _thumbnailImageService;
+    readonly AlbamRepository _albamRepository;
 
     public IImageSource Item { get; }
-    public SelectionContext Selection { get; }
+    public SelectionContext? Selection { get; }
     public string Name { get; }
 
 
@@ -36,52 +36,34 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public DateTimeOffset DateCreated { get; }
 
-    private BitmapImage _image;
-    public BitmapImage Image
-    {
-        get { return _image; }
-        set { SetProperty(ref _image, value); }
-    }
+    [ObservableProperty]
+    BitmapImage? _image;
 
-    private float? _ImageAspectRatioWH;
-    public float? ImageAspectRatioWH
-    {
-        get { return _ImageAspectRatioWH; }
-        set { SetProperty(ref _ImageAspectRatioWH, value); }
-    }
+    [ObservableProperty]
+    float? _imageAspectRatioWH;
 
 
-    private bool _isSelected;
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set => SetProperty(ref _isSelected, value);
-    }
+    [ObservableProperty]
+    bool _isSelected;
 
-    private bool _isFavorite;
-    public bool IsFavorite
-    {
-        get => _isFavorite;
-        set => SetProperty(ref _isFavorite, value);
-    }
-
+    [ObservableProperty]
+    bool _isFavorite;
+    
     public StorageItemTypes Type { get; }
     public bool StorageItemTypesIsFolder => Type is StorageItemTypes.Folder;
 
-    private double _ReadParcentage;
-    public double ReadParcentage
-    {
-        get { return _ReadParcentage; }
-        set { SetProperty(ref _ReadParcentage, value); }
-    }
-
+    [ObservableProperty]
+    double _readParcentage;
+    
     public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
 
 
     [ObservableProperty]
     string? _duration;
 
+#pragma warning disable CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。'required' 修飾子を追加するか、Null 許容として宣言することを検討してください。
     public StorageItemViewModel(string name, StorageItemTypes storageItemTypes)
+#pragma warning restore CS8618 // null 非許容のフィールドには、コンストラクターの終了時に null 以外の値が入っていなければなりません。'required' 修飾子を追加するか、Null 許容として宣言することを検討してください。
     {
         Name = name;
         Type = storageItemTypes;
@@ -94,7 +76,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         LocalBookmarkRepository bookmarkManager,
         ThumbnailImageManager thumbnailImageService,
         AlbamRepository albamRepository,
-        SelectionContext selectionContext = null
+        SelectionContext? selectionContext = null
         )
     {
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -110,7 +92,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
         Path = item.Path;
 
-        _ImageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
+        _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
         UpdateLastReadPosition();
         _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
@@ -126,7 +108,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     CancellationTokenSource? _initializeCts;
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {

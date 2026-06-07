@@ -23,7 +23,7 @@
       xmlns:models="using:TsubameViewer.Core.Models.EBook"
       mc:Ignorable="d"
   NavigationCacheMode="Enabled"
-  >
+      xmlns:Windows10version1903="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 8)">
   <Page.Transitions>
     <TransitionCollection>
       
@@ -538,7 +538,7 @@
       <Grid x:Name="TocContentPanel" MaxWidth="320" HorizontalAlignment="Left" 
             Visibility="{x:Bind TocContainer.Visibility, Mode=OneWay}"
             Background="{ThemeResource ApplicationContentBackgroundBrush}"
-            Translation="0, 0, 16"
+            Windows10version1903:Translation="0, 0, 16"
             >
         
         <animation:Implicit.ShowAnimations>
@@ -548,9 +548,9 @@
           <animation:TranslationAnimation To="-320, 0" Duration="0:0:0.25" />
         </animation:Implicit.HideAnimations>
 
-        <Grid.Shadow>
-          <ThemeShadow />
-        </Grid.Shadow>
+        <Windows10version1903:Grid.Shadow>
+          <Windows10version1903:ThemeShadow />
+        </Windows10version1903:Grid.Shadow>
         <uwpControls:DockPanel>
           <ScrollViewer Padding="0"
                  Margin="0"
@@ -558,11 +558,11 @@
                         x:Name="TocItemsContainer">
             <StackPanel Padding="0 0 0 32">
               <Border uwpControls:DockPanel.Dock="Top"
-                      Translation="0, 0, 16"
+                      Windows10version1903:Translation="0, 0, 16"
                       Margin="0 16 0 0">
-                <Border.Shadow>
-                  <ThemeShadow />
-                </Border.Shadow>
+                <Windows10version1903:Border.Shadow>
+                  <Windows10version1903:ThemeShadow />
+                </Windows10version1903:Border.Shadow>
                 <Image Source="{x:Bind _vm.CoverImage, Mode=OneWay}"
                        Stretch="Uniform"
                        Height="240">

@@ -5,12 +5,12 @@ using System.Text;
 using System.Web;
 
 namespace TsubameViewer.Core.Models.Navigation;
-
+#nullable enable
 public static class PageNavigationConstants
 {
     public const string GeneralPathKey = "q"; // general content url
     public const string AlbamPathKey = "al"; // albam url
-    private const string PageName = "p"; // pageName
+    public const string PageName = "p"; // pageName
     public const string Restored = "re"; // restored
 
     public static string MakeStorageItemIdWithPage(string path, string? pageName = null)

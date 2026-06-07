@@ -16,15 +16,15 @@ using Windows.Storage;
 using Windows.Storage.Pickers;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 using TsubameViewer.Core.Contracts.Maintenance;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
 public sealed class SplitImageCommand : ImageSourceCommandBase
 {
-    private readonly IMessenger _messenger;
-    private readonly SplitImageTransform _splitImageTransform;
-    private readonly ISplitImageInputDialogService _numberInputDialogService;
-    private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
+    readonly IMessenger _messenger;
+    readonly SplitImageTransform _splitImageTransform;
+    readonly ISplitImageInputDialogService _numberInputDialogService;
+    readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SplitImageCommand(
         IMessenger messenger,

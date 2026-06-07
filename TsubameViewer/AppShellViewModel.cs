@@ -33,11 +33,11 @@ using Windows.Storage;
 using Windows.System;
 using ZLinq;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
-
+#nullable enable
 
 namespace TsubameViewer.ViewModels;
 
-public sealed class AppShellViewModel 
+public sealed partial class AppShellViewModel 
     : ObservableRecipient    
     , IRecipient<SourceStorageItemAddedMessage>
     , IRecipient<SourceStorageItemRemovedMessage>
@@ -45,9 +45,9 @@ public sealed class AppShellViewModel
     , IRecipient<SourceStorageItemIgnoringRequestMessage>
     , IRecipient<SourceStorageItemReorderedMessage>
 {
-    private readonly IScheduler _scheduler;
-    private readonly IMessenger _messenger;
-    private readonly FolderContainerTypeManager _folderContainerTypeManager;
+    readonly IScheduler _scheduler;
+    readonly IMessenger _messenger;
+    readonly FolderContainerTypeManager _folderContainerTypeManager;
 
     public List<object> HeaderMenuItems { get; }
     public ObservableCollection<object> MenuItems { get;  }
@@ -141,15 +141,8 @@ public sealed class AppShellViewModel
         }
     }
 
-
-
-    private bool _IsDisplayMenu = true;
-    public bool IsDisplayMenu
-    {
-        get { return _IsDisplayMenu; }
-        set { SetProperty(ref _IsDisplayMenu, value); }
-    }
-
+    [ObservableProperty]
+    bool _isDisplayMenu = true;
 
     public ApplicationSettings ApplicationSettings { get; }
     public NavigationStackRepository RestoreNavigationManager { get; }
@@ -190,7 +183,7 @@ public sealed class AppShellViewModel
 
 }
 
-public class InPageSearchContext : IDisposable
+public sealed partial class InPageSearchContext : IDisposable
 {
     public InPageSearchContext(
         IMessenger messenger,
@@ -209,14 +202,14 @@ public class InPageSearchContext : IDisposable
             .AsObservable()
             .Debounce(TimeSpan.FromSeconds(0.250))
             .Where(_ => _onceSkipSuggestUpdate is false)
-            .Subscribe(ExecuteUpdateAutoSuggestCommand)
+            .SubscribeAwait(async (x, ct) => await UpdateAutoSuggestAsync(x, ct))
             .AddTo(ref db);
 
         _disposable = db.Build();
 
         AutoSuggestBoxItems = new[]
         {
-            _AutoSuggestItemsGroup,
+            _autoSuggestItemsGroup,
         };
     }
 
@@ -232,29 +225,27 @@ public class InPageSearchContext : IDisposable
     #region Search
 
     IDisposable _disposable;
-
-    AutoSuggestBoxGroupBase _AutoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
-
+    AutoSuggestBoxGroupBase _autoSuggestItemsGroup = new AutoSuggestBoxGroupBase();
     public object[] AutoSuggestBoxItems { get; }
-
     public R3.ReactiveCommand<string> UpdateAutoSuggestCommand { get; }
+    public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
+    bool _onceSkipSuggestUpdate = false;
+    readonly Core.AsyncLock _suggestUpdateLock = new();
+    readonly IMessenger _messenger;
+    readonly FolderContainerTypeManager _folderContainerTypeManager;
+    CancellationTokenSource? _cts;
 
-    private bool _onceSkipSuggestUpdate = false;
-    private readonly Core.AsyncLock _suggestUpdateLock = new();
-    private readonly IMessenger _messenger;
-    private readonly FolderContainerTypeManager _folderContainerTypeManager;
-    private CancellationTokenSource? _cts;
-    private async void ExecuteUpdateAutoSuggestCommand(string parameter)
+    async Task UpdateAutoSuggestAsync(string parameter, CancellationToken ct)
     {
         CancellationTokenSource cts;
-        CancellationToken ct = default;
+        CancellationToken updateCt;
         using (await _suggestUpdateLock.LockAsync(default))
         {
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
 
-            _AutoSuggestItemsGroup.Items.Clear();
+            _autoSuggestItemsGroup.Items.Clear();
 
             if (_onceSkipSuggestUpdate)
             {
@@ -264,22 +255,23 @@ public class InPageSearchContext : IDisposable
             if (string.IsNullOrWhiteSpace(parameter)) { return; }
 
             _cts = cts = new CancellationTokenSource();
-            ct = cts.Token;
+            updateCt = cts.Token;
         }
 
         object recipentObject = new object();
 
         try
         {
-            List<IStorageItem> result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), ct).Take(3).ToListAsync(ct), ct);
+            List<IStorageItem> result = await Task.Run(async () => await SourceStorageItemsRepository.SearchAsync(parameter.Trim(), updateCt).Take(3).ToListAsync(updateCt), updateCt);
 
             ct.ThrowIfCancellationRequested();
+            updateCt.ThrowIfCancellationRequested();
 
             using (await _suggestUpdateLock.LockAsync(default))
             {
                 foreach (var item in result)
                 {
-                    _AutoSuggestItemsGroup.Items.Add(item);
+                    _autoSuggestItemsGroup.Items.Add(item);
                 }
                 _cts = null;
             }
@@ -291,11 +283,8 @@ public class InPageSearchContext : IDisposable
         }
     }
 
-    private RelayCommand<IStorageItem> _SuggestChosenCommand;
-    public RelayCommand<IStorageItem> SuggestChosenCommand =>
-        _SuggestChosenCommand ?? (_SuggestChosenCommand = new RelayCommand<IStorageItem>(ExecuteSuggestChosenCommand));
-
-    async void ExecuteSuggestChosenCommand(IStorageItem entry)
+    [RelayCommand]
+    async Task SuggestChosenAsync(IStorageItem entry)
     {
         using (await _suggestUpdateLock.LockAsync(default))
         {
@@ -348,13 +337,8 @@ public class InPageSearchContext : IDisposable
     }
 
 
-    private RelayCommand<object> _SearchQuerySubmitCommand;
-    public RelayCommand<object> SearchQuerySubmitCommand =>
-        _SearchQuerySubmitCommand ?? (_SearchQuerySubmitCommand = new RelayCommand<object>(ExecuteSearchQuerySubmitCommand));
-
-    public SourceStorageItemsRepository SourceStorageItemsRepository { get; }
-
-    async void ExecuteSearchQuerySubmitCommand(object parameter)
+    [RelayCommand]
+    async Task SearchQuerySubmitAsync(object parameter)
     {
         if (parameter is string q)
         {
@@ -376,7 +360,7 @@ public class InPageSearchContext : IDisposable
         }
         else if (parameter is IStorageItem entry)
         {
-            ExecuteSuggestChosenCommand(entry);
+            await SuggestChosenAsync(entry);
         }
     }
 
@@ -386,7 +370,7 @@ public class InPageSearchContext : IDisposable
 
 public class AutoSuggestBoxGroupBase : ObservableObject
 {
-    public string Label { get; set; }
+    public string? Label { get; set; }
     public ObservableCollection<IStorageItem> Items { get; } = new ObservableCollection<IStorageItem>();        
 }
 
@@ -398,25 +382,25 @@ public class MenuSeparatorViewModel
 
 public class MenuItemViewModel
 {
-    public string Title { get; set; }
-    public string PageType { get; set; }
-    public INavigationParameters Parameters { get; set; }
-    public string AccessKey { get; set; }
+    public string? Title { get; set; }
+    public string? PageType { get; set; }
+    public INavigationParameters? Parameters { get; set; }
+    public string? AccessKey { get; set; }
     public VirtualKey KeyboardAceseralator { get; set; }
 }
 
 public class MenuItemInvokeActionViewModel
 {
-    public string Title { get; set; }
-    public string Tooltip { get; set; }
-    public Action Invoked { get; set; }
-    public object Icon { get; set; }
-    public string AccessKey { get; set; }
+    public string? Title { get; set; }
+    public string? Tooltip { get; set; }
+    public Action? Invoked { get; set; }
+    public object? Icon { get; set; }
+    public string? AccessKey { get; set; }
     public VirtualKey KeyboardAceseralator { get; set; }
 }
 
 public class MenuSubItemViewModel : MenuItemViewModel
 {
     public ObservableCollection<object> Items { get; } = new();
-    public object Icon { get; set; }
+    public object? Icon { get; set; }
 }
