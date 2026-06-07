@@ -31,6 +31,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
+using TsubameViewer.Views.Behaviors;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
@@ -995,23 +996,25 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
         if (args.Y != 0)
         {
-            VolumeChange(args.Y * -0.05);
+            _vm.PageSettings.SoundVolume = MediaPlayer.Volume;
+            VolumeChange(0);
         }
     }
 
+    string _lastProgressXText = "";
     string ProgressXToTimeText(double progressX)
     {
         if (progressX != 0)
         {
-            return TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
+            return _lastProgressXText = TimeSpanHelper.FormatTimeSpan(TimeSpan.FromSeconds(progressX));
         }
-        else { return ""; }
+        else { return _lastProgressXText; }
     }
 
     double EmptyProgressAsOpacity(double progressX, bool isEnabled)
     {
         if (!isEnabled) { return 0; }
-        if (Math.Abs(progressX) < 1) { return 0; }
+        if (Math.Abs(progressX) <= 1) { return 0; }
         
         return 1;
     }
@@ -1114,6 +1117,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     #region Sound Volume
 
+    AnimationBuilder _fadeInAnimation = AnimationBuilder.Create()
+        .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
+
+    AnimationBuilder _fadeOutAnimation = AnimationBuilder.Create()
+        .Opacity(0, delay: TimeSpan.FromMilliseconds(2000), duration: TimeSpan.FromMilliseconds(75));
+
+
     AnimationBuilder _soundVolumeNotificationAnimation = AnimationBuilder.Create()
         .TimedKeyFrames<double>("Opacity",
             d => d.KeyFrame(TimeSpan.FromSeconds(0.125), 1)
@@ -1154,7 +1164,25 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this), (x, s) =>
             {
                 s.MediaPlayer.Volume = x;
-                s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);
+                s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);                
+            })
+            .AddTo(ref db);
+
+        MySwipeDistanceBehavior.ObserveDependencyProperty(SwipeDistanceBehavior.ProgressYProperty)
+            .Select(MySwipeDistanceBehavior, (_, s) => Math.Abs(s.ProgressY) >= 1)
+            .Subscribe(this, (pair, s) => 
+            {
+                s.SetSoundVolume(Math.Clamp(_vm.PageSettings.SoundVolume + s.MySwipeDistanceBehavior.ProgressY * -0.05, 0, 1), s._vm.PageSettings.IsMuted);
+            })
+            .AddTo(ref db);
+
+        MySwipeDistanceBehavior.ObserveDependencyProperty(SwipeDistanceBehavior.ProgressXProperty)
+            .Subscribe(this, (pair, s) =>
+            {
+                if (Math.Abs(s.MySwipeDistanceBehavior.ProgressX) >= 1)
+                {
+                    s._soundVolumeNotificationAnimation.Start(s.SeekingTimeUIContainer);
+                }
             })
             .AddTo(ref db);
     }

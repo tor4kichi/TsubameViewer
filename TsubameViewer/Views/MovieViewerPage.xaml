@@ -930,27 +930,32 @@
       </Button>
     </Grid>
 
-    <Grid x:Name="SeekingTimeUIContainer"
-          Visibility="{x:Bind MySwipeDistanceBehavior.NowManipulation, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-          CornerRadius="6"
-          Margin="32 48 32 32"
-          Padding="16 8 16 8"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Top"
-          Opacity="{x:Bind EmptyProgressAsOpacity(MySwipeDistanceBehavior.ProgressX, MySwipeDistanceBehavior.NowManipulation), Mode=OneWay}">
-      <animation:Implicit.ShowAnimations>
-        <animation:OpacityAnimation To="1" Duration="0:0:0.125" />
-      </animation:Implicit.ShowAnimations>
-      <animation:Implicit.HideAnimations>
-        <animation:OpacityAnimation To="0"
-                                    Duration="0:0:0.175" />
-      </animation:Implicit.HideAnimations>
+    <Grid HorizontalAlignment="Center"
+            VerticalAlignment="Top">
+      <Grid x:Name="SeekingTimeUIContainer"
+            Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"            
+            CornerRadius="6"
+            Margin="8 48 8 32"
+            Padding="16 8 16 8"
+            Opacity="0"
+            HorizontalAlignment="Center">
+        <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}"
+                   FontSize="24" />
+      </Grid>
 
-      <TextBlock Text="{x:Bind ProgressXToTimeText(MySwipeDistanceBehavior.ProgressX), Mode=OneWay}" 
-                 FontSize="24"/>
+      <Grid x:Name="SoundVolumeNotifier"
+            Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+            CornerRadius="6"
+            Margin="8 48 8 32"
+            Padding="16 8 16 8"
+            Opacity="0">
+        <TextBlock FontSize="24">
+        <Run Text="{i18nExt:Localize Key=MovieViewer_SoundVolume}" />: <Run Text="{x:Bind SoundVolume_Display, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
+        </TextBlock>
+      </Grid>
+
     </Grid>
-
+   
     <ProgressBar Minimum="0"
                       Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
                       Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
@@ -989,19 +994,6 @@
       </Button>
     </Grid>
 
-    <Grid x:Name="SoundVolumeNotifier"
-          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-          CornerRadius="6"
-          Margin="32 48 32 32"
-          Padding="16 8 16 8"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Top"
-          Opacity="0">
-      <TextBlock FontSize="24">
-        <Run Text="{i18nExt:Localize Key=MovieViewer_SoundVolume}" />: <Run Text="{x:Bind SoundVolume_Display, Mode=OneWay, Converter={StaticResource DoubleToPercentTextConverter}}" />
-      </TextBlock>
-    </Grid>
-    
     <uwpControls:InAppNotification x:Name="FrameSavedNotification"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Bottom"
