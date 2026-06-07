@@ -479,6 +479,32 @@
                                     Duration="0:0:0.225" />
       </animation:Implicit.HideAnimations>
 
+      <Grid.Resources>
+        <Style TargetType="Button">
+          <Setter Property="BorderThickness"
+                  Value="1" />
+          <Setter Property="CornerRadius"
+                  Value="4" />
+          <Setter Property="BorderBrush"
+                  Value="{ThemeResource SystemChromeMediumHighColor}" />
+        </Style>
+        <Style TargetType="RepeatButton">
+          <Setter Property="BorderThickness"
+                  Value="1" />
+          <Setter Property="CornerRadius"
+                  Value="4" />
+          <Setter Property="BorderBrush"
+                  Value="{ThemeResource SystemChromeMediumHighColor}" />
+        </Style>
+        <Style TargetType="ToggleButton">
+          <Setter Property="BorderThickness"
+                  Value="1" />
+          <Setter Property="CornerRadius"
+                  Value="4" />
+          <Setter Property="BorderBrush"
+                  Value="{ThemeResource SystemChromeMediumHighColor}" />
+        </Style>
+      </Grid.Resources>
       <StackPanel Margin="8 0"
                   Spacing="6"
                   MaxWidth="720">
