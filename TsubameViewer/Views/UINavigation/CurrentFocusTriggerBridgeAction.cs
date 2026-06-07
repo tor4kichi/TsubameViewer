@@ -7,75 +7,75 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Markup;
 
-namespace TsubameViewer.Views.UINavigation
-{
-	// UINatigationTriggerBehaviorをListViewなどに適用した際に
-	// Focusされた子アイテムをFocusManager.GetFocusedElement()で強引に取得し
-	// 入れ子になったInvokeCommandAction等で子アイテムのDataContextを渡せるようにする
+#nullable enable
+namespace TsubameViewer.Views.UINavigation;
 
-	[ContentProperty(Name = nameof(Actions))]
+// UINatigationTriggerBehaviorをListViewなどに適用した際に
+// Focusされた子アイテムをFocusManager.GetFocusedElement()で強引に取得し
+// 入れ子になったInvokeCommandAction等で子アイテムのDataContextを渡せるようにする
+
+[ContentProperty(Name = nameof(Actions))]
     public sealed class BypassToCurrentFocusElementDataContextAction : DependencyObject, IAction
     {
-		public ActionCollection Actions
+	public ActionCollection Actions
+	{
+		get
 		{
-			get
+			if (GetValue(ActionsProperty) == null)
 			{
-				if (GetValue(ActionsProperty) == null)
-				{
-					this.Actions = new ActionCollection();
-				}
-				return (ActionCollection)GetValue(ActionsProperty);
+				this.Actions = new ActionCollection();
 			}
-			set { SetValue(ActionsProperty, value); }
+			return (ActionCollection)GetValue(ActionsProperty);
 		}
+		set { SetValue(ActionsProperty, value); }
+	}
 
-		public static readonly DependencyProperty ActionsProperty =
-			DependencyProperty.Register(
-				nameof(Actions),
-				typeof(ActionCollection),
-				typeof(BypassToCurrentFocusElementDataContextAction),
-				new PropertyMetadata(null));
+	public static readonly DependencyProperty ActionsProperty =
+		DependencyProperty.Register(
+			nameof(Actions),
+			typeof(ActionCollection),
+			typeof(BypassToCurrentFocusElementDataContextAction),
+			new PropertyMetadata(null));
 
-		public object Execute(object sender, object parameter)
+	public object Execute(object sender, object parameter)
         {
             var currentFocusElement = FocusManager.GetFocusedElement();
 
-			Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext ?? (currentFocusElement as SelectorItem).Content);
+		Interaction.ExecuteActions(sender, Actions, (currentFocusElement as FrameworkElement).DataContext ?? (currentFocusElement as SelectorItem).Content);
 
             return true;
         }
     }
 
-	[ContentProperty(Name = nameof(Actions))]
-	public sealed class BypassToCurrentFocusElementAction : DependencyObject, IAction
+[ContentProperty(Name = nameof(Actions))]
+public sealed class BypassToCurrentFocusElementAction : DependencyObject, IAction
+{
+	public ActionCollection Actions
 	{
-		public ActionCollection Actions
+		get
 		{
-			get
+			if (GetValue(ActionsProperty) == null)
 			{
-				if (GetValue(ActionsProperty) == null)
-				{
-					this.Actions = new ActionCollection();
-				}
-				return (ActionCollection)GetValue(ActionsProperty);
+				this.Actions = new ActionCollection();
 			}
-			set { SetValue(ActionsProperty, value); }
+			return (ActionCollection)GetValue(ActionsProperty);
 		}
+		set { SetValue(ActionsProperty, value); }
+	}
 
-		public static readonly DependencyProperty ActionsProperty =
-			DependencyProperty.Register(
-				nameof(Actions),
-				typeof(ActionCollection),
-				typeof(BypassToCurrentFocusElementAction),
-				new PropertyMetadata(null));
+	public static readonly DependencyProperty ActionsProperty =
+		DependencyProperty.Register(
+			nameof(Actions),
+			typeof(ActionCollection),
+			typeof(BypassToCurrentFocusElementAction),
+			new PropertyMetadata(null));
 
-		public object Execute(object sender, object parameter)
-		{
-			var currentFocusElement = FocusManager.GetFocusedElement();
+	public object Execute(object sender, object parameter)
+	{
+		var currentFocusElement = FocusManager.GetFocusedElement();
 
-			Interaction.ExecuteActions(sender, Actions, currentFocusElement);
+		Interaction.ExecuteActions(sender, Actions, currentFocusElement);
 
-			return true;
-		}
+		return true;
 	}
 }

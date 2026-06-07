@@ -11,7 +11,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public sealed class AlbamItemRemoveCommand : ImageSourceCommandBase
     {
-        private readonly AlbamRepository _albamRepository;
+        readonly AlbamRepository _albamRepository;
 
         public AlbamItemRemoveCommand(
             AlbamRepository albamRepository            

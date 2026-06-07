@@ -10,173 +10,177 @@ using System.Threading;
 using Windows.UI.Core;
 using System.Diagnostics;
 using TsubameViewer.Core.Infrastructure;
+#nullable enable
+namespace TsubameViewer.Views.UINavigation;
 
-namespace TsubameViewer.Views.UINavigation
+public delegate void UINavigationButtonEventHandler(UINavigationManager sender, UINavigationButtons buttons);
+
+public class UINavigationManager : IDisposable
 {
-    public delegate void UINavigationButtonEventHandler(UINavigationManager sender, UINavigationButtons buttons);
+    public static event UINavigationButtonEventHandler? OnPressing;
 
-    public class UINavigationManager : IDisposable
+    /// <summary>
+    /// ボタンを離した瞬間を通知するイベントです。
+    /// </summary>
+    public static event UINavigationButtonEventHandler? OnPressed;
+
+    /// <summary>
+    /// ボタンを押し続けた場合に通知されるイベントです。<br />
+    /// 一度のボタン押下中に対して一回だけホールドを検出して通知します。
+    /// </summary>
+    public static event UINavigationButtonEventHandler? OnHolding;
+
+
+
+
+    static UINavigationManager _instance;
+
+    static readonly TimeSpan _inputPollingInterval = TimeSpan.FromMilliseconds(16); 
+    static readonly TimeSpan _holdDetectTime = TimeSpan.FromSeconds(1);
+    static readonly UINavigationButtons[] _inputDetectTargets = ((UINavigationButtons[])Enum.GetValues(typeof(UINavigationButtons))).Skip(1).ToArray();
+
+    Timer? _pollingTimer;
+
+    UINavigationButtons _prevPressingButtons;
+    UINavigationButtons _processedHoldingButtons;
+    Dictionary<UINavigationButtons, TimeSpan> _buttonHold = new Dictionary<UINavigationButtons, TimeSpan>();
+
+    Core.AsyncLock _updateLock = new ();
+
+    bool _isDisposed;
+
+    public static bool NowControllerConnected => UINavigationController.UINavigationControllers.Count > 0;
+
+    public static bool InitialEnabling = true;
+
+    static UINavigationManager()
     {
-        public static event UINavigationButtonEventHandler OnPressing;
-
-        /// <summary>
-        /// ボタンを離した瞬間を通知するイベントです。
-        /// </summary>
-        public static event UINavigationButtonEventHandler OnPressed;
-
-        /// <summary>
-        /// ボタンを押し続けた場合に通知されるイベントです。<br />
-        /// 一度のボタン押下中に対して一回だけホールドを検出して通知します。
-        /// </summary>
-        public static event UINavigationButtonEventHandler OnHolding;
+        _instance = new UINavigationManager();
+    }
 
 
-
-
-        private static UINavigationManager __Instance;
-
-        static readonly TimeSpan __InputPollingInterval = TimeSpan.FromMilliseconds(16); 
-        static readonly TimeSpan __HoldDetectTime = TimeSpan.FromSeconds(1);
-        static readonly UINavigationButtons[] __InputDetectTargets = ((UINavigationButtons[])Enum.GetValues(typeof(UINavigationButtons))).Skip(1).ToArray();
-
-        Timer _PollingTimer;
-
-        UINavigationButtons _PrevPressingButtons;
-        UINavigationButtons _ProcessedHoldingButtons;
-        Dictionary<UINavigationButtons, TimeSpan> _ButtonHold = new Dictionary<UINavigationButtons, TimeSpan>();
-
-        Core.AsyncLock _UpdateLock = new ();
-
-        bool _IsDisposed;
-
-        public static bool NowControllerConnected => UINavigationController.UINavigationControllers.Count > 0;
-
-        public static bool InitialEnabling = true;
-
-        static UINavigationManager()
+    private UINavigationManager()
+    {
+        foreach (var target in _inputDetectTargets)
         {
-            __Instance = new UINavigationManager();
+            _buttonHold[target] = TimeSpan.Zero;
         }
 
+        Window.Current.Activated += Current_Activated;
 
-        private UINavigationManager()
-        {
-            foreach (var target in __InputDetectTargets)
-            {
-                _ButtonHold[target] = TimeSpan.Zero;
-            }
-
-            Window.Current.Activated += Current_Activated;
-
-            UINavigationController.UINavigationControllerAdded += UINavigationController_UINavigationControllerAdded;
-            UINavigationController.UINavigationControllerRemoved += UINavigationController_UINavigationControllerRemoved;
-            
-            IsEnabled = InitialEnabling;
-        }
-
+        UINavigationController.UINavigationControllerAdded += UINavigationController_UINavigationControllerAdded;
+        UINavigationController.UINavigationControllerRemoved += UINavigationController_UINavigationControllerRemoved;
         
-        private bool _IsEnabled;
-        public bool IsEnabled
-        {
-            get { return _IsEnabled; }
-            set
-            {
-                if (_IsEnabled != value)
-                {
-                    _IsEnabled = value;
+        IsEnabled = InitialEnabling;
+    }
 
-                    if (_IsEnabled)
-                    {
-                        ActivatePolling();
-                    }
-                    else
-                    {
-                        DeactivatePolling();
-                    }
+    
+    bool _isEnabled;
+    public bool IsEnabled
+    {
+        get { return _isEnabled; }
+        set
+        {
+            if (_isEnabled != value)
+            {
+                _isEnabled = value;
+
+                if (_isEnabled)
+                {
+                    ActivatePolling();
+                }
+                else
+                {
+                    DeactivatePolling();
                 }
             }
         }
+    }
 
-        private void Current_Activated(object sender, WindowActivatedEventArgs e)
-        {
-            if (e.WindowActivationState == CoreWindowActivationState.Deactivated)
-            {
-                DeactivatePolling();
-            }
-            else
-            {
-                ActivatePolling();
-            }
-        }
-
-        private void UINavigationController_UINavigationControllerAdded(object sender, UINavigationController e)
-        {
-            ActivatePolling();
-        }
-
-        private void UINavigationController_UINavigationControllerRemoved(object sender, UINavigationController e)
+    void Current_Activated(object sender, WindowActivatedEventArgs e)
+    {
+        if (e.WindowActivationState == CoreWindowActivationState.Deactivated)
         {
             DeactivatePolling();
         }
-
-
-
-        public void Dispose()
+        else
         {
-            _PollingTimer?.Dispose();
-            _PollingTimer = null;
-            _IsDisposed = true;
+            ActivatePolling();
         }
+    }
+
+    void UINavigationController_UINavigationControllerAdded(object sender, UINavigationController e)
+    {
+        ActivatePolling();
+    }
+
+    void UINavigationController_UINavigationControllerRemoved(object sender, UINavigationController e)
+    {
+        DeactivatePolling();
+    }
 
 
-        /// <summary>
-        /// 入力検出処理を開始する。
-        /// ただし、Kindが None である場合はアクティブ化を行わない。
-        /// 検出終了には DeactivatePolling を呼び出す。
-        /// </summary>
-        private void ActivatePolling()
+
+    public void Dispose()
+    {
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+        _isDisposed = true;
+    }
+
+
+    /// <summary>
+    /// 入力検出処理を開始する。
+    /// ただし、Kindが None である場合はアクティブ化を行わない。
+    /// 検出終了には DeactivatePolling を呼び出す。
+    /// </summary>
+    void ActivatePolling()
+    {
+        if (_isDisposed) { return; }
+
+        if (!IsEnabled) { return; }
+
+        if (UINavigationController.UINavigationControllers.Count == 0) { return; }
+
+        if (_pollingTimer == null)
         {
-            if (_IsDisposed) { return; }
-
-            if (!IsEnabled) { return; }
-
-            if (UINavigationController.UINavigationControllers.Count == 0) { return; }
-
-            if (_PollingTimer == null)
-            {
-                _PollingTimer = new Timer(
-                    _ => _DispatcherTimer_Tick()
-                    , null
-                    , TimeSpan.Zero
-                    , __InputPollingInterval
-                    );
-            }
+            _pollingTimer = new Timer(
+                _ => _DispatcherTimer_Tick()
+                , null
+                , TimeSpan.Zero
+                , _inputPollingInterval
+                );
         }
+    }
 
-        private void DeactivatePolling()
+    void DeactivatePolling()
+    {
+        if (_isDisposed) { return; }
+
+        if (UINavigationController.UINavigationControllers.Count > 0) { return; }
+
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+    }
+
+
+    bool _nowUpdating = false;
+    async void _DispatcherTimer_Tick()
+    {
+        d().FireAndForgetSafe();
+        async Task d()
         {
-            if (_IsDisposed) { return; }
 
-            if (UINavigationController.UINavigationControllers.Count > 0) { return; }
-
-            _PollingTimer?.Dispose();
-            _PollingTimer = null;
-        }
-
-
-        bool _NowUpdating = false;
-        private async void _DispatcherTimer_Tick()
-        {
-            if (_NowUpdating)
+            if (_nowUpdating)
             {
                 return;
             }
 
-            using (var releaser = await _UpdateLock.LockAsync(default))
+            using (var releaser = await _updateLock.LockAsync(default))
             {
                 try
                 {
-                    _NowUpdating = true;
+                    _nowUpdating = true;
 
                     // コントローラー入力をチェック
                     foreach (var controller in UINavigationController.UINavigationControllers.Take(1))
@@ -187,14 +191,14 @@ namespace TsubameViewer.Views.UINavigation
                         var pressing = RequiredUINavigationButtonsHelper.ToUINavigationButtons(currentInput.RequiredButtons)
                             | OptionalUINavigationButtonsHelper.ToUINavigationButtons(currentInput.OptionalButtons);
 
-                        var trigger = pressing & (_PrevPressingButtons ^ pressing);
+                        var trigger = pressing & (_prevPressingButtons ^ pressing);
                         if (trigger != UINavigationButtons.None)
                         {
                             Debug.WriteLine($"pressing : {trigger}");
                             OnPressing?.Invoke(this, trigger);
                         }
 
-                        var released = _PrevPressingButtons & (_PrevPressingButtons ^ pressing);
+                        var released = _prevPressingButtons & (_prevPressingButtons ^ pressing);
                         if (released != UINavigationButtons.None)
                         {
                             Debug.WriteLine($"released : {released}");
@@ -203,25 +207,25 @@ namespace TsubameViewer.Views.UINavigation
 
                         // ホールド入力の検出
                         UINavigationButtons holdingButtons = UINavigationButtons.None;
-                        foreach (var target in __InputDetectTargets)
+                        foreach (var target in _inputDetectTargets)
                         {
                             if (pressing.HasFlag(target))
                             {
-                                if (!_ProcessedHoldingButtons.HasFlag(target))
+                                if (!_processedHoldingButtons.HasFlag(target))
                                 {
-                                    var time = _ButtonHold[target] += __InputPollingInterval;
+                                    var time = _buttonHold[target] += _inputPollingInterval;
 
-                                    if (time > __HoldDetectTime)
+                                    if (time > _holdDetectTime)
                                     {
                                         holdingButtons |= target;
-                                        _ProcessedHoldingButtons |= target;
+                                        _processedHoldingButtons |= target;
                                     }
                                 }
                             }
                             else
                             {
-                                _ButtonHold[target] = TimeSpan.Zero;
-                                _ProcessedHoldingButtons = (((UINavigationButtons)0) ^ target) & _ProcessedHoldingButtons;
+                                _buttonHold[target] = TimeSpan.Zero;
+                                _processedHoldingButtons = (((UINavigationButtons)0) ^ target) & _processedHoldingButtons;
                             }
                         }
 
@@ -231,12 +235,12 @@ namespace TsubameViewer.Views.UINavigation
                         }
 
                         // トリガー検出用に前フレームの入力情報を保存
-                        _PrevPressingButtons = pressing;
+                        _prevPressingButtons = pressing;
                     }
                 }
                 finally
                 {
-                    _NowUpdating = false;
+                    _nowUpdating = false;
                 }
             }
         }

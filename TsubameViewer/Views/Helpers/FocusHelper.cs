@@ -10,7 +10,7 @@ namespace TsubameViewer.Views.Helpers
 {
     public sealed class FocusHelper
     {
-        private readonly ApplicationSettings _applicationSettings;
+        readonly ApplicationSettings _applicationSettings;
 
         public FocusHelper(ApplicationSettings applicationSettings)
         {

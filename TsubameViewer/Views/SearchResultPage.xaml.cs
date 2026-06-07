@@ -37,8 +37,8 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         return _vm.ObservePropertyChanged(x => x.SearchText).Select(x => "SearchResultWith".Translate(x));
     }
 
-    private readonly SearchResultPageViewModel _vm;
-    private readonly IMessenger _messenger;
+    readonly SearchResultPageViewModel _vm;
+    readonly IMessenger _messenger;
 
     public SearchResultPage()
     {
@@ -50,11 +50,11 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
     }
 
-    private void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         if (args.Item is IStorageItemViewModel itemVM)
         {
-            if (_navigationCts.IsCancellationRequested is false)
+            if (_navigationCts?.IsCancellationRequested is false)
             {
                 ToolTipService.SetToolTip(args.ItemContainer, new ToolTip() { Content = new TextBlock() { Text = itemVM.Name, TextWrapping = TextWrapping.Wrap } });
             }
@@ -63,7 +63,7 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         }
     }
 
-    CancellationTokenSource _navigationCts;
+    CancellationTokenSource? _navigationCts;
     CancellationToken _ct;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -80,8 +80,8 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
+        _navigationCts?.Cancel();
+        _navigationCts?.Dispose();
 
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
@@ -91,36 +91,40 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
     #region Search Box
 
     InPageSearchContext? _searchContext;
-    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-        textBox.TextChanged += TextBox_TextChanged;
-        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+            textBox.TextChanged += TextBox_TextChanged;
+            _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        }
     }
 
 
-    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
-        textBox.TextChanged -= TextBox_TextChanged;
-        _searchContext?.Dispose();
-        _searchContext = null;
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+            textBox.TextChanged -= TextBox_TextChanged;
+            _searchContext?.Dispose();
+            _searchContext = null;
+        }
     }
 
 
 
     bool _isInputIncomplete;
 
-    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
     {
         _isInputIncomplete = true;
     }
 
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    void TextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isInputIncomplete == false)
         {
@@ -129,7 +133,7 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         }
     }
 
-    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
     {
         _isInputIncomplete = false;
         var textBox = (TextBox)sender;
@@ -138,20 +142,19 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
 
 
-    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
     {
         //(sender as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         //(args.Element as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
-    InPageSearchRequestMessage? _searchMessage;
-    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         //_messenger.Send(new InPageSearchRequestMessage(sender.Text));
         //if (!sender.Items.Any())
@@ -161,12 +164,12 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
         //sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
     }
 
-    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         //_searchContext.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
-    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
     }

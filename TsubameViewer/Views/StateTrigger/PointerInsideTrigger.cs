@@ -19,7 +19,7 @@ namespace TsubameViewer.Views.StateTrigger
         public static readonly DependencyProperty TargetProperty =
             DependencyProperty.Register("Target", typeof(UIElement), typeof(PointerInsideTrigger), new PropertyMetadata(null, OnTargetPropertyChanged));
 
-        private static void OnTargetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        static void OnTargetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (e.NewValue is FrameworkElement item)
             {
@@ -30,7 +30,7 @@ namespace TsubameViewer.Views.StateTrigger
             }
         }
 
-        private void Item_Unloaded(object sender, RoutedEventArgs e)
+        void Item_Unloaded(object sender, RoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
             item.PointerEntered -= Item_PointerEntered;
@@ -38,7 +38,7 @@ namespace TsubameViewer.Views.StateTrigger
             item.Unloaded -= Item_Unloaded;
         }
 
-        private void Item_PointerEntered(object sender, PointerRoutedEventArgs e)
+        void Item_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
             var oldIsActive = IsActive;
             SetActive(IsActive = true);
@@ -49,7 +49,7 @@ namespace TsubameViewer.Views.StateTrigger
             }
         }
 
-        private void Item_PointerExited(object sender, PointerRoutedEventArgs e)
+        void Item_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             var oldIsActive = IsActive;
             SetActive(IsActive = false);

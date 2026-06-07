@@ -83,7 +83,7 @@ namespace TsubameViewer.Views.Behaviors
         }
 
 
-		private void Register()
+		void Register()
 		{
 			var fe = this.AssociatedObject as FrameworkElement;
 			if (fe == null) { return; }
@@ -100,7 +100,7 @@ namespace TsubameViewer.Views.Behaviors
 			}
 		}
 
-		private void Ui_PointerWheelChanged(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs args)
+		void Ui_PointerWheelChanged(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs args)
 		{
 			if (!IsEnabled) { return; }
 
@@ -119,7 +119,7 @@ namespace TsubameViewer.Views.Behaviors
 
 		}
 
-		private void CoreWindow_PointerWheelChanged(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.PointerEventArgs args)
+		void CoreWindow_PointerWheelChanged(Windows.UI.Core.CoreWindow sender, Windows.UI.Core.PointerEventArgs args)
 		{
 			if (!IsEnabled) { return; }
 
@@ -139,12 +139,12 @@ namespace TsubameViewer.Views.Behaviors
 		}
 
 
-		private void Process(PointerPoint pp)
+		void Process(PointerPoint pp)
 		{
 
 		}
 
-		private void Unregister()
+		void Unregister()
 		{
 			Window.Current.CoreWindow.PointerWheelChanged -= CoreWindow_PointerWheelChanged;
 
@@ -157,7 +157,7 @@ namespace TsubameViewer.Views.Behaviors
 
 		
 
-		private void Fe_Unloaded(object sender, RoutedEventArgs e)
+		void Fe_Unloaded(object sender, RoutedEventArgs e)
 		{
 			(sender as FrameworkElement).Unloaded -= this.Fe_Unloaded;
 			this.Unregister();

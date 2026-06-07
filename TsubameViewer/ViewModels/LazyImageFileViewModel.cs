@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
+using TsubameViewer.Views.Helpers;
 using Windows.Storage;
 using Windows.UI.Xaml.Media.Imaging;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
@@ -25,14 +27,14 @@ namespace TsubameViewer.ViewModels;
 
 public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageItemViewModel
 {
-    private readonly IImageCollectionContext _imageCollectionContext;
+    readonly IImageCollectionContext _imageCollectionContext;
     public int Index { get; }
-    private readonly FileSortType _fileSortType;
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly ThumbnailImageManager _thumbnailImageService;
-    private readonly AlbamRepository _albamRepository;
+    readonly FileSortType _fileSortType;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly ThumbnailImageManager _thumbnailImageService;
+    readonly AlbamRepository _albamRepository;
     public SelectionContext? Selection { get; }
 
     [ObservableProperty]
@@ -68,7 +70,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     [ObservableProperty]
     string? _duration;
 
-    public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
+    public bool IsSourceStorageItem => Path != null && (_sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false);
 
 
     public LazyImageFileViewModel(
@@ -120,7 +122,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         }
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -152,12 +154,12 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         catch (DirectoryNotFoundException)
         {
             Status = LoadingStatus.LoadFailed;
-            _messenger.Send(new StorageItemNotFoundMessage(Path));
+            _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }
         catch (FileNotFoundException)
         {
             Status = LoadingStatus.LoadFailed;
-            _messenger.Send(new StorageItemNotFoundMessage(Path));
+            _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }
     }
 
@@ -177,9 +179,10 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 if (IsInitialized) { return; }
                 if (_disposed) { return; }
                 if (_status is not LoadingStatus.PendingLoad) { return; }
-
+                
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
+                Guard.IsNotNull(Item);
 
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
@@ -227,7 +230,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 
@@ -249,6 +252,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
         await EnsureStorageItemAsync(ct);
+        Guard.IsNotNull(Item);
         ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
     }
     bool _disposed;
@@ -258,14 +262,14 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
 public sealed partial class LazyCacheImageFileViewModel : ObservableObject, IStorageItemViewModel
 {
-    private readonly FolderImageCollectionContext _imageCollectionContext;
-    private readonly FileSortType _fileSortType;
-    private readonly FolderStructureFileEntry _cacheEntry;
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly ThumbnailImageManager _thumbnailImageService;
-    private readonly AlbamRepository _albamRepository;
+    readonly FolderImageCollectionContext _imageCollectionContext;
+    readonly FileSortType _fileSortType;
+    readonly FolderStructureFileEntry _cacheEntry;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly ThumbnailImageManager _thumbnailImageService;
+    readonly AlbamRepository _albamRepository;
     public SelectionContext? Selection { get; }
 
     [ObservableProperty]
@@ -298,7 +302,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     [ObservableProperty]
     private double _readParcentage;
 
-    public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
+    public bool IsSourceStorageItem => Path != null && (_sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false);
 
     [ObservableProperty]
     string? _duration;
@@ -328,12 +332,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         if (imageSource != null)
         {
             _item = imageSource;
-            Name = Item.Name;
-            Path = Item.Path;
-            DateCreated = Item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
+            Name = _item.Name;
+            Path = _item.Path;
+            DateCreated = _item.DateCreated;
+            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _item.Path);
         }
         else
         {
@@ -369,7 +373,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         }
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -394,12 +398,12 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             }
             catch (DirectoryNotFoundException)
             {
-                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
                 throw;
             }
             catch (FileNotFoundException)
             {
-                _messenger.Send(new StorageItemNotFoundMessage(Path));
+                _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
                 throw;
             }            
             Item = new StorageItemImageSource(file);
@@ -439,7 +443,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
-
+                Guard.IsNotNull(Item);
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -486,7 +490,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 
@@ -508,6 +512,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
     public async ValueTask EnsureImageSizeRatioAsync(CancellationToken ct)
     {
         await EnsureStorageItemAsync(ct);
+        Guard.IsNotNull(Item);
         ImageAspectRatioWH ??= (await _thumbnailImageService.GetEnsureThumbnailSizeAsync(Item, ct)).RatioWH;
     }
     bool _disposed;

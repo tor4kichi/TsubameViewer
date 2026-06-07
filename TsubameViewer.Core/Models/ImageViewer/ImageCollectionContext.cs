@@ -1,4 +1,5 @@
-﻿using LiteDB;
+﻿using CommunityToolkit.Diagnostics;
+using LiteDB;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Common;
@@ -23,7 +24,7 @@ using Windows.Storage.Search;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using ZLinq;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.ImageViewer;
 
 public interface IImageCollectionContext
@@ -60,10 +61,10 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public static readonly QueryOptions DefaultImageFileSearchQueryOptions = CreateDefaultImageFileSearchQueryOptions(FileSortType.None);
     public static readonly QueryOptions FoldersAndArchiveFileSearchQueryOptions = CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None);
 
-    private StorageItemQueryResult _folderAndArchiveFileSearchQuery;
+    private StorageItemQueryResult? _folderAndArchiveFileSearchQuery;
     private StorageItemQueryResult FolderAndArchiveFileSearchQuery => _folderAndArchiveFileSearchQuery ??= Folder.CreateItemQueryWithOptions(FoldersAndArchiveFileSearchQueryOptions);
 
-    private StorageFileQueryResult _imageFileSearchQuery;
+    private StorageFileQueryResult? _imageFileSearchQuery;
     private StorageFileQueryResult ImageFileSearchQuery => _imageFileSearchQuery ??= Folder.CreateFileQueryWithOptions(DefaultImageFileSearchQueryOptions);
 
     public string Name => Folder?.Name ?? "";
@@ -93,7 +94,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     int _prevAccessIndex = -1;
     int _cachedPage = -1;
-    IStorageItem[] _cachedPageItems = new IStorageItem[100];
+    IStorageItem?[] _cachedPageItems = new IStorageItem[100];
 
     AsyncLock _lock = new AsyncLock();
     public async ValueTask<IImageSource> GetFolderOrArchiveFileAtAsync(int index, FileSortType sort, CancellationToken ct)
@@ -130,6 +131,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
             }
 
             var imageSource = _cachedPageItems[index - checkPage * _cachedPageItems.Length];
+            Guard.IsNotNull(imageSource);
             Debug.WriteLine($"index:{index}, Name:{imageSource.Name}");
             return new StorageItemImageSource(imageSource);
         }
@@ -275,7 +277,6 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
         //return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct); ;
     }
 
-    private FileSortType _lastFileSortType;
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
         await Context.UpdateCacheIfCountNotSameAsync(ct);
@@ -574,9 +575,9 @@ public sealed class FolderStructureCacheContext : IDisposable
 public sealed class FolderStructureFileEntry
 {
     [BsonId]
-    public string Path { get; set; }
+    public string Path { get; set; } = "";
 
-    public string ParentFolderPath { get; set; }
+    public string ParentFolderPath { get; set; } = "";
 
     public DateTimeOffset DateCreated { get; set; }
 

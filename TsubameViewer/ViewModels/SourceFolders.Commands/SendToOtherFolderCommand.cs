@@ -15,14 +15,14 @@ using TsubameViewer.Helpers;
 using Windows.Storage;
 using Windows.UI.Xaml.Controls;
 using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepository;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
 internal class SendToOtherFolderCommand : CommandBase
 {
-    private readonly TokenToPathEntry _entry;
-    private readonly SourceStorageItemsRepository _sourceRepo;
-    private readonly IMessenger _messenger;
+    readonly TokenToPathEntry _entry;
+    readonly SourceStorageItemsRepository _sourceRepo;
+    readonly IMessenger _messenger;
 
     public SendToOtherFolderCommand(
         TokenToPathEntry entry, 

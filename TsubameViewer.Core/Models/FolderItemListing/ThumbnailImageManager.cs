@@ -46,7 +46,7 @@ using Windows.System;
 using Windows.UI.Xaml.Media.Imaging;
 
 
-
+#nullable enable
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
 
@@ -75,9 +75,9 @@ public sealed class ThumbnailImageManager
         return Path.Combine(file.Path, entry?.Key ?? "_");
     }
 
-    Regex _titlePriorityRegex;
+    Regex? _titlePriorityRegex;
     string? _lasttitlePriorityRegexText = null;
-    Regex GetTitlePriorityRegex()
+    Regex? GetTitlePriorityRegex()
     {
         if (_titlePriorityRegex != null)
         {
@@ -85,13 +85,13 @@ public sealed class ThumbnailImageManager
             {
                 _titlePriorityRegex = null;
             }
-
-            try
-            {
-                _titlePriorityRegex ??= new Regex(_folderListingSettings.ThumbnailPriorityTitleRegex);
-            }
-            catch { }
         }
+
+        try
+        {
+            _titlePriorityRegex ??= new Regex(_folderListingSettings.ThumbnailPriorityTitleRegex);
+        }
+        catch { }
 
         return _titlePriorityRegex;
     }
@@ -191,9 +191,9 @@ public sealed class ThumbnailImageManager
     class ThumbnailItemIdEntry
     {
         [BsonId]
-        public string Id { get; set; }
+        public string Id { get; set; } = "";
 
-        public string InsideId { get; set; }
+        public string InsideId { get; set; } = "";
     }
 
     public ThumbnailImageManager(
@@ -236,7 +236,7 @@ public sealed class ThumbnailImageManager
     }
 
     // Note: Task.Run(async () => await SomeValueTaskMethod()) の形になるとリリースビルドでクラッシュする
-    public async Task<Stream> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
+    public async Task<Stream?> GetThumbnailImageStreamAsync(IImageSource imageSource, Stream? outputStream = null, CancellationToken ct = default)
     {
         var itemId = GetId(imageSource);
         if (await GetThumbnailFromIdAsync(itemId, ct) is not null and var cachedImageStream)
@@ -356,48 +356,52 @@ public sealed class ThumbnailImageManager
         // ネイティブコンパイル時かつ画像ビューア上からのサムネイル設定でアプリがハングアップを起こすため
         // InMemoryRandomAccessStreamを使用している
         using var stream = _recyclableMemoryStreamManager.GetStream();
-        using var imageMemoryStream = await GetThumbnailImageStreamAsync(childImageSource, stream, ct);
+        var imageMemoryStream = await GetThumbnailImageStreamAsync(childImageSource, stream, ct);
+        if (imageMemoryStream == null) { return; }
 
-        bool requireTranscode = false;
-
-        if (childImageSource is ArchiveEntryImageSource archiveEntry)
+        using (imageMemoryStream)
         {
-            var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
-            if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+            bool requireTranscode = false;
+
+            if (childImageSource is ArchiveEntryImageSource archiveEntry)
             {
-                await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                var parentDirectoryArchiveEntry = archiveEntry.GetParentDirectoryEntry();
+                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+                {
+                    await SetThumbnailAsync(archiveEntry.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+                else
+                {
+                    await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+            }
+            else if (childImageSource is PdfPageImageSource pdf)
+            {
+                await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+            else if (childImageSource is StorageItemImageSource folderItem)
+            {
+                var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
+                if (folder == null) { throw new InvalidOperationException(); }
+                await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
+            }
+            else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
+            {
+                var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
+                if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
+                {
+                    await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
+                else
+                {
+                    await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+                }
             }
             else
             {
-                await SetArchiveEntryThumbnailAsync(archiveEntry.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
+                throw new NotSupportedException();
             }
         }
-        else if (childImageSource is PdfPageImageSource pdf)
-        {
-            await SetThumbnailAsync(pdf.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-        }
-        else if (childImageSource is StorageItemImageSource folderItem)
-        {
-            var folder = await _sourceStorageItemsRepository.TryGetStorageItemFromPath(Path.GetDirectoryName(folderItem.Path));
-            if (folder == null) { throw new InvalidOperationException(); }
-            await SetThumbnailAsync(folder, imageMemoryStream, requireTrancode: requireTranscode, default);
-        }
-        else if (childImageSource is ArchiveDirectoryImageSource archiveDirectoryItem)
-        {
-            var parentDirectoryArchiveEntry = archiveDirectoryItem.GetParentDirectoryEntry();
-            if (isArchiveThumbnailSetToFile || parentDirectoryArchiveEntry == null)
-            {
-                await SetThumbnailAsync(archiveDirectoryItem.StorageItem, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-            else
-            {
-                await SetArchiveEntryThumbnailAsync(archiveDirectoryItem.StorageItem, parentDirectoryArchiveEntry, imageMemoryStream, requireTrancode: requireTranscode, default);
-            }
-        }
-        else
-        {
-            throw new NotSupportedException();
-        }       
     }
 
     public async ValueTask<ThumbnailSize> GetEnsureThumbnailSizeAsync(IImageSource imageSource, CancellationToken ct)
@@ -617,7 +621,7 @@ public sealed class ThumbnailImageManager
 #if WINDOWS_UWP
 
         var file = await GetCoverThumbnailImageAsync(folder, ct);
-        if (file == null) { return null; }
+        if (file == null) { return Stream.Null; }
         return await GenerateThumbnailImageAsync(file, itemId, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
 #else
         return null;
@@ -629,10 +633,12 @@ public sealed class ThumbnailImageManager
 #if WINDOWS_UWP
 
         var file = await GetCoverThumbnailImageAsync(folder, ct);
+        if (file == null) { return Stream.Null; }
+
         var outputStream = _recyclableMemoryStreamManager.GetStream();
         try
         {
-            return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : null;
+            return await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct) ? outputStream : Stream.Null;
         }
         catch
         {
@@ -644,19 +650,19 @@ public sealed class ThumbnailImageManager
 #endif
     }
 
-    readonly static QueryOptions _CoverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
+    readonly static QueryOptions _coverFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.SupportedImageFileExtensions)
     {
         FolderDepth = FolderDepth.Deep,
         ApplicationSearchFilter = "System.FileName:*cover*"
     };
 
-    readonly static QueryOptions _AllSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
+    readonly static QueryOptions _allSupportedFileQueryOptions = new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep };
 
     private async Task<StorageFile?> GetCoverThumbnailImageAsync(StorageFolder folder, CancellationToken ct)
     {
-        StorageFile file = null;
+        StorageFile? file = null;
         // タイトルに "cover" を含む画像を優先してサムネイルとして採用する
-        var coverFileQuery = folder.CreateFileQueryWithOptions(_CoverFileQueryOptions);
+        var coverFileQuery = folder.CreateFileQueryWithOptions(_coverFileQueryOptions);
         if (await coverFileQuery.GetItemCountAsync().AsTask(ct) >= 1)
         {
             var files = await coverFileQuery.GetFilesAsync(0, 1).AsTask(ct);
@@ -665,7 +671,7 @@ public sealed class ThumbnailImageManager
 
         if (file == null)
         {
-            var query = folder.CreateFileQueryWithOptions(_AllSupportedFileQueryOptions);
+            var query = folder.CreateFileQueryWithOptions(_allSupportedFileQueryOptions);
             var files = await query.GetFilesAsync(0, 1);
             file = files.ElementAtOrDefault(0);
         }
@@ -681,7 +687,7 @@ public sealed class ThumbnailImageManager
         }
         else
         {
-            return null;
+            return Stream.Null;
         }
     }
 
@@ -701,7 +707,7 @@ public sealed class ThumbnailImageManager
         return await GenerateThumbnailImageAsync(file, itemId, encoderSettingMapper, ct);
     }
 
-    public async Task<Stream> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
+    public async Task<Stream?> GetFileThumbnailImageStreamAsync(StorageFile file, CancellationToken ct)
     {
         var outputStream = _recyclableMemoryStreamManager.GetStream();
         try
@@ -881,7 +887,7 @@ public sealed class ThumbnailImageManager
         {
             result = await GenerateThumbnailImageToStreamAsync(file, memoryStream, setupEncoder, ct);
 
-            if (result is false) { return null; }
+            if (result is false) { return Stream.Null; }
 
             memoryStream.Seek(0, SeekOrigin.Begin);
 
@@ -1129,7 +1135,7 @@ public sealed class ThumbnailImageManager
         {
             ct.ThrowIfCancellationRequested();
 
-            ZipArchiveEntry entry = null;
+            ZipArchiveEntry? entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = zipArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Name));
@@ -1148,7 +1154,7 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var rarArchive = RarArchive.OpenArchive(fileStream))
         {
-            RarArchiveEntry entry = null;
+            RarArchiveEntry? entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = (RarArchiveEntry)rarArchive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
@@ -1167,7 +1173,7 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var archive = SevenZipArchive.OpenArchive(fileStream))
         {
-            SevenZipArchiveEntry entry = null;
+            SevenZipArchiveEntry? entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = (SevenZipArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
@@ -1186,7 +1192,7 @@ public sealed class ThumbnailImageManager
         using (var fileStream = new FileStream(fileHandle, FileAccess.Read))
         using (var archive = TarArchive.OpenArchive(fileStream))
         {
-            TarArchiveEntry entry = null;
+            TarArchiveEntry? entry = null;
             if (GetTitlePriorityRegex() is not null and Regex regex)
             {
                 entry = (TarArchiveEntry)archive.Entries.FirstOrDefault(x => regex.IsMatch(x.Key));
@@ -1335,7 +1341,7 @@ public sealed class ThumbnailImageManager
     public class ThumbnailImageInfo
     {
         [BsonId]
-        public string Path { get; set; }
+        public string Path { get; set; } = "";
 
         [BsonField]
         public uint ImageWidth { get; set; }
@@ -1408,10 +1414,10 @@ public sealed class ThumbnailImageManager
     #region Secondary Tile
 
     public const string SecondaryTileThumbnailSaveFolderName = "SecondaryTile";
-    static StorageFolder _SecondaryTileThumbnailFolder;
+    static StorageFolder? _secondaryTileThumbnailFolder;
     public static async ValueTask<StorageFolder> GetSecondaryTileThumbnailFolderAsync()
     {
-        return _SecondaryTileThumbnailFolder ??= await ApplicationData.Current.LocalFolder.CreateFolderAsync(SecondaryTileThumbnailSaveFolderName, CreationCollisionOption.OpenIfExists);
+        return _secondaryTileThumbnailFolder ??= await ApplicationData.Current.LocalFolder.CreateFolderAsync(SecondaryTileThumbnailSaveFolderName, CreationCollisionOption.OpenIfExists);
     }
 
 
@@ -1432,7 +1438,7 @@ public sealed class ThumbnailImageManager
         });
     }
 
-    public Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(IStorageItem storageItem, string tileId, CancellationToken ct)
+    public Task<GenerateSecondaryTileThumbnailResult?> GenerateSecondaryThumbnailImageAsync(IStorageItem storageItem, string tileId, CancellationToken ct)
     {
         if (storageItem is StorageFolder folder)
         {
@@ -1448,7 +1454,7 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    public async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFolder folder, string tileId, CancellationToken ct)
+    public async Task<GenerateSecondaryTileThumbnailResult?> GenerateSecondaryThumbnailImageAsync(StorageFolder folder, string tileId, CancellationToken ct)
     {
 #if WINDOWS_UWP
         var query = folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.OrderByName, SupportedFileTypesHelper.GetAllSupportedFileExtensions()) { FolderDepth = FolderDepth.Deep });
@@ -1461,7 +1467,7 @@ public sealed class ThumbnailImageManager
 #endif
     }
 
-    private async Task<GenerateSecondaryTileThumbnailResult> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, CancellationToken ct)
+    private async Task<GenerateSecondaryTileThumbnailResult?> GenerateSecondaryThumbnailImageAsync(StorageFile file, string tileId, CancellationToken ct)
     {
         var thumbnailFolder = await GetSecondaryTileThumbnailFolderAsync();
         var itemFolder = await thumbnailFolder.CreateFolderAsync(tileId, CreationCollisionOption.ReplaceExisting);
@@ -1541,12 +1547,7 @@ public sealed class ThumbnailImageManager
                     }
                 }
 
-                return new GenerateSecondaryTileThumbnailResult()
-                {
-                    Wide310x150Logo = wideThumbFile,
-                    Square310x310Logo = square310ThumbFile,
-                    Square150x150Logo = square150ThumbFile,
-                };
+                return new GenerateSecondaryTileThumbnailResult(wideThumbFile, square310ThumbFile, square150ThumbFile);
             }
         }
         catch

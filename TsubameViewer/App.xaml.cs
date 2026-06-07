@@ -33,6 +33,7 @@ using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
 using TsubameViewer.Views.Dialogs;
+using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -40,7 +41,7 @@ using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Animation;
-
+#nullable enable
 namespace TsubameViewer;
 
 /// <summary>
@@ -52,7 +53,7 @@ sealed partial class App : Application
 
     public Container Container { get; }
 
-    Core.AsyncLock _InitializeLock = new();
+    readonly Core.AsyncLock _initializeLock = new();
 
 
     /// <summary>
@@ -67,7 +68,6 @@ sealed partial class App : Application
 
         RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
         WinRTProviderInitializer.SetDefaultObservableSystem(OnTimerProviderException);
-
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
         ConnectedAnimationService.GetForCurrentView().DefaultDuration = TimeSpan.FromMilliseconds(150);
@@ -89,10 +89,13 @@ sealed partial class App : Application
         
     }
 
-
-    private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+    void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {
         e.Handled = true;
+        if (e.Exception is OperationCanceledException)
+        {
+            return; 
+        }
 
         Debug.WriteLine(e.Message);
         Debug.WriteLine(e.Exception.ToString());
@@ -109,7 +112,7 @@ sealed partial class App : Application
     }
 
 
-    private Container ConfigureService()
+    Container ConfigureService()
     {
         var rules = Rules.Default
             .WithAutoConcreteTypeResolution()
@@ -127,7 +130,7 @@ sealed partial class App : Application
         return container;
     }
 
-    private void RegisterRequiredTypes(Container container)
+    void RegisterRequiredTypes(Container container)
     {
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.LocalFolder.Path, "tsubame.db")}; Async=false;"));
         container.RegisterInstance<ILiteDatabase>(new LiteDatabase($"Filename={Path.Combine(ApplicationData.Current.TemporaryFolder.Path, "tsubame_temp.db")}; Async=false;"), serviceKey: "TemporaryDb");
@@ -159,7 +162,7 @@ sealed partial class App : Application
         container.Register<HistoryPage>();
     }
 
-    private void RegisterTypes(Container container)
+    void RegisterTypes(Container container)
     {
         container.RegisterInstance<IMessenger>(WeakReferenceMessenger.Default);
         container.Register<Core.Models.ImageViewer.ImageViewerSettings>(reuse: new SingletonReuse());
@@ -220,14 +223,20 @@ sealed partial class App : Application
 
     protected override async void OnFileActivated(FileActivatedEventArgs args)
     {
-        await InitializeAsync();
-        await OnActivationAsync(args);
+        AsyncTaskErrorHandler.Handle(this, async (s) => 
+        {
+            await s.InitializeAsync();
+            await s.OnActivationAsync(args);
+        });
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
-        await InitializeAsync();
-        await OnActivationAsync(args);
+        AsyncTaskErrorHandler.Handle(this, async (s) =>
+        {
+            await s.InitializeAsync();
+            await s.OnActivationAsync(args);
+        });
     }
 
     void InitializeLocalization()
@@ -248,7 +257,7 @@ sealed partial class App : Application
             Debug.WriteLine(ex.ToString());
         }
 
-        var applicationSettings = Ioc.Default.GetService<Core.Models.ApplicationSettings>();
+        var applicationSettings = Ioc.Default.GetRequiredService<Core.Models.ApplicationSettings>();
         try
         {
             I18NPortable.I18N.Current.Locale = applicationSettings.Locale ?? I18NPortable.I18N.Current.Languages.FirstOrDefault(x => x.Locale.StartsWith(CultureInfo.CurrentCulture.Name))?.Locale;
@@ -262,7 +271,7 @@ sealed partial class App : Application
     bool _isRestored = false;
     public async Task OnActivationAsync(IActivatedEventArgs args)
     {
-        using var releaser = await _InitializeLock.LockAsync(default);
+        using var releaser = await _initializeLock.LockAsync(default);
 
         if (args is IActivatedEventArgs activated)
         {
@@ -279,7 +288,7 @@ sealed partial class App : Application
 
             try
             {
-                if (!SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments, out var tileArgs))
+                if (!SecondaryTileManager.DeserializeSecondaryTileArguments(launchActivatedEvent.Arguments, out var tileArgs) || tileArgs == null)
                 {
                     return;
                 }
@@ -311,13 +320,12 @@ sealed partial class App : Application
 
         if (_isRestored is false)
         {
-            var shell = Window.Current.Content as AppShell;
-            shell.RestoreNavigationStack();
+            ((AppShell)Window.Current.Content).RestoreNavigationStack().FireAndForgetSafe();
         }
     }
 
 
-    private async ValueTask UpdateMigrationAsync()
+    async ValueTask UpdateMigrationAsync()
     {
         if (SystemInformation.Instance.IsAppUpdated)
         {
@@ -399,21 +407,21 @@ sealed partial class App : Application
 
     bool _isInitialized = false;
 
-    private async Task InitializeAsync()
+    async Task InitializeAsync()
     {
-        using var releaser = await _InitializeLock.LockAsync(default);
+        using var releaser = await _initializeLock.LockAsync(default);
 
         if (_isInitialized) { return; }
 
         _isInitialized = true;
 #if DEBUG
-        Resources["DebugTVMode"] = Ioc.Default.GetService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
+        Resources["DebugTVMode"] = Ioc.Default.GetRequiredService<ApplicationSettings>().ForceXboxAppearanceModeEnabled;
 #else
         Resources["DebugTVMode"] = false;
 #endif
 
 #if DEBUG
-        foreach (var collectionName in Ioc.Default.GetService<ILiteDatabase>().GetCollectionNames())
+        foreach (var collectionName in Ioc.Default.GetRequiredService<ILiteDatabase>().GetCollectionNames())
         {
             Debug.WriteLine(collectionName);
         }
@@ -446,7 +454,7 @@ sealed partial class App : Application
 
     public void UpdateFolderItemSizingResourceValues()
     {
-        var folderListingSettings = Ioc.Default.GetService<Core.Models.FolderItemListing.FolderListingSettings>();
+        var folderListingSettings = Ioc.Default.GetRequiredService<Core.Models.FolderItemListing.FolderListingSettings>();
         Resources["FolderItemTitleHeight"] = folderListingSettings.FolderItemTitleHeight;
         Resources["FolderGridViewItemWidth"] = folderListingSettings.FolderItemThumbnailImageSize.Width;
         Resources["FolderGridViewItemHeight"] = folderListingSettings.FolderItemThumbnailImageSize.Height;
@@ -461,19 +469,19 @@ sealed partial class App : Application
     /// </summary>
     /// <param name="sender">The source of the suspend request.</param>
     /// <param name="e">Details about the suspend request.</param>
-    private void OnSuspending(object sender, SuspendingEventArgs e)
+    void OnSuspending(object sender, SuspendingEventArgs e)
     {
         var deferral = e.SuspendingOperation.GetDeferral();
         deferral.Complete();
     }
 
 
-    static async Task<INavigationResult> NavigateAsync(string path, string pageName, IMessenger messenger = null)
+    static async Task<INavigationResult> NavigateAsync(string path, string pageName, IMessenger? messenger = null)
     {
         Guard.IsNotNullOrEmpty(path, nameof(path));
 
-        messenger ??= Ioc.Default.GetService<IMessenger>();
-        var sourceFolderRepository = Ioc.Default.GetService<SourceStorageItemsRepository>();
+        messenger ??= Ioc.Default.GetRequiredService<IMessenger>();
+        var sourceFolderRepository = Ioc.Default.GetRequiredService<SourceStorageItemsRepository>();
 
         NavigationParameters parameters = new NavigationParameters();
         
@@ -489,7 +497,7 @@ sealed partial class App : Application
         var item = await sourceFolderRepository.TryGetStorageItemFromPath(path);
         if (item is StorageFolder itemFolder)
         {
-            var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
+            var containerTypeManager = Ioc.Default.GetRequiredService<FolderContainerTypeManager>();
             if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(itemFolder, CancellationToken.None) == FolderContainerType.OnlyImages)
             {
                 return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
@@ -518,12 +526,12 @@ sealed partial class App : Application
             }
         }
 
-        return null;
+        return new NavigationResult() { IsSuccess = false };
     }
 
-    static async Task<INavigationResult> NavigateAsync(IStorageItem storageItem, IMessenger messenger = null)
+    static async Task<INavigationResult> NavigateAsync(IStorageItem storageItem, IMessenger? messenger = null)
     {
-        messenger ??= Ioc.Default.GetService<IMessenger>();
+        messenger ??= Ioc.Default.GetRequiredService<IMessenger>();
         var sourceFolderRepository = Ioc.Default.GetService<SourceStorageItemsRepository>();
 
         NavigationParameters parameters = new NavigationParameters();
@@ -531,7 +539,7 @@ sealed partial class App : Application
 
         if (storageItem is StorageFolder folder)
         {
-            var containerTypeManager = Ioc.Default.GetService<FolderContainerTypeManager>();
+            var containerTypeManager = Ioc.Default.GetRequiredService<FolderContainerTypeManager>();
             if (await containerTypeManager.GetFolderContainerTypeWithCacheAsync(folder, CancellationToken.None) == FolderContainerType.OnlyImages)
             {
                 return await messenger.NavigateAsync(nameof(Views.ImageViewerPage), parameters, isForgetNavigation: true);
@@ -558,8 +566,8 @@ sealed partial class App : Application
                 return await messenger.NavigateAsync(nameof(Views.MovieViewerPage), parameters, isForgetNavigation: true);
             }
         }
-        
-        return null;
+
+        return new NavigationResult() { IsSuccess = false };
     }
 
     static async Task<INavigationResult> SecondatyTileArgumentNavigationAsync(SecondaryTileArguments args)
@@ -572,7 +580,7 @@ sealed partial class App : Application
     static async Task<INavigationResult> FileActivatedNavigationAsync(FileActivatedEventArgs args)
     {
         // 渡されたストレージアイテムをアプリ内部の管理ファイル・フォルダとして登録する
-        var sourceStroageItemsRepo = Ioc.Default.GetService<SourceStorageItemsRepository>();
+        var sourceStroageItemsRepo = Ioc.Default.GetRequiredService<SourceStorageItemsRepository>();
         IStorageItem? firstItem = null;
         foreach (var item in args.Files)
         {

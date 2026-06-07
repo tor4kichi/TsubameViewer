@@ -8,13 +8,13 @@ using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
 public sealed class SourceChoiceCommand : CommandBase
 {
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _SourceStorageItemsRepository;
 
     public SourceChoiceCommand(
         IMessenger messenger,

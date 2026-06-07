@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels.SourceFolders;
 using TsubameViewer.Views.Converters;
+using TsubameViewer.Views.Helpers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -33,14 +35,14 @@ public enum LoadingStatus
 
 public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject, IStorageItemViewModel
 {
-    private readonly IImageCollectionContext _imageCollectionContext;
-    private readonly int _itemIndex;
-    private readonly FileSortType _fileSortType;
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly ThumbnailImageManager _thumbnailImageService;
-    private readonly AlbamRepository _albamRepository;
+    readonly IImageCollectionContext _imageCollectionContext;
+    readonly int _itemIndex;
+    readonly FileSortType _fileSortType;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly ThumbnailImageManager _thumbnailImageService;
+    readonly AlbamRepository _albamRepository;
     public SelectionContext? Selection { get; }
 
     [ObservableProperty]
@@ -73,7 +75,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     [ObservableProperty]
     private double _readParcentage;
 
-    public bool IsSourceStorageItem => _sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false;
+    public bool IsSourceStorageItem => Path != null && (_sourceStorageItemsRepository?.IsSourceStorageItem(Path) ?? false);
 
     [ObservableProperty]
     string? _duration;
@@ -130,7 +132,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         }
     }
 
-    private readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
+    readonly static Core.AsyncLock _asyncLock = new(Math.Max(1, Environment.ProcessorCount * 4));
 
     public ValueTask PrepareImageSizeAsync(CancellationToken ct)
     {
@@ -163,7 +165,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
                 _status = LoadingStatus.NowLoading;
                 await EnsureStorageItemAsync(ct);
-
+                Guard.IsNotNull(Item);
                 using (var stream = await Task.Run(async () => await _thumbnailImageService.GetThumbnailImageStreamAsync(Item, ct: ct)))
                 {
                     if (stream is null || stream.Length == 0) { return; }
@@ -198,12 +200,12 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         catch (DirectoryNotFoundException)
         {
             Status = LoadingStatus.LoadFailed;
-            _messenger.Send(new StorageItemNotFoundMessage(Path));
+            _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }
         catch (FileNotFoundException)
         {
             Status = LoadingStatus.LoadFailed;
-            _messenger.Send(new StorageItemNotFoundMessage(Path));
+            _messenger.Send(new StorageItemNotFoundMessage(Path ?? ""));
         }        
     }
 
@@ -258,7 +260,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         if (Status is LoadingStatus.NowLoading)
         {
             Status = LoadingStatus.PendingLoad;
-            _ = InitializeAsync(ct);
+            InitializeAsync(ct).FireAndForgetSafe();
         }
     }
 

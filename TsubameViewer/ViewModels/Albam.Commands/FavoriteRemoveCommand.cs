@@ -7,7 +7,7 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public class FavoriteRemoveCommand : ImageSourceCommandBase
     {
-        private readonly FavoriteAlbam _favoriteAlbam;
+        readonly FavoriteAlbam _favoriteAlbam;
 
         public FavoriteRemoveCommand(FavoriteAlbam favoriteAlbam)
         {

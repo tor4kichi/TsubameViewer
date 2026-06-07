@@ -20,8 +20,8 @@ public sealed class ThumbnailImageUpdateRequestMessage : ValueChangedMessage<str
 
 public sealed class ChangeStorageItemThumbnailImageCommand : CommandBase
 {
-    private readonly IMessenger _messenger;
-    private readonly ThumbnailImageManager _thumbnailManager;
+    readonly IMessenger _messenger;
+    readonly ThumbnailImageManager _thumbnailManager;
 
 
     public bool IsArchiveThumbnailSetToFile { get; set; }

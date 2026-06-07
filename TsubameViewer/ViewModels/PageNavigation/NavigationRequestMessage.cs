@@ -36,7 +36,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
 
     public static class NavigationRequestMessageExtensions
     {
-        private static async Task<INavigationResult> NavigateAsync_Internal(IMessenger messenger, NavigationRequestMessage message)
+        static async Task<INavigationResult> NavigateAsync_Internal(IMessenger messenger, NavigationRequestMessage message)
         {
             return await messenger.Send(message);
         }

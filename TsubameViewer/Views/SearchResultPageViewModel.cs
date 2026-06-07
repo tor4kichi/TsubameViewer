@@ -24,7 +24,7 @@ using Windows.Storage;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Navigation;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 
 public sealed partial class SearchResultPageViewModel 
@@ -46,20 +46,16 @@ public sealed partial class SearchResultPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly AlbamRepository _albamRepository;
-    private readonly ThumbnailImageManager _thumbnailManager;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly AlbamRepository _albamRepository;
+    readonly ThumbnailImageManager _thumbnailManager;
 
     public ObservableCollection<ItemsGroupedByFolderViewModel> SearchResultItems { get; } = [];
 
-    private string _SearchText;
-    public string SearchText
-    {
-        get { return _SearchText; }
-        set { SetProperty(ref _SearchText, value); }
-    }
+    [ObservableProperty]
+    string? _searchText;
 
     [ObservableProperty]
     int _hitCount = 0;
@@ -131,7 +127,7 @@ public sealed partial class SearchResultPageViewModel
             throw new Exception();
         }
 
-        _ = ProcessSearchQueryAsync(q, ct);
+        ProcessSearchQueryAsync(q, ct).FireAndForgetSafe();
 
         _messenger.Register<SearchQuerySubmitedRequestMessage>(this);
 

@@ -42,9 +42,9 @@ namespace TsubameViewer.Views.Behaviors
 
         // 自動非表示のためのタイマー
         // DispatcherTimerはUIスレッドフレンドリーなタイマー
-        private readonly DispatcherQueueTimer _AutoHideTimer;
+        readonly DispatcherQueueTimer _AutoHideTimer;
 
-        private readonly bool IsDebugOutputEnabled = false;
+        readonly bool IsDebugOutputEnabled = false;
 
         // このビヘイビアを保持しているElement内にカーソルがあるかのフラグ
         // PointerEntered/PointerExitedで変更される
@@ -109,7 +109,7 @@ namespace TsubameViewer.Views.Behaviors
         #endregion
 
 
-        private static bool GetIsWindowActive()
+        static bool GetIsWindowActive()
         {
             return Window.Current.CoreWindow.ActivationMode == CoreWindowActivationMode.ActivatedInForeground;
         }
@@ -149,7 +149,7 @@ namespace TsubameViewer.Views.Behaviors
             base.OnAttached();
         }
 
-        private void Current_Activated(object sender, WindowActivatedEventArgs e)
+        void Current_Activated(object sender, WindowActivatedEventArgs e)
         {
             if (e.WindowActivationState != CoreWindowActivationState.Deactivated)
             {
@@ -158,7 +158,7 @@ namespace TsubameViewer.Views.Behaviors
         }
 
         bool IsUnlaoded = false;
-        private void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
+        void AssociatedObject_Unloaded(object sender, RoutedEventArgs e)
         {
             IsUnlaoded = true;
 
@@ -179,7 +179,7 @@ namespace TsubameViewer.Views.Behaviors
             base.OnDetaching();
         }
 
-        private void ResetAutoHideTimer()
+        void ResetAutoHideTimer()
         {
             _AutoHideTimer.Stop();
 
@@ -193,7 +193,7 @@ namespace TsubameViewer.Views.Behaviors
 
         bool _prevIsVisible = true;
         
-        private void CursorVisibilityChanged(bool isVisible)
+        void CursorVisibilityChanged(bool isVisible)
         {
             if (_DefaultCursor == null) { throw new InvalidOperationException($"Default cursor is can not be null."); }
 
@@ -220,18 +220,18 @@ namespace TsubameViewer.Views.Behaviors
         }
 
 
-        private void RecordCursorPosition()
+        void RecordCursorPosition()
         {
             _LastCursorPosition = GetPointerPosition();
         }
 
-        private void RestoreCursorPosition()
+        void RestoreCursorPosition()
         {
             var windowBound = Window.Current.CoreWindow.Bounds;
             Window.Current.CoreWindow.PointerPosition = new Point(windowBound.Left + _LastCursorPosition.X, windowBound.Top + _LastCursorPosition.Y);
         }
 
-        private void AutoHideTimer_Tick(object sender, object e)
+        void AutoHideTimer_Tick(object sender, object e)
         {
             if (IsUnlaoded) { return; }
             if (GetIsWindowActive() is false) { return; }
@@ -244,7 +244,7 @@ namespace TsubameViewer.Views.Behaviors
             Debug.WriteLineIf(IsDebugOutputEnabled, "AutoHideTimer Stop!");
         }
 
-        private void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
+        void CursorSetter_MouseMoved(MouseDevice sender, MouseEventArgs args)
         {
             if (IsUnlaoded) { return; }
 
@@ -258,7 +258,7 @@ namespace TsubameViewer.Views.Behaviors
         }
 
 
-        private void AssociatedObject_PointerEntered(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        void AssociatedObject_PointerEntered(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             if (IsUnlaoded) { return; }
 
@@ -267,7 +267,7 @@ namespace TsubameViewer.Views.Behaviors
             Debug.WriteLineIf(IsDebugOutputEnabled, "PointerEntered");
         }
 
-        private void AssociatedObject_PointerExited(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        void AssociatedObject_PointerExited(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             if (IsUnlaoded) { return; }
 

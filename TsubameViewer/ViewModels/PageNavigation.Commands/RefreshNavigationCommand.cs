@@ -7,7 +7,7 @@ namespace TsubameViewer.ViewModels.PageNavigation.Commands
 {
     public sealed class RefreshNavigationCommand : CommandBase
     {
-        private readonly IMessenger _messenger;
+        readonly IMessenger _messenger;
 
         public RefreshNavigationCommand(IMessenger messenger)
         {

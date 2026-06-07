@@ -11,7 +11,8 @@ using System.IO;
 using SharpCompress.Archives;
 using SharpCompress.Writers;
 using SharpCompress.Writers.Zip;
-
+using CommunityToolkit.Diagnostics;
+#nullable enable
 namespace TsubameViewer.Core.Models.Transform;
 
 public static class TitleDigitCompletionTransform
@@ -95,7 +96,7 @@ public static class TitleDigitCompletionTransform
     /// <param name="digitCompletionChar"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public static (bool Result, IWritableArchive<ZipWriterOptions> Archive) TransformArchive(IArchive srcArchive, char digitCompletionChar, Action<(string Old, string New)>? onRenamed, CancellationToken ct)
+    public static (bool Result, IWritableArchive<ZipWriterOptions>? Archive) TransformArchive(IArchive srcArchive, char digitCompletionChar, Action<(string? Old, string? New)>? onRenamed, CancellationToken ct)
     {
         // アーカイブ内でフォルダが別れている場合がある
         // 各アーカイブ内フォルダごとに数字の最大数を出して処理する必要があるけど
@@ -119,7 +120,7 @@ public static class TitleDigitCompletionTransform
 
         // 並びはそのまま維持して桁数補完できるアイテムのみを
         foreach (var item in srcArchive.Entries)
-        {
+        {            
             var memoryStream = new MemoryStream();
             using (var entryStream = item.OpenEntryStream())
             {
@@ -141,23 +142,23 @@ public static class TitleDigitCompletionTransform
             }
             else
             {
-                destArchive.AddEntry(item.Key, memoryStream, true);
+                destArchive.AddEntry(item.Key!, memoryStream, true);
             }
         }
 
         return (true, destArchive);
     }
 
-    public static async Task<bool> TransformArchiveFileAsync(StorageFile file, char digitCompletionChar, SharpCompress.Common.CompressionType compressionType, Action<(string Old, string New)>? onRenamed, CancellationToken ct)
+    public static async Task<bool> TransformArchiveFileAsync(StorageFile file, char digitCompletionChar, SharpCompress.Common.CompressionType compressionType, Action<(string? Old, string? New)>? onRenamed, CancellationToken ct)
     {
         if (SupportedFileTypesHelper.IsSupportedMangaFile(file) is false) { throw new NotSupportedException(); }
 
-        IWritableArchive<ZipWriterOptions> destArchive;
+        IWritableArchive<ZipWriterOptions>? destArchive;
         using (var stream = await file.OpenStreamForReadAsync())
         using (var srcArchive = ArchiveFactory.OpenArchive(stream))
         {
-            (var result, destArchive) = TransformArchive(srcArchive, digitCompletionChar, onRenamed, ct);
-            if (result is false)
+            (bool result, destArchive) = TransformArchive(srcArchive!, digitCompletionChar, onRenamed, ct);
+            if (result is false || destArchive == null)
             {
                 return false;
             }

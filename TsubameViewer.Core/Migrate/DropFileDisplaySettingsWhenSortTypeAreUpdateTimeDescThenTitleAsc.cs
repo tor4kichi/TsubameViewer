@@ -3,38 +3,37 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+#nullable enable
+namespace TsubameViewer.Core.Models.Migrate;
 
-namespace TsubameViewer.Core.Models.Migrate
+public sealed class DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc : IAsyncMigrater
 {
-    public sealed class DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc : IAsyncMigrater
+    private readonly ILiteDatabase _liteDatabase;
+
+    public DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc(
+        ILiteDatabase liteDatabase
+        )
     {
-        private readonly ILiteDatabase _liteDatabase;
+        _liteDatabase = liteDatabase;
+    }
 
-        public DropFileDisplaySettingsWhenSortTypeAreUpdateTimeDescThenTitleAsc(
-            ILiteDatabase liteDatabase
-            )
+
+    public Version? TargetVersion { get; } = new Version(1, 5, ushort.MaxValue);
+
+    public ValueTask MigrateAsync()
+    {
+        if (_liteDatabase.CollectionExists("FolderAndArchiveDisplaySettingEntry"))
         {
-            _liteDatabase = liteDatabase;
+            var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveDisplaySettingEntry")
+                .DeleteMany("$.Sort = 'UpdateTimeDescThenTitleAsc'");
         }
 
-
-        public Version? TargetVersion { get; } = new Version(1, 5, ushort.MaxValue);
-
-        public ValueTask MigrateAsync()
+        if (_liteDatabase.CollectionExists("FolderAndArchiveChildFileDisplaySettingEntry"))
         {
-            if (_liteDatabase.CollectionExists("FolderAndArchiveDisplaySettingEntry"))
-            {
-                var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveDisplaySettingEntry")
-                    .DeleteMany("$.Sort = 'UpdateTimeDescThenTitleAsc'");
-            }
-
-            if (_liteDatabase.CollectionExists("FolderAndArchiveChildFileDisplaySettingEntry"))
-            {
-                var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveChildFileDisplaySettingEntry")
-                    .DeleteMany("$.ChildItemDefaultSort = 'UpdateTimeDescThenTitleAsc'");
-            }
-
-            return new();
+            var deleteCount = _liteDatabase.GetCollection("FolderAndArchiveChildFileDisplaySettingEntry")
+                .DeleteMany("$.ChildItemDefaultSort = 'UpdateTimeDescThenTitleAsc'");
         }
+
+        return new();
     }
 }

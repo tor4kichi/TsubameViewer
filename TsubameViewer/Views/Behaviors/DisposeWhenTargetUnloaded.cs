@@ -29,7 +29,7 @@ namespace TsubameViewer.Views.Behaviors
         static Dictionary<FrameworkElement, CompositeDisposable> _disposersMap = new Dictionary<FrameworkElement, CompositeDisposable>();
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("IDisposableAnalyzers.Correctness", "IDISP001:Dispose created.", Justification = "<保留中>")]
-        private static void DisposeOnUnloadedTargetPropertyChanged(DependencyObject s, DependencyPropertyChangedEventArgs e)
+        static void DisposeOnUnloadedTargetPropertyChanged(DependencyObject s, DependencyPropertyChangedEventArgs e)
         {
             if (e.NewValue is FrameworkElement newTarget)
             {
@@ -70,7 +70,7 @@ namespace TsubameViewer.Views.Behaviors
             }
         }
 
-        private static void NewTarget_Unloaded(object sender, RoutedEventArgs e)
+        static void NewTarget_Unloaded(object sender, RoutedEventArgs e)
         {
             var fe = sender as FrameworkElement;
             fe.Unloaded -= NewTarget_Unloaded;

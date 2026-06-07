@@ -6,62 +6,62 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.ViewModels.PageNavigation;
 
-namespace TsubameViewer.ViewModels.Albam.Commands
+#nullable enable
+namespace TsubameViewer.ViewModels.Albam.Commands;
+
+public sealed class AlbamDeleteCommand : CommandBase
 {
-    public sealed class AlbamDeleteCommand : CommandBase
+    readonly AlbamRepository _albamRepository;
+    readonly IMessenger _messenger;
+    readonly IMessageDialogService _messageDialogService;
+
+    public AlbamDeleteCommand(
+        AlbamRepository albamRepository,
+        IMessenger messenger,
+        IMessageDialogService messageDialogService 
+        )
     {
-        private readonly AlbamRepository _albamRepository;
-        private readonly IMessenger _messenger;
-        private readonly IMessageDialogService _messageDialogService;
-
-        public AlbamDeleteCommand(
-            AlbamRepository albamRepository,
-            IMessenger messenger,
-            IMessageDialogService messageDialogService 
-            )
+        _albamRepository = albamRepository;
+        _messenger = messenger;
+        _messageDialogService = messageDialogService;
+    }
+    public override bool CanExecute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
         {
-            _albamRepository = albamRepository;
-            _messenger = messenger;
-            _messageDialogService = messageDialogService;
-        }
-        public override bool CanExecute(object parameter)
-        {
-            if (parameter is IStorageItemViewModel itemVM)
-            {
-                parameter = itemVM.Item;
-            }
-
-            return parameter is AlbamImageSource albam
-                && albam.AlbamId != FavoriteAlbam.FavoriteAlbamId
-                ;
+            parameter = itemVM.Item;
         }
 
-        public override async void Execute(object parameter)
+        return parameter is AlbamImageSource albam
+            && albam.AlbamId != FavoriteAlbam.FavoriteAlbamId
+            ;
+    }
+
+    public override async void Execute(object parameter)
+    {
+        if (parameter is IStorageItemViewModel itemVM)
         {
-            if (parameter is IStorageItemViewModel itemVM)
+            parameter = itemVM.Item;
+        }
+
+        if (parameter is AlbamImageSource albam)
+        {
+            if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
             {
-                parameter = itemVM.Item;
+                if (!await _messageDialogService.ShowMessageDialogAsync(
+                    "AlbamDeleteConfirmDialogText".Translate(albam.Name),
+                    "Delete".Translate(),
+                    "Cancel".Translate(),
+                    true
+                    ))
+                {
+                    return;
+                }
             }
 
-            if (parameter is AlbamImageSource albam)
+            if (_albamRepository.DeleteAlbam(albam.AlbamId) is false)
             {
-                if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
-                {
-                    if (!await _messageDialogService.ShowMessageDialogAsync(
-                        "AlbamDeleteConfirmDialogText".Translate(albam.Name),
-                        "Delete".Translate(),
-                        "Cancel".Translate(),
-                        true
-                        ))
-                    {
-                        return;
-                    }
-                }
-
-                if (_albamRepository.DeleteAlbam(albam.AlbamId) is false)
-                {
-                    throw new InvalidOperationException();
-                }
+                throw new InvalidOperationException();
             }
         }
     }

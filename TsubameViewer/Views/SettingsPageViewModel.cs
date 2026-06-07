@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -35,20 +36,20 @@ namespace TsubameViewer.ViewModels;
 
 public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
 {
-    private readonly IMessenger _messenger;
-    private readonly ApplicationSettings _applicationSettings;
-    private readonly FolderListingSettings _folderListingSettings;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly ImageViewerSettings _imageViewerPageSettings;
-    private readonly FolderListingSettings _folderListupSettings;
-    private readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
+    readonly IMessenger _messenger;
+    readonly ApplicationSettings _applicationSettings;
+    readonly FolderListingSettings _folderListingSettings;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly ImageViewerSettings _imageViewerPageSettings;
+    readonly FolderListingSettings _folderListupSettings;
+    readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
     public SettingsGroupViewModel[] AdvancedSettingGroups { get; }
 
     public RelayCommand AppInfoCopyToClipboard { get; }
 
-    private readonly ButtonSettingItemViewModel _cacheSizeButton;
+    readonly ButtonSettingItemViewModel _cacheSizeButton;
     
     public bool IsForceXboxAppearanceModeEnabled
     {
@@ -78,8 +79,8 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _imageViewerPageSettings = imageViewerPageSettings;
         _folderListupSettings = folderListupSettings;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
-        _IsThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
-        _ThumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
+        _isThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
+        _thumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
         
         AppInfoCopyToClipboard = new RelayCommand(() =>
         {
@@ -201,18 +202,18 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         base.OnNavigatedFrom(parameters);
     }
 
-    private async Task DeleteAllThumbnailsAsync()
+    async Task DeleteAllThumbnailsAsync()
     {
-        _ThumbnailImagesCacheSizeText.Value = string.Empty;
+        _thumbnailImagesCacheSizeText.Value = string.Empty;
 
-        _IsThumbnailDeleteButtonActive.Value = false;
+        _isThumbnailDeleteButtonActive.Value = false;
         await _thumbnailImageMaintenanceService.DeleteAllThumbnailsAsync();
 
-        _ = RefreshThumbnailFilesSizeAsync(_navigationCt);
+        RefreshThumbnailFilesSizeAsync(_navigationCt).FireAndForgetSafe();
     }
 
-    ReactiveProperty<bool> _IsThumbnailDeleteButtonActive;
-    ReactivePropertySlim<string> _ThumbnailImagesCacheSizeText;
+    ReactiveProperty<bool> _isThumbnailDeleteButtonActive;
+    ReactivePropertySlim<string> _thumbnailImagesCacheSizeText;
 
 
     CancellationToken _navigationCt;
@@ -225,14 +226,14 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
             return Task.CompletedTask;
         }
 
-        _IsThumbnailDeleteButtonActive.Value = true;
-        _ = RefreshThumbnailFilesSizeAsync(ct);
+        _isThumbnailDeleteButtonActive.Value = true;
+        RefreshThumbnailFilesSizeAsync(ct).FireAndForgetSafe();
         // base.OnNavigatedToAsync(parameters, ct);
 
         return Task.CompletedTask;
     }
 
-    private async Task RefreshThumbnailFilesSizeAsync(CancellationToken ct)
+    async Task RefreshThumbnailFilesSizeAsync(CancellationToken ct)
     {
         try
         {
@@ -245,7 +246,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
 
         }
     }
-    private static string ToUserFiendlyFileSizeText(ulong size)
+    static string ToUserFiendlyFileSizeText(ulong size)
     {
         var conv = new ToKMGTPEZYConverter();
         return (string)conv.Convert(size, typeof(string), null, CultureInfo.CurrentCulture.Name);
@@ -263,7 +264,7 @@ public sealed class SettingsGroupViewModel : IDisposable
 {
     public bool IsVisible => Items?.Any(x => x.IsVisible) ?? false;
 
-    public string Label { get; set; }
+    public string Label { get; set; } = "";
     public List<SettingItemViewModelBase> Items { get; set; } = new List<SettingItemViewModelBase>();
 
     public void Dispose() 
@@ -278,8 +279,8 @@ public sealed class SettingsGroupViewModel : IDisposable
 
 public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBase
 {
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
 
     public ObservableCollection<StoredFolderViewModel> Folders { get; }
     public ObservableCollection<StoredFolderViewModel> TempFiles { get; }
@@ -291,10 +292,10 @@ public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBas
         Folders = new ObservableCollection<StoredFolderViewModel>();
         TempFiles = new ObservableCollection<StoredFolderViewModel>();
 
-        Init();
+        Init().FireAndForgetSafe();
     }
 
-    async void Init()
+    async Task Init()
     {
         try
         {
@@ -302,7 +303,7 @@ public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBas
             {
                 Folders.Add(new StoredFolderViewModel(_messenger, this, _sourceStorageItemsRepository)
                 {
-                    Item = item.item,
+                    Item = item.item!,
                     FolderName = item.item?.Name ?? "???",
                     Path = item.item?.Path ?? "",
                     Token = item.token,
@@ -332,9 +333,9 @@ public sealed class StoredFoldersSettingItemViewModel :  SettingItemViewModelBas
 
 public sealed partial class StoredFolderViewModel
 {
-    private readonly IMessenger _messenger;
-    private readonly StoredFoldersSettingItemViewModel _parentVM;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly IMessenger _messenger;
+    readonly StoredFoldersSettingItemViewModel _parentVM;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
 
     public StoredFolderViewModel(IMessenger messenger, StoredFoldersSettingItemViewModel parentVM, SourceStorageItemsRepository sourceStorageItemsRepository)
     {
@@ -343,14 +344,15 @@ public sealed partial class StoredFolderViewModel
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
     }
 
-    public string FolderName { get; set; }
-    public string Path { get; set; }
-    public string Token { get; set; }
-    public IStorageItem Item { get; set; }
+    public string? FolderName { get; set; }
+    public string? Path { get; set; }
+    public string? Token { get; set; }
+    public IStorageItem? Item { get; set; }
 
     [RelayCommand]
     async Task DeleteStoredFolder()
     {
+        Guard.IsNotNullOrEmpty(Token);
         // 削除済みフォルダであった場合は記録したパスを利用する            
         var path = !string.IsNullOrEmpty(Path) ? Path : _sourceStorageItemsRepository.GetPathFromToken(Token);
         if (path != null)
@@ -391,7 +393,7 @@ public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, ITo
 
 public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
 {
-    private readonly Action<double> _changedAction;
+    readonly Action<double> _changedAction;
     
     public NumberBoxSettingItemViewModel(string label, double firstValue, double minValue, double maxValue, double valueStep, Action<double> changedAction)
     {
@@ -418,7 +420,7 @@ public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
 public class UpdatableTextSettingItemViewModel : SettingItemViewModelBase, IDisposable 
 {
     public string Label { get; }
-    public IReadOnlyReactiveProperty<string> Text { get; }
+    public IReadOnlyReactiveProperty<string?> Text { get; }
     public UpdatableTextSettingItemViewModel(string label, IObservable<string> textObservable)
     {
         Label = label;
@@ -469,7 +471,7 @@ public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDis
 
 
     [ObservableProperty]
-    string _description;
+    string? _description;
 
     public AsyncReactiveCommand ActionCommand { get; }
 
@@ -481,7 +483,7 @@ public partial class ButtonSettingItemViewModel : SettingItemViewModelBase, IDis
 
 public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
 {
-    private readonly IMessenger _messenger;
+    readonly IMessenger _messenger;
 
     public ThemeSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings, IMessenger messenger)
     {
@@ -512,7 +514,7 @@ public class ThemeSelectSettingItemViewModel : SettingItemViewModelBase, IDispos
 
 public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewModelBase, IDisposable
 {
-    private string _currentLocale = I18NPortable.I18N.Current.Locale;
+    string _currentLocale = I18NPortable.I18N.Current.Locale;
     public LocaleSelectSettingItemViewModel(string label, ApplicationSettings applicationSettings)
     {
         Label = label;
@@ -520,11 +522,11 @@ public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewMo
         SelectedLocale = Locales.FirstOrDefault(x =>x.Locale == applicationSettings.Locale);
     }
 
-    private string _RestartTextTranslated;
-    public string RestartTextTranslated
+    private string? _restartTextTranslated;
+    public string? RestartTextTranslated
     {
-        get { return _RestartTextTranslated; }
-        set { SetProperty(ref _RestartTextTranslated, value); }
+        get { return _restartTextTranslated; }
+        set { SetProperty(ref _restartTextTranslated, value); }
     }
 
     private bool _isRequireRestart;
@@ -557,7 +559,7 @@ public sealed partial class LocaleSelectSettingItemViewModel : SettingItemViewMo
     {
     }
 
-    private readonly ApplicationSettings _applicationSettings;
+    readonly ApplicationSettings _applicationSettings;
 
     [RelayCommand]
     void RestartApplication()

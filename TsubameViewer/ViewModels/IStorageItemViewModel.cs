@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using Windows.UI.Xaml.Media.Imaging;
-
+#nullable enable
 namespace TsubameViewer.ViewModels;
 public interface IStorageItemViewModel : INotifyPropertyChanged
 {
@@ -19,7 +19,7 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
     string Name { get; }
     string Path { get; }
     double ReadParcentage { get; set; }
-    SelectionContext Selection { get; }
+    SelectionContext? Selection { get; }
     StorageItemTypes Type { get; }
 
     string? Duration { get; }

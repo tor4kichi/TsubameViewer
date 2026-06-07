@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Models.SourceFolders;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.Migrate;
 
 

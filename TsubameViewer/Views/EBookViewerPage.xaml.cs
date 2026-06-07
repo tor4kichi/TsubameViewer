@@ -46,9 +46,9 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     }
 
     internal readonly EBookViewerPageViewModel _vm;
-    private readonly IMessenger _messenger;
+    readonly IMessenger _messenger;
 
-    private readonly Core.AsyncLock _movePageLock = new();
+    readonly Core.AsyncLock _movePageLock = new();
 
     public EBookViewerPage()
     {
@@ -70,7 +70,6 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         EPubRenderer_2.WebResourceRequested += WebView_WebResourceRequested;
     }
 
-    bool _isFirstDisplay = true;
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         AnimationBuilder.Create()
@@ -129,7 +128,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         base.OnNavigatingFrom(e);
     }
     Core.AsyncLock _resourceReadLock = new Core.AsyncLock();
-    private async void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
+    async void WebView_WebResourceRequested(object sender, WebViewWebResourceRequestedEventArgs e)
     {
         var reqesutUri = e.Request.RequestUri;
         using (var defferral = e.GetDeferral())
@@ -158,14 +157,14 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     // デバッグあり実行だと動くが、デバッグ無し実行だと動かなかった。（リリースビルドでも同様）
     //
 
-    private void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
+    void MoveButtonEnablingWorkAround_EBookReaderPage_Loaded(object sender, RoutedEventArgs e)
     {
         //ControlHeight = EPubRendererContainer.ActualHeight - 64;
         // Note: WebViewにフォーカスがあるとWebViewより前面にあるボタンが押せないバグのワークアラウンド
         this.LeftPageMoveButton.Focus(FocusState.Programmatic);
     }
 
-    private void WebView_Loaded(object sender, RoutedEventArgs e)
+    void WebView_Loaded(object sender, RoutedEventArgs e)
     {
         var elem = (EPubRenderer)sender;
         var db = new DisposableBuilder();
@@ -262,12 +261,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
     AnimationBuilder _fadeInAnim = AnimationBuilder.Create()
             .Opacity(1, duration: TimeSpan.FromMilliseconds(125));
 
-    private void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
+    void WebView_ContentRefreshStarting_1(object sender, EventArgs e)
     {            
         NowEnablePageMove_1 = false;
     }
 
-    private void WebView_ContentRefreshComplete_1(object sender, EventArgs e)
+    void WebView_ContentRefreshComplete_1(object sender, EventArgs e)
     {
         NowEnablePageMove_1 = true;
         if (_vm.SwapPages[0].PageHtml != null)
@@ -278,12 +277,12 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         _fadeInAnim.Start(EPubRenderer_1);
     }
 
-    private void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
+    void WebView_ContentRefreshStarting_2(object sender, EventArgs e)
     {
         NowEnablePageMove_2= false;
     }
 
-    private void WebView_ContentRefreshComplete_2(object sender, EventArgs e)
+    void WebView_ContentRefreshComplete_2(object sender, EventArgs e)
     {
         NowEnablePageMove_2 = true;
         if (_vm.SwapPages[1].PageHtml != null)
@@ -433,7 +432,7 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         TocContainer.Visibility = Visibility.Collapsed;
     }
 
-    private void CoverImage_Tapped(object sender, TappedRoutedEventArgs e)
+    void CoverImage_Tapped(object sender, TappedRoutedEventArgs e)
     {
         _vm.CurrentImageIndex = 0;
     }
@@ -446,17 +445,17 @@ public sealed partial class EBookViewerPage : Page, ITitlebarContentAware
         currentEPubRenderer.Refresh();
     }
 
-    private void CurrentBookReadingOrder_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void CurrentBookReadingOrder_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (((FrameworkElement)sender).IsLoaded == false) { return; }
 
         if (e.AddedItems.ElementAtOrDefault(0) is EpubLocalTextContentFileRef pageRef)
         {
-            _ = _vm.SetPageAsync(pageRef);
+            _vm.SetPageAsync(pageRef).FireAndForgetSafe();
         }
     }
 
-    private void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
+    void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
     {
         if (args.X > 1)
         {

@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Infrastructure;
-
+#nullable enable
 namespace TsubameViewer.Core.Models.Navigation;
 
 
 public class PageEntry
 {
-    public PageEntry() { }
+    public PageEntry() 
+    {
+        PageName = "";
+        Parameters = [];
+    }
 
     public PageEntry(string pageName)
     {
@@ -20,7 +24,7 @@ public class PageEntry
     public PageEntry(string pageName, IEnumerable<KeyValuePair<string, object>> parameters)
     {
         PageName = pageName;
-        Parameters = parameters?.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())).ToList();
+        Parameters = (parameters ?? []).Select(x => new KeyValuePair<string, string>(x.Key, x.Value.ToString())).ToList();
     }
 
     public string PageName { get; set; }
@@ -72,7 +76,7 @@ public sealed class NavigationStackRepository
         _navigationStackRepository.SetViewerNavigationEntry(pageEntry);
     }
 
-    public PageEntry GetViewerNavigationEntry()
+    public PageEntry? GetViewerNavigationEntry()
     {
         return _navigationStackRepository.GetViewerNavigationEntry();
     }
@@ -96,7 +100,7 @@ public sealed class NavigationStackRepository
 
         public PageEntry GetCurrentNavigationEntry()
         {
-            return Read<PageEntry>(null, CurrentNavigationEntryName);
+            return Read<PageEntry>(null!, CurrentNavigationEntryName);
         }
 
         public void SetCurrentNavigationEntry(PageEntry entry)
@@ -106,7 +110,7 @@ public sealed class NavigationStackRepository
 
         public Task<PageEntry[]> GetBackNavigationEntriesAsync()
         {
-            return ReadFileAsync<PageEntry[]>(null, BackNavigationEntriesName);
+            return ReadFileAsync<PageEntry[]>(null!, BackNavigationEntriesName);
         }
 
         public Task SetBackNavigationEntriesAsync(PageEntry[] entries)
@@ -116,7 +120,7 @@ public sealed class NavigationStackRepository
 
         public Task<PageEntry[]> GetForwardNavigationEntriesAsync()
         {
-            return ReadFileAsync<PageEntry[]>(null, ForwardNavigationEntriesName);
+            return ReadFileAsync<PageEntry[]>(null!, ForwardNavigationEntriesName);
         }
 
         public Task SetForwardNavigationEntriesAsync(PageEntry[] entries)
@@ -130,7 +134,7 @@ public sealed class NavigationStackRepository
 
         public PageEntry? GetViewerNavigationEntry()
         {
-            return Read<PageEntry>(null, ViewerNavigationEntryName);
+            return Read<PageEntry>(null!, ViewerNavigationEntryName);
         }
 
         public void SetViewerNavigationEntry(PageEntry entry)

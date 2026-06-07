@@ -4,6 +4,7 @@ using Microsoft.Toolkit.Uwp.UI.Controls;
 using R3;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using TsubameViewer.ViewModels;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -32,13 +33,12 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
         DataContext = _vm = Ioc.Default.GetRequiredService<FolderOrArchiveRestructurePageViewModel>();
     }
 
-    private readonly FolderOrArchiveRestructurePageViewModel _vm;
+    readonly FolderOrArchiveRestructurePageViewModel _vm;
 
-    private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_nowSelectAllWithSearch) { return; }
-
-        var dataGrid = sender as DataGrid;
+        if (sender is not  DataGrid dataGrid) { return; }
 
         foreach (var removed in e.RemovedItems.Cast<IPathRestructure>())
         {
@@ -55,7 +55,7 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
         }
     }
 
-    private void ToggleSelectAll()
+    void ToggleSelectAll()
     {
         if (_vm.SelectedItems.Any())
         {
@@ -74,7 +74,7 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
 
 
     bool _nowSelectAllWithSearch = false;
-    private void SelectAllWithSearch()
+    void SelectAllWithSearch()
     {
         _nowSelectAllWithSearch = true;
 
@@ -107,16 +107,19 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
     }
 
 
-    private async void SaveOverwrite()
+    async void SaveOverwrite()
     {
-        var dialog = new MessageDialog("RestructurePage_OverwriteSave_Confirm".Translate(_vm.SourceStorageItem.Name));
+        d().FireAndForgetSafe();
+        async Task d ()
+        {
+            var dialog = new MessageDialog("RestructurePage_OverwriteSave_Confirm".Translate(_vm.SourceStorageItem.Name));
 
-        dialog.Commands.Add(new UICommand("RestructurePage_OverwriteSave".Translate(), (s) => { _vm.OverwriteSaveCommand.Execute(null); }));
-        dialog.Commands.Add(new UICommand("Cancel".Translate(), (s) => { }));
-        dialog.DefaultCommandIndex = 1;
-        dialog.CancelCommandIndex = 1;
-        var result = await dialog.ShowAsync();
-
+            dialog.Commands.Add(new UICommand("RestructurePage_OverwriteSave".Translate(), (s) => { _vm.OverwriteSaveCommand.Execute(null); }));
+            dialog.Commands.Add(new UICommand("Cancel".Translate(), (s) => { }));
+            dialog.DefaultCommandIndex = 1;
+            dialog.CancelCommandIndex = 1;
+            var result = await dialog.ShowAsync();
+        }
     }
 }
 

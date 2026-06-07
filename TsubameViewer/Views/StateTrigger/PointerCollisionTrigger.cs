@@ -21,7 +21,7 @@ namespace TsubameViewer.Views.StateTrigger
         public static readonly DependencyProperty TargetProperty =
             DependencyProperty.Register("Target", typeof(UIElement), typeof(PointerCollisionTrigger), new PropertyMetadata(null, OnTargetPropertyChanged));
 
-        private static void OnTargetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        static void OnTargetPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (e.NewValue is FrameworkElement item)
             {
@@ -31,14 +31,14 @@ namespace TsubameViewer.Views.StateTrigger
             }
         }
 
-        private void Item_Unloaded(object sender, RoutedEventArgs e)
+        void Item_Unloaded(object sender, RoutedEventArgs e)
         {
             var item = sender as FrameworkElement;
             item.PointerMoved -= Item_PointerMoved;
             item.Unloaded -= Item_Unloaded;
         }
 
-        private void Item_PointerMoved(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        void Item_PointerMoved(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             var collisionRect = CollisionRect;
             var oldIsActive = IsActive;

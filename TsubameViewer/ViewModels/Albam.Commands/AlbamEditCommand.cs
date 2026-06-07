@@ -10,8 +10,8 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public sealed class AlbamEditCommand : CommandBase
     {
-        private readonly AlbamRepository _albamRepository;
-        private readonly IAlbamDialogService _albamDialogService;
+        readonly AlbamRepository _albamRepository;
+        readonly IAlbamDialogService _albamDialogService;
 
         public AlbamEditCommand(
             AlbamRepository albamRepository,

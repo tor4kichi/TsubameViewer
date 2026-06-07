@@ -83,9 +83,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             .Select(x => UriHelper.ToHumanReadable(x));
     }
 
-    private readonly ImageListupPageViewModel _vm;
-    private readonly IMessenger _messenger;
-    private readonly FocusHelper _focusHelper;
+    readonly ImageListupPageViewModel _vm;
+    readonly IMessenger _messenger;
+    readonly FocusHelper _focusHelper;
 
     public ImageListupPage()
     {
@@ -107,7 +107,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         FileItemsRepeater_Large.ElementClearing += FileItemsRepeater_Large_ElementClearing;
     }
 
-    private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
+    void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
         ContentViewTypeSelector.SelectedIndex = 1;
 
@@ -128,14 +128,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         });
     }
 
-    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
+    void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
 
         StopLoadingTaskMonitor();
     }
 
-    private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selector = (Selector)sender;
         if (selector.IsLoaded && selector.SelectedIndex == 0 && _vm?.CurrentFolderItem != null)
@@ -314,14 +314,14 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     #region 初期フォーカス設定
 
-    CancellationTokenSource _navigationCts;
+    CancellationTokenSource? _navigationCts;
     CancellationToken _ct;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _messenger.Unregister<StartMultiSelectionMessage>(this);
 
-        _navigationCts.Cancel();
-        _navigationCts.Dispose();
+        _navigationCts?.Cancel();
+        _navigationCts?.Dispose();
 
         ClearSelection();
 
@@ -333,58 +333,60 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         base.OnNavigatedTo(e);
 
-        _navigationCts = new CancellationTokenSource();
-        var ct = _ct = _navigationCts.Token;
-
-        _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
+        d().FireAndForgetSafe();
+        async Task d()
         {
-            if (_vm.Selection.IsSelectionModeEnabled)
-            {
-                _vm.Selection.EndSelection();
-            }
-            else
-            {
-                _vm.Selection.StartSelection();
-            }
 
-            _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
-        });
+            _navigationCts = new CancellationTokenSource();
+            var ct = _ct = _navigationCts.Token;
 
-        try
-        {
-            if (e.NavigationMode == NavigationMode.New)
+            _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
             {
-                await ResetScrollPosition(ct);
-
-                if (_focusHelper.IsRequireSetFocus())
+                if (_vm.Selection.IsSelectionModeEnabled)
                 {
-                    var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
-                    if (firstItem != null)
+                    _vm.Selection.EndSelection();
+                }
+                else
+                {
+                    _vm.Selection.StartSelection();
+                }
+
+                _vm.FileDeleteCommand.NotifyCanExecuteChanged();
+                _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
+            });
+
+            try
+            {
+                if (e.NavigationMode == NavigationMode.New)
+                {
+                    await ResetScrollPosition(ct);
+
+                    if (_focusHelper.IsRequireSetFocus())
                     {
-                        (firstItem as Control)?.Focus(FocusState.Keyboard);
-                    }
-                    else
-                    {
-                        //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        var firstItem = await WaitTargetIndexItemLoadingAsync(0, ct);
+                        if (firstItem != null)
+                        {
+                            (firstItem as Control)?.Focus(FocusState.Keyboard);
+                        }
+                        else
+                        {
+                            //ReturnSourceFolderPageButton.Focus(FocusState.Keyboard);
+                        }
                     }
                 }
+                else
+                {
+                    await BringIntoViewLastIntractItem(ct);
+                }
             }
-            else
-            {
-                await BringIntoViewLastIntractItem(ct);
-            }
-        }
-        catch (OperationCanceledException) { }
-        finally
-        {
-        }
+            catch (OperationCanceledException) { }
 
-        StartLoadingTaskMonitor(ct);
-        UpdateVisibleRangeItemInitialize();
+            StartLoadingTaskMonitor(ct);
+            UpdateVisibleRangeItemInitialize();
+        }
     }
 
-    private void SaveScrollStatus(UIElement target)
+    void SaveScrollStatus(UIElement target)
     {
         if (target is FrameworkElement fe
                     && fe.DataContext is IStorageItemViewModel itemVM)
@@ -393,7 +395,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private async Task<UIElement?> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
+    async Task<UIElement?> WaitTargetIndexItemLoadingAsync(int index, CancellationToken ct)
     {
         await this.WaitFillingValue(x => x.GetCurrentDisplayItemsRepeater() != null, ct);
 
@@ -418,7 +420,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    private async Task ResetScrollPosition(CancellationToken ct)
+    async Task ResetScrollPosition(CancellationToken ct)
     {
         var lastIntractItem = await WaitTargetIndexItemLoadingAsync(0, ct);
         ItemsScrollViewer.ChangeView(null, 0.0, null, disableAnimation: true);
@@ -430,7 +432,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    private void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    void FileItemsRepeater_Large_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         this.FileItemsRepeater_Small.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
         this.FileItemsRepeater_Midium.ElementPrepared -= FileItemsRepeater_Large_ElementPrepared;
@@ -501,19 +503,19 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
     ObservableCollection<FrameworkElement> _realizedItems = [];
-    private void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    void FileItemsRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
         if (args.Element is FrameworkElement fe)
         {
             _realizedItems.Add(fe);
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
-                _ = itemVM.EnsureImageSizeRatioAsync(_ct);
+                itemVM.EnsureImageSizeRatioAsync(_ct).FireAndForgetSafe();
             }
         }
     }
 
-    private void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
+    void FileItemsRepeater_Large_ElementClearing(ItemsRepeater sender, ItemsRepeaterElementClearingEventArgs args)
     {
         if (args.Element is FrameworkElement fe)
         {
@@ -526,13 +528,13 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    private readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
+    readonly AnimationBuilder _zoomUpAnimation = AnimationBuilder.Create()
             .Scale(new Vector2(1.020f, 1.020f), duration: TimeSpan.FromMilliseconds(50));
 
-    private readonly AnimationBuilder _zoomDownAnimation = AnimationBuilder.Create()
+    readonly AnimationBuilder _zoomDownAnimation = AnimationBuilder.Create()
             .Scale(new Vector2(1, 1), duration: TimeSpan.FromMilliseconds(50));
 
-    private void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
+    void Image_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
         var item = (FrameworkElement)sender;
         var image = item.FindChild<Image>();
@@ -553,7 +555,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     }
 
 
-    private void Image_PointerExited(object sender, PointerRoutedEventArgs e)
+    void Image_PointerExited(object sender, PointerRoutedEventArgs e)
     {
         var item = (FrameworkElement)sender;
         var image = item.FindChild<Image>();
@@ -571,8 +573,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    RelayCommand<TappedRoutedEventArgs> _PrepareConnectedAnimationWithTappedItemCommand;
-    public RelayCommand<TappedRoutedEventArgs> PrepareConnectedAnimationWithTappedItemCommand => _PrepareConnectedAnimationWithTappedItemCommand ??= new RelayCommand<TappedRoutedEventArgs>(item =>
+    [RelayCommand]
+    void PrepareConnectedAnimationWithTappedItem(TappedRoutedEventArgs item)
     {
         SaveScrollStatus((UIElement)item!.OriginalSource);
 
@@ -583,7 +585,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 .PrepareToAnimate(PageTransitionHelper.ImageJumpConnectedAnimationName, image);
             anim.Configuration = new BasicConnectedAnimationConfiguration();
         }
-    });
+    }
 
     [RelayCommand]
     void PrepareConnectedAnimationWithCurrentFocusElement(UIElement item)
@@ -601,8 +603,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private int _lastSelectedItemIndex = -1;
-    private void ImageListItem_Clicked(object sender, RoutedEventArgs e)
+    int _lastSelectedItemIndex = -1;
+    void ImageListItem_Clicked(object sender, RoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
         if (IsSelectionModeEnabled
@@ -641,7 +643,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     IReadOnlyList<IStorageItemViewModel>? _selectedItems = new List<IStorageItemViewModel>();
 
 
-    private void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
+    void ImageListToggleSelectButton_Tapped(object sender, TappedRoutedEventArgs e)
     {
         e.Handled = true;
 
@@ -651,7 +653,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private void ItemSelectedProcess(IStorageItemViewModel itemVM)
+    void ItemSelectedProcess(IStorageItemViewModel itemVM)
     {
         var prevSelectedItemIndex = _lastSelectedItemIndex;
         var lastSelectedItemsCount = SelectedItemsCount;
@@ -703,7 +705,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         set { SetValue(SelectedItemsCountProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for SelectedItemsCount.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty SelectedItemsCountProperty =
         DependencyProperty.Register("SelectedItemsCount", typeof(int), typeof(ImageListupPage), new PropertyMetadata(0));
 
@@ -716,7 +717,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         set { SetValue(IsSelectionModeEnabledProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for IsSelectionModeEnabled.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty IsSelectionModeEnabledProperty =
         DependencyProperty.Register("IsSelectionModeEnabled", typeof(bool), typeof(ImageListupPage), new PropertyMetadata(false));
 
@@ -782,15 +782,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         _messenger.Unregister<Core.Models.Albam.AlbamItemRemovedMessage>(this);
     }
 
-    private RelayCommand<object> _SelectionChangeCommand;
-    public RelayCommand<object> SelectionChangeCommand => _SelectionChangeCommand ??= new RelayCommand<object>(item =>
+    [RelayCommand]
+    void SelectionChange(object item)
     {
         if (item == null) { return; }
 
         StorageItemViewModel itemVM = (StorageItemViewModel)item;
         itemVM.IsSelected = !itemVM.IsSelected;
         ItemSelectedProcess(itemVM);
-    });
+    }
 
     public string SelectedCountDisplayText
     {
@@ -798,11 +798,10 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         set { SetValue(SelectedCountDisplayTextProperty, value); }
     }
 
-    // Using a DependencyProperty as the backing store for SelectedCountDisplayText.  This enables animation, styling, binding, etc...
     public static readonly DependencyProperty SelectedCountDisplayTextProperty =
         DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
 
-    private void AlbamItemManagementFlyout_Opening(object sender, object e)
+    void AlbamItemManagementFlyout_Opening(object sender, object e)
     {
         MenuFlyout menuFlyout = (MenuFlyout)sender;
         menuFlyout.Items.Clear();
@@ -831,35 +830,39 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region Search Box
 
     InPageSearchContext? _searchContext;
-    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-        textBox.TextChanged += TextBox_TextChanged;
-        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+            textBox.TextChanged += TextBox_TextChanged;
+            _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+        }
     }
 
 
-    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
-        textBox.TextChanged -= TextBox_TextChanged;
-        _searchContext?.Dispose();
-        _searchContext = null;
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+            textBox.TextChanged -= TextBox_TextChanged;
+            _searchContext?.Dispose();
+            _searchContext = null;
+        }
     }
 
 
     bool _isInputIncomplete;
 
-    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
     {
         _isInputIncomplete = true;
     }
 
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    void TextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isInputIncomplete == false)
         {
@@ -868,7 +871,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
     {
         _isInputIncomplete = false;
         var textBox = (TextBox)sender;
@@ -877,20 +880,19 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
 
 
-    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
     {
         //(sender as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         //(args.Element as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
-    InPageSearchRequestMessage? _searchMessage;
-    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         if (!sender.Items.Any())
@@ -900,12 +902,12 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         sender.IsSuggestionListOpen = !string.IsNullOrWhiteSpace(sender.Text);
     }
 
-    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
-    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));

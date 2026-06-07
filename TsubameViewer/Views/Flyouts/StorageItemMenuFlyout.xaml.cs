@@ -48,11 +48,11 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         _albamRepository = Ioc.Default.GetService<AlbamRepository>();
     }
 
-    private readonly ISecondaryTileManager _secondaryTileManager;
-    private readonly FavoriteAlbam _favoriteAlbam;
-    private readonly AlbamRepository _albamRepository;
+    readonly ISecondaryTileManager _secondaryTileManager;
+    readonly FavoriteAlbam _favoriteAlbam;
+    readonly AlbamRepository _albamRepository;
     
-    private void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
+    void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
     {
         var flyout = sender as FlyoutBase;
         

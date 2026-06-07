@@ -11,7 +11,7 @@ namespace TsubameViewer.ViewModels.SourceFolders.Commands;
 
 internal class FolderOrArchiveResturctureCommand : CommandBase
 {
-    private readonly IMessenger _messeger;
+    readonly IMessenger _messeger;
 
     public FolderOrArchiveResturctureCommand(IMessenger messeger)
     {

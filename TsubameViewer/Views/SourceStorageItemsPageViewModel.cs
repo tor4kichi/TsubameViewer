@@ -53,7 +53,7 @@ public sealed class SourceStorageItemsPageViewModel
             if (item.Path.Equals(message.Value, StringComparison.Ordinal))
             {
                 item.ThumbnailChanged();
-                _ = item.InitializeAsync(default);
+                item.InitializeAsync(default).FireAndForgetSafe();
                 break;
             }
         }
@@ -61,14 +61,14 @@ public sealed class SourceStorageItemsPageViewModel
 
     public ObservableCollection<StorageItemViewModel> Folders { get; }
 
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly AlbamRepository _albamRepository;
-    private readonly ThumbnailImageManager _thumbnailManager;
-    private readonly IScheduler _scheduler;
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LastIntractItemRepository _folderLastIntractItemManager;
-    private readonly RecentlyAccessRepository _recentlyAccessRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly AlbamRepository _albamRepository;
+    readonly ThumbnailImageManager _thumbnailManager;
+    readonly IScheduler _scheduler;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LastIntractItemRepository _folderLastIntractItemManager;
+    readonly RecentlyAccessRepository _recentlyAccessRepository;
     
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
     public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
@@ -245,7 +245,7 @@ public sealed class SourceStorageItemsPageViewModel
                 if (folderItem.Name == lastIntaractItemPath)
                 {
                     folderItem.ThumbnailChanged();
-                    _ = folderItem.InitializeAsync(ct);
+                    folderItem.InitializeAsync(ct).FireAndForgetSafe();
                 }
             }
 
@@ -279,12 +279,7 @@ public sealed class SourceStorageItemsPageViewModel
     }
 }
 
-public sealed class SourceItemsGroup
-{
-    public string GroupId { get; set; }
-    public ObservableCollection<StorageItemViewModel> Items { get; set; }
-}
-
+public sealed record SourceItemsGroup(string GroupId, ObservableCollection<StorageItemViewModel> Items);
 
 public sealed class RemoveSourceStorageItemFromAppMessage : ValueChangedMessage<IStorageItemViewModel>
 {

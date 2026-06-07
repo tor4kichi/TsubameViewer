@@ -60,7 +60,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         Unloaded += FolderListupPage_Unloaded;
     }
 
-    private void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
+    void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
         ContentViewTypeSelector.SelectedIndex = 0;
 
@@ -91,13 +91,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         });
     }
 
-    private void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
+    void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _messenger.Unregister<RequestConnectedAnimationMessage>(this);
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
     }
 
-    private void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    void ContentViewTypeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selector = (Selector)sender;
         if (selector.IsLoaded && selector.SelectedIndex == 1 && _vm?.CurrentFolderItem != null)
@@ -106,34 +106,38 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private readonly FolderListupPageViewModel _vm;
-    private readonly IMessenger _messenger;
-    private readonly FocusHelper _focusHelper;
+    readonly FolderListupPageViewModel _vm;
+    readonly IMessenger _messenger;
+    readonly FocusHelper _focusHelper;
 
-    private async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        if (args.Item is IStorageItemViewModel itemVM)
+        d(args).FireAndForgetSafe();
+        async Task d(ContainerContentChangingEventArgs args)
         {
-            // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-            await itemVM.InitializeAsync(_ct);
-            if (itemVM.Item != null)
+            if (args.Item is IStorageItemViewModel itemVM)
             {
-                var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
-                if (size.Y == 0)
+                // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
+                await itemVM.InitializeAsync(_ct);
+                if (itemVM.Item != null)
                 {
-                    size = new Vector2(120, 200);
+                    var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
+                    if (size.Y == 0)
+                    {
+                        size = new Vector2(120, 200);
+                    }
+                    ToolTipService.SetToolTip(args.ItemContainer,
+                        new ToolTip()
+                        {
+                            Content = new TextBlock()
+                            {
+                                Text = itemVM.Name,
+                                TextWrapping = TextWrapping.Wrap
+                            },
+                            PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
+                            Placement = PlacementMode.Bottom
+                        });
                 }
-                ToolTipService.SetToolTip(args.ItemContainer, 
-                    new ToolTip()
-                    { 
-                        Content = new TextBlock() 
-                        { 
-                            Text = itemVM.Name, 
-                            TextWrapping = TextWrapping.Wrap 
-                        },
-                        PlacementRect = new Windows.Foundation.Rect(new(), (size - new Vector2(0, 16)).ToSize()),
-                        Placement = PlacementMode.Bottom
-                    });
             }
         }
     }
@@ -154,7 +158,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             {
                 var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
                 var ratio = sv.VerticalOffset / sv.ScrollableHeight;
-                _PathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
+                _pathToLastScrollPosition[_vm.DisplayCurrentPath] = ratio;
 
                 Debug.WriteLine(ratio);
             }
@@ -173,8 +177,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     {
         _navigationCts = new CancellationTokenSource();
         var ct = _ct = _navigationCts.Token;
-
-        try
+        
+        d().FireAndForgetSafe();
+        async Task d()
         {
             ConnectedAnimationService.GetForCurrentView()
                         .GetAnimation(PageTransitionHelper.ImageJumpConnectedAnimationName)?.Cancel();
@@ -191,7 +196,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                     {
                         await FoldersAdaptiveGridView.WaitFillingValue(x => x.ContainerFromItem(firstItem) != null, ct);
                         Control? itemContainer = FoldersAdaptiveGridView.ContainerFromItem(firstItem) as Control;
-                        if (itemContainer != null) 
+                        if (itemContainer != null)
                         {
                             await Task.Delay(50);
                             itemContainer.Focus(FocusState.Keyboard);
@@ -208,14 +213,13 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 await BringIntoViewLastIntractItem(ct);
             }
         }
-        catch (OperationCanceledException) { }        
     }
 
     #endregion
 
     // 前回スクロール位置への復帰に対応する
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
-    Dictionary<string, double> _PathToLastScrollPosition = new();
+    readonly Dictionary<string, double> _pathToLastScrollPosition = new();
 
     public void DeselectItem()
     {
@@ -238,10 +242,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         DependencyObject item;
         item = FoldersAdaptiveGridView.ContainerFromItem(lastIntaractItem);
 
-        if (item is Control control)
+        if (item is Control control
+            && _vm.DisplayCurrentPath != null)
         {
             var sv = FoldersAdaptiveGridView.FindFirstChild<ScrollViewer>();
-            if (_PathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
+            if (_pathToLastScrollPosition.TryGetValue(_vm.DisplayCurrentPath, out double ratio) && double.IsNaN(ratio) is false)
             {
                 sv.ChangeView(null, sv.ScrollableHeight * ratio, null, true);
             }
@@ -306,7 +311,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     }
 
 
-    private void AlbamItemManagementFlyout_Opening(object sender, object e)
+    void AlbamItemManagementFlyout_Opening(object sender, object e)
     {
         var menuFlyout = (MenuFlyout)sender;
         menuFlyout.Items.Clear();
@@ -362,38 +367,42 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     #region Search Box
 
     InPageSearchContext? _searchContext;
-    private void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
+    void PrimaryWindowCoreLayout_Loaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
-        textBox.TextChanged += TextBox_TextChanged;
-        _searchContext = Ioc.Default.GetService<InPageSearchContext>();
-        
-        _isItemsForceInfoLoaded = false;
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted += TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded += TextBox_TextCompositionEnded;
+            textBox.TextChanged += TextBox_TextChanged;
+            _searchContext = Ioc.Default.GetService<InPageSearchContext>();
+
+            _isItemsForceInfoLoaded = false;
+        }
     }
 
 
-    private void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
+    void AutoSuggestBox_Unloaded(object sender, RoutedEventArgs e)
     {
-        var textBox = ((AutoSuggestBox)sender).FindDescendant<TextBox>();
-        textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
-        textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
-        textBox.TextChanged -= TextBox_TextChanged;
-        _searchContext?.Dispose();
-        _searchContext = null;
+        if (((AutoSuggestBox)sender).FindDescendant<TextBox>() is { } textBox)
+        {
+            textBox.TextCompositionStarted -= TextBox_TextCompositionStarted;
+            textBox.TextCompositionEnded -= TextBox_TextCompositionEnded;
+            textBox.TextChanged -= TextBox_TextChanged;
+            _searchContext?.Dispose();
+            _searchContext = null;
+        }
     }
 
 
 
     bool _isInputIncomplete;
 
-    private void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
+    void TextBox_TextCompositionStarted(TextBox sender, TextCompositionStartedEventArgs args)
     {
         _isInputIncomplete = true;
     }
 
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    void TextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_isInputIncomplete == false)
         {
@@ -402,7 +411,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         }
     }
 
-    private void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
+    void TextBox_TextCompositionEnded(TextBox sender, TextCompositionEndedEventArgs args)
     {
         _isInputIncomplete = false;
         var textBox = (TextBox)sender;
@@ -411,20 +420,19 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
 
 
-    private void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
+    void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
     {
         //(sender as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
-    private void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         //(args.Element as Control).Focus(FocusState.Keyboard);
         args.Handled = true;
     }
     bool _isItemsForceInfoLoaded;
-    InPageSearchRequestMessage? _searchMessage;
-    private void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    void AutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         if (!sender.Items.Any())
@@ -439,17 +447,17 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                _ = (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct);
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct).FireAndForgetSafe();
             }
         }
     }
 
-    private void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    void AutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
     {
         _searchContext?.SearchQuerySubmitCommand.Execute(sender.Text);
     }
 
-    private void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    void AutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
         _messenger.Send(new InPageSearchRequestMessage(sender.Text));
         _messenger.Send(new SearchQuerySubmitedRequestMessage(sender.Text));

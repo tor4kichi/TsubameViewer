@@ -32,7 +32,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
 
 
         bool _IsSkipSwipe = false;
-        private void AssociatedObject_ManipulationStarted(object sender, Windows.UI.Xaml.Input.ManipulationStartedRoutedEventArgs e)
+        void AssociatedObject_ManipulationStarted(object sender, Windows.UI.Xaml.Input.ManipulationStartedRoutedEventArgs e)
         {
             NowSwiping = true;
             _IsSkipSwipe = false;
@@ -66,7 +66,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
             }
         }
 
-        private void AssociatedObject_ManipulationDelta(object sender, Windows.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs e)
+        void AssociatedObject_ManipulationDelta(object sender, Windows.UI.Xaml.Input.ManipulationDeltaRoutedEventArgs e)
         {
             if (_IsSkipSwipe) { return; }
 
@@ -74,7 +74,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
             e.Handled = true;
         }
 
-        private void AssociatedObject_ManipulationCompleted(object sender, Windows.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs e)
+        void AssociatedObject_ManipulationCompleted(object sender, Windows.UI.Xaml.Input.ManipulationCompletedRoutedEventArgs e)
         {
             NowSwiping = false;
 
@@ -86,12 +86,12 @@ namespace NicoPlayerHohoema.Views.Behaviors
             e.Handled = true;
         }
 
-        private void InitializeSwipe(Windows.UI.Input.ManipulationDelta cumulative)
+        void InitializeSwipe(Windows.UI.Input.ManipulationDelta cumulative)
         {
             SwipeAmount = 0;
         }
 
-        private void UpdateSwipe(Windows.UI.Input.ManipulationDelta cumulative)
+        void UpdateSwipe(Windows.UI.Input.ManipulationDelta cumulative)
         {
             double swipeAmount = 0.0;
             switch (AssociatedObject.ManipulationMode)
@@ -146,7 +146,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
             }
         }
 
-        private void CompleteSwipe(Point position)
+        void CompleteSwipe(Point position)
         {
             if (SwipeAmount != 0.0)
             {
@@ -159,7 +159,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
         }
 
 
-        private const double DefaultSwipeAmountOfPlay = 10.0;
+        const double DefaultSwipeAmountOfPlay = 10.0;
 
 
         // 
@@ -317,7 +317,7 @@ namespace NicoPlayerHohoema.Views.Behaviors
         }
 
 
-        private void ResetManipulationEvent()
+        void ResetManipulationEvent()
         {
             if (IsEnabled)
             {

@@ -50,14 +50,14 @@ namespace TsubameViewer.Views.Behaviors
         }
 
         DateTime prevPressedTime;
-        private void AssociatedObject_PointerReleased(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        void AssociatedObject_PointerReleased(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
 			prevPressedTime = DateTime.Now;
 			AssociatedObject.ReleasePointerCapture(e.Pointer);
 			e.Handled = true;
 		}
 
-        private void AssociatedObject_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
+        void AssociatedObject_PointerPressed(object sender, Windows.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
 			var point = e.GetCurrentPoint(AssociatedObject);			
             if (point.Properties.IsMiddleButtonPressed && DateTime.Now - prevPressedTime > TimeSpan.FromMilliseconds(50))

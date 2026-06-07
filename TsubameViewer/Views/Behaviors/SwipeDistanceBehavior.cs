@@ -76,7 +76,7 @@ public sealed class SwipeDistanceBehavior : ManipulationBehaviorBase
     }
 
     protected override bool ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-    {
+    {        
         ProgressX = Math.Round(e.Cumulative.Translation.X * _invToXUnit);
         ProgressY = Math.Round(e.Cumulative.Translation.Y * _invToYUnit);
         return true;
@@ -90,6 +90,9 @@ public sealed class SwipeDistanceBehavior : ManipulationBehaviorBase
             Math.Round(e.Cumulative.Translation.X * _invToXUnit),
             Math.Round(e.Cumulative.Translation.Y * _invToYUnit), 
             TimeProvider.System.GetElapsedTime(_startedTime)));
+
+        ProgressX = 0;
+        ProgressY = 0;
         return true;
     }
 }

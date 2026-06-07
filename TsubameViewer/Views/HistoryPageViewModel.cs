@@ -30,13 +30,13 @@ public sealed partial class HistoryPageViewModel
     [ObservableProperty]
     string _filterText = "";
 
-    private readonly IMessenger _messenger;
-    private readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
-    private readonly LastIntractItemRepository _folderLastIntractItemManager;
-    private readonly RecentlyAccessRepository _recentlyAccessRepository;
-    private readonly LocalBookmarkRepository _bookmarkManager;
-    private readonly AlbamRepository _albamRepository;
-    private readonly ThumbnailImageManager _thumbnailManager;
+    readonly IMessenger _messenger;
+    readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
+    readonly LastIntractItemRepository _folderLastIntractItemManager;
+    readonly RecentlyAccessRepository _recentlyAccessRepository;
+    readonly LocalBookmarkRepository _bookmarkManager;
+    readonly AlbamRepository _albamRepository;
+    readonly ThumbnailImageManager _thumbnailManager;
 
     public ObservableCollection<StorageItemViewModel> RecentlyItems { get; } = [];
 
@@ -126,7 +126,7 @@ public sealed partial class HistoryPageViewModel
                     if (item.Name == lastIntaractItemPath)
                     {
                         item.ThumbnailChanged();
-                        _ = item.InitializeAsync(ct);
+                        item.InitializeAsync(ct).FireAndForgetSafe();
                     }
                 }
             }

@@ -48,7 +48,7 @@ namespace TsubameViewer.Views.Behaviors
         }
 
 
-        private void AssociatedObject_ChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)
+        void AssociatedObject_ChoosingItemContainer(ListViewBase sender, ChoosingItemContainerEventArgs args)
         {
             Microsoft.Xaml.Interactivity.Interaction.ExecuteActions(args.Item, Actions, null);
         }

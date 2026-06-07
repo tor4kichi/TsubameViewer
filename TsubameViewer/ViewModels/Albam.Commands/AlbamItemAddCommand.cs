@@ -10,8 +10,8 @@ namespace TsubameViewer.ViewModels.Albam.Commands
 {
     public sealed class AlbamItemAddCommand : ImageSourceCommandBase
     {
-        private readonly AlbamRepository _albamRepository;
-        private readonly AlbamEntry _albamEntry;
+        readonly AlbamRepository _albamRepository;
+        readonly AlbamEntry _albamEntry;
 
         public AlbamItemAddCommand(
             AlbamRepository albamRepository,
