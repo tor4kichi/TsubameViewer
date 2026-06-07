@@ -478,96 +478,58 @@
         <animation:OpacityAnimation To="0"
                                     Duration="0:0:0.225" />
       </animation:Implicit.HideAnimations>
-      
+
       <StackPanel Margin="8 0"
                   Spacing="6"
-                  MaxWidth="720"
-                  >
+                  MaxWidth="720">
+        <Grid>
+          <Slider x:Name="VideoPositionSlider"
+                  uwpControls:DockPanel.Dock="Bottom"
+                  Minimum="0"
+                  Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
+                  Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
+                  ValueChanged="VideoPositionSlider_ValueChanged"
+                  ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                  TickFrequency="1"
+                  StepFrequency="1"
+                  Padding="0"
+                  Margin="0 8 0 24"
+                  FlowDirection="LeftToRight"
+                  AccessKey="B"
+                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
+            <Slider.KeyboardAccelerators>
+              <KeyboardAccelerator Key="4" />
+            </Slider.KeyboardAccelerators>
+          </Slider>
+          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SeekNotSupported}"
+                     VerticalAlignment="Bottom"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource SystemErrorTextColor}"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}" />
+          <TextBlock VerticalAlignment="Bottom"
+                     FontSize="12"
+                     Margin="0 32 0 0"
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
+          <TextBlock VerticalAlignment="Bottom"
+                     FontSize="12"
+                     Margin="0 32 8 0"
+                     HorizontalAlignment="Right"
+                     uwpControls:DockPanel.Dock="Bottom"
+                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+            <TextBlock.RenderTransform>
+              <TranslateTransform Y="-6" />
+            </TextBlock.RenderTransform>
+            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
+          </TextBlock>
 
-        <Grid Margin="0 0 0 8">
-          <Grid.Resources>
-            <ScaleTransform x:Key="FavoriteIconTransform"
-                            ScaleX="0.9"
-                            ScaleY="0.9" />
-          </Grid.Resources>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition />
-          </Grid.ColumnDefinitions>
-
-          <muxc:DropDownButton x:Name="Page2ActionButton"
-                               Grid.Column="0"
-                               HorizontalAlignment="Stretch"
-                               HorizontalContentAlignment="Stretch"
-                               Margin="0 0 0 0"
-                               IsAccessKeyScope="True"
-                               AccessKey="I">
-            <muxc:DropDownButton.KeyboardAccelerators>
-              <KeyboardAccelerator Key="Number1" />
-            </muxc:DropDownButton.KeyboardAccelerators>
-
-            <uwpControls:DockPanel>
-              <!--<SymbolIcon Symbol="Favorite"
-                          
-                          uwpControls:DockPanel.Dock="Left"
-                          Margin="0 0 4 0"
-                          RenderTransform="{StaticResource FavoriteIconTransform}"
-                          RenderTransformOrigin="0.5, 0.5" />-->
-              <TextBlock x:Name="Page2NameTextBlock"
-                         VerticalAlignment="Center"
-                         FontSize="12"
-                         Margin="0 0 0 0"
-                         HorizontalAlignment="Center"
-                         TextWrapping="Wrap"
-                         MaxLines="3"
-                         TextTrimming="CharacterEllipsis">
-                <Run Text="{x:Bind _vm.Title, Mode=OneWay}" />
-              </TextBlock>
-            </uwpControls:DockPanel>
-
-            <muxc:DropDownButton.Flyout>
-              <MenuFlyout Opening="Page2MenuFlyout_Opening"
-                          Opened="MenuFlyout_Opened"
-                          Closed="MenuFlyout_Closed">
-                <!--
-                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton"
-                                   Text="{i18nExt:Localize Key=AlbamItemAdd}"
-                                   >
-
-                </MenuFlyoutSubItem>
-                -->
-                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton"
-                                AccessKey="T"
-                                Text="{i18nExt:Localize Key=SetThumbnailImage}"
-                                Command="{x:Bind SetThumbnailImageCommand}"
-                                >
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="T" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
-                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton"
-                                AccessKey="G"
-                                Text="{i18nExt:Localize Key=OpenWithExplorer}"
-                                Command="{x:Bind OpenMovieFileWithExplorerCommand}"
-                                >
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="G" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton"
-                                AccessKey="B"
-                                Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
-                                Command="{x:Bind LaunchMovieFileCommand}"
-                                >
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="B" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-              </MenuFlyout>
-            </muxc:DropDownButton.Flyout>
-          </muxc:DropDownButton>
         </Grid>
-
         <uwpControls:DockPanel>
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right"
@@ -688,6 +650,14 @@
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_DisplayShortcutKeysGuide}"
                                   Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}" />
                   <MenuFlyoutSeparator />
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                  Command="{x:Bind SetThumbnailImageCommand}"
+                                  AccessKey="T">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="T" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_SaveCurrentFrame}"
                                   Command="{x:Bind SaveCurrentFrameCommand}" />
                   <MenuFlyoutSeparator />
@@ -806,57 +776,7 @@
                     PointerReleased="ControlUI_SoundVolumeSlider_PointerReleased" />
           </StackPanel>
         </uwpControls:DockPanel>
-        
-        <Grid>
-          <Slider x:Name="VideoPositionSlider"
-                  uwpControls:DockPanel.Dock="Bottom"
-                  Minimum="0"
-                  Maximum="{x:Bind ToTotalSeconds(VideoDuration), Mode=OneWay}"
-                  Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
-                  ValueChanged="VideoPositionSlider_ValueChanged"
-                  ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
-                  TickFrequency="1"
-                  StepFrequency="1"
-                  Padding="0"
-                  Margin="0 0"
-                  FlowDirection="LeftToRight"
-                  AccessKey="B"
-                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
-            <Slider.KeyboardAccelerators>
-              <KeyboardAccelerator Key="4" />
-            </Slider.KeyboardAccelerators>
-          </Slider>
-          <TextBlock Text="{i18nExt:Localize Key=MovieViewer_SeekNotSupported}"
-                     VerticalAlignment="Bottom"
-                     Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource SystemErrorTextColor}"
-                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}" />
-          <TextBlock VerticalAlignment="Bottom"
-                     FontSize="12"
-                     Margin="0 32 8 0"                     
-                     HorizontalAlignment="Right"
-                     uwpControls:DockPanel.Dock="Bottom"
-                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
-            <TextBlock.RenderTransform>
-              <TranslateTransform Y="-6" />
-            </TextBlock.RenderTransform>
-            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />/<Run Text="{x:Bind VideoDuration, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
-          </TextBlock>
-          <TextBlock VerticalAlignment="Bottom"
-                     FontSize="12"
-                     Margin="0 32 8 0"
-                     HorizontalAlignment="Right"
-                     uwpControls:DockPanel.Dock="Bottom"
-                     Visibility="{x:Bind IsDurationAvairable, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
-            <TextBlock.RenderTransform>
-              <TranslateTransform Y="-6" />
-            </TextBlock.RenderTransform>
-            <Run Text="{x:Bind VideoPosition, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}" />
-          </TextBlock>
-
-        </Grid>
       </StackPanel>
-
     </Grid>
 
     <Grid x:Name="ShortcutKeyGuideUIContainer"
@@ -976,23 +896,43 @@
                       HorizontalAlignment="Stretch"
                   />
 
-    <Grid x:Name="CloseButtonForFullScreen"
-          HorizontalAlignment="Left"
-          VerticalAlignment="Top"
-          Margin="16"
-          Visibility="Collapsed"
-          CornerRadius="12"
-          Height="54"
-          Width="54"
-          Background="{ThemeResource SystemChromeLowColor}">
-      <Button Command="{x:Bind BackNavigationRequestCommand}"
-              HorizontalAlignment="Stretch"
-              VerticalAlignment="Stretch"
-              Margin="1 1 0 0"
-              CornerRadius="12">
-        <SymbolIcon Symbol="Clear" />
-      </Button>
-    </Grid>
+    <StackPanel Orientation="Horizontal"
+                x:Name="CloseButtonForFullScreen"
+                Visibility="Collapsed"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="16"
+                Spacing="16">
+      <Grid CornerRadius="12"
+            Height="54"
+            Width="54"
+            Background="{ThemeResource SystemChromeLowColor}">
+        <Button Command="{x:Bind BackNavigationRequestCommand}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Margin="1 1 0 0"
+                CornerRadius="12">
+          <SymbolIcon Symbol="Clear" />
+        </Button>
+      </Grid>
+
+      <Grid>
+        <Border x:Name="ShadowTarget" />
+        <TextBlock Text="{x:Bind _vm.MovieFile.Name, Mode=OneWay}"
+                   Style="{StaticResource SubtitleTextBlockStyle}"
+                   VerticalAlignment="Center"
+                   MaxWidth="400"
+                   TextWrapping="Wrap"
+                   Foreground="{ThemeResource SystemChromeWhiteColor}">
+          <uwpUIExtensions:Effects.Shadow>
+            <uwpUIExtensions:AttachedDropShadow CastTo="{x:Bind ShadowTarget}"
+                                                BlurRadius="4" 
+                                                Offset="1, 1"
+                                                Color="{ThemeResource SystemChromeBlackMediumColor}"/>
+          </uwpUIExtensions:Effects.Shadow>
+        </TextBlock>
+      </Grid>
+    </StackPanel>
 
     <uwpControls:InAppNotification x:Name="FrameSavedNotification"
                                    HorizontalAlignment="Right"
