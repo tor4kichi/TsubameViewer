@@ -67,7 +67,7 @@ StorePackageUpdateState.ErrorWiFiRequired = Wi-Fi required error
 NowAvairableUpdate = App updates are available.
 Update = update
 OpenUpdateHistoryWithBrowser = Update information (Opens in browser)
-
+ApplicationUpdated = Updated to v{0}
 
 #### SettingsPage
 SettingsPageTitle = Setting

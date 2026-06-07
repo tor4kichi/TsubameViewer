@@ -67,7 +67,7 @@ StorePackageUpdateState.ErrorWiFiRequired = 需要 Wi-Fi 错误
 NowAvairableUpdate = 应用更新已发布。
 Update = 更新
 OpenUpdateHistoryWithBrowser = 更新信息（在浏览器中打开）
-
+ApplicationUpdated = 已更新至 v{0}
 
 #### SettingsPage
 SettingsPageTitle = 设置

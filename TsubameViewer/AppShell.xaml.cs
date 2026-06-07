@@ -1708,8 +1708,8 @@ public sealed partial class AppShell : UserControl
 
     async Task CheckAppPackageUpdateAsync()
     {
-        Update = await CheckUpdateAsync();
         UpdatedNotify();
+        Update = await CheckUpdateAsync();
         NowAvairableUpdate = Update.HasAppUpdate;
     }
 
@@ -1728,7 +1728,7 @@ public sealed partial class AppShell : UserControl
         var systemInfo = Microsoft.Toolkit.Uwp.Helpers.SystemInformation.Instance;
         if (systemInfo .IsAppUpdated)
         {
-            _messenger.SendShowTextNotificationMessage($"{"Update".Translate()}! : v{systemInfo.ApplicationVersion.ToFormattedString(3)}");
+            _messenger.SendShowTextNotificationMessage("ApplicationUpdated".Translate(systemInfo.ApplicationVersion.ToFormattedString(3)));
         }
     }
 
