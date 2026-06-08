@@ -649,7 +649,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         if (sender is ToggleButton toggleButton)
         {
-            ItemSelectedProcess((StorageItemViewModel)toggleButton.DataContext);
+            ItemSelectedProcess((IStorageItemViewModel)toggleButton.DataContext);
         }
     }
 
@@ -787,7 +787,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         if (item == null) { return; }
 
-        StorageItemViewModel itemVM = (StorageItemViewModel)item;
+        IStorageItemViewModel itemVM = (IStorageItemViewModel)item;
         itemVM.IsSelected = !itemVM.IsSelected;
         ItemSelectedProcess(itemVM);
     }
