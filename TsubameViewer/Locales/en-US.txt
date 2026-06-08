@@ -141,6 +141,11 @@ TitleDigitCompletionTransform = Title digit completion
 SendToOtherFolder = Move...
 SendToOtherFolder_ConfirmOverwrite = Is it okay to overwrite it?
 SendToOtherFolder_MoveItem0to1 = {0} was moved to {1}.
+CreateFolder = Create a folder
+CreateFolder_FolderNamePlaceholder = Enter the folder name...
+CreateFolder_ExistFolderName = This folder name already exists. Please enter an alternative name.
+
+
 
 #### History Page
 HistoryPage_Title = history

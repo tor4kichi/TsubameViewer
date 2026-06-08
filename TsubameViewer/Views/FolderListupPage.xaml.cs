@@ -1,13 +1,16 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
 using R3;
+using R3.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reactive;
@@ -15,13 +18,17 @@ using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Xml.Linq;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
+using Windows.Storage;
 using Windows.System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -89,6 +96,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             var itemVM = _vm.FolderItems.FirstOrDefault(x => x.Path?.Equals(m.Value, StringComparison.Ordinal) ?? false);
             itemVM?.UpdateLastReadPosition();
         });
+
+        DisposableBuilder db = new();
+        HandleCreateFolderDialogTextChanging(ref db);
+
+        db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
@@ -364,6 +376,117 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);
     }
 
+    #region Create Folder
+
+    [RelayCommand]
+    async Task CreateFolder()
+    {
+        var folder = (StorageFolder)_vm.CurrentFolderItem!.Item.StorageItem;
+        CreateFolderDialogTextBox.Text = "";
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+        bool isExitWithEnterKey = false;
+        async void CreateFolderDialogTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.OriginalKey == VirtualKey.Enter)
+            {
+                AsyncTaskErrorHandler.Handle(async () =>
+                {
+                    var name = CreateFolderDialogTextBox.Text;
+                    var isExistFolder = false;
+                    try
+                    {
+                        isExistFolder = await folder.GetFolderAsync(name) != null;
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        isExistFolder = false;
+                    }
+
+
+                    if (!isExistFolder)
+                    {
+                        isExitWithEnterKey = true;
+                        CreateFolderDialog.Hide();
+                    }
+                });
+            }
+        }
+
+        try
+        {
+            CreateFolderDialogTextBox.KeyDown += CreateFolderDialogTextBox_KeyDown;
+            while (true)
+            {
+                if (await CreateFolderDialog.ShowAsync() != ContentDialogResult.Primary
+                    && !isExitWithEnterKey) { return; }
+
+                isExitWithEnterKey = false;
+                var name = CreateFolderDialogTextBox.Text;
+                var isExistFolder = false;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+                if (isExistFolder) { continue; }
+
+                try
+                {
+                    var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
+                    var itemVM = _vm.ToStorageItemVM(newfodler);
+                    itemVM.InitializeAsync(_ct).FireAndForgetSafe();
+                    _vm.FileItemsView.Insert(0, itemVM);
+                    return;
+                }
+                catch (FileNotFoundException) { }
+            }
+        }
+        finally
+        {
+            CreateFolderDialogTextBox.KeyDown -= CreateFolderDialogTextBox_KeyDown;
+        }
+        
+    }
+
+    void HandleCreateFolderDialogTextChanging(ref DisposableBuilder db)
+    {
+        CreateFolderDialogTextBox.ObserveTextChanged()
+            .Debounce(TimeSpan.FromSeconds(0.1))
+            .SubscribeAwait(this, async (e, s, ct) => 
+            {
+                var name = s.CreateFolderDialogTextBox.Text;
+                if (string.IsNullOrWhiteSpace(name)) 
+                {
+                    s.CreateFolderDialog.IsPrimaryButtonEnabled = false;
+                    return; 
+                }
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = true;
+                var folder = (StorageFolder)s._vm.CurrentFolderItem!.Item.StorageItem;
+                bool isExistFolder;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = !isExistFolder;
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+            })
+            .AddTo(ref db);
+
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+    }
+
+    #endregion
+
     #region Search Box
 
     InPageSearchContext? _searchContext;
@@ -464,5 +587,5 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     }
 
 
-    #endregion
+    #endregion    
 }

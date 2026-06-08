@@ -141,6 +141,11 @@ TitleDigitCompletionTransform = 标题数字完成
 SendToOtherFolder = 移动...
 SendToOtherFolder_ConfirmOverwrite = 可以覆盖它吗？
 SendToOtherFolder_MoveItem0to1 = {0} 被移至 {1}。
+CreateFolder = 创建一个文件夹
+CreateFolder_FolderNamePlaceholder = 请输入文件夹名称……
+CreateFolder_ExistFolderName = 此文件夹名称已存在。请输入其他名称。
+
+
 
 #### History Page
 HistoryPage_Title = 历史

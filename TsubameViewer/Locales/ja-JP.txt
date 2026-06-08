@@ -141,6 +141,11 @@ TitleDigitCompletionTransform = タイトルの桁数補完
 SendToOtherFolder = 移動...
 SendToOtherFolder_ConfirmOverwrite = 上書きしてもいいですか？
 SendToOtherFolder_MoveItem0to1 = {0} を {1} へ移動しました
+CreateFolder = フォルダを作成
+CreateFolder_FolderNamePlaceholder = フォルダ名を入力...
+CreateFolder_ExistFolderName = 既に存在するフォルダ名です。別名を入力してください
+
+
 
 #### History Page
 HistoryPage_Title = 履歴

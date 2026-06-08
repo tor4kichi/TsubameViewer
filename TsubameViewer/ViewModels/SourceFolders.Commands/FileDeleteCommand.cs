@@ -106,6 +106,10 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                 try
                 {
                     await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
+                    foreach (var deleted in imageSources)
+                    {
+                        _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));
+                    }
                 }
                 catch (FileNotFoundException)
                 {

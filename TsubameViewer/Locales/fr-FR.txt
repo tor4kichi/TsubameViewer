@@ -141,6 +141,11 @@ TitleDigitCompletionTransform = Complétion des chiffres du titre
 SendToOtherFolder = Se déplacer...
 SendToOtherFolder_ConfirmOverwrite = Est-ce que je peux l'écraser ?
 SendToOtherFolder_MoveItem0to1 = {0} a été déplacé vers {1}.
+CreateFolder = Créer un dossier
+CreateFolder_FolderNamePlaceholder = Saisissez le nom du dossier...
+CreateFolder_ExistFolderName = Ce nom de dossier existe déjà. Veuillez saisir un autre nom.
+
+
 
 #### History Page
 HistoryPage_Title = histoire

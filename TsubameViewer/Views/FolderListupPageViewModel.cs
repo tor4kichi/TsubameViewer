@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
@@ -22,6 +23,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
@@ -31,6 +33,7 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views;
+using TsubameViewer.Views.Helpers;
 using Windows.Devices.Geolocation;
 using Windows.Storage;
 using Windows.System;
@@ -161,6 +164,11 @@ public sealed partial class FolderListupPageViewModel
     DefaultFolderOrArchiveOpenMode _selectedChildFolderOrArchiveOpenMode;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
+
+    public Visibility IsFolderItemIsRawFolderAsVisible(IStorageItemViewModel? itemVM)
+    {
+        return (itemVM?.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
+    }
 
     static readonly Core.AsyncLock _navigationLock = new();
     private IImageSource? _currentImageSource;
@@ -829,7 +837,13 @@ public sealed partial class FolderListupPageViewModel
         _displaySettingsByPathRepository.SetFileParentSettings(_currentImageSource.Path, sortType);
     }
 
-#endregion
+    #endregion
+
+
+    public StorageItemViewModel ToStorageItemVM(IStorageItem item)
+    {
+        return new StorageItemViewModel(new StorageItemImageSource(item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection);
+    }
 }
 
 public abstract class FolderItemsGroupBase

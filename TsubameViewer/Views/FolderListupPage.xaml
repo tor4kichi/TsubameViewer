@@ -92,9 +92,12 @@
     <uwpControls:DockPanel>
 
       <Grid x:Name="SelectActionsContainer" Visibility="Collapsed" uwpControls:DockPanel.Dock="Top"   
-            Background="{ThemeResource ApplicationHeaderBackgroundBrush}"
+            Background="{ThemeResource SystemChromeMediumHighColor}"
+            BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
+            BorderThickness="0 0 0 1"
           >
-        <CommandBar DefaultLabelPosition="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
+        <CommandBar DefaultLabelPosition="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    MaxWidth="1400">
           <CommandBar.Content>
 
             <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}" VerticalAlignment="Center" Margin="48 0">
@@ -103,7 +106,23 @@
           </CommandBar.Content>
 
           <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_AlbamAddItem" Label="{i18nExt:Localize Key=AlbamItemAdd}" Icon="Add">
+            <AppBarButton x:Name="CreateFolderButton"
+                          Label="{i18nExt:Localize Key=CreateFolder}"
+                          Command="{x:Bind CreateFolderCommand}"
+                          AccessKey="B"
+                          Visibility="{x:Bind _vm.IsFolderItemIsRawFolderAsVisible(_vm.CurrentFolderItem), Mode=OneWay}"
+                          BorderThickness="1"
+                          BorderBrush="{ThemeResource SystemBaseLowColor}">
+              <AppBarButton.Icon>
+                <SymbolIcon Symbol="Folder" />
+              </AppBarButton.Icon>
+              <AppBarButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="B" />
+              </AppBarButton.KeyboardAccelerators>
+            </AppBarButton>
+            <AppBarButton x:Name="SelectAction_AlbamAddItem" Label="{i18nExt:Localize Key=AlbamItemAdd}" Icon="Add"
+                          BorderThickness="1"
+                          BorderBrush="{ThemeResource SystemBaseLowColor}">
               <AppBarButton.Flyout>
                 <MenuFlyout x:Name="AlbamItemManagementFlyout" Opening="AlbamItemManagementFlyout_Opening" Placement="Bottom">
 
@@ -114,7 +133,9 @@
                           Label="{i18nExt:Localize Key=Delete}"
                           Command="{x:Bind _vm.FileDeleteCommand}"
                           CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
-                          AccessKey="D">
+                          AccessKey="D"
+                          BorderThickness="1"
+                          BorderBrush="{ThemeResource SystemBaseLowColor}">
               <AppBarButton.Icon>
                 <SymbolIcon Symbol="Delete" />
               </AppBarButton.Icon>
@@ -122,22 +143,13 @@
                 <KeyboardAccelerator Key="Delete" />
               </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
-            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton"
-                          Label="{i18nExt:Localize Key=OpenWithExplorer}"
-                          Command="{x:Bind _vm.OpenWithExplorerCommand}"
-                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
-                          AccessKey="O">
-              <AppBarButton.Icon>
-                <fluentIcon:FluentIconElement Symbol="Open24" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="O" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarElementContainer VerticalContentAlignment="Center" IsTabStop="False">
+            <AppBarElementContainer VerticalContentAlignment="Stretch" IsTabStop="False" Margin="16 0 0 0">
               <Button Content="{i18nExt:Localize Key=Cancel}"
                       Click="{x:Bind _vm.Selection.EndSelection}"
-                      AccessKey="Q">
+                      AccessKey="Q"
+                      Background="Transparent"
+                      VerticalAlignment="Stretch"
+                      Margin="0 6">
                 <Button.KeyboardAccelerators>
                   <KeyboardAccelerator Key="Escape" />
                 </Button.KeyboardAccelerators>
@@ -345,8 +357,27 @@
       </uwpControls:AdaptiveGridView>
 
     </uwpControls:DockPanel>
-       
-    
+
+    <ContentDialog x:Name="CreateFolderDialog"
+                   Padding="0 48 0 0"
+                   PrimaryButtonText="{i18nExt:Localize Key=Create}"
+                   SecondaryButtonText="{i18nExt:Localize Key=Cancel}"
+                   Title="{i18nExt:Localize Key=CreateFolder}">
+      <StackPanel MinHeight="60">
+        <TextBox x:Name="CreateFolderDialogTextBox"
+                 AcceptsReturn="False"
+                 VerticalAlignment="Top" 
+                 MaxLength="100"
+                 PlaceholderText="{i18nExt:Localize Key=CreateFolder_FolderNamePlaceholder}"
+                 Margin="0 0 0 8" />
+        <TextBlock Text="{i18nExt:Localize Key=CreateFolder_ExistFolderName}" 
+                   Visibility="Collapsed"
+                   x:Name="CreateFolder_ExistFolderNameTextBlock"
+                   Foreground="{ThemeResource SystemErrorTextColor}"
+                   />
+      </StackPanel>
+    </ContentDialog>
+
     <VisualStateManager.VisualStateGroups>
 
       <!-- 選択中の表示 -->
