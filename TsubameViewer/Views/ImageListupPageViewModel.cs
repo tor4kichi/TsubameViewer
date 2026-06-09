@@ -324,6 +324,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<InPageSearchRequestMessage>(this);
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
         _messenger.Unregister<SendToOtherFolderMessage>(this);
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -436,6 +437,26 @@ public sealed partial class ImageListupPageViewModel
                     itemVM.IsFavorite = false;
                 }
             });
+
+            Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+                .Subscribe(selectionEnabled =>
+                {
+                    if (selectionEnabled)
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+                        _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+                        {
+                            m.Value.IsHandled = true;
+                            Selection.EndSelection();
+                        });
+                    }
+                    else
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+                        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+                    }
+                })
+                .AddTo(ref db);
 
             _messenger.Register<InPageSearchRequestMessage>(this);
             _messenger.Register<StorageItemNotFoundMessage>(this);

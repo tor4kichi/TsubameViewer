@@ -693,19 +693,9 @@
                 <KeyboardAccelerator Key="Delete" />
               </AppBarButton.KeyboardAccelerators>
             </AppBarButton>
-            <AppBarButton x:Name="SelectAction_OpenWithExplorerButton"
-                          Label="{i18nExt:Localize Key=OpenWithExplorer}"
-                          Command="{x:Bind _vm.OpenWithExplorerCommand}"
-                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
-              <AppBarButton.Icon>
-                <fluentIcon:FluentIconElement Symbol="Open24" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="O" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
             <AppBarElementContainer VerticalContentAlignment="Center"
-                                    IsTabStop="False">
+                                    IsTabStop="False"
+                                    Margin="16 0 0 0">
               <Button Content="{i18nExt:Localize Key=Cancel}"
                       Click="{x:Bind ClearSelection}">
                 <Button.KeyboardAccelerators>
@@ -1029,7 +1019,7 @@
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>
-            <StateTrigger IsActive="{x:Bind IsSelectionModeEnabled, Mode=OneWay}" />
+            <StateTrigger IsActive="{x:Bind _vm.Selection.IsSelectionModeEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="SelectActionsContainer.Visibility"
