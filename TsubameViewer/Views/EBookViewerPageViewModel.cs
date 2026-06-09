@@ -348,7 +348,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         BookmarkFacade bookmark = _bookmarkManager.GetBookmarkFacade(_currentPath);
         R3.Observable.Merge(
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
+            this.ObservePropertyChanged(x => x.CurrentPageInfo, true).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(250))
             .Subscribe((this, bookmark), static (_, state) =>
