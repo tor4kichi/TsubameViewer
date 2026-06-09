@@ -24,7 +24,7 @@ public struct NormalizedPagePosition
         Value = Math.Clamp(normalized, 0.0f, 1.0f);
     }
 
-    public NormalizedPagePosition(int pageCount, int currentPagePosition)
+    public NormalizedPagePosition(long pageCount, long currentPagePosition)
     {
         if (pageCount < currentPagePosition) { throw new ArgumentOutOfRangeException("pageCount < currentPagePosition"); }
 
@@ -49,6 +49,9 @@ public sealed class BookmarkEntry
 
     [BsonField]
     public NormalizedPagePosition Position { get; set; }
+
+    [BsonField]
+    public bool IsFinishedReading { get; set; }
 }
 
 public sealed class LocalBookmarkRepository
@@ -83,14 +86,14 @@ public sealed class LocalBookmarkRepository
     }
 
 
-    public void AddBookmark(string path, string pageName, NormalizedPagePosition normalizedPosition)
+    public void AddBookmarkForImageViewer(string path, string pageName, NormalizedPagePosition normalizedPosition, bool isFinished)
     {
-        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition);
+        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, isFinished: isFinished);
     }
 
-    public void AddBookmark(string path, string pageName, int innerPageIndex, NormalizedPagePosition normalizedPosition)
+    public void AddBookmarkForEBookViewer(string path, string pageName, int innerPageIndex, NormalizedPagePosition normalizedPosition, bool isFinished)
     {
-        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, innerPageIndex);
+        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, innerPageIndex, isFinished);
     }
 
     public void RemoveBookmark(string path)
@@ -146,7 +149,7 @@ public sealed class LocalBookmarkRepository
             }
             else
             {
-                return bookmark.Position.Value;
+                return !bookmark.IsFinishedReading ? bookmark.Position.Value : 1f;
             }
         }
 
@@ -163,18 +166,30 @@ public sealed class LocalBookmarkRepository
             return bookmark != null;
         }
 
-        public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0)
+        public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0, bool isFinished = false)
         {
             var bookmark = _collection.FindOne(x => x.Path == path);
             if (bookmark == null)
             {
-                _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName, InnerPageIndex = innerPageIndex, Position = normalizedPosition });
+                _collection.Insert(new BookmarkEntry()
+                {
+                    Path = path,
+                    PageName = bookmarkPageName,
+                    InnerPageIndex = innerPageIndex,
+                    Position = normalizedPosition,
+                    IsFinishedReading = isFinished,
+                });
             }
             else
             {
                 bookmark.PageName = bookmarkPageName;
                 bookmark.InnerPageIndex = innerPageIndex;
                 bookmark.Position = normalizedPosition;
+                if (!bookmark.IsFinishedReading)
+                {
+                    Debug.WriteLine($"isFinished: {isFinished} ({normalizedPosition.Value:F2})");
+                    bookmark.IsFinishedReading = isFinished;
+                }
                 _collection.Update(bookmark);
             }
         }
@@ -241,11 +256,27 @@ public sealed class BookmarkFacade : DeferSaveAwareObservableObject
         set => SetProperty(_entry.Position, value, _entry, (m, v) => m.Position = v);
     }
 
+    public void SetReadPosition(long currentValue, long totalValue)
+    {
+        ReadPosition = new NormalizedPagePosition(totalValue, currentValue);
+    }
 
     // Note: 動画のDurationにも使ってます
     public string PageName
     {
         get => _entry.PageName;
         set => SetProperty(_entry.PageName, value, _entry, (m, v) => m.PageName = v);
+    }
+
+    public int InnerPageIndex
+    {
+        get => _entry.InnerPageIndex;
+        set => SetProperty(_entry.InnerPageIndex, value, _entry, (m, v) => m.InnerPageIndex = v);
+    }
+
+    public bool IsFinishedReading 
+    {
+        get => _entry.IsFinishedReading;
+        set => SetProperty(_entry.IsFinishedReading, value, _entry, (m, v) => m.IsFinishedReading = v);
     }
 }

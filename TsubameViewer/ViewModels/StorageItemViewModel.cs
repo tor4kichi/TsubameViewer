@@ -192,8 +192,8 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public void UpdateLastReadPosition()
     {
-        var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
+        var facade = _bookmarkManager.GetBookmarkFacade(Path);
+        ReadParcentage = facade.IsFinishedReading ? 1d : facade.ReadPosition.Value;
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)

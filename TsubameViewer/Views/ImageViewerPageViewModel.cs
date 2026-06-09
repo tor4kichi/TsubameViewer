@@ -370,6 +370,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _imageLoadingCts = null;
 
         ParentFolderOrArchiveName = String.Empty;
+        _pageMovedCount = 0;
 
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
@@ -378,6 +379,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     }
 
     CancellationToken _navigationCt;
+
+    int _pageMovedCount = 0;
     
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -630,7 +633,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (imageSource == null) { return; }
                     if (_currentImageSource.StorageItem is IStorageItem)
                     {
-                        _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
+                        var v = new NormalizedPagePosition(Images.Length, imageIndex);
+                        bool isFinished = _pageMovedCount > 0 && v.Value > 0.85f;
+                        _bookmarkManager.AddBookmarkForImageViewer(_pathForSettings, imageSource.Name, v, isFinished: isFinished);
                         _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
                     }
                     else if (_currentImageSource is AlbamImageSource albam)
@@ -1892,6 +1897,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     void ExecuteGoNextImageCommand()
     {
         MoveImageIndex(IndexMoveDirection.Forward).FireAndForgetSafe();
+        _pageMovedCount++;
     }
 
     private bool CanGoNextCommand()
@@ -1907,6 +1913,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     void ExecuteGoPrevImageCommand()
     {
         MoveImageIndex(IndexMoveDirection.Backward).FireAndForgetSafe();
+        _pageMovedCount--;
     }
 
     private bool CanGoPrevCommand()

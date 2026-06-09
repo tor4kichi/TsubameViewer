@@ -247,10 +247,12 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void UpdateLastReadPosition()
     {
-        // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
-        _bookmark = null;
-        var parcentage = Bookmark.ReadPosition.Value;
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;        
+        if (Type is StorageItemTypes.Archive or StorageItemTypes.EBook or StorageItemTypes.Movie)
+        {
+            // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
+            _bookmark = null;
+            ReadParcentage = Bookmark.IsFinishedReading ? 1.0 : Bookmark.ReadPosition.Value;
+        }
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)

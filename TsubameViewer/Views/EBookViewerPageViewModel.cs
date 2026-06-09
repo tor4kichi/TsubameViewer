@@ -145,12 +145,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         WritingMode.Vertical_RightToLeft, 
         WritingMode.Vertical_LeftToRight 
     };
-
-
-
     [ObservableProperty]
     WritingMode _defaultWritingMode;
 
+    int _pageMovedCount = 0;
     public EBookViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
@@ -202,6 +200,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             _readingSessionDisposer = null;
             ClearPageInfo(SwapPages[0]);
             ClearPageInfo(SwapPages[1]);
+            _pageMovedCount = 0;
         }
 
         base.OnNavigatedFrom(parameters);
@@ -333,17 +332,29 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
                 if (currentPage == null) { return; }
 
-                s._bookmarkManager.AddBookmark(s.CurrentFolderItem.Path, currentPage.FilePath, s.InnerCurrentImageIndex, new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex));
+                var v = new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex);
+                bool isFinished = s._pageMovedCount > 0 && v.Value > 0.90f;
+                s._bookmarkManager.AddBookmarkForEBookViewer(
+                    s.CurrentFolderItem.Path,
+                    currentPage.FilePath,
+                    s.InnerCurrentImageIndex,
+                    v,
+                    isFinished
+                    );
             })
             .AddTo(ref db);
 
+
+        BookmarkFacade bookmark = _bookmarkManager.GetBookmarkFacade(_currentPath);
         R3.Observable.Merge(
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
             this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(250))
-            .Subscribe(this, static (_, s) =>
+            .Subscribe((this, bookmark), static (_, state) =>
             {
+                var (s, bookmark) = state;
+                if (s.CurrentFolderItem == null) { return; }
                 if (s.CurrentPageInfo == null) { return; }
                 if (s.CurrentBookReadingOrder == null) { return; }
                 if (s.CurrentPageInfo.InnerCurrentPageIndex == -1) { return; }
@@ -359,6 +370,18 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                 s.CurrentReadingItemPosition = totalSize + partialPageUnit * s.CurrentPageInfo.InnerCurrentPageIndex;
                 Debug.WriteLine($"{s.CurrentReadingItemPosition / s.TotalReadingItemContentSize * 100:F1}%");
+
+                using (bookmark.GetDeferSave())
+                {
+                    bookmark.PageName = currentPage.FilePath;
+                    bookmark.SetReadPosition((long)s.CurrentReadingItemPosition, (long)s.TotalReadingItemContentSize);
+                    bookmark.InnerPageIndex = s.InnerCurrentImageIndex;
+                    if (!bookmark.IsFinishedReading)
+                    {
+                        bookmark.IsFinishedReading = s._pageMovedCount > 0 && bookmark.ReadPosition.Value > 0.90f;
+                        Debug.WriteLine("Mark Finished!");
+                    }
+                }
             })
             .AddTo(ref db);
 
@@ -484,6 +507,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         Debug.WriteLine($"UpdateCurrentPage {requestPage:000}: start");
         NowLoadingPage = true;
         EBookPageInfo? currentLoadingPage = null;
+        if (CurrentPageInfo != null)
+        {
+            _pageMovedCount += requestPage - CurrentPageInfo.OuterPageIndex;
+        }
         try
         {
             using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))

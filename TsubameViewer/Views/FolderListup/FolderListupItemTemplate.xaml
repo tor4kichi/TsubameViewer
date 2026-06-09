@@ -220,7 +220,7 @@
         <Border Background="{ThemeResource ApplicationContentBackgroundBrush}"
                 Opacity="0.8" />
         <ProgressBar Value="{x:Bind ReadParcentage, Mode=OneWay}"
-                     VerticalAlignment="Bottom"
+                     VerticalAlignment="Bottom"                     
                      Style="{StaticResource ReadParcentageProgressBarStyle}" />
         <ContentControl Content="{x:Bind}"
                         ContentTemplateSelector="{StaticResource StorageItemIconTemplateSelector}"
