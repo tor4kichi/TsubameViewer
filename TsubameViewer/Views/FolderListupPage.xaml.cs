@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -9,6 +10,7 @@ using R3;
 using R3.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -19,9 +21,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Xml.Linq;
+using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -36,11 +41,13 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 using static Microsoft.Toolkit.Uwp.UI.Animations.Expressions.ExpressionValues;
 
 #nullable enable
 namespace TsubameViewer.Views;
 
+[ObservableObject]
 public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
@@ -97,10 +104,11 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             itemVM?.UpdateLastReadPosition();
         });
 
+        var ct = this.GetCancellationTokenOnUnloaded();
         DisposableBuilder db = new();
-        HandleCreateFolderDialogTextChanging(ref db);
-
-        db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
+        HandleCreateFolderDialogTextChanging(ref db);        
+        db.Build().RegisterTo(ct);
+        InitializeMoveToFolders(ct).FireAndForgetSafe();
     }
 
     void FolderListupPage_Unloaded(object sender, RoutedEventArgs e)
@@ -233,6 +241,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     // valueはスクロール位置のスクロール可能範囲に対する割合で示される 0.0 ~ 1.0 の範囲の値
     readonly Dictionary<string, double> _pathToLastScrollPosition = new();
 
+
     public void DeselectItem()
     {
         FoldersAdaptiveGridView.DeselectAll();
@@ -268,6 +277,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         }
     }
 
+    #region Selection
 
     void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -290,12 +300,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             foreach (var itemVM in e.RemovedItems.Cast<IStorageItemViewModel>())
             {
                 _vm.Selection.SelectedItems.Remove(itemVM);
-            }
-
-            // 複数選択開始時に選択アイテムが無い場合にそのまま選択動作が終了しないようにしている
-            if (prevCount != 0 && FoldersAdaptiveGridView.SelectedItems.Count == 0)
-            {
-                _vm.Selection.EndSelection();
             }
         }
     }
@@ -325,12 +329,173 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     private void FoldersAdaptiveGridView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
     {
         e.Data.Properties.Add("MyCustomDroppedItems", e.Items.ToList());
+        FolderSelectionSplitView.IsPaneOpen = true;
+    }
+
+    async Task InitializeMoveToFolders(CancellationToken ct)
+    {
+        _vm.ObservePropertyChanged(x => x.CurrentFolderItem)
+            .SubscribeAwait(async (folderVM, ct) => 
+            {
+                Folders = [];
+                ToggleDisplaySiblingFoldersButton.IsEnabled = false;
+                if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
+                {
+                    var folderQuery = parentFolder.CreateFolderQuery();
+                    await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (!FolderSelectionSplitView.IsPaneOpen)
+                        {
+                            await Task.Delay(250, ct);
+                        }
+                        Folders.Add(folder);
+
+                        if (Folders.Count <= 1)
+                        {
+                            ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                        }
+                    }
+                }
+            })
+            .RegisterTo(ct);
+
+        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+            .Subscribe(x => 
+            {
+                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
+                {
+                    FolderSelectionSplitView.IsPaneOpen = x;
+                }
+            })
+            .RegisterTo(ct);
+    }
+
+    [ObservableProperty]
+    ObservableCollection<StorageFolder>? _folders;
+
+    bool CanMoveToFolderSelectedItems(StorageFolder? folder)
+    {
+        return folder != null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveToFolderSelectedItems))]    
+    async Task MoveToFolderSelectedItemsAsync(StorageFolder? hostFolder)
+    {
+        if (hostFolder == null) { return; }
+
+        using var pooledItems = _vm.Selection.SelectedItems.AsValueEnumerable().ToArrayPool();
+        var items = pooledItems.ArraySegment;
+        if (items.Count == 0) { return; }
+
+        await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
+        _messenger.SendShowTextNotificationMessage(items.Count == 1
+            ? "MoveToFolder_Completed_Single".Translate((items[0]).Name, hostFolder.Name)
+            : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+        foreach (var item in items.Cast<IStorageItemViewModel>())
+        {
+            _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+        }
+
+        _vm.Selection.SelectedItems.Clear();
+    }
+
+    [RelayCommand]
+    void ToggleSiblingFolderPaneDisplay()
+    {
+        FolderSelectionSplitView.IsPaneOpen = !FolderSelectionSplitView.IsPaneOpen;
     }
 
     private void FoldersAdaptiveGridView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
 
     }
+
+
+    private void ListView_DragEnter(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>);
+        if (items is null or { Count: 0 }) { return; }
+        var deferral = R3.Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, deferral, items), static async (s) =>
+        {
+            var (_this, hostUI, e, deferral, items) = s;
+            using (deferral)
+            {
+                foreach (var item in items)
+                {
+                    if (item is not IStorageItemViewModel myItem)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
+                        return;
+                    }
+                }
+
+                if (hostUI.DataContext is StorageFolder folderItem)
+                {
+                    e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+                    e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(folderItem.Name);
+                }
+            }
+        });
+    }
+
+    private void ListView_Drop(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>).ToList();
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, items), static async (s) =>
+        {
+            var (_this, hostUI, e, items) = s;
+            if (items is null or { Count: 0 }) { return; }
+
+            if (hostUI.DataContext is StorageFolder hostFolder)
+            {
+                var messenger = Ioc.Default.GetRequiredService<IMessenger>();
+                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage(items.Count == 1
+                    ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
+                    : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+            }
+
+        });
+    }
+
+
+    private async Task MoveItemsToAsync(Windows.Storage.StorageFolder targetFolder, IEnumerable<Windows.Storage.IStorageItem> items, CancellationToken ct)
+    {
+        foreach (var item in items)
+        {
+            Debug.WriteLine($"Move to {targetFolder.Path}: {item.Name}");
+            List<Windows.Storage.IStorageItem> failedItems = [];
+            if (item is Windows.Storage.StorageFile file)
+            {
+                try
+                {
+                    await file.MoveAsync(targetFolder, file.Name, Windows.Storage.NameCollisionOption.FailIfExists).AsTask(ct);
+                }
+                catch
+                {
+                    failedItems.Add(item);
+                }
+            }
+            else if (item is Windows.Storage.StorageFolder folder)
+            {
+                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+            }
+        }
+    }
+
+    #endregion
 
 
     void AlbamItemManagementFlyout_Opening(object sender, object e)

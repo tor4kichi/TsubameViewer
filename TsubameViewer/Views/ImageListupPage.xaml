@@ -26,6 +26,7 @@
       xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
       xmlns:myTrigger="using:TsubameViewer.Views.StateTrigger"
       xmlns:fluentIcon="using:Fluent.Icons"
+      xmlns:storage="using:Windows.Storage"
       NavigationCacheMode="Enabled"
       x:Name="PageRoot">
 
@@ -174,7 +175,9 @@
 
     <DataTemplate x:Key="FileItemTemplate_Line"
                   x:DataType="vm:StorageItemViewModel">
-      <UserControl x:Name="ItemControl">
+      <UserControl x:Name="ItemControl"
+                   CanDrag="True"
+                   DragStarting="ItemControl_DragStarting">
 
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
@@ -268,7 +271,9 @@
 
     <DataTemplate x:Key="FileItemTemplate_Small"
                   x:DataType="vm:StorageItemViewModel">
-      <UserControl x:Name="ItemControl">
+      <UserControl x:Name="ItemControl"
+                   CanDrag="True"
+                   DragStarting="ItemControl_DragStarting">
 
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
@@ -371,7 +376,9 @@
 
     <DataTemplate x:Key="FileItemTemplate_Midium"
                   x:DataType="vm:StorageItemViewModel">
-      <UserControl x:Name="ItemControl">
+      <UserControl x:Name="ItemControl"
+                   CanDrag="True"
+                   DragStarting="ItemControl_DragStarting">
         <ToolTipService.ToolTip>
           <ToolTip PlacementRect="{StaticResource MidiumImageRect}"
                    Placement="Bottom"
@@ -472,7 +479,9 @@
 
     <DataTemplate x:Key="FileItemTemplate_Large"
                   x:DataType="vm:StorageItemViewModel">
-      <UserControl x:Name="ItemControl">
+      <UserControl x:Name="ItemControl"
+                   CanDrag="True"
+                   DragStarting="ItemControl_DragStarting">
 
         <i:Interaction.Behaviors>
           <uiNavigation:UINavigationTriggerBehavior Kind="Context1"
@@ -651,292 +660,349 @@
 
   <Grid>
 
-    <uwpControls:DockPanel x:Name="ContentRootStackPanel"
-                           Margin="0 0 0 0">
+    <SplitView DisplayMode="Overlay"
+               PanePlacement="Left"
+               x:Name="FolderSelectionSplitView"
+               OpenPaneLength="280">
+      <SplitView.Pane>
+        <uwpControls:DockPanel Margin="8 16 8 0">
 
-      <Grid x:Name="SelectActionsContainer"
-            Visibility="Collapsed"
-            uwpControls:DockPanel.Dock="Top"
-            Background="{ThemeResource ApplicationHeaderBackgroundBrush}">
-        <CommandBar DefaultLabelPosition="Right"
-                    VerticalContentAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch">
-          <CommandBar.Content>
-
-            <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}"
-                       VerticalAlignment="Center"
-                       Margin="48 0">
-
-            </TextBlock>
-          </CommandBar.Content>
-
-          <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="SelectAction_AlbamAddItem"
-                          Label="{i18nExt:Localize Key=AlbamItemAdd}"
-                          Icon="Add">
-              <AppBarButton.Flyout>
-                <MenuFlyout x:Name="AlbamItemManagementFlyout"
-                            Opening="AlbamItemManagementFlyout_Opening"
-                            Placement="Bottom">
-
-                </MenuFlyout>
-              </AppBarButton.Flyout>
-            </AppBarButton>
-            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
-                          Label="{i18nExt:Localize Key=Delete}"
-                          Command="{x:Bind _vm.FileDeleteCommand}"
-                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
-              <AppBarButton.Icon>
-                <SymbolIcon Symbol="Delete" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="Delete" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarElementContainer VerticalContentAlignment="Center"
-                                    IsTabStop="False"
-                                    Margin="16 0 0 0">
-              <Button Content="{i18nExt:Localize Key=Cancel}"
-                      Click="{x:Bind ClearSelection}">
-                <Button.KeyboardAccelerators>
-                  <KeyboardAccelerator Key="Escape" />
-                </Button.KeyboardAccelerators>
-              </Button>
-            </AppBarElementContainer>
-          </CommandBar.PrimaryCommands>
-        </CommandBar>
-      </Grid>
-
-      <StackPanel x:Name="HeaderLayout"
-                  uwpControls:DockPanel.Dock="Top"
-                  Padding="48 8 48 0"
-                  Background="{ThemeResource ApplicationContentBackgroundBrush}"
-                  Spacing="8">
-        <uwpControls:DockPanel x:Name="FilesActionLayout"
-                               Margin="0 0 0 0">
-          <StackPanel uwpControls:DockPanel.Dock="Bottom"
-                      Orientation="Horizontal"
-                  Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
-            <TextBlock Opacity="0.7">
-              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
-            </TextBlock>
+          <StackPanel uwpControls:DockPanel.Dock="Top" Margin="0 0 0 16">
+            <Button Command="{x:Bind MoveToFolderSelectedItemsCommand}"
+                    CommandParameter="{x:Bind MoveToFolderTargetSelector.SelectedItem, Mode=OneWay}"
+                    HorizontalAlignment="Stretch"
+                    Style="{ThemeResource AccentButtonStyle}">
+              <TextBlock Text="{i18nExt:Localize Key=MoveToFolder_ItemsMoveToSelectedFolder}" />
+            </Button>
           </StackPanel>
 
-          <DropDownButton x:Name="FileSortButton"
-                          uwpControls:DockPanel.Dock="Left"
-                          Content="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
-                          Background="Transparent"
-                          ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
-                          AccessKey="S"
-                          CornerRadius="4">
-            <DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
-                                Command="{x:Bind _vm.ChangeFileSortCommand}"
-                                CommandParameter="{x:Null}" />
+          <ListView ItemsSource="{x:Bind Folders, Mode=OneWay}"
+                    AllowDrop="True"
+                    Drop="ListView_Drop"
+                    DragEnter="ListView_DragEnter"
+                    SelectionMode="Single"
+                    x:Name="MoveToFolderTargetSelector"
+                    Padding="0 0 8 48">
+            <ListView.ItemTemplate>
+              <DataTemplate x:DataType="storage:StorageFolder">
+                <TextBlock Text="{x:Bind Name}" />
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+        </uwpControls:DockPanel>
+      </SplitView.Pane>
 
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
-                                Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <modelListing:FileSortType>UpdateTimeDecending</modelListing:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}"
-                                Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <modelListing:FileSortType>UpdateTimeAscending</modelListing:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}"
-                                Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <modelListing:FileSortType>TitleAscending</modelListing:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}"
-                                Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <modelListing:FileSortType>TitleDecending</modelListing:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-              </MenuFlyout>
-            </DropDownButton.Flyout>
+      <uwpControls:DockPanel x:Name="ContentRootStackPanel"
+                             Margin="0 0 0 0">
 
-            <DropDownButton.KeyboardAccelerators>
-              <KeyboardAccelerator Key="S"
-                                   Modifiers="Control" />
-            </DropDownButton.KeyboardAccelerators>
-          </DropDownButton>
+        <Grid x:Name="SelectActionsContainer"
+              Visibility="Collapsed"
+              uwpControls:DockPanel.Dock="Top"
+              Background="{ThemeResource SystemChromeMediumHighColor}"
+              BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
+              BorderThickness="0 0 0 1"
+              Padding="48 0 48 0">
+          <CommandBar DefaultLabelPosition="Right"
+                      VerticalContentAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch"
+                      >
+            <CommandBar.Content>
 
-          <Button x:Name="OptionalActionsButton"
-                  Margin="8 0 0 0"
-                  XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
-                  Visibility="Collapsed">
-            <Button.Content>
-              <SymbolIcon Symbol="More" />
-            </Button.Content>
+              <StackPanel Orientation="Horizontal">
+                <Button Content="{i18nExt:Localize Key=MoveToFolder_ToggleSiblingFoldersDisplay}"
+                        x:Name="ToggleDisplaySiblingFoldersButton"
+                        IsEnabled="False"
+                        Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}" />
+                <TextBlock Text="{x:Bind SelectedCountDisplayText, Mode=OneWay}"
+                           VerticalAlignment="Center"
+                           Margin="48 0" />
+                <TextBlock Text="{i18nExt:Localize Key=ImageListupPage_DragAndDrop_Unsupported}"
+                           MaxWidth="240"
+                           Foreground="{ThemeResource SystemErrorTextColor}"
+                           VerticalAlignment="Center"
+                           x:Name="TextBlock_ImageListupPage_DragAndDrop_Unsupported"/>
 
-            <Button.Flyout>
-              <Flyout Placement="Bottom">
-                <StackPanel Spacing="8">
-                  <!--
+              </StackPanel>
+            </CommandBar.Content>
+
+            <CommandBar.PrimaryCommands>
+              <AppBarButton x:Name="SelectAction_AlbamAddItem"
+                            Label="{i18nExt:Localize Key=AlbamItemAdd}"
+                            Icon="Add"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Flyout>
+                  <MenuFlyout x:Name="AlbamItemManagementFlyout"
+                              Opening="AlbamItemManagementFlyout_Opening"
+                              Placement="Bottom">
+
+                  </MenuFlyout>
+                </AppBarButton.Flyout>
+              </AppBarButton>
+              <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
+                            Label="{i18nExt:Localize Key=Delete}"
+                            Command="{x:Bind _vm.FileDeleteCommand}"
+                            CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Delete" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="Delete" />
+                </AppBarButton.KeyboardAccelerators>
+              </AppBarButton>
+              <AppBarElementContainer VerticalContentAlignment="Center"
+                                      IsTabStop="False"
+                                      Margin="16 0 0 0">
+                <Button Content="{i18nExt:Localize Key=Cancel}"
+                        Click="{x:Bind ClearSelection}"
+                        Background="Transparent"
+                        Height="36">
+                  <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="Escape" />
+                  </Button.KeyboardAccelerators>
+                </Button>
+              </AppBarElementContainer>
+            </CommandBar.PrimaryCommands>
+          </CommandBar>
+        </Grid>
+
+        <StackPanel x:Name="HeaderLayout"
+                    uwpControls:DockPanel.Dock="Top"
+                    Padding="48 8 48 0"
+                    Background="{ThemeResource ApplicationContentBackgroundBrush}"
+                    Spacing="8">
+          <uwpControls:DockPanel x:Name="FilesActionLayout"
+                                 Margin="0 0 0 0">
+            <StackPanel uwpControls:DockPanel.Dock="Bottom"
+                        Orientation="Horizontal"
+                        Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+              <TextBlock Opacity="0.7">
+              <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+              </TextBlock>
+            </StackPanel>
+
+            <DropDownButton x:Name="FileSortButton"
+                            uwpControls:DockPanel.Dock="Left"
+                            Content="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                            Background="Transparent"
+                            ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
+                            AccessKey="S"
+                            CornerRadius="4">
+              <DropDownButton.Flyout>
+                <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}"
+                                  CommandParameter="{x:Null}" />
+
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <modelListing:FileSortType>UpdateTimeDecending</modelListing:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <modelListing:FileSortType>UpdateTimeAscending</modelListing:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <modelListing:FileSortType>TitleAscending</modelListing:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <modelListing:FileSortType>TitleDecending</modelListing:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </DropDownButton.Flyout>
+
+              <DropDownButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="S"
+                                     Modifiers="Control" />
+              </DropDownButton.KeyboardAccelerators>
+            </DropDownButton>
+
+            <Button x:Name="OptionalActionsButton"
+                    Margin="8 0 0 0"
+                    XYFocusRight="{x:Bind FileDisplayModeItemsListView}"
+                    Visibility="Collapsed">
+              <Button.Content>
+                <SymbolIcon Symbol="More" />
+              </Button.Content>
+
+              <Button.Flyout>
+                <Flyout Placement="Bottom">
+                  <StackPanel Spacing="8">
+                    <!--
                 <Button Content="現在の並び替えを兄弟フォルダのデフォルトに設定" Command="{x:Bind _vm.SetParentFileSortWithCurrentSettingCommand}" />
                 -->
 
-                </StackPanel>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
 
-          <ListView x:Name="FileDisplayModeItemsListView"
-                    uwpControls:DockPanel.Dock="Right"
-                    ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
-                    SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
-                    ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
-                    SelectionMode="Single"
-                    SingleSelectionFollowsFocus="False"
-                    XYFocusLeft="{x:Bind OptionalActionsButton}"
-                    AccessKey="I">
-            <ListView.Header>
-              <StackPanel Orientation="Horizontal" Margin="8 0">
-                <TextBlock VerticalAlignment="Center"
-                           Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
-                           Margin="0 0 8 0">
+            <ListView x:Name="FileDisplayModeItemsListView"
+                      uwpControls:DockPanel.Dock="Right"
+                      ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
+                      SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
+                      ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                      SelectionMode="Single"
+                      SingleSelectionFollowsFocus="False"
+                      XYFocusLeft="{x:Bind OptionalActionsButton}"
+                      AccessKey="I">
+              <ListView.Header>
+                <StackPanel Orientation="Horizontal"
+                            Margin="8 0">
+                  <TextBlock VerticalAlignment="Center"
+                             Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                             Margin="0 0 8 0">
                   <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
-                </TextBlock>
-                <TextBlock Margin="0 0 0 0"
-                           VerticalAlignment="Center"
-                           Opacity="0.7">
+                  </TextBlock>
+                  <TextBlock Margin="0 0 0 0"
+                             VerticalAlignment="Center"
+                             Opacity="0.7">
                   <Run Text="{x:Bind _vm.ImageFileItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
-                </TextBlock>
-              </StackPanel>
-            </ListView.Header>
-            <ListView.ItemContainerTransitions>
-              <TransitionCollection />
-            </ListView.ItemContainerTransitions>
+                  </TextBlock>
+                </StackPanel>
+              </ListView.Header>
+              <ListView.ItemContainerTransitions>
+                <TransitionCollection />
+              </ListView.ItemContainerTransitions>
 
-            <ListView.ItemContainerStyle>
-              <Style TargetType="ListViewItem"
-                     BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
-                <Setter Property="MinWidth"
-                        Value="40" />
-                <Setter Property="Width"
-                        Value="40" />
-                <Setter Property="MinHeight"
-                        Value="32" />
-                <Setter Property="Padding"
-                        Value="0 0 0 0" />
-                <Setter Property="Margin"
-                        Value="0" />
-                <Setter Property="HorizontalContentAlignment"
-                        Value="Center" />
+              <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem"
+                       BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
+                  <Setter Property="MinWidth"
+                          Value="40" />
+                  <Setter Property="Width"
+                          Value="40" />
+                  <Setter Property="MinHeight"
+                          Value="32" />
+                  <Setter Property="Padding"
+                          Value="0 0 0 0" />
+                  <Setter Property="Margin"
+                          Value="0" />
+                  <Setter Property="HorizontalContentAlignment"
+                          Value="Center" />
 
-              </Style>
-            </ListView.ItemContainerStyle>
-            <ListView.ItemsPanel>
-              <ItemsPanelTemplate>
-                <ItemsStackPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ListView.ItemsPanel>
-          </ListView>
+                </Style>
+              </ListView.ItemContainerStyle>
+              <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <ItemsStackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ListView.ItemsPanel>
+            </ListView>
 
-          <Border uwpControls:DockPanel.Dock="Right"
-                  Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                  Margin="8 0 16 0">
-            <winUIControls:Segmented SelectionMode="Single"
-                                     SelectionChanged="ContentViewTypeSelector_SelectionChanged"
-                                     x:Name="ContentViewTypeSelector"
-                                     AccessKey="L">
-              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}" />
-              <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
-                                           IsSelected="True" />
-            </winUIControls:Segmented>
-          </Border>
+            <Border uwpControls:DockPanel.Dock="Right"
+                    Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                    Margin="8 0 16 0">
+              <winUIControls:Segmented SelectionMode="Single"
+                                       SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                       x:Name="ContentViewTypeSelector"
+                                       AccessKey="L">
+                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}" />
+                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
+                                             IsSelected="True" />
+              </winUIControls:Segmented>
+            </Border>
 
-          <Border />
-        </uwpControls:DockPanel>
-        <Border Background="{ThemeResource SystemBaseLowColor}"
-                Height="1"
-                Opacity="0.5"></Border>
-      </StackPanel>
+            <Border />
+          </uwpControls:DockPanel>
+          <Border Background="{ThemeResource SystemBaseLowColor}"
+                  Height="1"
+                  Opacity="0.5"></Border>
+        </StackPanel>
 
-      <ScrollViewer Padding="48 0 48 0"
-                    XYFocusUp="{x:Bind FileSortButton}"
-                    x:Name="ItemsScrollViewer">
-        <Grid x:Name="FileItemsContainer"
-              Margin="0 16 0 32">
-          <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
-          <uwpControls:SwitchPresenter x:Name="ItemsSwitchPresenter"
-                                       Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode), Mode=OneWay}">
-            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Line}"
-                              IsDefault="True">
-              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
-                                   ItemsSource="{x:Bind _vm.FileItemsView}"
-                                   ItemTemplate="{StaticResource FileItemTemplate_Line}"
-                                   DataContext="{x:Null}">
-                <winUI:ItemsRepeater.Layout>
-                  <winUI:UniformGridLayout Orientation="Horizontal"
-                                           MinRowSpacing="6"
-                                           MinColumnSpacing="6" />
-                </winUI:ItemsRepeater.Layout>
-              </winUI:ItemsRepeater>
-            </uwpControls:Case>
+        <ScrollViewer Padding="48 0 48 0"
+                      XYFocusUp="{x:Bind FileSortButton}"
+                      x:Name="ItemsScrollViewer">
+          <Grid x:Name="FileItemsContainer"
+                Margin="0 16 0 32">
+            <!-- Note: ItemTemplateの切り替えでは再表示が掛からないためItemsRepeater丸ごと表示切替で対応している -->
+            <uwpControls:SwitchPresenter x:Name="ItemsSwitchPresenter"
+                                         Value="{x:Bind ToViewDisplayMode(_vm.FileDisplayMode), Mode=OneWay}">
+              <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Line}"
+                                IsDefault="True">
+                <winUI:ItemsRepeater x:Name="FileItemsRepeater_Line"
+                                     ItemsSource="{x:Bind _vm.FileItemsView}"
+                                     ItemTemplate="{StaticResource FileItemTemplate_Line}"
+                                     DataContext="{x:Null}"
+                                     CanDrag="True">
+                  <winUI:ItemsRepeater.Layout>
+                    <winUI:UniformGridLayout Orientation="Horizontal"
+                                             MinRowSpacing="6"
+                                             MinColumnSpacing="6" />
+                  </winUI:ItemsRepeater.Layout>
+                </winUI:ItemsRepeater>
+              </uwpControls:Case>
 
-            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Small}">
-              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
-                                   ItemsSource="{x:Bind _vm.FileItemsView}"
-                                   ItemTemplate="{StaticResource FileItemTemplate_Small}"
-                                   DataContext="{x:Null}"
-                                   VerticalCacheLength="3">
-                <winUI:ItemsRepeater.Layout>
-                  <uwpControls:WrapLayout Orientation="Horizontal"
-                                          HorizontalSpacing="6"
-                                          VerticalSpacing="6" />
-                </winUI:ItemsRepeater.Layout>
-              </winUI:ItemsRepeater>
-            </uwpControls:Case>
-            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Midium}">
-              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
-                                   ItemsSource="{x:Bind _vm.FileItemsView}"
-                                   ItemTemplate="{StaticResource FileItemTemplate_Midium}"
-                                   FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}"
-                                   VerticalCacheLength="3">
-                <winUI:ItemsRepeater.Layout>
-                  <uwpControls:WrapLayout Orientation="Horizontal"
-                                          HorizontalSpacing="8"
-                                          VerticalSpacing="8"
-                                          />
-                </winUI:ItemsRepeater.Layout>
-              </winUI:ItemsRepeater>
-            </uwpControls:Case>
-            <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Large}">
-              <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
-                                   ItemsSource="{x:Bind _vm.FileItemsView}"
-                                   ItemTemplate="{StaticResource FileItemTemplate_Large}"
-                                   FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
-                                   DataContext="{x:Null}"
-                                   VerticalCacheLength="3">
-                <winUI:ItemsRepeater.Layout>
-                  <uwpControls:WrapLayout Orientation="Horizontal"
-                                          HorizontalSpacing="12"
-                                          VerticalSpacing="12" />
-                </winUI:ItemsRepeater.Layout>
-              </winUI:ItemsRepeater>
-            </uwpControls:Case>
-          </uwpControls:SwitchPresenter>
+              <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Small}">
+                <winUI:ItemsRepeater x:Name="FileItemsRepeater_Small"
+                                     ItemsSource="{x:Bind _vm.FileItemsView}"
+                                     ItemTemplate="{StaticResource FileItemTemplate_Small}"
+                                     DataContext="{x:Null}"
+                                     VerticalCacheLength="3"
+                                     CanDrag="True">
+                  <winUI:ItemsRepeater.Layout>
+                    <uwpControls:WrapLayout Orientation="Horizontal"
+                                            HorizontalSpacing="6"
+                                            VerticalSpacing="6" />
+                  </winUI:ItemsRepeater.Layout>
+                </winUI:ItemsRepeater>
+              </uwpControls:Case>
+              <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Midium}">
+                <winUI:ItemsRepeater x:Name="FileItemsRepeater_Midium"
+                                     ItemsSource="{x:Bind _vm.FileItemsView}"
+                                     ItemTemplate="{StaticResource FileItemTemplate_Midium}"
+                                     FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                                     DataContext="{x:Null}"
+                                     VerticalCacheLength="3"
+                                     CanDrag="True">
+                  <winUI:ItemsRepeater.Layout>
+                    <uwpControls:WrapLayout Orientation="Horizontal"
+                                            HorizontalSpacing="8"
+                                            VerticalSpacing="8" />
+                  </winUI:ItemsRepeater.Layout>
+                </winUI:ItemsRepeater>
+              </uwpControls:Case>
+              <uwpControls:Case Value="{x:Bind local:ImageListupPage.ItemsDisplayMode_Large}">
+                <winUI:ItemsRepeater x:Name="FileItemsRepeater_Large"
+                                     ItemsSource="{x:Bind _vm.FileItemsView}"
+                                     ItemTemplate="{StaticResource FileItemTemplate_Large}"
+                                     FocusVisualSecondaryBrush="{ThemeResource SystemAccentColor}"
+                                     DataContext="{x:Null}"
+                                     VerticalCacheLength="3"
+                                     CanDrag="True">
+                  <winUI:ItemsRepeater.Layout>
+                    <uwpControls:WrapLayout Orientation="Horizontal"
+                                            HorizontalSpacing="12"
+                                            VerticalSpacing="12" />
+                  </winUI:ItemsRepeater.Layout>
+                </winUI:ItemsRepeater>
+              </uwpControls:Case>
+            </uwpControls:SwitchPresenter>
 
-          <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
-                Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
-            <TextBlock Text="{i18nExt:Localize Key=NoItems}"
-                       Style="{StaticResource SubtitleTextBlockStyle}"
-                       Opacity="0.5"
-                       HorizontalAlignment="Center"
-                       Margin="32" />
+            <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
+                  Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
+              <TextBlock Text="{i18nExt:Localize Key=NoItems}"
+                         Style="{StaticResource SubtitleTextBlockStyle}"
+                         Opacity="0.5"
+                         HorizontalAlignment="Center"
+                         Margin="32" />
+            </Grid>
           </Grid>
-        </Grid>
-      </ScrollViewer>
-    </uwpControls:DockPanel>
+        </ScrollViewer>
+      </uwpControls:DockPanel>
+    </SplitView>
 
     <VisualStateManager.VisualStateGroups>
 
@@ -979,6 +1045,7 @@
             <StateTrigger IsActive="{StaticResource DebugTVMode}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -986,6 +1053,7 @@
             <AdaptiveTrigger MinWindowWidth="1600" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -993,6 +1061,7 @@
             <AdaptiveTrigger MinWindowWidth="1220" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -1011,6 +1080,10 @@
                     Value="12 8" />
             <Setter Target="ItemsScrollViewer.Padding"
                     Value="12 0" />
+            <Setter Target="SelectActionsContainer.Padding"
+                    Value="12 0" />
+            <Setter Target="TextBlock_ImageListupPage_DragAndDrop_Unsupported.Visibility"
+                    Value="Collapsed" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

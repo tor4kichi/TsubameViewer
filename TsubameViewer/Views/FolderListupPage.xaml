@@ -20,6 +20,7 @@
   xmlns:models="using:TsubameViewer.Core.Models" 
   xmlns:fluentIcon="using:Fluent.Icons"
       xmlns:winUIControls="using:CommunityToolkit.WinUI.Controls"
+      xmlns:storage="using:Windows.Storage"
       mc:Ignorable="d"
     Background="{ThemeResource ApplicationContentBackgroundBrush}"
   NavigationCacheMode="Enabled"
@@ -89,278 +90,337 @@
   </Page.Resources>
   <Grid >
 
-    <uwpControls:DockPanel>
+    <SplitView DisplayMode="Overlay"
+               PanePlacement="Left"
+               x:Name="FolderSelectionSplitView"
+               OpenPaneLength="280">
+      <SplitView.Pane>
+        <uwpControls:DockPanel Margin="8 16 8 0">
 
-      <Grid x:Name="SelectActionsContainer" Visibility="Collapsed" uwpControls:DockPanel.Dock="Top"   
-            Background="{ThemeResource SystemChromeMediumHighColor}"
-            BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
-            BorderThickness="0 0 0 1"
-          >
-        <CommandBar DefaultLabelPosition="Right" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    MaxWidth="1400">
-          <CommandBar.Content>
+          <StackPanel uwpControls:DockPanel.Dock="Top" Margin="0 0 0 16">
+            <Button Command="{x:Bind MoveToFolderSelectedItemsCommand}"
+                    CommandParameter="{x:Bind MoveToFolderTargetSelector.SelectedItem, Mode=OneWay}"
+                    HorizontalAlignment="Stretch"
+                    Style="{ThemeResource AccentButtonStyle}">
+              <TextBlock Text="{i18nExt:Localize Key=MoveToFolder_ItemsMoveToSelectedFolder}" />
+            </Button>
+          </StackPanel>
 
-            <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}" VerticalAlignment="Center" Margin="48 0">
+          <ListView ItemsSource="{x:Bind Folders, Mode=OneWay}"
+                    AllowDrop="True"
+                    Drop="ListView_Drop"
+                    DragEnter="ListView_DragEnter"
+                    SelectionMode="Single"
+                    x:Name="MoveToFolderTargetSelector"
+                    Padding="0 0 0 48"
+                    uwpUIExtensions:ListViewExtensions.AlternateColor="{ThemeResource SystemBaseLowColor}">
+            <ListView.ItemTemplate>
+              <DataTemplate x:DataType="storage:StorageFolder">
+                <TextBlock Text="{x:Bind Name}" />
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+        </uwpControls:DockPanel>
+      </SplitView.Pane>
+      <uwpControls:DockPanel>
 
-            </TextBlock>
-          </CommandBar.Content>
+        <Grid x:Name="SelectActionsContainer"
+              Visibility="Collapsed"
+              uwpControls:DockPanel.Dock="Top"
+              Background="{ThemeResource SystemChromeMediumHighColor}"
+              BorderBrush="{ThemeResource SystemBaseMediumLowColor}"
+              BorderThickness="0 0 0 1">
+          <CommandBar DefaultLabelPosition="Right"
+                      VerticalContentAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch"
+                      MaxWidth="1600">
+            <CommandBar.Content>
 
-          <CommandBar.PrimaryCommands>
-            <AppBarButton x:Name="CreateFolderButton"
-                          Label="{i18nExt:Localize Key=CreateFolder}"
-                          Command="{x:Bind CreateFolderCommand}"
-                          AccessKey="B"
-                          Visibility="{x:Bind _vm.IsFolderItemIsRawFolderAsVisible(_vm.CurrentFolderItem), Mode=OneWay}"
-                          BorderThickness="1"
-                          BorderBrush="{ThemeResource SystemBaseLowColor}">
-              <AppBarButton.Icon>
-                <SymbolIcon Symbol="Folder" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="B" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarButton x:Name="SelectAction_AlbamAddItem" Label="{i18nExt:Localize Key=AlbamItemAdd}" Icon="Add"
-                          BorderThickness="1"
-                          BorderBrush="{ThemeResource SystemBaseLowColor}">
-              <AppBarButton.Flyout>
-                <MenuFlyout x:Name="AlbamItemManagementFlyout" Opening="AlbamItemManagementFlyout_Opening" Placement="Bottom">
+              <StackPanel Orientation="Horizontal"                          
+                          Spacing="16">
+                <Button Content="{i18nExt:Localize Key=MoveToFolder_ToggleSiblingFoldersDisplay}"
+                        x:Name="ToggleDisplaySiblingFoldersButton"
+                        IsEnabled="False"
+                        Command="{x:Bind ToggleSiblingFolderPaneDisplayCommand}" />
+                <TextBlock Text="{x:Bind _vm.SelectedCountDisplayText, Mode=OneWay}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </CommandBar.Content>
 
-                </MenuFlyout>
-              </AppBarButton.Flyout>
-            </AppBarButton>
-            <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
-                          Label="{i18nExt:Localize Key=Delete}"
-                          Command="{x:Bind _vm.FileDeleteCommand}"
-                          CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
-                          AccessKey="D"
-                          BorderThickness="1"
-                          BorderBrush="{ThemeResource SystemBaseLowColor}">
-              <AppBarButton.Icon>
-                <SymbolIcon Symbol="Delete" />
-              </AppBarButton.Icon>
-              <AppBarButton.KeyboardAccelerators>
-                <KeyboardAccelerator Key="Delete" />
-              </AppBarButton.KeyboardAccelerators>
-            </AppBarButton>
-            <AppBarElementContainer VerticalContentAlignment="Stretch" IsTabStop="False" Margin="16 0 0 0">
-              <Button Content="{i18nExt:Localize Key=Cancel}"
-                      Click="{x:Bind _vm.Selection.EndSelection}"
-                      AccessKey="Q"
-                      Background="Transparent"
-                      VerticalAlignment="Stretch"
-                      Margin="0 6">
-                <Button.KeyboardAccelerators>
-                  <KeyboardAccelerator Key="Escape" />
-                </Button.KeyboardAccelerators>
-              </Button>
-            </AppBarElementContainer>
-          </CommandBar.PrimaryCommands>
-        </CommandBar>
-      </Grid>
-      
-      <StackPanel x:Name="HeaderLayout" Background="{ThemeResource ApplicationContentBackgroundBrush}"
+            <CommandBar.PrimaryCommands>
+              <AppBarButton x:Name="CreateFolderButton"
+                            Label="{i18nExt:Localize Key=CreateFolder}"
+                            Command="{x:Bind CreateFolderCommand}"
+                            AccessKey="B"
+                            Visibility="{x:Bind _vm.IsFolderItemIsRawFolderAsVisible(_vm.CurrentFolderItem), Mode=OneWay}"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Folder" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="B" />
+                </AppBarButton.KeyboardAccelerators>
+              </AppBarButton>
+              <AppBarButton x:Name="SelectAction_AlbamAddItem"
+                            Label="{i18nExt:Localize Key=AlbamItemAdd}"
+                            Icon="Add"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Flyout>
+                  <MenuFlyout x:Name="AlbamItemManagementFlyout"
+                              Opening="AlbamItemManagementFlyout_Opening"
+                              Placement="Bottom">
+
+                  </MenuFlyout>
+                </AppBarButton.Flyout>
+              </AppBarButton>
+              <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
+                            Label="{i18nExt:Localize Key=Delete}"
+                            Command="{x:Bind _vm.FileDeleteCommand}"
+                            CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}"
+                            AccessKey="D"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Delete" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="Delete" />
+                </AppBarButton.KeyboardAccelerators>
+              </AppBarButton>
+              <AppBarElementContainer VerticalContentAlignment="Stretch"
+                                      IsTabStop="False"
+                                      Margin="16 0 0 0">
+                <Button Content="{i18nExt:Localize Key=Cancel}"
+                        Click="{x:Bind _vm.Selection.EndSelection}"
+                        AccessKey="Q"
+                        Background="Transparent"
+                        VerticalAlignment="Stretch"
+                        Margin="0 6">
+                  <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="Escape" />
+                  </Button.KeyboardAccelerators>
+                </Button>
+              </AppBarElementContainer>
+            </CommandBar.PrimaryCommands>
+          </CommandBar>
+        </Grid>
+
+        <StackPanel x:Name="HeaderLayout"
+                    Background="{ThemeResource ApplicationContentBackgroundBrush}"
                     uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
-                  uwpControls:DockPanel.Dock="Top"
-                  HorizontalAlignment="Stretch"
-                  >
-        <uwpControls:DockPanel x:Name="FilesActionLayout" Margin="0 16 0 8">
-          <DropDownButton x:Name="FileSortButton" 
+                    uwpControls:DockPanel.Dock="Top"
+                    HorizontalAlignment="Stretch">
+          <uwpControls:DockPanel x:Name="FilesActionLayout"
+                                 Margin="0 16 0 8">
+            <DropDownButton x:Name="FileSortButton"
                             uwpControls:DockPanel.Dock="Left"
                             Background="Transparent"
                             ToolTipService.ToolTip="{i18nExt:Localize Key=FileSortTitle}"
-                          AccessKey="S"
-                          CornerRadius="4"
-                            >
-            <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
-            <DropDownButton.Flyout>
-              <MenuFlyout>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeFileSortCommand}">
-                  <MenuFlyoutItem.CommandParameter>
-                    <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
-                  </MenuFlyoutItem.CommandParameter>
-                </MenuFlyoutItem>
-              </MenuFlyout>
-            </DropDownButton.Flyout>
+                            AccessKey="S"
+                            CornerRadius="4">
+              <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
+              <DropDownButton.Flyout>
+                <MenuFlyout>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}"
+                                  Command="{x:Bind _vm.ChangeFileSortCommand}">
+                    <MenuFlyoutItem.CommandParameter>
+                      <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
+                    </MenuFlyoutItem.CommandParameter>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </DropDownButton.Flyout>
 
-            <DropDownButton.KeyboardAccelerators>
-              <KeyboardAccelerator Key="S" Modifiers="Control" />
-            </DropDownButton.KeyboardAccelerators>
-          </DropDownButton>
+              <DropDownButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="S"
+                                     Modifiers="Control" />
+              </DropDownButton.KeyboardAccelerators>
+            </DropDownButton>
 
-          <StackPanel Orientation="Horizontal"                      
-                      Margin="8 0"
-                      uwpControls:DockPanel.Dock="Right">
+            <StackPanel Orientation="Horizontal"
+                        Margin="8 0"
+                        uwpControls:DockPanel.Dock="Right">
 
-            <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                    uwpControls:DockPanel.Dock="Right"
-                    Margin="8 0 16 0">
-              <winUIControls:Segmented uwpControls:DockPanel.Dock="Right"
-                                       SelectionMode="Single"
-                                       SelectionChanged="ContentViewTypeSelector_SelectionChanged"
-                                       x:Name="ContentViewTypeSelector"
-                                       AccessKey="L">
-                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                                             IsSelected="True" />
-                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}" />
-              </winUIControls:Segmented>
-            </Border>
-            
-            <TextBlock VerticalAlignment="Center"
-                       Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
-                       Margin="0 0 8 0"
-                       Opacity="0.7">
+              <Border Visibility="{x:Bind _vm.HasFileItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                      uwpControls:DockPanel.Dock="Right"
+                      Margin="8 0 16 0">
+                <winUIControls:Segmented uwpControls:DockPanel.Dock="Right"
+                                         SelectionMode="Single"
+                                         SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                         x:Name="ContentViewTypeSelector"
+                                         AccessKey="L">
+                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
+                                               IsSelected="True" />
+                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}" />
+                </winUIControls:Segmented>
+              </Border>
+
+              <TextBlock VerticalAlignment="Center"
+                         Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                         Margin="0 0 8 0"
+                         Opacity="0.7">
               <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
-            </TextBlock>
-            <TextBlock Margin="0 0 0 0"
-                       VerticalAlignment="Center"
-                       Opacity="0.7">
+              </TextBlock>
+              <TextBlock Margin="0 0 0 0"
+                         VerticalAlignment="Center"
+                         Opacity="0.7">
               <Run Text="{x:Bind _vm.FolderItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
-            </TextBlock>
-          </StackPanel>
+              </TextBlock>
+            </StackPanel>
 
-          <Button Margin="8 0 0 0">
-            <Button.Content>
-              <SymbolIcon Symbol="More" />
-            </Button.Content>
+            <Button Margin="8 0 0 0">
+              <Button.Content>
+                <SymbolIcon Symbol="More" />
+              </Button.Content>
 
-            <Button.Flyout>
-              <Flyout Placement="Bottom">
-                <StackPanel Spacing="8">
-                  <TextBlock x:Name="ChildFolderSortButtonHeaderText" Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}" Visibility="Collapsed" />
-                  <DropDownButton x:Name="ChildFolderSortButton" 
-                            Content="{x:Bind _vm.SelectedChildFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
-                            Background="Transparent"
-                                  Visibility="Collapsed"
-                                  CornerRadius="4"
-                            >
-                    <DropDownButton.Flyout>
-                      <MenuFlyout Placement="RightEdgeAlignedTop">
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}" Command="{x:Bind _vm.ChangeChildFileSortCommand}" CommandParameter="{x:Null}">
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
-                          <MenuFlyoutItem.CommandParameter>
-                            <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
-                          </MenuFlyoutItem.CommandParameter>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
-                          <MenuFlyoutItem.CommandParameter>
-                            <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
-                          </MenuFlyoutItem.CommandParameter>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
-                          <MenuFlyoutItem.CommandParameter>
-                            <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
-                          </MenuFlyoutItem.CommandParameter>
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}" Command="{x:Bind _vm.ChangeChildFileSortCommand}">
-                          <MenuFlyoutItem.CommandParameter>
-                            <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
-                          </MenuFlyoutItem.CommandParameter>
-                        </MenuFlyoutItem>
-                      </MenuFlyout>
-                    </DropDownButton.Flyout>
-                  </DropDownButton>
+              <Button.Flyout>
+                <Flyout Placement="Bottom">
+                  <StackPanel Spacing="8">
+                    <TextBlock x:Name="ChildFolderSortButtonHeaderText"
+                               Text="{i18nExt:Localize Key=Sort_DefaultChildItemSort}"
+                               Visibility="Collapsed" />
+                    <DropDownButton x:Name="ChildFolderSortButton"
+                                    Content="{x:Bind _vm.SelectedChildFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                                    Background="Transparent"
+                                    Visibility="Collapsed"
+                                    CornerRadius="4">
+                      <DropDownButton.Flyout>
+                        <MenuFlyout Placement="RightEdgeAlignedTop">
+                          <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
+                                          Command="{x:Bind _vm.ChangeChildFileSortCommand}"
+                                          CommandParameter="{x:Null}">
+                          </MenuFlyoutItem>
+                          <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
+                                          Command="{x:Bind _vm.ChangeChildFileSortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                              <folderModels:FileSortType>UpdateTimeDecending</folderModels:FileSortType>
+                            </MenuFlyoutItem.CommandParameter>
+                          </MenuFlyoutItem>
+                          <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeAscending}"
+                                          Command="{x:Bind _vm.ChangeChildFileSortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                              <folderModels:FileSortType>UpdateTimeAscending</folderModels:FileSortType>
+                            </MenuFlyoutItem.CommandParameter>
+                          </MenuFlyoutItem>
+                          <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleAscending}"
+                                          Command="{x:Bind _vm.ChangeChildFileSortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                              <folderModels:FileSortType>TitleAscending</folderModels:FileSortType>
+                            </MenuFlyoutItem.CommandParameter>
+                          </MenuFlyoutItem>
+                          <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.TitleDecending}"
+                                          Command="{x:Bind _vm.ChangeChildFileSortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                              <folderModels:FileSortType>TitleDecending</folderModels:FileSortType>
+                            </MenuFlyoutItem.CommandParameter>
+                          </MenuFlyoutItem>
+                        </MenuFlyout>
+                      </DropDownButton.Flyout>
+                    </DropDownButton>
 
-                  <TextBlock x:Name="ChildDefaultFolderOrArchiveOpenModeButtonHeaderText"
-                             Text="{i18nExt:Localize Key=DefaultFolderOrArchiveOpenMode}"
-                             Visibility="Collapsed" />
-                  <DropDownButton x:Name="ChildDefaultFolderOrArchiveOpenModeButton"
-                                  Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
-                                  Background="Transparent"
-                                  Visibility="Collapsed"
-                                  CornerRadius="4">
-                    <DropDownButton.Flyout>
-                      <MenuFlyout Placement="RightEdgeAlignedTop">
-                        <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer, Converter={StaticResource LocalizeConverter}}"
-                                        Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
-                                        CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer}"
-                                        >
-                        </MenuFlyoutItem>
-                        <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup, Converter={StaticResource LocalizeConverter}}"
-                                        Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
-                                        CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup}"
-                                        >
-                        </MenuFlyoutItem>
-                      </MenuFlyout>
-                    </DropDownButton.Flyout>
-                  </DropDownButton>
+                    <TextBlock x:Name="ChildDefaultFolderOrArchiveOpenModeButtonHeaderText"
+                               Text="{i18nExt:Localize Key=DefaultFolderOrArchiveOpenMode}"
+                               Visibility="Collapsed" />
+                    <DropDownButton x:Name="ChildDefaultFolderOrArchiveOpenModeButton"
+                                    Content="{x:Bind _vm.SelectedChildFolderOrArchiveOpenMode, Mode=OneWay, Converter={StaticResource LocalizeConverter}}"
+                                    Background="Transparent"
+                                    Visibility="Collapsed"
+                                    CornerRadius="4">
+                      <DropDownButton.Flyout>
+                        <MenuFlyout Placement="RightEdgeAlignedTop">
+                          <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer, Converter={StaticResource LocalizeConverter}}"
+                                          Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
+                                          CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Viewer}">
+                          </MenuFlyoutItem>
+                          <MenuFlyoutItem Text="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup, Converter={StaticResource LocalizeConverter}}"
+                                          Command="{x:Bind _vm.ChangeChildFolderOrArchiveOpenModeCommand}"
+                                          CommandParameter="{x:Bind folderModels:DefaultFolderOrArchiveOpenMode.Listup}">
+                          </MenuFlyoutItem>
+                        </MenuFlyout>
+                      </DropDownButton.Flyout>
+                    </DropDownButton>
 
-                </StackPanel>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
-        </uwpControls:DockPanel>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+          </uwpControls:DockPanel>
 
-        <Border Background="{ThemeResource SystemBaseLowColor}" Height="1" Opacity="0.5"></Border>
-      </StackPanel>
+          <Border Background="{ThemeResource SystemBaseLowColor}"
+                  Height="1"
+                  Opacity="0.5"></Border>
+        </StackPanel>
 
-      <uwpControls:AdaptiveGridView 
-        ItemsSource="{x:Bind _vm.FileItemsView}"
-        x:Name="FoldersAdaptiveGridView"
-        StretchContentForSingleRow="False"
-        OneRowModeEnabled="False"
-        ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
-        ItemContainerStyle="{StaticResource FolderStyle}"
-        DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
-        ItemHeight="{StaticResource FolderGridViewItemHeight}"
-        IsItemClickEnabled="True"
-        ItemClickCommand="{x:Bind OpenItemCommand}"
-        IsSynchronizedWithCurrentItem="False"
-        SelectionMode="None"        
-        IsMultiSelectCheckBoxEnabled="True"
-        IsTabStop="False"
-        ContextFlyout="{StaticResource StorageItemMenuFlyout}"
-        uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
-        XYFocusUp="{x:Bind FileSortButton}"
-        SelectedItem="{x:Bind _vm.FolderLastIntractItem, Mode=TwoWay}"  
-        SelectionChanged="OnSelectionChanged"
-        CanDragItems="True"   
-        DragItemsStarting="FoldersAdaptiveGridView_DragItemsStarting"
-        DragItemsCompleted="FoldersAdaptiveGridView_DragItemsCompleted"
-        AllowDrop="True"
-        >
+        <uwpControls:AdaptiveGridView ItemsSource="{x:Bind _vm.FileItemsView}"
+                                      x:Name="FoldersAdaptiveGridView"
+                                      StretchContentForSingleRow="False"
+                                      OneRowModeEnabled="False"
+                                      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+                                      ItemContainerStyle="{StaticResource FolderStyle}"
+                                      DesiredWidth="{StaticResource FolderGridViewItemWidth}"
+                                      ItemHeight="{StaticResource FolderGridViewItemHeight}"
+                                      IsItemClickEnabled="True"
+                                      ItemClickCommand="{x:Bind OpenItemCommand}"
+                                      IsSynchronizedWithCurrentItem="False"
+                                      SelectionMode="None"
+                                      IsMultiSelectCheckBoxEnabled="True"
+                                      IsTabStop="False"
+                                      ContextFlyout="{StaticResource StorageItemMenuFlyout}"
+                                      uwpUIExtensions:ScrollViewerExtensions.VerticalScrollBarMargin="0 0 0 0"
+                                      XYFocusUp="{x:Bind FileSortButton}"
+                                      SelectedItem="{x:Bind _vm.FolderLastIntractItem, Mode=TwoWay}"
+                                      SelectionChanged="OnSelectionChanged"
+                                      CanDragItems="True"
+                                      DragItemsStarting="FoldersAdaptiveGridView_DragItemsStarting"
+                                      DragItemsCompleted="FoldersAdaptiveGridView_DragItemsCompleted"
+                                      AllowDrop="True">
 
-        <GridView.Header>
-          <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
-                Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
-            <TextBlock Text="{i18nExt:Localize Key=NoItems}"
-                       Style="{StaticResource SubtitleTextBlockStyle}"
-                       Opacity="0.5"
-                       HorizontalAlignment="Center"
-                       Margin="32" />
-          </Grid>
-        </GridView.Header>
-        <GridView.ItemContainerTransitions>
-          <TransitionCollection />
-        </GridView.ItemContainerTransitions>
+          <GridView.Header>
+            <Grid Visibility="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource ZeroToVisibleConverter}}"
+                  Opacity="{x:Bind _vm.NowProcessing, Mode=OneWay, Converter={StaticResource FalseToDouble1Converter}}">
+              <TextBlock Text="{i18nExt:Localize Key=NoItems}"
+                         Style="{StaticResource SubtitleTextBlockStyle}"
+                         Opacity="0.5"
+                         HorizontalAlignment="Center"
+                         Margin="32" />
+            </Grid>
+          </GridView.Header>
+          <GridView.ItemContainerTransitions>
+            <TransitionCollection />
+          </GridView.ItemContainerTransitions>
 
-        <i:Interaction.Behaviors>
-          <uiNavigation:UINavigationTriggerBehavior Kind="Context1">
-            <uiNavigation:BypassToCurrentFocusElementDataContextAction>
-              <core:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />
-            </uiNavigation:BypassToCurrentFocusElementDataContextAction>
-          </uiNavigation:UINavigationTriggerBehavior>
-        </i:Interaction.Behaviors>
+          <i:Interaction.Behaviors>
+            <uiNavigation:UINavigationTriggerBehavior Kind="Context1">
+              <uiNavigation:BypassToCurrentFocusElementDataContextAction>
+                <core:InvokeCommandAction Command="{x:Bind SelectionChangeCommand}" />
+              </uiNavigation:BypassToCurrentFocusElementDataContextAction>
+            </uiNavigation:UINavigationTriggerBehavior>
+          </i:Interaction.Behaviors>
 
-      </uwpControls:AdaptiveGridView>
+        </uwpControls:AdaptiveGridView>
 
-    </uwpControls:DockPanel>
+      </uwpControls:DockPanel>
+
+    </SplitView>
 
     <ContentDialog x:Name="CreateFolderDialog"
                    Padding="0 48 0 0"
@@ -454,6 +514,8 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 27" />
             <Setter Target="HeaderLayout.Padding" Value="48 0 48 0" />
+            <Setter Target="SelectActionsContainer.Padding" Value="48 0 48 0" />            
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -463,6 +525,8 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="280 0 280 32" />
             <Setter Target="HeaderLayout.Padding" Value="280 0 280 0" />
+            <Setter Target="SelectActionsContainer.Padding" Value="280 0 280 0" />            
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -472,6 +536,8 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="140 0 140 32" />
             <Setter Target="HeaderLayout.Padding" Value="140 0 140 0" />
+            <Setter Target="SelectActionsContainer.Padding" Value="140 0 140 0" />            
+            <Setter Target="FolderSelectionSplitView.DisplayMode" Value="Inline" />
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -480,7 +546,8 @@
           </VisualState.StateTriggers>
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="48 0 48 32" />
-            <Setter Target="HeaderLayout.Padding" Value="48 0 48 0" />
+            <Setter Target="HeaderLayout.Padding" Value="48 0 48 0" />            
+            <Setter Target="SelectActionsContainer.Padding" Value="48 0 48 0" />            
           </VisualState.Setters>
         </VisualState>
         <VisualState>
@@ -490,6 +557,7 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
             <Setter Target="HeaderLayout.Padding" Value="8 0 8 0" />
+            <Setter Target="SelectActionsContainer.Padding" Value="8 0 8 0" />            
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

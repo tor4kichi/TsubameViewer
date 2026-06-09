@@ -16,20 +16,22 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Reactive.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Helpers;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
+using Windows.Storage;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -336,7 +338,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         d().FireAndForgetSafe();
         async Task d()
         {
-
             _navigationCts = new CancellationTokenSource();
             var ct = _ct = _navigationCts.Token;
 
@@ -383,6 +384,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
             StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize();
+            InitializeMoveToFolders(ct).FireAndForgetSafe();
         }
     }
 
@@ -607,7 +609,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void ImageListItem_Clicked(object sender, RoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
-        if (IsSelectionModeEnabled
+        if (_vm.Selection.IsSelectionModeEnabled
             || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
             )
         {
@@ -692,11 +694,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
         {
             StartSelection();
-        }
-        else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
-        {
-            ClearSelection();
-        }
+        }        
     }
 
     public int SelectedItemsCount
@@ -711,20 +709,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
 
 
-    public bool IsSelectionModeEnabled
-    {
-        get { return (bool)GetValue(IsSelectionModeEnabledProperty); }
-        set { SetValue(IsSelectionModeEnabledProperty, value); }
-    }
-
-    public static readonly DependencyProperty IsSelectionModeEnabledProperty =
-        DependencyProperty.Register("IsSelectionModeEnabled", typeof(bool), typeof(ImageListupPage), new PropertyMetadata(false));
-
-
 
     public void StartSelection()
     {
-        IsSelectionModeEnabled = true;
         _selectedItems = _vm.Selection.SelectedItems;
         _vm.Selection.StartSelection();
         _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
@@ -761,12 +748,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     ItemSelectedProcess(itemVM);
                 }
             });
-        }
+        }        
     }
 
     public void ClearSelection()
     {
-        IsSelectionModeEnabled = false;
         foreach (var itemVM in _selectedItems ?? [])
         {
             itemVM.IsSelected = false;
@@ -825,6 +811,36 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => x.StorageItem is not null && !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
             }                
         }
+    }
+
+    bool CanMoveToFolderSelectedItems(StorageFolder? folder)
+    {
+        return folder != null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveToFolderSelectedItems))]
+    async Task MoveToFolderSelectedItemsAsync(StorageFolder? hostFolder)
+    {
+        if (hostFolder == null) { return; }
+        if (_vm.Selection.SelectedItems is not { } items || items.Count == 0) { return; }
+
+        await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
+        _messenger.SendShowTextNotificationMessage(items.Count == 1
+            ? "MoveToFolder_Completed_Single".Translate((items[0]).Name, hostFolder.Name)
+            : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+        foreach (var item in items.Cast<IStorageItemViewModel>())
+        {
+            _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+        }
+
+        _vm.Selection.SelectedItems.Clear();
+    }
+
+    [RelayCommand]
+    void ToggleSiblingFolderPaneDisplay()
+    {
+        FolderSelectionSplitView.IsPaneOpen = !FolderSelectionSplitView.IsPaneOpen;
     }
 
     #region Search Box
@@ -915,6 +931,140 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+
+    #region Selection
+
+    [ObservableProperty]
+    ObservableCollection<StorageFolder>? _folders;
+
+
+    async Task InitializeMoveToFolders(CancellationToken ct)
+    {
+        Folders = [];
+        ToggleDisplaySiblingFoldersButton.IsEnabled = false;
+        if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
+        {
+            var folderQuery = parentFolder.CreateFolderQuery();
+            await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!FolderSelectionSplitView.IsPaneOpen)
+                {
+                    await Task.Delay(250, ct);
+                }
+                Folders.Add(folder);
+
+                if (Folders.Count <= 1)
+                {
+                    ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                }
+            }
+        }
+
+        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+            .Subscribe(x =>
+            {
+                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
+                {
+                    FolderSelectionSplitView.IsPaneOpen = x;
+                }
+            })
+            .RegisterTo(ct);
+
+    }
+
+    private void ListView_DragEnter(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>);
+        if (items is null or { Count: 0 }) { return; }
+        var deferral = R3.Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, deferral, items), static async (s) =>
+        {
+            var (_this, hostUI, e, deferral, items) = s;
+            using (deferral)
+            {
+                foreach (var item in items)
+                {
+                    if (item is not IStorageItemViewModel myItem)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
+                        return;
+                    }
+                }
+
+                if (hostUI.DataContext is StorageFolder folderItem)
+                {
+                    e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+                    e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(folderItem.Name);
+                }
+            }
+        });
+    }
+
+    private void ListView_Drop(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>).ToList();
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, items), static async (s) =>
+        {
+            var (_this, hostUI, e, items) = s;
+            if (items is null or { Count: 0 }) { return; }
+
+            if (hostUI.DataContext is StorageFolder hostFolder)
+            {
+                var messenger = Ioc.Default.GetRequiredService<IMessenger>();
+                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage(items.Count == 1
+                    ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
+                    : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+            }
+
+        });
+    }
+
+
+
+
+    private async Task MoveItemsToAsync(Windows.Storage.StorageFolder targetFolder, IEnumerable<Windows.Storage.IStorageItem> items, CancellationToken ct)
+    {
+        foreach (var item in items)
+        {
+            Debug.WriteLine($"Move to {targetFolder.Path}: {item.Name}");
+            List<Windows.Storage.IStorageItem> failedItems = [];
+            if (item is Windows.Storage.StorageFile file)
+            {
+                try
+                {
+                    await file.MoveAsync(targetFolder, file.Name, Windows.Storage.NameCollisionOption.FailIfExists).AsTask(ct);
+                }
+                catch
+                {
+                    failedItems.Add(item);
+                }
+            }
+            else if (item is Windows.Storage.StorageFolder folder)
+            {
+                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+            }
+        }
+    }
+
+
+    #endregion
+
+    private void ItemControl_DragStarting(UIElement sender, DragStartingEventArgs args)
+    {
+        args.AllowedOperations = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+    }
 }
 
 

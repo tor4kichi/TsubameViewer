@@ -147,8 +147,8 @@ CreateFolder_ExistFolderName = This folder name already exists. Please enter an 
 MoveToFolder_WithFolderName = Move to {0}
 MoveToFolder_Completed_Single = Move {0} to {1}
 MoveToFolder_Completed_Multi = Move {0} items to {1}
-
-
+MoveToFolder_ItemsMoveToSelectedFolder = Move to the selected folder
+MoveToFolder_ToggleSiblingFoldersDisplay = Show sibling folders
 
 
 #### History Page
@@ -160,7 +160,7 @@ HistoryPage_RemoveAll = Delete all history
 ImageSelection_SelectedCount = Selecting {0} items
 SelectItems_ActionAs = Select item...
 StartMultiSelection = Multiple selection
-
+ImageListupPage_DragAndDrop_Unsupported = Drag and drop is not supported.
 
 #### ImageViewerPage
 CurrentFolder_InArchive = Folder
