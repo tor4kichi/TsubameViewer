@@ -321,6 +321,16 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             }
         }
     }
+        
+    private void FoldersAdaptiveGridView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        e.Data.Properties.Add("MyCustomDroppedItems", e.Items.ToList());
+    }
+
+    private void FoldersAdaptiveGridView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+
+    }
 
 
     void AlbamItemManagementFlyout_Opening(object sender, object e)
@@ -587,5 +597,5 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     }
 
 
-    #endregion    
+    #endregion
 }

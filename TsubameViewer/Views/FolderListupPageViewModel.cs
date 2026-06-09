@@ -98,7 +98,7 @@ public sealed partial class FolderListupPageViewModel
 
     public void Receive(StorageItemNotFoundMessage message)
     {
-        var item = FolderItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
+        var item = FolderItems.FirstOrDefault(x => x.Path != null && x.Path.Equals(message.Value, StringComparison.Ordinal));
         if (item != null)
         {
             FolderItems.Remove(item);

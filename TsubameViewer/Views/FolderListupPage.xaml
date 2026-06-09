@@ -330,6 +330,10 @@
         XYFocusUp="{x:Bind FileSortButton}"
         SelectedItem="{x:Bind _vm.FolderLastIntractItem, Mode=TwoWay}"  
         SelectionChanged="OnSelectionChanged"
+        CanDragItems="True"   
+        DragItemsStarting="FoldersAdaptiveGridView_DragItemsStarting"
+        DragItemsCompleted="FoldersAdaptiveGridView_DragItemsCompleted"
+        AllowDrop="True"
         >
 
         <GridView.Header>

@@ -144,6 +144,10 @@ SendToOtherFolder_MoveItem0to1 = {0} 被移至 {1}。
 CreateFolder = 创建一个文件夹
 CreateFolder_FolderNamePlaceholder = 请输入文件夹名称……
 CreateFolder_ExistFolderName = 此文件夹名称已存在。请输入其他名称。
+MoveToFolder_WithFolderName = 移至 {0}
+MoveToFolder_Completed_Single = 将 {0} 移至 {1}
+MoveToFolder_Completed_Multi = 将 {0} 个项目移至 {1}
+
 
 
 
