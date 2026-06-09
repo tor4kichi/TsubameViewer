@@ -793,7 +793,6 @@ public sealed partial class FolderListupPageViewModel
         using (FileItemsView.DeferRefresh())
         {
             FileItemsView.SortDescriptions.Clear();
-            FileItemsView.SortDescriptions.Add(new SortDescription(nameof(StorageItemViewModel.Type), SortDirection.Ascending));
             foreach (var sort in sortDescriptions)
             {
                 FileItemsView.SortDescriptions.Add(sort);

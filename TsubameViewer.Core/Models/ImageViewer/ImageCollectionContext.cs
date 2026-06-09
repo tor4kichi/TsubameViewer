@@ -188,14 +188,14 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
     public static QueryOptions CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType sort)
     {
-        var query = new QueryOptions(CommonFileQuery.DefaultQuery,
+        var query = new QueryOptions(CommonFileQuery.OrderByName,
             [
                 .. SupportedFileTypesHelper.SupportedArchiveFileExtensions,
                 .. SupportedFileTypesHelper.SupportedEBookFileExtensions,
                 .. SupportedFileTypesHelper.SupportedMovieFileExtensions                
             ])
         {
-            FolderDepth = FolderDepth.Shallow
+            FolderDepth = FolderDepth.Shallow,
         };
         query.SortOrder.Clear();
         switch (sort)
