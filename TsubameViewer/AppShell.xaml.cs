@@ -299,7 +299,8 @@ public sealed partial class AppShell : UserControl
     readonly Queue<object> _notificationRequestedItems = new Queue<object>();
     void ShowNotification(object content)
     {
-        if (NotificationContentControl.Content == null)
+        if (NotificationContentControl.Content == null
+            && string.IsNullOrEmpty(NotificationTextBlock.Text))
         {
             PushShowingNotificationContent(content);
         }
