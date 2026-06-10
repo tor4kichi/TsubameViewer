@@ -153,8 +153,8 @@ ReadingState_ToggleToFinished = Marquer comme lu
 ReadingState_ToggleToUnfinished = Remettre en non lu
 ReadingState_SetToFinished = Marqué comme lu
 ReadingState_SetToUnfinished = Remis en non lu
-
-
+StorageItemSettings_IsDisplayFolderItemsCount = Afficher le nombre de fichiers lus dans un dossier
+StorageItemSettings_IsDisplayFolderItemsCount_Desc = Dans la liste des dossiers, vous pouvez choisir d'afficher soit le nombre de fichiers lus, soit le nombre total de fichiers. Les catégories « Archives d'images », « EPUB » et « Vidéos » sont prises en compte dans ce décompte.
 
 
 #### History Page

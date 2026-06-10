@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
-using static TsubameViewer.Core.Models.FolderItemListing.LocalBookmarkRepository;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
@@ -56,11 +56,12 @@ public sealed class BookmarkEntry
 
 public sealed class LocalBookmarkRepository
 {
-    private readonly BookmarkRepository _bookmarkRepository;
+    private readonly ILiteCollection<BookmarkEntry> _bookmarkRepository;
 
-    public LocalBookmarkRepository(BookmarkRepository bookmarkRepository)
+    public LocalBookmarkRepository(ILiteDatabase localDatabase)
     {
-        _bookmarkRepository = bookmarkRepository;
+        _bookmarkRepository = localDatabase.GetCollection<BookmarkEntry>();
+        _bookmarkRepository.EnsureIndex(x => x.Path);
     }
 
     // OneDriveを意識するならログインユーザーに対する一意のIDを持たせて置いたほうがいいかもしれない
@@ -118,13 +119,21 @@ public sealed class LocalBookmarkRepository
         return new BookmarkFacade(_bookmarkRepository, entry);
     }
 
-    public sealed class BookmarkRepository : LiteDBServiceBase<BookmarkEntry>
+    public (int finishedItemsCount, int totalItemsCount) GetItemsCountForFolder(string path)
     {
-        public BookmarkRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
-        {
-            _collection.EnsureIndex(x => x.Path);
-        }
+        int sepCount = path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar) + 1;
+        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path));
+        var finishedCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path) && x.IsFinishedReading);
+        return (finishedCount, itemsCount - 1);
+    }
+}
 
+
+file static class BookmarkCollectionExtensions
+{
+    extension (ILiteCollection<BookmarkEntry> _collection)
+    {
+        
         public string GetBookmarkPageName(string path)
         {
             var bookmark = _collection.FindOne(x => x.Path == path);
@@ -223,22 +232,21 @@ public sealed class LocalBookmarkRepository
             {
                 entry = new BookmarkEntry() { Path = path };
                 var id = _collection.Insert(entry);
-                entry.Id = id;                
+                entry.Id = id;
             }
 
             return entry;
         }
     }
-
 }
 
 
 public sealed class BookmarkFacade : DeferSaveAwareObservableObject
 {
-    private readonly BookmarkRepository _repo;
+    private readonly ILiteCollection<BookmarkEntry> _repo;
     private readonly BookmarkEntry _entry;
 
-    public BookmarkFacade(BookmarkRepository repo, BookmarkEntry entry)
+    public BookmarkFacade(ILiteCollection<BookmarkEntry> repo, BookmarkEntry entry)
     {
         _repo = repo;
         _entry = entry;
@@ -246,7 +254,7 @@ public sealed class BookmarkFacade : DeferSaveAwareObservableObject
 
     protected override void OnSave()
     {
-        _repo.UpdateItem(_entry);
+        _repo.Update(_entry);
     }
 
 

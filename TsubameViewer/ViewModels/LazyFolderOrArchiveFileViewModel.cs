@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     readonly ThumbnailImageManager _thumbnailImageService;
     readonly AlbamRepository _albamRepository;
     public SelectionContext? Selection { get; }
+    public StorageItemSettings Settings { get; }
 
     [ObservableProperty]
     IImageSource? _item;
@@ -89,7 +91,8 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         LocalBookmarkRepository bookmarkManager,
         ThumbnailImageManager thumbnailImageService,
         AlbamRepository albamRepository,
-        SelectionContext? selectionContext = null
+        SelectionContext? selectionContext = null,
+        StorageItemSettings? settings = null
         )
     {
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -97,6 +100,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _thumbnailImageService = thumbnailImageService;
         _albamRepository = albamRepository;
         Selection = selectionContext;
+        Settings = settings ?? Ioc.Default.GetRequiredService<StorageItemSettings>();
         _imageCollectionContext = imageCollectionContext;
         _itemIndex = itemIndex;
         _fileSortType = fileSortType;
@@ -252,6 +256,14 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
             _bookmark = null;
             ReadParcentage = Bookmark.IsFinishedReading ? 1.0 : Bookmark.ReadPosition.Value;
+        }
+        else if (Type is StorageItemTypes.Folder && Settings.IsDisplayFolderItemsCount)
+        {
+            var (finished, total) = _bookmarkManager.GetItemsCountForFolder(Path);
+            if (total != 0)
+            {
+                Duration = $"{finished}/{total}";
+            }
         }
     }
 

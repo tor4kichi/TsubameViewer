@@ -169,6 +169,7 @@ sealed partial class App : Application
         container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
         container.Register<FileControlSettings>(reuse: new SingletonReuse());
         container.Register<ApplicationSettings>(reuse: new SingletonReuse());
+        container.Register<StorageItemSettings>(reuse: new SingletonReuse());
 
         container.Register<ISecondaryTileManager, SecondaryTileManager>(reuse: new SingletonReuse());
 

@@ -42,6 +42,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly ImageViewerSettings _imageViewerPageSettings;
     readonly FolderListingSettings _folderListupSettings;
+    private readonly StorageItemSettings _storageItemSettings;
     readonly IThumbnailImageMaintenanceService _thumbnailImageMaintenanceService;
 
     public SettingsGroupViewModel[] SettingGroups { get; }
@@ -69,6 +70,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         SourceStorageItemsRepository sourceStorageItemsRepository,
         ImageViewerSettings imageViewerPageSettings,
         FolderListingSettings folderListupSettings,
+        StorageItemSettings storageItemSettings,
         IThumbnailImageMaintenanceService thumbnailImageMaintenanceService
         )
     {
@@ -78,6 +80,7 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _imageViewerPageSettings = imageViewerPageSettings;
         _folderListupSettings = folderListupSettings;
+        _storageItemSettings = storageItemSettings;
         _thumbnailImageMaintenanceService = thumbnailImageMaintenanceService;
         _isThumbnailDeleteButtonActive = new ReactiveProperty<bool>();
         _thumbnailImagesCacheSizeText = new ReactivePropertySlim<string>();
@@ -131,6 +134,10 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveFileThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveFileGenerateThumbnailEnabled),
                     new ToggleSwitchSettingItemViewModel<FolderListingSettings>("IsGenerateArchiveEntryThumbnail".Translate(), _folderListingSettings, x => x.IsArchiveEntryGenerateThumbnailEnabled),
                     _cacheSizeButton,
+                    new ToggleSwitchSettingItemViewModel<StorageItemSettings>(
+                        "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
+                        "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),
+                        _storageItemSettings, x => x.IsDisplayFolderItemsCount),
                 }
             },
             new SettingsGroupViewModel
@@ -370,6 +377,7 @@ public sealed partial class StoredFolderViewModel
 public interface IToggleSwitchSettingItemViewModel
 {
     string Label { get; }
+    string Desc { get; }
     ReactiveProperty<bool> ValueContainer { get; }
 }
 
@@ -380,10 +388,19 @@ public class ToggleSwitchSettingItemViewModel<T> : SettingItemViewModelBase, ITo
     {
         ValueContainer = value.ToReactivePropertyAsSynchronized(expression);
         Label = label;
+        Desc = "";
+    }
+
+    public ToggleSwitchSettingItemViewModel(string label, string desc, T value, Expression<Func<T, bool>> expression)
+    {
+        ValueContainer = value.ToReactivePropertyAsSynchronized(expression);
+        Label = label;
+        Desc = desc;
     }
 
     public ReactiveProperty<bool> ValueContainer { get; }
     public string Label { get; }
+    public string Desc { get; }
 
     public void Dispose()
     {

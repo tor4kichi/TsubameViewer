@@ -153,8 +153,8 @@ ReadingState_ToggleToFinished = 标记为已读
 ReadingState_ToggleToUnfinished = 恢复为未读
 ReadingState_SetToFinished = 已标记为已读
 ReadingState_SetToUnfinished = 已标记为未读
-
-
+StorageItemSettings_IsDisplayFolderItemsCount = 显示文件夹的已读数量
+StorageItemSettings_IsDisplayFolderItemsCount_Desc = 在文件夹列表的文件夹条目中，可以切换显示“已读数量”和“总数量”。统计对象包括“图片存档”、“EPUB”和“视频”。
 
 
 #### History Page
