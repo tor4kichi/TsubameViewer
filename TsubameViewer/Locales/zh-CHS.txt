@@ -149,6 +149,12 @@ MoveToFolder_Completed_Single = 将 {0} 移至 {1}
 MoveToFolder_Completed_Multi = 将 {0} 个项目移至 {1}
 MoveToFolder_ItemsMoveToSelectedFolder = 移动到选定的文件夹
 MoveToFolder_ToggleSiblingFoldersDisplay = 显示同级文件夹
+ReadingState_ToggleToFinished = 标记为已读
+ReadingState_ToggleToUnfinished = 恢复为未读
+ReadingState_SetToFinished = 已标记为已读
+ReadingState_SetToUnfinished = 已标记为未读
+
+
 
 
 #### History Page

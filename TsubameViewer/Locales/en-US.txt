@@ -149,6 +149,12 @@ MoveToFolder_Completed_Single = Move {0} to {1}
 MoveToFolder_Completed_Multi = Move {0} items to {1}
 MoveToFolder_ItemsMoveToSelectedFolder = Move to the selected folder
 MoveToFolder_ToggleSiblingFoldersDisplay = Show sibling folders
+ReadingState_ToggleToFinished = Mark as read
+ReadingState_ToggleToUnfinished = Mark as unread
+ReadingState_SetToFinished = Marked as read
+ReadingState_SetToUnfinished = Marked as unread
+
+
 
 
 #### History Page
