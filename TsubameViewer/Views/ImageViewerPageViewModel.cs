@@ -217,6 +217,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     readonly AlbamRepository _albamRepository;
     readonly ImageCollectionManager _imageCollectionManager;
     readonly LocalBookmarkRepository _bookmarkManager;
+    readonly StorageItemSettings _storageItemSettings;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ThumbnailImageManager _thumbnailManager;
     readonly FolderListingSettings _folderListingSettings;
@@ -232,6 +233,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
+        StorageItemSettings storageItemSettings,
         RecentlyAccessRepository recentlyAccessRepository,
         ThumbnailImageManager thumbnailManager,
         FolderListingSettings folderListingSettings,
@@ -267,6 +269,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         _bookmarkManager = bookmarkManager;
+        _storageItemSettings = storageItemSettings;
         _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
         _folderListingSettings = folderListingSettings;
@@ -634,7 +637,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (_currentImageSource.StorageItem is IStorageItem)
                     {
                         var v = new NormalizedPagePosition(Images.Length, imageIndex);
-                        bool isFinished = _pageMovedCount > 0 && v.Value > 0.85f;
+                        bool isFinished = _pageMovedCount > 0 && v.Value > _storageItemSettings.ReadingFinishedThresholdForImageViewer;
                         _bookmarkManager.AddBookmarkForImageViewer(_pathForSettings, imageSource.Name, v, isFinished: isFinished);
                         _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
                     }

@@ -19,7 +19,6 @@ using Windows.UI.Xaml.Media.Imaging;
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
-using static DryIoc.Setup;
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 
 public sealed class StorageItemSettings : FlagsRepositoryBase
@@ -28,6 +27,9 @@ public sealed class StorageItemSettings : FlagsRepositoryBase
     {
         _isDisplayFolderItemsCount = Read(false, nameof(IsDisplayFolderItemsCount));
         _descriptionTextFontSize = Read(12, nameof(DescriptionTextFontSize));
+        _readingFinishedThresholdForImageViewer = Read(0.85, nameof(ReadingFinishedThresholdForImageViewer));
+        _readingFinishedThresholdForEBookViewer = Read(0.9, nameof(ReadingFinishedThresholdForEBookViewer));
+        _readingFinishedThresholdForMovieViewer = Read(0.9, nameof(ReadingFinishedThresholdForMovieViewer));
     }
 
     bool _isDisplayFolderItemsCount = false;
@@ -42,6 +44,26 @@ public sealed class StorageItemSettings : FlagsRepositoryBase
     {
         get => _descriptionTextFontSize;
         set => SetProperty(ref _descriptionTextFontSize, value);
+    }
+
+
+    double _readingFinishedThresholdForImageViewer;
+    public double ReadingFinishedThresholdForImageViewer
+    {
+        get => _readingFinishedThresholdForImageViewer;
+        set => SetProperty(ref _readingFinishedThresholdForImageViewer, value);
+    }
+    double _readingFinishedThresholdForEBookViewer;
+    public double ReadingFinishedThresholdForEBookViewer
+    {
+        get => _readingFinishedThresholdForEBookViewer;
+        set => SetProperty(ref _readingFinishedThresholdForEBookViewer, value);
+    }
+    double _readingFinishedThresholdForMovieViewer;
+    public double ReadingFinishedThresholdForMovieViewer
+    {
+        get => _readingFinishedThresholdForMovieViewer;
+        set => SetProperty(ref _readingFinishedThresholdForMovieViewer, value);
     }
 }
 

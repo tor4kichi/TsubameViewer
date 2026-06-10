@@ -442,10 +442,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             NormalizedPagePosition v = new((float)(pos.TotalSeconds / duration.TotalSeconds));
                             bkmk.ReadPosition = v;
                             if (!bkmk.IsFinishedReading
-                                && v.Value > 0.95f)
+                                && v.Value > s._vm.StorageItemSettings.ReadingFinishedThresholdForMovieViewer)
                             {
-                                bkmk.IsFinishedReading = v.Value > 0.9f;
-                                Debug.WriteLine($"Mark Finished!");
+                                bkmk.IsFinishedReading = true;
+                                Debug.WriteLine($"Mark as Finished: {v.Value:F2}");
                             }
                         }
                     })

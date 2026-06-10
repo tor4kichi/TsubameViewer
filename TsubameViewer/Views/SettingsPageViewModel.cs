@@ -30,6 +30,7 @@ using TsubameViewer.Views.Converters;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.UI.ViewManagement;
+using Windows.UI.Xaml.Controls.Primitives;
 
 #nullable enable
 namespace TsubameViewer.ViewModels;
@@ -138,6 +139,27 @@ public sealed class SettingsPageViewModel : NavigationAwareViewModelBase
                         "StorageItemSettings_IsDisplayFolderItemsCount".Translate(),
                         "StorageItemSettings_IsDisplayFolderItemsCount_Desc".Translate(),
                         _storageItemSettings, x => x.IsDisplayFolderItemsCount),
+                    new NumberBoxSettingItemViewModel(
+                        "StorageItemSettings_ReadingFinishedThresholdForImageViewer".Translate(),
+                        _storageItemSettings.ReadingFinishedThresholdForImageViewer,
+                        0.01,
+                        0.99,
+                        0.01,
+                        f => _storageItemSettings.ReadingFinishedThresholdForImageViewer = (float)f),
+                    new NumberBoxSettingItemViewModel(
+                        "StorageItemSettings_ReadingFinishedThresholdForEBookViewer".Translate(),
+                        _storageItemSettings.ReadingFinishedThresholdForEBookViewer,
+                        0.01,
+                        0.99,
+                        0.01,
+                        f => _storageItemSettings.ReadingFinishedThresholdForEBookViewer = (float)f),
+                    new NumberBoxSettingItemViewModel(
+                        "StorageItemSettings_ReadingFinishedThresholdForMovieViewer".Translate(),
+                        _storageItemSettings.ReadingFinishedThresholdForMovieViewer,
+                        0.01,
+                        0.99,
+                        0.01,
+                        f => _storageItemSettings.ReadingFinishedThresholdForMovieViewer = (float)f),
                 }
             },
             new SettingsGroupViewModel
@@ -428,7 +450,7 @@ public class NumberBoxSettingItemViewModel : SettingItemViewModelBase
     public double MaxValue { get; }
     public double ValueStep { get; }
 
-    public void OnValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    public void OnValueChanged(object sender, RangeBaseValueChangedEventArgs args)
     {
         _changedAction(args.NewValue);
     }

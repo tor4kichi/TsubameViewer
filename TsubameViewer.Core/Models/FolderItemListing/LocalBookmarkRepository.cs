@@ -196,7 +196,7 @@ file static class BookmarkCollectionExtensions
                 bookmark.Position = normalizedPosition;
                 if (!bookmark.IsFinishedReading)
                 {
-                    Debug.WriteLine($"isFinished: {isFinished} ({normalizedPosition.Value:F2})");
+                    Debug.WriteLine($"Mark as Finished: {normalizedPosition.Value:F2}");
                     bookmark.IsFinishedReading = isFinished;
                 }
                 _collection.Update(bookmark);

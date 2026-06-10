@@ -155,6 +155,9 @@ ReadingState_SetToFinished = Marqué comme lu
 ReadingState_SetToUnfinished = Remis en non lu
 StorageItemSettings_IsDisplayFolderItemsCount = Afficher le nombre de fichiers lus dans un dossier
 StorageItemSettings_IsDisplayFolderItemsCount_Desc = Dans la liste des dossiers, vous pouvez choisir d'afficher soit le nombre de fichiers lus, soit le nombre total de fichiers. Les catégories « Archives d'images », « EPUB » et « Vidéos » sont prises en compte dans ce décompte.
+StorageItemSettings_ReadingFinishedThresholdForImageViewer = Seuil de détermination de la fin de lecture pour la visionneuse d'images
+StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermination de la fin de lecture pour la visionneuse de romans
+StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
 
 
 #### History Page

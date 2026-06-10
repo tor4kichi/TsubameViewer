@@ -125,6 +125,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
+        StorageItemSettings storageItemSettings,
         RecentlyAccessRepository recentlyAccessRepository,
         ThumbnailImageManager thumbnailManager,
         LastIntractItemRepository folderLastIntractItemManager,
@@ -138,6 +139,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _imageCollectionManager = imageCollectionManager;
         _imageCollectionSettings = imageCollectionSettings;
         BookmarkManager = bookmarkManager;
+        StorageItemSettings = storageItemSettings;
         _recentlyAccessRepository = recentlyAccessRepository;
         ThumbnailManager = thumbnailManager;
         _folderLastIntractItemManager = folderLastIntractItemManager;
@@ -153,6 +155,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     readonly ImageCollectionManager _imageCollectionManager;
     readonly ImageViewerSettings _imageCollectionSettings;
     public LocalBookmarkRepository BookmarkManager { get; }
+    public StorageItemSettings StorageItemSettings { get; }
     public MovieViewerPageSettings PageSettings { get; }
 
     readonly RecentlyAccessRepository _recentlyAccessRepository;

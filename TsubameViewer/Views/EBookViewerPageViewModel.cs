@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -126,6 +127,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly StorageItemSettings _storageItemSettings;
     readonly ThumbnailImageManager _thumbnailManager;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ApplicationSettings _applicationSettings;
@@ -153,6 +155,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
+        StorageItemSettings storageItemSettings,
         ThumbnailImageManager thumbnailManager,
         RecentlyAccessRepository recentlyAccessRepository,
         ApplicationSettings applicationSettings,
@@ -165,6 +168,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _bookmarkManager = bookmarkManager;
+        _storageItemSettings = storageItemSettings;
         _thumbnailManager = thumbnailManager;
         _recentlyAccessRepository = recentlyAccessRepository;
         _applicationSettings = applicationSettings;
@@ -376,10 +380,12 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     bookmark.PageName = currentPage.FilePath;
                     bookmark.SetReadPosition((long)s.CurrentReadingItemPosition, (long)s.TotalReadingItemContentSize);
                     bookmark.InnerPageIndex = s.InnerCurrentImageIndex;
-                    if (!bookmark.IsFinishedReading)
+                    if (!bookmark.IsFinishedReading
+                        && s._pageMovedCount > 0 
+                        && bookmark.ReadPosition.Value > s._storageItemSettings.ReadingFinishedThresholdForEBookViewer)
                     {
-                        bookmark.IsFinishedReading = s._pageMovedCount > 0 && bookmark.ReadPosition.Value > 0.90f;
-                        Debug.WriteLine("Mark Finished!");
+                        bookmark.IsFinishedReading = true;
+                        Debug.WriteLine($"Mark as Finished: {bookmark.ReadPosition.Value:F2}");
                     }
                 }
             })

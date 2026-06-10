@@ -13,7 +13,7 @@ internal class DoubleToPercentTextConverter : IValueConverter
     {
         if (value is double doubleValue)
         {
-            int percent = (int)(doubleValue * 100);
+            int percent = (int)Math.Round(doubleValue * 100);
             return $"{percent}%";
         }
         return "0%";

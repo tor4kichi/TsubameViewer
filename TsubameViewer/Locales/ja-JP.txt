@@ -155,6 +155,9 @@ ReadingState_SetToFinished = 読了済みに変更しました
 ReadingState_SetToUnfinished = 未読に変更しました
 StorageItemSettings_IsDisplayFolderItemsCount = フォルダの読了数を表示する
 StorageItemSettings_IsDisplayFolderItemsCount_Desc = フォルダ一覧のフォルダアイテムにおいて、読了数と個数の表示を切り替えられます。「画像アーカイブ」「EPUB」「動画」が集計の対象です。
+StorageItemSettings_ReadingFinishedThresholdForImageViewer = 画像ビューアの読了判定のしきい値
+StorageItemSettings_ReadingFinishedThresholdForEBookViewer = 小説ビューアの読了判定のしきい値
+StorageItemSettings_ReadingFinishedThresholdForMovieViewer = 動画ビューアの読了判定のしきい値
 
 
 #### History Page
