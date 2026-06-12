@@ -241,9 +241,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ToggleFullScreenCommand toggleFullScreenCommand,
         BackNavigationCommand backNavigationCommand,
-        FavoriteAddCommand favoriteAddCommand,
-        FavoriteRemoveCommand favoriteRemoveCommand,
-        AlbamItemEditCommand albamItemEditCommand,
+        FavoriteToggleCommand favoriteToggleCommand,
         RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
@@ -259,9 +257,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ImageViewerSettings = imageCollectionSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
-        FavoriteAddCommand = favoriteAddCommand;
-        FavoriteRemoveCommand = favoriteRemoveCommand;
-        AlbamItemEditCommand = albamItemEditCommand;
+        FavoriteToggleCommand = favoriteToggleCommand;
         RefreshCommand = refreshNavigationCommand;
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
@@ -616,7 +612,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         _currentDisplayImageSources[0] = firstImage;
                         _currentDisplayImageSources[1] = null;
 
-                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(firstImage.Path) : false;
                         Page2Favorite = false;
                     }
                     else if (imageSources.Length == 2)
@@ -626,8 +622,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         _currentDisplayImageSources[0] = firstImage;
                         _currentDisplayImageSources[1] = secondImage;
 
-                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
-                        Page2Favorite = secondImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, secondImage.Path) : false;
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(firstImage.Path) : false;
+                        Page2Favorite = secondImage != null ? _albamRepository.IsExistAlbamItem(secondImage.Path) : false;
                     }
 
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
@@ -1884,9 +1880,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
     public BackNavigationCommand BackNavigationCommand { get; }
-    public FavoriteAddCommand FavoriteAddCommand { get; }
-    public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
-    public AlbamItemEditCommand AlbamItemEditCommand { get; }
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }

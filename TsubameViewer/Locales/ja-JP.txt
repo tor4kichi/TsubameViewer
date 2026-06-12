@@ -275,8 +275,11 @@ ChoiceTargetAlbam = アルバムを選択
 AlbamItemRemove = アルバムから除去
 AlbamItemAdd = アルバムに追加
 FavoriteAlbam = お気に入り
-AddFavoriteImage = お気に入りに追加
-RemoveFavoriteImage = お気に入りから除去
+Favorite_AddItem = お気に入りに登録
+Favorite_RemoveItem = お気に入りから解除
+Favorite_Added = {0} をお気に入りに登録
+Favorite_Removed = {0} をお気に入りから解除
+
 
 
 #### FolderOrArchiveResturcture

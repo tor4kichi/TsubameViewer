@@ -275,8 +275,11 @@ ChoiceTargetAlbam = Sélectionner un album
 AlbamItemRemove = Supprimer de l'album
 AlbamItemAdd = Ajouter à l'album
 FavoriteAlbam = Favoris
-AddFavoriteImage = Ajouter aux favoris
-RemoveFavoriteImage = Retirer des favoris
+Favorite_AddItem = Ajouter aux favoris
+Favorite_RemoveItem = Supprimer des favoris
+Favorite_Added = Ajouter {0} aux favoris
+Favorite_Removed = Supprimer {0} des favoris
+
 
 
 #### FolderOrArchiveResturcture

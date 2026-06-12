@@ -24,6 +24,7 @@ public static class AlbamItemExtensions
                 StorageItemTypes.ArchiveFolder => AlbamItemType.FolderOrArchive,
                 StorageItemTypes.EBook => AlbamItemType.FolderOrArchive,
                 StorageItemTypes.AddAlbam => throw new NotSupportedException(),
+                StorageItemTypes.Movie => AlbamItemType.FolderOrArchive,
                 _ => throw new NotSupportedException()
             },
             AlbamItemImageSource albamItem => albamItem.InnerImageSource.GetAlbamItemType(),

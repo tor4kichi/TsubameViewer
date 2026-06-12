@@ -664,9 +664,11 @@
 
             <muxc:DropDownButton.Flyout>
               <MenuFlyout Opening="Page1MenuFlyout_Opening">
-                <MenuFlyoutSubItem x:Name="Page1AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}">
-                  
-                </MenuFlyoutSubItem>
+                <MenuFlyoutItem x:Name="Page1FavoriteToggleItemButton"
+                                Text="{i18nExt:Localize Key=Favorite_AddItem}"
+                                Command="{x:Bind _vm.FavoriteToggleCommand}"
+                                CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" />
+
                 <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="T" />
@@ -702,9 +704,10 @@
 
             <muxc:DropDownButton.Flyout>
               <MenuFlyout Opening="Page2MenuFlyout_Opening">
-                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}">
-
-                </MenuFlyoutSubItem>
+                <MenuFlyoutItem x:Name="Page2FavoriteToggleItemButton"
+                                Text="{i18nExt:Localize Key=Favorite_AddItem}"
+                                Command="{x:Bind _vm.FavoriteToggleCommand}"
+                                CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" />
                 <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
                   <MenuFlyoutItem.KeyboardAccelerators>
                     <KeyboardAccelerator Key="T" />
@@ -1229,6 +1232,31 @@
           <VisualState.Setters>
             <Setter Target="ReadOnlySeekBar.Opacity"
                     Value="0.0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- ページ１のお気に入り切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page1Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1FavoriteToggleItemButton.Text"
+                    Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <!-- ページ２のお気に入り切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page2Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2FavoriteToggleItemButton.Text"
+                    Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

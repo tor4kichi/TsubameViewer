@@ -125,8 +125,7 @@
 
       <Grid Visibility="{x:Bind Duration, Mode=OneWay, Converter={StaticResource StringNotEmptyToVisibleConverter}}"
             HorizontalAlignment="Right"
-            VerticalAlignment="Bottom"
-            >
+            VerticalAlignment="Bottom">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto" />
           <RowDefinition Height="1*" />
@@ -140,15 +139,29 @@
                   Margin="0 0 0 0"
                   Padding="6 2"
                   Opacity="0.8">
-            <TextBlock Text="{x:Bind Duration, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock Text="{x:Bind Duration, Mode=OneWay}"
+                       Style="{StaticResource CaptionTextBlockStyle}" />
           </Border>
         </Border>
-        
+
         <Border Height="{StaticResource FolderItemTitleHeight}"
                 Grid.Row="1">
-          
+
         </Border>
       </Grid>
+      <Border Background="{ThemeResource SystemAccentColor}"
+              Width="80"
+              Height="24"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+              RenderTransformOrigin="0.5, 0.5">
+        <Border.RenderTransform>
+          <CompositeTransform Rotation="-45"
+                              TranslateX="-40"
+                              TranslateY="0"/>
+        </Border.RenderTransform>
+      </Border>
     </Grid>
   </DataTemplate>
 
@@ -198,7 +211,19 @@
 
         </Border>
       </Grid>
-
+      <Border Background="{ThemeResource SystemAccentColor}"
+              Width="80"
+              Height="24"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+              RenderTransformOrigin="0.5, 0.5">
+        <Border.RenderTransform>
+          <CompositeTransform Rotation="-45"
+                              TranslateX="-40"
+                              TranslateY="0" />
+        </Border.RenderTransform>
+      </Border>
     </Grid>
   </DataTemplate>
 
@@ -261,6 +286,19 @@
 
         </Border>
       </Grid>
+      <Border Background="{ThemeResource SystemAccentColor}"
+              Width="80"
+              Height="24"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              Opacity="{x:Bind IsFavorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+              RenderTransformOrigin="0.5, 0.5">
+        <Border.RenderTransform>
+          <CompositeTransform Rotation="-45"
+                              TranslateX="-40"
+                              TranslateY="0" />
+        </Border.RenderTransform>
+      </Border>
     </Grid>
   </DataTemplate>
 

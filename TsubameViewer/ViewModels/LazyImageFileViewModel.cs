@@ -148,7 +148,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                 DateCreated = Item.DateCreated;
                 Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
                 UpdateLastReadPosition();
-                IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+                IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             }
         }
         catch (DirectoryNotFoundException)
@@ -225,7 +225,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is LoadingStatus.NowLoading)
         {
@@ -337,7 +337,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             DateCreated = _item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _item.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
         }
         else
         {
@@ -346,7 +346,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             DateCreated = _cacheEntry.DateCreated;
             Type = StorageItemTypes.Image;
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, _cacheEntry.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
         }
     }
 
@@ -412,7 +412,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
             DateCreated = Item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
         }
 
         if (Type == StorageItemTypes.Movie
@@ -485,7 +485,7 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is LoadingStatus.NowLoading)
         {

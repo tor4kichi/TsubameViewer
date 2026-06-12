@@ -31,13 +31,13 @@ public sealed class FavoriteAlbam
 
     public bool IsFavorite(string path)
     {
-        return _albamRepository.IsExistAlbamItem(FavoriteAlbamId, path, AlbamItemType.Image);
+        return _albamRepository.IsExistAlbamItem(path);
     }
 
     public AlbamItemEntry AddFavoriteItem(IImageSource imageSource)
     {
         var itemType = imageSource.GetAlbamItemType();
-        if (_albamRepository.IsExistAlbamItem(FavoriteAlbamId, imageSource.Path, itemType))
+        if (_albamRepository.IsExistAlbamItem(imageSource.Path, itemType))
         {
             return null;
         }

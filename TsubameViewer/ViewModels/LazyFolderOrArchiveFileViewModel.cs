@@ -223,7 +223,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             DateCreated = Item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)
             {
@@ -269,7 +269,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is LoadingStatus.NowLoading)
         {

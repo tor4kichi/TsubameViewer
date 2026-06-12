@@ -29,6 +29,7 @@ using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
 using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
@@ -56,6 +57,7 @@ public sealed partial class FolderListupPageViewModel
     , IRecipient<StorageItemNotFoundMessage>
     , IRecipient<ThumbnailImageUpdateRequestMessage>
     , IRecipient<SendToOtherFolderMessage>
+    , IRecipient<ImageSourceFavoriteChanged>
 {
 
     public void Receive(SendToOtherFolderMessage message)
@@ -121,6 +123,19 @@ public sealed partial class FolderListupPageViewModel
         }
     }
 
+    public void Receive(ImageSourceFavoriteChanged message)
+    {
+        var (imageSource, isFav) = message.Value;
+        foreach (var item in FolderItems)
+        {
+            if (item.Path?.Equals(imageSource.Path, StringComparison.Ordinal) ?? false)
+            {
+                item.IsFavorite = isFav;
+                break;
+            }
+        }
+    }
+
     [ObservableProperty]
     bool _nowProcessing;
 
@@ -150,6 +165,7 @@ public sealed partial class FolderListupPageViewModel
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FileDeleteCommand FileDeleteCommand { get; }
+    public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public ObservableCollection<IStorageItemViewModel> FolderItems { get; private set; }
 
     public AdvancedCollectionView FileItemsView { get; }
@@ -216,7 +232,8 @@ public sealed partial class FolderListupPageViewModel
         SecondaryTileRemoveCommand secondaryTileRemoveCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        FileDeleteCommand fileDeleteCommand
+        FileDeleteCommand fileDeleteCommand,
+        FavoriteToggleCommand favoriteToggleCommand
         )
     {
         _messenger = messenger;
@@ -243,6 +260,7 @@ public sealed partial class FolderListupPageViewModel
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FileDeleteCommand = fileDeleteCommand;
+        FavoriteToggleCommand = favoriteToggleCommand;
         FolderItems = new ObservableCollection<IStorageItemViewModel>();
         FileItemsView = new AdvancedCollectionView(FolderItems);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
@@ -277,6 +295,7 @@ public sealed partial class FolderListupPageViewModel
                 _messenger.Unregister<StorageItemNotFoundMessage>(this);
                 _messenger.Unregister<ThumbnailImageUpdateRequestMessage>(this);
                 _messenger.Unregister<SendToOtherFolderMessage>(this);
+                _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
                 base.OnNavigatedFrom(parameters);
             }
@@ -520,6 +539,7 @@ public sealed partial class FolderListupPageViewModel
         _messenger.Register<StorageItemNotFoundMessage>(this);
         _messenger.Register<ThumbnailImageUpdateRequestMessage>(this);
         _messenger.Register<SendToOtherFolderMessage>(this);
+        _messenger.Register<ImageSourceFavoriteChanged>(this);
 
         await base.OnNavigatedToAsync(parameters, ct);
     }
@@ -598,7 +618,7 @@ public sealed partial class FolderListupPageViewModel
             throw new InvalidOperationException();
         }
 
-        var albam = _albamRepository.GetAlbam(albamId);
+        var albam = _albamRepository.GetAlbam(FavoriteAlbam.FavoriteAlbamId);
 
         HasFileItem = false;
         

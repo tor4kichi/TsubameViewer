@@ -59,6 +59,11 @@ public sealed class SelectionContext : ObservableObject
 
     public ObservableCollection<IStorageItemViewModel> SelectedItems { get; } = new ();
 
+    public void ForceNotifySelectedItems()
+    {
+        OnPropertyChanged(nameof(SelectedItems));
+    }
+
     public void StartSelection()
     {
         IsSelectionModeEnabled = true;
@@ -76,6 +81,7 @@ public sealed partial class ImageListupPageViewModel
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
     , IRecipient<SendToOtherFolderMessage>
+    , IRecipient<ImageSourceFavoriteChanged>
 {
 
     public void Receive(SendToOtherFolderMessage message)
@@ -127,6 +133,18 @@ public sealed partial class ImageListupPageViewModel
         }
     }
 
+    public void Receive(ImageSourceFavoriteChanged message)
+    {
+        var (imageSource, isFav) = message.Value;
+        foreach (var item in ImageFileItems)
+        {
+            if (item.Path?.Equals(imageSource.Path, StringComparison.Ordinal) ?? false)
+            {
+                item.IsFavorite = isFav;
+                break;
+            }
+        }
+    }
 
     readonly IMessenger _messenger;
     readonly LocalBookmarkRepository _bookmarkManager;
@@ -155,10 +173,7 @@ public sealed partial class ImageListupPageViewModel
     public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
-    public AlbamItemEditCommand AlbamItemEditCommand { get; }
-    public FavoriteAddCommand FavoriteAddCommand { get; }
-    public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
-    public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
+    public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public ObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
     public AdvancedCollectionView FileItemsView { get; }
@@ -241,10 +256,7 @@ public sealed partial class ImageListupPageViewModel
         SecondaryTileRemoveCommand secondaryTileRemoveCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        AlbamItemEditCommand albamItemEditCommand,
-        AlbamItemRemoveCommand albamItemRemoveCommand,
-        FavoriteAddCommand favoriteAddCommand,
-        FavoriteRemoveCommand favoriteRemoveCommand
+        FavoriteToggleCommand favoriteToggleCommand
         )
     {
         _messenger = messenger;
@@ -267,10 +279,7 @@ public sealed partial class ImageListupPageViewModel
         SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
-        AlbamItemEditCommand = albamItemEditCommand;
-        AlbamItemRemoveCommand = albamItemRemoveCommand;
-        FavoriteAddCommand = favoriteAddCommand;
-        FavoriteRemoveCommand = favoriteRemoveCommand;
+        FavoriteToggleCommand = favoriteToggleCommand;
         ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
@@ -325,6 +334,7 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
         _messenger.Unregister<SendToOtherFolderMessage>(this);
         _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -461,6 +471,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Register<InPageSearchRequestMessage>(this);
             _messenger.Register<StorageItemNotFoundMessage>(this);
             _messenger.Register<SendToOtherFolderMessage>(this);
+            _messenger.Register<ImageSourceFavoriteChanged>(this);
 
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
@@ -484,6 +495,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
             _messenger.Unregister<SendToOtherFolderMessage>(this);
+            _messenger.Unregister<ImageSourceFavoriteChanged>(this);
             throw;
         }
 

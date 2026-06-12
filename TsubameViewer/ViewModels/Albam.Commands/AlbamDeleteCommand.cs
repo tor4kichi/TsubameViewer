@@ -46,7 +46,7 @@ public sealed class AlbamDeleteCommand : CommandBase
 
         if (parameter is AlbamImageSource albam)
         {
-            if (_albamRepository.GetAlbamItemsCount(albam.AlbamId) > 0)
+            if (_albamRepository.GetAlbamItemsCount() > 0)
             {
                 if (!await _messageDialogService.ShowMessageDialogAsync(
                     "AlbamDeleteConfirmDialogText".Translate(albam.Name),

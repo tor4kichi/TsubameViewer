@@ -148,7 +148,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
         UpdateLastReadPosition();
-        _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
+        _isFavorite = _albamRepository.IsExistAlbamItem(item.Path);
     }
 
     public bool IsRequestImageLoading { get; private set; } = false;
@@ -262,7 +262,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (_isRequireLoadImageWhenRestored && Image == null)
         {

@@ -117,12 +117,12 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public ValueTask<bool> IsExistFolderOrArchiveFileAsync(CancellationToken ct)
     {
-        return new(_albamRepository.IsExistAlbamItem(_albam._id, AlbamItemType.FolderOrArchive));
+        return new(_albamRepository.IsExistAlbamItem(AlbamItemType.FolderOrArchive));
     }
 
     public ValueTask<bool> IsExistImageFileAsync(CancellationToken ct)
     {
-        return new(_albamRepository.IsExistAlbamItem(_albam._id, AlbamItemType.Image));
+        return new(_albamRepository.IsExistAlbamItem(AlbamItemType.Image));
     }
 
 
@@ -150,7 +150,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public async IAsyncEnumerable<IImageSource> GetAllImageFilesAsync([EnumeratorCancellation] CancellationToken ct)
     {
-        var items = _albamRepository.GetAlbamImageItems(_albam._id);
+        var items = _albamRepository.GetAlbamImageItems();
         foreach (var item in items.ToList())
         {
             yield return await GetAlbamItemImageSourceAsync(item, ct);
@@ -159,7 +159,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public async IAsyncEnumerable<IImageSource> GetFolderOrArchiveFilesAsync([EnumeratorCancellation] CancellationToken ct)
     {
-        var items = _albamRepository.GetAlbamFolderOrArchiveItems(_albam._id).ToArray();
+        var items = _albamRepository.GetAlbamFolderOrArchiveItems().ToArray();
         foreach (var item in items)
         {
             yield return await GetAlbamItemImageSourceAsync(item, ct);
@@ -168,7 +168,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
-        var albamItem = _albamRepository.GetAlbamImageItems(_albam._id, sort, index, 1).FirstOrDefault();
+        var albamItem = _albamRepository.GetAlbamImageItems(sort, index, 1).FirstOrDefault();
         if (albamItem == null)
         {
             throw new InvalidOperationException($"not found albam item from index [{index}] in {_albam.Name}");
@@ -179,7 +179,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
     {
-        return new (_albamRepository.GetAlbamItemsCount(_albam._id, AlbamItemType.Image));
+        return new (_albamRepository.GetAlbamItemsCount(AlbamItemType.Image));
     }
 
     public IAsyncEnumerable<IImageSource> GetImageFilesAsync(CancellationToken ct)
@@ -189,7 +189,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
-        var items = _albamRepository.GetAlbamImageItems(_albam._id, sort);
+        var items = _albamRepository.GetAlbamImageItems(sort);
         int index = 0;
         foreach (var item in items)
         {

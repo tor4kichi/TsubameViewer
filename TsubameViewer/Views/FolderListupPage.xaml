@@ -162,18 +162,17 @@
                   <KeyboardAccelerator Key="B" />
                 </AppBarButton.KeyboardAccelerators>
               </AppBarButton>
-              <AppBarButton x:Name="SelectAction_AlbamAddItem"
-                            Label="{i18nExt:Localize Key=AlbamItemAdd}"
-                            Icon="Add"
-                            BorderThickness="1"
-                            BorderBrush="{ThemeResource SystemBaseLowColor}">
-                <AppBarButton.Flyout>
-                  <MenuFlyout x:Name="AlbamItemManagementFlyout"
-                              Opening="AlbamItemManagementFlyout_Opening"
-                              Placement="Bottom">
-
-                  </MenuFlyout>
-                </AppBarButton.Flyout>
+              <AppBarButton Label="{i18nExt:Localize Key=Favorite_AddItem}"                            
+                            BorderThickness="1"                            
+                            BorderBrush="{ThemeResource SystemBaseLowColor}"
+                            Command="{Binding FavoriteToggleCommand}"
+                            CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Favorite" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="O" />
+                </AppBarButton.KeyboardAccelerators>
               </AppBarButton>
               <AppBarButton x:Name="SelectAction_StorageItemRemoveButton"
                             Label="{i18nExt:Localize Key=Delete}"
