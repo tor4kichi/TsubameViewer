@@ -12,6 +12,7 @@
   xmlns:animation="using:Microsoft.Toolkit.Uwp.UI.Animations" 
   xmlns:local="using:TsubameViewer.Views.FolderListup"
   xmlns:fluentIcon="using:Fluent.Icons"
+  xmlns:uwpUI="using:Microsoft.Toolkit.Uwp.UI"
   >
 
   <Style TargetType="ProgressBar" x:Key="ReadParcentageProgressBarStyle" >
@@ -103,7 +104,9 @@
           IsHitTestVisible="True"
           AllowDrop="True"
           DragEnter="Grid_DragEnter"
-          Drop="Grid_Drop">
+          Drop="Grid_Drop"
+          uwpUI:UIElementExtensions.ClipToBounds="True"
+          CornerRadius="6">
       <Image Source="{x:Bind Image, Mode=OneWay}"             
              Style="{StaticResource FolderItemImageStyle}"
              Stretch="UniformToFill"
@@ -166,7 +169,13 @@
   </DataTemplate>
 
   <DataTemplate x:Key="StorageItemCardTemplate" x:DataType="vm:IStorageItemViewModel">
-    <Grid Background="Transparent" IsHitTestVisible="True">
+    <Grid Background="Transparent"
+          IsHitTestVisible="True"
+          AllowDrop="True"
+          DragEnter="Grid_DragEnter"
+          Drop="Grid_Drop"
+          uwpUI:UIElementExtensions.ClipToBounds="True"
+          CornerRadius="6">
       <Image Source="{x:Bind Image, Mode=OneWay}"
              Style="{StaticResource FolderItemImageStyle}"
              Stretch="UniformToFill"
@@ -230,7 +239,9 @@
   <DataTemplate x:Key="MovieStorageItemCardTemplate"
                 x:DataType="vm:IStorageItemViewModel">
     <Grid Background="Transparent"
-          IsHitTestVisible="True">
+          IsHitTestVisible="True"
+          uwpUI:UIElementExtensions.ClipToBounds="True"
+          CornerRadius="6">
       <Image Source="{x:Bind Image, Mode=OneWay}"
              Style="{StaticResource FolderItemImageStyle}"
              Stretch="UniformToFill"
