@@ -194,7 +194,7 @@ file static class BookmarkCollectionExtensions
                 bookmark.PageName = bookmarkPageName;
                 bookmark.InnerPageIndex = innerPageIndex;
                 bookmark.Position = normalizedPosition;
-                if (!bookmark.IsFinishedReading)
+                if (!bookmark.IsFinishedReading && isFinished)
                 {
                     Debug.WriteLine($"Mark as Finished: {normalizedPosition.Value:F2}");
                     bookmark.IsFinishedReading = isFinished;
