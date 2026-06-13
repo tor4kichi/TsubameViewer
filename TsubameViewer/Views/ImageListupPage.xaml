@@ -708,6 +708,19 @@
             </CommandBar.Content>
 
             <CommandBar.PrimaryCommands>
+              <AppBarButton x:Name="CreateFolderButton"
+                            Label="{i18nExt:Localize Key=CreateFolder}"
+                            Command="{x:Bind CreateFolderCommand}"
+                            AccessKey="B"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource SystemBaseLowColor}">
+                <AppBarButton.Icon>
+                  <SymbolIcon Symbol="Folder" />
+                </AppBarButton.Icon>
+                <AppBarButton.KeyboardAccelerators>
+                  <KeyboardAccelerator Key="B" />
+                </AppBarButton.KeyboardAccelerators>
+              </AppBarButton>
               <AppBarButton Label="{i18nExt:Localize Key=Favorite_AddItem}"                            
                             BorderThickness="1"
                             BorderBrush="{ThemeResource SystemBaseLowColor}"
@@ -985,6 +998,25 @@
         </ScrollViewer>
       </uwpControls:DockPanel>
     </SplitView>
+
+    <ContentDialog x:Name="CreateFolderDialog"
+                   Padding="0 48 0 0"
+                   PrimaryButtonText="{i18nExt:Localize Key=Create}"
+                   SecondaryButtonText="{i18nExt:Localize Key=Cancel}"
+                   Title="{i18nExt:Localize Key=CreateFolder}">
+      <StackPanel MinHeight="60">
+        <TextBox x:Name="CreateFolderDialogTextBox"
+                 AcceptsReturn="False"
+                 VerticalAlignment="Top"
+                 MaxLength="100"
+                 PlaceholderText="{i18nExt:Localize Key=CreateFolder_FolderNamePlaceholder}"
+                 Margin="0 0 0 8" />
+        <TextBlock Text="{i18nExt:Localize Key=CreateFolder_ExistFolderName}"
+                   Visibility="Collapsed"
+                   x:Name="CreateFolder_ExistFolderNameTextBlock"
+                   Foreground="{ThemeResource SystemErrorTextColor}" />
+      </StackPanel>
+    </ContentDialog>
 
     <VisualStateManager.VisualStateGroups>
 

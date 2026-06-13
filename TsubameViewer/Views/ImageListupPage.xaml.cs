@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
@@ -385,6 +386,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize();
             InitializeMoveToFolders(ct).FireAndForgetSafe();
+            HandleCreateFolderDialogTextChanging(ct);
         }
     }
 
@@ -1033,6 +1035,119 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         }
     }
 
+
+    #endregion
+
+
+    #region Create Folder
+
+    [RelayCommand]
+    async Task CreateFolder()
+    {
+        var folder = (StorageFolder)_vm.CurrentFolderItem!.Item.StorageItem;
+        CreateFolderDialogTextBox.Text = "";
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+        bool isExitWithEnterKey = false;
+        async void CreateFolderDialogTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.OriginalKey == VirtualKey.Enter)
+            {
+                AsyncTaskErrorHandler.Handle(async () =>
+                {
+                    var name = CreateFolderDialogTextBox.Text;
+                    var isExistFolder = false;
+                    try
+                    {
+                        isExistFolder = await folder.GetFolderAsync(name) != null;
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        isExistFolder = false;
+                    }
+
+
+                    if (!isExistFolder)
+                    {
+                        isExitWithEnterKey = true;
+                        CreateFolderDialog.Hide();
+                    }
+                });
+            }
+        }
+
+        try
+        {
+            CreateFolderDialogTextBox.KeyDown += CreateFolderDialogTextBox_KeyDown;
+            while (true)
+            {
+                if (await CreateFolderDialog.ShowAsync() != ContentDialogResult.Primary
+                    && !isExitWithEnterKey) { return; }
+
+                isExitWithEnterKey = false;
+                var name = CreateFolderDialogTextBox.Text;
+                var isExistFolder = false;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+                if (isExistFolder) { continue; }
+
+                try
+                {
+                    var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
+                    Folders?.Insert(0, newfodler);
+                    ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                    FolderSelectionSplitView.IsPaneOpen = true;
+                    _vm.HasFolderOrBookItem = true;
+                    return;
+                }
+                catch (FileNotFoundException) { }
+            }
+        }
+        finally
+        {
+            CreateFolderDialogTextBox.KeyDown -= CreateFolderDialogTextBox_KeyDown;
+        }
+
+    }
+
+    void HandleCreateFolderDialogTextChanging(CancellationToken ct)
+    {
+        R3.Extensions.ObservableEventExtensions.ObserveTextChanged(CreateFolderDialogTextBox)
+            .Debounce(TimeSpan.FromSeconds(0.1))
+            .SubscribeAwait(this, async (e, s, ct) =>
+            {
+                var name = s.CreateFolderDialogTextBox.Text;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    s.CreateFolderDialog.IsPrimaryButtonEnabled = false;
+                    return;
+                }
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = true;
+                var folder = (StorageFolder)s._vm.CurrentFolderItem!.Item.StorageItem;
+                bool isExistFolder;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = !isExistFolder;
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+            })
+            .RegisterTo(ct);
+
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+    }
 
     #endregion
 
