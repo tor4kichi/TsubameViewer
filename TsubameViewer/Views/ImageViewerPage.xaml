@@ -38,7 +38,8 @@
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
                     Grid.Column="0">
-          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
             <SymbolIcon Symbol="Favorite"
                         Style="{StaticResource TitlebarSymbolIcon}" />
           </ToggleButton>

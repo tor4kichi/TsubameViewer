@@ -52,7 +52,7 @@ public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 
 
 public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelBase
-{    
+{
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
 
@@ -216,8 +216,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     bool _isFavoriteCurrentFolderOrArchive;
 
     [ObservableProperty]
-    IImageSource _parentFolderOrArchive;
-
+    bool _isFavoriteAlbamDisplay;
+    
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly AlbamRepository _albamRepository;
@@ -770,33 +770,41 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 .AddTo(ref db);
         }
 
-        string folderPath = _currentImageSource.StorageItem switch
+        if (_currentImageSource.StorageItem != null)
         {
-            StorageFile file => Path.GetDirectoryName(file.Path),
-            StorageFolder folder => folder.Path,
-            _ => throw new NotSupportedException(),
-        };
-        Debug.WriteLine(folderPath);
-        IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(folderPath);
-        this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
-            .Subscribe((_favoriteAlbam, folderPath, Path.GetFileName(folderPath), _messenger), static (isFavorite, s) =>
+            string folderPath = _currentImageSource.StorageItem switch
             {
-                var (_favoriteAlbam, folderPath, folderName, _messenger) = s;
-                if (isFavorite)
+                StorageFile file => Path.GetDirectoryName(file.Path),
+                StorageFolder folder => folder.Path,
+                _ => throw new NotSupportedException(),
+            };
+            Debug.WriteLine(folderPath);
+            IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(folderPath);
+            this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+                .Subscribe((_favoriteAlbam, folderPath, Path.GetFileName(folderPath), _messenger), static (isFavorite, s) =>
                 {
-                    _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
-                    _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(folderName));
-                    _messenger.Send(new ImageSourceFavoriteChanged(folderPath, true));
-                }
-                else
-                {
-                    _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
-                    _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(folderName));
-                    _messenger.Send(new ImageSourceFavoriteChanged(folderPath, false));
+                    var (_favoriteAlbam, folderPath, folderName, _messenger) = s;
+                    if (isFavorite)
+                    {
+                        _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(folderName));
+                        _messenger.Send(new ImageSourceFavoriteChanged(folderPath, true));
+                    }
+                    else
+                    {
+                        _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(folderName));
+                        _messenger.Send(new ImageSourceFavoriteChanged(folderPath, false));
 
-                }
-            })
-        .AddTo(ref db);
+                    }
+                })
+            .AddTo(ref db);
+            IsFavoriteAlbamDisplay = false;
+        }
+        else
+        {
+            IsFavoriteAlbamDisplay = true;
+        }
 
 
         db.Build().RegisterTo(ct);
