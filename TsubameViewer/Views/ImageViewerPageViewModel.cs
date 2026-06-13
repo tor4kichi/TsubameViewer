@@ -489,7 +489,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             {
                 (string albamIdString, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedAlbamPath));
 
-                if (_currentImageSource.Path != albamIdString)
+                if (_currentImageSource?.Path != albamIdString)
                 {
                     var albam = _albamRepository.GetAlbam(Guid.Parse(albamIdString));
 
@@ -770,7 +770,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 .AddTo(ref db);
         }
 
-        string folderPath = Path.GetDirectoryName(_currentImageSource.Path);
+        string folderPath = _currentImageSource.StorageItem switch
+        {
+            StorageFile file => Path.GetDirectoryName(file.Path),
+            StorageFolder folder => folder.Path,
+            _ => throw new NotSupportedException(),
+        };
+        Debug.WriteLine(folderPath);
         IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(folderPath);
         this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
             .Subscribe((_favoriteAlbam, folderPath, Path.GetFileName(folderPath), _messenger), static (isFavorite, s) =>
@@ -778,13 +784,13 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 var (_favoriteAlbam, folderPath, folderName, _messenger) = s;
                 if (isFavorite)
                 {
-                    _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.Image);
+                    _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
                     _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(folderName));
                     _messenger.Send(new ImageSourceFavoriteChanged(folderPath, true));
                 }
                 else
                 {
-                    _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.Image);
+                    _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
                     _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(folderName));
                     _messenger.Send(new ImageSourceFavoriteChanged(folderPath, false));
 
