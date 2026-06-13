@@ -165,7 +165,7 @@
               <AppBarButton Label="{i18nExt:Localize Key=Favorite_AddItem}"                            
                             BorderThickness="1"                            
                             BorderBrush="{ThemeResource SystemBaseLowColor}"
-                            Command="{Binding FavoriteToggleCommand}"
+                            Command="{x:Bind _vm.FavoriteToggleCommand}"
                             CommandParameter="{x:Bind _vm.Selection.SelectedItems, Mode=OneWay}">
                 <AppBarButton.Icon>
                   <SymbolIcon Symbol="Favorite" />

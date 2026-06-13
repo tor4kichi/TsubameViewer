@@ -678,6 +678,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+            _vm.Selection.ForceNotifySelectedItems();
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
             _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();

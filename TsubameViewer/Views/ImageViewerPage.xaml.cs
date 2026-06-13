@@ -926,6 +926,13 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
     void Page2MenuFlyout_Opening(object sender, object e)
     {
     }
+
+
+    [RelayCommand]
+    void FavoriteToggle(object parameter)
+    {
+        _vm.FavoriteToggleCommand.Execute(parameter);
+    }
 }
 
 public class SelectorSelectedChangedToStringConverter : IValueConverter

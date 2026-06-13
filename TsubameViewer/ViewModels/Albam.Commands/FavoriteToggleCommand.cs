@@ -1,19 +1,28 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using I18NPortable;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Input;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.UI.Xaml.Media;
-
+#nullable enable
 namespace TsubameViewer.ViewModels.Albam.Commands;
 
-public sealed class FavoriteToggleCommand : ImageSourceCommandBase
+public sealed class ImageSourceFavoriteChanged : ValueChangedMessage<(IImageSource imageSource, bool isFav)>
+{
+    public ImageSourceFavoriteChanged(IImageSource imageSource, bool isFav) : base((imageSource, isFav))
+    {
+    }
+}
+
+public sealed class FavoriteToggleCommand : ImageSourceCommandBase, IRelayCommand, ICommand
 {
     private readonly FavoriteAlbam _favoriteAlbam;
     private readonly IMessenger _messenger;
@@ -26,17 +35,8 @@ public sealed class FavoriteToggleCommand : ImageSourceCommandBase
         _messenger = messenger;
     }
 
-    protected override bool CanExecute(IImageSource imageSource)
-    {
-        return base.CanExecute(imageSource);
-    }
-    protected override bool CanExecute(IEnumerable<IImageSource> imageSources)
-    {
-        return base.CanExecute(imageSources);
-    }
-
     public override bool CanExecute(object parameter)
-    {
+    {    
         return base.CanExecute(parameter);
     }
 
@@ -78,13 +78,5 @@ public sealed class FavoriteToggleCommand : ImageSourceCommandBase
             }
             _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(imageSources.Count()));            
         }
-    }
-}
-
-
-public sealed class ImageSourceFavoriteChanged : ValueChangedMessage<(IImageSource imageSource, bool isFav)>
-{
-    public ImageSourceFavoriteChanged(IImageSource imageSource, bool isFav) : base((imageSource, isFav))
-    {
     }
 }
