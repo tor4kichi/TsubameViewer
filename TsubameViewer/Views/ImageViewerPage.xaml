@@ -37,6 +37,13 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
+                    Grid.Column="0">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="8">
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
@@ -53,8 +60,6 @@
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </Button>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal">
         </StackPanel>
       </Grid>
     </DataTemplate>

@@ -135,10 +135,10 @@ public sealed partial class ImageListupPageViewModel
 
     public void Receive(ImageSourceFavoriteChanged message)
     {
-        var (imageSource, isFav) = message.Value;
+        var (imageSourcePath, isFav) = message.Value;
         foreach (var item in ImageFileItems)
         {
-            if (item.Path?.Equals(imageSource.Path, StringComparison.Ordinal) ?? false)
+            if (item.Path?.Equals(imageSourcePath, StringComparison.Ordinal) ?? false)
             {
                 item.IsFavorite = isFav;
                 break;
@@ -433,8 +433,8 @@ public sealed partial class ImageListupPageViewModel
                 var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = true;
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+                    itemVM?.IsFavorite = true;
                 }
             });
 
@@ -443,8 +443,8 @@ public sealed partial class ImageListupPageViewModel
                 var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = false;
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+                    itemVM?.IsFavorite = false;
                 }
             });
 

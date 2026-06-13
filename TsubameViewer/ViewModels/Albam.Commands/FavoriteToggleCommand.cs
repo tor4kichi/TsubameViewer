@@ -15,9 +15,9 @@ using Windows.UI.Xaml.Media;
 #nullable enable
 namespace TsubameViewer.ViewModels.Albam.Commands;
 
-public sealed class ImageSourceFavoriteChanged : ValueChangedMessage<(IImageSource imageSource, bool isFav)>
+public sealed class ImageSourceFavoriteChanged : ValueChangedMessage<(string imageSourcePath, bool isFav)>
 {
-    public ImageSourceFavoriteChanged(IImageSource imageSource, bool isFav) : base((imageSource, isFav))
+    public ImageSourceFavoriteChanged(string imageSourcePath, bool isFav) : base((imageSourcePath, isFav))
     {
     }
 }
@@ -46,13 +46,13 @@ public sealed class FavoriteToggleCommand : ImageSourceCommandBase, IRelayComman
         {
             _favoriteAlbam.DeleteFavoriteItem(imageSource);
             _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(imageSource.Name));
-            _messenger.Send(new ImageSourceFavoriteChanged(imageSource, false));
+            _messenger.Send(new ImageSourceFavoriteChanged(imageSource.Path, false));
         }
         else
         {
             _favoriteAlbam.AddFavoriteItem(imageSource);
             _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(imageSource.Name));
-            _messenger.Send(new ImageSourceFavoriteChanged(imageSource, true));
+            _messenger.Send(new ImageSourceFavoriteChanged(imageSource.Path, true));
         }
     }
 
@@ -64,7 +64,7 @@ public sealed class FavoriteToggleCommand : ImageSourceCommandBase, IRelayComman
             foreach (var item in imageSources)
             {
                 _favoriteAlbam.DeleteFavoriteItem(item);
-                _messenger.Send(new ImageSourceFavoriteChanged(item, false));
+                _messenger.Send(new ImageSourceFavoriteChanged(item.Path, false));
             }
             _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(imageSources.Count()));
             
@@ -74,7 +74,7 @@ public sealed class FavoriteToggleCommand : ImageSourceCommandBase, IRelayComman
             foreach (var item in imageSources)
             {
                 _favoriteAlbam.AddFavoriteItem(item);
-                _messenger.Send(new ImageSourceFavoriteChanged(item, true));
+                _messenger.Send(new ImageSourceFavoriteChanged(item.Path, true));
             }
             _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(imageSources.Count()));            
         }

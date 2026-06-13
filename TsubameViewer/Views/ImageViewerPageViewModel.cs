@@ -212,9 +212,16 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     private bool _requireRefresh;
 
+    [ObservableProperty]
+    bool _isFavoriteCurrentFolderOrArchive;
+
+    [ObservableProperty]
+    IImageSource _parentFolderOrArchive;
+
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly AlbamRepository _albamRepository;
+    readonly FavoriteAlbam _favoriteAlbam;
     readonly ImageCollectionManager _imageCollectionManager;
     readonly LocalBookmarkRepository _bookmarkManager;
     readonly StorageItemSettings _storageItemSettings;
@@ -230,6 +237,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ApplicationSettings applicationSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,
+        FavoriteAlbam favoriteAlbam,
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
@@ -253,6 +261,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ApplicationSettings = applicationSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _albamRepository = albamRepository;
+        _favoriteAlbam = favoriteAlbam;
         _imageCollectionManager = imageCollectionManager;
         ImageViewerSettings = imageCollectionSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
@@ -761,6 +770,28 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 .AddTo(ref db);
         }
 
+        string folderPath = Path.GetDirectoryName(_currentImageSource.Path);
+        IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(folderPath);
+        this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+            .Subscribe((_favoriteAlbam, folderPath, Path.GetFileName(folderPath), _messenger), static (isFavorite, s) =>
+            {
+                var (_favoriteAlbam, folderPath, folderName, _messenger) = s;
+                if (isFavorite)
+                {
+                    _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.Image);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(folderName));
+                    _messenger.Send(new ImageSourceFavoriteChanged(folderPath, true));
+                }
+                else
+                {
+                    _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.Image);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(folderName));
+                    _messenger.Send(new ImageSourceFavoriteChanged(folderPath, false));
+
+                }
+            })
+        .AddTo(ref db);
+
 
         db.Build().RegisterTo(ct);
 #if DEBUG
@@ -769,7 +800,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 #endif
         await base.OnNavigatedToAsync(parameters, ct);
     }
-
 
     #region ImageCollection 
 

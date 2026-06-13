@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.IO;
 using R3;
 using Reactive.Bindings;
@@ -22,9 +23,12 @@ using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
@@ -110,6 +114,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     int _firstApproachingPageIndex;
 
+    [ObservableProperty]
+    bool _isFavoriteCurrentFolderOrArchive;
+
+    [ObservableProperty]
+    IImageSource? _currentItem;
 
     [RelayCommand]
     void ResetEBookReaderSettings()
@@ -127,6 +136,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly FavoriteAlbam _favoriteAlbam;
     private readonly StorageItemSettings _storageItemSettings;
     readonly ThumbnailImageManager _thumbnailManager;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
@@ -155,6 +165,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
+        FavoriteAlbam favoriteAlbam,
         StorageItemSettings storageItemSettings,
         ThumbnailImageManager thumbnailManager,
         RecentlyAccessRepository recentlyAccessRepository,
@@ -168,6 +179,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _bookmarkManager = bookmarkManager;
+        _favoriteAlbam = favoriteAlbam;
         _storageItemSettings = storageItemSettings;
         _thumbnailManager = thumbnailManager;
         _recentlyAccessRepository = recentlyAccessRepository;
@@ -255,6 +267,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     {
                         throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
                     }
+
+                    CurrentItem = new StorageItemImageSource(CurrentFolderItem);
                 }
 
                 NowFirstLoadingProgress = true;
@@ -423,6 +437,28 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 await _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
             })
             .AddTo(ref db);
+
+
+        IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(_currentPath);
+        this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+            .Subscribe((_favoriteAlbam, CurrentItem!, _messenger), static (isFavorite, s) =>
+            {
+                var (_favoriteAlbam, _currentItem, _messenger) = s;
+                if (isFavorite)
+                {
+                    _favoriteAlbam.AddFavoriteItem(_currentItem);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(_currentItem.Name));
+                    _messenger.Send(new ImageSourceFavoriteChanged(_currentItem.Path, true));
+                }
+                else
+                {
+                    _favoriteAlbam.DeleteFavoriteItem(_currentItem);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(_currentItem.Name));
+                    _messenger.Send(new ImageSourceFavoriteChanged(_currentItem.Path, false));
+
+                }
+            })
+        .AddTo(ref db);
 
         db.Build().RegisterTo(ct);
 

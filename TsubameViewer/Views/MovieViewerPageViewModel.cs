@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.IO;
+using R3;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,13 +11,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Infrastructure;
+using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -122,6 +127,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,
+        FavoriteAlbam favoriteAlbam,
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
@@ -136,6 +142,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _albamRepository = albamRepository;
+        _favoriteAlbam = favoriteAlbam;
         _imageCollectionManager = imageCollectionManager;
         _imageCollectionSettings = imageCollectionSettings;
         BookmarkManager = bookmarkManager;
@@ -152,6 +159,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly AlbamRepository _albamRepository;
+    private readonly FavoriteAlbam _favoriteAlbam;
     readonly ImageCollectionManager _imageCollectionManager;
     readonly ImageViewerSettings _imageCollectionSettings;
     public LocalBookmarkRepository BookmarkManager { get; }
@@ -174,6 +182,12 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
 
     [ObservableProperty]
     string _title = "";
+
+    [ObservableProperty]
+    bool _isFavoriteCurrentFolderOrArchive;
+
+    [ObservableProperty]
+    IImageSource _currentImageSource;
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -207,11 +221,30 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                     MovieFile = file;
                     Title = MovieFile.Name;
                 }
+
+                CurrentImageSource = imageSource;
             }, ct);
-        }
-        else if (parameters.TryGetValue(PageNavigationConstants.AlbamPathKey, out string escapedAlbamPath))
-        {
-            (string albamIdString, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedAlbamPath));
+
+            IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(_currentImageSource.Path);
+            this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+                .Subscribe((_favoriteAlbam, CurrentImageSource, _messenger), static (isFavorite, s) =>
+                {                    
+                    var (_favoriteAlbam, imageSource, _messenger) = s;
+                    if (isFavorite)
+                    {
+                        _favoriteAlbam.AddFavoriteItem(imageSource);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(imageSource.Name));
+                        _messenger.Send(new ImageSourceFavoriteChanged(imageSource.Path, true));
+                    }
+                    else
+                    {
+                        _favoriteAlbam.DeleteFavoriteItem(imageSource);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(imageSource.Name));
+                        _messenger.Send(new ImageSourceFavoriteChanged(imageSource.Path, false));
+
+                    }
+                })
+                .RegisterTo(_navigationCt);
         }
     }
 

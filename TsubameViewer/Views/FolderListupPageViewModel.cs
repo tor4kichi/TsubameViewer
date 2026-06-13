@@ -125,10 +125,10 @@ public sealed partial class FolderListupPageViewModel
 
     public void Receive(ImageSourceFavoriteChanged message)
     {
-        var (imageSource, isFav) = message.Value;
+        var (imageSourcePath, isFav) = message.Value;
         foreach (var item in FolderItems)
         {
-            if (item.Path?.Equals(imageSource.Path, StringComparison.Ordinal) ?? false)
+            if (item.Path?.Equals(imageSourcePath, StringComparison.Ordinal) ?? false)
             {
                 item.IsFavorite = isFav;
                 break;
