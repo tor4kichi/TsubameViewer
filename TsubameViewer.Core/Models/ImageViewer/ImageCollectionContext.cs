@@ -188,7 +188,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     // see@ https://docs.microsoft.com/en-us/uwp/api/windows.storage.search.queryoptions.sortorder?view=winrt-22000#remarks
     public static QueryOptions CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType sort)
     {
-        var query = new QueryOptions(CommonFileQuery.OrderByName,
+        var query = new QueryOptions(CommonFileQuery.DefaultQuery,
             [
                 .. SupportedFileTypesHelper.SupportedArchiveFileExtensions,
                 .. SupportedFileTypesHelper.SupportedEBookFileExtensions,
