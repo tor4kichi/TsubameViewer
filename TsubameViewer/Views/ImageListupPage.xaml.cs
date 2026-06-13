@@ -151,96 +151,104 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region Image Loading
 
     IDisposable? _lodingTaskMonitor;
-    async void StartLoadingTaskMonitor(CancellationToken ct)
+    void StartLoadingTaskMonitor(CancellationToken ct)
     {
         StopLoadingTaskMonitor();
         _lastVerticalOffset = 0;
         DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
         R3.Observable.Merge(
-                _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-                _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-                R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
-                ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
-            .Debounce(TimeSpan.FromMilliseconds(100))
-            .SubscribeAwait(async (_, ct) =>
+            _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
+        .Debounce(TimeSpan.FromMilliseconds(10))
+        .SubscribeAwait(async (_, ct) =>
+        {
+            var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
+                
+            UpdateVisibleRangeItemInitialize();
+            if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
+            _isVisibleRangeUpdated = false;
+            bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
+            _lastVerticalOffset = currentVerticalOffset;
+                
+            if (_priorityLoadPendingItems.Any())
             {
-                var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
-                
-                UpdateVisibleRangeItemInitialize();
-                if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
-                _isVisibleRangeUpdated = false;
-                bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
-                _lastVerticalOffset = currentVerticalOffset;
-                
-                if (_priorityLoadPendingItems.Any())
+                Debug.WriteLine("LoadingTaskMonitor primary.");
+                try
                 {
-                    Debug.WriteLine("LoadingTaskMonitor primary.");
-                    try
+                    using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
+                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                    int count = tasks.Count;
+                    while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
                     {
-                        using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
-                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                        int count = tasks.Count;
-                        while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
+                        tasks.RemoveAt(index);
+                        count--;
+                        await Task.Delay(1);
+                        if (count <= 0)
                         {
-                            tasks.RemoveAt(index);
-                            count--;
-                            if (count <= 0)
-                            {
-                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
-                                break;
-                            }
-                        }
-
-                        _priorityLoadPendingItems.Clear();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
-                }
-
-                if (_loadPendingItems.Any())
-                {
-                    Debug.WriteLine("LoadingTaskMonitor secondary.");
-                    try
-                    {
-                        using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
-                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                        int count = tasks.Count;
-                        foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
-                        {
-                            int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
-                            tasks.RemoveAt(index);
-                            await Task.Delay(1);
-                            count--;
-                            if (count <= 0 || _isVisibleRangeUpdated)
-                            {
-                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
-                                break;
-                            }
-                        }
-                        if (!_isVisibleRangeUpdated)
-                        {
-                            _loadPendingItems.Clear();
+                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
+                            break;
                         }
                     }
-                    catch (OperationCanceledException)
+
+                    _priorityLoadPendingItems.Clear();
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+
+            if (ItemsScrollViewer.Opacity != 1)
+            {
+                ItemsScrollViewer.Opacity = 1;
+                await Task.Delay(500);
+            }
+
+
+            if (_loadPendingItems.Any())
+            {
+                Debug.WriteLine("LoadingTaskMonitor secondary.");
+                try
+                {
+                    using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                    int count = tasks.Count;
+                    foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
                     {
-                        return;
+                        int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
+                        tasks.RemoveAt(index);
+                        await Task.Delay(3);
+                        count--;
+                        if (count <= 0 || _isVisibleRangeUpdated)
+                        {
+                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
+                            break;
+                        }
+                    }
+                    if (!_isVisibleRangeUpdated)
+                    {
+                        _loadPendingItems.Clear();
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
 
-                if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
-                {
-                    Debug.WriteLine("LoadingTaskMonitor STOP.");                    
-                }
-                else
-                {
-                    Debug.WriteLine("LoadingTaskMonitor Continue.");
-                }
-            }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
-            .AddTo(ref db);
+            if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
+            {
+                Debug.WriteLine("LoadingTaskMonitor STOP.");                    
+            }
+            else
+            {
+                Debug.WriteLine("LoadingTaskMonitor Continue.");
+            }
+        }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
+        .AddTo(ref db);
 
         foreach (var item in _realizedItems)
         {
@@ -250,7 +258,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
         }
 
-        _lodingTaskMonitor = db.Build();
+        db.Build().RegisterTo(ct);
     }
 
     void StopLoadingTaskMonitor()
@@ -336,11 +344,15 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         base.OnNavigatedTo(e);
 
+        ItemsScrollViewer.Opacity = 0.0001;
         d().FireAndForgetSafe();
         async Task d()
         {
+
             _navigationCts = new CancellationTokenSource();
             var ct = _ct = _navigationCts.Token;
+
+            StartLoadingTaskMonitor(ct);
 
             _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
             {
@@ -383,7 +395,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             catch (OperationCanceledException) { }
 
-            StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize();
             InitializeMoveToFolders(ct).FireAndForgetSafe();
             HandleCreateFolderDialogTextChanging(ct);

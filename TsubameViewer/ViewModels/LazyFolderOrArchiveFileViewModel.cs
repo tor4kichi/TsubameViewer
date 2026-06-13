@@ -178,8 +178,8 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                     Image = bitmapImage;
+                    bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct).FireAndForgetSafe();
                 }
 
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;

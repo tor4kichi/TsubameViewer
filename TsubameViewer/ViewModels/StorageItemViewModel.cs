@@ -203,8 +203,8 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt);
                     Image = bitmapImage;
+                    bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(rootCt).FireAndForgetSafe();
                 }
             }
 

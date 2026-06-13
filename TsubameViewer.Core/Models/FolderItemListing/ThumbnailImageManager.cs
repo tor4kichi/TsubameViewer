@@ -1026,7 +1026,7 @@ public sealed class ThumbnailImageManager
 
         // SKBitmap → SKImage → SKData (エンコード)
         using var image = SKImage.FromBitmap(resizedBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Webp, 80); // 80%品質        
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80); // 80%品質        
         
         // SKData → outputStream
         outputStream.SetLength(0);
