@@ -213,7 +213,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         }        
     }
 
-    public async Task EnsureStorageItemAsync(CancellationToken ct)
+    public async ValueTask EnsureStorageItemAsync(CancellationToken ct)
     {
         if (Item == null)
         {
