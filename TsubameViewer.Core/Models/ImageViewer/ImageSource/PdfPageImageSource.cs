@@ -15,7 +15,7 @@ using Windows.Storage.Streams;
 
 namespace TsubameViewer.Core.Models.ImageViewer.ImageSource;
 
-public sealed class PdfPageImageSource : IImageSource, IDisposable
+public sealed class PdfPageImageSource : IImageSource
 {
     private readonly ImageViewerSettings _imageViewerSettings;
 
@@ -87,11 +87,6 @@ public sealed class PdfPageImageSource : IImageSource, IDisposable
             return memoryStream;
         }
     }
-
-    public void Dispose()
-    {
-        //((IDisposable)_pdfPage).Dispose();
-    }    
 
     public bool Equals(IImageSource other)
     {

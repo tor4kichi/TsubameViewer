@@ -242,7 +242,7 @@ public sealed partial class EPubRenderer : UserControl
     public static readonly DependencyProperty PageHtmlProperty =
         DependencyProperty.Register("PageHtml", typeof(XmlDocument), typeof(EPubRenderer), new PropertyMetadata(null, OnPageHtmlPropertyChanged ));
 
-    static async void OnPageHtmlPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    static void OnPageHtmlPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         task((EPubRenderer)d, e).FireAndForgetSafe();
         async Task task(EPubRenderer _this, DependencyPropertyChangedEventArgs e)
@@ -547,12 +547,12 @@ public sealed partial class EPubRenderer : UserControl
 
 
 
-    async void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+    void WebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
     {
         //using var _ = await _domUpdateLock.LockAsync(default);
     }
 
-    async void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+    void WebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
     {
         d().FireAndForgetSafe(); 
         async Task d()
@@ -580,7 +580,7 @@ public sealed partial class EPubRenderer : UserControl
         return _innerCurrentPage + 1 < _innerPageCount;
     }
 
-    public async void GoNext()
+    public void GoNext()
     {
         d().FireAndForgetSafe();
         async Task d()
@@ -602,16 +602,20 @@ public sealed partial class EPubRenderer : UserControl
         return _innerCurrentPage > 0;
     }
 
-    public async void GoPreview()
+    public void GoPreview()
     {
-        using var _ = await _domUpdateLock.LockAsync(default);
+        d().FireAndForgetSafe();
+        async Task d()
+        {
+            using var _ = await _domUpdateLock.LockAsync(default);
 
-        if (!CanGoPreview()) { throw new Exception(); }
+            if (!CanGoPreview()) { throw new Exception(); }
 
-        _innerCurrentPage--;
-        CurrentInnerPage = _innerCurrentPage;
-        Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
-        await SetScrollPositionAsync();
+            _innerCurrentPage--;
+            CurrentInnerPage = _innerCurrentPage;
+            Debug.WriteLine($"InnerPage: {_innerCurrentPage}/{_innerPageCount}");
+            await SetScrollPositionAsync();
+        }
     }
 
 
@@ -797,7 +801,7 @@ return JSON.stringify(Array.from(set));
         return JsonSerializer.Deserialize<int[]>(sizeList)!;        
     }
 
-    async void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
+    void WebView_DOMContentLoaded(WebView sender, WebViewDOMContentLoadedEventArgs args)
     {
         if (PageHtml == null) { return; }
 #if DEBUG

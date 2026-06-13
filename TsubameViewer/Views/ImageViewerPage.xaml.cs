@@ -199,7 +199,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         base.OnNavigatedTo(e);
     }
 
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         d().FireAndForgetSafe();
         async Task d()

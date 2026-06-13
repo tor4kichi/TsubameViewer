@@ -130,7 +130,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     readonly IMessenger _messenger;
     readonly FocusHelper _focusHelper;
 
-    async void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
+    void FoldersAdaptiveGridView_ContainerContentChanging1(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
         d(args).FireAndForgetSafe();
         async Task d(ContainerContentChangingEventArgs args)
@@ -340,6 +340,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     async Task InitializeMoveToFolders(CancellationToken ct)
     {
         _vm.ObservePropertyChanged(x => x.CurrentFolderItem)
+            .Debounce(TimeSpan.FromSeconds(1))
             .SubscribeAwait(async (folderVM, ct) => 
             {
                 Folders = [];
@@ -365,7 +366,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             })
             .RegisterTo(ct);
 
-        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled, false)
             .Subscribe(x => 
             {
                 if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)

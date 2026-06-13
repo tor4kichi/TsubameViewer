@@ -166,7 +166,7 @@ public sealed partial class FolderListupPageViewModel
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FileDeleteCommand FileDeleteCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
-    public ObservableCollection<IStorageItemViewModel> FolderItems { get; private set; }
+    public RangeObservableCollection<IStorageItemViewModel> FolderItems { get; private set; }
 
     public AdvancedCollectionView FileItemsView { get; }
     [ObservableProperty]
@@ -261,7 +261,7 @@ public sealed partial class FolderListupPageViewModel
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FileDeleteCommand = fileDeleteCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
-        FolderItems = new ObservableCollection<IStorageItemViewModel>();
+        FolderItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new AdvancedCollectionView(FolderItems);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
 
@@ -269,7 +269,7 @@ public sealed partial class FolderListupPageViewModel
     }
 
 
-    public override async void OnNavigatedFrom(INavigationParameters parameters)
+    public override void OnNavigatedFrom(INavigationParameters parameters)
     {
         d().FireAndForgetSafe();
         async Task d()
@@ -304,10 +304,6 @@ public sealed partial class FolderListupPageViewModel
 
     void ClearContent()
     {
-        foreach (var itemVM in FolderItems)
-        {
-            itemVM.Dispose();
-        }
         FolderItems.Clear();
 
         (_currentImageSource as IDisposable)?.Dispose();
@@ -669,20 +665,23 @@ public sealed partial class FolderListupPageViewModel
                 {
                     Debug.WriteLine($"items count : {FolderItems.Count}");
 
-                    // 新規アイテム               
+                    // 新規アイテム
+                    List<StorageItemViewModel> items = [];
                     await foreach (var item in imageCollectionContext.GetFolderOrArchiveFilesAsync(ct).WithCancellation(ct))
                     {
                         if (item == null) { continue; }
 
                         if (existItemsHashSet.Contains(item.Path) is false)
                         {
-                            FolderItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                            items.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
                         }
                         else
                         {
                             existItemsHashSet.Remove(item.Path);
                         }
                     }
+
+                    FolderItems.AddRange(items);
 
                     Debug.WriteLine($"after added : {FolderItems.Count}");
                     for (int i = FolderItems.Count - 1; i >= 0; i--)
@@ -699,7 +698,6 @@ public sealed partial class FolderListupPageViewModel
                     }
 
                     FileItemsView.RefreshFilter();
-
                     Debug.WriteLine($"after deleted : {FolderItems.Count}");
                 }
             }, ct);
@@ -715,17 +713,10 @@ public sealed partial class FolderListupPageViewModel
                     int itemsCount = await imageCollectionContext.GetFolderOrArchiveFilesCountAsync(linkcedCt);
                     using (FileItemsView.DeferRefresh())
                     {
-                        foreach (var itemVM in FolderItems)
-                        {
-                            itemVM.Dispose();
-                        }
-
                         FolderItems.Clear();
                         FileItemsView.SortDescriptions.Clear();
-                        foreach (int index in Enumerable.Range(0, itemsCount))
-                        {
-                            FolderItems.Add(new LazyFolderOrArchiveFileViewModel(imageCollectionContext, index, SelectedFileSortType, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
-                        }
+                        FolderItems.AddRange(Enumerable.Range(0, itemsCount)
+                            .Select(index => new LazyFolderOrArchiveFileViewModel(imageCollectionContext, index, SelectedFileSortType, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection)));
                         FileItemsView.RefreshFilter();
                     }
                 }

@@ -192,7 +192,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
     DirectConnectedAnimationConfiguration _animConfig = new();
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         d().FireAndForgetSafe();
         async Task d()

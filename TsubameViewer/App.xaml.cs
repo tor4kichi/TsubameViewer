@@ -222,7 +222,7 @@ sealed partial class App : Application
     }
 #endif
 
-    protected override async void OnFileActivated(FileActivatedEventArgs args)
+    protected override void OnFileActivated(FileActivatedEventArgs args)
     {
         AsyncTaskErrorHandler.Handle(this, async (s) => 
         {
@@ -231,7 +231,7 @@ sealed partial class App : Application
         });
     }
 
-    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         AsyncTaskErrorHandler.Handle(this, async (s) =>
         {

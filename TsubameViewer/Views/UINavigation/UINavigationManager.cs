@@ -165,7 +165,7 @@ public class UINavigationManager : IDisposable
 
 
     bool _nowUpdating = false;
-    async void _DispatcherTimer_Tick()
+    void _DispatcherTimer_Tick()
     {
         d().FireAndForgetSafe();
         async Task d()

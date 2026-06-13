@@ -192,7 +192,7 @@ public sealed partial class LazyImageFileViewModel : ObservableObject, IStorageI
                     stream.Seek(0, System.IO.SeekOrigin.Begin);
                     var bitmapImage = new BitmapImage();
                     bitmapImage.AutoPlay = false;
-                    bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct).FireAndForgetSafe();
+                    await bitmapImage.SetSourceAsync(stream.AsRandomAccessStream()).AsTask(ct);
                     Image = bitmapImage;
                 }
                 

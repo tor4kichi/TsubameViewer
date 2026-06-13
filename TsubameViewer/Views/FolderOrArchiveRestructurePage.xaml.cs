@@ -107,7 +107,7 @@ public sealed partial class FolderOrArchiveRestructurePage : Page, ITitlebarCont
     }
 
 
-    async void SaveOverwrite()
+    void SaveOverwrite()
     {
         d().FireAndForgetSafe();
         async Task d ()

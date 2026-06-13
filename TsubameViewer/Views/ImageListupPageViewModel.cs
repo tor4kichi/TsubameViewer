@@ -174,7 +174,7 @@ public sealed partial class ImageListupPageViewModel
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
-    public ObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
+    public RangeObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
     public AdvancedCollectionView FileItemsView { get; }
 
@@ -280,7 +280,7 @@ public sealed partial class ImageListupPageViewModel
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
-        ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
+        ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
         FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -506,10 +506,6 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        foreach (var item in ImageFileItems)
-        {
-            item.Dispose();
-        }
         ImageFileItems.Clear();
 
         IsFavoriteAlbam = false;
@@ -653,17 +649,20 @@ public sealed partial class ImageListupPageViewModel
                 Debug.WriteLine($"items count : {ImageFileItems.Count}");
 
                 // 新規アイテム
+                List<IStorageItemViewModel> items = [];
                 await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct).WithCancellation(ct))
                 {
                     if (existItemsHashSet.Contains(item.Path) is false)
                     {
-                        ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                        items.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
                     }
                     else
                     {
                         existItemsHashSet.Remove(item.Path);
                     }
                 }
+
+                ImageFileItems.AddRange(items);
 
                 Debug.WriteLine($"after added : {ImageFileItems.Count}");
                 for (int i = ImageFileItems.Count - 1; i >= 0; i--)
@@ -734,16 +733,15 @@ public sealed partial class ImageListupPageViewModel
                 using (FileItemsView.DeferRefresh())
                 {
                     ImageFileItems.Clear();
-                    foreach (var entry in col.Context.GetCacheItems())
+                    ImageFileItems.AddRange(col.Context.GetCacheItems().Select(entry =>
                     {
-                        var itemVM = new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                        return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
                             _sourceStorageItemsRepository,
                             _bookmarkManager,
                             _thumbnailManager,
                             _albamRepository,
                             Selection);
-                        ImageFileItems.Add(itemVM);
-                    }
+                    }));
 
                     if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
                     {
@@ -762,20 +760,21 @@ public sealed partial class ImageListupPageViewModel
                 using (FileItemsView.DeferRefresh())
                 {
                     ImageFileItems.Clear();
-                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);
-                    foreach (var index in ValueEnumerable.Range(0, count))
-                    {
-                        ImageFileItems.Add(new LazyImageFileViewModel(
-                            _imageCollectionContext,
-                            index,
-                            SelectedFileSortType,
-                            _messenger,
-                            _sourceStorageItemsRepository,
-                            _bookmarkManager,
-                            _thumbnailManager,
-                            _albamRepository,
-                            Selection));
-                    }
+                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);                    
+                    ImageFileItems.AddRange(Enumerable.Range(0, count)
+                        .Select(index =>
+                        {
+                            return new LazyImageFileViewModel(
+                                _imageCollectionContext,
+                                index,
+                                SelectedFileSortType,
+                                _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                        }));
                 }                
             }
         }

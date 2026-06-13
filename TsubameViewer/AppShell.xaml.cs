@@ -1439,7 +1439,7 @@ public sealed partial class AppShell : UserControl
 
     #region Drop Action
 
-    async void Grid_DragEnter(object sender, DragEventArgs e)
+    void Grid_DragEnter(object sender, DragEventArgs e)
     {
         var deferral = Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
         AsyncTaskErrorHandler.Handle((this, e, deferral), static async (s) =>
@@ -1462,7 +1462,7 @@ public sealed partial class AppShell : UserControl
         });
     }
 
-    async void Grid_Drop(object sender, DragEventArgs e)
+    void Grid_Drop(object sender, DragEventArgs e)
     {
         var deferral = Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
         AsyncTaskErrorHandler.Handle((this, e, deferral), static async (s) =>

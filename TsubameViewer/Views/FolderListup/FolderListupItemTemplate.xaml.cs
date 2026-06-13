@@ -67,7 +67,7 @@ public sealed partial class FolderListupItemTemplate : ResourceDictionary
         });        
     }
 
-    private async void Grid_Drop(object sender, DragEventArgs e)
+    private void Grid_Drop(object sender, DragEventArgs e)
     {        
         var hostUI = (FrameworkElement)sender;
         if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
