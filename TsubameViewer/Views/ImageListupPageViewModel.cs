@@ -213,6 +213,17 @@ public sealed partial class ImageListupPageViewModel
     bool _isFavoriteAlbam;
 
     [ObservableProperty]
+    bool _isFavoriteFilteredDisplayEnabled;
+
+    partial void OnIsFavoriteFilteredDisplayEnabledChanged(bool value)
+    {
+        using (FileItemsView.DeferRefresh())
+        {
+            FileItemsView.RefreshFilter();
+        }
+    }
+
+    [ObservableProperty]
     string? _displayCurrentArchiveFolderName;
 
     [ObservableProperty]
@@ -282,7 +293,16 @@ public sealed partial class ImageListupPageViewModel
         FavoriteToggleCommand = favoriteToggleCommand;
         ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
-        FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        FileItemsView.Filter = s =>
+        {
+            if (s is not IStorageItemViewModel itemVM) { return true; }
+            if (IsFavoriteFilteredDisplayEnabled
+                && !itemVM.IsFavorite)
+            {
+                return false;
+            }
+            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        };
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         FileDisplayMode = _folderListingSettings.FileDisplayMode;        
     }
@@ -506,7 +526,10 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        ImageFileItems.Clear();
+        using (FileItemsView.DeferRefresh())
+        {
+            ImageFileItems.Clear();
+        }
 
         IsFavoriteAlbam = false;
         (_imageCollectionContext as IDisposable)?.Dispose();
@@ -644,6 +667,7 @@ public sealed partial class ImageListupPageViewModel
             var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
             using (FileItemsView.DeferRefresh())
             {
+                IsFavoriteFilteredDisplayEnabled = false;
                 ImageFileItems.Clear();
                 // 削除アイテム
                 Debug.WriteLine($"items count : {ImageFileItems.Count}");
@@ -732,6 +756,7 @@ public sealed partial class ImageListupPageViewModel
 
                 using (FileItemsView.DeferRefresh())
                 {
+                    IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
                     ImageFileItems.AddRange(col.Context.GetCacheItems().Select(entry =>
                     {
@@ -741,7 +766,7 @@ public sealed partial class ImageListupPageViewModel
                             _thumbnailManager,
                             _albamRepository,
                             Selection);
-                    }));
+                    }));                    
 
                     if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
                     {
@@ -759,6 +784,7 @@ public sealed partial class ImageListupPageViewModel
                 Guard.IsNotNull(_imageCollectionContext);
                 using (FileItemsView.DeferRefresh())
                 {
+                    IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
                     var count = await imageCollectionContext.GetImageFileCountAsync(ct);                    
                     ImageFileItems.AddRange(Enumerable.Range(0, count)

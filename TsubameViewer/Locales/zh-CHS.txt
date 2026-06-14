@@ -279,7 +279,7 @@ Favorite_AddItem = 添加到收藏夹
 Favorite_RemoveItem = 从收藏夹中移除
 Favorite_Added = 将 {0} 添加到收藏夹
 Favorite_Removed = 将 {0} 从收藏夹中移除
-
+Favorite_ShowOnlyFavorite = 仅显示收藏项
 
 
 #### FolderOrArchiveResturcture

@@ -263,11 +263,36 @@ public sealed partial class FolderListupPageViewModel
         FavoriteToggleCommand = favoriteToggleCommand;
         FolderItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new AdvancedCollectionView(FolderItems);
-        FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        FileItemsView.Filter = s =>
+        {
+            if (s is not IStorageItemViewModel itemVM) { return true; }
+            if (IsFavoriteFilteredDisplayEnabled
+                && !itemVM.IsFavorite)
+            {
+                return false;
+            }
+            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        };
 
         SelectedChildFolderOrArchiveOpenMode = DefaultFolderOrArchiveOpenMode.Viewer;
     }
 
+    [ObservableProperty]
+    bool _isFavoriteAlbam;
+
+    [ObservableProperty]
+    bool _isFavoriteFilteredDisplayEnabled;
+
+    partial void OnIsFavoriteFilteredDisplayEnabledChanged(bool value)
+    {   
+        using (FileItemsView.DeferRefresh())
+        {
+            FileItemsView.RefreshFilter();
+        }
+    }
+
+    [ObservableProperty]
+    bool _isReadyToFavoriteFilterDisplay;
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
@@ -304,7 +329,10 @@ public sealed partial class FolderListupPageViewModel
 
     void ClearContent()
     {
-        FolderItems.Clear();
+        using (FileItemsView.DeferRefresh())
+        {
+            FolderItems.Clear();
+        }
 
         (_currentImageSource as IDisposable)?.Dispose();
         _currentImageSource = null;
@@ -313,7 +341,7 @@ public sealed partial class FolderListupPageViewModel
 
         CurrentFolderItem?.Dispose();
         CurrentFolderItem = null;
-
+        
         DisplayCurrentArchiveFolderName = null;
     }
 
@@ -615,19 +643,17 @@ public sealed partial class FolderListupPageViewModel
         }
 
         var albam = _albamRepository.GetAlbam(FavoriteAlbam.FavoriteAlbamId);
-
         HasFileItem = false;
-        
         DisplayCurrentPath = "Albam".Translate();
 
-        string path = albam._id.ToString();
+        ClearContent();
 
+        string path = albam._id.ToString();
+        IsFavoriteAlbam = true;
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
         SelectedChildFileSortType  = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         SetSortAsyncUnsafe(SelectedFileSortType, path);        
-
-        ClearContent();
 
         AlbamImageCollectionContext imageCollectionContext = new (albam, _albamRepository, _sourceStorageItemsRepository, _imageCollectionManager, _messenger);
         AlbamImageSource albamImageSource = new (albam, imageCollectionContext);
@@ -655,7 +681,7 @@ public sealed partial class FolderListupPageViewModel
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
-
+        IsFavoriteAlbam = false;
         if (!IsIndexAccessListingEnabled)
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
@@ -663,6 +689,7 @@ public sealed partial class FolderListupPageViewModel
                 var existItemsHashSet = FolderItems.Select(x => x.Path).ToHashSet();
                 using (FileItemsView.DeferRefresh())
                 {
+                    IsFavoriteFilteredDisplayEnabled = false;
                     Debug.WriteLine($"items count : {FolderItems.Count}");
 
                     // 新規アイテム
@@ -698,12 +725,14 @@ public sealed partial class FolderListupPageViewModel
                     }
 
                     FileItemsView.RefreshFilter();
+                    IsReadyToFavoriteFilterDisplay = true;
                     Debug.WriteLine($"after deleted : {FolderItems.Count}");
                 }
             }, ct);
         }
         else
         {
+            IsReadyToFavoriteFilterDisplay = false;
             await _messenger.WorkWithBusyWallAsync(async (ct) =>
             {
                 using (var cts = new CancellationTokenSource(5000))
@@ -713,6 +742,7 @@ public sealed partial class FolderListupPageViewModel
                     int itemsCount = await imageCollectionContext.GetFolderOrArchiveFilesCountAsync(linkcedCt);
                     using (FileItemsView.DeferRefresh())
                     {
+                        IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
                         FileItemsView.SortDescriptions.Clear();
                         FolderItems.AddRange(Enumerable.Range(0, itemsCount)
@@ -720,7 +750,22 @@ public sealed partial class FolderListupPageViewModel
                         FileItemsView.RefreshFilter();
                     }
                 }
-            }, ct);            
+            }, ct);
+
+            DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
+            {
+                try
+                {
+                    await Task.Delay(2000, ct);
+                    foreach (var itemVM in FolderItems.Cast<LazyFolderOrArchiveFileViewModel>())
+                    {
+                        _ = itemVM.EnsureStorageItemAsync(_navigationCt);
+                        ct.ThrowIfCancellationRequested();
+                    }
+                    IsReadyToFavoriteFilterDisplay = true;
+                }
+                catch (OperationCanceledException) { }
+            });
         }
 
         ct.ThrowIfCancellationRequested();

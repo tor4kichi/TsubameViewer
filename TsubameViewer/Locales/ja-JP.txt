@@ -279,7 +279,7 @@ Favorite_AddItem = お気に入りに登録
 Favorite_RemoveItem = お気に入りから解除
 Favorite_Added = {0} をお気に入りに登録
 Favorite_Removed = {0} をお気に入りから解除
-
+Favorite_ShowOnlyFavorite = お気に入りのみ
 
 
 #### FolderOrArchiveResturcture
