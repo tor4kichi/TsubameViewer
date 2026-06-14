@@ -1021,7 +1021,8 @@ return JSON.stringify(Array.from(set));
         double position = _innerPageScrollPositions[_innerCurrentPage];
         Debug.WriteLine(position);
         // Note: vertical-rlでは縦スクロールが横倒しして扱われるので縦書き横書きどちらもXにだけ設定すればOK
-        await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position:F0}" });
+        // +1してるのはColumn==1かつ縦書き表示時に画像が次ページの上部にはみ出て表示されないようにするため
+        await WebView.InvokeScriptAsync("SetScrollPosition", new[] { $"{position+1:F0}" });
 
 #if DEBUG
         //if (IsVerticalLayout)
