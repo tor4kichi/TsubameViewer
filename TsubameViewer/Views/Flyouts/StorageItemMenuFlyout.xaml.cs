@@ -23,6 +23,7 @@ using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using ZLinq;
 
 #nullable enable
 namespace TsubameViewer.Views.Flyouts;
@@ -265,7 +266,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
                 var sourceFolderRegistrationRepository = Ioc.Default.GetRequiredService<SourceStorageItemsRepository>();
                 SendOtherFolderMenuItem.Items.Clear();
                 var parentFolderPath = Path.GetDirectoryName(itemVM.Path);
-                foreach (SourceStorageItemsRepository.TokenToPathEntry item in sourceFolderRegistrationRepository.GetParsistantItemsFromCache())
+                foreach (SourceStorageItemsRepository.TokenToPathEntry item in sourceFolderRegistrationRepository.GetParsistantItemsFromCache().AsValueEnumerable().OrderBy(x => x.Order))
                 {
                     var menuItem = new MenuFlyoutItem()
                     {
