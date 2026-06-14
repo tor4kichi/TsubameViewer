@@ -577,7 +577,8 @@ public sealed partial class FolderListupPageViewModel
         using var lockObject = await _refreshLock.LockAsync(ct);
 
         HasFileItem = false;
-        
+        IsFavoriteAlbam = false;
+
         // 表示情報の解決
         ClearContent();
 
@@ -645,11 +646,11 @@ public sealed partial class FolderListupPageViewModel
         var albam = _albamRepository.GetAlbam(FavoriteAlbam.FavoriteAlbamId);
         HasFileItem = false;
         DisplayCurrentPath = "Albam".Translate();
+        IsFavoriteAlbam = true;
 
         ClearContent();
 
         string path = albam._id.ToString();
-        IsFavoriteAlbam = true;
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
         SelectedChildFileSortType  = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -661,7 +662,7 @@ public sealed partial class FolderListupPageViewModel
         DisplayCurrentArchiveFolderName = imageCollectionContext.Name;
 
         _currentImageSource = albamImageSource;
-        _imageCollectionContext = imageCollectionContext;
+        _imageCollectionContext = imageCollectionContext;        
 
         try
         {
@@ -681,7 +682,6 @@ public sealed partial class FolderListupPageViewModel
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
         Guard.IsNotNull(imageCollectionContext);
-        IsFavoriteAlbam = false;
         if (!IsIndexAccessListingEnabled)
         {
             await _messenger.WorkWithBusyWallAsync(async (ct) =>

@@ -151,26 +151,28 @@ public static class SupportedFileTypesHelper
             ;
     }
 
-    public static bool IsSupportedArchiveFileExtension(string fileType)
+    public static bool IsSupportedArchiveFileExtension(string fileNameOrExtension)
     {
-        return SupportedArchiveFileExtensions.Contains(fileType);
+        if (SupportedArchiveFileExtensions.Contains(fileNameOrExtension)) { return true; }
+        else { return SupportedArchiveFileExtensions.Any(x => fileNameOrExtension.EndsWith(x, StringComparison.Ordinal)); }
     }
 
     public static bool IsSupportedImageFileExtension(string fileNameOrExtension)
     {
         if (SupportedImageFileExtensions.Contains(fileNameOrExtension)) { return true; }
-        else { return SupportedImageFileExtensions.Any(x => fileNameOrExtension.EndsWith(x)); }
+        else { return SupportedImageFileExtensions.Any(x => fileNameOrExtension.EndsWith(x, StringComparison.Ordinal)); }
     }
 
     public static bool IsSupportedEBookFileExtension(string fileNameOrExtension)
     {
         if (SupportedEBookFileExtensions.Contains(fileNameOrExtension)) { return true; }
-        else { return SupportedEBookFileExtensions.Any(x => fileNameOrExtension.EndsWith(x)); }
+        else { return SupportedEBookFileExtensions.Any(x => fileNameOrExtension.EndsWith(x, StringComparison.Ordinal)); }
     }
 
-    public static bool IsSupportedMovieFileExtension(string fileType)
+    public static bool IsSupportedMovieFileExtension(string fileNameOrExtension)
     {
-        return SupportedMovieFileExtensions.Contains(fileType);
+        if (SupportedMovieFileExtensions.Contains(fileNameOrExtension)) { return true; }
+        else { return SupportedMovieFileExtensions.Any(x => fileNameOrExtension.EndsWith(x, StringComparison.Ordinal)); }
     }
 
     private static StorageItemTypes FileExtensionToStorageItemType(string fileType)
@@ -211,12 +213,11 @@ public static class SupportedFileTypesHelper
             ArchiveEntryImageSource _ => StorageItemTypes.Image,
             ArchiveDirectoryImageSource _ => StorageItemTypes.ArchiveFolder,
             Albam.AlbamImageSource _ => StorageItemTypes.Albam,
-            Albam.AlbamItemImageSource source => source.GetAlbamItemType() switch
-            {
-                AlbamItemType.Image => StorageItemTypes.AlbamImage,
-                AlbamItemType.FolderOrArchive => StorageItemToStorageItemTypes(source.InnerImageSource),
-                _ => StorageItemTypes.None
-            },
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedArchiveFileExtension(albamItem.Path) => StorageItemTypes.Archive,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedEBookFileExtension(albamItem.Path) => StorageItemTypes.EBook,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedMovieFileExtension(albamItem.Path) => StorageItemTypes.Movie,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedImageFileExtension(albamItem.Path) => StorageItemTypes.Image,
+            AlbamItemImageSource albamItem => StorageItemTypes.Folder,
             _ => StorageItemTypes.None
         };
     }
