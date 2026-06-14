@@ -46,7 +46,7 @@ public sealed class FavoriteAlbam
 
     public bool DeleteFavoriteItem(string path, AlbamItemType itemType)
     {
-        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, path, itemType);
+        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, path);
     }
 
     public AlbamItemEntry AddFavoriteItem(IImageSource imageSource)
@@ -62,6 +62,6 @@ public sealed class FavoriteAlbam
 
     public bool DeleteFavoriteItem(IImageSource imageSource)
     {
-        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, imageSource.Path, imageSource.GetAlbamItemType());
+        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, imageSource.Path);
     }
 }
