@@ -200,12 +200,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
             }
 
-            if (ItemsScrollViewer.Opacity != 1)
-            {
-                ItemsScrollViewer.Opacity = 1;
-                await Task.Delay(500);
-            }
-
             if (_loadPendingItems.Any())
             {
                 Debug.WriteLine("LoadingTaskMonitor secondary.");
@@ -342,7 +336,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         base.OnNavigatedTo(e);
 
-        ItemsScrollViewer.Opacity = 0.0001;
         d().FireAndForgetSafe();
         async Task d()
         {
