@@ -326,7 +326,7 @@
     </Button>
 
     <!-- 電子書籍ビューワー -->
-    <Grid Margin="40 24 24 80">
+    <Grid Margin="40 32 24 80">
       <Grid MaxWidth="{x:Bind _vm.EBookReaderSettings.MaxWidth, Mode=OneWay}"
             MaxHeight="{x:Bind _vm.EBookReaderSettings.MaxHeight, Mode=OneWay}"            
             x:Name="EPubRendererContainer"

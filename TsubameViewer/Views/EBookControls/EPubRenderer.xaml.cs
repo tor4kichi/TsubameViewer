@@ -852,7 +852,7 @@ return JSON.stringify(Array.from(set));
                 //await WebView.InvokeScriptAsync("eval", new[] { $"document.body.style = \"width: 100vw; overflow: hidden; max-height: {WebView.ActualHeight}px; column-count: {columnCount}; column-rule-width: 0px; column-gap: 1em; font-size:{FontSize}px; \";" });
                 await SetVerticalBodyStyleAsync(
                     WebView.ActualWidth,
-                    WebView.ActualHeight - 4,
+                    WebView.ActualHeight + 4,
                     columnCount,
                     FontSize);
             }
@@ -900,9 +900,9 @@ return JSON.stringify(Array.from(set));
                 {
                     heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
                 }
-                if (pageRealSize * 2 > relSizeItemsSpan[^1])
+                if (ActualHeight  > relSizeItemsSpan[^1])
                 {
-                    _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8).Count();
+                    _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > ActualHeight).Count();
                     _onePageScrollSize = heroPageHeight;
                     _webViewScrollableSize = heroPageHeight;
 
@@ -939,8 +939,9 @@ return JSON.stringify(Array.from(set));
                             }
                             else { return false; }
                         })
-                        .Select(x => x + 2 /* 画面上部に前ページの情報が映らないようにする補正 */)
                         .ToArrayPool();
+                    /* Note1: 画面上部に前ページの情報が映らないようにする補正 */ 
+                    /* Note2: 補正を追加すると通常のページの上下がズレるので取りやめ */
 
                     Debug.WriteLine(pageScrollPositions.AsValueEnumerable().JoinToString(','));
 
