@@ -358,8 +358,10 @@
                                          x:Name="ContentViewTypeSelector"
                                          AccessKey="L">
                   <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
-                                               IsSelected="True" />
-                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}" />
+                                               IsSelected="True"
+                                               x:Name="ContentViewType_FolderListup" />
+                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"                                               
+                                               x:Name="ContentViewType_ImageListup" />
                 </winUIControls:Segmented>
               </Border>
 
@@ -571,7 +573,20 @@
           <VisualState.Setters>
             <Setter Target="FoldersAdaptiveGridView.Padding" Value="8 0 8 32" />
             <Setter Target="HeaderLayout.Padding" Value="8 0 8 0" />
-            <Setter Target="SelectActionsContainer.Padding" Value="8 0 8 0" />            
+            <Setter Target="SelectActionsContainer.Padding" Value="8 0 8 0" />
+
+            <Setter Target="ContentViewType_FolderListup.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="Folder24"
+                                             Margin="0 0 0 2" />
+              </Setter.Value>
+            </Setter>
+            <Setter Target="ContentViewType_ImageListup.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="Image24"
+                                             Margin="0 0 2 2" />
+              </Setter.Value>
+            </Setter>
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

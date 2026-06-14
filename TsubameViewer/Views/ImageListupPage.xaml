@@ -856,71 +856,74 @@
               </uwpControls:DockPanel>
             </StackPanel>
 
-            <ListView x:Name="FileDisplayModeItemsListView"
-                      uwpControls:DockPanel.Dock="Right"
-                      ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
-                      SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
-                      ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
-                      SelectionMode="Single"
-                      SingleSelectionFollowsFocus="False"
-                      XYFocusLeft="{x:Bind OptionalActionsButton}"
-                      AccessKey="I">
-              <ListView.Header>
-                <StackPanel Orientation="Horizontal"
-                            Margin="8 0">
-                  <TextBlock VerticalAlignment="Center"
-                             Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
-                             Margin="0 0 8 0">
+            <uwpControls:WrapPanel uwpControls:DockPanel.Dock="Right"
+                                   VerticalSpacing="4">
+              <Border Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
+                      Margin="8 0 16 0">
+                <winUIControls:Segmented SelectionMode="Single"
+                                         SelectionChanged="ContentViewTypeSelector_SelectionChanged"
+                                         x:Name="ContentViewTypeSelector"
+                                         AccessKey="L">
+                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}"
+                                               x:Name="ContentViewType_FolderListup" />
+                  <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
+                                               IsSelected="True"
+                                               x:Name="ContentViewType_ImageListup" />
+                </winUIControls:Segmented>
+              </Border>
+
+              <StackPanel Orientation="Horizontal"
+                          Margin="8 0">
+                <TextBlock VerticalAlignment="Center"
+                           Visibility="{x:Bind _vm.NotEmptyToVisible(_vm.FilterText), Mode=OneWay}"
+                           Margin="0 0 8 0">
                   <Run Text="{x:Bind _vm.FileItemsView.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_FilteredDisplayItemsCount'}" />
-                  </TextBlock>
-                  <TextBlock Margin="0 0 0 0"
-                             VerticalAlignment="Center"
-                             Opacity="0.7">
+                </TextBlock>
+                <TextBlock Margin="0 0 0 0"
+                           VerticalAlignment="Center"
+                           Opacity="0.7">
                   <Run Text="{x:Bind _vm.ImageFileItems.Count, Mode=OneWay, Converter={StaticResource LocalizeKeyAsParametersConverter}, ConverterParameter='Search_DisplayItemsCount'}" />
-                  </TextBlock>
-                </StackPanel>
-              </ListView.Header>
-              <ListView.ItemContainerTransitions>
-                <TransitionCollection />
-              </ListView.ItemContainerTransitions>
+                </TextBlock>
+              </StackPanel>
 
-              <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem"
-                       BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
-                  <Setter Property="MinWidth"
-                          Value="40" />
-                  <Setter Property="Width"
-                          Value="40" />
-                  <Setter Property="MinHeight"
-                          Value="32" />
-                  <Setter Property="Padding"
-                          Value="0 0 0 0" />
-                  <Setter Property="Margin"
-                          Value="0" />
-                  <Setter Property="HorizontalContentAlignment"
-                          Value="Center" />
+              <ListView x:Name="FileDisplayModeItemsListView"
+                        ItemsSource="{x:Bind _vm.FileDisplayModeItems}"
+                        SelectedItem="{x:Bind _vm.FileDisplayMode, Mode=TwoWay}"
+                        ItemTemplateSelector="{StaticResource FileDisplayModeTemplateSelector}"
+                        SelectionMode="Single"
+                        SingleSelectionFollowsFocus="False"
+                        XYFocusLeft="{x:Bind OptionalActionsButton}"
+                        AccessKey="I">
+                <ListView.ItemContainerTransitions>
+                  <TransitionCollection />
+                </ListView.ItemContainerTransitions>
 
-                </Style>
-              </ListView.ItemContainerStyle>
-              <ListView.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <ItemsStackPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-              </ListView.ItemsPanel>
-            </ListView>
+                <ListView.ItemContainerStyle>
+                  <Style TargetType="ListViewItem"
+                         BasedOn="{StaticResource ListViewItemRevealBackgroundShowsAboveContentStyle}">
+                    <Setter Property="MinWidth"
+                            Value="40" />
+                    <Setter Property="Width"
+                            Value="40" />
+                    <Setter Property="MinHeight"
+                            Value="32" />
+                    <Setter Property="Padding"
+                            Value="0 0 0 0" />
+                    <Setter Property="Margin"
+                            Value="0" />
+                    <Setter Property="HorizontalContentAlignment"
+                            Value="Center" />
 
-            <Border uwpControls:DockPanel.Dock="Right"
-                    Visibility="{x:Bind _vm.HasFolderOrBookItem, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}"
-                    Margin="8 0 16 0">
-              <winUIControls:Segmented SelectionMode="Single"
-                                       SelectionChanged="ContentViewTypeSelector_SelectionChanged"
-                                       x:Name="ContentViewTypeSelector"
-                                       AccessKey="L">
-                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToFolderListupPage}" />
-                <winUIControls:SegmentedItem Content="{i18nExt:Localize Key=ChangeViewToImageListupPage}"
-                                             IsSelected="True" />
-              </winUIControls:Segmented>
-            </Border>
+                  </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+              </ListView>
+
+            </uwpControls:WrapPanel>
 
             <Border />
           </uwpControls:DockPanel>
@@ -1110,6 +1113,19 @@
                     Value="12 0" />
             <Setter Target="TextBlock_ImageListupPage_DragAndDrop_Unsupported.Visibility"
                     Value="Collapsed" />
+
+            <Setter Target="ContentViewType_FolderListup.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="Folder24"
+                                             Margin="0 0 0 2" />
+              </Setter.Value>
+            </Setter>
+            <Setter Target="ContentViewType_ImageListup.Content">
+              <Setter.Value>
+                <fluentIcon:FluentSymbolIcon Symbol="Image24"
+                                             Margin="0 0 2 2" />
+              </Setter.Value>
+            </Setter>
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>
