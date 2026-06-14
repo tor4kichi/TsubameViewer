@@ -185,7 +185,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     {
                         tasks.RemoveAt(index);
                         count--;
-                        await Task.Delay(1);
                         if (count <= 0)
                         {
                             Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
@@ -207,7 +206,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 await Task.Delay(500);
             }
 
-
             if (_loadPendingItems.Any())
             {
                 Debug.WriteLine("LoadingTaskMonitor secondary.");
@@ -220,7 +218,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     {
                         int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
                         tasks.RemoveAt(index);
-                        await Task.Delay(3);
+                        await Task.Delay(1);
                         count--;
                         if (count <= 0 || _isVisibleRangeUpdated)
                         {
