@@ -200,11 +200,15 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
             StorageItemDeleteMenuItem.CommandParameter = itemVM;
-            StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
+            StorageItemDeleteMenuItem.Visibility = (type is Core.Models.StorageItemTypes.Folder 
+                or Core.Models.StorageItemTypes.Archive 
+                or Core.Models.StorageItemTypes.EBook 
+                or Core.Models.StorageItemTypes.Movie 
+                or Core.Models.StorageItemTypes.Image)
+                .TrueToVisible();
 
             FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource
-                && imageSource.ItemTypes is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
+            FolderOrArchiveRestructureItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
                 .TrueToVisible();
 
             OpenWithExplorerItem.CommandParameter = itemVM;

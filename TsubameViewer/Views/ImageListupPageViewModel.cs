@@ -128,8 +128,7 @@ public sealed partial class ImageListupPageViewModel
         var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
         if (item != null)
         {
-            ImageFileItems.Remove(item);
-
+            ImageFileItems.Remove(item);            
         }
     }
 

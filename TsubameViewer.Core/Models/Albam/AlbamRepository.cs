@@ -71,6 +71,11 @@ public sealed class AlbamRepository
             _collection.EnsureIndex(x => x.ItemType);
         }
 
+        public AlbamItemEntry? FindByPath(string path)
+        {
+            return _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
+        }
+
         public int DeleteAlbam(Guid albamId)
         {
             return _collection.DeleteMany(x => x.AlbamId == albamId);
@@ -223,12 +228,15 @@ public sealed class AlbamRepository
         return createdItem;
     }
 
-    public bool DeleteAlbamItem(Guid albamId, string path, AlbamItemType albamItemType)
+    public bool DeleteAlbamItem(Guid albamId, string path)
     {
+        var item = _albamItemDatabase.FindByPath(path);
+        if (item == null) { return false; }
+
         var result = _albamItemDatabase.Delete(albamId, path);
         if (result)
         {
-            _messenger.Send(new AlbamItemRemovedMessage(albamId, path, albamItemType));
+            _messenger.Send(new AlbamItemRemovedMessage(albamId, path, item.ItemType));
         }
 
         return result;

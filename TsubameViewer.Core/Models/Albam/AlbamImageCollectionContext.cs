@@ -67,7 +67,9 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
         IImageSource imageSource = null;
         if (storageItem is StorageFile file)
         {
-            if (SupportedFileTypesHelper.IsSupportedImageFile(file))
+            if (SupportedFileTypesHelper.IsSupportedImageFile(file)
+                || SupportedFileTypesHelper.IsSupportedEBookFile(file)
+                || SupportedFileTypesHelper.IsSupportedMovieFile(file))
             {
                 imageSource = new StorageItemImageSource(file);
             }
@@ -89,10 +91,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
                     imageSource = new StorageItemImageSource(file);
                 }
             }
-            else if (SupportedFileTypesHelper.IsSupportedEBookFile(file))
-            {
-                imageSource = new StorageItemImageSource(file);
-            }
+            else { throw new NotSupportedException(); }
         }
         else if (storageItem is StorageFolder folder)
         {
@@ -211,7 +210,7 @@ public sealed class AlbamImageCollectionContext : IImageCollectionContext, IDisp
 
     public ValueTask<int> GetFolderOrArchiveFilesCountAsync(CancellationToken ct)
     {
-        throw new NotSupportedException();
+        return new (_albamRepository.GetAlbamItemsCount(AlbamItemType.FolderOrArchive));
     }
 
     public ValueTask<IImageSource> GetFolderOrArchiveFileAtAsync(int index, FileSortType sort, CancellationToken ct)
