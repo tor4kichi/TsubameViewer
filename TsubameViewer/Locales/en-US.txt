@@ -141,6 +141,24 @@ TitleDigitCompletionTransform = Title digit completion
 SendToOtherFolder = Move...
 SendToOtherFolder_ConfirmOverwrite = Is it okay to overwrite it?
 SendToOtherFolder_MoveItem0to1 = {0} was moved to {1}.
+CreateFolder = Create a folder
+CreateFolder_FolderNamePlaceholder = Enter the folder name...
+CreateFolder_ExistFolderName = This folder name already exists. Please enter an alternative name.
+MoveToFolder_WithFolderName = Move to {0}
+MoveToFolder_Completed_Single = Move {0} to {1}
+MoveToFolder_Completed_Multi = Move {0} items to {1}
+MoveToFolder_ItemsMoveToSelectedFolder = Move to the selected folder
+MoveToFolder_ToggleSiblingFoldersDisplay = Show sibling folders
+ReadingState_ToggleToFinished = Mark as read
+ReadingState_ToggleToUnfinished = Mark as unread
+ReadingState_SetToFinished = Marked as read
+ReadingState_SetToUnfinished = Marked as unread
+StorageItemSettings_IsDisplayFolderItemsCount = Display the number of items read in a folder
+StorageItemSettings_IsDisplayFolderItemsCount_Desc = For each folder item in the folder list, you can toggle between displaying the number of items read and the total number of items. This feature applies to “Image Archive,” “EPUB,” and “Video” items.
+StorageItemSettings_ReadingFinishedThresholdForImageViewer = Threshold for determining completion in the image viewer
+StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Threshold for determining completion in the novel viewer
+StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Threshold for determining completion in the movie viewer
+
 
 #### History Page
 HistoryPage_Title = history
@@ -151,7 +169,7 @@ HistoryPage_RemoveAll = Delete all history
 ImageSelection_SelectedCount = Selecting {0} items
 SelectItems_ActionAs = Select item...
 StartMultiSelection = Multiple selection
-
+ImageListupPage_DragAndDrop_Unsupported = Drag and drop is not supported.
 
 #### ImageViewerPage
 CurrentFolder_InArchive = Folder
@@ -257,8 +275,11 @@ ChoiceTargetAlbam = Select an album
 AlbamItemRemove = Removed from album
 AlbamItemAdd = Add to album
 FavoriteAlbam = Favorite
-AddFavoriteImage = Add to Favourites
-RemoveFavoriteImage = Remove from favorites
+Favorite_AddItem = Add to Favorites
+Favorite_RemoveItem = Remove from Favorites
+Favorite_Added = Add {0} to Favorites
+Favorite_Removed = Remove {0} from Favorites
+Favorite_ShowOnlyFavorite = Favorites only
 
 
 #### FolderOrArchiveResturcture

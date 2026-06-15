@@ -81,7 +81,12 @@
           </Button>
         </StackPanel>
 
-        <Border />
+        <StackPanel Orientation="Horizontal">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
+        </StackPanel>
 
       </uwpControls:DockPanel>
     </DataTemplate>

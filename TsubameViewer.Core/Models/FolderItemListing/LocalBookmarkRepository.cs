@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using TsubameViewer.Core.Infrastructure;
-using static TsubameViewer.Core.Models.FolderItemListing.LocalBookmarkRepository;
 
 namespace TsubameViewer.Core.Models.FolderItemListing;
 
@@ -24,7 +24,7 @@ public struct NormalizedPagePosition
         Value = Math.Clamp(normalized, 0.0f, 1.0f);
     }
 
-    public NormalizedPagePosition(int pageCount, int currentPagePosition)
+    public NormalizedPagePosition(long pageCount, long currentPagePosition)
     {
         if (pageCount < currentPagePosition) { throw new ArgumentOutOfRangeException("pageCount < currentPagePosition"); }
 
@@ -49,15 +49,19 @@ public sealed class BookmarkEntry
 
     [BsonField]
     public NormalizedPagePosition Position { get; set; }
+
+    [BsonField]
+    public bool IsFinishedReading { get; set; }
 }
 
 public sealed class LocalBookmarkRepository
 {
-    private readonly BookmarkRepository _bookmarkRepository;
+    private readonly ILiteCollection<BookmarkEntry> _bookmarkRepository;
 
-    public LocalBookmarkRepository(BookmarkRepository bookmarkRepository)
+    public LocalBookmarkRepository(ILiteDatabase localDatabase)
     {
-        _bookmarkRepository = bookmarkRepository;
+        _bookmarkRepository = localDatabase.GetCollection<BookmarkEntry>();
+        _bookmarkRepository.EnsureIndex(x => x.Path);
     }
 
     // OneDriveを意識するならログインユーザーに対する一意のIDを持たせて置いたほうがいいかもしれない
@@ -83,14 +87,14 @@ public sealed class LocalBookmarkRepository
     }
 
 
-    public void AddBookmark(string path, string pageName, NormalizedPagePosition normalizedPosition)
+    public void AddBookmarkForImageViewer(string path, string pageName, NormalizedPagePosition normalizedPosition, bool isFinished)
     {
-        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition);
+        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, isFinished: isFinished);
     }
 
-    public void AddBookmark(string path, string pageName, int innerPageIndex, NormalizedPagePosition normalizedPosition)
+    public void AddBookmarkForEBookViewer(string path, string pageName, int innerPageIndex, NormalizedPagePosition normalizedPosition, bool isFinished)
     {
-        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, innerPageIndex);
+        _bookmarkRepository.AddorReplace(path, pageName, normalizedPosition, innerPageIndex, isFinished);
     }
 
     public void RemoveBookmark(string path)
@@ -115,13 +119,21 @@ public sealed class LocalBookmarkRepository
         return new BookmarkFacade(_bookmarkRepository, entry);
     }
 
-    public sealed class BookmarkRepository : LiteDBServiceBase<BookmarkEntry>
+    public (int finishedItemsCount, int totalItemsCount) GetItemsCountForFolder(string path)
     {
-        public BookmarkRepository(ILiteDatabase liteDatabase) : base(liteDatabase)
-        {
-            _collection.EnsureIndex(x => x.Path);
-        }
+        int sepCount = path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar) + 1;
+        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path));
+        var finishedCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path) && x.IsFinishedReading);
+        return (finishedCount, itemsCount - 1);
+    }
+}
 
+
+file static class BookmarkCollectionExtensions
+{
+    extension (ILiteCollection<BookmarkEntry> _collection)
+    {
+        
         public string GetBookmarkPageName(string path)
         {
             var bookmark = _collection.FindOne(x => x.Path == path);
@@ -146,7 +158,7 @@ public sealed class LocalBookmarkRepository
             }
             else
             {
-                return bookmark.Position.Value;
+                return !bookmark.IsFinishedReading ? bookmark.Position.Value : 1f;
             }
         }
 
@@ -163,18 +175,30 @@ public sealed class LocalBookmarkRepository
             return bookmark != null;
         }
 
-        public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0)
+        public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0, bool isFinished = false)
         {
             var bookmark = _collection.FindOne(x => x.Path == path);
             if (bookmark == null)
             {
-                _collection.Insert(new BookmarkEntry() { Path = path, PageName = bookmarkPageName, InnerPageIndex = innerPageIndex, Position = normalizedPosition });
+                _collection.Insert(new BookmarkEntry()
+                {
+                    Path = path,
+                    PageName = bookmarkPageName,
+                    InnerPageIndex = innerPageIndex,
+                    Position = normalizedPosition,
+                    IsFinishedReading = isFinished,
+                });
             }
             else
             {
                 bookmark.PageName = bookmarkPageName;
                 bookmark.InnerPageIndex = innerPageIndex;
                 bookmark.Position = normalizedPosition;
+                if (!bookmark.IsFinishedReading && isFinished)
+                {
+                    Debug.WriteLine($"Mark as Finished: {normalizedPosition.Value:F2}");
+                    bookmark.IsFinishedReading = isFinished;
+                }
                 _collection.Update(bookmark);
             }
         }
@@ -208,22 +232,21 @@ public sealed class LocalBookmarkRepository
             {
                 entry = new BookmarkEntry() { Path = path };
                 var id = _collection.Insert(entry);
-                entry.Id = id;                
+                entry.Id = id;
             }
 
             return entry;
         }
     }
-
 }
 
 
 public sealed class BookmarkFacade : DeferSaveAwareObservableObject
 {
-    private readonly BookmarkRepository _repo;
+    private readonly ILiteCollection<BookmarkEntry> _repo;
     private readonly BookmarkEntry _entry;
 
-    public BookmarkFacade(BookmarkRepository repo, BookmarkEntry entry)
+    public BookmarkFacade(ILiteCollection<BookmarkEntry> repo, BookmarkEntry entry)
     {
         _repo = repo;
         _entry = entry;
@@ -231,7 +254,7 @@ public sealed class BookmarkFacade : DeferSaveAwareObservableObject
 
     protected override void OnSave()
     {
-        _repo.UpdateItem(_entry);
+        _repo.Update(_entry);
     }
 
 
@@ -241,11 +264,27 @@ public sealed class BookmarkFacade : DeferSaveAwareObservableObject
         set => SetProperty(_entry.Position, value, _entry, (m, v) => m.Position = v);
     }
 
+    public void SetReadPosition(long currentValue, long totalValue)
+    {
+        ReadPosition = new NormalizedPagePosition(totalValue, currentValue);
+    }
 
     // Note: 動画のDurationにも使ってます
     public string PageName
     {
         get => _entry.PageName;
         set => SetProperty(_entry.PageName, value, _entry, (m, v) => m.PageName = v);
+    }
+
+    public int InnerPageIndex
+    {
+        get => _entry.InnerPageIndex;
+        set => SetProperty(_entry.InnerPageIndex, value, _entry, (m, v) => m.InnerPageIndex = v);
+    }
+
+    public bool IsFinishedReading 
+    {
+        get => _entry.IsFinishedReading;
+        set => SetProperty(_entry.IsFinishedReading, value, _entry, (m, v) => m.IsFinishedReading = v);
     }
 }

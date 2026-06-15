@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Diagnostics;
@@ -6,6 +7,7 @@ using System.IO;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TsubameViewer.Core.Infrastructure;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
@@ -18,6 +20,53 @@ using Windows.UI.Xaml.Media.Imaging;
 namespace TsubameViewer.ViewModels;
 
 using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
+
+public sealed class StorageItemSettings : FlagsRepositoryBase
+{
+    public StorageItemSettings()
+    {
+        _isDisplayFolderItemsCount = Read(false, nameof(IsDisplayFolderItemsCount));
+        _descriptionTextFontSize = Read(12, nameof(DescriptionTextFontSize));
+        _readingFinishedThresholdForImageViewer = Read(0.85, nameof(ReadingFinishedThresholdForImageViewer));
+        _readingFinishedThresholdForEBookViewer = Read(0.9, nameof(ReadingFinishedThresholdForEBookViewer));
+        _readingFinishedThresholdForMovieViewer = Read(0.9, nameof(ReadingFinishedThresholdForMovieViewer));
+    }
+
+    bool _isDisplayFolderItemsCount = false;
+    public bool IsDisplayFolderItemsCount
+    {
+        get => _isDisplayFolderItemsCount;
+        set => SetProperty(ref _isDisplayFolderItemsCount, value);
+    }
+
+    int _descriptionTextFontSize;
+    public int DescriptionTextFontSize
+    {
+        get => _descriptionTextFontSize;
+        set => SetProperty(ref _descriptionTextFontSize, value);
+    }
+
+
+    double _readingFinishedThresholdForImageViewer;
+    public double ReadingFinishedThresholdForImageViewer
+    {
+        get => _readingFinishedThresholdForImageViewer;
+        set => SetProperty(ref _readingFinishedThresholdForImageViewer, value);
+    }
+    double _readingFinishedThresholdForEBookViewer;
+    public double ReadingFinishedThresholdForEBookViewer
+    {
+        get => _readingFinishedThresholdForEBookViewer;
+        set => SetProperty(ref _readingFinishedThresholdForEBookViewer, value);
+    }
+    double _readingFinishedThresholdForMovieViewer;
+    public double ReadingFinishedThresholdForMovieViewer
+    {
+        get => _readingFinishedThresholdForMovieViewer;
+        set => SetProperty(ref _readingFinishedThresholdForMovieViewer, value);
+    }
+}
+
 
 public sealed partial class StorageItemViewModel : ObservableObject, IDisposable, IStorageItemViewModel
 {
@@ -35,6 +84,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     public string Path { get; }
 
     public DateTimeOffset DateCreated { get; }
+    public StorageItemSettings Settings { get; }
 
     [ObservableProperty]
     BitmapImage? _image;
@@ -67,6 +117,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
     {
         Name = name;
         Type = storageItemTypes;
+        Settings = Ioc.Default.GetRequiredService<StorageItemSettings>();
     }
 
     public StorageItemViewModel(
@@ -76,7 +127,8 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         LocalBookmarkRepository bookmarkManager,
         ThumbnailImageManager thumbnailImageService,
         AlbamRepository albamRepository,
-        SelectionContext? selectionContext = null
+        SelectionContext? selectionContext = null,
+        StorageItemSettings? settings = null
         )
     {
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -87,6 +139,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         Item = item;
         _messenger = messenger;
         DateCreated = Item.DateCreated;
+        Settings = settings ?? Ioc.Default.GetRequiredService<StorageItemSettings>();
 
         Name = Item.Name;
         Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(item);
@@ -95,7 +148,7 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
         _imageAspectRatioWH = _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
 
         UpdateLastReadPosition();
-        _isFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, item.Path);
+        _isFavorite = _albamRepository.IsExistAlbamItem(item.Path);
     }
 
     public bool IsRequestImageLoading { get; private set; } = false;
@@ -192,13 +245,24 @@ public sealed partial class StorageItemViewModel : ObservableObject, IDisposable
 
     public void UpdateLastReadPosition()
     {
-        var parcentage = _bookmarkManager.GetBookmarkLastReadPositionInNormalized(Path);
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;
+        if (Type is StorageItemTypes.Archive or StorageItemTypes.EBook or StorageItemTypes.Movie)
+        {
+            var facade = _bookmarkManager.GetBookmarkFacade(Path);
+            ReadParcentage = facade.IsFinishedReading ? 1d : facade.ReadPosition.Value;
+        }
+        else if (Type is StorageItemTypes.Folder && Settings.IsDisplayFolderItemsCount)
+        {
+            var (finished, total) = _bookmarkManager.GetItemsCountForFolder(Path);
+            if (total != 0)
+            {
+                Duration = $"{finished}/{total}";
+            }
+        }
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (_isRequireLoadImageWhenRestored && Image == null)
         {

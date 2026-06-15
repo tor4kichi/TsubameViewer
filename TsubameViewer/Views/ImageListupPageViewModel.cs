@@ -59,6 +59,11 @@ public sealed class SelectionContext : ObservableObject
 
     public ObservableCollection<IStorageItemViewModel> SelectedItems { get; } = new ();
 
+    public void ForceNotifySelectedItems()
+    {
+        OnPropertyChanged(nameof(SelectedItems));
+    }
+
     public void StartSelection()
     {
         IsSelectionModeEnabled = true;
@@ -76,6 +81,7 @@ public sealed partial class ImageListupPageViewModel
     , IRecipient<InPageSearchRequestMessage>
     , IRecipient<StorageItemNotFoundMessage>
     , IRecipient<SendToOtherFolderMessage>
+    , IRecipient<ImageSourceFavoriteChanged>
 {
 
     public void Receive(SendToOtherFolderMessage message)
@@ -122,11 +128,22 @@ public sealed partial class ImageListupPageViewModel
         var item = ImageFileItems.FirstOrDefault(x => x.Path.Equals(message.Value, StringComparison.Ordinal));
         if (item != null)
         {
-            ImageFileItems.Remove(item);
-
+            ImageFileItems.Remove(item);            
         }
     }
 
+    public void Receive(ImageSourceFavoriteChanged message)
+    {
+        var (imageSourcePath, isFav) = message.Value;
+        foreach (var item in ImageFileItems)
+        {
+            if (item.Path?.Equals(imageSourcePath, StringComparison.Ordinal) ?? false)
+            {
+                item.IsFavorite = isFav;
+                break;
+            }
+        }
+    }
 
     readonly IMessenger _messenger;
     readonly LocalBookmarkRepository _bookmarkManager;
@@ -155,11 +172,8 @@ public sealed partial class ImageListupPageViewModel
     public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
-    public AlbamItemEditCommand AlbamItemEditCommand { get; }
-    public FavoriteAddCommand FavoriteAddCommand { get; }
-    public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
-    public AlbamItemRemoveCommand AlbamItemRemoveCommand { get; }
-    public ObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
+    public FavoriteToggleCommand FavoriteToggleCommand { get; }
+    public RangeObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
     public AdvancedCollectionView FileItemsView { get; }
 
@@ -196,6 +210,17 @@ public sealed partial class ImageListupPageViewModel
 
     [ObservableProperty]
     bool _isFavoriteAlbam;
+
+    [ObservableProperty]
+    bool _isFavoriteFilteredDisplayEnabled;
+
+    partial void OnIsFavoriteFilteredDisplayEnabledChanged(bool value)
+    {
+        using (FileItemsView.DeferRefresh())
+        {
+            FileItemsView.RefreshFilter();
+        }
+    }
 
     [ObservableProperty]
     string? _displayCurrentArchiveFolderName;
@@ -241,10 +266,7 @@ public sealed partial class ImageListupPageViewModel
         SecondaryTileRemoveCommand secondaryTileRemoveCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
-        AlbamItemEditCommand albamItemEditCommand,
-        AlbamItemRemoveCommand albamItemRemoveCommand,
-        FavoriteAddCommand favoriteAddCommand,
-        FavoriteRemoveCommand favoriteRemoveCommand
+        FavoriteToggleCommand favoriteToggleCommand
         )
     {
         _messenger = messenger;
@@ -267,13 +289,19 @@ public sealed partial class ImageListupPageViewModel
         SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
-        AlbamItemEditCommand = albamItemEditCommand;
-        AlbamItemRemoveCommand = albamItemRemoveCommand;
-        FavoriteAddCommand = favoriteAddCommand;
-        FavoriteRemoveCommand = favoriteRemoveCommand;
-        ImageFileItems = new ObservableCollection<IStorageItemViewModel>();
+        FavoriteToggleCommand = favoriteToggleCommand;
+        ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);
-        FileItemsView.Filter = s => string.IsNullOrWhiteSpace(_filterText) ? true : ((s as IStorageItemViewModel)?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        FileItemsView.Filter = s =>
+        {
+            if (s is not IStorageItemViewModel itemVM) { return true; }
+            if (IsFavoriteFilteredDisplayEnabled
+                && !itemVM.IsFavorite)
+            {
+                return false;
+            }
+            return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
+        };
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         FileDisplayMode = _folderListingSettings.FileDisplayMode;        
     }
@@ -324,6 +352,8 @@ public sealed partial class ImageListupPageViewModel
         _messenger.Unregister<InPageSearchRequestMessage>(this);
         _messenger.Unregister<StorageItemNotFoundMessage>(this);
         _messenger.Unregister<SendToOtherFolderMessage>(this);
+        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+        _messenger.Unregister<ImageSourceFavoriteChanged>(this);
 
         foreach (var itemVM in ImageFileItems.Reverse())
         {
@@ -422,8 +452,8 @@ public sealed partial class ImageListupPageViewModel
                 var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = true;
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+                    itemVM?.IsFavorite = true;
                 }
             });
 
@@ -432,14 +462,35 @@ public sealed partial class ImageListupPageViewModel
                 var (albamId, path, itemType) = m.Value;
                 if (albamId == FavoriteAlbam.FavoriteAlbamId)
                 {
-                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path == path);
-                    itemVM.IsFavorite = false;
+                    var itemVM = ImageFileItems.FirstOrDefault(x => x.Path.Equals(path, StringComparison.Ordinal));
+                    itemVM?.IsFavorite = false;
                 }
             });
+
+            Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+                .Subscribe(selectionEnabled =>
+                {
+                    if (selectionEnabled)
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
+                        _messenger.Register<BackNavigationRequestingMessage>(this, (r, m) =>
+                        {
+                            m.Value.IsHandled = true;
+                            Selection.EndSelection();
+                        });
+                    }
+                    else
+                    {
+                        _messenger.Send(new MenuDisplayMessage(Visibility.Visible));
+                        _messenger.Unregister<BackNavigationRequestingMessage>(this);
+                    }
+                })
+                .AddTo(ref db);
 
             _messenger.Register<InPageSearchRequestMessage>(this);
             _messenger.Register<StorageItemNotFoundMessage>(this);
             _messenger.Register<SendToOtherFolderMessage>(this);
+            _messenger.Register<ImageSourceFavoriteChanged>(this);
 
             this.ObservePropertyChanged(x => x.SelectedFileSortType)
                 .SubscribeAwait(async (sort, ct) =>
@@ -463,6 +514,7 @@ public sealed partial class ImageListupPageViewModel
             _messenger.Unregister<InPageSearchRequestMessage>(this);
             _messenger.Unregister<StorageItemNotFoundMessage>(this);
             _messenger.Unregister<SendToOtherFolderMessage>(this);
+            _messenger.Unregister<ImageSourceFavoriteChanged>(this);
             throw;
         }
 
@@ -473,11 +525,10 @@ public sealed partial class ImageListupPageViewModel
 
     void ClearContent()
     {
-        foreach (var item in ImageFileItems)
+        using (FileItemsView.DeferRefresh())
         {
-            item.Dispose();
+            ImageFileItems.Clear();
         }
-        ImageFileItems.Clear();
 
         IsFavoriteAlbam = false;
         (_imageCollectionContext as IDisposable)?.Dispose();
@@ -615,22 +666,26 @@ public sealed partial class ImageListupPageViewModel
             var existItemsHashSet = ImageFileItems.Select(x => x.Path).ToHashSet();
             using (FileItemsView.DeferRefresh())
             {
+                IsFavoriteFilteredDisplayEnabled = false;
                 ImageFileItems.Clear();
                 // 削除アイテム
                 Debug.WriteLine($"items count : {ImageFileItems.Count}");
 
                 // 新規アイテム
+                List<IStorageItemViewModel> items = [];
                 await foreach (var item in imageCollectionContext.GetImageFilesAsync(ct).WithCancellation(ct))
                 {
                     if (existItemsHashSet.Contains(item.Path) is false)
                     {
-                        ImageFileItems.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
+                        items.Add(new StorageItemViewModel(item, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection));
                     }
                     else
                     {
                         existItemsHashSet.Remove(item.Path);
                     }
                 }
+
+                ImageFileItems.AddRange(items);
 
                 Debug.WriteLine($"after added : {ImageFileItems.Count}");
                 for (int i = ImageFileItems.Count - 1; i >= 0; i--)
@@ -700,17 +755,17 @@ public sealed partial class ImageListupPageViewModel
 
                 using (FileItemsView.DeferRefresh())
                 {
+                    IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
-                    foreach (var entry in col.Context.GetCacheItems())
+                    ImageFileItems.AddRange(col.Context.GetCacheItems().Select(entry =>
                     {
-                        var itemVM = new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
+                        return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
                             _sourceStorageItemsRepository,
                             _bookmarkManager,
                             _thumbnailManager,
                             _albamRepository,
                             Selection);
-                        ImageFileItems.Add(itemVM);
-                    }
+                    }));                    
 
                     if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
                     {
@@ -728,21 +783,23 @@ public sealed partial class ImageListupPageViewModel
                 Guard.IsNotNull(_imageCollectionContext);
                 using (FileItemsView.DeferRefresh())
                 {
+                    IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
-                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);
-                    foreach (var index in ValueEnumerable.Range(0, count))
-                    {
-                        ImageFileItems.Add(new LazyImageFileViewModel(
-                            _imageCollectionContext,
-                            index,
-                            SelectedFileSortType,
-                            _messenger,
-                            _sourceStorageItemsRepository,
-                            _bookmarkManager,
-                            _thumbnailManager,
-                            _albamRepository,
-                            Selection));
-                    }
+                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);                    
+                    ImageFileItems.AddRange(Enumerable.Range(0, count)
+                        .Select(index =>
+                        {
+                            return new LazyImageFileViewModel(
+                                _imageCollectionContext,
+                                index,
+                                SelectedFileSortType,
+                                _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                        }));
                 }                
             }
         }

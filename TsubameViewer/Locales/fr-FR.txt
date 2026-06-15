@@ -141,6 +141,24 @@ TitleDigitCompletionTransform = Complétion des chiffres du titre
 SendToOtherFolder = Se déplacer...
 SendToOtherFolder_ConfirmOverwrite = Est-ce que je peux l'écraser ?
 SendToOtherFolder_MoveItem0to1 = {0} a été déplacé vers {1}.
+CreateFolder = Créer un dossier
+CreateFolder_FolderNamePlaceholder = Saisissez le nom du dossier...
+CreateFolder_ExistFolderName = Ce nom de dossier existe déjà. Veuillez saisir un autre nom.
+MoveToFolder_WithFolderName = Déplacez-vous vers {0}
+MoveToFolder_Completed_Single = Déplacer {0} vers {1}
+MoveToFolder_Completed_Multi = Déplacer {0} éléments vers {1}
+MoveToFolder_ItemsMoveToSelectedFolder = Déplacez-vous vers le dossier sélectionné
+MoveToFolder_ToggleSiblingFoldersDisplay = Afficher les dossiers frères
+ReadingState_ToggleToFinished = Marquer comme lu
+ReadingState_ToggleToUnfinished = Remettre en non lu
+ReadingState_SetToFinished = Marqué comme lu
+ReadingState_SetToUnfinished = Remis en non lu
+StorageItemSettings_IsDisplayFolderItemsCount = Afficher le nombre de fichiers lus dans un dossier
+StorageItemSettings_IsDisplayFolderItemsCount_Desc = Dans la liste des dossiers, vous pouvez choisir d'afficher soit le nombre de fichiers lus, soit le nombre total de fichiers. Les catégories « Archives d'images », « EPUB » et « Vidéos » sont prises en compte dans ce décompte.
+StorageItemSettings_ReadingFinishedThresholdForImageViewer = Seuil de détermination de la fin de lecture pour la visionneuse d'images
+StorageItemSettings_ReadingFinishedThresholdForEBookViewer = Seuil de détermination de la fin de lecture pour la visionneuse de romans
+StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermination de la fin de lecture pour la visionneuse de vidéos
+
 
 #### History Page
 HistoryPage_Title = histoire
@@ -151,7 +169,7 @@ HistoryPage_RemoveAll = Supprimer tout l'historique
 ImageSelection_SelectedCount = {0} éléments sélectionnés
 SelectItems_ActionAs = Sélectionner un élément
 StartMultiSelection = Sélection multiple
-
+ImageListupPage_DragAndDrop_Unsupported = Le glisser-déposer n'est pas pris en charge.
 
 #### ImageViewerPage
 CurrentFolder_InArchive = Dossier
@@ -257,8 +275,11 @@ ChoiceTargetAlbam = Sélectionner un album
 AlbamItemRemove = Supprimer de l'album
 AlbamItemAdd = Ajouter à l'album
 FavoriteAlbam = Favoris
-AddFavoriteImage = Ajouter aux favoris
-RemoveFavoriteImage = Retirer des favoris
+Favorite_AddItem = Ajouter aux favoris
+Favorite_RemoveItem = Supprimer des favoris
+Favorite_Added = Ajouter {0} aux favoris
+Favorite_Removed = Supprimer {0} des favoris
+Favorite_ShowOnlyFavorite = Uniquement mes favoris
 
 
 #### FolderOrArchiveResturcture

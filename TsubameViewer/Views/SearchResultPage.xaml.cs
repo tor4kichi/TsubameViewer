@@ -144,13 +144,13 @@ public sealed partial class SearchResultPage : Page, ITitlebarContentAware
 
     void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
     {
-        //(sender as Control).Focus(FocusState.Keyboard);
+        (sender as Control)!.Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
     void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        //(args.Element as Control).Focus(FocusState.Keyboard);
+        (args.Element as Control)!.Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 

@@ -160,9 +160,6 @@
     <Compile Include="ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\AlbamEditCommand.cs" />
-    <Compile Include="ViewModels\Albam.Commands\AlbamItemAddCommand.cs" />
-    <Compile Include="ViewModels\Albam.Commands\AlbamItemEditCommand.cs" />
-    <Compile Include="ViewModels\Albam.Commands\AlbamItemRemoveCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteAddCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteListupOpenCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\FavoriteRemoveCommand.cs" />
@@ -186,6 +183,7 @@
     <Compile Include="Views\FolderListupPageViewModel.cs" />
     <Compile Include="Views\FolderOrArchiveRestructurePageViewModel.cs" />
     <Compile Include="Helpers\TaskHelper.cs" />
+    <Compile Include="Views\Helpers\RangeObservableCollection.cs" />
     <Compile Include="Views\HistoryPage.xaml.cs">
       <DependentUpon>HistoryPage.xaml</DependentUpon>
     </Compile>

@@ -1,10 +1,21 @@
 ﻿using CommunityToolkit.Mvvm.DependencyInjection;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
-using TsubameViewer.ViewModels.Albam.Commands;
+using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.ViewModels;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.SourceFolders.Commands;
 using TsubameViewer.Views.Helpers;
@@ -12,12 +23,9 @@ using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using TsubameViewer.Core.Models.SourceFolders;
-using System.IO;
-using CommunityToolkit.Mvvm.Messaging;
+using ZLinq;
 
-// ユーザー コントロールの項目テンプレートについては、https://go.microsoft.com/fwlink/?LinkId=234236 を参照してください
-
+#nullable enable
 namespace TsubameViewer.Views.Flyouts;
 
 public sealed partial class StorageItemMenuFlyout : MenuFlyout
@@ -32,10 +40,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         OpenViewerItem.Command = Ioc.Default.GetService<OpenImageViewerCommand>();
         SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();
-        SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteAddCommand>();
-        SelectedItems_AlbamItemEditMenuItem.Command = Ioc.Default.GetService<AlbamItemEditCommand>();
-        AlbamEditMenuItem.Command = Ioc.Default.GetService<AlbamEditCommand>();
-        AlbamDeleteMenuItem.Command = Ioc.Default.GetService<AlbamDeleteCommand>();
+        SelectedItems_AddFavariteImageMenuItem.Command = Ioc.Default.GetService<FavoriteToggleCommand>();
         StorageItemDeleteMenuItem.Command = Ioc.Default.GetService<FileDeleteCommand>();
         FolderOrArchiveRestructureItem.Command = Ioc.Default.GetService<FolderOrArchiveResturctureCommand>();
         AddSecondaryTile.Command = Ioc.Default.GetService<SecondaryTileAddCommand>();
@@ -43,20 +48,25 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         OpenWithExplorerItem.Command = Ioc.Default.GetService<OpenWithExplorerCommand>();
         SelectedItems_OpenWithExplorerItem.Command = OpenWithExplorerItem.Command;
         OpenWithExternalAppMenuItem.Command = Ioc.Default.GetService<OpenWithExternalApplicationCommand>();
-        _secondaryTileManager = Ioc.Default.GetService<ISecondaryTileManager>();
-        _favoriteAlbam = Ioc.Default.GetService<FavoriteAlbam>();
-        _albamRepository = Ioc.Default.GetService<AlbamRepository>();
+        _secondaryTileManager = Ioc.Default.GetRequiredService<ISecondaryTileManager>();
+        _favoriteAlbam = Ioc.Default.GetRequiredService<FavoriteAlbam>();
+        _albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
+        _bookmarkRepository = Ioc.Default.GetRequiredService<LocalBookmarkRepository>();
+        ToggleReadingFinishedStateItem.Command = ToggleReadingFinishedStateCommand;
+        ToggleFavoriteMenuItem.Command = Ioc.Default.GetRequiredService<FavoriteToggleCommand>(); 
     }
 
     readonly ISecondaryTileManager _secondaryTileManager;
     readonly FavoriteAlbam _favoriteAlbam;
     readonly AlbamRepository _albamRepository;
-    
+    readonly LocalBookmarkRepository _bookmarkRepository;
+
     void FolderAndArchiveMenuFlyout_Opened(object sender, object e)
     {
-        var flyout = sender as FlyoutBase;
-        
-        IStorageItemViewModel itemVM = flyout.Target.DataContext as IStorageItemViewModel;
+        long time = TimeProvider.System.GetTimestamp();
+
+        var flyout = (FlyoutBase)sender;
+        IStorageItemViewModel? itemVM = flyout.Target.DataContext as IStorageItemViewModel;
         if (itemVM == null && flyout.Target is Control content)
         {
             itemVM = (content as ContentControl)?.Content as IStorageItemViewModel;
@@ -71,9 +81,12 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
         if (itemVM.Selection is not null and var selection && selection.IsSelectionModeEnabled && selection.SelectedItems.Count >= 2)
         {
             SelectItemsSubItem.Visibility = Visibility.Visible;
-            SelectedItems_AddFavariteImageMenuItem.CommandParameter = itemVM.Selection.SelectedItems;
-            SelectedItems_AlbamItemEditMenuItem.CommandParameter = itemVM.Selection.SelectedItems;
-            SelectedItems_OpenWithExplorerItem.CommandParameter = itemVM.Selection.SelectedItems;
+            SelectedItems_AddFavariteImageMenuItem.CommandParameter = selection.SelectedItems;
+            SelectedItems_AddFavariteImageMenuItem.Text = selection.SelectedItems.All(x => _favoriteAlbam.IsFavorite(x.Path))
+                ? "Favorite_RemoveItem".Translate()
+                : "Favorite_AddItem".Translate();
+
+            SelectedItems_OpenWithExplorerItem.CommandParameter = selection.SelectedItems;
         }
         else
         {
@@ -88,18 +101,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = (itemVM.Type == Core.Models.StorageItemTypes.Archive || itemVM.Type == Core.Models.StorageItemTypes.Folder).TrueToVisible();
             
-            var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-
-            AlbamEditMenuItem.Visibility = Visibility.Collapsed;
-            AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
-
-            AlbamMenuSubItem.Visibility = Visibility.Visible;
-            AlbamMenuSubItem.Items.Clear();
-            foreach (var albam in _albamRepository.GetAlbams())
-            {
-                AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, itemVM.Path) });
-            }
-
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
             SetThumbnailImageMenuItem.Visibility = (IsRootPage is false && itemVM.Type is Core.Models.StorageItemTypes.Image or Core.Models.StorageItemTypes.Folder or Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Movie).TrueToVisible();
             RemoveFromAccessListMenuItem.CommandParameter = itemVM;
@@ -139,18 +140,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = Visibility.Visible;
 
-            var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
-
-            AlbamEditMenuItem.Visibility = Visibility.Collapsed;
-            AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
-
-            AlbamMenuSubItem.Visibility= Visibility.Visible;
-            AlbamMenuSubItem.Items.Clear();
-            foreach (var albam in _albamRepository.GetAlbams())
-            {
-                AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = _albamRepository.IsExistAlbamItem(albam._id, itemVM.Path) });
-            }
-
             SetThumbnailImageMenuItem.CommandParameter = itemVM;
             SetThumbnailImageMenuItem.Visibility = Visibility.Visible;            
 
@@ -176,13 +165,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenListupItem.Visibility = Visibility.Visible;
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = Visibility.Visible;
-
-            AlbamEditMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
-            AlbamEditMenuItem.CommandParameter = itemVM;
-            AlbamDeleteMenuItem.Visibility = isFavAlbamItem.FalseToVisible();
-            AlbamDeleteMenuItem.CommandParameter = itemVM;
-
-            AlbamMenuSubItem.Visibility = Visibility.Collapsed;
 
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
@@ -211,17 +193,6 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             OpenViewerItem.CommandParameter = itemVM;
             OpenViewerItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.ArchiveFolder or Core.Models.StorageItemTypes.Folder).TrueToVisible();
 
-            AlbamEditMenuItem.Visibility = Visibility.Collapsed;
-            AlbamDeleteMenuItem.Visibility = Visibility.Collapsed;
-
-            AlbamMenuSubItem.Visibility = Visibility.Visible;
-            AlbamMenuSubItem.Items.Clear();                
-            foreach (var albam in _albamRepository.GetAlbams())
-            {
-                var isExistInAlbam = _albamRepository.IsExistAlbamItem(albam._id, albamItem.Path);
-                AlbamMenuSubItem.Items.Add(new ToggleMenuFlyoutItem { Text = albam.Name, Command = new AlbamItemAddCommand(_albamRepository, albam), CommandParameter = itemVM, IsChecked = isExistInAlbam, IsEnabled = albamItem.InnerImageSource != null || isExistInAlbam });
-            }
-
             SetThumbnailImageMenuItem.Visibility = Visibility.Collapsed;
             RemoveFromAccessListMenuItem.Visibility = Visibility.Collapsed;
 
@@ -229,11 +200,15 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             RemoveSecondaryTile.Visibility = Visibility.Collapsed;
 
             StorageItemDeleteMenuItem.CommandParameter = itemVM;
-            StorageItemDeleteMenuItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource).TrueToVisible();
+            StorageItemDeleteMenuItem.Visibility = (type is Core.Models.StorageItemTypes.Folder 
+                or Core.Models.StorageItemTypes.Archive 
+                or Core.Models.StorageItemTypes.EBook 
+                or Core.Models.StorageItemTypes.Movie 
+                or Core.Models.StorageItemTypes.Image)
+                .TrueToVisible();
 
             FolderOrArchiveRestructureItem.CommandParameter = itemVM;
-            FolderOrArchiveRestructureItem.Visibility = (albamItem.InnerImageSource is StorageItemImageSource imageSource
-                && imageSource.ItemTypes is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
+            FolderOrArchiveRestructureItem.Visibility = (type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.Folder)
                 .TrueToVisible();
 
             OpenWithExplorerItem.CommandParameter = itemVM;
@@ -248,17 +223,18 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
             return;
         }
 
-        AlbamMenuSeparator.Visibility = (
-            (OpenListupItem.Visibility == Visibility.Visible || SelectItemsSubItem.Visibility is Visibility.Visible)
-            && (AlbamEditMenuItem.Visibility == Visibility.Visible
-                || AlbamDeleteMenuItem.Visibility == Visibility.Visible)
-            ).TrueToVisible();
-
         FileControlMenuSeparator.Visibility =
             (StorageItemDeleteMenuItem.Visibility == Visibility.Visible                
             )
             .TrueToVisible()
             ;
+
+        var isFav = _favoriteAlbam.IsFavorite(itemVM.Path);
+        ToggleFavoriteMenuItem.Text = isFav
+            ? "Favorite_RemoveItem".Translate()
+            : "Favorite_AddItem".Translate();
+        ToggleFavoriteMenuItem.IsChecked = isFav;
+        ToggleFavoriteMenuItem.CommandParameter = itemVM;
 
         //FolderAndArchiveMenuSeparator1.Visibility = (
         //    AddSecondaryTile.Visibility == Visibility.Visible
@@ -294,7 +270,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
                 var sourceFolderRegistrationRepository = Ioc.Default.GetRequiredService<SourceStorageItemsRepository>();
                 SendOtherFolderMenuItem.Items.Clear();
                 var parentFolderPath = Path.GetDirectoryName(itemVM.Path);
-                foreach (SourceStorageItemsRepository.TokenToPathEntry item in sourceFolderRegistrationRepository.GetParsistantItemsFromCache())
+                foreach (SourceStorageItemsRepository.TokenToPathEntry item in sourceFolderRegistrationRepository.GetParsistantItemsFromCache().AsValueEnumerable().OrderBy(x => x.Order))
                 {
                     var menuItem = new MenuFlyoutItem()
                     {
@@ -307,5 +283,36 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
                 }
             }
         }
+
+        if (itemVM.Type is Core.Models.StorageItemTypes.Archive or Core.Models.StorageItemTypes.EBook or Core.Models.StorageItemTypes.Movie)
+        {
+            var facade = _bookmarkRepository.GetBookmarkFacade(itemVM.Path);
+            ToggleReadingFinishedStateItem.CommandParameter = itemVM;
+            ToggleReadingFinishedStateItem.Text = facade.IsFinishedReading
+                ? "ReadingState_ToggleToUnfinished".Translate()
+                : "ReadingState_ToggleToFinished".Translate();
+            ToggleReadingFinishedStateItem.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            ToggleReadingFinishedStateItem.Visibility = Visibility.Collapsed;
+        }
+        
+
+        Debug.WriteLine($"StorateItemMenuFlyout.Opened: {TimeProvider.System.GetElapsedTime(time)}");
+    }
+
+
+    [RelayCommand]
+    void ToggleReadingFinishedState(IStorageItemViewModel? itemVM)
+    {
+        if (itemVM == null) { return; }
+
+        var facade = _bookmarkRepository.GetBookmarkFacade(itemVM.Path);
+        facade.IsFinishedReading = !facade.IsFinishedReading;
+        itemVM.UpdateLastReadPosition();
+        Ioc.Default.GetRequiredService<IMessenger>().SendShowTextNotificationMessage(facade.IsFinishedReading
+            ? "ReadingState_SetToFinished".Translate()
+            : "ReadingState_SetToUnfinished".Translate());
     }
 }

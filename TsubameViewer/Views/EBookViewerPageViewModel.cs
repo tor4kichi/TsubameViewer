@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using I18NPortable;
 using Microsoft.IO;
 using R3;
 using Reactive.Bindings;
@@ -18,12 +19,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.EBook;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.ImageViewer;
+using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.ViewModels.ViewManagement.Commands;
@@ -109,6 +114,11 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     int _firstApproachingPageIndex;
 
+    [ObservableProperty]
+    bool _isFavoriteCurrentFolderOrArchive;
+
+    [ObservableProperty]
+    IImageSource? _currentItem;
 
     [RelayCommand]
     void ResetEBookReaderSettings()
@@ -126,6 +136,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LocalBookmarkRepository _bookmarkManager;
+    private readonly FavoriteAlbam _favoriteAlbam;
+    private readonly StorageItemSettings _storageItemSettings;
     readonly ThumbnailImageManager _thumbnailManager;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ApplicationSettings _applicationSettings;
@@ -145,16 +157,16 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         WritingMode.Vertical_RightToLeft, 
         WritingMode.Vertical_LeftToRight 
     };
-
-
-
     [ObservableProperty]
     WritingMode _defaultWritingMode;
 
+    int _pageMovedCount = 0;
     public EBookViewerPageViewModel(
         IMessenger messenger,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LocalBookmarkRepository bookmarkManager,
+        FavoriteAlbam favoriteAlbam,
+        StorageItemSettings storageItemSettings,
         ThumbnailImageManager thumbnailManager,
         RecentlyAccessRepository recentlyAccessRepository,
         ApplicationSettings applicationSettings,
@@ -167,6 +179,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         _messenger = messenger;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _bookmarkManager = bookmarkManager;
+        _favoriteAlbam = favoriteAlbam;
+        _storageItemSettings = storageItemSettings;
         _thumbnailManager = thumbnailManager;
         _recentlyAccessRepository = recentlyAccessRepository;
         _applicationSettings = applicationSettings;
@@ -202,6 +216,7 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
             _readingSessionDisposer = null;
             ClearPageInfo(SwapPages[0]);
             ClearPageInfo(SwapPages[1]);
+            _pageMovedCount = 0;
         }
 
         base.OnNavigatedFrom(parameters);
@@ -252,6 +267,8 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                     {
                         throw new ArgumentException("EBookReaderPage can not open StorageFolder.");
                     }
+
+                    CurrentItem = new StorageItemImageSource(CurrentFolderItem);
                 }
 
                 NowFirstLoadingProgress = true;
@@ -333,17 +350,29 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 var currentPage = s.CurrentBookReadingOrder.ElementAtOrDefault(s.CurrentImageIndex);
                 if (currentPage == null) { return; }
 
-                s._bookmarkManager.AddBookmark(s.CurrentFolderItem.Path, currentPage.FilePath, s.InnerCurrentImageIndex, new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex));
+                var v = new NormalizedPagePosition(s.CurrentBookReadingOrder.Count, s.CurrentImageIndex);
+                bool isFinished = s._pageMovedCount > 0 && v.Value > 0.90f;
+                s._bookmarkManager.AddBookmarkForEBookViewer(
+                    s.CurrentFolderItem.Path,
+                    currentPage.FilePath,
+                    s.InnerCurrentImageIndex,
+                    v,
+                    isFinished
+                    );
             })
             .AddTo(ref db);
 
+
+        BookmarkFacade bookmark = _bookmarkManager.GetBookmarkFacade(_currentPath);
         R3.Observable.Merge(
             this.ObservePropertyChanged(x => x.InnerCurrentImageIndex, true).AsUnitObservable(),
-            this.ObservePropertyChanged(x => x.CurrentPage, true).AsUnitObservable()
+            this.ObservePropertyChanged(x => x.CurrentPageInfo, true).AsUnitObservable()
             )
             .ThrottleLast(TimeSpan.FromMilliseconds(250))
-            .Subscribe(this, static (_, s) =>
+            .Subscribe((this, bookmark), static (_, state) =>
             {
+                var (s, bookmark) = state;
+                if (s.CurrentFolderItem == null) { return; }
                 if (s.CurrentPageInfo == null) { return; }
                 if (s.CurrentBookReadingOrder == null) { return; }
                 if (s.CurrentPageInfo.InnerCurrentPageIndex == -1) { return; }
@@ -359,6 +388,20 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
 
                 s.CurrentReadingItemPosition = totalSize + partialPageUnit * s.CurrentPageInfo.InnerCurrentPageIndex;
                 Debug.WriteLine($"{s.CurrentReadingItemPosition / s.TotalReadingItemContentSize * 100:F1}%");
+
+                using (bookmark.GetDeferSave())
+                {
+                    bookmark.PageName = currentPage.FilePath;
+                    bookmark.SetReadPosition((long)s.CurrentReadingItemPosition, (long)s.TotalReadingItemContentSize);
+                    bookmark.InnerPageIndex = s.InnerCurrentImageIndex;
+                    if (!bookmark.IsFinishedReading
+                        && s._pageMovedCount > 0 
+                        && bookmark.ReadPosition.Value > s._storageItemSettings.ReadingFinishedThresholdForEBookViewer)
+                    {
+                        bookmark.IsFinishedReading = true;
+                        Debug.WriteLine($"Mark as Finished: {bookmark.ReadPosition.Value:F2}");
+                    }
+                }
             })
             .AddTo(ref db);
 
@@ -394,6 +437,28 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
                 await _this.UpdateCurrentPage(_this.CurrentImageIndex, _this._navigationCt);
             })
             .AddTo(ref db);
+
+
+        IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(_currentPath);
+        this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+            .Subscribe((_favoriteAlbam, CurrentItem!, _messenger), static (isFavorite, s) =>
+            {
+                var (_favoriteAlbam, _currentItem, _messenger) = s;
+                if (isFavorite)
+                {
+                    _favoriteAlbam.AddFavoriteItem(_currentItem);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(_currentItem.Name));
+                    _messenger.Send(new ImageSourceFavoriteChanged(_currentItem.Path, true));
+                }
+                else
+                {
+                    _favoriteAlbam.DeleteFavoriteItem(_currentItem);
+                    _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(_currentItem.Name));
+                    _messenger.Send(new ImageSourceFavoriteChanged(_currentItem.Path, false));
+
+                }
+            })
+        .AddTo(ref db);
 
         db.Build().RegisterTo(ct);
 
@@ -484,6 +549,10 @@ public sealed partial class EBookViewerPageViewModel : NavigationAwareViewModelB
         Debug.WriteLine($"UpdateCurrentPage {requestPage:000}: start");
         NowLoadingPage = true;
         EBookPageInfo? currentLoadingPage = null;
+        if (CurrentPageInfo != null)
+        {
+            _pageMovedCount += requestPage - CurrentPageInfo.OuterPageIndex;
+        }
         try
         {
             using (var lockReleaser = await _pageUpdateLock.LockAsync(ct))

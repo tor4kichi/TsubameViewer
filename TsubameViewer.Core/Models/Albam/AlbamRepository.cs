@@ -71,6 +71,11 @@ public sealed class AlbamRepository
             _collection.EnsureIndex(x => x.ItemType);
         }
 
+        public AlbamItemEntry? FindByPath(string path)
+        {
+            return _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
+        }
+
         public int DeleteAlbam(Guid albamId)
         {
             return _collection.DeleteMany(x => x.AlbamId == albamId);
@@ -100,28 +105,28 @@ public sealed class AlbamRepository
         }
 
 
-        public IEnumerable<AlbamItemEntry> GetImageItems(Guid albamId, FileSortType sort, int skip = 0, int limit = int.MaxValue)
+        public IEnumerable<AlbamItemEntry> GetImageItems(FileSortType sort, int skip = 0, int limit = int.MaxValue)
         {
             return sort switch
             {
-                FileSortType.None => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image && x.AlbamId == albamId).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.TitleAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image && x.AlbamId == albamId).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.TitleDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image && x.AlbamId == albamId).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image && x.AlbamId == albamId).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.UpdateTimeDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image && x.AlbamId == albamId).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.None => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.TitleAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.TitleDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.UpdateTimeDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.Image).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
                 _ => throw new NotSupportedException(sort.ToString()),
             };
         }
 
-        public IEnumerable<AlbamItemEntry> GetFolderOrArchiveItems(Guid albamId, FileSortType sort, int skip = 0, int limit = int.MaxValue)
+        public IEnumerable<AlbamItemEntry> GetFolderOrArchiveItems(FileSortType sort, int skip = 0, int limit = int.MaxValue)
         {
             return sort switch
             {
-                FileSortType.None => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive && x.AlbamId == albamId).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.TitleAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive && x.AlbamId == albamId).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.TitleDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive && x.AlbamId == albamId).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive && x.AlbamId == albamId).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
-                FileSortType.UpdateTimeDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive && x.AlbamId == albamId).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.None => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.TitleAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive).OrderBy(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.TitleDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive).OrderByDescending(x => x.Name).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.UpdateTimeAscending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive).OrderBy(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
+                FileSortType.UpdateTimeDecending => _collection.Query().Where(x => x.ItemType == AlbamItemType.FolderOrArchive).OrderByDescending(x => x.AddedAt).Offset(skip).Limit(limit).ToEnumerable(),
                 _ => throw new NotSupportedException(sort.ToString()),
             };
         }
@@ -197,24 +202,20 @@ public sealed class AlbamRepository
         return _albamDatabase.ReadAllItems();
     }
 
-    public bool IsExistAlbamItem(Guid albamId)
+
+    public bool IsExistAlbamItem(AlbamItemType itemType)
     {
-        return _albamItemDatabase.Exists(x => x.AlbamId == albamId);
+        return _albamItemDatabase.Exists(x => x.ItemType == itemType);
     }
 
-    public bool IsExistAlbamItem(Guid albamId, AlbamItemType itemType)
+    public bool IsExistAlbamItem(string path)
     {
-        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.AlbamId == albamId);
+        return _albamItemDatabase.Exists(x => x.Path == path);
     }
 
-    public bool IsExistAlbamItem(Guid albamId, string path)
+    public bool IsExistAlbamItem(string path, AlbamItemType itemType)
     {
-        return _albamItemDatabase.Exists(x => x.AlbamId == albamId && x.Path == path);
-    }
-
-    public bool IsExistAlbamItem(Guid albamId, string path, AlbamItemType itemType)
-    {
-        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.AlbamId == albamId && x.Path == path);
+        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.Path == path);
     }
 
     public AlbamItemEntry AddAlbamItem(Guid albamId, string path, string name, AlbamItemType itemType)
@@ -227,25 +228,28 @@ public sealed class AlbamRepository
         return createdItem;
     }
 
-    public bool DeleteAlbamItem(Guid albamId, string path, AlbamItemType albamItemType)
+    public bool DeleteAlbamItem(Guid albamId, string path)
     {
+        var item = _albamItemDatabase.FindByPath(path);
+        if (item == null) { return false; }
+
         var result = _albamItemDatabase.Delete(albamId, path);
         if (result)
         {
-            _messenger.Send(new AlbamItemRemovedMessage(albamId, path, albamItemType));
+            _messenger.Send(new AlbamItemRemovedMessage(albamId, path, item.ItemType));
         }
 
         return result;
     }
 
-    public int GetAlbamItemsCount(Guid albamId)
+    public int GetAlbamItemsCount()
     {
-        return _albamItemDatabase.Count(x => x.AlbamId == albamId);
+        return _albamItemDatabase.Count();
     }
 
-    public int GetAlbamItemsCount(Guid albamId, AlbamItemType itemType)
+    public int GetAlbamItemsCount(AlbamItemType itemType)
     {
-        return _albamItemDatabase.Count(x => x.AlbamId == albamId && x.ItemType == itemType);
+        return _albamItemDatabase.Count(x => x.ItemType == itemType);
     }
 
 
@@ -254,14 +258,14 @@ public sealed class AlbamRepository
         return _albamItemDatabase.GetAlbamItem(albamId, fileSortType, skip, limit);
     }
 
-    public IEnumerable<AlbamItemEntry> GetAlbamImageItems(Guid albamId, FileSortType fileSortType = FileSortType.None, int skip = 0, int limit = int.MaxValue)
+    public IEnumerable<AlbamItemEntry> GetAlbamImageItems(FileSortType fileSortType = FileSortType.None, int skip = 0, int limit = int.MaxValue)
     {
-        return _albamItemDatabase.GetImageItems(albamId, fileSortType, skip, limit);
+        return _albamItemDatabase.GetImageItems(fileSortType, skip, limit);
     }
 
-    public IEnumerable<AlbamItemEntry> GetAlbamFolderOrArchiveItems(Guid albamId, FileSortType fileSortType = FileSortType.None, int skip = 0, int limit = int.MaxValue)
+    public IEnumerable<AlbamItemEntry> GetAlbamFolderOrArchiveItems(FileSortType fileSortType = FileSortType.None, int skip = 0, int limit = int.MaxValue)
     {
-        return _albamItemDatabase.GetFolderOrArchiveItems(albamId, fileSortType, skip, limit);
+        return _albamItemDatabase.GetFolderOrArchiveItems(fileSortType, skip, limit);
     }
 
     public int DeleteAlbamItemsUnderPath(string path)

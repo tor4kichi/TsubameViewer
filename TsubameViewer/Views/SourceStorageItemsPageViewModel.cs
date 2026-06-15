@@ -50,7 +50,7 @@ public sealed class SourceStorageItemsPageViewModel
     {
         foreach (var item in Folders)
         {
-            if (item.Path.Equals(message.Value, StringComparison.Ordinal))
+            if (item.Path?.Equals(message.Value, StringComparison.Ordinal) ?? false)
             {
                 item.ThumbnailChanged();
                 item.InitializeAsync(default).FireAndForgetSafe();

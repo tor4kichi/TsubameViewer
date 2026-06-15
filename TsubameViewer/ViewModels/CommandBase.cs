@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.Input;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +8,7 @@ using System.Windows.Input;
 
 namespace TsubameViewer.ViewModels;
 
-public abstract class CommandBase : ICommand
+public abstract class CommandBase : IRelayCommand, ICommand
 {
     public event EventHandler CanExecuteChanged;
 

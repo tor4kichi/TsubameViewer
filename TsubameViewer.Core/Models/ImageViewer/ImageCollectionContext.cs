@@ -195,7 +195,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
                 .. SupportedFileTypesHelper.SupportedMovieFileExtensions                
             ])
         {
-            FolderDepth = FolderDepth.Shallow
+            FolderDepth = FolderDepth.Shallow,
         };
         query.SortOrder.Clear();
         switch (sort)

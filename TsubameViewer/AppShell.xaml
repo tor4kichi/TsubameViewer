@@ -71,7 +71,10 @@
                                      DataContext="{x:Bind}"
                                      Tag="{x:Bind}"
                                      Tapped="NavigationViewItem_Tapped"
-                                     FlowDirection="RightToLeft">
+                                     FlowDirection="RightToLeft"
+                                     AllowDrop="True"
+                                     DragEnter="NavigationViewItem_DragEnter"
+                                     Drop="NavigationViewItem_Drop">
               <muxc:NavigationViewItem.KeyboardAccelerators>
                 <KeyboardAccelerator Key="{x:Bind KeyboardAceseralator}"
                                      Modifiers="Control" />

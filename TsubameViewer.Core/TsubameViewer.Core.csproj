@@ -121,6 +121,7 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Contracts\Models\IFavoriteRepository.cs" />
     <Compile Include="Contracts\Services\IStorageHelper.cs" />
     <Compile Include="Contracts\Maintenance\IThumbnailImageMaintenanceService.cs" />
     <Compile Include="Helpers\DeferSaveAwareObservableObject.cs" />
@@ -138,6 +139,10 @@
     <Compile Include="Models\ApplicationSettings.cs" />
     <Compile Include="Models\EBook\EBookReaderSettings.cs" />
     <Compile Include="Helpers\FolderHelper.cs" />
+    <Compile Include="Models\Favorite\FavoriteEBookRepository.cs" />
+    <Compile Include="Models\Favorite\FavoriteImageArchiveRepository.cs" />
+    <Compile Include="Models\Favorite\FavoriteImageRepository.cs" />
+    <Compile Include="Models\Favorite\FavoriteMovieRepository.cs" />
     <Compile Include="Models\FolderItemListing\DisplaySettingsByPathRepository.cs" />
     <Compile Include="Models\FolderItemListing\FileDisplayMode.cs" />
     <Compile Include="Models\FolderItemListing\FileSortType.cs" />
@@ -217,7 +222,7 @@
       <Version>2.2.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.13</Version>
+      <Version>6.2.14</Version>
     </PackageReference>
     <PackageReference Include="PDFtoImage">
       <Version>4.1.1</Version>

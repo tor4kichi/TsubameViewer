@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
@@ -35,7 +37,12 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
 
     protected override bool CanExecute(IImageSource imageSource)
     {
-        return FlattenAlbamItemInnerImageSource(imageSource) is StorageItemImageSource;
+        var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+        return type is Core.Models.StorageItemTypes.Archive
+            or Core.Models.StorageItemTypes.Folder
+            or Core.Models.StorageItemTypes.EBook
+            or Core.Models.StorageItemTypes.Movie
+            or Core.Models.StorageItemTypes.Image;
     }
 
     protected override async void Execute(IImageSource imageSource)
@@ -80,6 +87,10 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                 }
             }
         }
+        else if (imageSource is AlbamItemImageSource albamItem)
+        {
+            
+        }
     }
 
     protected override async void Execute(IEnumerable<IImageSource> imageSources)
@@ -106,6 +117,10 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                 try
                 {
                     await Task.WhenAll(imageSources.Select(x => x.StorageItem.DeleteAsync(StorageDeleteOption.Default).AsTask()));
+                    foreach (var deleted in imageSources)
+                    {
+                        _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));
+                    }
                 }
                 catch (FileNotFoundException)
                 {

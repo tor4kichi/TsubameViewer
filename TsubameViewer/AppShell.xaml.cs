@@ -31,6 +31,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Core.Models.SourceFolders;
+using TsubameViewer.Helpers;
 using TsubameViewer.Services;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
@@ -298,7 +299,8 @@ public sealed partial class AppShell : UserControl
     readonly Queue<object> _notificationRequestedItems = new Queue<object>();
     void ShowNotification(object content)
     {
-        if (NotificationContentControl.Content == null)
+        if (NotificationContentControl.Content == null
+            && string.IsNullOrEmpty(NotificationTextBlock.Text))
         {
             PushShowingNotificationContent(content);
         }
@@ -1437,7 +1439,7 @@ public sealed partial class AppShell : UserControl
 
     #region Drop Action
 
-    async void Grid_DragEnter(object sender, DragEventArgs e)
+    void Grid_DragEnter(object sender, DragEventArgs e)
     {
         var deferral = Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
         AsyncTaskErrorHandler.Handle((this, e, deferral), static async (s) =>
@@ -1460,7 +1462,7 @@ public sealed partial class AppShell : UserControl
         });
     }
 
-    async void Grid_Drop(object sender, DragEventArgs e)
+    void Grid_Drop(object sender, DragEventArgs e)
     {
         var deferral = Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
         AsyncTaskErrorHandler.Handle((this, e, deferral), static async (s) =>
@@ -1469,9 +1471,10 @@ public sealed partial class AppShell : UserControl
             var _messenger = _this._messenger;
             using (deferral)
             {
-
                 string? token = null;
                 IStorageItem? openStorageItem = null;
+                if (!e.DataView.Contains(StandardDataFormats.StorageItems)) { return; }
+
                 var dropItems = await e.DataView.GetStorageItemsAsync();
                 foreach (var storageItem in dropItems)
                 {
@@ -1531,6 +1534,96 @@ public sealed partial class AppShell : UserControl
         //});
     }
 
+
+    private void NavigationViewItem_DragEnter(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>);
+        if (items is null or {Count: 0 }) { return; }
+        var deferral = R3.Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, deferral, items), static async (s) =>
+        {
+            var (_this, hostUI, e, deferral, items) = s;
+            using (deferral)
+            {
+                foreach (var item in items)
+                {
+                    if (item is not IStorageItemViewModel myItem)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
+                        return;
+                    }
+                }
+
+                if (hostUI.DataContext is MenuItemViewModel menuItemVM)
+                {
+                    e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+                    e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(menuItemVM.Title);
+                }
+            }
+        });
+    }
+
+    private void NavigationViewItem_Drop(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>).ToList();
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, items), static async (s) =>
+        {
+            var (_this, hostUI, e, items) = s;
+            if (items is null or { Count: 0 }) { return; }
+
+            if (hostUI.DataContext is MenuItemViewModel menuItemVM
+                && (menuItemVM.Parameters?.TryGetValue(PageNavigationConstants.GeneralPathKey, out var pathValue) ?? false)
+                && pathValue is string escapedPath)                
+            {
+                var path = Uri.UnescapeDataString(escapedPath);
+                // 2. ドラッグ開始時にパッケージされたデータを非同期で取得
+                var (token, storageItem) = await _this._vm.SourceStorageItemsRepository.GetSourceStorageItem(path);
+                if (storageItem is not StorageFolder hostFolder) { return; }
+
+                var messenger = Ioc.Default.GetRequiredService<IMessenger>();
+                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage(items.Count == 1 
+                    ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
+                    : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+            }
+
+        });
+
+        // TODO: インスタントな「元に戻す」UIの表示
+    }
+
+    private async Task MoveItemsToAsync(Windows.Storage.StorageFolder targetFolder, IEnumerable<Windows.Storage.IStorageItem> items, CancellationToken ct)
+    {
+        foreach (var item in items)
+        {
+            Debug.WriteLine($"Move to {targetFolder.Path}: {item.Name}");
+            List<Windows.Storage.IStorageItem> failedItems = [];
+            if (item is Windows.Storage.StorageFile file)
+            {
+                try
+                {
+                    await file.MoveAsync(targetFolder, file.Name, Windows.Storage.NameCollisionOption.FailIfExists).AsTask(ct);
+                }
+                catch
+                {
+                    failedItems.Add(item);
+                }
+            }
+            else if (item is Windows.Storage.StorageFolder folder)
+            {
+                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+            }
+        }
+    }
 
     #endregion
 
@@ -1761,7 +1854,6 @@ public sealed partial class AppShell : UserControl
     }
 
     #endregion
-
 }
 
 

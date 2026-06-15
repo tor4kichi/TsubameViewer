@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
     readonly ThumbnailImageManager _thumbnailImageService;
     readonly AlbamRepository _albamRepository;
     public SelectionContext? Selection { get; }
+    public StorageItemSettings Settings { get; }
 
     [ObservableProperty]
     IImageSource? _item;
@@ -89,7 +91,8 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         LocalBookmarkRepository bookmarkManager,
         ThumbnailImageManager thumbnailImageService,
         AlbamRepository albamRepository,
-        SelectionContext? selectionContext = null
+        SelectionContext? selectionContext = null,
+        StorageItemSettings? settings = null
         )
     {
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -97,6 +100,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         _thumbnailImageService = thumbnailImageService;
         _albamRepository = albamRepository;
         Selection = selectionContext;
+        Settings = settings ?? Ioc.Default.GetRequiredService<StorageItemSettings>();
         _imageCollectionContext = imageCollectionContext;
         _itemIndex = itemIndex;
         _fileSortType = fileSortType;
@@ -209,7 +213,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
         }        
     }
 
-    public async Task EnsureStorageItemAsync(CancellationToken ct)
+    public async ValueTask EnsureStorageItemAsync(CancellationToken ct)
     {
         if (Item == null)
         {
@@ -219,7 +223,7 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
             DateCreated = Item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Item.Path);
+            IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)
             {
@@ -247,15 +251,25 @@ public sealed partial class LazyFolderOrArchiveFileViewModel : ObservableObject,
 
     public void UpdateLastReadPosition()
     {
-        // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
-        _bookmark = null;
-        var parcentage = Bookmark.ReadPosition.Value;
-        ReadParcentage = parcentage >= 0.90f ? 1.0 : parcentage;        
+        if (Type is StorageItemTypes.Archive or StorageItemTypes.EBook or StorageItemTypes.Movie)
+        {
+            // ビューアから戻った際にこのメソッドが呼ばれる前提でBookmarkFacadeを再取得させる
+            _bookmark = null;
+            ReadParcentage = Bookmark.IsFinishedReading ? 1.0 : Bookmark.ReadPosition.Value;
+        }
+        else if (Type is StorageItemTypes.Folder && Settings.IsDisplayFolderItemsCount)
+        {
+            var (finished, total) = _bookmarkManager.GetItemsCountForFolder(Path);
+            if (total != 0)
+            {
+                Duration = $"{finished}/{total}";
+            }
+        }
     }
 
     public void RestoreThumbnailLoadingTask(CancellationToken ct)
     {
-        IsFavorite = _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, Path);
+        IsFavorite = _albamRepository.IsExistAlbamItem(Path);
 
         if (Status is LoadingStatus.NowLoading)
         {

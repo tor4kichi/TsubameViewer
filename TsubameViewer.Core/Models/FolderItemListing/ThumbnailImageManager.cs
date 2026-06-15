@@ -246,54 +246,48 @@ public sealed class ThumbnailImageManager
 
         if (imageSource.StorageItem is StorageFolder folder)
         {
-            using (await _fileReadWriteLock.LockAsync(ct))
+            outputStream ??= _recyclableMemoryStreamManager.GetStream();
+            try
             {
-                outputStream ??= _recyclableMemoryStreamManager.GetStream();
-                try
+                var file = await GetCoverThumbnailImageAsync(folder, ct);
+                if (file != null
+                    && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
-                    var file = await GetCoverThumbnailImageAsync(folder, ct);
-                    if (file != null
-                        && await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
-                    {
-                        UploadWithRetry(itemId, imageSource.Name, outputStream);
-                        return outputStream;
-                    }
-                    else
-                    {
-                        outputStream.Dispose();
-                        return null;
-                    }
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputStream;
                 }
-                catch
+                else
                 {
                     outputStream.Dispose();
-                    throw;
+                    return null;
                 }
+            }
+            catch
+            {
+                outputStream.Dispose();
+                throw;
             }
         }
         else if (imageSource is StorageItemImageSource && imageSource.StorageItem is StorageFile file 
             && (file.IsSupportedMangaFile() || file.IsSupportedEBookFile() || file.IsSupportedMovieFile()))
         {
-            using (await _fileReadWriteLock.LockAsync(ct))
+            outputStream ??= _recyclableMemoryStreamManager.GetStream();
+            try
             {
-                outputStream ??= _recyclableMemoryStreamManager.GetStream();
-                try
+                if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
                 {
-                    if (await GenerateThumbnailImageToStreamAsync(file, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct))
-                    {
-                        UploadWithRetry(itemId, imageSource.Name, outputStream);
-                        return outputStream;
-                    }
-                    else
-                    {
-                        return null;
-                    }
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
+                    return outputStream;
                 }
-                catch
+                else
                 {
-                    outputStream.Dispose();
-                    throw;
+                    return null;
                 }
+            }
+            catch
+            {
+                outputStream.Dispose();
+                throw;
             }
         }
         else if (imageSource is AlbamItemImageSource albamItemImageSource)
@@ -336,10 +330,7 @@ public sealed class ThumbnailImageManager
                 try
                 {
                     await TranscodeThumbnailImageToStreamAsync(imageSource.Path, async () => await imageSource.GetImageStreamAsync(ct), outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
-                    using (await _fileReadWriteLock.LockAsync(ct))
-                    {
-                        UploadWithRetry(itemId, imageSource.Name, outputStream);
-                    }
+                    UploadWithRetry(itemId, imageSource.Name, outputStream);
                     return outputStream;
                 }
                 catch
@@ -879,7 +870,7 @@ public sealed class ThumbnailImageManager
     //    }
     //}
 
-    private async Task<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask<Stream> GenerateThumbnailImageAsync(StorageFile file, string itemId, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         bool result = false;
         var memoryStream = _recyclableMemoryStreamManager.GetStream();        
@@ -903,7 +894,7 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    private async Task<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask<bool> GenerateThumbnailImageToStreamAsync(StorageFile file, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         return await (file.FileType.ToLowerInvariant() switch
         {
@@ -950,7 +941,7 @@ public sealed class ThumbnailImageManager
     };
 
     static AsyncLock _renderLock = new AsyncLock();
-    private async Task TranscodeThumbnailImageToStreamAsync(string path, Func<ValueTask<Stream>> streamOpener, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Func<ValueTask<Stream>> streamOpener, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -982,7 +973,7 @@ public sealed class ThumbnailImageManager
 
     }
 
-    private async Task TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    private async ValueTask TranscodeThumbnailImageToStreamAsync(string path, Stream stream, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         try
         {
@@ -1007,7 +998,7 @@ public sealed class ThumbnailImageManager
         }
     }
 
-    async Task TranscodeSkiaAsync(string path, Stream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
+    async ValueTask TranscodeSkiaAsync(string path, Stream stream, Guid encoderId, BitmapPropertySet propertySet, Stream outputStream, Action<BitmapDecoder, BitmapEncoder> setupEncoder, CancellationToken ct)
     {
         //using var skiaStream = new SKManagedStream(stream);            
         using var bitmap = SKBitmap.Decode(stream);
@@ -1035,12 +1026,12 @@ public sealed class ThumbnailImageManager
 
         // SKBitmap → SKImage → SKData (エンコード)
         using var image = SKImage.FromBitmap(resizedBitmap);
-        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80); // 80%品質
-
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, 80); // 80%品質        
+        
         // SKData → outputStream
         outputStream.SetLength(0);
         data.SaveTo(outputStream);
-        await outputStream.FlushAsync(ct);
+        //await outputStream.FlushAsync(ct);
         outputStream.Seek(0, SeekOrigin.Begin);
     }
 
@@ -1497,6 +1488,17 @@ public sealed class ThumbnailImageManager
                 SupportedFileTypesHelper.AvifFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.JpegXRFileType => ImageFileThumbnailImageWriteToStreamAsync(file, stream, ct),
                 SupportedFileTypesHelper.EPubFileType => EPubFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_Mp4FileType => MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_WebMFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_HevcFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_MkvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_M4vFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_MovFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_MTsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_M2TsFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_AviFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
+                SupportedFileTypesHelper.Movie_WmvFileType => FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, stream, ct),
                 _ => throw new NotSupportedException(file.FileType)
             });
 

@@ -14,22 +14,25 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reactive.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.Navigation;
+using TsubameViewer.Helpers;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Converters;
 using TsubameViewer.Views.Helpers;
 using Windows.Foundation;
+using Windows.Storage;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -148,96 +151,96 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region Image Loading
 
     IDisposable? _lodingTaskMonitor;
-    async void StartLoadingTaskMonitor(CancellationToken ct)
+    void StartLoadingTaskMonitor(CancellationToken ct)
     {
         StopLoadingTaskMonitor();
         _lastVerticalOffset = 0;
         DisposableBuilder db = new();
         Debug.WriteLine("LoadingTaskMonitor START.");
         R3.Observable.Merge(
-                _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-                _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
-                R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
-                ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
-            .Debounce(TimeSpan.FromMilliseconds(100))
-            .SubscribeAwait(async (_, ct) =>
+            _priorityLoadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            _loadPendingItems.CollectionChangedAsObservable().ToObservable().AsUnitObservable(),
+            R3.Observable.Interval(TimeSpan.FromMilliseconds(1000)),
+            ItemsScrollViewer.ObserveDependencyProperty(ScrollViewer.VerticalOffsetProperty).ToObservable().AsUnitObservable())
+        .Debounce(TimeSpan.FromMilliseconds(10))
+        .SubscribeAwait(async (_, ct) =>
+        {
+            var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
+                
+            UpdateVisibleRangeItemInitialize();
+            if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
+            _isVisibleRangeUpdated = false;
+            bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
+            _lastVerticalOffset = currentVerticalOffset;
+                
+            if (_priorityLoadPendingItems.Any())
             {
-                var currentVerticalOffset = ItemsScrollViewer.VerticalOffset;
-                
-                UpdateVisibleRangeItemInitialize();
-                if (!_priorityLoadPendingItems.Any() && !_loadPendingItems.Any()) { return; }
-                _isVisibleRangeUpdated = false;
-                bool scrollDesc = currentVerticalOffset < _lastVerticalOffset;
-                _lastVerticalOffset = currentVerticalOffset;
-                
-                if (_priorityLoadPendingItems.Any())
+                Debug.WriteLine("LoadingTaskMonitor primary.");
+                try
                 {
-                    Debug.WriteLine("LoadingTaskMonitor primary.");
-                    try
+                    using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
+                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                    int count = tasks.Count;
+                    while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
                     {
-                        using var items = scrollDesc ? _priorityLoadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _priorityLoadPendingItems.AsValueEnumerable().ToArrayPool();
-                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                        int count = tasks.Count;
-                        while (await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks) is int index)
+                        tasks.RemoveAt(index);
+                        count--;
+                        if (count <= 0)
                         {
-                            tasks.RemoveAt(index);
-                            count--;
-                            if (count <= 0)
-                            {
-                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
-                                break;
-                            }
-                        }
-
-                        _priorityLoadPendingItems.Clear();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
-                }
-
-                if (_loadPendingItems.Any())
-                {
-                    Debug.WriteLine("LoadingTaskMonitor secondary.");
-                    try
-                    {
-                        using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
-                        var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
-                        int count = tasks.Count;
-                        foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
-                        {
-                            int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
-                            tasks.RemoveAt(index);
-                            await Task.Delay(1);
-                            count--;
-                            if (count <= 0 || _isVisibleRangeUpdated)
-                            {
-                                Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
-                                break;
-                            }
-                        }
-                        if (!_isVisibleRangeUpdated)
-                        {
-                            _loadPendingItems.Clear();
+                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP primary.");
+                            break;
                         }
                     }
-                    catch (OperationCanceledException)
+
+                    _priorityLoadPendingItems.Clear();
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+
+            if (_loadPendingItems.Any())
+            {
+                Debug.WriteLine("LoadingTaskMonitor secondary.");
+                try
+                {
+                    using var items = scrollDesc ? _loadPendingItems.AsValueEnumerable().Reverse().ToArrayPool() : _loadPendingItems.AsValueEnumerable().ToArrayPool();
+                    var tasks = items.AsValueEnumerable().Select(itemVM => itemVM.InitializeAsync(ct)).ToList();
+                    int count = tasks.Count;
+                    foreach (var ignore in ValueEnumerable.Range(0, tasks.Count))
                     {
-                        return;
+                        int index = await ValueTaskSupplement.ValueTaskEx.WhenAny(tasks);
+                        tasks.RemoveAt(index);
+                        await Task.Delay(1);
+                        count--;
+                        if (count <= 0 || _isVisibleRangeUpdated)
+                        {
+                            Debug.WriteLineIf(_isVisibleRangeUpdated, "LoadingTaskMonitor SKIP secondary.");
+                            break;
+                        }
+                    }
+                    if (!_isVisibleRangeUpdated)
+                    {
+                        _loadPendingItems.Clear();
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
 
-                if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
-                {
-                    Debug.WriteLine("LoadingTaskMonitor STOP.");                    
-                }
-                else
-                {
-                    Debug.WriteLine("LoadingTaskMonitor Continue.");
-                }
-            }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
-            .AddTo(ref db);
+            if (_priorityLoadPendingItems.Count == 0 && _loadPendingItems.Count == 0)
+            {
+                Debug.WriteLine("LoadingTaskMonitor STOP.");                    
+            }
+            else
+            {
+                Debug.WriteLine("LoadingTaskMonitor Continue.");
+            }
+        }, (_) => StopLoadingTaskMonitor(), awaitOperation: AwaitOperation.Drop)
+        .AddTo(ref db);
 
         foreach (var item in _realizedItems)
         {
@@ -247,7 +250,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
         }
 
-        _lodingTaskMonitor = db.Build();
+        db.Build().RegisterTo(ct);
     }
 
     void StopLoadingTaskMonitor()
@@ -340,6 +343,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _navigationCts = new CancellationTokenSource();
             var ct = _ct = _navigationCts.Token;
 
+            StartLoadingTaskMonitor(ct);
+
             _messenger.Register<StartMultiSelectionMessage>(this, (r, m) =>
             {
                 if (_vm.Selection.IsSelectionModeEnabled)
@@ -381,8 +386,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             }
             catch (OperationCanceledException) { }
 
-            StartLoadingTaskMonitor(ct);
             UpdateVisibleRangeItemInitialize();
+            InitializeMoveToFolders(ct).FireAndForgetSafe();
+            HandleCreateFolderDialogTextChanging(ct);
         }
     }
 
@@ -607,7 +613,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     void ImageListItem_Clicked(object sender, RoutedEventArgs e)
     {
         var fe = (FrameworkElement)sender;
-        if (IsSelectionModeEnabled
+        if (_vm.Selection.IsSelectionModeEnabled
             || ((uint)Window.Current.CoreWindow.GetKeyState(Windows.System.VirtualKey.Control) & 0x01) != 0
             )
         {
@@ -649,7 +655,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
         if (sender is ToggleButton toggleButton)
         {
-            ItemSelectedProcess((StorageItemViewModel)toggleButton.DataContext);
+            ItemSelectedProcess((IStorageItemViewModel)toggleButton.DataContext);
         }
     }
 
@@ -676,6 +682,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 _selectedItems = _vm.Selection.SelectedItems;
             }
             SelectedItemsCount = SelectedItemsCount + (itemVM.IsSelected ? 1 : -1);
+            _vm.Selection.ForceNotifySelectedItems();
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
             _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
@@ -692,11 +699,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (lastSelectedItemsCount == 0 && selectedItemsCount > 0)
         {
             StartSelection();
-        }
-        else if (lastSelectedItemsCount > 0 && selectedItemsCount == 0)
-        {
-            ClearSelection();
-        }
+        }        
     }
 
     public int SelectedItemsCount
@@ -711,20 +714,9 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
 
 
-    public bool IsSelectionModeEnabled
-    {
-        get { return (bool)GetValue(IsSelectionModeEnabledProperty); }
-        set { SetValue(IsSelectionModeEnabledProperty, value); }
-    }
-
-    public static readonly DependencyProperty IsSelectionModeEnabledProperty =
-        DependencyProperty.Register("IsSelectionModeEnabled", typeof(bool), typeof(ImageListupPage), new PropertyMetadata(false));
-
-
 
     public void StartSelection()
     {
-        IsSelectionModeEnabled = true;
         _selectedItems = _vm.Selection.SelectedItems;
         _vm.Selection.StartSelection();
         _messenger.Send(new MenuDisplayMessage(Visibility.Collapsed));
@@ -761,12 +753,11 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                     ItemSelectedProcess(itemVM);
                 }
             });
-        }
+        }        
     }
 
     public void ClearSelection()
     {
-        IsSelectionModeEnabled = false;
         foreach (var itemVM in _selectedItems ?? [])
         {
             itemVM.IsSelected = false;
@@ -787,7 +778,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     {
         if (item == null) { return; }
 
-        StorageItemViewModel itemVM = (StorageItemViewModel)item;
+        IStorageItemViewModel itemVM = (IStorageItemViewModel)item;
         itemVM.IsSelected = !itemVM.IsSelected;
         ItemSelectedProcess(itemVM);
     }
@@ -801,30 +792,34 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     public static readonly DependencyProperty SelectedCountDisplayTextProperty =
         DependencyProperty.Register("SelectedCountDisplayText", typeof(string), typeof(ImageListupPage), new PropertyMetadata(string.Empty));
 
-    void AlbamItemManagementFlyout_Opening(object sender, object e)
+    bool CanMoveToFolderSelectedItems(StorageFolder? folder)
     {
-        MenuFlyout menuFlyout = (MenuFlyout)sender;
-        menuFlyout.Items.Clear();
-        AlbamRepository albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
-        var expandImageSources = _vm.Selection.SelectedItems.Select(x => x.Item);
-        foreach (var albam in albamRepository.GetAlbams())
-        {                
-            if (expandImageSources.Any(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)) is false)
-            {
-                // 一つも登録されていないなら全部を登録する
-                menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => x.StorageItem is not null), IsChecked = false });
-            }
-            else if (expandImageSources.All(x => albamRepository.IsExistAlbamItem(albam._id, x.Path)))
-            {
-                // 全て登録済みなら全て削除
-                menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources, IsChecked = true });
-            }
-            else 
-            {
-                // いずれかが登録済みなら、未登録アイテムを登録
-                menuFlyout.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = expandImageSources.Where(x => x.StorageItem is not null && !albamRepository.IsExistAlbamItem(albam._id, x.Path)), IsChecked = true });
-            }                
+        return folder != null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveToFolderSelectedItems))]
+    async Task MoveToFolderSelectedItemsAsync(StorageFolder? hostFolder)
+    {
+        if (hostFolder == null) { return; }
+        if (_vm.Selection.SelectedItems is not { } items || items.Count == 0) { return; }
+
+        await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
+        _messenger.SendShowTextNotificationMessage(items.Count == 1
+            ? "MoveToFolder_Completed_Single".Translate((items[0]).Name, hostFolder.Name)
+            : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+        foreach (var item in items.Cast<IStorageItemViewModel>())
+        {
+            _messenger.Send(new StorageItemNotFoundMessage(item.Path));
         }
+
+        _vm.Selection.SelectedItems.Clear();
+    }
+
+    [RelayCommand]
+    void ToggleSiblingFolderPaneDisplay()
+    {
+        FolderSelectionSplitView.IsPaneOpen = !FolderSelectionSplitView.IsPaneOpen;
     }
 
     #region Search Box
@@ -882,13 +877,13 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
     void AutoSuggestBox_AccessKeyInvoked(UIElement sender, AccessKeyInvokedEventArgs args)
     {
-        //(sender as Control).Focus(FocusState.Keyboard);
+        (sender as Control)!.Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
     void KeyboardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        //(args.Element as Control).Focus(FocusState.Keyboard);
+        (args.Element as Control)!.Focus(FocusState.Keyboard);
         args.Handled = true;
     }
 
@@ -915,6 +910,253 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+
+    #region Selection
+
+    [ObservableProperty]
+    ObservableCollection<StorageFolder>? _folders;
+
+
+    async Task InitializeMoveToFolders(CancellationToken ct)
+    {
+        Folders = [];
+        ToggleDisplaySiblingFoldersButton.IsEnabled = false;
+        if (_vm.CurrentFolderItem?.Item.StorageItem is StorageFolder parentFolder)
+        {
+            var folderQuery = parentFolder.CreateFolderQuery();
+            await foreach (var folder in folderQuery.ToAsyncEnumerable().WithCancellation(ct))
+            {
+                ct.ThrowIfCancellationRequested();
+                if (!FolderSelectionSplitView.IsPaneOpen)
+                {
+                    await Task.Delay(250, ct);
+                }
+                Folders.Add(folder);
+
+                if (Folders.Count <= 1)
+                {
+                    ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                }
+            }
+        }
+
+        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
+            .Subscribe(x =>
+            {
+                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
+                {
+                    FolderSelectionSplitView.IsPaneOpen = x;
+                }
+            })
+            .RegisterTo(ct);
+
+    }
+
+    private void ListView_DragEnter(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>);
+        if (items is null or { Count: 0 }) { return; }
+        var deferral = R3.Disposable.Create(e.GetDeferral(), deferral => deferral.Complete());
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, deferral, items), static async (s) =>
+        {
+            var (_this, hostUI, e, deferral, items) = s;
+            using (deferral)
+            {
+                foreach (var item in items)
+                {
+                    if (item is not IStorageItemViewModel myItem)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"処理できないドラッグされたアイテム: {item?.GetType().Name}");
+                        return;
+                    }
+                }
+
+                if (hostUI.DataContext is StorageFolder folderItem)
+                {
+                    e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+                    e.DragUIOverride.Caption = "MoveToFolder_WithFolderName".Translate(folderItem.Name);
+                }
+            }
+        });
+    }
+
+    private void ListView_Drop(object sender, DragEventArgs e)
+    {
+        var hostUI = (FrameworkElement)sender;
+        if (e.DataView.Properties.TryGetValue("MyCustomDroppedItems", out object itemsRaw) is false) { return; }
+        var items = (itemsRaw as List<object>).ToList();
+        AsyncTaskErrorHandler.Handle((this, hostUI, e, items), static async (s) =>
+        {
+            var (_this, hostUI, e, items) = s;
+            if (items is null or { Count: 0 }) { return; }
+
+            if (hostUI.DataContext is StorageFolder hostFolder)
+            {
+                var messenger = Ioc.Default.GetRequiredService<IMessenger>();
+                await _this.MoveItemsToAsync(hostFolder, items.Cast<IStorageItemViewModel>().Select(x => x.Item.StorageItem), default);
+                messenger.SendShowTextNotificationMessage(items.Count == 1
+                    ? "MoveToFolder_Completed_Single".Translate(((IStorageItemViewModel)items[0]).Name, hostFolder.Name)
+                    : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
+
+                foreach (var item in items.Cast<IStorageItemViewModel>())
+                {
+                    messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                }
+            }
+
+        });
+    }
+
+
+
+
+    private async Task MoveItemsToAsync(Windows.Storage.StorageFolder targetFolder, IEnumerable<Windows.Storage.IStorageItem> items, CancellationToken ct)
+    {
+        foreach (var item in items)
+        {
+            Debug.WriteLine($"Move to {targetFolder.Path}: {item.Name}");
+            List<Windows.Storage.IStorageItem> failedItems = [];
+            if (item is Windows.Storage.StorageFile file)
+            {
+                try
+                {
+                    await file.MoveAsync(targetFolder, file.Name, Windows.Storage.NameCollisionOption.FailIfExists).AsTask(ct);
+                }
+                catch
+                {
+                    failedItems.Add(item);
+                }
+            }
+            else if (item is Windows.Storage.StorageFolder folder)
+            {
+                await folder.MoveAsync(targetFolder, Windows.Storage.CreationCollisionOption.OpenIfExists, Windows.Storage.NameCollisionOption.FailIfExists);
+            }
+        }
+    }
+
+
+    #endregion
+
+
+    #region Create Folder
+
+    [RelayCommand]
+    async Task CreateFolder()
+    {
+        var folder = (StorageFolder)_vm.CurrentFolderItem!.Item.StorageItem;
+        CreateFolderDialogTextBox.Text = "";
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+        bool isExitWithEnterKey = false;
+        async void CreateFolderDialogTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.OriginalKey == VirtualKey.Enter)
+            {
+                AsyncTaskErrorHandler.Handle(async () =>
+                {
+                    var name = CreateFolderDialogTextBox.Text;
+                    var isExistFolder = false;
+                    try
+                    {
+                        isExistFolder = await folder.GetFolderAsync(name) != null;
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        isExistFolder = false;
+                    }
+
+
+                    if (!isExistFolder)
+                    {
+                        isExitWithEnterKey = true;
+                        CreateFolderDialog.Hide();
+                    }
+                });
+            }
+        }
+
+        try
+        {
+            CreateFolderDialogTextBox.KeyDown += CreateFolderDialogTextBox_KeyDown;
+            while (true)
+            {
+                if (await CreateFolderDialog.ShowAsync() != ContentDialogResult.Primary
+                    && !isExitWithEnterKey) { return; }
+
+                isExitWithEnterKey = false;
+                var name = CreateFolderDialogTextBox.Text;
+                var isExistFolder = false;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+                if (isExistFolder) { continue; }
+
+                try
+                {
+                    var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
+                    Folders?.Insert(0, newfodler);
+                    ToggleDisplaySiblingFoldersButton.IsEnabled = true;
+                    FolderSelectionSplitView.IsPaneOpen = true;
+                    _vm.HasFolderOrBookItem = true;
+                    return;
+                }
+                catch (FileNotFoundException) { }
+            }
+        }
+        finally
+        {
+            CreateFolderDialogTextBox.KeyDown -= CreateFolderDialogTextBox_KeyDown;
+        }
+
+    }
+
+    void HandleCreateFolderDialogTextChanging(CancellationToken ct)
+    {
+        R3.Extensions.ObservableEventExtensions.ObserveTextChanged(CreateFolderDialogTextBox)
+            .Debounce(TimeSpan.FromSeconds(0.1))
+            .SubscribeAwait(this, async (e, s, ct) =>
+            {
+                var name = s.CreateFolderDialogTextBox.Text;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    s.CreateFolderDialog.IsPrimaryButtonEnabled = false;
+                    return;
+                }
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = true;
+                var folder = (StorageFolder)s._vm.CurrentFolderItem!.Item.StorageItem;
+                bool isExistFolder;
+                try
+                {
+                    isExistFolder = await folder.GetFolderAsync(name) != null;
+                }
+                catch (FileNotFoundException)
+                {
+                    isExistFolder = false;
+                }
+
+                s.CreateFolderDialog.IsPrimaryButtonEnabled = !isExistFolder;
+                CreateFolder_ExistFolderNameTextBlock.Visibility = isExistFolder.TrueToVisible();
+            })
+            .RegisterTo(ct);
+
+        CreateFolderDialog.IsPrimaryButtonEnabled = false;
+    }
+
+    #endregion
+
+    private void ItemControl_DragStarting(UIElement sender, DragStartingEventArgs args)
+    {
+        args.AllowedOperations = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+    }
 }
 
 

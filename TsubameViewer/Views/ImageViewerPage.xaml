@@ -37,6 +37,14 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal"
+                    Grid.Column="0">
+          <ToggleButton IsChecked="{x:Bind IsFavoriteCurrentFolderOrArchive, Mode=TwoWay}"
+                        Visibility="{x:Bind IsFavoriteAlbamDisplay, Mode=OneWay, Converter={StaticResource FalseToVisibleConverter}}">
+            <SymbolIcon Symbol="Favorite"
+                        Style="{StaticResource TitlebarSymbolIcon}" />
+          </ToggleButton>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal"
                     Grid.Column="1"
                     Spacing="8">
           <TextBlock x:Name="IfAllFilesWannaWatchThenRegistrationFolderAtApp_Desktop"
@@ -53,8 +61,6 @@
                         Style="{StaticResource TitlebarSymbolIcon}">
             </SymbolIcon>
           </Button>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal">
         </StackPanel>
       </Grid>
     </DataTemplate>
@@ -619,7 +625,7 @@
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
             MinWidth="380"
-              MaxWidth="420"
+              MaxWidth="480"
               CornerRadius="8"
               Margin="0 0 0 16"
             Windows10version1903:Translation="0, 0, 16"
@@ -644,86 +650,196 @@
           </Grid.Resources>
           <Grid.ColumnDefinitions>
             <ColumnDefinition />
-            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="8" />
             <ColumnDefinition />
           </Grid.ColumnDefinitions>
 
-          <muxc:DropDownButton x:Name="Page1ActionButton" Grid.Column="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0" IsAccessKeyScope="True"
-                               AccessKey="1"
-                               >
-            <muxc:DropDownButton.KeyboardAccelerators>
-              <KeyboardAccelerator Key="Number1" Invoked="{x:Bind ShowBottomUI}" />
-            </muxc:DropDownButton.KeyboardAccelerators>
-            <uwpControls:DockPanel>
-              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page1Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock x:Name="Page1NameTextBlock" VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis"                                                  
-                         >
-                <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
-              </TextBlock>
-            </uwpControls:DockPanel>
+          <uwpControls:DockPanel Grid.Column="0"
+                                 x:Name="Page1ActionButtonsContainer">
+            <RepeatButton Command="{x:Bind FavoriteToggleCommand}"
+                          CommandParameter="{Binding CurrentDisplayImageSources[0], Mode=OneWay}"
+                          ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                          uwpControls:DockPanel.Dock="Left"    
+                          IsEnabled="True"
+                          Height="40"
+                          Width="56"
+                          Padding="8 0">
+              <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page1Favorite, Mode=OneWay}">
+                <uwpControls:Case>
+                  <uwpControls:Case.Value>
+                    <x:Boolean>True</x:Boolean>
+                  </uwpControls:Case.Value>
+                  <fluentIcon:FluentSymbolIcon Symbol="Star24Filled">
+                    <UIElement.RenderTransform>
+                      <TranslateTransform X="-1"
+                                          Y="-1" />
+                    </UIElement.RenderTransform>
+                  </fluentIcon:FluentSymbolIcon>
+                </uwpControls:Case>
+                <uwpControls:Case IsDefault="True">
+                  <uwpControls:Case.Value>
+                    <x:Boolean>False</x:Boolean>
+                  </uwpControls:Case.Value>
+                  <fluentIcon:FluentSymbolIcon Symbol="Star24">
+                    <UIElement.RenderTransform>
+                      <TranslateTransform X="-1"
+                                          Y="-1" />
+                    </UIElement.RenderTransform>
+                  </fluentIcon:FluentSymbolIcon>
+                </uwpControls:Case>
+              </uwpControls:SwitchPresenter>
+            </RepeatButton>
+            <muxc:DropDownButton x:Name="Page1ActionButton"
+                                 HorizontalAlignment="Stretch"
+                                 HorizontalContentAlignment="Stretch"
+                                 Height="40"
+                                 Margin="8 0 0 0"
+                                 IsAccessKeyScope="True"
+                                 AccessKey="1">
+              <muxc:DropDownButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Number1"
+                                     Invoked="{x:Bind ShowBottomUI}" />
+              </muxc:DropDownButton.KeyboardAccelerators>
+              <uwpControls:DockPanel>
+                <TextBlock x:Name="Page1NameTextBlock"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Margin="0 0 0 0"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxLines="2"
+                           TextTrimming="CharacterEllipsis">
+                  <Run Text="{x:Bind _vm.Page1Name, Mode=OneWay}" />
+                </TextBlock>
+              </uwpControls:DockPanel>
 
-            <muxc:DropDownButton.Flyout>
-              <MenuFlyout Opening="Page1MenuFlyout_Opening">
-                <MenuFlyoutSubItem x:Name="Page1AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}">
-                  
-                </MenuFlyoutSubItem>
-                <MenuFlyoutItem x:Name="Page1SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="T" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
-                <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton" AccessKey="G" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}" >
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="G" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="Page1OpenWithExternalAppButton" AccessKey="B" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="B" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-              </MenuFlyout>
-            </muxc:DropDownButton.Flyout>
-          </muxc:DropDownButton >
-          <muxc:DropDownButton x:Name="Page2ActionButton" Grid.Column="2" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Margin="0 0 0 0" IsAccessKeyScope="True"
-                               AccessKey="2"
-                               >
-            <muxc:DropDownButton.KeyboardAccelerators>
-              <KeyboardAccelerator Key="Number2" />
-            </muxc:DropDownButton.KeyboardAccelerators>
-            
-            <uwpControls:DockPanel>
-              <SymbolIcon Symbol="Favorite" Visibility="{x:Bind _vm.Page2Favorite, Mode=OneWay}" uwpControls:DockPanel.Dock="Left" Margin="0 0 4 0" RenderTransform="{StaticResource FavoriteIconTransform}" RenderTransformOrigin="0.5, 0.5" />
-              <TextBlock x:Name="Page2NameTextBlock"  VerticalAlignment="Center" FontSize="12" Margin="0 0 0 0"  HorizontalAlignment="Center" TextWrapping="Wrap" MaxLines="1" TextTrimming="CharacterEllipsis">
-              <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
-              </TextBlock>
-            </uwpControls:DockPanel>
+              <muxc:DropDownButton.Flyout>
+                <MenuFlyout Opening="Page1MenuFlyout_Opening">
+                  <MenuFlyoutItem x:Name="Page1SetThubmailImageButton"
+                                  AccessKey="T"
+                                  Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}"
+                                  Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="T" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutSeparator x:Name="Page1ThumbnailImageSeparator" />
+                  <MenuFlyoutItem x:Name="Page1OpenWithExplorerButton"
+                                  AccessKey="G"
+                                  Text="{i18nExt:Localize Key=OpenWithExplorer}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}"
+                                  Command="{x:Bind _vm.OpenWithExplorerCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="G" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem x:Name="Page1OpenWithExternalAppButton"
+                                  AccessKey="B"
+                                  Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[0], Mode=OneWay}"
+                                  Command="{x:Bind _vm.OpenWithExternalApplicationCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="B" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </muxc:DropDownButton.Flyout>
+            </muxc:DropDownButton >
+          </uwpControls:DockPanel>
 
-            <muxc:DropDownButton.Flyout>
-              <MenuFlyout Opening="Page2MenuFlyout_Opening">
-                <MenuFlyoutSubItem x:Name="Page2AlbamAddItemButton" Text="{i18nExt:Localize Key=AlbamItemAdd}" DataContext="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}">
+          <uwpControls:DockPanel Grid.Column="2"
+                                 x:Name="Page2ActionButtonsContainer">
+            <RepeatButton Command="{x:Bind FavoriteToggleCommand}"
+                          CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
+                          ToolTipService.ToolTip="{i18nExt:Localize Key=Favorite_AddItem}"
+                          uwpControls:DockPanel.Dock="Right"
+                          Height="40"
+                          Width="56"
+                          Padding="8 0">
+              <uwpControls:SwitchPresenter Value="{x:Bind _vm.Page2Favorite, Mode=OneWay}">
+                <uwpControls:Case>
+                  <uwpControls:Case.Value>
+                    <x:Boolean>True</x:Boolean>
+                  </uwpControls:Case.Value>
+                  <fluentIcon:FluentSymbolIcon Symbol="Star24Filled">
+                    <UIElement.RenderTransform>
+                      <TranslateTransform X="-1"
+                                          Y="-1" />
+                    </UIElement.RenderTransform>
+                  </fluentIcon:FluentSymbolIcon>
+                </uwpControls:Case>
+                <uwpControls:Case IsDefault="True">
+                  <uwpControls:Case.Value>
+                    <x:Boolean>False</x:Boolean>
+                  </uwpControls:Case.Value>
+                  <fluentIcon:FluentSymbolIcon Symbol="Star24">
+                    <UIElement.RenderTransform>
+                      <TranslateTransform X="-1"
+                                          Y="-1" />
+                    </UIElement.RenderTransform>
+                  </fluentIcon:FluentSymbolIcon>
+                </uwpControls:Case>
+              </uwpControls:SwitchPresenter>
+            </RepeatButton>
+            <muxc:DropDownButton x:Name="Page2ActionButton"
+                                 HorizontalAlignment="Stretch"
+                                 HorizontalContentAlignment="Stretch"
+                                 Height="40"
+                                 Margin="0 0 8 0"
+                                 IsAccessKeyScope="True"
+                                 AccessKey="2">
+              <muxc:DropDownButton.KeyboardAccelerators>
+                <KeyboardAccelerator Key="Number2" />
+              </muxc:DropDownButton.KeyboardAccelerators>
 
-                </MenuFlyoutSubItem>
-                <MenuFlyoutItem x:Name="Page2SetThubmailImageButton" AccessKey="T" Text="{i18nExt:Localize Key=SetThumbnailImage}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="T" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
-                <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton" AccessKey="G" Text="{i18nExt:Localize Key=OpenWithExplorer}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExplorerCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="G" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton" AccessKey="B" Text="{i18nExt:Localize Key=OpenWithExternalApplication}" CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}" Command="{x:Bind _vm.OpenWithExternalApplicationCommand}">
-                  <MenuFlyoutItem.KeyboardAccelerators>
-                    <KeyboardAccelerator Key="B" />
-                  </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-              </MenuFlyout>
-            </muxc:DropDownButton.Flyout>
-          </muxc:DropDownButton>
+              <uwpControls:DockPanel>
+                <TextBlock x:Name="Page2NameTextBlock"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Margin="0 0 0 0"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxLines="2"
+                           TextTrimming="CharacterEllipsis">
+                  <Run Text="{x:Bind _vm.Page2Name, Mode=OneWay}" />
+                </TextBlock>
+              </uwpControls:DockPanel>
+
+              <muxc:DropDownButton.Flyout>
+                <MenuFlyout Opening="Page2MenuFlyout_Opening">
+                  <MenuFlyoutItem x:Name="Page2SetThubmailImageButton"
+                                  AccessKey="T"
+                                  Text="{i18nExt:Localize Key=SetThumbnailImage}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
+                                  Command="{x:Bind _vm.ChangeStorageItemThumbnailImageCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="T" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutSeparator x:Name="Page2ThumbnailImageSeparator" />
+                  <MenuFlyoutItem x:Name="Page2OpenWithExplorerButton"
+                                  AccessKey="G"
+                                  Text="{i18nExt:Localize Key=OpenWithExplorer}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
+                                  Command="{x:Bind _vm.OpenWithExplorerCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="G" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem x:Name="Page2OpenWithExternalAppButton"
+                                  AccessKey="B"
+                                  Text="{i18nExt:Localize Key=OpenWithExternalApplication}"
+                                  CommandParameter="{x:Bind _vm.CurrentDisplayImageSources[1], Mode=OneWay}"
+                                  Command="{x:Bind _vm.OpenWithExternalApplicationCommand}">
+                    <MenuFlyoutItem.KeyboardAccelerators>
+                      <KeyboardAccelerator Key="B" />
+                    </MenuFlyoutItem.KeyboardAccelerators>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </muxc:DropDownButton.Flyout>
+            </muxc:DropDownButton>
+          </uwpControls:DockPanel>
         </Grid>
         
 
@@ -853,6 +969,18 @@
           <TranslateTransform Y="4" />
         </Slider.RenderTransform>
       </Slider>
+    </Grid>
+
+    <Grid Opacity="0.5">
+      <Border Opacity="{x:Bind _vm.Page1Favorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}" 
+              Width="2"
+              HorizontalAlignment="Left"
+              Background="{ThemeResource SystemAccentColor}"
+              />
+      <Border Opacity="{x:Bind _vm.Page2Favorite, Mode=OneWay, Converter={StaticResource TrueToDouble1Converter}}"
+              Width="2"
+              HorizontalAlignment="Right"
+              Background="{ThemeResource SystemAccentColor}" />
     </Grid>
     
     <VisualStateManager.VisualStateGroups>
@@ -1047,9 +1175,9 @@
             <StateTrigger IsActive="True" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page2ActionButton.Visibility"
+            <Setter Target="Page2ActionButtonsContainer.Visibility"
                     Value="Collapsed" />
-            <Setter Target="Page1ActionButton.(Grid.ColumnSpan)"
+            <Setter Target="Page1ActionButtonsContainer.(Grid.ColumnSpan)"
                     Value="3" />
           </VisualState.Setters>
         </VisualState>
@@ -1068,9 +1196,9 @@
             <StateTrigger IsActive="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}" />
           </VisualState.StateTriggers>
           <VisualState.Setters>
-            <Setter Target="Page1ActionButton.(Grid.Column)"
+            <Setter Target="Page1ActionButtonsContainer.(Grid.Column)"
                     Value="2" />
-            <Setter Target="Page2ActionButton.(Grid.Column)"
+            <Setter Target="Page2ActionButtonsContainer.(Grid.Column)"
                     Value="0" />
           </VisualState.Setters>
         </VisualState>
@@ -1229,6 +1357,31 @@
           <VisualState.Setters>
             <Setter Target="ReadOnlySeekBar.Opacity"
                     Value="0.0" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+
+      <!-- ページ１のお気に入り切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page1Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page1FavoriteToggleItemButton.Text"
+                    Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+      <!-- ページ２のお気に入り切替 -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.Page2Favorite, Mode=OneWay}" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="Page2FavoriteToggleItemButton.Text"
+                    Value="{i18nExt:Localize Key=Favorite_RemoveItem}" />
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

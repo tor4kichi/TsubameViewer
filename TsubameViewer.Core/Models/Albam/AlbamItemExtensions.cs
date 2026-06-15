@@ -24,9 +24,14 @@ public static class AlbamItemExtensions
                 StorageItemTypes.ArchiveFolder => AlbamItemType.FolderOrArchive,
                 StorageItemTypes.EBook => AlbamItemType.FolderOrArchive,
                 StorageItemTypes.AddAlbam => throw new NotSupportedException(),
+                StorageItemTypes.Movie => AlbamItemType.FolderOrArchive,
                 _ => throw new NotSupportedException()
             },
-            AlbamItemImageSource albamItem => albamItem.InnerImageSource.GetAlbamItemType(),
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedArchiveFileExtension(albamItem.Path) => AlbamItemType.FolderOrArchive,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedEBookFileExtension(albamItem.Path) => AlbamItemType.FolderOrArchive,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedMovieFileExtension(albamItem.Path) => AlbamItemType.FolderOrArchive,
+            AlbamItemImageSource albamItem when SupportedFileTypesHelper.IsSupportedImageFileExtension(albamItem.Path) => AlbamItemType.Image,
+            AlbamItemImageSource albamItem => AlbamItemType.FolderOrArchive,
             _ => AlbamItemType.Image
         };
     }

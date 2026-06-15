@@ -169,6 +169,7 @@ sealed partial class App : Application
         container.Register<Core.Models.FolderItemListing.FolderListingSettings>(reuse: new SingletonReuse());
         container.Register<FileControlSettings>(reuse: new SingletonReuse());
         container.Register<ApplicationSettings>(reuse: new SingletonReuse());
+        container.Register<StorageItemSettings>(reuse: new SingletonReuse());
 
         container.Register<ISecondaryTileManager, SecondaryTileManager>(reuse: new SingletonReuse());
 
@@ -221,7 +222,7 @@ sealed partial class App : Application
     }
 #endif
 
-    protected override async void OnFileActivated(FileActivatedEventArgs args)
+    protected override void OnFileActivated(FileActivatedEventArgs args)
     {
         AsyncTaskErrorHandler.Handle(this, async (s) => 
         {
@@ -230,7 +231,7 @@ sealed partial class App : Application
         });
     }
 
-    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         AsyncTaskErrorHandler.Handle(this, async (s) =>
         {

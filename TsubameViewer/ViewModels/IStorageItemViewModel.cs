@@ -24,7 +24,6 @@ public interface IStorageItemViewModel : INotifyPropertyChanged
 
     string? Duration { get; }
 
-    void Dispose();
     bool IsRequestImageLoading { get; }
     bool IsInitialized { get; }
     ValueTask InitializeAsync(CancellationToken ct);

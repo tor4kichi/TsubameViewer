@@ -96,5 +96,22 @@ public static class ObservableEventExtensions
             );
     }
 
+    public static Observable<TextChangedEventArgs> ObserveTextChanged(this TextBox tb)
+    {
+        return Observable.FromEvent<TextChangedEventHandler, TextChangedEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => tb.TextChanged += h,
+            h => tb.TextChanged -= h);
+    }
+
+    public static Observable<TextBoxTextChangingEventArgs> ObserveTextChanging(this TextBox tb)
+    {
+        return Observable.FromEvent<TypedEventHandler<TextBox, TextBoxTextChangingEventArgs>, TextBoxTextChangingEventArgs>(
+            conversion => (sender, args) => conversion(args),
+            h => tb.TextChanging += h,
+            h => tb.TextChanging -= h);
+    }
+
+
 
 }

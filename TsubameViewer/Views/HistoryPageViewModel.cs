@@ -18,6 +18,7 @@ using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Services.Navigation;
 using TsubameViewer.ViewModels;
+using TsubameViewer.ViewModels.Albam.Commands;
 using TsubameViewer.ViewModels.PageNavigation.Commands;
 using TsubameViewer.Views;
 using ZLinq;
@@ -25,10 +26,24 @@ using ZLinq;
 namespace TsubameViewer.ViewModels;
 
 public sealed partial class HistoryPageViewModel 
-    : NavigationAwareViewModelBase    
+    : NavigationAwareViewModelBase
+    , IRecipient<ImageSourceFavoriteChanged>
 {
     [ObservableProperty]
     string _filterText = "";
+
+    public void Receive(ImageSourceFavoriteChanged message)
+    {
+        var (imageSourcePath, isFav) = message.Value;
+        foreach (var item in RecentlyItems)
+        {
+            if (item.Path?.Equals(imageSourcePath, StringComparison.Ordinal) ?? false)
+            {
+                item.IsFavorite = isFav;
+                break;
+            }
+        }
+    }
 
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
@@ -74,7 +89,7 @@ public sealed partial class HistoryPageViewModel
 
     public override void OnNavigatedFrom(INavigationParameters parameters)
     {
-
+        _messenger.Unregister<ImageSourceFavoriteChanged>(this);
         base.OnNavigatedFrom(parameters);
     }
 
@@ -139,6 +154,7 @@ public sealed partial class HistoryPageViewModel
 
             db.Build().RegisterTo(ct);
 
+            _messenger.Register<ImageSourceFavoriteChanged>(this);
             await base.OnNavigatedToAsync(parameters, ct);
         }
         finally

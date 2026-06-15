@@ -31,13 +31,28 @@ public sealed class FavoriteAlbam
 
     public bool IsFavorite(string path)
     {
-        return _albamRepository.IsExistAlbamItem(FavoriteAlbamId, path, AlbamItemType.Image);
+        return _albamRepository.IsExistAlbamItem(path);
+    }
+
+    public AlbamItemEntry AddFavoriteItem(string path, AlbamItemType itemType)
+    {
+        if (_albamRepository.IsExistAlbamItem(path, itemType))
+        {
+            return null;
+        }
+
+        return _albamRepository.AddAlbamItem(FavoriteAlbamId, path, System.IO.Path.GetFileName(path), itemType);
+    }
+
+    public bool DeleteFavoriteItem(string path, AlbamItemType itemType)
+    {
+        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, path);
     }
 
     public AlbamItemEntry AddFavoriteItem(IImageSource imageSource)
     {
         var itemType = imageSource.GetAlbamItemType();
-        if (_albamRepository.IsExistAlbamItem(FavoriteAlbamId, imageSource.Path, itemType))
+        if (_albamRepository.IsExistAlbamItem(imageSource.Path, itemType))
         {
             return null;
         }
@@ -47,6 +62,6 @@ public sealed class FavoriteAlbam
 
     public bool DeleteFavoriteItem(IImageSource imageSource)
     {
-        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, imageSource.Path, imageSource.GetAlbamItemType());
+        return _albamRepository.DeleteAlbamItem(FavoriteAlbamId, imageSource.Path);
     }
 }

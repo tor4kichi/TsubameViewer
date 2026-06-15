@@ -63,14 +63,7 @@ namespace TsubameViewer.ViewModels.PageNavigation
             }
             else if (imageSource is AlbamItemImageSource albamItem)
             {
-                if (albamItem.GetAlbamItemType() == AlbamItemType.Image)
-                {
-                    return CreatePageParameter(albamItem);
-                }
-                else
-                {
-                    return CreatePageParameter(albamItem.InnerImageSource);
-                }
+                return new NavigationParameters((PageNavigationConstants.GeneralPathKey, Uri.EscapeDataString(imageSource.Path)));
             }
             else
             {

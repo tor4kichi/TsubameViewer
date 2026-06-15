@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.PageNavigation;
@@ -191,7 +192,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
     DirectConnectedAnimationConfiguration _animConfig = new();
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         d().FireAndForgetSafe();
         async Task d()
@@ -433,11 +434,19 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         s.SetVideoPositionFromCode(ts);
 
                         if (e.Sender.CanSeek
-                            && e.Sender.NaturalDuration != TimeSpan.Zero)
+                            && e.Sender.NaturalDuration != TimeSpan.Zero
+                            && bookmarkRp.CurrentValue is { } bkmk)
                         {
                             var pos = e.Sender.Position;
                             var duration = e.Sender.NaturalDuration;
-                            bookmarkRp.CurrentValue?.ReadPosition = new((float)(pos.TotalSeconds / duration.TotalSeconds));
+                            NormalizedPagePosition v = new((float)(pos.TotalSeconds / duration.TotalSeconds));
+                            bkmk.ReadPosition = v;
+                            if (!bkmk.IsFinishedReading
+                                && v.Value > s._vm.StorageItemSettings.ReadingFinishedThresholdForMovieViewer)
+                            {
+                                bkmk.IsFinishedReading = true;
+                                Debug.WriteLine($"Mark as Finished: {v.Value:F2}");
+                            }
                         }
                     })
                     .AddTo(db);

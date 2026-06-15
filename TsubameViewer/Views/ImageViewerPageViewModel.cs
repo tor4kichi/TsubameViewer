@@ -52,7 +52,7 @@ public sealed class ImageLoadedMessage : AsyncRequestMessage<Unit>
 
 
 public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelBase
-{    
+{
     private IImageSource _currentImageSource;
     private IImageCollectionContext _imageCollectionContext;
 
@@ -212,11 +212,19 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     [ObservableProperty]
     private bool _requireRefresh;
 
+    [ObservableProperty]
+    bool _isFavoriteCurrentFolderOrArchive;
+
+    [ObservableProperty]
+    bool _isFavoriteAlbamDisplay;
+    
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly AlbamRepository _albamRepository;
+    readonly FavoriteAlbam _favoriteAlbam;
     readonly ImageCollectionManager _imageCollectionManager;
     readonly LocalBookmarkRepository _bookmarkManager;
+    readonly StorageItemSettings _storageItemSettings;
     readonly RecentlyAccessRepository _recentlyAccessRepository;
     readonly ThumbnailImageManager _thumbnailManager;
     readonly FolderListingSettings _folderListingSettings;
@@ -229,9 +237,11 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ApplicationSettings applicationSettings,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         AlbamRepository albamRepository,
+        FavoriteAlbam favoriteAlbam,
         ImageCollectionManager imageCollectionManager,
         ImageViewerSettings imageCollectionSettings,
         LocalBookmarkRepository bookmarkManager,
+        StorageItemSettings storageItemSettings,
         RecentlyAccessRepository recentlyAccessRepository,
         ThumbnailImageManager thumbnailManager,
         FolderListingSettings folderListingSettings,
@@ -239,9 +249,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         ToggleFullScreenCommand toggleFullScreenCommand,
         BackNavigationCommand backNavigationCommand,
-        FavoriteAddCommand favoriteAddCommand,
-        FavoriteRemoveCommand favoriteRemoveCommand,
-        AlbamItemEditCommand albamItemEditCommand,
+        FavoriteToggleCommand favoriteToggleCommand,
         RefreshNavigationCommand refreshNavigationCommand,
         ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
@@ -253,13 +261,12 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         ApplicationSettings = applicationSettings;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _albamRepository = albamRepository;
+        _favoriteAlbam = favoriteAlbam;
         _imageCollectionManager = imageCollectionManager;
         ImageViewerSettings = imageCollectionSettings;
         ToggleFullScreenCommand = toggleFullScreenCommand;
         BackNavigationCommand = backNavigationCommand;
-        FavoriteAddCommand = favoriteAddCommand;
-        FavoriteRemoveCommand = favoriteRemoveCommand;
-        AlbamItemEditCommand = albamItemEditCommand;
+        FavoriteToggleCommand = favoriteToggleCommand;
         RefreshCommand = refreshNavigationCommand;
         ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
         ChangeStorageItemThumbnailImageCommand.IsArchiveThumbnailSetToFile = true;
@@ -267,6 +274,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         _recyclableMemoryStreamManager = recyclableMemoryStreamManager;
         _bookmarkManager = bookmarkManager;
+        _storageItemSettings = storageItemSettings;
         _recentlyAccessRepository = recentlyAccessRepository;
         _thumbnailManager = thumbnailManager;
         _folderListingSettings = folderListingSettings;
@@ -370,6 +378,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         _imageLoadingCts = null;
 
         ParentFolderOrArchiveName = String.Empty;
+        _pageMovedCount = 0;
 
         _messenger.Unregister<AlbamItemAddedMessage>(this);
         _messenger.Unregister<AlbamItemRemovedMessage>(this);
@@ -378,6 +387,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     }
 
     CancellationToken _navigationCt;
+
+    int _pageMovedCount = 0;
     
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -478,7 +489,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
             {
                 (string albamIdString, firstDisplayPageName) = PageNavigationConstants.ParseStorageItemId(Uri.UnescapeDataString(escapedAlbamPath));
 
-                if (_currentImageSource.Path != albamIdString)
+                if (_currentImageSource?.Path != albamIdString)
                 {
                     var albam = _albamRepository.GetAlbam(Guid.Parse(albamIdString));
 
@@ -610,7 +621,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         _currentDisplayImageSources[0] = firstImage;
                         _currentDisplayImageSources[1] = null;
 
-                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(firstImage.Path) : false;
                         Page2Favorite = false;
                     }
                     else if (imageSources.Length == 2)
@@ -620,8 +631,8 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                         _currentDisplayImageSources[0] = firstImage;
                         _currentDisplayImageSources[1] = secondImage;
 
-                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, firstImage.Path) : false;
-                        Page2Favorite = secondImage != null ? _albamRepository.IsExistAlbamItem(FavoriteAlbam.FavoriteAlbamId, secondImage.Path) : false;
+                        Page1Favorite = firstImage != null ? _albamRepository.IsExistAlbamItem(firstImage.Path) : false;
+                        Page2Favorite = secondImage != null ? _albamRepository.IsExistAlbamItem(secondImage.Path) : false;
                     }
 
                     OnPropertyChanged(nameof(CurrentDisplayImageSources));
@@ -630,7 +641,9 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                     if (imageSource == null) { return; }
                     if (_currentImageSource.StorageItem is IStorageItem)
                     {
-                        _bookmarkManager.AddBookmark(_pathForSettings, imageSource.Name, new NormalizedPagePosition(Images.Length, imageIndex));
+                        var v = new NormalizedPagePosition(Images.Length, imageIndex);
+                        bool isFinished = _pageMovedCount > 0 && v.Value > _storageItemSettings.ReadingFinishedThresholdForImageViewer;
+                        _bookmarkManager.AddBookmarkForImageViewer(_pathForSettings, imageSource.Name, v, isFinished: isFinished);
                         _folderLastIntractItemManager.SetLastIntractItemName(_pathForSettings, imageSource.Path);
                     }
                     else if (_currentImageSource is AlbamImageSource albam)
@@ -757,6 +770,42 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
                 .AddTo(ref db);
         }
 
+        if (_currentImageSource.StorageItem != null)
+        {
+            string folderPath = _currentImageSource.StorageItem switch
+            {
+                StorageFile file => Path.GetDirectoryName(file.Path),
+                StorageFolder folder => folder.Path,
+                _ => throw new NotSupportedException(),
+            };
+            Debug.WriteLine(folderPath);
+            IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(folderPath);
+            this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
+                .Subscribe((_favoriteAlbam, folderPath, Path.GetFileName(folderPath), _messenger), static (isFavorite, s) =>
+                {
+                    var (_favoriteAlbam, folderPath, folderName, _messenger) = s;
+                    if (isFavorite)
+                    {
+                        _favoriteAlbam.AddFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Added".Translate(folderName));
+                        _messenger.Send(new ImageSourceFavoriteChanged(folderPath, true));
+                    }
+                    else
+                    {
+                        _favoriteAlbam.DeleteFavoriteItem(folderPath, AlbamItemType.FolderOrArchive);
+                        _messenger.SendShowTextNotificationMessage("Favorite_Removed".Translate(folderName));
+                        _messenger.Send(new ImageSourceFavoriteChanged(folderPath, false));
+
+                    }
+                })
+            .AddTo(ref db);
+            IsFavoriteAlbamDisplay = false;
+        }
+        else
+        {
+            IsFavoriteAlbamDisplay = true;
+        }
+
 
         db.Build().RegisterTo(ct);
 #if DEBUG
@@ -765,7 +814,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 #endif
         await base.OnNavigatedToAsync(parameters, ct);
     }
-
 
     #region ImageCollection 
 
@@ -1876,9 +1924,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     public ToggleFullScreenCommand ToggleFullScreenCommand { get; }
     public BackNavigationCommand BackNavigationCommand { get; }
-    public FavoriteAddCommand FavoriteAddCommand { get; }
-    public FavoriteRemoveCommand FavoriteRemoveCommand { get; }
-    public AlbamItemEditCommand AlbamItemEditCommand { get; }
     public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
     public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
     public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
@@ -1892,6 +1937,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     void ExecuteGoNextImageCommand()
     {
         MoveImageIndex(IndexMoveDirection.Forward).FireAndForgetSafe();
+        _pageMovedCount++;
     }
 
     private bool CanGoNextCommand()
@@ -1907,6 +1953,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
     void ExecuteGoPrevImageCommand()
     {
         MoveImageIndex(IndexMoveDirection.Backward).FireAndForgetSafe();
+        _pageMovedCount--;
     }
 
     private bool CanGoPrevCommand()

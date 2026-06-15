@@ -199,7 +199,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         base.OnNavigatedTo(e);
     }
 
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         d().FireAndForgetSafe();
         async Task d()
@@ -921,24 +921,17 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 
     void Page1MenuFlyout_Opening(object sender, object e)
     {
-        Page1AlbamAddItemButton.Items.Clear();
-        var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
-        var imageSource = Page1AlbamAddItemButton.DataContext as IImageSource;
-        foreach (var albam in albamRepository.GetAlbams())
-        {
-            Page1AlbamAddItemButton.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = imageSource, IsChecked = albamRepository.IsExistAlbamItem(albam._id, imageSource.FlattenAlbamItemInnerImageSource().Path) });
-        }
     }
 
     void Page2MenuFlyout_Opening(object sender, object e)
     {
-        Page2AlbamAddItemButton.Items.Clear();
-        var albamRepository = Ioc.Default.GetRequiredService<AlbamRepository>();
-        var imageSource = Page2AlbamAddItemButton.DataContext as IImageSource;
-        foreach (var albam in albamRepository.GetAlbams())
-        {
-            Page2AlbamAddItemButton.Items.Add(new ToggleMenuFlyoutItem() { Text = albam.Name, Command = new AlbamItemAddCommand(albamRepository, albam), CommandParameter = imageSource, IsChecked = albamRepository.IsExistAlbamItem(albam._id, imageSource.FlattenAlbamItemInnerImageSource().Path) });
-        }
+    }
+
+
+    [RelayCommand]
+    void FavoriteToggle(object parameter)
+    {
+        _vm.FavoriteToggleCommand.Execute(parameter);
     }
 }
 
