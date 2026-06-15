@@ -390,6 +390,10 @@
     <None Include="Package.StoreAssociation.xml" />
     <EmbeddedResource Include="Locales\fr-FR.txt" />
     <Content Include="Properties\Default.rd.xml" />
+    <PRIResource Include="Strings\ja-jp\Resources.resw" />
+    <PRIResource Include="Strings\zh-chs\Resources.resw" />
+    <PRIResource Include="Strings\fr-FR\Resources.resw" />
+    <PRIResource Include="Strings\en-us\Resources.resw" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Diagnostics">
