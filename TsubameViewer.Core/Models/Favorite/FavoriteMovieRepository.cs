@@ -48,7 +48,7 @@ public sealed class FavoriteMovieRepository
 
     public IEnumerable<FavoriteMovieItemFacade> GetFavorites(string path)
     {
-        return _col.Find(x => x.Path == path && x.StartAt != null).Select(x => new FavoriteMovieItemFacade(x, _col));
+        return _col.Find(x => x.Path.Equals(path, StringComparison.Ordinal) && x.StartAt != null).Select(x => new FavoriteMovieItemFacade(x, _col));
     }
 
     IEnumerable<IFavoriteItemFacade> IFavoriteRepository.GetFavorites(string path)

@@ -9,18 +9,27 @@ using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Maintenance;
 using TsubameViewer.Core.Contracts.Services;
 using TsubameViewer.Core.Models;
+using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.SourceFolders;
+using Windows.Devices.Geolocation;
 using Windows.Storage;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Shapes;
 
 namespace TsubameViewer.Core.Models.Maintenance;
 
-public sealed class AccessRemovedValueChangedMessage : ValueChangedMessage<string>
+public sealed class StroageItemAccessRemovedMessage : ValueChangedMessage<string>
 {
-    public AccessRemovedValueChangedMessage(string value) : base(value)
+    public StroageItemAccessRemovedMessage(string value) : base(value)
+    {
+    }
+}
+
+public sealed class StroageItemMovedOrRenamedMessage : ValueChangedMessage<(string OldPath, string NewPath)>
+{
+    public StroageItemMovedOrRenamedMessage(string OldPath, string NewPath) : base((OldPath, NewPath))
     {
     }
 }
@@ -32,10 +41,12 @@ public sealed class AccessRemovedValueChangedMessage : ValueChangedMessage<strin
 /// 単にソース管理が消されたからと破棄処理をしてしまうと包含関係のフォルダ追加を許容できなくなるので
 /// 包含関係のフォルダに関するキャッシュの削除をスキップするような動作が含まれる
 /// </summary>
-public sealed class CacheDeletionWhenSourceStorageItemIgnored :
+public sealed class SyncStorageCacheService :
     ILaunchTimeMaintenanceAsync,
     IRecipient<SourceStorageItemIgnoringRequestMessage>,
-    IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>
+    IRecipient<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>,
+    IRecipient<StroageItemMovedOrRenamedMessage>
+    
 {
     private readonly IMessenger _messenger;
     private readonly SourceStorageItemsRepository _storageItemsRepository;
@@ -48,8 +59,10 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
     private readonly LastIntractItemRepository _folderLastIntractItemManager;
     private readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     private readonly ArchiveFileInnerStructureCache _archiveFileInnerStructureCache;
+    private readonly FolderStructureFilesRepository _folderStructureFilesRepository;
+    private readonly AlbamRepository _albamRepository;
 
-    public CacheDeletionWhenSourceStorageItemIgnored(
+    public SyncStorageCacheService(
         IMessenger messenger,        
         SourceStorageItemsRepository storageItemsRepository,
         IgnoreStorageItemRepository ignoreStorageItemRepository,
@@ -60,7 +73,9 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         ISecondaryTileManager secondaryTileManager,
         LastIntractItemRepository folderLastIntractItemManager,
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
-        ArchiveFileInnerStructureCache archiveFileInnerStructureCache
+        ArchiveFileInnerStructureCache archiveFileInnerStructureCache,
+        FolderStructureFilesRepository folderStructureFilesRepository,
+        Albam.AlbamRepository albamRepository
         )
     {
         _messenger = messenger;
@@ -74,11 +89,14 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _archiveFileInnerStructureCache = archiveFileInnerStructureCache;
+        _folderStructureFilesRepository = folderStructureFilesRepository;
+        _albamRepository = albamRepository;
         _messenger.Register<SourceStorageItemIgnoringRequestMessage>(this);
         _messenger.Register<SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage>(this);
+        _messenger.Register<StroageItemMovedOrRenamedMessage>(this);
     }
 
-    public async void Receive(SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage message)
+    public void Receive(SourceStorageItemsRepository.SourceStorageItemMovedOrRenameMessage message)
     {
         var oldPath = message.Value.OldPath;
         var newPath = message.Value.NewPath;
@@ -87,6 +105,19 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         Debug.WriteLine($"OldPath = {oldPath}");
         Debug.WriteLine($"NewPath = {newPath}");
 
+        ProcessStorageItemMovedAsync(oldPath, newPath).FireAndForgetSafe();
+    }
+
+    public void Receive(StroageItemMovedOrRenamedMessage m)
+    {
+        ProcessStorageItemMovedAsync(m.Value.OldPath, m.Value.NewPath).FireAndForgetSafe();
+    }
+
+    private async Task ProcessStorageItemMovedAsync(string oldPath, string newPath)
+    {
+
+        // Note: ドライブレターに含まれる : コロン が含まれる文字列を
+        // 直接FindByIdするとLiteDatabaseがエラーを起こす（BsonExpression変換中のエラー）
         try
         {
             var tasks = new[] {
@@ -94,13 +125,15 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
                 _secondaryTileManager.RemoveSecondaryTile(newPath)
             };
 
-            _displaySettingsByPathRepository.FolderChanged(oldPath, newPath);
-            _bookmarkManager.FolderChanged(oldPath, newPath);
+            _displaySettingsByPathRepository.PathChanged(oldPath, newPath);
+            _bookmarkManager.PathChanged(oldPath, newPath);
+            _recentlyAccessRepository.PathChanged(oldPath, newPath);
+            _folderContainerTypeManager.PathChanged(oldPath, newPath);
+            _archiveFileInnerStructureCache.PathChanged(oldPath, newPath);
+            _folderStructureFilesRepository.PathChanged(oldPath, newPath);
+            _albamRepository.PathChanged(oldPath, newPath);
 
-            _recentlyAccessRepository.Delete(oldPath);
-            _folderContainerTypeManager.Delete(oldPath);
             _folderLastIntractItemManager.Remove(oldPath);
-            _archiveFileInnerStructureCache.DeleteUnderPath(oldPath);
 
             await Task.WhenAll(tasks);
 
@@ -268,10 +301,12 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _folderLastIntractItemManager.RemoveAllUnderPath(path);
         _displaySettingsByPathRepository.DeleteUnderPath(path);
         _archiveFileInnerStructureCache.DeleteUnderPath(path);
+        _folderStructureFilesRepository.FolderRemoved(path);
+        _albamRepository.DeleteAlbamItemsUnderPath(path);
 
         await Task.WhenAll(tasks);
         Debug.WriteLine($"対象パス以下の全てのデータを除去完了 {path}");
-        _messenger.Send(new AccessRemovedValueChangedMessage(path));
+        _messenger.Send(new StroageItemAccessRemovedMessage(path));
     }
 
 
@@ -290,10 +325,12 @@ public sealed class CacheDeletionWhenSourceStorageItemIgnored :
         _folderLastIntractItemManager.Remove(path);
         _displaySettingsByPathRepository.Delete(path);
         _archiveFileInnerStructureCache.Delete(path);
+        _folderStructureFilesRepository.FileRemoved(path);
+        _albamRepository.DeleteAlbamItemsUnderPath(path);
 
         await Task.WhenAll(tasks);
         Debug.WriteLine($"対象パスのデータを除去完了 {path}");
-        _messenger.Send(new AccessRemovedValueChangedMessage(path));
+        _messenger.Send(new StroageItemAccessRemovedMessage(path));
     }
 
 

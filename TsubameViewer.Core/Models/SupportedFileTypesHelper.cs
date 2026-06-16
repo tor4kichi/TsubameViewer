@@ -175,7 +175,7 @@ public static class SupportedFileTypesHelper
         else { return SupportedMovieFileExtensions.Any(x => fileNameOrExtension.EndsWith(x, StringComparison.Ordinal)); }
     }
 
-    private static StorageItemTypes FileExtensionToStorageItemType(string fileType)
+    public static StorageItemTypes FileExtensionToStorageItemType(string fileType)
     {
         if (IsSupportedArchiveFileExtension(fileType)) { return StorageItemTypes.Archive; }
         else if (IsSupportedImageFileExtension(fileType)) { return StorageItemTypes.Image; }

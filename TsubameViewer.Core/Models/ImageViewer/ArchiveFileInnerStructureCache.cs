@@ -68,6 +68,18 @@ public sealed class ArchiveFileInnerStructureCache
         {
             return _collection.DeleteMany(x => x.Path.StartsWith(path));
         }
+
+        public void PathChanged(string oldPath, string newPath)
+        {
+            var entry = _collection.FindOne(x => x.Path.Equals(oldPath, StringComparison.Ordinal));
+            if (entry == null) { return; }
+            _collection.Delete(entry.Path);
+            Debug.WriteLine($"ArchiveFileInnerSturcture Path changing: {entry.Path}");
+            entry.Path = newPath;
+            _collection.Upsert(entry);
+            Debug.WriteLine($"ArchiveFileInnerSturcture Path changed: {entry.Path}");
+        }
+
     }
 
     sealed class ArchiveFileLastSizeCache
@@ -94,6 +106,17 @@ public sealed class ArchiveFileInnerStructureCache
         public int DeleteUnderPath(string path)
         {
             return _collection.DeleteMany(x => x.Path.StartsWith(path));
+        }
+
+        public void PathChanged(string oldPath, string newPath)
+        {
+            var entry = _collection.FindOne(x => x.Path.Equals(oldPath, StringComparison.Ordinal));
+            if (entry == null) { return; }
+            _collection.Delete(entry.Path);
+            Debug.WriteLine($"ArchiveFileLastSizeCache Path changing: {entry.Path}");
+            entry.Path = newPath;
+            _collection.Upsert(entry);
+            Debug.WriteLine($"ArchiveFileLastSizeCache Path changed: {entry.Path}");
         }
     }
 
@@ -230,5 +253,11 @@ public sealed class ArchiveFileInnerStructureCache
         var count2 = _archiveFileLastSizeCacheRepository.DeleteUnderPath(path);
 
         return count1;
+    }
+
+    public void PathChanged(string oldPath, string newPath)
+    {
+        _archiveFileInnerStructureCacheRepository.PathChanged(oldPath, newPath);
+        _archiveFileLastSizeCacheRepository.PathChanged(oldPath, newPath);
     }
 }

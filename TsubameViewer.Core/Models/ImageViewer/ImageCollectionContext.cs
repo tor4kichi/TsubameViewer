@@ -4,6 +4,7 @@ using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 using SharpCompress.Common;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TsubameViewer.Core.Contracts.Services;
@@ -553,7 +555,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         }
 
         Debug.WriteLine($"{Folder.Name} START structure cache update.");
-        _repo.DeleteItem(Folder.Path);
+        _repo.FolderRemoved(Folder.Path);
         uint currentCount = 0;
         while (await query.GetFilesAsync(currentCount, 500).AsTask(ct) is not null and var items && items.Any())
         {
@@ -611,7 +613,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
 
     public bool HasFolderItems(StorageFolder folder)
     {
-        return _collection.Exists(x => x.ParentFolderPath == folder.Path);
+        return _collection.Exists(x => x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal));
     }
 
     public FolderStructureFileEntry AddOrUpdateItem(IStorageItem file)
@@ -639,21 +641,26 @@ public sealed class FolderStructureFilesRepository : IDisposable
 
     public IEnumerable<FolderStructureFileEntry> FindFolderItems(string folderPath)
     {
-        return _collection.Find(x => x.ParentFolderPath == folderPath);
+        return _collection.Find(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
     }
 
     public int GetFolderItemsCount(string folderPath)
     {
-        return _collection.Count(x => x.ParentFolderPath == folderPath);
+        return _collection.Count(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
     }
 
-    public void DeleteItem(string folderPath)
+    public void FolderRemoved(string folderPath)
     {
-        _collection.DeleteMany(x => x.ParentFolderPath == folderPath);
+        _collection.DeleteMany(x => folderPath.StartsWith(x.ParentFolderPath, StringComparison.Ordinal));
     }
     public void FileRemoved(FolderStructureFileEntry entry)
     {
         _collection.Delete(entry.Path);
+    }
+
+    public void FileRemoved(string path)
+    {
+        _collection.Delete(path);
     }
 
     public void Dispose()
@@ -661,6 +668,39 @@ public sealed class FolderStructureFilesRepository : IDisposable
         _tempLiteDatabase.Dispose();
     }
 
+
+    public void PathChanged(string oldPath, string newPath)
+    {
+        if (string.IsNullOrEmpty(Path.GetExtension(oldPath)))
+        {
+            using var entries = _collection.Find(x => x.ParentFolderPath.StartsWith(oldPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+            StringBuilder sb = new();
+            foreach (var entry in entries.Span)
+            {
+                _collection.Delete(entry.Path);
+                Debug.WriteLine($"ImageList Path changing: {entry.Path}");
+                sb.Clear();
+                sb.Append(entry.Path);
+                sb.Replace(oldPath, newPath);
+                entry.Path = sb.ToString();
+                entry.ParentFolderPath = newPath;
+                _collection.Upsert(entry);
+                Debug.WriteLine($"ImageList Path changed: {entry.Path}");
+            }
+        }
+        else
+        {
+            // FindByIdだと ドライブレターに使われる : によって例外が生じる
+            var entry = _collection.FindOne(x => x.Path.Equals(oldPath, StringComparison.Ordinal));
+            if (entry == null) { return; }
+            _collection.Delete(entry.Path);
+            Debug.WriteLine($"ImageList Path changing: {entry.Path}");
+            entry.Path = newPath;
+            entry.ParentFolderPath = Path.GetDirectoryName(newPath);
+            _collection.Upsert(entry);
+            Debug.WriteLine($"ImageList Path changed: {entry.Path}");
+        }
+    }
 }
 
 

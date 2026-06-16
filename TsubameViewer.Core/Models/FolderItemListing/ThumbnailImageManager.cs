@@ -552,7 +552,7 @@ public sealed class ThumbnailImageManager
         {
             var oldPathId = ToId(oldPath);
             if (TryGetThumbnailInsideId(oldPathId, out var insideId) is false) { return; }
-            foreach (var oldPathItem in _thumbnailDb.Find(insideId).ToArray())
+            foreach (var oldPathItem in _thumbnailDb.Find(x => x.Id.Equals(insideId, StringComparison.Ordinal)).ToArray())
             {
                 using (var memoryStream = _recyclableMemoryStreamManager.GetStream())
                 {

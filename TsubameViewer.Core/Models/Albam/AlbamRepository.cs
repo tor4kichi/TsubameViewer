@@ -1,12 +1,16 @@
-﻿using LiteDB;
-using CommunityToolkit.Diagnostics;
+﻿using CommunityToolkit.Diagnostics;
 using CommunityToolkit.Mvvm.Messaging;
+using LiteDB;
+using SharpCompress.Common;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
-using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Infrastructure;
+using TsubameViewer.Core.Models.FolderItemListing;
+using ZLinq;
 
 namespace TsubameViewer.Core.Models.Albam;
 
@@ -83,7 +87,7 @@ public sealed class AlbamRepository
 
         public bool Delete(Guid albamId, string path)
         {
-            return _collection.DeleteMany(x => x.AlbamId == albamId && x.Path == path) > 0;
+            return _collection.DeleteMany(x => x.AlbamId == albamId && x.Path.Equals(path, StringComparison.Ordinal)) > 0;
         }
 
         public IEnumerable<AlbamItemEntry> GetAlbamItem(Guid albamId, FileSortType sort, int skip = 0, int limit = int.MaxValue)
@@ -101,7 +105,7 @@ public sealed class AlbamRepository
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
 
@@ -133,10 +137,30 @@ public sealed class AlbamRepository
 
         public void PathChanged(string oldPath, string newPath)
         {
-            var items = _collection.Find(x => x.Path == oldPath).ToList();
-            foreach (var item in items)
+            if (string.IsNullOrEmpty(Path.GetExtension(oldPath)))
             {
-                _collection.Update(item with { Path = newPath });
+                var entires = _collection.Find(x => x.Path.StartsWith(oldPath)).AsValueEnumerable().ToArrayPool();
+                StringBuilder sb = new();
+                foreach (var entry in entires.Span)
+                {
+                    Debug.WriteLine($"AlbamItem Path changing: {entry.Path}");
+                    sb.Clear();
+                    sb.Append(entry.Path);
+                    sb.Replace(oldPath, newPath);
+                    var newEntry = entry with { Path = sb.ToString() };
+                    _collection.Upsert(newEntry);
+                    Debug.WriteLine($"AlbamItem Path changed: {newEntry.Path}");
+                }
+            }
+            else
+            {
+                // FindByIdだと ドライブレターに使われる : によって例外が生じる
+                var entry = _collection.FindOne(x => x.Path.Equals(oldPath, StringComparison.Ordinal));
+                if (entry == null) { return; }
+                Debug.WriteLine($"AlbamItem Path changing: {entry.Path}");
+                var newEntry = entry with { Path = newPath };
+                _collection.Upsert(newEntry);
+                Debug.WriteLine($"AlbamItem Path changed: {newEntry.Path}");
             }
         }
     }
@@ -210,12 +234,12 @@ public sealed class AlbamRepository
 
     public bool IsExistAlbamItem(string path)
     {
-        return _albamItemDatabase.Exists(x => x.Path == path);
+        return _albamItemDatabase.Exists(x => x.Path.Equals(path, StringComparison.Ordinal));
     }
 
     public bool IsExistAlbamItem(string path, AlbamItemType itemType)
     {
-        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.Path == path);
+        return _albamItemDatabase.Exists(x => x.ItemType == itemType && x.Path.Equals(path, StringComparison.Ordinal));
     }
 
     public AlbamItemEntry AddAlbamItem(Guid albamId, string path, string name, AlbamItemType itemType)

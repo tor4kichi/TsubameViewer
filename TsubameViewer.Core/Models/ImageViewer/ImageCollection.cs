@@ -200,9 +200,9 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
     public ArchiveDirectoryToken GetDirectoryTokenFromPath(string path)
     {
         if (string.IsNullOrEmpty(path)) { return RootDirectoryToken; }
-        if (RootDirectoryToken.Key == path) { return RootDirectoryToken; }
+        if (RootDirectoryToken.Key.Equals(path, StringComparison.Ordinal)) { return RootDirectoryToken; }
 
-        return _directories.FirstOrDefault(x => x.Key == path)
+        return _directories.FirstOrDefault(x => x.Key.Equals(path, StringComparison.Ordinal))
             ?? _directories.FirstOrDefault(x => x.Key?.StartsWith(path) ?? false);
     }
 
