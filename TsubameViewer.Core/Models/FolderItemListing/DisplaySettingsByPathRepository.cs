@@ -57,7 +57,7 @@ public sealed class DisplaySettingsByPathRepository
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         internal void FolderChanged(string oldPath, string newPath)
@@ -90,7 +90,7 @@ public sealed class DisplaySettingsByPathRepository
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         internal void FolderChanged(string oldPath, string newPath)

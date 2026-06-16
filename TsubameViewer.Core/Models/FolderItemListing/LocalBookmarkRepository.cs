@@ -62,6 +62,7 @@ public sealed class LocalBookmarkRepository
     {
         _bookmarkRepository = localDatabase.GetCollection<BookmarkEntry>();
         _bookmarkRepository.EnsureIndex(x => x.Path);
+        _bookmarkRepository.EnsureIndex(x => x.IsFinishedReading);        
     }
 
     // OneDriveを意識するならログインユーザーに対する一意のIDを持たせて置いたほうがいいかもしれない
@@ -122,8 +123,8 @@ public sealed class LocalBookmarkRepository
     public (int finishedItemsCount, int totalItemsCount) GetItemsCountForFolder(string path)
     {
         int sepCount = path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar) + 1;
-        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path));
-        var finishedCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path) && x.IsFinishedReading);
+        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path, StringComparison.Ordinal));
+        var finishedCount = _bookmarkRepository.Count(x => x.IsFinishedReading && x.Path.StartsWith(path, StringComparison.Ordinal));
         return (finishedCount, itemsCount - 1);
     }
 }
@@ -210,13 +211,13 @@ file static class BookmarkCollectionExtensions
 
         public void RemoveAllUnderPath(string path)
         {
-            _collection.DeleteMany(x => path.StartsWith(x.Path));
+            _collection.DeleteMany(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         public void PathChanged(string oldPath, string newPath)
         {
             StringBuilder sb = new();
-            var bookmarkEntries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+            var bookmarkEntries = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).ToList();
             foreach (var entry in bookmarkEntries)
             {
                 var prevPath = entry.Path;

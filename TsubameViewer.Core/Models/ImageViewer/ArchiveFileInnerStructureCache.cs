@@ -66,7 +66,7 @@ public sealed class ArchiveFileInnerStructureCache
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         public void PathChanged(string oldPath, string newPath)
@@ -105,7 +105,7 @@ public sealed class ArchiveFileInnerStructureCache
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         public void PathChanged(string oldPath, string newPath)

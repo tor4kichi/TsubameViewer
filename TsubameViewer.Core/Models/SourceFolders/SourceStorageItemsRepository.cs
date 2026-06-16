@@ -163,7 +163,7 @@ public sealed class SourceStorageItemsRepository
 
         internal IEnumerable<TokenToPathEntry> GetAllTokenFromPath(string path)
         {
-            return _collection.Find(x => path.StartsWith(x.Path));
+            return _collection.Find(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         internal TokenToPathEntry? FindTokenToPathFromRoot(string path)
@@ -183,7 +183,7 @@ public sealed class SourceStorageItemsRepository
 
         internal IEnumerable<TokenToPathEntry> FindTokenToPathAll(string path)
         {
-            return _collection.Find(x => path.StartsWith(x.Path));
+            return _collection.Find(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         public bool IsExistPath(string path)
@@ -193,7 +193,7 @@ public sealed class SourceStorageItemsRepository
 
         public bool IsAvairableAccessPath(string path)
         {
-            return _collection.Exists(x => path.StartsWith(x.Path));
+            return _collection.Exists(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         internal void Clear()
@@ -281,7 +281,7 @@ public sealed class SourceStorageItemsRepository
         foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
         {
             var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-            if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+            if (parentPath != item.Path && item.Path.StartsWith(parentPath, StringComparison.Ordinal))
             {
                 yield return item.Path;
             }
@@ -292,7 +292,7 @@ public sealed class SourceStorageItemsRepository
             foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
             {
                 var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-                if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+                if (parentPath != item.Path && item.Path.StartsWith(parentPath, StringComparison.Ordinal))
                 {
                     yield return item.Path;
                 }

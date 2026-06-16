@@ -258,7 +258,7 @@ public sealed class SyncStorageCacheService :
 
                 bool IsDeleteTargetPath(string path)
                 {
-                    if (descendantPaths.Any(path.StartsWith))
+                    if (descendantPaths.Any(x => path.StartsWith(x, StringComparison.Ordinal)))
                     {
                         Debug.WriteLine($"保持されるフォルダのためスキップ: {path}");
                         return false;

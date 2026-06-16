@@ -139,7 +139,7 @@ public sealed class AlbamRepository
         {
             if (string.IsNullOrEmpty(Path.GetExtension(oldPath)))
             {
-                var entires = _collection.Find(x => x.Path.StartsWith(oldPath)).AsValueEnumerable().ToArrayPool();
+                var entires = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
                 StringBuilder sb = new();
                 foreach (var entry in entires.Span)
                 {

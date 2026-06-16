@@ -187,7 +187,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         }
         else
         {
-            var find = _KeyToIndex.FirstOrDefault(x => x.Key.StartsWith(key));
+            var find = _KeyToIndex.FirstOrDefault(x => x.Key.StartsWith(key, StringComparison.Ordinal));
             Guard.IsNotNullOrEmpty(find.Key, nameof(find.Key));
             return find.Value;
         }
@@ -203,7 +203,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         if (RootDirectoryToken.Key.Equals(path, StringComparison.Ordinal)) { return RootDirectoryToken; }
 
         return _directories.FirstOrDefault(x => x.Key.Equals(path, StringComparison.Ordinal))
-            ?? _directories.FirstOrDefault(x => x.Key?.StartsWith(path) ?? false);
+            ?? _directories.FirstOrDefault(x => x.Key?.StartsWith(path, StringComparison.Ordinal) ?? false);
     }
 
 
@@ -334,7 +334,7 @@ public sealed class ArchiveImageCollection : IImageCollectionWithDirectory, IDis
         {
             var sortedIndex = ToSortedIndex(i, sort);
             var imageEntry = Archive.Entries.ElementAt(sortedIndex);
-            if (key == imageEntry.Key || imageEntry.Key.StartsWith(key))
+            if (key == imageEntry.Key || imageEntry.Key.StartsWith(key, StringComparison.Ordinal))
             {
                 return new (i);
             }

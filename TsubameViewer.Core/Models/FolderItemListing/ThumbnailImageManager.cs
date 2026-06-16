@@ -538,7 +538,7 @@ public sealed class ThumbnailImageManager
         _thumbnailImageInfoRepository.DeleteAllUnderPath(id);
         using (await _fileReadWriteLock.LockAsync(CancellationToken.None))
         {
-            foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(id)).ToArray())
+            foreach (var item in _thumbnailDb.Find(x => x.Id.StartsWith(id, StringComparison.Ordinal)).ToArray())
             {
                 _thumbnailDb.Delete(item.Id);
             }
@@ -1394,7 +1394,7 @@ public sealed class ThumbnailImageManager
 
         public int DeleteAllUnderPath(string path)
         {
-            return _collection.DeleteMany(x => path.StartsWith(x.Path));
+            return _collection.DeleteMany(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
     }
 

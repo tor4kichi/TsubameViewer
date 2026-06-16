@@ -444,9 +444,9 @@ public sealed class FolderStructureCacheContext : IDisposable
         return _repo.HasFolderNotImages(Folder);
     }
 
-    public List<FolderStructureFileEntry> GetCacheNotImages()
+    public IEnumerable<FolderStructureFileEntry> GetCacheNotImages()
     {
-        return _repo.FindFolderNotImages(Folder.Path).AsValueEnumerable().ToList();
+        return _repo.FindFolderNotImages(Folder.Path);
     }
 
     public FolderStructureFileEntry? GetEntryFromIndex(int index, FileSortType sort)
@@ -717,6 +717,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
         _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();
         _collection.EnsureIndex(x => x.ParentFolderPath);
         _collection.EnsureIndex(x => x.DateCreated);
+        _collection.EnsureIndex(x => x.IsImage);
         _tempLiteDatabase = tempLiteDatabase;
     }
 

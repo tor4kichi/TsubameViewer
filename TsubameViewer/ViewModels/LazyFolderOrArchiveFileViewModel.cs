@@ -384,25 +384,23 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         if (imageSource != null)
         {
             _item = imageSource;
-            Name = _item.Name;
-            Path = _item.Path;
-            DateCreated = _item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            _name = _item.Name;
+            _path = _item.Path;
+            _dateCreated = _item.DateCreated;
+            _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
+            _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
         }
         else
         {
-            Name = _cacheEntry.GetFileName();
-            Path = _cacheEntry.Path;
-            DateCreated = _cacheEntry.DateCreated;
-            Type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
-            if (Type == StorageItemTypes.None)
+            _name = _cacheEntry.GetFileName();
+            _path = _cacheEntry.Path;
+            _dateCreated = _cacheEntry.DateCreated;
+            _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
+            if (_type == StorageItemTypes.None)
             {
-                Type = StorageItemTypes.Folder;
+                _type = StorageItemTypes.Folder;
             }
-            UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
+            _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
         }
     }
 
@@ -478,6 +476,9 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
                     Image = bitmapImage;
                 }
 
+                // Note: 20msぐらい掛かるのでInitializeで実行
+                UpdateLastReadPosition();
+
                 //ImageAspectRatioWH ??= _thumbnailImageService.GetCachedThumbnailSize(Item)?.RatioWH;
                 Status = LoadingStatus.Laoded;
             }
@@ -534,7 +535,6 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             Path = Item.Path;
             DateCreated = Item.DateCreated;
             Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(Item);
-            UpdateLastReadPosition();
             IsFavorite = _albamRepository.IsExistAlbamItem(Item.Path);
             if (Type == StorageItemTypes.Movie
                 && Item.StorageItem is Windows.Storage.StorageFile file)

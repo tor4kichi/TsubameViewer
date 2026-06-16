@@ -54,7 +54,7 @@ public sealed class RecentlyAccessRepository
     {
         if (string.IsNullOrEmpty(Path.GetExtension(oldPath)))
         {
-            var entires = _collection.Find(x => x.Path.StartsWith(oldPath)).AsValueEnumerable().ToArrayPool();
+            var entires = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
             StringBuilder sb = new();
             foreach (var entry in entires.Span)
             {
@@ -123,7 +123,7 @@ public sealed class RecentlyAccessRepository
 
     public void DeleteAllUnderPath(string path)
     {
-        _collection.DeleteMany(x => path.StartsWith(x.Path));
+        _collection.DeleteMany(x => path.StartsWith(x.Path, StringComparison.Ordinal));
     }
 
     public void DeleteAll()
