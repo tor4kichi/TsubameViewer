@@ -742,7 +742,7 @@ public sealed partial class ImageListupPageViewModel
                     {
                         var (col, items, itemFacotry) = s;
                         //await ReloadItemsAsync(col, ct);
-                        var ignore = col.Context.HandleDiffItems(
+                        var ignore = col.Context.HandleDiffImages(
                             (ObservableCollection<IStorageItemViewModel>)items.Source, 
                             items.DeferRefresh,
                             itemFacotry,
@@ -757,7 +757,7 @@ public sealed partial class ImageListupPageViewModel
                 {
                     IsFavoriteFilteredDisplayEnabled = false;
                     ImageFileItems.Clear();
-                    ImageFileItems.AddRange(col.Context.GetCacheItems().Select(entry =>
+                    ImageFileItems.AddRange(col.Context.GetCacheImages().Select(entry =>
                     {
                         return new LazyCacheImageFileViewModel(col, sortType, entry, null, _messenger,
                             _sourceStorageItemsRepository,
@@ -767,9 +767,9 @@ public sealed partial class ImageListupPageViewModel
                             Selection);
                     }));                    
 
-                    if (await col.Context.CheckIsNotSameCacheCountAndExactCountAsync(ct))
+                    if (await col.Context.CheckIsNotSameImagesCacheCountAndExactCountAsync(ct))
                     {
-                        await col.Context.HandleDiffItems(
+                        await col.Context.HandleDiffImages(
                                 (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
                                 FileItemsView.DeferRefresh,
                                 cacheImageViewModelFactory,
