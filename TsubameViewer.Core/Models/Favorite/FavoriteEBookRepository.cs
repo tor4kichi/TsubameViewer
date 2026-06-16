@@ -48,7 +48,7 @@ public sealed class FavoriteEBookRepository
 
     public IEnumerable<FavoriteEBookItemFacade> GetFavorites(string path)
     {
-        return _col.Find(x => x.Path == path && x.FileName != null).Select(x => new FavoriteEBookItemFacade(x, _col));
+        return _col.Find(x => x.Path.Equals(path, StringComparison.Ordinal) && x.FileName != null).Select(x => new FavoriteEBookItemFacade(x, _col));
     }
 
     IEnumerable<IFavoriteItemFacade> IFavoriteRepository.GetFavorites(string path)

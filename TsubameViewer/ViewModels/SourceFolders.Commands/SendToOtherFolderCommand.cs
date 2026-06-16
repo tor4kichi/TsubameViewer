@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Contracts.Services;
+using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.SourceFolders;
 using TsubameViewer.Helpers;
 using Windows.Storage;
@@ -48,6 +49,7 @@ internal class SendToOtherFolderCommand : CommandBase
 
             if (itemVM.Item.StorageItem is StorageFile file)
             {
+                var oldPath = file.Path;
                 var toFolder = (StorageFolder)await _sourceRepo.GetSourceStorageItemAsync(_entry);
                 try
                 {
@@ -70,10 +72,12 @@ internal class SendToOtherFolderCommand : CommandBase
                 }
                 Debug.WriteLine($"SendToOtherFolder {file.Name} move to {toFolder.Name}");
                 _messenger.Send(new SendToOtherFolderMessage(_entry, itemVM.Path));
+                _messenger.Send(new StroageItemMovedOrRenamedMessage(oldPath, file.Path));
                 _messenger.SendShowTextNotificationMessage("SendToOtherFolder_MoveItem0to1".Translate(file.Name, toFolder.Name));
             }
             else if (itemVM.Item.StorageItem is StorageFolder folder)
             {
+                var oldPath = folder.Path;
                 var toFolder = (StorageFolder)await _sourceRepo.GetSourceStorageItemAsync(_entry);
                 try
                 {                    
@@ -96,6 +100,7 @@ internal class SendToOtherFolderCommand : CommandBase
                 }
                 Debug.WriteLine($"SendToOtherFolder {folder.Name} move to {toFolder.Name}");
                 _messenger.Send(new SendToOtherFolderMessage(_entry, itemVM.Path));
+                _messenger.Send(new StroageItemMovedOrRenamedMessage(oldPath, folder.Path));
                 _messenger.SendShowTextNotificationMessage("SendToOtherFolder_MoveItem0to1".Translate(folder.Name, toFolder.Name));
             }
         }

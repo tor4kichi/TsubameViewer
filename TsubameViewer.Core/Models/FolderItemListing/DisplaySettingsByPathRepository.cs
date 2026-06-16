@@ -57,16 +57,21 @@ public sealed class DisplaySettingsByPathRepository
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         internal void FolderChanged(string oldPath, string newPath)
         {
-            var entries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+            StringBuilder sb = new();
+            var entries = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).ToList();
             foreach (var entry in entries)
             {
-                var newEntry = entry with { Path = entry.Path.Replace(oldPath, newPath) };
-                _collection.Update(newEntry);
+                _collection.Delete(entry.Path);
+                sb.Clear();
+                sb.Append(entry.Path);
+                sb.Replace(oldPath, newPath);
+                var newEntry = entry with { Path = sb.ToString() };
+                _collection.Upsert(newEntry);
                 Debug.WriteLine($"FnADisplaySettings path {entry.Path} ===> {newEntry.Path}");
             }
         }
@@ -85,16 +90,21 @@ public sealed class DisplaySettingsByPathRepository
 
         public int DeleteUnderPath(string path)
         {
-            return _collection.DeleteMany(x => x.Path.StartsWith(path));
+            return _collection.DeleteMany(x => x.Path.StartsWith(path, StringComparison.Ordinal));
         }
 
         internal void FolderChanged(string oldPath, string newPath)
         {
-            var entries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+            StringBuilder sb = new();
+            var entries = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).ToList();
             foreach (var entry in entries)
             {
-                var newEntry = entry with { Path = entry.Path.Replace(oldPath, newPath) };
-                _collection.Update(newEntry);
+                _collection.Delete(entry.Path);
+                sb.Clear();
+                sb.Append(entry.Path);
+                sb.Replace(oldPath, newPath);
+                var newEntry = entry with { Path = sb.ToString() };
+                _collection.Upsert(newEntry);
                 Debug.WriteLine($"FnAChildFileDisplaySettings path {entry.Path} ===> {newEntry.Path}");
             }
         }
@@ -191,7 +201,7 @@ public sealed class DisplaySettingsByPathRepository
         _internalChildFileRepository.DeleteUnderPath(path);
     }
 
-    public void FolderChanged(string oldPath, string newPath)
+    public void PathChanged(string oldPath, string newPath)
     {
         _internalFolderAndArchiveRepository.FolderChanged(oldPath, newPath);
         _internalChildFileRepository.FolderChanged(oldPath, newPath);
@@ -226,5 +236,5 @@ public sealed class DisplaySettingsByPathRepository
     public bool ClearAlbamSettings(Guid albamId)
     {
         return _internalAlbameDisplaySettingsRepository.DeleteItem(albamId);
-    }
+    }    
 }

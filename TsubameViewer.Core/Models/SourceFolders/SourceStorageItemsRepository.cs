@@ -139,7 +139,7 @@ public sealed class SourceStorageItemsRepository
             foreach (var (i, path) in sortedTokens.AsValueEnumerable().Index())
             {
                 if (string.IsNullOrEmpty(path)) { return; }
-                var entry = _collection.FindOne(x => x.Path == path);
+                var entry = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
                 entry.Order = i;
                 _collection.Update(entry);
             }
@@ -147,23 +147,23 @@ public sealed class SourceStorageItemsRepository
 
         internal TokenToPathEntry GetPathFromToken(string token)
         {
-            return _collection.FindOne(x => x.Token == token);
+            return _collection.FindOne(x => x.Token.Equals(token, StringComparison.Ordinal));
         }
 
         internal TokenToPathEntry GetTokenFromPathExact(string exactPath)
         {
-            return _collection.Find(x => x.Path == exactPath).FirstOrDefault();
+            return _collection.Find(x => x.Path.Equals(exactPath, StringComparison.Ordinal)).FirstOrDefault();
         }
 
         internal TokenToPathEntry GetTokenFromPath(string path)
         {
-            return _collection.Find(x => x.Path == path).FirstOrDefault()
+            return _collection.Find(x => x.Path.Equals(path, StringComparison.Ordinal)).FirstOrDefault()
                 ?? _collection.Find(x => path.StartsWith(x.Path)).OrderByDescending(x => x.Path.Length).FirstOrDefault();
         }
 
         internal IEnumerable<TokenToPathEntry> GetAllTokenFromPath(string path)
         {
-            return _collection.Find(x => path.StartsWith(x.Path));
+            return _collection.Find(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         internal TokenToPathEntry? FindTokenToPathFromRoot(string path)
@@ -171,7 +171,7 @@ public sealed class SourceStorageItemsRepository
             TokenToPathEntry? token = null;
             while (Path.GetDirectoryName(path) is not null and var dir && string.IsNullOrEmpty(dir))
             {
-                token = _collection.Find(x => dir == x.Path).FirstOrDefault();
+                token = _collection.Find(x =>dir.Equals(x.Path, StringComparison.Ordinal)).FirstOrDefault();
                 if (token is not null)
                 {
                     break;
@@ -183,17 +183,17 @@ public sealed class SourceStorageItemsRepository
 
         internal IEnumerable<TokenToPathEntry> FindTokenToPathAll(string path)
         {
-            return _collection.Find(x => path.StartsWith(x.Path));
+            return _collection.Find(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         public bool IsExistPath(string path)
         {
-            return _collection.Exists(x => x.Path == path);
+            return _collection.Exists(x => x.Path.Equals(path, StringComparison.Ordinal));
         }
 
         public bool IsAvairableAccessPath(string path)
         {
-            return _collection.Exists(x => path.StartsWith(x.Path));
+            return _collection.Exists(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
         internal void Clear()
@@ -281,7 +281,7 @@ public sealed class SourceStorageItemsRepository
         foreach (var entry in StorageApplicationPermissions.FutureAccessList.Entries)
         {
             var item = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-            if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+            if (parentPath != item.Path && item.Path.StartsWith(parentPath, StringComparison.Ordinal))
             {
                 yield return item.Path;
             }
@@ -292,7 +292,7 @@ public sealed class SourceStorageItemsRepository
             foreach (var entry in StorageApplicationPermissions.MostRecentlyUsedList.Entries)
             {
                 var item = await StorageApplicationPermissions.MostRecentlyUsedList.GetItemAsync(entry.Token, AccessCacheOptions.FastLocationsOnly);
-                if (parentPath != item.Path && item.Path.StartsWith(parentPath))
+                if (parentPath != item.Path && item.Path.StartsWith(parentPath, StringComparison.Ordinal))
                 {
                     yield return item.Path;
                 }
@@ -474,7 +474,7 @@ public sealed class SourceStorageItemsRepository
             try
             {
                 var tokenStorageItem = await GetItemAsync(tokenEntry.Token);
-                if (tokenStorageItem?.Path == path)
+                if (tokenStorageItem?.Path.Equals(path, StringComparison.Ordinal) ?? false)
                 {
                     return tokenStorageItem;
                 }

@@ -46,7 +46,7 @@ public sealed class FavoriteImageRepository
 
     public IEnumerable<FavoriteImageItemFacade> GetFavorites(string path)
     {
-        return _col.Find(x => x.Path == path && x.Range != null).Select(x => new FavoriteImageItemFacade(x, _col));
+        return _col.Find(x => x.Path.Equals(path, StringComparison.Ordinal) && x.Range != null).Select(x => new FavoriteImageItemFacade(x, _col));
     }
 
     IEnumerable<IFavoriteItemFacade> IFavoriteRepository.GetFavorites(string path)

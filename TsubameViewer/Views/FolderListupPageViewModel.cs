@@ -41,6 +41,7 @@ using Windows.System;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Navigation;
+using ZLinq;
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
@@ -341,7 +342,9 @@ public sealed partial class FolderListupPageViewModel
 
         CurrentFolderItem?.Dispose();
         CurrentFolderItem = null;
-        
+        _itemsDisposable?.Dispose();
+        _itemsDisposable = null;
+
         DisplayCurrentArchiveFolderName = null;
     }
 
@@ -678,9 +681,12 @@ public sealed partial class FolderListupPageViewModel
     #region Refresh Item
 
     static readonly Core.AsyncLock _refreshLock = new ();
-
+    IDisposable? _itemsDisposable;
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
+        _itemsDisposable?.Dispose();
+        _itemsDisposable = null;
+
         Guard.IsNotNull(imageCollectionContext);
         if (!IsIndexAccessListingEnabled)
         {
@@ -733,39 +739,106 @@ public sealed partial class FolderListupPageViewModel
         else
         {
             IsReadyToFavoriteFilterDisplay = false;
-            await _messenger.WorkWithBusyWallAsync(async (ct) =>
+            var sortType = SelectedFileSortType;
+            if (imageCollectionContext is FolderImageCollectionContext col)
             {
-                using (var cts = new CancellationTokenSource(5000))
-                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, ct))
+                R3.CompositeDisposable disposable = new R3.CompositeDisposable();
+                // StorageFolderはアイテム取得に時間がかかる
+                Func<FolderStructureFileEntry, IStorageItem?, LazyCacheFolderOrArchiveFileViewModel> cacheImageViewModelFactory = (entry, file) =>
                 {
-                    var linkcedCt = linkedCts.Token;
-                    int itemsCount = await imageCollectionContext.GetFolderOrArchiveFilesCountAsync(linkcedCt);
+                    return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, new StorageItemImageSource(file), _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                };
+
+                var d1 = imageCollectionContext.CreateFolderAndArchiveFileChangedObserver()
+                    .ToObservable()
+                    .SubscribeAwait((col, FileItemsView, cacheImageViewModelFactory), async (_, s, ct) =>
+                    {
+                        var (col, items, itemFacotry) = s;
+                        //await ReloadItemsAsync(col, ct);
+                        var ignore = col.Context.HandleDiffNotImages(
+                            (ObservableCollection<IStorageItemViewModel>)items.Source,
+                            items.DeferRefresh,
+                            itemFacotry,
+                            (IStorageItemViewModel itemVM) => itemVM.Path,
+                            ct);
+                    });
+
+                disposable.Add(d1);
+                _itemsDisposable = disposable;
+
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                {
                     using (FileItemsView.DeferRefresh())
                     {
                         IsFavoriteFilteredDisplayEnabled = false;
                         FolderItems.Clear();
-                        FileItemsView.SortDescriptions.Clear();
-                        FolderItems.AddRange(Enumerable.Range(0, itemsCount)
-                            .Select(index => new LazyFolderOrArchiveFileViewModel(imageCollectionContext, index, SelectedFileSortType, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection)));
-                        FileItemsView.RefreshFilter();
-                    }
-                }
-            }, ct);
 
-            DispatcherQueue.GetForCurrentThread().TryEnqueue(async () =>
-            {
-                try
-                {
-                    await Task.Delay(2000, ct);
-                    foreach (var itemVM in FolderItems.Cast<LazyFolderOrArchiveFileViewModel>())
-                    {
-                        _ = itemVM.EnsureStorageItemAsync(_navigationCt);
-                        ct.ThrowIfCancellationRequested();
+                        FolderItems.AddRange(col.Context.GetCacheNotImages().Select(entry =>
+                        {
+                            return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
+                                _sourceStorageItemsRepository,
+                                _bookmarkManager,
+                                _thumbnailManager,
+                                _albamRepository,
+                                Selection);
+                        }), true);
+
+                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
+                        {
+                            await col.Context.HandleDiffNotImages(
+                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    FileItemsView.DeferRefresh,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
+                        }
+
+                        IsReadyToFavoriteFilterDisplay = true;
                     }
-                    IsReadyToFavoriteFilterDisplay = true;
-                }
-                catch (OperationCanceledException) { }
-            });
+                }, ct);
+            }
+            else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
+            {
+                Guard.IsNotNull(_imageCollectionContext);
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                {
+                    using (FileItemsView.DeferRefresh())
+                    {
+                        IsFavoriteFilteredDisplayEnabled = false;
+                        FolderItems.Clear();
+                        var count = await imageCollectionContext.GetImageFileCountAsync(ct);
+                        FolderItems.AddRange(Enumerable.Range(0, count)
+                            .Select(index =>
+                            {
+                                return new LazyFolderOrArchiveFileViewModel(
+                                    _imageCollectionContext,
+                                    index,
+                                    SelectedFileSortType,
+                                    _messenger,
+                                    _sourceStorageItemsRepository,
+                                    _bookmarkManager,
+                                    _thumbnailManager,
+                                    _albamRepository,
+                                    Selection);
+                            }));
+
+                        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                        {
+                            var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
+                            foreach (var itemVM in items.ArraySegment)
+                            {
+                                await itemVM.EnsureStorageItemAsync(ct);
+                            }
+                            IsReadyToFavoriteFilterDisplay = true;
+                        }).FireAndForgetSafe();
+                    }
+                }, ct);
+            }
         }
 
         ct.ThrowIfCancellationRequested();

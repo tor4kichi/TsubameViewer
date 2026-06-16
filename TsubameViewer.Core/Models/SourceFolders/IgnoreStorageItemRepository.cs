@@ -22,12 +22,12 @@ public class IgnoreStorageItemRepository : Infrastructure.LiteDBServiceBase<Igno
 
     public bool IsIgnoredPath(string path)
     {
-        return _collection.Exists(x => path.StartsWith(x.Path));
+        return _collection.Exists(x => path.StartsWith(x.Path, StringComparison.Ordinal));
     }
 
     public bool IsIgnoredPathExact(string path)
     {
-        return _collection.Exists(x => path == x.Path);
+        return _collection.Exists(x => path.Equals(x.Path, StringComparison.Ordinal));
     }
 
     public bool TryPeek(out IgnoreStorageItemEntry outEntry)

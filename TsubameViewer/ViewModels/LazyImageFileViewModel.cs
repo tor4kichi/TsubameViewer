@@ -332,21 +332,21 @@ public sealed partial class LazyCacheImageFileViewModel : ObservableObject, ISto
         if (imageSource != null)
         {
             _item = imageSource;
-            Name = _item.Name;
-            Path = _item.Path;
-            DateCreated = _item.DateCreated;
-            Type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
+            _name = _item.Name;
+            _path = _item.Path;
+            _dateCreated = _item.DateCreated;
+            _type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(_item);
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
+            _isFavorite = _albamRepository.IsExistAlbamItem(_item.Path);
         }
         else
         {
-            Name = _cacheEntry.GetFileName();
-            Path = _cacheEntry.Path;
-            DateCreated = _cacheEntry.DateCreated;
-            Type = StorageItemTypes.Image;
+            _name = _cacheEntry.GetFileName();
+            _path = _cacheEntry.Path;
+            _dateCreated = _cacheEntry.DateCreated;
+            _type = StorageItemTypes.Image;
             UpdateLastReadPosition();
-            IsFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
+            _isFavorite = _albamRepository.IsExistAlbamItem(_cacheEntry.Path);
         }
     }
 

@@ -62,6 +62,7 @@ public sealed class LocalBookmarkRepository
     {
         _bookmarkRepository = localDatabase.GetCollection<BookmarkEntry>();
         _bookmarkRepository.EnsureIndex(x => x.Path);
+        _bookmarkRepository.EnsureIndex(x => x.IsFinishedReading);        
     }
 
     // OneDriveを意識するならログインユーザーに対する一意のIDを持たせて置いたほうがいいかもしれない
@@ -108,9 +109,9 @@ public sealed class LocalBookmarkRepository
         _bookmarkRepository.RemoveAllUnderPath(path);
     }
 
-    public void FolderChanged(string oldPath, string newPath)
+    public void PathChanged(string oldPath, string newPath)
     {
-        _bookmarkRepository.FolderChanged(oldPath, newPath);
+        _bookmarkRepository.PathChanged(oldPath, newPath);
     }
 
     public BookmarkFacade GetBookmarkFacade(string path)
@@ -122,8 +123,8 @@ public sealed class LocalBookmarkRepository
     public (int finishedItemsCount, int totalItemsCount) GetItemsCountForFolder(string path)
     {
         int sepCount = path.Count(c => c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar) + 1;
-        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path));
-        var finishedCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path) && x.IsFinishedReading);
+        var itemsCount = _bookmarkRepository.Count(x => x.Path.StartsWith(path, StringComparison.Ordinal));
+        var finishedCount = _bookmarkRepository.Count(x => x.IsFinishedReading && x.Path.StartsWith(path, StringComparison.Ordinal));
         return (finishedCount, itemsCount - 1);
     }
 }
@@ -136,20 +137,20 @@ file static class BookmarkCollectionExtensions
         
         public string GetBookmarkPageName(string path)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             return bookmark?.PageName;
         }
 
         public (string pageName, int pageInnerIndex) GetBookmarkPageNameAndIndex(string path)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             if (bookmark == null) { return default; }
             return (bookmark.PageName, bookmark.InnerPageIndex);
         }
 
         public float GetBookmarkLastReadPositionInNormalized(string path)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             // Note: bookmark?.Position.Value ?? 0f; と書くと
             //       x86 のリリースモードで System.InvalidCastException が発生する
             if (bookmark == null)
@@ -164,20 +165,20 @@ file static class BookmarkCollectionExtensions
 
         public bool IsBookmarked(string path)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             return bookmark != null;
         }
 
         public bool IsBookmarked(string path, out string bookmarkPageName)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             bookmarkPageName = bookmark?.PageName;
             return bookmark != null;
         }
 
         public void AddorReplace(string path, string bookmarkPageName, NormalizedPagePosition normalizedPosition, int innerPageIndex = 0, bool isFinished = false)
         {
-            var bookmark = _collection.FindOne(x => x.Path == path);
+            var bookmark = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             if (bookmark == null)
             {
                 _collection.Insert(new BookmarkEntry()
@@ -205,21 +206,25 @@ file static class BookmarkCollectionExtensions
 
         public void Remove(string path)
         {
-            _collection.DeleteMany(x => x.Path == path);
+            _collection.DeleteMany(x => x.Path.Equals(path, StringComparison.Ordinal));
         }
 
         public void RemoveAllUnderPath(string path)
         {
-            _collection.DeleteMany(x => path.StartsWith(x.Path));
+            _collection.DeleteMany(x => path.StartsWith(x.Path, StringComparison.Ordinal));
         }
 
-        public void FolderChanged(string oldPath, string newPath)
+        public void PathChanged(string oldPath, string newPath)
         {
-            var bookmarkEntries = _collection.Find(x => x.Path.StartsWith(oldPath)).ToList();
+            StringBuilder sb = new();
+            var bookmarkEntries = _collection.Find(x => x.Path.StartsWith(oldPath, StringComparison.Ordinal)).ToList();
             foreach (var entry in bookmarkEntries)
             {
                 var prevPath = entry.Path;
-                entry.Path = entry.Path.Replace(oldPath, newPath);
+                sb.Clear();
+                sb.Append(entry.Path);
+                sb.Replace(oldPath, newPath);
+                entry.Path = sb.ToString();
                 _collection.Update(entry);
                 Debug.WriteLine($"Bookmark path {prevPath} ===> {entry.Path}");
             }
@@ -227,7 +232,7 @@ file static class BookmarkCollectionExtensions
 
         internal BookmarkEntry GetEnsureEntryByPath(string path)
         {
-            var entry = _collection.FindOne(x => x.Path == path);
+            var entry = _collection.FindOne(x => x.Path.Equals(path, StringComparison.Ordinal));
             if (entry == null)
             {
                 entry = new BookmarkEntry() { Path = path };

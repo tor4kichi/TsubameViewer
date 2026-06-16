@@ -12,6 +12,7 @@ using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
+using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.SourceFolders;
 using Windows.Storage;
 using Windows.UI.Xaml.Media;
@@ -69,6 +70,7 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                 {
                     await item.DeleteAsync(StorageDeleteOption.Default);
                     _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+                    _messenger.Send(new StroageItemAccessRemovedMessage(item.Path));                    
                 }
                 catch (FileNotFoundException)
                 {
@@ -120,6 +122,7 @@ public sealed class FileDeleteCommand : ImageSourceCommandBase
                     foreach (var deleted in imageSources)
                     {
                         _messenger.Send(new StorageItemNotFoundMessage(deleted.Path));
+                        _messenger.Send(new StroageItemAccessRemovedMessage(deleted.Path));
                     }
                 }
                 catch (FileNotFoundException)

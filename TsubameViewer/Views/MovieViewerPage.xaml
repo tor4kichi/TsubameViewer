@@ -527,7 +527,9 @@
                   Margin="0 8 0 24"
                   FlowDirection="LeftToRight"
                   AccessKey="B"
-                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}">
+                  IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
+                  KeyboardAcceleratorPlacementMode="Hidden"
+                  KeyTipPlacementMode="Hidden">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>

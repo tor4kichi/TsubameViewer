@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using DryIoc.FastExpressionCompiler.LightExpression;
 using I18NPortable;
 using Microsoft.Toolkit.Uwp;
 using Microsoft.Toolkit.Uwp.UI;
@@ -17,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -24,6 +26,7 @@ using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models.Albam;
 using TsubameViewer.Core.Models.FolderItemListing;
+using TsubameViewer.Core.Models.Maintenance;
 using TsubameViewer.Core.Models.Navigation;
 using TsubameViewer.Helpers;
 using TsubameViewer.ViewModels;
@@ -803,14 +806,21 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         if (hostFolder == null) { return; }
         if (_vm.Selection.SelectedItems is not { } items || items.Count == 0) { return; }
 
+
         await MoveItemsToAsync(hostFolder, items.Select(x => x.Item.StorageItem), default);
         _messenger.SendShowTextNotificationMessage(items.Count == 1
             ? "MoveToFolder_Completed_Single".Translate((items[0]).Name, hostFolder.Name)
             : "MoveToFolder_Completed_Multi".Translate(items.Count, hostFolder.Name));
 
+        StringBuilder sb = new StringBuilder();
         foreach (var item in items.Cast<IStorageItemViewModel>())
         {
             _messenger.Send(new StorageItemNotFoundMessage(item.Path));
+            sb.Clear();
+            sb.Append(hostFolder.Path);
+            sb.Append(Path.DirectorySeparatorChar);
+            sb.Append(item.Name);
+            _messenger.Send(new StroageItemMovedOrRenamedMessage(sb.ToString(), item.Path));
         }
 
         _vm.Selection.SelectedItems.Clear();

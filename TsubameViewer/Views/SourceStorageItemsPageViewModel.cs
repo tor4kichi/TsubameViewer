@@ -148,7 +148,7 @@ public sealed class SourceStorageItemsPageViewModel
             }
         });
 
-        _messenger.Register<AccessRemovedValueChangedMessage>(this, (r, m) =>
+        _messenger.Register<StroageItemAccessRemovedMessage>(this, (r, m) =>
         {
             _scheduler.Schedule(() =>
             {
