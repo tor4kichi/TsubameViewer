@@ -14,7 +14,7 @@ public class RangeObservableCollection<T> : ObservableCollection<T>
     /// <summary>
     /// Adds multiple items to the collection and raises a single CollectionChanged event.
     /// </summary>
-    public void AddRange(IEnumerable<T> items)
+    public void AddRange(IEnumerable<T> items, bool ignoreNotify = false)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
 
@@ -25,7 +25,15 @@ public class RangeObservableCollection<T> : ObservableCollection<T>
         }
         _suppressNotification = false;
 
-        // Notify that the collection has changed (Reset means "refresh everything")
+        if (!ignoreNotify)
+        {
+            // Notify that the collection has changed (Reset means "refresh everything")
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+    }
+
+    public void ForceNotifyReset()
+    {
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }
 

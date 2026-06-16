@@ -771,66 +771,73 @@ public sealed partial class FolderListupPageViewModel
                 disposable.Add(d1);
                 _itemsDisposable = disposable;
 
-                using (FileItemsView.DeferRefresh())
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
                 {
-                    IsFavoriteFilteredDisplayEnabled = false;
-                    FolderItems.Clear();
-                    FolderItems.AddRange(col.Context.GetCacheNotImages().Select(entry =>
+                    using (FileItemsView.DeferRefresh())
                     {
-                        return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
-                            _sourceStorageItemsRepository,
-                            _bookmarkManager,
-                            _thumbnailManager,
-                            _albamRepository,
-                            Selection);
-                    }));
+                        IsFavoriteFilteredDisplayEnabled = false;
+                        FolderItems.Clear();
 
-                    if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
-                    {
-                        await col.Context.HandleDiffNotImages(
-                                (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
-                                FileItemsView.DeferRefresh,
-                                cacheImageViewModelFactory,
-                                (IStorageItemViewModel itemVM) => itemVM.Path,
-                                ct);
-                    }
-
-                    IsReadyToFavoriteFilterDisplay = true;
-                }
-            }
-            else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
-            {
-                Guard.IsNotNull(_imageCollectionContext);
-                using (FileItemsView.DeferRefresh())
-                {
-                    IsFavoriteFilteredDisplayEnabled = false;
-                    FolderItems.Clear();
-                    var count = await imageCollectionContext.GetImageFileCountAsync(ct);
-                    FolderItems.AddRange(Enumerable.Range(0, count)
-                        .Select(index =>
+                        FolderItems.AddRange(col.Context.GetCacheNotImages().Select(entry =>
                         {
-                            return new LazyFolderOrArchiveFileViewModel(
-                                _imageCollectionContext,
-                                index,
-                                SelectedFileSortType,
-                                _messenger,
+                            return new LazyCacheFolderOrArchiveFileViewModel(col, entry, sortType, null, _messenger,
                                 _sourceStorageItemsRepository,
                                 _bookmarkManager,
                                 _thumbnailManager,
                                 _albamRepository,
                                 Selection);
-                        }));
+                        }), true);
 
-                    DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
-                    {
-                        var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
-                        foreach (var itemVM in items.ArraySegment)
+                        if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
-                            await itemVM.EnsureStorageItemAsync(ct);
+                            await col.Context.HandleDiffNotImages(
+                                    (ObservableCollection<IStorageItemViewModel>)FileItemsView.Source,
+                                    FileItemsView.DeferRefresh,
+                                    cacheImageViewModelFactory,
+                                    (IStorageItemViewModel itemVM) => itemVM.Path,
+                                    ct);
                         }
+
                         IsReadyToFavoriteFilterDisplay = true;
-                    }).FireAndForgetSafe();
-                }
+                    }
+                }, ct);
+            }
+            else // pdfやzipなどは構造が固定でIndexアクセスしても安定する
+            {
+                Guard.IsNotNull(_imageCollectionContext);
+                await _messenger.WorkWithBusyWallAsync(async (ct) =>
+                {
+                    using (FileItemsView.DeferRefresh())
+                    {
+                        IsFavoriteFilteredDisplayEnabled = false;
+                        FolderItems.Clear();
+                        var count = await imageCollectionContext.GetImageFileCountAsync(ct);
+                        FolderItems.AddRange(Enumerable.Range(0, count)
+                            .Select(index =>
+                            {
+                                return new LazyFolderOrArchiveFileViewModel(
+                                    _imageCollectionContext,
+                                    index,
+                                    SelectedFileSortType,
+                                    _messenger,
+                                    _sourceStorageItemsRepository,
+                                    _bookmarkManager,
+                                    _thumbnailManager,
+                                    _albamRepository,
+                                    Selection);
+                            }));
+
+                        DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
+                        {
+                            var items = FolderItems.AsValueEnumerable().Cast<LazyFolderOrArchiveFileViewModel>().ToArrayPool();
+                            foreach (var itemVM in items.ArraySegment)
+                            {
+                                await itemVM.EnsureStorageItemAsync(ct);
+                            }
+                            IsReadyToFavoriteFilterDisplay = true;
+                        }).FireAndForgetSafe();
+                    }
+                }, ct);
             }
         }
 
