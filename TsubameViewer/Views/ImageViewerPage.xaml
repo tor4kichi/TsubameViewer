@@ -481,22 +481,21 @@
     <Grid x:Name="IntaractionWall" IsTapEnabled="True" Background="Transparent" />
     
     <!-- ボタン類 -->
-    <StackPanel x:Name="ButtonsContainer" 
+    <Grid x:Name="ButtonsContainer" 
                 Background="{ThemeResource SystemChromeMediumHighColor}"  
                 Grid.ColumnSpan="3"
                 VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
                 IsHitTestVisible="True"
                 CornerRadius="8"
-                Orientation="Horizontal"
                 Padding="4 4"
                 Margin="0 48 0 0"
-                Spacing="4"             
+                Width="480"
                 Windows10version1903:Translation="0, 0, 16"
                 >
-      <Windows10version1903:StackPanel.Shadow>
+      <Windows10version1903:UIElement.Shadow>
         <Windows10version1903:ThemeShadow  />
-      </Windows10version1903:StackPanel.Shadow>
+      </Windows10version1903:UIElement.Shadow>
 
       <animation:Implicit.ShowAnimations>
         <animation:TranslationAnimation To="0, 0" EasingType="Cubic" Duration="0:0:0.175" />
@@ -505,20 +504,28 @@
         <animation:TranslationAnimation To="0, -48" EasingType="Cubic" Duration="0:0:0.125" />
       </animation:Implicit.HideAnimations>
 
-      <StackPanel.Resources>
+      <Grid.Resources>
         <Style TargetType="Button">
           <Setter Property="Height" Value="40" />
-          <Setter Property="Width" Value="40" />
+          <Setter Property="Width" Value="48" />
           <Setter Property="Padding" Value="0" />
           <Setter Property="CornerRadius" Value="4" />
           <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness"
+                  Value="1" />
+          <Setter Property="BorderBrush"
+                  Value="{ThemeResource SystemBaseLowColor}" />
         </Style>
         <Style TargetType="ToggleButton">
           <Setter Property="Height" Value="40" />
-          <Setter Property="Width" Value="40" />
+          <Setter Property="Width" Value="48" />
           <Setter Property="Padding" Value="0" />
           <Setter Property="CornerRadius" Value="4" />
           <Setter Property="Background" Value="Transparent" />
+          <Setter Property="BorderThickness"
+                  Value="1" />
+          <Setter Property="BorderBrush"
+                  Value="{ThemeResource SystemBaseLowColor}" />
         </Style>
         <Style TargetType="SymbolIcon">
           <Setter Property="RenderTransformOrigin" Value="0.5, 0.5" />
@@ -528,10 +535,11 @@
             </Setter.Value>
           </Setter>
         </Style>
-      </StackPanel.Resources>
+      </Grid.Resources>
 
       <Button x:Name="BottomUIBackNavigationButton" Click="ForceClosePage"
               AccessKey="Q"
+              HorizontalAlignment="Left"
               >
         <SymbolIcon Symbol="Clear" />
 
@@ -540,83 +548,93 @@
         </Button.KeyboardAccelerators>
       </Button>
 
-      <Border Width="12" />
+      <StackPanel Orientation="Horizontal" Spacing="4"
+                  HorizontalAlignment="Right">
 
-      <Button x:Name="ZoomResetButton"
-              Command="{x:Bind ZoomResetCommand}" AccessKey="R"
-              ToolTipService.ToolTip="{i18nExt:Localize Key=ZoomReset}">
-        <SymbolIcon Symbol="Zoom" />
-      </Button>
+        <Button x:Name="ZoomResetButton"
+                Command="{x:Bind ZoomResetCommand}"
+                AccessKey="R"
+                ToolTipService.ToolTip="{i18nExt:Localize Key=ZoomReset}">
+          <SymbolIcon Symbol="Zoom" />
+        </Button>
 
-      <Button x:Name="ZoomInButton" Command="{StaticResource ZoomInUICommand}" AccessKey="T">
-        <SymbolIcon Symbol="ZoomIn" />
-      </Button>
+        <Button x:Name="ZoomInButton"
+                Command="{StaticResource ZoomInUICommand}"
+                AccessKey="T">
+          <SymbolIcon Symbol="ZoomIn" />
+        </Button>
 
-      <Button x:Name="ZoomOutButton" Command="{StaticResource ZoomOutUICommand}" AccessKey="Y">
-        <SymbolIcon Symbol="ZoomOut" />
-      </Button>
+        <Button x:Name="ZoomOutButton"
+                Command="{StaticResource ZoomOutUICommand}"
+                AccessKey="Y">
+          <SymbolIcon Symbol="ZoomOut" />
+        </Button>
 
-      <Button x:Name="DoubleViewCorrectButton" 
-              Command="{StaticResource DoubleViewCorrectUICommand}"
-              IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
-              Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
-              AccessKey="U"
-              >
-        <Button.Content>
-          <Grid>
-            <fluentIcon:FluentSymbolIcon Symbol="BookPulse24">
+        <Button x:Name="DoubleViewCorrectButton"
+                Command="{StaticResource DoubleViewCorrectUICommand}"
+                IsHitTestVisible="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
+                Foreground="{ThemeResource ButtonDisabledForegroundThemeBrush}"
+                AccessKey="U">
+          <Button.Content>
+            <Grid>
+              <fluentIcon:FluentSymbolIcon Symbol="BookPulse24">
+                <fluentIcon:FluentSymbolIcon.RenderTransform>
+                  <TranslateTransform X="-2"
+                                      Y="-1" />
+                </fluentIcon:FluentSymbolIcon.RenderTransform>
+              </fluentIcon:FluentSymbolIcon>
+            </Grid>
+          </Button.Content>
+
+        </Button>
+
+        <ToggleButton x:Name="DoubleViewToggleButton"
+                      IsChecked="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}"
+                      Command="{StaticResource DoubleViewToggleUICommand}"
+                      AccessKey="I">
+          <ToggleButton.Content>
+            <fluentIcon:FluentSymbolIcon Symbol="BookOpen24"
+                                         Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
               <fluentIcon:FluentSymbolIcon.RenderTransform>
-                <TranslateTransform X="-2" Y="-1"/>
+                <TranslateTransform X="-1"
+                                    Y="-1" />
               </fluentIcon:FluentSymbolIcon.RenderTransform>
             </fluentIcon:FluentSymbolIcon>
-          </Grid>
-        </Button.Content>
-        
-      </Button>
+          </ToggleButton.Content>
+        </ToggleButton>
 
-      <ToggleButton x:Name="DoubleViewToggleButton" IsChecked="{x:Bind _vm.IsDoubleViewEnabled, Mode=OneWay}" 
-                    Command="{StaticResource DoubleViewToggleUICommand}"  
-                    AccessKey="I"
-                    >
-        <ToggleButton.Content>
-          <fluentIcon:FluentSymbolIcon Symbol="BookOpen24" Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
-            <fluentIcon:FluentSymbolIcon.RenderTransform>
-              <TranslateTransform X="-1" Y="-1"/>
-            </fluentIcon:FluentSymbolIcon.RenderTransform>
-          </fluentIcon:FluentSymbolIcon>
-        </ToggleButton.Content>
-      </ToggleButton>
+        <ToggleButton x:Name="LeftBindingToggleButton"
+                      IsChecked="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}"
+                      Command="{StaticResource LeftBindingToggleUICommand}"
+                      AccessKey="O">
+          <ToggleButton.Content>
+            <fluentIcon:FluentSymbolIcon Symbol="ArrowImport20Filled">
+              <fluentIcon:FluentSymbolIcon.RenderTransform>
+                <TranslateTransform X="-1"
+                                    Y="-1" />
+              </fluentIcon:FluentSymbolIcon.RenderTransform>
+            </fluentIcon:FluentSymbolIcon>
+          </ToggleButton.Content>
+        </ToggleButton>
 
-      <ToggleButton x:Name="LeftBindingToggleButton" IsChecked="{x:Bind _vm.IsLeftBindingEnabled, Mode=OneWay}" 
-                    Command="{StaticResource LeftBindingToggleUICommand}"
-                    AccessKey="O"
-                    >
-        <ToggleButton.Content>
-          <fluentIcon:FluentSymbolIcon Symbol="ArrowImport20Filled">
-            <fluentIcon:FluentSymbolIcon.RenderTransform>
-              <TranslateTransform X="-1" Y="-1"/>
-            </fluentIcon:FluentSymbolIcon.RenderTransform>
-          </fluentIcon:FluentSymbolIcon>
-        </ToggleButton.Content>
-      </ToggleButton>
-      
-      <Button x:Name="ImagesSortButton" Flyout="{StaticResource PageFlyout}" 
-              AccessKey="P"
-              >
-        <Button.Content>
-          <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending24" />
-        </Button.Content>
-      </Button>
+        <Button x:Name="ImagesSortButton"
+                Flyout="{StaticResource PageFlyout}"
+                AccessKey="P">
+          <Button.Content>
+            <fluentIcon:FluentSymbolIcon Symbol="TextSortAscending20" />
+          </Button.Content>
+        </Button>
 
-      
-      <Button x:Name="OthersSettingsButton" Flyout="{StaticResource OtherSettingsFlyout}"
-              XYFocusLeft="{x:Bind ImagesSortButton}"
-              Visibility="Collapsed"
-                  >
-        <SymbolIcon Symbol="More" />
-      </Button>
+        <Button x:Name="OthersSettingsButton"
+                Flyout="{StaticResource OtherSettingsFlyout}"
+                XYFocusLeft="{x:Bind ImagesSortButton}"
+                Visibility="Collapsed">
+          <SymbolIcon Symbol="More" />
+        </Button>
+      </StackPanel>
 
-    </StackPanel>
+
+    </Grid>
 
 
 
@@ -624,8 +642,7 @@
               Grid.ColumnSpan="3"
               VerticalAlignment="Bottom"
               HorizontalAlignment="Center"
-            MinWidth="380"
-              MaxWidth="480"
+              Width="480"
               CornerRadius="8"
               Margin="0 0 0 16"
             Windows10version1903:Translation="0, 0, 16"
@@ -886,7 +903,8 @@
                 XYFocusDown="{x:Bind PageFolderNamesSelector}"
                 FlowDirection="RightToLeft"
                 AccessKey="4"
-                >
+                KeyboardAcceleratorPlacementMode="Hidden"
+                KeyTipPlacementMode="Hidden">
           <i:Interaction.Behaviors>
             <core:EventTriggerBehavior EventName="ValueChanged">
               <core:InvokeCommandAction Command="{Binding ChangePageCommand}" InputConverter="{StaticResource SliderValueChangedEventArgsConverter}" />
