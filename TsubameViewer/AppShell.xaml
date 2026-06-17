@@ -29,9 +29,13 @@
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="NavigationViewTopPaneBackground"
                            Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground"
+                           Color="{ThemeResource SystemChromeMediumColor}" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="NavigationViewTopPaneBackground"
+                           Color="{ThemeResource SystemChromeMediumColor}" />
+          <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground"
                            Color="{ThemeResource SystemChromeMediumColor}" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
@@ -189,7 +193,19 @@
         <TranslateTransform />
       </UIElement.RenderTransform>
       <muxc:NavigationView.PaneHeader>
-        <Border x:Name="NavigationViewHeader" />
+        <Border x:Name="NavigationViewHeader">
+          <Border Translation="0, 0, 8"
+                  VerticalAlignment="Top"
+                  Height="16"
+                  Background="Transparent">
+            <Border.RenderTransform>
+              <TranslateTransform Y="-19" />
+            </Border.RenderTransform>
+            <Border.Shadow>
+              <ThemeShadow />
+            </Border.Shadow>
+          </Border>
+        </Border>
       </muxc:NavigationView.PaneHeader>
       
       <i:Interaction.Behaviors>
@@ -199,13 +215,37 @@
         </core:EventTriggerBehavior>
         -->
       </i:Interaction.Behaviors>
-      
 
-      <Frame x:Name="ContentFrame"
-             DataContext="{x:Null}"
-             CacheSize="5"
-             XYFocusDownNavigationStrategy="RectilinearDistance">
-      </Frame>
+      <Grid>
+        <Frame x:Name="ContentFrame"
+               DataContext="{x:Null}"
+               CacheSize="5"
+               XYFocusDownNavigationStrategy="RectilinearDistance">
+        </Frame>
+        <Border Translation="0, 0, 8"
+                VerticalAlignment="Top"
+                Height="16"
+                Background="Transparent">
+          <Border.RenderTransform>
+            <TranslateTransform Y="-17" />
+          </Border.RenderTransform>
+          <Border.Shadow>
+            <ThemeShadow />
+          </Border.Shadow>
+        </Border>
+        <Border Translation="0, 0, 8"
+                HorizontalAlignment="Left"
+                Width="32"
+                Background="Transparent">
+          <Border.RenderTransform>
+            <TranslateTransform X="-32" />
+          </Border.RenderTransform>
+          <Border.Shadow>
+            <ThemeShadow />
+          </Border.Shadow>
+        </Border>
+
+      </Grid>
     </muxc:NavigationView>
 
     <Frame x:Name="ViewerFrame"
@@ -435,7 +475,7 @@
       </Button>
     </StackPanel>
     -->
-
+    
     <Grid Background="{ThemeResource SystemAltMediumColor}"
           x:Name="PackageUpdateDialogBGWall"
           Visibility="Collapsed"
