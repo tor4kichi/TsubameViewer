@@ -281,9 +281,9 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
-        await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
         if (Context.GetEntryFromIndex(index, sort) is not { } entry
-            || await Folder.GetFileAsync(entry.GetFileName()) is not { } file)
+            || await Folder.GetFileAsync(entry.Name) is not { } file)
         {
             throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
         }
@@ -337,7 +337,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
-        await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
 
         //if (_lastFileSortType != sort)
         //{
@@ -460,11 +460,11 @@ public sealed class FolderStructureCacheContext : IDisposable
         var folderItems = _repo.FindFolderImages(Folder.Path);
         return sort switch
         {
-            FileSortType.None => folderItems.OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
-            FileSortType.TitleAscending => folderItems.OrderBy(x => x.GetFileName()).ElementAtOrDefault(index),
-            FileSortType.TitleDecending => folderItems.OrderByDescending(x => x.GetFileName()).ElementAtOrDefault(index),
-            FileSortType.UpdateTimeAscending => folderItems.OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
-            FileSortType.UpdateTimeDecending => folderItems.OrderByDescending(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.Name).ElementAtOrDefault(index),
+            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.Name).ElementAtOrDefault(index),
+            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).ElementAtOrDefault(index),
             _ => throw new InvalidOperationException(),
         };
     }
@@ -474,11 +474,11 @@ public sealed class FolderStructureCacheContext : IDisposable
         var folderItems = _repo.FindFolderImages(Folder.Path);
         return sort switch
         {
-            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
+            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.Name == key).Index,
             _ => throw new InvalidOperationException(),
         };
     }
@@ -722,13 +722,17 @@ public sealed class FolderStructureFileEntry
     [BsonId]
     public string Path { get; set; } = "";
 
-    public string ParentFolderPath { get; set; } = "";
+    //public string ParentFolderPath { get; set; } = "";
+
+    string? _parentFolderPath;
+    public string ParentFolderPath => _parentFolderPath ??= System.IO.Path.GetDirectoryName(Path);
+
+    string? _fileName;
+    public string Name => _fileName ??= System.IO.Path.GetFileName(Path);
 
     public DateTimeOffset DateCreated { get; set; }
 
     public bool IsImage { get; set; } = true;
-
-    public string GetFileName() => System.IO.Path.GetFileName(Path);
 }
 
 public sealed class FolderStructureFilesRepository : IDisposable
@@ -752,6 +756,7 @@ public sealed class FolderStructureFilesRepository : IDisposable
     {
         _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();
         _collection.EnsureIndex(x => x.ParentFolderPath);
+        _collection.EnsureIndex(x => x.Name);
         _collection.EnsureIndex(x => x.DateCreated);
         _collection.EnsureIndex(x => x.IsImage);        
         _tempLiteDatabase = tempLiteDatabase;
@@ -772,11 +777,11 @@ public sealed class FolderStructureFilesRepository : IDisposable
         var entry = new FolderStructureFileEntry()
         {
             Path = file.Path,
-            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
             DateCreated = file.DateCreated,
             IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
         };
         _collection.Upsert(entry);
+        ClearCache();
         return entry;
     }
 
@@ -785,49 +790,81 @@ public sealed class FolderStructureFilesRepository : IDisposable
         _collection.InsertBulk(items.Select(file => new FolderStructureFileEntry()
         {
             Path = file.Path,
-            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
             DateCreated = file.DateCreated,
             IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
         }));
+        ClearCache();
     }
 
 
+    void ClearCache()
+    {
+        _folderImagesCache?.Dispose();
+        _folderImagesCache = null;
+
+        _folderNotImagesCache?.Dispose();
+        _folderNotImagesCache = null;
+    }
+    PooledArray<FolderStructureFileEntry>? _folderImagesCache;
+    string? _cachedImagesfolderPath;
     public IEnumerable<FolderStructureFileEntry> FindFolderImages(string folderPath)
     {
-        return _collection.Find(x => x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
+        if (_folderImagesCache == null || _cachedImagesfolderPath == null || !folderPath.Equals(_cachedImagesfolderPath, StringComparison.Ordinal))
+        {
+            _folderImagesCache?.Dispose();
+            _folderImagesCache = _collection.Find(x => x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+            _cachedImagesfolderPath = folderPath;
+        }
+
+        return _folderImagesCache.Value.ArraySegment;
     }
 
+
+    PooledArray<FolderStructureFileEntry>? _folderNotImagesCache;
+    string? _cachedNotImagesfolderPath;
     public IEnumerable<FolderStructureFileEntry> FindFolderNotImages(string folderPath)
     {
-        return _collection.Find(x => !x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
+        if (_folderNotImagesCache == null || _cachedNotImagesfolderPath == null || !folderPath.Equals(_cachedNotImagesfolderPath, StringComparison.Ordinal))
+        {
+            _folderNotImagesCache?.Dispose();
+            _folderNotImagesCache = _collection.Find(x => !x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+        }
+
+        return _folderNotImagesCache.Value.ArraySegment;
     }
 
     public int GetFolderImagesCount(string folderPath)
     {
-        return _collection.Count(x => x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
+        FindFolderImages(folderPath);
+        return _folderImagesCache!.Value.Size;
     }
 
     public int GetFolderNotImagesCount(string folderPath)
     {
-        return _collection.Count(x => !x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal));
+        FindFolderNotImages(folderPath);
+        return _folderNotImagesCache!.Value.Size;
     }
 
     public void FolderRemoved(string folderPath)
     {
         _collection.DeleteMany(x => folderPath.StartsWith(x.ParentFolderPath, StringComparison.Ordinal));
+        ClearCache();
     }
     public void FileRemoved(FolderStructureFileEntry entry)
     {
         _collection.Delete(entry.Path);
+        ClearCache();
     }
 
     public void FileRemoved(string path)
     {
         _collection.Delete(path);
+        ClearCache();
     }
 
     public void Dispose()
     {
+        ClearCache();
         _tempLiteDatabase.Dispose();
     }
 
@@ -846,7 +883,6 @@ public sealed class FolderStructureFilesRepository : IDisposable
                 sb.Append(entry.Path);
                 sb.Replace(oldPath, newPath);
                 entry.Path = sb.ToString();
-                entry.ParentFolderPath = newPath;
                 _collection.Upsert(entry);
                 Debug.WriteLine($"ImageList Path changed: {entry.Path}");
             }
@@ -859,10 +895,11 @@ public sealed class FolderStructureFilesRepository : IDisposable
             _collection.Delete(entry.Path);
             Debug.WriteLine($"ImageList Path changing: {entry.Path}");
             entry.Path = newPath;
-            entry.ParentFolderPath = Path.GetDirectoryName(newPath);
             _collection.Upsert(entry);
             Debug.WriteLine($"ImageList Path changed: {entry.Path}");
         }
+
+        ClearCache();
     }
 }
 

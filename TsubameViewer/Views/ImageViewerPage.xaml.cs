@@ -272,7 +272,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
             if (isConnectedAnimationDone is false)
             {
                 await WaitImageLoadingAsync(navigationCt);
-                AnimationBuilder.Create()
+                await AnimationBuilder.Create()
                    .CenterPoint(ImageItemsControl_0.ActualSize * 0.5f, duration: TimeSpan.FromMilliseconds(1))
                    .Scale()
                        .TimedKeyFrames(ke =>
@@ -281,7 +281,7 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
                            ke.KeyFrame(TimeSpan.FromMilliseconds(150), new(1.0f));
                        })
                    .Opacity(1.0, delay: TimeSpan.FromMilliseconds(10), duration: TimeSpan.FromMilliseconds(250))
-                   .Start(ImageItemsControl_0, navigationCt);
+                   .StartAsync(ImageItemsControl_0, navigationCt);
             }
         }
         catch (OperationCanceledException) { }

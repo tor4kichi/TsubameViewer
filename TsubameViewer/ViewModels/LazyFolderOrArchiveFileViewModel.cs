@@ -392,7 +392,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
         }
         else
         {
-            _name = _cacheEntry.GetFileName();
+            _name = _cacheEntry.Name;
             _path = _cacheEntry.Path;
             _dateCreated = _cacheEntry.DateCreated;
             _type = SupportedFileTypesHelper.FileExtensionToStorageItemType(_cacheEntry.Path);
@@ -517,7 +517,7 @@ public sealed partial class LazyCacheFolderOrArchiveFileViewModel : ObservableOb
             IStorageItem storageItem;
             try
             {
-                storageItem = await _imageCollectionContext.Folder.GetItemAsync(_cacheEntry.GetFileName());
+                storageItem = await _imageCollectionContext.Folder.GetItemAsync(_cacheEntry.Name);
             }
             catch (DirectoryNotFoundException)
             {

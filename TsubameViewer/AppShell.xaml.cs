@@ -500,7 +500,7 @@ public sealed partial class AppShell : UserControl
             {
                 frame.Visibility = Visibility.Visible;
                 SetTitleContentForPrimary(frame);
-                MyNavigationView.IsEnabled = false;
+                MyNavigationView.Visibility = Visibility.Collapsed;
                 if (e.Content is Page page)
                 {
                     page.Focus(FocusState.Programmatic);
@@ -509,7 +509,7 @@ public sealed partial class AppShell : UserControl
             else
             {
                 frame.Visibility = Visibility.Collapsed;
-                MyNavigationView.IsEnabled = true;
+                MyNavigationView.Visibility = Visibility.Visible;
                 if (ContentFrame.Content == null)
                 {
                     await _messenger.NavigateAsync(HomePageName);
