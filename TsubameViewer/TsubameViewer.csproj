@@ -158,6 +158,11 @@
     <Compile Include="Helpers\ApplicationLifecycleObservableExtensions.cs" />
     <Compile Include="Services\SecondaryTileManager.cs" />
     <Compile Include="Services\SupportedImageCodec.cs" />
+    <Compile Include="Strings\ja-JP\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resw</DependentUpon>
+    </Compile>
     <Compile Include="ViewModels\Albam.Commands\AlbamCreateCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\AlbamDeleteCommand.cs" />
     <Compile Include="ViewModels\Albam.Commands\AlbamEditCommand.cs" />
@@ -391,10 +396,13 @@
     <None Include="Package.StoreAssociation.xml" />
     <EmbeddedResource Include="Locales\fr-FR.txt" />
     <Content Include="Properties\Default.rd.xml" />
-    <PRIResource Include="Strings\ja-jp\Resources.resw" />
-    <PRIResource Include="Strings\zh-chs\Resources.resw" />
+    <PRIResource Include="Strings\ja-JP\Resources.resw">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </PRIResource>
+    <PRIResource Include="Strings\zh-CHS\Resources.resw" />
     <PRIResource Include="Strings\fr-FR\Resources.resw" />
-    <PRIResource Include="Strings\en-us\Resources.resw" />
+    <PRIResource Include="Strings\en-US\Resources.resw" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Diagnostics">

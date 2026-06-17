@@ -615,6 +615,34 @@
         </VisualState>
       </VisualStateGroup>
 
+      <!-- サイドメニュー表示時に戻るボタン・アプリアイコンのアラインをサイドペインとコンテンツエリアの境界に合わせる -->
+      <VisualStateGroup>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <StateTrigger IsActive="{x:Bind _vm.ApplicationSettings.IsAppMenuShowWithLeft, Mode=OneWay, Converter={StaticResource BoolNegationConverter}}" />
+            <wst:EqualsStateTrigger Value="{Binding ElementName=ViewerFrame, Path=Visibility}">
+              <wst:EqualsStateTrigger.EqualTo>
+                <Visibility>Visible</Visibility>
+              </wst:EqualsStateTrigger.EqualTo>
+            </wst:EqualsStateTrigger>
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="920" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="GoBackButton.Margin"
+                    Value="144 0 8 0" />
+          </VisualState.Setters>
+        </VisualState>
+        <VisualState>
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+        </VisualState>
+      </VisualStateGroup>
+
       <VisualStateGroup>
         <VisualState>
           <VisualState.StateTriggers>

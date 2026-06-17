@@ -23,7 +23,7 @@ public record FolderAndArchiveDisplaySettingEntry
 
     public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
 
-    public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Viewer;
+    public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Listup;
 }
 
 public record FolderAndArchiveChildFileDisplaySettingEntry

@@ -49,7 +49,7 @@ public sealed class FolderContainerTypeManager
     {
         FolderContainerType folderContainerType = FolderContainerType.Other;
         if (await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, 
-            Enumerable.Concat(SupportedFileTypesHelper.SupportedArchiveFileExtensions, SupportedFileTypesHelper.SupportedEBookFileExtensions))
+            [..SupportedFileTypesHelper.SupportedArchiveFileExtensions, ..SupportedFileTypesHelper.SupportedEBookFileExtensions, ..SupportedFileTypesHelper.SupportedMovieFileExtensions])
             { FolderDepth = FolderDepth.Shallow }).GetItemCountAsync().AsTask(ct) > 0
            )
         {
