@@ -786,7 +786,7 @@ public sealed partial class FolderListupPageViewModel
                                 _thumbnailManager,
                                 _albamRepository,
                                 Selection);
-                        }), true);
+                        }));
 
                         if (await col.Context.CheckIsNotSameNotImagesCacheCountAndExactCountAsync(ct))
                         {
