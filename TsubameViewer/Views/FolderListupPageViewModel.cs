@@ -797,6 +797,7 @@ public sealed partial class FolderListupPageViewModel
                                     (IStorageItemViewModel itemVM) => itemVM.Path,
                                     ct);
                         }
+                        FileItemsView.RefreshFilter();
 
                         IsReadyToFavoriteFilterDisplay = true;
                     }
@@ -826,6 +827,7 @@ public sealed partial class FolderListupPageViewModel
                                     _albamRepository,
                                     Selection);
                             }));
+                        FileItemsView.RefreshFilter();
 
                         DispatcherQueue.GetForCurrentThread().EnqueueAsync(async () =>
                         {
@@ -900,19 +902,7 @@ public sealed partial class FolderListupPageViewModel
 
         using (await _refreshLock.LockAsync(ct))
         {
-            if (IsIndexAccessListingEnabled)
-            {
-                _displaySettingsByPathRepository.SetFolderAndArchiveSettings(
-                    _currentImageSource.Path,
-                    fileSort
-                    );
-
-                await ReloadItemsAsync(_imageCollectionContext, ct);                
-            }
-            else
-            {
-                SetSortAsyncUnsafe(fileSort, _currentImageSource.Path);
-            }
+            SetSortAsyncUnsafe(fileSort, _currentImageSource.Path);
         }
     }
 
