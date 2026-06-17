@@ -85,7 +85,12 @@ public sealed class OpenFolderItemCommand : CommandBase
             await imageSource.ThrowIfImageSourceStorageItemNotFound(_messenger);
 
             var type = SupportedFileTypesHelper.StorageItemToStorageItemTypes(imageSource);
-            if (type is StorageItemTypes.Image or StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder or StorageItemTypes.AlbamImage)
+            if (type is StorageItemTypes.Image or StorageItemTypes.AlbamImage)
+            {
+                var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
+            }
+            else if (type is StorageItemTypes.Archive or StorageItemTypes.ArchiveFolder)
             {
                 var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                 var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
@@ -114,7 +119,7 @@ public sealed class OpenFolderItemCommand : CommandBase
                 }                                        
                 else
                 {
-                    if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode == DefaultFolderOrArchiveOpenMode.Listup)
+                    if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode is null or DefaultFolderOrArchiveOpenMode.Listup)
                     {
                         var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                         var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
