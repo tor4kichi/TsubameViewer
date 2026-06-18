@@ -149,22 +149,10 @@ public sealed partial class FolderListupPageViewModel
     readonly ThumbnailImageManager _thumbnailManager;        
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     readonly FolderListingSettings _folderListingSettings;
-    readonly BackNavigationCommand _backNavigationCommand;
 
     public ISecondaryTileManager SecondaryTileManager { get; }
-    public OpenPageCommand OpenPageCommand { get; }
-    public OpenListupCommand OpenListupCommand { get; }
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-    public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
-    public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenFolderListupCommand OpenFolderListupCommand { get; }
-    public OpenImageListupCommand OpenImageListupCommand { get; }
 
-    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-    public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
-    public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FileDeleteCommand FileDeleteCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RangeObservableCollection<IStorageItemViewModel> FolderItems { get; private set; }
@@ -178,9 +166,11 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     FileSortType? _selectedChildFileSortType;
     [ObservableProperty]
-    DefaultFolderOrArchiveOpenMode _selectedChildFolderOrArchiveOpenMode;
+    string? _displaySortTypeInheritancePath;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
+
+    readonly FileSortType _defaultFileSortType = FileSortType.UpdateTimeAscending;
 
     public Visibility IsFolderItemIsRawFolderAsVisible(IStorageItemViewModel? itemVM)
     {
@@ -220,19 +210,7 @@ public sealed partial class FolderListupPageViewModel
         ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         FolderListingSettings folderListingSettings,
-        BackNavigationCommand backNavigationCommand,
-        OpenPageCommand openPageCommand,
-        OpenListupCommand openListupCommand,
         OpenFolderItemCommand openFolderItemCommand,
-        OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
-        OpenImageViewerCommand openImageViewerCommand,
-        OpenFolderListupCommand openFolderListupCommand,
-        OpenImageListupCommand openImageListupCommand,
-        OpenWithExplorerCommand openWithExplorerCommand,
-        SecondaryTileAddCommand secondaryTileAddCommand,
-        SecondaryTileRemoveCommand secondaryTileRemoveCommand,
-        ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
         FileDeleteCommand fileDeleteCommand,
         FavoriteToggleCommand favoriteToggleCommand
         )
@@ -247,19 +225,7 @@ public sealed partial class FolderListupPageViewModel
         _thumbnailManager = thumbnailManager;            
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _folderListingSettings = folderListingSettings;
-        _backNavigationCommand = backNavigationCommand;
-        OpenPageCommand = openPageCommand;
-        OpenListupCommand = openListupCommand;
         OpenFolderItemCommand = openFolderItemCommand;
-        OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
-        OpenImageViewerCommand = openImageViewerCommand;
-        OpenFolderListupCommand = openFolderListupCommand;
-        OpenImageListupCommand = openImageListupCommand;
-        OpenWithExplorerCommand = openWithExplorerCommand;
-        SecondaryTileAddCommand = secondaryTileAddCommand;
-        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
-        ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
-        OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FileDeleteCommand = fileDeleteCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
         FolderItems = new RangeObservableCollection<IStorageItemViewModel>();
@@ -274,8 +240,6 @@ public sealed partial class FolderListupPageViewModel
             }
             return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
         };
-
-        SelectedChildFolderOrArchiveOpenMode = DefaultFolderOrArchiveOpenMode.Viewer;
     }
 
     [ObservableProperty]
@@ -528,7 +492,6 @@ public sealed partial class FolderListupPageViewModel
             }
             
             FileDeleteCommand.NotifyCanExecuteChanged();
-            OpenWithExplorerCommand.NotifyCanExecuteChanged();
         });
 
         Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
@@ -556,7 +519,6 @@ public sealed partial class FolderListupPageViewModel
             {
                 SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(count);
                 FileDeleteCommand.NotifyCanExecuteChanged();
-                OpenWithExplorerCommand.NotifyCanExecuteChanged();
             })
             .AddTo(ref db);
 
@@ -606,11 +568,21 @@ public sealed partial class FolderListupPageViewModel
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
         if (settings != null)
         {
-            SelectedFileSortType = settings.Sort;
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType = settings.Sort;            
+            SetSortAsyncUnsafe(SelectedFileSortType, path);
+        }
+        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+            && parentSort.ChildItemDefaultSort != null
+            )
+        {
+            DisplaySortTypeInheritancePath = parentSort.Path;
+            SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
             SetSortAsyncUnsafe(SelectedFileSortType, path);
         }
         else
         {
+            DisplaySortTypeInheritancePath = null; 
             if (_currentImageSource.StorageItem is StorageFolder)
             {
                 SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -623,8 +595,7 @@ public sealed partial class FolderListupPageViewModel
             }
         }
 
-        SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFolderOrArchiveOpenMode = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path)?.DefaultOpenMode ?? DefaultFolderOrArchiveOpenMode.Viewer;
+        SelectedChildFileSortType = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path)?.ChildItemDefaultSort;
 
         try
         {
@@ -633,7 +604,7 @@ public sealed partial class FolderListupPageViewModel
         catch (OperationCanceledException)
         {
             ClearContent();
-            (_backNavigationCommand as ICommand).Execute(null);
+            _messenger.Send<BackNavigationRequestMessage>();
         }
     }
 
@@ -655,7 +626,7 @@ public sealed partial class FolderListupPageViewModel
 
         string path = albam._id.ToString();
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFileSortType  = FileSortType.None;
+        SelectedChildFileSortType = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         SetSortAsyncUnsafe(SelectedFileSortType, path);        
 
@@ -674,7 +645,7 @@ public sealed partial class FolderListupPageViewModel
         catch (OperationCanceledException)
         {
             ClearContent();
-            (_backNavigationCommand as ICommand).Execute(null);
+            _messenger.Send<BackNavigationRequestMessage>();
         }
     }
 
@@ -891,7 +862,44 @@ public sealed partial class FolderListupPageViewModel
 
         if (sortType.HasValue)
         {
+            DisplaySortTypeInheritancePath = null;
             SelectedFileSortType = sortType.Value;
+            if (_currentImageSource.StorageItem is IStorageItem)
+            {
+                _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, SelectedFileSortType);
+            }
+            else if (_currentImageSource is AlbamImageSource albamImageSource)
+            {
+                _displaySettingsByPathRepository.SetAlbamSettings(albamImageSource.AlbamId, SelectedFileSortType);
+            }
+            else if (_currentImageSource is AlbamItemImageSource albamItemImageSource)
+            {
+                _displaySettingsByPathRepository.SetAlbamSettings(albamItemImageSource.AlbamId, SelectedFileSortType);
+            }
+        }
+        else
+        {
+            if (_currentImageSource.StorageItem is IStorageItem)
+            {
+                _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentImageSource.Path);
+                if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+                && parentSort.ChildItemDefaultSort != null
+                )
+                {
+                    DisplaySortTypeInheritancePath = parentSort.Path;
+                    SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
+                }
+                else
+                {
+                    DisplaySortTypeInheritancePath = null;
+                    SelectedFileSortType = _defaultFileSortType;
+                }
+            }
+            else if (_currentImageSource is AlbamImageSource albamImageSource)
+            {
+                _displaySettingsByPathRepository.ClearAlbamSettings(albamImageSource.AlbamId);
+                SelectedFileSortType = _defaultFileSortType;
+            }
         }
     }
 
@@ -925,18 +933,6 @@ public sealed partial class FolderListupPageViewModel
     }
 
     [RelayCommand]
-    void ChangeChildFolderOrArchiveOpenMode(object mode)
-    {
-        if (mode is DefaultFolderOrArchiveOpenMode openMode)
-        {
-            Guard.IsNotNull(_currentImageSource);
-
-            SelectedChildFolderOrArchiveOpenMode = openMode;
-            _displaySettingsByPathRepository.SetChildFolderOrArchiveOpenModeParentSettings(_currentImageSource.Path, openMode);
-        }
-    }
-
-    [RelayCommand]
     void ChangeChildFileSort(object sort)
     {
         if (_currentImageSource == null) { throw new NullReferenceException(nameof(_currentImageSource.Path)); }
@@ -952,7 +948,7 @@ public sealed partial class FolderListupPageViewModel
         }
 
         SelectedChildFileSortType = sortType;
-        _displaySettingsByPathRepository.SetFileParentSettings(_currentImageSource.Path, sortType);
+        _displaySettingsByPathRepository.SetParentFolderImagesSortSettings(_currentImageSource.Path, sortType);
     }
 
     #endregion
@@ -961,6 +957,15 @@ public sealed partial class FolderListupPageViewModel
     public StorageItemViewModel ToStorageItemVM(IStorageItem item)
     {
         return new StorageItemViewModel(new StorageItemImageSource(item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection);
+    }
+
+
+    public void SetDefaultListupMode()
+    {
+        if (_currentImageSource != null)
+        {
+            _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.Images);
+        }
     }
 }
 

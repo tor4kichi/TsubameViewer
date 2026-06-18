@@ -384,7 +384,7 @@ public sealed class SourceStorageItemsRepository
            token,
            storageItem,
            metadata,
-           TokenListType.MostRecentlyUsedList
+           TokenListType.FutureAccessList
        )));
 
         return token;
@@ -539,7 +539,7 @@ public sealed class SourceStorageItemsRepository
         return _tokenToPathRepository.GetTokenFromPath(path)?.Order ?? -1;
     }
 
-    public async IAsyncEnumerable<(IStorageItem? item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
+    public async IAsyncEnumerable<(IStorageItem item, string token, string metadata)> GetParsistantItems([EnumeratorCancellation] CancellationToken ct = default)
     {
 #if WINDOWS_UWP
         var myItems = StorageApplicationPermissions.FutureAccessList.Entries;
@@ -552,6 +552,8 @@ public sealed class SourceStorageItemsRepository
                 storageItem = await StorageApplicationPermissions.FutureAccessList.GetItemAsync(item.Token);
             }
             catch (FileNotFoundException) { }
+
+            if (storageItem == null) { continue; }
 
             yield return (storageItem, item.Token, item.Metadata);
         }

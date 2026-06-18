@@ -75,25 +75,24 @@
   </Page.Resources>
   <Grid Margin="0 32 0 0">
 
-    <uwpControls:AdaptiveGridView 
-      x:Name="FoldersAdaptiveGridView"
-      StretchContentForSingleRow="False"
-      OneRowModeEnabled="False"
-      ItemsSource="{x:Bind _vm.Folders}" 
-      ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"    
-      ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
-      DesiredWidth="{StaticResource FolderGridViewItemWidth}"            
-      ItemHeight="{StaticResource FolderGridViewItemHeight}"
-      IsItemClickEnabled="True"
-      ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
-      IsSynchronizedWithCurrentItem="False"
-      SelectionMode="None"
-      ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
-      AllowDrop="True"
-      ReorderMode="Enabled"
-      CanReorderItems="True"
-      >
-      
+    <uwpControls:AdaptiveGridView x:Name="FoldersAdaptiveGridView"
+                                  StretchContentForSingleRow="False"
+                                  OneRowModeEnabled="False"
+                                  ItemsSource="{x:Bind _vm.Folders}"
+                                  ItemTemplateSelector="{StaticResource FolderItemTemplateSelector}"
+                                  ItemContainerStyleSelector="{StaticResource FolderItemStyleSelector}"
+                                  DesiredWidth="{StaticResource FolderGridViewItemWidth}"
+                                  ItemHeight="{StaticResource FolderGridViewItemHeight}"
+                                  IsItemClickEnabled="True"
+                                  ItemClickCommand="{x:Bind _vm.OpenFolderItemCommand}"
+                                  IsSynchronizedWithCurrentItem="False"
+                                  SelectionMode="None"
+                                  ContextFlyout="{StaticResource RootPageStorageItemMenuFlyout}"
+                                  AllowDrop="True"
+                                  ReorderMode="Enabled"
+                                  CanReorderItems="True"
+                                  Visibility="{x:Bind _vm.FoldersInitialized, Mode=OneWay, Converter={StaticResource TrueToVisibleConverter}}">
+
       <!-- 表示がチラつくのでGridViewItemのアニメーションを無効にしている -->
       <GridView.ItemContainerTransitions>
         <TransitionCollection />

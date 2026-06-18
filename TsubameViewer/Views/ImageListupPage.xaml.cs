@@ -146,7 +146,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         var selector = (Selector)sender;
         if (selector.IsLoaded && selector.SelectedIndex == 0 && _vm?.CurrentFolderItem != null)
         {
-            _messenger.NavigateAsync(nameof(FolderListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
+            _messenger.Send(new NavigationRequestMessage(nameof(FolderListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item)) { TransitionInfo = new SuppressNavigationTransitionInfo() });
+            _vm.SetDefaultListupMode();
         }
     }
 
@@ -360,7 +361,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
 
                 _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-                _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
             });
 
             try
@@ -688,7 +688,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _vm.Selection.ForceNotifySelectedItems();
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
         }
 
         _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);
@@ -950,17 +949,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
             }
         }
-
-        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
-            .Subscribe(x =>
-            {
-                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
-                {
-                    FolderSelectionSplitView.IsPaneOpen = x;
-                }
-            })
-            .RegisterTo(ct);
-
     }
 
     private void ListView_DragEnter(object sender, DragEventArgs e)

@@ -32,21 +32,22 @@ namespace TsubameViewer.ViewModels.PageNavigation
         public INavigationParameters Parameters { get; }
 
         public bool IsForgetNavigaiton { get; init; } = false;
+        public NavigationTransitionInfo? TransitionInfo { get; set; }
     }
 
     public static class NavigationRequestMessageExtensions
     {
-        static async Task<INavigationResult> NavigateAsync_Internal(IMessenger messenger, NavigationRequestMessage message)
+        public static async Task<INavigationResult> NavigateAsync_Internal(IMessenger messenger, NavigationRequestMessage message)
         {
             return await messenger.Send(message);
         }
 
-        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, bool isForgetNavigation = false)
+        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, bool isForgetNavigation = false, NavigationTransitionInfo? transitionInfo = null)
         {
             return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName) { IsForgetNavigaiton = isForgetNavigation });
         }
 
-        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, INavigationParameters parameters, bool isForgetNavigation = false)
+        public static Task<INavigationResult> NavigateAsync(this IMessenger messenger, string pageName, INavigationParameters parameters, bool isForgetNavigation = false, NavigationTransitionInfo? transitionInfo = null)
         {
             return NavigateAsync_Internal(messenger, new NavigationRequestMessage(pageName, parameters) { IsForgetNavigaiton = isForgetNavigation });
         }

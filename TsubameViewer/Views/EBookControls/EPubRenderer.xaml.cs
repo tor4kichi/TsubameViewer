@@ -900,7 +900,7 @@ return JSON.stringify(Array.from(set));
                 {
                     heroPageHeight = relSizeItemsSpan.ElementAtOrDefault(1);
                 }
-                if (ActualHeight  > relSizeItemsSpan[^1])
+                if (ActualHeight > relSizeItemsSpan[^1])
                 {
                     _innerPageCount = relSizeItemsSpan.Where(x => x == 0 || x > ActualHeight).Count();
                     _onePageScrollSize = heroPageHeight;
@@ -916,6 +916,11 @@ return JSON.stringify(Array.from(set));
 
                     _innerPageScrollPositions.Clear();
                     _innerPageScrollPositions.AddRange(relSizeItemsSpan.Where(x => x == 0 || x > pageRealSize - 8));
+                    if (_innerPageCount == 1 && heroPageHeight != 0 && relSizeItemsSpan[^1] == heroPageHeight)
+                    {
+                        _innerPageCount++;
+                        _innerPageScrollPositions.Add(heroPageHeight);
+                    }
                 }
                 else
                 {

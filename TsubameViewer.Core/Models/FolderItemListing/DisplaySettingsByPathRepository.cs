@@ -16,6 +16,12 @@ public enum DefaultFolderOrArchiveOpenMode
     Listup,
 }
 
+public enum DefaultFolderListupMode
+{
+    FolderOrContents,
+    Images,
+}
+
 public record FolderAndArchiveDisplaySettingEntry
 {
     [BsonId]
@@ -23,7 +29,7 @@ public record FolderAndArchiveDisplaySettingEntry
 
     public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
 
-    public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Listup;
+    public DefaultFolderListupMode? ListupMode { get; set; } = null;
 }
 
 public record FolderAndArchiveChildFileDisplaySettingEntry
@@ -31,7 +37,7 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
     [BsonId]
     public string Path { get; init; } = "";
 
-    public FileSortType? ChildItemDefaultSort { get; init; }
+    public FileSortType? ChildItemDefaultSort { get; set; }
 }
 
 public record AlbamDisplaySettingEntry
@@ -138,6 +144,20 @@ public sealed class DisplaySettingsByPathRepository
         return _internalFolderAndArchiveRepository.FindById(path);
     }
 
+    public void SetFolderAndArchiveSettings(string path, DefaultFolderListupMode listupMode)
+    {
+        var entry = _internalFolderAndArchiveRepository.FindById(path);
+        if (entry == null)
+        {
+            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, ListupMode = listupMode });
+        }
+        else
+        {
+            entry.ListupMode = listupMode;
+            _internalFolderAndArchiveRepository.UpdateItem(entry);
+        }
+    }
+
     public void SetFolderAndArchiveSettings(string path, FileSortType sortType)
     {
         var entry = _internalFolderAndArchiveRepository.FindById(path);
@@ -163,6 +183,11 @@ public sealed class DisplaySettingsByPathRepository
         return _internalChildFileRepository.FindById(path)?.ChildItemDefaultSort;
     }
 
+    public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsEntry(string path)
+    {
+        return _internalChildFileRepository.FindById(path);
+    }
+
     public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsUpStreamToRoot(string path)
     {
         while (!string.IsNullOrEmpty(path))
@@ -179,13 +204,12 @@ public sealed class DisplaySettingsByPathRepository
     }
 
 
-    public void SetFileParentSettings(string path, FileSortType? sort)
+    public void SetParentFolderImagesSortSettings(string path, FileSortType? sort)
     {
-        _internalChildFileRepository.UpdateItem(new FolderAndArchiveChildFileDisplaySettingEntry()
-        {
-            Path = path,
-            ChildItemDefaultSort = sort,
-        });
+        var entry = _internalChildFileRepository.FindById(path)
+            ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
+        entry.ChildItemDefaultSort = sort;
+        _internalChildFileRepository.UpdateItem(entry);
     }
 
     public void Delete(string path)
@@ -206,22 +230,6 @@ public sealed class DisplaySettingsByPathRepository
         _internalFolderAndArchiveRepository.FolderChanged(oldPath, newPath);
         _internalChildFileRepository.FolderChanged(oldPath, newPath);
     }
-
-
-    public void SetChildFolderOrArchiveOpenModeParentSettings(string path, DefaultFolderOrArchiveOpenMode openMode)
-    {
-        var entry = _internalFolderAndArchiveRepository.FindById(path);
-        if (entry == null)
-        {
-            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, DefaultOpenMode = openMode });
-        }
-        else
-        {
-            entry.DefaultOpenMode = openMode;
-            _internalFolderAndArchiveRepository.UpdateItem(entry);
-        }
-    }
-
 
     public void SetAlbamSettings(Guid albamId, FileSortType fileSortType)
     {

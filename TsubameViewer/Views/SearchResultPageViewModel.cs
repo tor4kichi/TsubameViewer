@@ -60,15 +60,7 @@ public sealed partial class SearchResultPageViewModel
     [ObservableProperty]
     int _hitCount = 0;
 
-    public ISecondaryTileManager SecondaryTileManager { get; }
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-    public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
-    public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenImageListupCommand OpenImageListupCommand { get; }
-    public OpenFolderListupCommand OpenFolderListupCommand { get; }
-    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
 
     public SearchResultPageViewModel(
         IMessenger messenger,
@@ -77,16 +69,7 @@ public sealed partial class SearchResultPageViewModel
         LocalBookmarkRepository bookmarkManager,
         AlbamRepository albamRepository,
         ThumbnailImageManager thumbnailManager,
-        ISecondaryTileManager secondaryTileManager,
-
-        OpenFolderItemCommand openFolderItemCommand,
-        OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
-        OpenImageViewerCommand openImageViewerCommand,
-        OpenImageListupCommand openImageListupCommand,
-        OpenFolderListupCommand openFolderListupCommand,
-        OpenWithExplorerCommand openWithExplorerCommand,
-        SecondaryTileAddCommand secondaryTileAddCommand,
-        SecondaryTileRemoveCommand secondaryTileRemoveCommand
+        OpenFolderItemCommand openFolderItemCommand
         )
     {
         _messenger = messenger;
@@ -94,15 +77,7 @@ public sealed partial class SearchResultPageViewModel
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;
-        SecondaryTileManager = secondaryTileManager;
         OpenFolderItemCommand = openFolderItemCommand;
-        OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
-        OpenImageViewerCommand = openImageViewerCommand;
-        OpenImageListupCommand = openImageListupCommand;
-        OpenFolderListupCommand = openFolderListupCommand;
-        OpenWithExplorerCommand = openWithExplorerCommand;
-        SecondaryTileAddCommand = secondaryTileAddCommand;
-        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
     }
 
 

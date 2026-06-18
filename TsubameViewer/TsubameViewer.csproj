@@ -203,11 +203,8 @@
     <Compile Include="ViewModels\LazyImageFileViewModel.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\BackNavigationCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemCommand.cs" />
-    <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderItemSecondaryCommand.cs" />
-    <Compile Include="ViewModels\PageNavigation.Commands\OpenFolderListupCommand.cs" />
-    <Compile Include="ViewModels\PageNavigation.Commands\OpenImageListupCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenImageViewerCommand.cs" />
-    <Compile Include="ViewModels\PageNavigation.Commands\OpenListupCommand.cs" />
+    <Compile Include="ViewModels\PageNavigation.Commands\OpenSecondaryListupCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenPageCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenWithExplorerCommand.cs" />
     <Compile Include="ViewModels\PageNavigation.Commands\OpenWithExternalApplicationCommand.cs" />

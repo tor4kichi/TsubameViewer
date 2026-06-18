@@ -1285,9 +1285,21 @@ public sealed class ThumbnailImageManager
         using var fileStream = await file.OpenReadAsync().AsTask(ct);
         using var fg = await FrameGrabber.CreateFromStreamAsync(fileStream).AsTask(ct);
         fg.DecodePixelHeight = (int)requestedSize;
-        using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(ct);
-        await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(ct);
 
+        using CancellationTokenSource cts = new CancellationTokenSource(3000);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, ct);
+        var linkedCt = linkedCts.Token;
+        try
+        {
+            using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(5)).AsTask(linkedCt);
+            await frame.EncodeAsJpegAsync(outputStream.AsRandomAccessStream()).AsTask(linkedCt);
+        }
+        catch
+        {
+            using var thumb = await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView);
+            await RandomAccessStream.CopyAsync(thumb, outputStream.AsOutputStream());
+        }        
+        
         return true;
     }
 
