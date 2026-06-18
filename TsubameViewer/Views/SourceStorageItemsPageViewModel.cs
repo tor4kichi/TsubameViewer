@@ -1,6 +1,8 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using I18NPortable;
+using Microsoft.Toolkit.Uwp.UI;
 using R3;
 using Reactive.Bindings;
 using System;
@@ -33,7 +35,7 @@ using static TsubameViewer.Core.Models.SourceFolders.SourceStorageItemsRepositor
 #nullable enable
 namespace TsubameViewer.ViewModels;
 
-public sealed class SourceStorageItemsPageViewModel 
+public sealed partial class SourceStorageItemsPageViewModel 
     : NavigationAwareViewModelBase
     , IRecipient<RemoveSourceStorageItemFromAppMessage>
     , IRecipient<ThumbnailImageUpdateRequestMessage>
@@ -59,6 +61,7 @@ public sealed class SourceStorageItemsPageViewModel
         }
     }
 
+    public AdvancedCollectionView ItemsView { get; }
     public ObservableCollection<StorageItemViewModel> Folders { get; }
 
     readonly LocalBookmarkRepository _bookmarkManager;
@@ -69,8 +72,10 @@ public sealed class SourceStorageItemsPageViewModel
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-   
+
+    [ObservableProperty]
     bool _foldersInitialized = false;
+
     public SourceStorageItemsPageViewModel(
         IScheduler scheduler,
         IMessenger messenger,
@@ -84,6 +89,7 @@ public sealed class SourceStorageItemsPageViewModel
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
+        ItemsView = new (Folders);
         OpenFolderItemCommand = openFolderItemCommand;
 
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
@@ -173,29 +179,21 @@ public sealed class SourceStorageItemsPageViewModel
             return;
         }
 
-        if (!_foldersInitialized)
+        if (!FoldersInitialized)
         {
             _foldersInitialized = true;
-            Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));
+            Folders.Add(new StorageItemViewModel("AddNewFolder".Translate(), Core.Models.StorageItemTypes.AddFolder));            
             try
             {
-                await foreach (var item in _sourceStorageItemsRepository.GetParsistantItems().WithCancellation(ct))
+                var items = await _sourceStorageItemsRepository.GetParsistantItems()
+                    .Select(x => new StorageItemViewModel(new StorageItemImageSource(x.item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository))
+                    .ToListAsync(ct);
+                items.Sort(_comparison);
+                foreach (var item in items)
                 {
-                    if (item.item == null)
+                    if (item.Type == Core.Models.StorageItemTypes.Folder)
                     {
-                        continue;
-                    }
-
-                    int order = _sourceStorageItemsRepository.GetOrderFromPath(item.item.Path);
-                    
-                    var storageItemImageSource = new StorageItemImageSource(item.item);
-                    if (storageItemImageSource.ItemTypes == Core.Models.StorageItemTypes.Folder)
-                    {
-                        Folders.InsertSorted(new StorageItemViewModel(storageItemImageSource, _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository), _comparison);
-                    }
-                    else
-                    {
-                        //throw new NotSupportedException();
+                        Folders.Add(item);
                     }
                 }
             }
@@ -203,6 +201,8 @@ public sealed class SourceStorageItemsPageViewModel
             {
                 Debug.WriteLine(ex.ToString());
             }
+
+            OnPropertyChanged(nameof(FoldersInitialized));
         }
         else
         {
