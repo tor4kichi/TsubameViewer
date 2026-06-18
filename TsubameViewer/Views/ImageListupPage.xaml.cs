@@ -949,17 +949,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
             }
         }
-
-        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
-            .Subscribe(x =>
-            {
-                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
-                {
-                    FolderSelectionSplitView.IsPaneOpen = x;
-                }
-            })
-            .RegisterTo(ct);
-
     }
 
     private void ListView_DragEnter(object sender, DragEventArgs e)

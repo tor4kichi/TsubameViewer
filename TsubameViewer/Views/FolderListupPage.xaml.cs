@@ -363,16 +363,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 }
             })
             .RegisterTo(ct);
-
-        _vm.Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled, false)
-            .Subscribe(x => 
-            {
-                if (FolderSelectionSplitView.DisplayMode == SplitViewDisplayMode.Inline)
-                {
-                    FolderSelectionSplitView.IsPaneOpen = x;
-                }
-            })
-            .RegisterTo(ct);
     }
 
     [ObservableProperty]
