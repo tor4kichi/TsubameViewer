@@ -431,7 +431,7 @@ public sealed partial class AppShell : UserControl
 
                 var parameters = m.Parameters ?? new NavigationParameters();
                 parameters.SetNavigationMode(NavigationMode.New);
-                return await NavigateAsync(m.PageName, parameters, m.IsForgetNavigaiton is false);
+                return await NavigateAsync(m.PageName, parameters, m.TransitionInfo, m.IsForgetNavigaiton is false);
             }
             catch (OperationCanceledException)
             {
@@ -445,7 +445,7 @@ public sealed partial class AppShell : UserControl
                 // ファイルにアクセス出来ない例外の場合はホームページへ遷移
                 var navigationParameters = new NavigationParameters();
                 navigationParameters.SetNavigationMode(NavigationMode.New);
-                await NavigateAsync(HomePageName, navigationParameters, false);
+                await NavigateAsync(HomePageName, navigationParameters, null, false);
                 _messenger.SendShowTextNotificationMessage("Notification_SourceStorageItemNotFound".Translate());
                 throw;
             }
@@ -757,14 +757,14 @@ public sealed partial class AppShell : UserControl
             // FolderListupPageが２回目に現れたタイミングで１回目のImageListupPageとFOlderListupPageのバックスタック要素を削除する
             {
                 if (e.NavigationMode == Windows.UI.Xaml.Navigation.NavigationMode.New
-                    && frame.BackStack.Count >= 3
+                    && frame.BackStack.Count >= 1
                     && (e.SourcePageType == typeof(FolderListupPage) || e.SourcePageType == typeof(ImageListupPage))
-                    && frame.BackStack.TakeLast(3).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
+                    && frame.BackStack.TakeLast(1).All(x => x.SourcePageType == typeof(FolderListupPage) || x.SourcePageType == typeof(ImageListupPage))
                     && currentNavParam != null && currentNavParam.TryGetValue(PageNavigationConstants.GeneralPathKey, out string currentNavigationPathParameter)
-                    && _backParametersStack.TakeLast(3).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
+                    && _backParametersStack.TakeLast(1).All(x => x.TryGetValue(PageNavigationConstants.GeneralPathKey, out string backStackEntryPathparameter) && backStackEntryPathparameter == currentNavigationPathParameter)
                     )
                 {
-                    foreach (var remove in frame.BackStack.TakeLast(2).ToArray())
+                    foreach (var remove in frame.BackStack.TakeLast(1).ToArray())
                     {
                         frame.BackStack.Remove(remove);
                         _backParametersStack.RemoveAt(_backParametersStack.Count - 1);
@@ -778,7 +778,7 @@ public sealed partial class AppShell : UserControl
         _isFirstNavigation = false;
     }
 
-    async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, bool isNavigationStackEnabled = true)
+    async Task<INavigationResult> NavigateAsync(string pageName, INavigationParameters parameters, NavigationTransitionInfo? transitionInfo = null,  bool isNavigationStackEnabled = true)
     {
         var viewType = _viewLocator.ResolveView(pageName);
         Frame frame;        
@@ -800,7 +800,7 @@ public sealed partial class AppShell : UserControl
         var options = new FrameNavigationOptions() 
         {
             IsNavigationStackEnabled = isNavigationStackEnabled, 
-            TransitionInfoOverride = isNavigationStackEnabled ? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName) : new SuppressNavigationTransitionInfo() 
+            TransitionInfoOverride = isNavigationStackEnabled ? (transitionInfo ?? PageTransitionHelper.MakeNavigationTransitionInfoFromPageName(pageName)) : new SuppressNavigationTransitionInfo() 
         };
         var result = frame.Navigate(viewType, parameters, options.TransitionInfoOverride);
 

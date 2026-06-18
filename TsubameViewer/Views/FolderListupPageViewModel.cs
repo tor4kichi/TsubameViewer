@@ -907,6 +907,15 @@ public sealed partial class FolderListupPageViewModel
     {
         return new StorageItemViewModel(new StorageItemImageSource(item), _messenger, _sourceStorageItemsRepository, _bookmarkManager, _thumbnailManager, _albamRepository, Selection);
     }
+
+
+    public void SetDefaultListupMode()
+    {
+        if (_currentImageSource != null)
+        {
+            _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.Images);
+        }
+    }
 }
 
 public abstract class FolderItemsGroupBase

@@ -119,7 +119,8 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
         var selector = (Selector)sender;
         if (selector.IsLoaded && selector.SelectedIndex == 1 && _vm?.CurrentFolderItem != null)
         {
-            _messenger.NavigateAsync(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item));
+            _messenger.Send(new NavigationRequestMessage(nameof(ImageListupPage), PageTransitionHelper.CreatePageParameter(_vm?.CurrentFolderItem.Item)) { TransitionInfo = new SuppressNavigationTransitionInfo() });
+            _vm.SetDefaultListupMode();
         }
     }
 

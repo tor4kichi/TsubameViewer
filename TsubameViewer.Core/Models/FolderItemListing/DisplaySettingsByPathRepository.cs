@@ -16,12 +16,20 @@ public enum DefaultFolderOrArchiveOpenMode
     Listup,
 }
 
+public enum DefaultFolderListupMode
+{
+    FolderOrContents,
+    Images,
+}
+
 public record FolderAndArchiveDisplaySettingEntry
 {
     [BsonId]
     public string Path { get; init; } = "";
 
-    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;    
+    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
+
+    public DefaultFolderListupMode? ListupMode { get; set; } = null;
 }
 
 public record FolderAndArchiveChildFileDisplaySettingEntry
@@ -134,6 +142,20 @@ public sealed class DisplaySettingsByPathRepository
     public FolderAndArchiveDisplaySettingEntry? GetFolderAndArchiveSettings(string path)
     {
         return _internalFolderAndArchiveRepository.FindById(path);
+    }
+
+    public void SetFolderAndArchiveSettings(string path, DefaultFolderListupMode listupMode)
+    {
+        var entry = _internalFolderAndArchiveRepository.FindById(path);
+        if (entry == null)
+        {
+            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, ListupMode = listupMode });
+        }
+        else
+        {
+            entry.ListupMode = listupMode;
+            _internalFolderAndArchiveRepository.UpdateItem(entry);
+        }
     }
 
     public void SetFolderAndArchiveSettings(string path, FileSortType sortType)

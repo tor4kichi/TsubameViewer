@@ -112,7 +112,21 @@ public sealed class OpenFolderItemCommand : CommandBase
             else if (type == StorageItemTypes.Folder)
             {
                 var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
-                if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
+                var setting = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(folder.Path);
+                if (setting?.ListupMode is { } listupMode)
+                {
+                    if (listupMode == DefaultFolderListupMode.FolderOrContents)
+                    {
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    }
+                    else
+                    {
+                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    }
+                }
+                else if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);

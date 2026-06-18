@@ -465,8 +465,6 @@
           <VisualState.Setters>
             <Setter Target="ChildFolderSortButton.Visibility" Value="Visible" />
             <Setter Target="ChildFolderSortButtonHeaderText.Visibility" Value="Visible" />
-            <Setter Target="ChildDefaultFolderOrArchiveOpenModeButton.Visibility" Value="Visible" />
-            <Setter Target="ChildDefaultFolderOrArchiveOpenModeButtonHeaderText.Visibility" Value="Visible" />  
           </VisualState.Setters>
         </VisualState>
       </VisualStateGroup>

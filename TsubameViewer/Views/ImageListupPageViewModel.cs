@@ -914,5 +914,13 @@ public sealed partial class ImageListupPageViewModel
 
 
 #endregion
+
+    public void SetDefaultListupMode()
+    {
+        if (_currentImageSource != null)
+        {
+            _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, DefaultFolderListupMode.FolderOrContents);
+        }
+    }
 }
 
