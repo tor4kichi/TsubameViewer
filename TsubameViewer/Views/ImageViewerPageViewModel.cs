@@ -860,8 +860,6 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
 
     async Task ReloadItemsAsync(IImageCollectionContext imageCollectionContext, CancellationToken ct)
     {
-        Images?.AsParallel().WithDegreeOfParallelism(4).ForAll((IImageSource x) => (x as IDisposable)?.Dispose());
-
         if (imageCollectionContext == null) { return; }
 
         int imageCount = await imageCollectionContext.GetImageFileCountAsync(ct);
@@ -1257,7 +1255,7 @@ public sealed partial class ImageViewerPageViewModel : NavigationAwareViewModelB
         }
         else
         {
-            var image = await Task.Run(async () => await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType, ct), ct);
+            var image = await _imageCollectionContext.GetImageFileAtAsync(requestIndex, SelectedFileSortType, ct);
             if (image == null)
             {
                 throw new InvalidOperationException();
@@ -2137,7 +2135,7 @@ public class PrefetchImageInfo : IDisposable
                 }
                 else
                 {
-                    using (var stream = await Task.Run(async () => await ImageSource.GetImageStreamAsync(linkedCt)))
+                    using (var stream = await ImageSource.GetImageStreamAsync(linkedCt))
                     {
                         try
                         {

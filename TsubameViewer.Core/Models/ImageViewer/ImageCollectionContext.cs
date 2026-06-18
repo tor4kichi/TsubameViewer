@@ -275,15 +275,15 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
     public async ValueTask<int> GetImageFileCountAsync(CancellationToken ct)
     {
         await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
-        return Context.GetCachedImagesCount();
+        return await Task.Run(Context.GetCachedImagesCount);
         //return (int)await ImageFileSearchQuery.GetItemCountAsync().AsTask(ct); ;
     }
 
     public async ValueTask<IImageSource> GetImageFileAtAsync(int index, FileSortType sort, CancellationToken ct)
     {
-        await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
         if (Context.GetEntryFromIndex(index, sort) is not { } entry
-            || await Folder.GetFileAsync(entry.GetFileName()) is not { } file)
+            || await Folder.GetFileAsync(entry.Name) is not { } file)
         {
             throw new ArgumentOutOfRangeException(nameof(index), index, "index out of range.");
         }
@@ -337,7 +337,7 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 
     public async ValueTask<int> GetImageFileIndexFromKeyAsync(string key, FileSortType sort, CancellationToken ct)
     {
-        await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
+        //await Context.UpdateImagesCacheIfCountNotSameAsync(ct);
 
         //if (_lastFileSortType != sort)
         //{
@@ -402,6 +402,12 @@ public sealed class FolderImageCollectionContext : IImageCollectionContext
 }
 
 
+public class FolderCacheUpdateInfo
+{
+    public bool IsRequireUpdate { get; set; }
+    public int? CachedImagesCount { get; set; }
+    public int? CachedNotImagesCount { get; set; }
+}
 
 public sealed class FolderStructureCacheContext : IDisposable
 {
@@ -414,16 +420,16 @@ public sealed class FolderStructureCacheContext : IDisposable
 
         if (!_updateMap.ContainsKey(Folder.Path))
         {
-            _updateMap[Folder.Path] = true;
+            _updateMap[Folder.Path] = new FolderCacheUpdateInfo { IsRequireUpdate = true };
         }
     }
 
-    readonly static Dictionary<string, bool> _updateMap = [];
+    readonly static Dictionary<string, FolderCacheUpdateInfo> _updateMap = [];
     
     private void Query_ContentsChanged(IStorageQueryResultBase sender, object args)
     {
         Debug.WriteLine($"{Folder.Name} contents changed!");
-        _updateMap[Folder.Path]= true;
+        _updateMap[Folder.Path]?.IsRequireUpdate = true;
     }
 
     public StorageFolder Folder { get; }
@@ -454,11 +460,11 @@ public sealed class FolderStructureCacheContext : IDisposable
         var folderItems = _repo.FindFolderImages(Folder.Path);
         return sort switch
         {
-            FileSortType.None => folderItems.OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
-            FileSortType.TitleAscending => folderItems.OrderBy(x => x.GetFileName()).ElementAtOrDefault(index),
-            FileSortType.TitleDecending => folderItems.OrderByDescending(x => x.GetFileName()).ElementAtOrDefault(index),
-            FileSortType.UpdateTimeAscending => folderItems.OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
-            FileSortType.UpdateTimeDecending => folderItems.OrderByDescending(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.Name).ElementAtOrDefault(index),
+            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.Name).ElementAtOrDefault(index),
+            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).ElementAtOrDefault(index),
+            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).ElementAtOrDefault(index),
             _ => throw new InvalidOperationException(),
         };
     }
@@ -468,11 +474,11 @@ public sealed class FolderStructureCacheContext : IDisposable
         var folderItems = _repo.FindFolderImages(Folder.Path);
         return sort switch
         {
-            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.GetFileName()).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
-            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.GetFileName() == key).Index,
+            FileSortType.None => folderItems.AsValueEnumerable().OrderBy(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.TitleAscending => folderItems.AsValueEnumerable().OrderBy(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.TitleDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.Name).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.UpdateTimeAscending => folderItems.AsValueEnumerable().OrderBy(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.Name == key).Index,
+            FileSortType.UpdateTimeDecending => folderItems.AsValueEnumerable().OrderByDescending(x => x.DateCreated).Index().FirstOrDefault(x => x.Item.Name == key).Index,
             _ => throw new InvalidOperationException(),
         };
     }
@@ -486,7 +492,7 @@ public sealed class FolderStructureCacheContext : IDisposable
         CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
-        _updateMap[Folder.Path] = false;
+        _updateMap[Folder.Path].IsRequireUpdate = false;
         var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
         int imagesCount = (int)await query.GetItemCountAsync();
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
@@ -514,6 +520,7 @@ public sealed class FolderStructureCacheContext : IDisposable
             }
         }
 
+        _updateMap[Folder.Path].CachedImagesCount = imagesCount;
         deferRefresh.Dispose();
         deferRefresh = deferRefreshFactory();
 
@@ -537,7 +544,7 @@ public sealed class FolderStructureCacheContext : IDisposable
        CancellationToken ct)
     {
         using var reelaser = await _asyncLock.LockAsync(ct);
-        _updateMap[Folder.Path] = false;
+        _updateMap[Folder.Path].IsRequireUpdate = false;
         var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
         int imagesCount = (int)await query.GetItemCountAsync();
         // キャッシュされたアイテムとの差分を求めてその結果からitemsからアイテムを差し引きする
@@ -565,6 +572,7 @@ public sealed class FolderStructureCacheContext : IDisposable
             }
         }
 
+        _updateMap[Folder.Path].CachedNotImagesCount = imagesCount;
         deferRefresh.Dispose();
         deferRefresh = deferRefreshFactory();
 
@@ -584,24 +592,48 @@ public sealed class FolderStructureCacheContext : IDisposable
 
     public int GetCachedImagesCount()
     {
-        return _repo.GetFolderImagesCount(Folder.Path);
+        var cacheInfo = _updateMap[Folder.Path];
+        if (cacheInfo.CachedImagesCount.HasValue)
+        {
+            return cacheInfo.CachedImagesCount.Value;
+        }
+        else
+        {
+            var count = _repo.GetFolderImagesCount(Folder.Path);
+            cacheInfo.CachedImagesCount = count;
+            return count;
+        }
     }
 
     public int GetCachedNotImagesCount()
     {
-        return _repo.GetFolderNotImagesCount(Folder.Path);
+        var cacheInfo = _updateMap[Folder.Path];
+        if (cacheInfo.CachedNotImagesCount.HasValue)
+        {
+            return cacheInfo.CachedNotImagesCount.Value;
+        }
+        else
+        {
+            var count = _repo.GetFolderNotImagesCount(Folder.Path);
+            cacheInfo.CachedNotImagesCount = count;
+            return count;
+        }
     }
 
     public async Task<bool> CheckIsNotSameImagesCacheCountAndExactCountAsync(CancellationToken ct)
     {
         var query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
-        return _repo.GetFolderImagesCount(Folder.Path) != await query.GetItemCountAsync().AsTask(ct);
+        var getCountTask = query.GetItemCountAsync().AsTask(ct);
+        var cachedCount = GetCachedImagesCount();
+        return cachedCount != (_updateMap[Folder.Path].CachedImagesCount = (int)await getCountTask);
     }
 
     public async Task<bool> CheckIsNotSameNotImagesCacheCountAndExactCountAsync(CancellationToken ct)
     {
         var query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
-        return _repo.GetFolderNotImagesCount(Folder.Path) != await query.GetItemCountAsync().AsTask(ct);
+        var getCountTask = query.GetItemCountAsync().AsTask(ct);
+        var cachedCount = GetCachedNotImagesCount();
+        return cachedCount != (_updateMap[Folder.Path].CachedNotImagesCount = (int)await getCountTask);
     }
 
 
@@ -610,11 +642,13 @@ public sealed class FolderStructureCacheContext : IDisposable
         using var reelaser = await _asyncLock.LockAsync(ct);
 
         StorageFileQueryResult query;
-        if (_updateMap[Folder.Path])
+        var cacheInfo = _updateMap[Folder.Path];
+        if (cacheInfo.IsRequireUpdate)
         {
             query = Folder.CreateFileQueryWithOptions(FolderImageCollectionContext.CreateDefaultImageFileSearchQueryOptions(FileSortType.None));
-            _updateMap[Folder.Path] = false;            
-            if (_repo.GetFolderImagesCount(Folder.Path) == await query.GetItemCountAsync().AsTask(ct))
+            cacheInfo.IsRequireUpdate = false;
+            var cachedCount = GetCachedImagesCount();
+            if (cachedCount == (cacheInfo.CachedImagesCount = (int)await query.GetItemCountAsync().AsTask(ct)))
             {
                 Debug.WriteLine($"{Folder.Name} SKIP structure cache update. but GetItemCountAsync called");
                 return false;
@@ -645,11 +679,13 @@ public sealed class FolderStructureCacheContext : IDisposable
         using var reelaser = await _asyncLock.LockAsync(ct);
 
         StorageItemQueryResult query;
-        if (_updateMap[Folder.Path])
+        var cacheInfo = _updateMap[Folder.Path];
+        if (cacheInfo.IsRequireUpdate)
         {
             query = Folder.CreateItemQueryWithOptions(FolderImageCollectionContext.CreateDefaultFolderOrArchiveFilesSearchQueryOptions(FileSortType.None));
-            _updateMap[Folder.Path] = false;
-            if (_repo.GetFolderNotImagesCount(Folder.Path) == await query.GetItemCountAsync().AsTask(ct))
+            cacheInfo.IsRequireUpdate = false;
+            var cachedCount = GetCachedNotImagesCount();
+            if (cachedCount == (cacheInfo.CachedNotImagesCount = (int)await query.GetItemCountAsync().AsTask(ct)))
             {
                 Debug.WriteLine($"{Folder.Name} SKIP structure cache update. but GetItemCountAsync called");
                 return false;
@@ -686,13 +722,17 @@ public sealed class FolderStructureFileEntry
     [BsonId]
     public string Path { get; set; } = "";
 
-    public string ParentFolderPath { get; set; } = "";
+    //public string ParentFolderPath { get; set; } = "";
+
+    string? _parentFolderPath;
+    public string ParentFolderPath => _parentFolderPath ??= System.IO.Path.GetDirectoryName(Path);
+
+    string? _fileName;
+    public string Name => _fileName ??= System.IO.Path.GetFileName(Path);
 
     public DateTimeOffset DateCreated { get; set; }
 
     public bool IsImage { get; set; } = true;
-
-    public string GetFileName() => System.IO.Path.GetFileName(Path);
 }
 
 public sealed class FolderStructureFilesRepository : IDisposable
@@ -716,19 +756,20 @@ public sealed class FolderStructureFilesRepository : IDisposable
     {
         _collection = tempLiteDatabase.GetCollection<FolderStructureFileEntry>();
         _collection.EnsureIndex(x => x.ParentFolderPath);
+        _collection.EnsureIndex(x => x.Name);
         _collection.EnsureIndex(x => x.DateCreated);
-        _collection.EnsureIndex(x => x.IsImage);
+        _collection.EnsureIndex(x => x.IsImage);        
         _tempLiteDatabase = tempLiteDatabase;
     }
 
     public bool HasFolderImages(StorageFolder folder)
     {
-        return _collection.Exists(x => x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal) && x.IsImage);
+        return _collection.Exists(x => x.IsImage && x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal));
     }
 
     public bool HasFolderNotImages(StorageFolder folder)
     {
-        return _collection.Exists(x => x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal) && !x.IsImage);
+        return _collection.Exists(x => !x.IsImage && x.ParentFolderPath.Equals(folder.Path, StringComparison.Ordinal));
     }
 
     public FolderStructureFileEntry AddOrUpdateItem(IStorageItem file)
@@ -736,11 +777,11 @@ public sealed class FolderStructureFilesRepository : IDisposable
         var entry = new FolderStructureFileEntry()
         {
             Path = file.Path,
-            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
             DateCreated = file.DateCreated,
             IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
         };
         _collection.Upsert(entry);
+        ClearCache();
         return entry;
     }
 
@@ -749,49 +790,81 @@ public sealed class FolderStructureFilesRepository : IDisposable
         _collection.InsertBulk(items.Select(file => new FolderStructureFileEntry()
         {
             Path = file.Path,
-            ParentFolderPath = System.IO.Path.GetDirectoryName(file.Path),
             DateCreated = file.DateCreated,
             IsImage = file is StorageFile f ? f.IsSupportedImageFile() : false
         }));
+        ClearCache();
     }
 
 
+    void ClearCache()
+    {
+        _folderImagesCache?.Dispose();
+        _folderImagesCache = null;
+
+        _folderNotImagesCache?.Dispose();
+        _folderNotImagesCache = null;
+    }
+    PooledArray<FolderStructureFileEntry>? _folderImagesCache;
+    string? _cachedImagesfolderPath;
     public IEnumerable<FolderStructureFileEntry> FindFolderImages(string folderPath)
     {
-        return _collection.Find(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal) && x.IsImage);
+        if (_folderImagesCache == null || _cachedImagesfolderPath == null || !folderPath.Equals(_cachedImagesfolderPath, StringComparison.Ordinal))
+        {
+            _folderImagesCache?.Dispose();
+            _folderImagesCache = _collection.Find(x => x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+            _cachedImagesfolderPath = folderPath;
+        }
+
+        return _folderImagesCache.Value.ArraySegment;
     }
 
+
+    PooledArray<FolderStructureFileEntry>? _folderNotImagesCache;
+    string? _cachedNotImagesfolderPath;
     public IEnumerable<FolderStructureFileEntry> FindFolderNotImages(string folderPath)
     {
-        return _collection.Find(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal) && !x.IsImage);
+        if (_folderNotImagesCache == null || _cachedNotImagesfolderPath == null || !folderPath.Equals(_cachedNotImagesfolderPath, StringComparison.Ordinal))
+        {
+            _folderNotImagesCache?.Dispose();
+            _folderNotImagesCache = _collection.Find(x => !x.IsImage && x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal)).AsValueEnumerable().ToArrayPool();
+        }
+
+        return _folderNotImagesCache.Value.ArraySegment;
     }
 
     public int GetFolderImagesCount(string folderPath)
     {
-        return _collection.Count(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal) && x.IsImage);
+        FindFolderImages(folderPath);
+        return _folderImagesCache!.Value.Size;
     }
 
     public int GetFolderNotImagesCount(string folderPath)
     {
-        return _collection.Count(x => x.ParentFolderPath.Equals(folderPath, StringComparison.Ordinal) && !x.IsImage);
+        FindFolderNotImages(folderPath);
+        return _folderNotImagesCache!.Value.Size;
     }
 
     public void FolderRemoved(string folderPath)
     {
         _collection.DeleteMany(x => folderPath.StartsWith(x.ParentFolderPath, StringComparison.Ordinal));
+        ClearCache();
     }
     public void FileRemoved(FolderStructureFileEntry entry)
     {
         _collection.Delete(entry.Path);
+        ClearCache();
     }
 
     public void FileRemoved(string path)
     {
         _collection.Delete(path);
+        ClearCache();
     }
 
     public void Dispose()
     {
+        ClearCache();
         _tempLiteDatabase.Dispose();
     }
 
@@ -810,7 +883,6 @@ public sealed class FolderStructureFilesRepository : IDisposable
                 sb.Append(entry.Path);
                 sb.Replace(oldPath, newPath);
                 entry.Path = sb.ToString();
-                entry.ParentFolderPath = newPath;
                 _collection.Upsert(entry);
                 Debug.WriteLine($"ImageList Path changed: {entry.Path}");
             }
@@ -823,10 +895,11 @@ public sealed class FolderStructureFilesRepository : IDisposable
             _collection.Delete(entry.Path);
             Debug.WriteLine($"ImageList Path changing: {entry.Path}");
             entry.Path = newPath;
-            entry.ParentFolderPath = Path.GetDirectoryName(newPath);
             _collection.Upsert(entry);
             Debug.WriteLine($"ImageList Path changed: {entry.Path}");
         }
+
+        ClearCache();
     }
 }
 
