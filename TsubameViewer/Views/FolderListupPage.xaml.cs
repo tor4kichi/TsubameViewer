@@ -517,17 +517,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             return;
         }
 
-        var container = FoldersAdaptiveGridView.ContainerFromItem(itemVM);
-        if (container is GridViewItem gvi)
-        {
-            var image = gvi.ContentTemplateRoot.FindDescendant<Image>();
-            if (image?.Source != null)
-            {
-                //ConnectedAnimationService.GetForCurrentView()
-                //    .PrepareToAnimate(PageTransisionHelper.ImageJumpConnectedAnimationName, image);
-            }
-        }
-
         (_vm.OpenFolderItemCommand as ICommand).Execute(itemVM);
     }
 

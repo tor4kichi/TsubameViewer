@@ -22,17 +22,13 @@ internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
 
     public ObservableCollection<StorageItemViewModel> Albams { get; } = new ();
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-    public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenImageListupCommand OpenImageListupCommand { get; }
-
+    
     readonly StorageItemViewModel _createNewAlbamViewModel;
 
     public AlbamListupPageViewModel(
         IMessenger messenger,
         AlbamRepository albamRepository,            
         OpenFolderItemCommand openFolderItemCommand,
-        OpenImageViewerCommand openImageViewerCommand,
-        OpenImageListupCommand openImageListupCommand,
         LocalBookmarkRepository bookmarkManager,
         ImageCollectionManager imageCollectionManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,            
@@ -42,8 +38,6 @@ internal sealed class AlbamListupPageViewModel : NavigationAwareViewModelBase
         _messenger = messenger;
         _albamRepository = albamRepository;
         OpenFolderItemCommand = openFolderItemCommand;
-        OpenImageViewerCommand = openImageViewerCommand;
-        OpenImageListupCommand = openImageListupCommand;
         _bookmarkManager = bookmarkManager;
         _imageCollectionManager = imageCollectionManager;
         _sourceStorageItemsRepository = sourceStorageItemsRepository;            

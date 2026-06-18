@@ -360,7 +360,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
                 }
 
                 _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-                _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
             });
 
             try
@@ -688,7 +687,6 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _vm.Selection.ForceNotifySelectedItems();
 
             _vm.FileDeleteCommand.NotifyCanExecuteChanged();
-            _vm.OpenWithExplorerCommand.NotifyCanExecuteChanged();
         }
 
         _lastSelectedItemIndex = _vm.FileItemsView.IndexOf(itemVM);

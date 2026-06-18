@@ -21,9 +21,7 @@ public record FolderAndArchiveDisplaySettingEntry
     [BsonId]
     public string Path { get; init; } = "";
 
-    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;
-
-    public DefaultFolderOrArchiveOpenMode DefaultOpenMode { get; set; } = DefaultFolderOrArchiveOpenMode.Listup;
+    public FileSortType Sort { get; set; } = FileSortType.UpdateTimeDecending;    
 }
 
 public record FolderAndArchiveChildFileDisplaySettingEntry
@@ -206,22 +204,6 @@ public sealed class DisplaySettingsByPathRepository
         _internalFolderAndArchiveRepository.FolderChanged(oldPath, newPath);
         _internalChildFileRepository.FolderChanged(oldPath, newPath);
     }
-
-
-    public void SetChildFolderOrArchiveOpenModeParentSettings(string path, DefaultFolderOrArchiveOpenMode openMode)
-    {
-        var entry = _internalFolderAndArchiveRepository.FindById(path);
-        if (entry == null)
-        {
-            _internalFolderAndArchiveRepository.CreateItem(new FolderAndArchiveDisplaySettingEntry() { Path = path, DefaultOpenMode = openMode });
-        }
-        else
-        {
-            entry.DefaultOpenMode = openMode;
-            _internalFolderAndArchiveRepository.UpdateItem(entry);
-        }
-    }
-
 
     public void SetAlbamSettings(Guid albamId, FileSortType fileSortType)
     {

@@ -48,16 +48,11 @@ public sealed class FolderContainerTypeManager
     public async Task<FolderContainerType> GetLatestFolderContainerTypeAndUpdateCacheAsync(StorageFolder folder, CancellationToken ct)
     {
         FolderContainerType folderContainerType = FolderContainerType.Other;
-        if (await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery, 
-            [..SupportedFileTypesHelper.SupportedArchiveFileExtensions, ..SupportedFileTypesHelper.SupportedEBookFileExtensions, ..SupportedFileTypesHelper.SupportedMovieFileExtensions])
-            { FolderDepth = FolderDepth.Shallow }).GetItemCountAsync().AsTask(ct) > 0
-           )
+        if (await IsAvairableFolderOrContentsAsync(folder, ct))
         {
             folderContainerType = FolderContainerType.Other;
         }
-        else if (await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery,
-            SupportedFileTypesHelper.SupportedImageFileExtensions)
-            { FolderDepth = FolderDepth.Shallow }).GetItemCountAsync().AsTask(ct) > 0)
+        else if (await IsAvairableImagesAsync(folder, ct))
         {
             folderContainerType = FolderContainerType.OnlyImages;
         }
@@ -69,6 +64,30 @@ public sealed class FolderContainerTypeManager
 
         SetContainerType(folder.Path, folderContainerType);
         return folderContainerType;
+    }
+
+    public async Task<bool> IsAvairableFolderOrContentsAsync(StorageFolder folder, CancellationToken ct)
+    {
+        try
+        {
+            var folderItems = await folder.CreateItemQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery,
+            [.. SupportedFileTypesHelper.SupportedArchiveFileExtensions, .. SupportedFileTypesHelper.SupportedEBookFileExtensions, .. SupportedFileTypesHelper.SupportedMovieFileExtensions])
+            { FolderDepth = FolderDepth.Shallow }).GetItemsAsync(0, 1).AsTask(ct);
+            return folderItems != null && folderItems.Any();
+        }
+        catch { return false; }
+    }
+
+    public async Task<bool> IsAvairableImagesAsync(StorageFolder folder, CancellationToken ct)
+    {
+        try
+        {
+            var fileItems = await folder.CreateFileQueryWithOptions(new QueryOptions(CommonFileQuery.DefaultQuery,
+                SupportedFileTypesHelper.SupportedImageFileExtensions)
+            { FolderDepth = FolderDepth.Shallow }).GetFilesAsync(0, 1).AsTask(ct);
+            return fileItems != null && fileItems.Any();
+        }
+        catch { return false; }
     }
 
 

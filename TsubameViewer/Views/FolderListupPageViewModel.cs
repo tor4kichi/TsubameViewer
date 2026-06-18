@@ -149,22 +149,10 @@ public sealed partial class FolderListupPageViewModel
     readonly ThumbnailImageManager _thumbnailManager;        
     readonly DisplaySettingsByPathRepository _displaySettingsByPathRepository;
     readonly FolderListingSettings _folderListingSettings;
-    readonly BackNavigationCommand _backNavigationCommand;
 
     public ISecondaryTileManager SecondaryTileManager { get; }
-    public OpenPageCommand OpenPageCommand { get; }
-    public OpenListupCommand OpenListupCommand { get; }
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-    public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
-    public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenFolderListupCommand OpenFolderListupCommand { get; }
-    public OpenImageListupCommand OpenImageListupCommand { get; }
 
-    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-    public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
-    public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FileDeleteCommand FileDeleteCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RangeObservableCollection<IStorageItemViewModel> FolderItems { get; private set; }
@@ -177,8 +165,6 @@ public sealed partial class FolderListupPageViewModel
     FileSortType _selectedFileSortType;
     [ObservableProperty]
     FileSortType? _selectedChildFileSortType;
-    [ObservableProperty]
-    DefaultFolderOrArchiveOpenMode _selectedChildFolderOrArchiveOpenMode;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
 
@@ -220,19 +206,7 @@ public sealed partial class FolderListupPageViewModel
         ThumbnailImageManager thumbnailManager,            
         DisplaySettingsByPathRepository displaySettingsByPathRepository,
         FolderListingSettings folderListingSettings,
-        BackNavigationCommand backNavigationCommand,
-        OpenPageCommand openPageCommand,
-        OpenListupCommand openListupCommand,
         OpenFolderItemCommand openFolderItemCommand,
-        OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
-        OpenImageViewerCommand openImageViewerCommand,
-        OpenFolderListupCommand openFolderListupCommand,
-        OpenImageListupCommand openImageListupCommand,
-        OpenWithExplorerCommand openWithExplorerCommand,
-        SecondaryTileAddCommand secondaryTileAddCommand,
-        SecondaryTileRemoveCommand secondaryTileRemoveCommand,
-        ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
         FileDeleteCommand fileDeleteCommand,
         FavoriteToggleCommand favoriteToggleCommand
         )
@@ -247,19 +221,7 @@ public sealed partial class FolderListupPageViewModel
         _thumbnailManager = thumbnailManager;            
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
         _folderListingSettings = folderListingSettings;
-        _backNavigationCommand = backNavigationCommand;
-        OpenPageCommand = openPageCommand;
-        OpenListupCommand = openListupCommand;
         OpenFolderItemCommand = openFolderItemCommand;
-        OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
-        OpenImageViewerCommand = openImageViewerCommand;
-        OpenFolderListupCommand = openFolderListupCommand;
-        OpenImageListupCommand = openImageListupCommand;
-        OpenWithExplorerCommand = openWithExplorerCommand;
-        SecondaryTileAddCommand = secondaryTileAddCommand;
-        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
-        ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
-        OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FileDeleteCommand = fileDeleteCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
         FolderItems = new RangeObservableCollection<IStorageItemViewModel>();
@@ -274,8 +236,6 @@ public sealed partial class FolderListupPageViewModel
             }
             return string.IsNullOrWhiteSpace(_filterText) ? true : (itemVM?.Name?.Contains(_filterText, StringComparison.Ordinal) ?? false);
         };
-
-        SelectedChildFolderOrArchiveOpenMode = DefaultFolderOrArchiveOpenMode.Viewer;
     }
 
     [ObservableProperty]
@@ -528,7 +488,6 @@ public sealed partial class FolderListupPageViewModel
             }
             
             FileDeleteCommand.NotifyCanExecuteChanged();
-            OpenWithExplorerCommand.NotifyCanExecuteChanged();
         });
 
         Selection.ObservePropertyChanged(x => x.IsSelectionModeEnabled)
@@ -556,7 +515,6 @@ public sealed partial class FolderListupPageViewModel
             {
                 SelectedCountDisplayText = "ImageSelection_SelectedCount".Translate(count);
                 FileDeleteCommand.NotifyCanExecuteChanged();
-                OpenWithExplorerCommand.NotifyCanExecuteChanged();
             })
             .AddTo(ref db);
 
@@ -624,7 +582,6 @@ public sealed partial class FolderListupPageViewModel
         }
 
         SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFolderOrArchiveOpenMode = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(path)?.DefaultOpenMode ?? DefaultFolderOrArchiveOpenMode.Viewer;
 
         try
         {
@@ -633,7 +590,7 @@ public sealed partial class FolderListupPageViewModel
         catch (OperationCanceledException)
         {
             ClearContent();
-            (_backNavigationCommand as ICommand).Execute(null);
+            _messenger.Send<BackNavigationRequestMessage>();
         }
     }
 
@@ -674,7 +631,7 @@ public sealed partial class FolderListupPageViewModel
         catch (OperationCanceledException)
         {
             ClearContent();
-            (_backNavigationCommand as ICommand).Execute(null);
+            _messenger.Send<BackNavigationRequestMessage>();
         }
     }
 
@@ -922,18 +879,6 @@ public sealed partial class FolderListupPageViewModel
             path,
             fileSort
             );
-    }
-
-    [RelayCommand]
-    void ChangeChildFolderOrArchiveOpenMode(object mode)
-    {
-        if (mode is DefaultFolderOrArchiveOpenMode openMode)
-        {
-            Guard.IsNotNull(_currentImageSource);
-
-            SelectedChildFolderOrArchiveOpenMode = openMode;
-            _displaySettingsByPathRepository.SetChildFolderOrArchiveOpenModeParentSettings(_currentImageSource.Path, openMode);
-        }
     }
 
     [RelayCommand]

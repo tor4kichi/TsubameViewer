@@ -68,18 +68,7 @@ public sealed class SourceStorageItemsPageViewModel
     readonly IMessenger _messenger;
     readonly SourceStorageItemsRepository _sourceStorageItemsRepository;
     readonly LastIntractItemRepository _folderLastIntractItemManager;
-    readonly RecentlyAccessRepository _recentlyAccessRepository;
-    
     public OpenFolderItemCommand OpenFolderItemCommand { get; }
-    public OpenFolderItemSecondaryCommand OpenFolderItemSecondaryCommand { get; }
-    public ISecondaryTileManager SecondaryTileManager { get; }
-    public SourceChoiceCommand SourceChoiceCommand { get; }
-    public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenImageListupCommand OpenImageListupCommand { get; }
-    public OpenFolderListupCommand OpenFolderListupCommand { get; }
-    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
    
     bool _foldersInitialized = false;
     public SourceStorageItemsPageViewModel(
@@ -91,33 +80,14 @@ public sealed class SourceStorageItemsPageViewModel
         ThumbnailImageManager thumbnailManager,
         SourceStorageItemsRepository sourceStorageItemsRepository,
         LastIntractItemRepository folderLastIntractItemManager,
-        RecentlyAccessRepository recentlyAccessRepository,
-        ISecondaryTileManager secondaryTileManager,
-        SourceChoiceCommand sourceChoiceCommand,
-        OpenFolderItemCommand openFolderItemCommand,
-        OpenFolderItemSecondaryCommand openFolderItemSecondaryCommand,
-        OpenImageViewerCommand openImageViewerCommand,
-        OpenImageListupCommand openImageListupCommand,
-        OpenFolderListupCommand openFolderListupCommand,
-        OpenWithExplorerCommand openWithExplorerCommand,
-        SecondaryTileAddCommand secondaryTileAddCommand,
-        SecondaryTileRemoveCommand secondaryTileRemoveCommand
+        OpenFolderItemCommand openFolderItemCommand
         )
     {
         Folders = new ObservableCollection<StorageItemViewModel>();
         OpenFolderItemCommand = openFolderItemCommand;
-        OpenFolderItemSecondaryCommand = openFolderItemSecondaryCommand;
-        SourceChoiceCommand = sourceChoiceCommand;
+
         _sourceStorageItemsRepository = sourceStorageItemsRepository;
         _folderLastIntractItemManager = folderLastIntractItemManager;
-        _recentlyAccessRepository = recentlyAccessRepository;
-        SecondaryTileManager = secondaryTileManager;
-        OpenImageViewerCommand = openImageViewerCommand;
-        OpenImageListupCommand = openImageListupCommand;
-        OpenFolderListupCommand = openFolderListupCommand;
-        OpenWithExplorerCommand = openWithExplorerCommand;
-        SecondaryTileAddCommand = secondaryTileAddCommand;
-        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
         _bookmarkManager = bookmarkManager;
         _albamRepository = albamRepository;
         _thumbnailManager = thumbnailManager;

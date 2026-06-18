@@ -162,16 +162,10 @@ public sealed partial class ImageListupPageViewModel
     }
 
     public ISecondaryTileManager SecondaryTileManager { get; }
-    public OpenPageCommand OpenPageCommand { get; }
-    public OpenFolderItemCommand OpenFolderItemCommand { get; }
+    
     public OpenImageViewerCommand OpenImageViewerCommand { get; }
-    public OpenFolderListupCommand OpenFolderListupCommand { get; }
+
     public FileDeleteCommand FileDeleteCommand { get; }
-    public OpenWithExplorerCommand OpenWithExplorerCommand { get; }
-    public SecondaryTileAddCommand SecondaryTileAddCommand { get; }
-    public SecondaryTileRemoveCommand SecondaryTileRemoveCommand { get; }
-    public ChangeStorageItemThumbnailImageCommand ChangeStorageItemThumbnailImageCommand { get; }
-    public OpenWithExternalApplicationCommand OpenWithExternalApplicationCommand { get; }
     public FavoriteToggleCommand FavoriteToggleCommand { get; }
     public RangeObservableCollection<IStorageItemViewModel> ImageFileItems { get; }
 
@@ -255,17 +249,10 @@ public sealed partial class ImageListupPageViewModel
         ISecondaryTileManager secondaryTileManager,
         LastIntractItemRepository folderLastIntractItemManager,
         FolderListingSettings folderListingSettings,
-        DisplaySettingsByPathRepository displaySettingsByPathRepository,
-        OpenPageCommand openPageCommand,
-        OpenFolderItemCommand openFolderItemCommand,
+        DisplaySettingsByPathRepository displaySettingsByPathRepository,        
         OpenImageViewerCommand openImageViewerCommand,
-        OpenFolderListupCommand openFolderListupCommand,
         FileDeleteCommand fileDeleteCommand,
         OpenWithExplorerCommand openWithExplorerCommand,
-        SecondaryTileAddCommand secondaryTileAddCommand,
-        SecondaryTileRemoveCommand secondaryTileRemoveCommand,
-        ChangeStorageItemThumbnailImageCommand changeStorageItemThumbnailImageCommand,
-        OpenWithExternalApplicationCommand openWithExternalApplicationCommand,
         FavoriteToggleCommand favoriteToggleCommand
         )
     {
@@ -279,16 +266,8 @@ public sealed partial class ImageListupPageViewModel
         _folderLastIntractItemManager = folderLastIntractItemManager;
         _folderListingSettings = folderListingSettings;
         _displaySettingsByPathRepository = displaySettingsByPathRepository;
-        OpenPageCommand = openPageCommand;
-        OpenFolderItemCommand = openFolderItemCommand;
         OpenImageViewerCommand = openImageViewerCommand;
-        OpenFolderListupCommand = openFolderListupCommand;
         FileDeleteCommand = fileDeleteCommand;
-        OpenWithExplorerCommand = openWithExplorerCommand;
-        SecondaryTileAddCommand = secondaryTileAddCommand;
-        SecondaryTileRemoveCommand = secondaryTileRemoveCommand;
-        ChangeStorageItemThumbnailImageCommand = changeStorageItemThumbnailImageCommand;
-        OpenWithExternalApplicationCommand = openWithExternalApplicationCommand;
         FavoriteToggleCommand = favoriteToggleCommand;
         ImageFileItems = new RangeObservableCollection<IStorageItemViewModel>();
         FileItemsView = new KeyIndexMappedAdvancedCollectionView<IStorageItemViewModel>(ImageFileItems, itemVM => itemVM.Path);

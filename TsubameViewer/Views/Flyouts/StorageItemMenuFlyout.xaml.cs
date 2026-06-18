@@ -36,7 +36,7 @@ public sealed partial class StorageItemMenuFlyout : MenuFlyout
     {
         this.InitializeComponent();
 
-        OpenListupItem.Command = Ioc.Default.GetService<OpenListupCommand>();
+        OpenListupItem.Command = Ioc.Default.GetService<OpenSecondaryListupCommand>();
         OpenViewerItem.Command = Ioc.Default.GetService<OpenImageViewerCommand>();
         SetThumbnailImageMenuItem.Command = Ioc.Default.GetService<ChangeStorageItemThumbnailImageCommand>();
         RemoveFromAccessListMenuItem.Command = Ioc.Default.GetService<RegisterItemRemoveFromAccessListCommand>();

@@ -18,12 +18,12 @@ using StorageItemTypes = TsubameViewer.Core.Models.StorageItemTypes;
 #nullable enable
 namespace TsubameViewer.ViewModels.PageNavigation.Commands;
 
-public sealed class OpenListupCommand : CommandBase
+public sealed class OpenSecondaryListupCommand : CommandBase
 {
     readonly IMessenger _messenger;
     readonly FolderContainerTypeManager _folderContainerTypeManager;
 
-    public OpenListupCommand(
+    public OpenSecondaryListupCommand(
         IMessenger messenger,
         FolderContainerTypeManager folderContainerTypeManager
         )
@@ -107,16 +107,16 @@ public sealed class OpenListupCommand : CommandBase
             }
             else if (type == StorageItemTypes.Folder)
             {
-                var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
-                if (containerType == FolderContainerType.Other)
+                var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
+                if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableImagesAsync(folder, ct), CancellationToken.None))
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
                 else
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
+                    var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }
             }
             else if (type == StorageItemTypes.ArchiveFolder)

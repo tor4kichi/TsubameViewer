@@ -111,24 +111,16 @@ public sealed class OpenFolderItemCommand : CommandBase
             }
             else if (type == StorageItemTypes.Folder)
             {
-                var containerType = await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.GetFolderContainerTypeWithCacheAsync((imageSource.FlattenAlbamItemInnerImageSource() as StorageItemImageSource).StorageItem as StorageFolder, ct), CancellationToken.None);
-                if (containerType == FolderContainerType.Other)
+                var folder = (StorageFolder)((StorageItemImageSource)imageSource.FlattenAlbamItemInnerImageSource()).StorageItem;
+                if (await _messenger.WorkWithBusyWallAsync(async ct => await _folderContainerTypeManager.IsAvairableFolderOrContentsAsync(folder, ct), CancellationToken.None))
                 {
                     var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
                     var result = await _messenger.NavigateAsync(nameof(FolderListupPage), parameters);
                 }                                        
                 else
                 {
-                    if (_displaySettingsByPathRepository.GetFolderAndArchiveSettings(Path.GetDirectoryName(imageSource.Path))?.DefaultOpenMode is null or DefaultFolderOrArchiveOpenMode.Listup)
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
-                    }
-                    else
-                    {
-                        var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
-                        var result = await _messenger.NavigateAsync(nameof(ImageViewerPage), parameters);
-                    }
+                    var parameters = PageTransitionHelper.CreatePageParameter(imageSource);
+                    var result = await _messenger.NavigateAsync(nameof(ImageListupPage), parameters);
                 }
             }
             else if (type == StorageItemTypes.EBook)
