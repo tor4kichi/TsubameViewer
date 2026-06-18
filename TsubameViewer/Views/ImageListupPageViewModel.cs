@@ -908,12 +908,11 @@ public sealed partial class ImageListupPageViewModel
     {
         Guard.IsNotNull(_currentImageSource);
 
-        _displaySettingsByPathRepository.SetFileParentSettings(Path.GetDirectoryName(_currentImageSource.Path), SelectedFileSortType);
+        _displaySettingsByPathRepository.SetParentFolderImagesSortSettings(Path.GetDirectoryName(_currentImageSource.Path), SelectedFileSortType);
     }
 
 
-
-#endregion
+    #endregion
 
     public void SetDefaultListupMode()
     {

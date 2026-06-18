@@ -213,8 +213,14 @@
                     HorizontalAlignment="Stretch">
           <uwpControls:DockPanel x:Name="FilesActionLayout"
                                  Margin="0 16 0 8">
-            
 
+            <StackPanel uwpControls:DockPanel.Dock="Bottom"
+                        Orientation="Horizontal"
+                        Visibility="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay, Converter={StaticResource StringNotEmptyToBooleanConverter}}">
+              <TextBlock Opacity="0.7">
+                <Run Text="{i18nExt:Localize Key=Sort_InheritancePath}" />: <Run Text="{x:Bind _vm.DisplaySortTypeInheritancePath, Mode=OneWay}" />
+              </TextBlock>
+            </StackPanel>
             <StackPanel Orientation="Horizontal"
                         uwpControls:DockPanel.Dock="Left"
                         Spacing="8">
@@ -226,6 +232,9 @@
                 <TextBlock Text="{x:Bind _vm.SelectedFileSortType, Mode=OneWay, Converter={StaticResource LocalizeConverter}}" />
                 <DropDownButton.Flyout>
                   <MenuFlyout>
+                    <MenuFlyoutItem Text="{i18nExt:Localize Key=Sort_Unselected}"
+                                    Command="{x:Bind _vm.ChangeFileSortCommand}"
+                                    CommandParameter="{x:Null}" />
                     <MenuFlyoutItem Text="{i18nExt:Localize Key=FileSortType.UpdateTimeDecending}"
                                     Command="{x:Bind _vm.ChangeFileSortCommand}">
                       <MenuFlyoutItem.CommandParameter>

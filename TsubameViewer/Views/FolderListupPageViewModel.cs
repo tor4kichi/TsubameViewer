@@ -166,7 +166,11 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     FileSortType? _selectedChildFileSortType;
     [ObservableProperty]
+    string? _displaySortTypeInheritancePath;
+    [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
+
+    readonly FileSortType _defaultFileSortType = FileSortType.UpdateTimeAscending;
 
     public Visibility IsFolderItemIsRawFolderAsVisible(IStorageItemViewModel? itemVM)
     {
@@ -564,11 +568,21 @@ public sealed partial class FolderListupPageViewModel
         var settings = _displaySettingsByPathRepository.GetFolderAndArchiveSettings(settingPath);
         if (settings != null)
         {
-            SelectedFileSortType = settings.Sort;
+            DisplaySortTypeInheritancePath = null;
+            SelectedFileSortType = settings.Sort;            
+            SetSortAsyncUnsafe(SelectedFileSortType, path);
+        }
+        else if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+            && parentSort.ChildItemDefaultSort != null
+            )
+        {
+            DisplaySortTypeInheritancePath = parentSort.Path;
+            SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
             SetSortAsyncUnsafe(SelectedFileSortType, path);
         }
         else
         {
+            DisplaySortTypeInheritancePath = null; 
             if (_currentImageSource.StorageItem is StorageFolder)
             {
                 SelectedFileSortType = FileSortType.UpdateTimeDecending;
@@ -581,7 +595,7 @@ public sealed partial class FolderListupPageViewModel
             }
         }
 
-        SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
+        SelectedChildFileSortType = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path)?.ChildItemDefaultSort;
 
         try
         {
@@ -612,7 +626,7 @@ public sealed partial class FolderListupPageViewModel
 
         string path = albam._id.ToString();
         //SelectedChildFileSortType  = _displaySettingsByPathRepository.GetFileParentSettings(path);
-        SelectedChildFileSortType  = FileSortType.None;
+        SelectedChildFileSortType = FileSortType.None;
         SelectedFileSortType = FileSortType.UpdateTimeDecending;
         SetSortAsyncUnsafe(SelectedFileSortType, path);        
 
@@ -848,7 +862,44 @@ public sealed partial class FolderListupPageViewModel
 
         if (sortType.HasValue)
         {
+            DisplaySortTypeInheritancePath = null;
             SelectedFileSortType = sortType.Value;
+            if (_currentImageSource.StorageItem is IStorageItem)
+            {
+                _displaySettingsByPathRepository.SetFolderAndArchiveSettings(_currentImageSource.Path, SelectedFileSortType);
+            }
+            else if (_currentImageSource is AlbamImageSource albamImageSource)
+            {
+                _displaySettingsByPathRepository.SetAlbamSettings(albamImageSource.AlbamId, SelectedFileSortType);
+            }
+            else if (_currentImageSource is AlbamItemImageSource albamItemImageSource)
+            {
+                _displaySettingsByPathRepository.SetAlbamSettings(albamItemImageSource.AlbamId, SelectedFileSortType);
+            }
+        }
+        else
+        {
+            if (_currentImageSource.StorageItem is IStorageItem)
+            {
+                _displaySettingsByPathRepository.ClearFolderAndArchiveSettings(_currentImageSource.Path);
+                if (_displaySettingsByPathRepository.GetFileParentSettingsUpStreamToRoot(_currentImageSource.Path) is not null and var parentSort
+                && parentSort.ChildItemDefaultSort != null
+                )
+                {
+                    DisplaySortTypeInheritancePath = parentSort.Path;
+                    SelectedFileSortType = parentSort.ChildItemDefaultSort.Value;
+                }
+                else
+                {
+                    DisplaySortTypeInheritancePath = null;
+                    SelectedFileSortType = _defaultFileSortType;
+                }
+            }
+            else if (_currentImageSource is AlbamImageSource albamImageSource)
+            {
+                _displaySettingsByPathRepository.ClearAlbamSettings(albamImageSource.AlbamId);
+                SelectedFileSortType = _defaultFileSortType;
+            }
         }
     }
 
@@ -897,7 +948,7 @@ public sealed partial class FolderListupPageViewModel
         }
 
         SelectedChildFileSortType = sortType;
-        _displaySettingsByPathRepository.SetFileParentSettings(_currentImageSource.Path, sortType);
+        _displaySettingsByPathRepository.SetParentFolderImagesSortSettings(_currentImageSource.Path, sortType);
     }
 
     #endregion

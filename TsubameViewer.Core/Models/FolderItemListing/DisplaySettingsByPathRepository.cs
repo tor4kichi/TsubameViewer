@@ -37,7 +37,7 @@ public record FolderAndArchiveChildFileDisplaySettingEntry
     [BsonId]
     public string Path { get; init; } = "";
 
-    public FileSortType? ChildItemDefaultSort { get; init; }
+    public FileSortType? ChildItemDefaultSort { get; set; }
 }
 
 public record AlbamDisplaySettingEntry
@@ -183,6 +183,11 @@ public sealed class DisplaySettingsByPathRepository
         return _internalChildFileRepository.FindById(path)?.ChildItemDefaultSort;
     }
 
+    public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsEntry(string path)
+    {
+        return _internalChildFileRepository.FindById(path);
+    }
+
     public FolderAndArchiveChildFileDisplaySettingEntry? GetFileParentSettingsUpStreamToRoot(string path)
     {
         while (!string.IsNullOrEmpty(path))
@@ -199,13 +204,12 @@ public sealed class DisplaySettingsByPathRepository
     }
 
 
-    public void SetFileParentSettings(string path, FileSortType? sort)
+    public void SetParentFolderImagesSortSettings(string path, FileSortType? sort)
     {
-        _internalChildFileRepository.UpdateItem(new FolderAndArchiveChildFileDisplaySettingEntry()
-        {
-            Path = path,
-            ChildItemDefaultSort = sort,
-        });
+        var entry = _internalChildFileRepository.FindById(path)
+            ?? new FolderAndArchiveChildFileDisplaySettingEntry() { Path = path, };
+        entry.ChildItemDefaultSort = sort;
+        _internalChildFileRepository.UpdateItem(entry);
     }
 
     public void Delete(string path)
