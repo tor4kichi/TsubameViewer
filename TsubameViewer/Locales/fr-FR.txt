@@ -27,7 +27,7 @@ PurchaseAddon_PurchasedThanksMessage = Merci pour votre soutien !
 #### PrimaryWindowCoreLayout
 AddNewFolder = Ajouter un dossier
 Import = Importer
-RefreshLatest = Obtenir les dernières informations
+RefreshLatest = Actualiser la page
 Settings = Paramètres
 SendFeedbackWithMashmallow = Soumettre un feedback
 SendFeedbackWithStoreReview = Soumettre un avis sur le store
@@ -158,7 +158,7 @@ StorageItemSettings_ReadingFinishedThresholdForMovieViewer = Seuil de détermina
 
 
 #### History Page
-HistoryPage_Title = histoire
+HistoryPage_Title = Histoire
 HistoryPage_RemoveAll = Supprimer tout l'historique
 
 
@@ -249,13 +249,14 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
 MovieViewer_SoundVolume = Volume
 NowPlayingWithFFmpegMediaSource = Lecture avec FFmpeg
 IsFFmpegUseFirstToMediaSourceFactory = Prioriser la lecture à l'aide de FFmpeg.
-MovieViewer_VideoTrack = Piste vidéo
+MovieViewer_VideoTrack = Piste vidéo ({0})
 MovieViewer_VideoTrackChanged = Changer la piste vidéo : {0}
-MovieViewer_AudioTrack = Piste audio
+MovieViewer_AudioTrack = Piste audio ({0})
 MovieViewer_AudioTrackChanged = Changer la piste audio : {0}
-
-
-
+MovieViewer_Subtitles = Sous-titre({0})
+MovieViewer_Subtitles_OpenSettings = Paramètres des sous-titres
+MovieViewer_Subtitles_HideAll = Pas de sous-titres
+MovieViewer_Subtitles_Avairable = Sous-titres disponibles
 
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}

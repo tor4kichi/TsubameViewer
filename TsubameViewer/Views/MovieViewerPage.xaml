@@ -734,8 +734,7 @@
                   <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
                                      Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
                   <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
-                                     Text="字幕"
-                                     Visibility="Collapsed" />
+                                     Text="{i18nExt:Localize Key=MovieViewer_Subtitles}" />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>

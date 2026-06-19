@@ -191,8 +191,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
-        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;
-
+        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;        
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
 
@@ -608,6 +607,23 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var mediaSource = MediaSource.CreateFromStorageFile(x);
         db.Add(mediaSource);
         var playbackItem = new MediaPlaybackItem(mediaSource);
+        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
+
+        // 字幕の追加        
+        foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
+        {
+            try
+            {
+                using (var stream = await subsFile.OpenReadAsync())
+                {
+                    var parser = await FFmpegInteropX.SubtitleParser.ReadSubtitleAsync(stream, subsFile.Name, null, null);                    
+                    mediaSource.ExternalTimedMetadataTracks.Add(parser.SubtitleTrack.SubtitleTrack);
+                    db.Add(parser);
+                }
+            }
+            catch { }
+        }
+
         MediaPlayer.Source = playbackItem;
         ct.ThrowIfCancellationRequested();
 
@@ -659,6 +675,21 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         // Note: PlaybackSession 設定するとむしろ壊れる
         //ms.PlaybackSession = MediaPlayer.PlaybackSession;
         db.Add(ms);
+
+        // 字幕の追加
+        foreach (var subsFile in await LoadSameNameSubtitleFilesAsync(x))
+        {
+            try
+            {
+                using (var stream = await subsFile.OpenReadAsync())
+                {
+                    await ms.AddExternalSubtitleAsync(stream, subsFile.Name);
+                }
+            }
+            catch { }
+        }
+        var playbackItem = ms.CreateMediaPlaybackItem();
+        playbackItem.TimedMetadataTracksChanged += PlaybackItem_TimedMetadataTracksChanged;
         await ms.OpenWithMediaPlayerAsync(MediaPlayer);
         try
         {
@@ -720,6 +751,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
 
         return _externalAudioTrackFiles.ElementAtOrDefault(0).PlaybackItem;
+    }
+
+    async Task<List<StorageFile>> LoadSameNameSubtitleFilesAsync(
+        StorageFile videoFile)
+    {
+        var folder = await videoFile.GetParentAsync();
+        string[] fileTypes = [".srt", ".vtt", ".ass", ".ssa", ".txt", ".lrc"];
+        var query = folder.CreateFileQueryWithOptions(
+            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+        return (await query.GetFilesAsync()).Where(subsFile => subsFile.Name.StartsWith(fileName, StringComparison.Ordinal)).ToList();
     }
 
 
@@ -2124,6 +2166,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     ||  _audioPlayer.Source == menuItem.DataContext;
             }
 
+            bool anySubstitleDisplay = false;
+            foreach (var (index, menuItem) in SubtitlesMenuSubItem.Items.Skip(1).SkipLast(2).AsValueEnumerable().Index())
+            {
+                var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented;
+                anySubstitleDisplay |= mode == TimedMetadataTrackPresentationMode.PlatformPresented;
+            }
+
             return; 
         }
 
@@ -2132,11 +2182,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         AudioTracksMenuSubItem.Items.Clear();
         SubtitlesMenuSubItem.Items.Clear();
 
+        // 動画ファイル内の映像
         foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
         {
             var menuItem = new ToggleMenuFlyoutItem()
             {
-                Text = !string.IsNullOrEmpty(videoTrack.Language) ? $"{index+1}. {videoTrack.Name} ({videoTrack.Language})" : videoTrack.Name,
+                Text = !string.IsNullOrWhiteSpace(videoTrack.Language) ? $"{videoTrack.Id}. {videoTrack.Name} ({videoTrack.Language})" : $"{videoTrack.Id}. {videoTrack.Name}",
                 DataContext = videoTrack,
                 IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
                 Command = SetVideoTrackCommand,
@@ -2146,17 +2197,20 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             VideoTracksMenuSubItem.Items.Add(menuItem);
         }
 
+        VideoTracksMenuSubItem.Text = "MovieViewer_VideoTrack".Translate(VideoTracksMenuSubItem.Items.Count);
+
         bool isVideoTracksChangeEnabled = VideoTracksMenuSubItem.Items.Count >= 2;
         foreach (var menuItem in VideoTracksMenuSubItem.Items)
         {
             menuItem.IsEnabled = isVideoTracksChangeEnabled;
         }
         
+        // 動画ファイル内の音声
         foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
         {
             var menuItem = new ToggleMenuFlyoutItem()
             {
-                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{index+1}. {audioTrack.Name} ({audioTrack.Language})" : audioTrack.Name,
+                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{audioTrack.Id}. {audioTrack.Name} ({audioTrack.Language})" : $"{audioTrack.Id}. {audioTrack.Name}",
                 DataContext = audioTrack,
                 IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
                 Command = SetAudioTrackCommand,
@@ -2166,6 +2220,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             AudioTracksMenuSubItem.Items.Add(menuItem);
         }
 
+        // 外部音声
         foreach (var (audioItem, file) in _externalAudioTrackFiles)
         {
             var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
@@ -2186,6 +2241,40 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         {
             menuItem.IsEnabled = isAudioTracksChangeEnabled;
         }
+
+        AudioTracksMenuSubItem.Text = "MovieViewer_AudioTrack".Translate(playbackItem.AudioTracks.Count + _externalAudioTrackFiles.Count);
+
+        // 字幕
+        var noSubtitlesMenuItem = new MenuFlyoutItem()
+        {
+            Text = "MovieViewer_Subtitles_HideAll".Translate(),          
+            Command = SetTimedMetadataTrackCommand,
+            CommandParameter = null,
+        };
+        SubtitlesMenuSubItem.Items.Add(noSubtitlesMenuItem);
+        foreach (var (index, subtitle) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+        {            
+            var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrWhiteSpace(subtitle.Language) ? $"{subtitle.Id} ({subtitle.Language})" : $"{subtitle.Id}",
+                DataContext = subtitle,
+                IsChecked = mode == TimedMetadataTrackPresentationMode.PlatformPresented,
+                Command = SetTimedMetadataTrackCommand,
+                CommandParameter = subtitle,
+            };
+
+            SubtitlesMenuSubItem.Items.Add(menuItem);
+        }
+        
+        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutSeparator());
+        SubtitlesMenuSubItem.Items.Add(new MenuFlyoutItem()
+        {
+            Text = "MovieViewer_Subtitles_OpenSettings".Translate(),
+            Command = OpenSubstitleSettingsCommand,
+        });
+
+        SubtitlesMenuSubItem.Text = "MovieViewer_Subtitles".Translate(playbackItem.TimedMetadataTracks.Count);
     }
 
     [RelayCommand]
@@ -2242,6 +2331,51 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     s.Item1._audioPlayer.Volume = s.Item1.MediaPlayer.Volume;
                 });
         }
+    }
+
+
+    [RelayCommand]
+    void SetTimedMetadataTrack(TimedMetadataTrack? subtitle)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            if (subtitle == null)
+            {
+                foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                {
+                    var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                    if (mode == TimedMetadataTrackPresentationMode.PlatformPresented)
+                    {
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                {
+                    if (subtitle.Id != timed.Id) { continue; }
+                    var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                    playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, mode == TimedMetadataTrackPresentationMode.PlatformPresented 
+                        ? TimedMetadataTrackPresentationMode.Hidden
+                        : TimedMetadataTrackPresentationMode.PlatformPresented);
+                }
+            }
+        }
+    }
+
+    private void PlaybackItem_TimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
+    {
+        if (sender.TimedMetadataTracks.Count > 0)
+        {
+        }
+    }
+
+    [RelayCommand]
+    async Task OpenSubstitleSettingsAsync()
+    {
+        var uri = new Uri("ms-settings:easeofaccess-closedcaptioning");
+        await Launcher.LaunchUriAsync(uri);        
     }
 }
 

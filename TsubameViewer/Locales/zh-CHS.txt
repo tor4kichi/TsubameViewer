@@ -27,7 +27,7 @@ PurchaseAddon_PurchasedThanksMessage = 感谢您的支持！
 #### PrimaryWindowCoreLayout
 AddNewFolder = 新增文件夹
 Import = 导入
-RefreshLatest = 刷新
+RefreshLatest = 刷新页面
 Settings = 设置
 SendFeedbackWithMashmallow = 发送反馈
 SendFeedbackWithStoreReview = 评价此应用
@@ -249,13 +249,14 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
 MovieViewer_SoundVolume = 体积
 NowPlayingWithFFmpegMediaSource = 使用 FFmpeg 播放
 IsFFmpegUseFirstToMediaSourceFactory = 优先使用 FFmpeg 进行播放。
-MovieViewer_VideoTrack = 视频轨道
+MovieViewer_VideoTrack = 视频轨道（{0}）
 MovieViewer_VideoTrackChanged = 切换视频轨道：{0}
-MovieViewer_AudioTrack = 音频轨道
+MovieViewer_AudioTrack = 音频轨道（{0}）
 MovieViewer_AudioTrackChanged = 切换音轨：{0}
-
-
-
+MovieViewer_Subtitles = 副标题({0})
+MovieViewer_Subtitles_OpenSettings = 字幕设置
+MovieViewer_Subtitles_HideAll = 无字幕
+MovieViewer_Subtitles_Avairable = 提供字幕
 
 #### SearchResult
 SearchResultWith = 搜索结果：{0}
