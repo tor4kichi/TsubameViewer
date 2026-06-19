@@ -39,6 +39,7 @@ using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
+using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
@@ -109,6 +110,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     bool? _nextIsDisplayControlUI;
     DispatcherQueueTimer? _mouseCursorAutoHideTimer;
 
+    MediaPlayer _audioPlayer = new();
+   
     void ControlUIInteractionWall_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
         var pt = e.GetCurrentPoint(null);
@@ -198,6 +201,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         async Task d()
         {
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
 
             bool isRotate = _vm.PageSettings.IsPlayerRotateEnabled && MediaPlayer.PlaybackSession.PlaybackRotation is MediaRotation.Clockwise90Degrees or MediaRotation.Clockwise270Degrees;
             bool isStretchAsFill = MyMediaPlayerElement.Stretch is Stretch.Fill or Stretch.UniformToFill;
@@ -229,6 +233,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _mouseCursorAutoHideTimer = null;
             ShowMouseCursor();
             MediaPlayer.Source = null;
+            _audioPlayer.Source = null;
 
             base.OnNavigatingFrom(e);
         }
@@ -368,9 +373,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var isLastPlaying = s.PlayerState == MediaPlaybackState.Playing;
                 var lastPlayPosition = s.VideoPosition;
                 s.MediaPlayer.Source = null;
+                s._audioPlayer.Source = null;
 
                 if (x == null) { return; }
-                if (s.MediaPlayer == null) { return; }
 
                 bool isFirstPlay = s._playbackResources == null;
                 
@@ -406,7 +411,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                             await s.OpenMediaWithFFmpegAsync(x, db, ct);
                             s.NowPlayingWithFFmpegMediaSource = true;
                         }
-                    }
+                    }                    
                 }
                 catch
                 {
@@ -487,10 +492,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                 ts = lastPlayPosition;
                             }
                             _this.MediaPlayer.PlaybackSession.Position = ts;
+                            _this._audioPlayer.PlaybackSession.Position = ts;
                         }
 
                         // Note: 再生後に速度変更する。そうしないと動き出し数フレームが２回再生される症状がでるため。
                         _this.MediaPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
+                        _this._audioPlayer.PlaybackSession.PlaybackRate = _this._vm.PageSettings.PlaybackRate;
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         if (_this.NowPlayingWithFFmpegMediaSource)
@@ -501,6 +508,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         {
                             _this._nowRequestPlayStart = false;
                             _this.MediaPlayer.Play();
+                            _this._audioPlayer.Play();
                         }
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
@@ -599,6 +607,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.Source = playbackItem;
         ct.ThrowIfCancellationRequested();
 
+        if (playbackItem.AudioTracks.Count == 0 && mediaSource.Duration != null && mediaSource.Duration.Value != TimeSpan.Zero && mediaSource.Duration.Value != TimeSpan.MaxValue)
+        {
+            Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
+            _audioPlayer.Source = await LoadSameNameAudioTrackAsync(x, mediaSource.Duration.Value, db); ;
+            Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
+        }
+        else
+        {
+            _audioPlayer.Source = null;
+        }
+
         var props = playbackItem.GetDisplayProperties();
         props.Type = Windows.Media.MediaPlaybackType.Video;
         props.VideoProperties.Title = x.DisplayName;
@@ -617,7 +636,40 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
         }
         catch { }
+
         playbackItem.ApplyDisplayProperties(props);
+    }
+
+    async Task<MediaPlaybackItem?> LoadSameNameAudioTrackAsync(
+        StorageFile videoFile, 
+        TimeSpan videoDuration,
+        ICollection<IDisposable> db)
+    {
+        var folder = await videoFile.GetParentAsync();
+        string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
+        var query = folder.CreateFileQueryWithOptions(
+            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+        foreach (var audioFile in await query.GetFilesAsync())
+        {
+            try
+            {
+                if (!audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)) { continue; }
+
+                var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
+                db.Add(audioMediaSource);
+                Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
+                return new MediaPlaybackItem(audioMediaSource); ;
+            }
+            catch 
+            {
+                var fileStream = await audioFile.OpenReadAsync();
+                var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+                return ms.CreateMediaPlaybackItem();
+            }
+        }
+
+        return null;
     }
 
     [ObservableProperty]
@@ -639,6 +691,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             mss.MaxSupportedPlaybackRate = 4.0;
         }
         catch { }
+
+        (_audioPlayer.Source as IDisposable)?.Dispose();
+        if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
+        {
+            Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
+            _audioPlayer.Source = await LoadSameNameAudioTrackAsync(x, ms.Duration, db);
+            Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
+        }
+        else
+        {
+            _audioPlayer.Source = null;
+        }
 
         _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);
     }
@@ -832,10 +896,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 ps.Position = TimeSpan.Zero;
             }
             MediaPlayer.Play();
+            _audioPlayer.Play();
+            _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         }
         else if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
         {
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
+            _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         }
     }
 
@@ -930,6 +998,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var ts = TimeSpan.FromSeconds((double)e.NewValue);
         _videoPositionChangingFromCode = true;
         MediaPlayer.PlaybackSession.Position = ts;
+        _audioPlayer.PlaybackSession.Position = ts;
     }
 
     bool _prevPlaying;
@@ -940,6 +1009,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
             MediaPlayer.Pause();
+            _audioPlayer.Pause();
         }
     }
 
@@ -951,12 +1021,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 _prevPlaying = false;
                 MediaPlayer.Play();
+                _audioPlayer.Play();
             }
             else
             {
                 // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
                 //MediaPlayer.StepBackwardOneFrame();
                 MediaPlayer.StepForwardOneFrame();
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;
             }
         }
     }
@@ -966,6 +1038,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         if (MediaPlayer == null) { return; }
         MediaPlayer.StepBackwardOneFrame();
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
         // Note: FFmpeg利用時に前フレーム移動後に表示更新されないことがある。仕方なくスルーすることに。
     }
 
@@ -973,12 +1047,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void ForwardOneFrame()
     {
         MediaPlayer.StepForwardOneFrame();
+        _audioPlayer.Pause();
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
 
     void SeekPlaybackPosition(TimeSpan relativeTime)
     {
-        MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + relativeTime;
+        var time = MediaPlayer.PlaybackSession.Position + relativeTime;
+        MediaPlayer.PlaybackSession.Position = time;
+        _audioPlayer.PlaybackSession.Position = time;
     }
 
     void MySwipeDistanceBehavior_Invoked(Behaviors.SwipeDistanceBehavior sender, Behaviors.SwipeDistanceInvokedEventArgs args)
@@ -990,13 +1068,16 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         if (args.X != 0)
         {
             bool isPlaying = PlayerState == MediaPlaybackState.Playing;
-            var ts = TimeSpan.FromSeconds(args.X);
-            MediaPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position + ts;
+            var ts = MediaPlayer.PlaybackSession.Position + TimeSpan.FromSeconds(args.X);
+            MediaPlayer.PlaybackSession.Position = ts;
+            _audioPlayer.PlaybackSession.Position = ts;
 
             // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
             if (!isPlaying)
             {
                 MediaPlayer.StepForwardOneFrame();
+                _audioPlayer.Pause();
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;
             }
         }
         if (args.Y != 0)
@@ -1038,7 +1119,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void SetPlaybackPositionWithPercent(double videoPositionInPercent)
     {
         if (!IsDurationAvairable) { return; }
-        MediaPlayer.PlaybackSession.Position = (VideoDuration * (videoPositionInPercent * 0.01));        
+        var ts = (VideoDuration * (videoPositionInPercent * 0.01));
+        MediaPlayer.PlaybackSession.Position = ts;
+        _audioPlayer.PlaybackSession.Position = ts;
     }
 
 
@@ -1081,6 +1164,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         SetPlaybackRateFromCode((double)e.NewValue);
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
 
@@ -1089,6 +1174,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         SetPlaybackRateFromCode(d);
         MediaPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = _vm.PageSettings.PlaybackRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     [RelayCommand]
@@ -1099,6 +1186,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var nextRate = Math.Min(roundedRate + 0.25f, _maxPlaybackRate);
         SetPlaybackRateFromCode(nextRate);
         MediaPlayer.PlaybackSession.PlaybackRate = nextRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = nextRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     void Button_Tapped(object sender, TappedRoutedEventArgs e)
@@ -1115,6 +1204,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var prevRate = Math.Max(roundedRate - 0.25f, _minPlaybackRate);
         SetPlaybackRateFromCode(prevRate);
         MediaPlayer.PlaybackSession.PlaybackRate = prevRate;
+        _audioPlayer.PlaybackSession.PlaybackRate = prevRate;
+        _audioPlayer.PlaybackSession.Position = MediaPlayer.PlaybackSession.Position;
     }
 
     #endregion
@@ -1139,6 +1230,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         SetSoundVolume(_vm.PageSettings.SoundVolume, _vm.PageSettings.IsMuted);
         MediaPlayer.Volume = 0;
+        _audioPlayer.Volume = 0;
         float increaseVolumeUnit = (float)_vm.PageSettings.SoundVolume / 30f; // 0.5秒
         var timer = DispatcherQueue.GetForCurrentThread().CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(16);
@@ -1148,11 +1240,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             if (nextVolume > _vm.PageSettings.SoundVolume)
             {
                 MediaPlayer.Volume = _vm.PageSettings.SoundVolume;
+                _audioPlayer.Volume = _vm.PageSettings.SoundVolume;
                 s.Stop();                
             }
             else
             {                
                 MediaPlayer.Volume += increaseVolumeUnit;
+                _audioPlayer.Volume = MediaPlayer.Volume;
             }
 
             //Debug.WriteLine($"volume smoothing: {MediaPlayer.Volume*100:F0}%");
@@ -1169,6 +1263,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .Subscribe((this), (x, s) =>
             {
                 s.MediaPlayer.Volume = x;
+                s._audioPlayer.Volume = x;
                 s._soundVolumeNotificationAnimation.Start(s.SoundVolumeNotifier);                
             })
             .AddTo(ref db);
@@ -1201,6 +1296,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         _vm.PageSettings.IsMuted = !_vm.PageSettings.IsMuted;
         MediaPlayer.IsMuted = _vm.PageSettings.IsMuted;
+        _audioPlayer.IsMuted = _vm.PageSettings.IsMuted;
         if (_vm.PageSettings.IsMuted)
         {
             SetSoundVolume(0, true);
@@ -1228,6 +1324,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
 
             MediaPlayer.IsMuted = isMute;
+            _audioPlayer.IsMuted = isMute;
         }
         finally
         {
@@ -1259,6 +1356,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             SoundVolume_Display = volume;            
             MediaPlayer.Volume = volume;
             MediaPlayer.IsMuted = isMute;
+            _audioPlayer.Volume = volume;
+            _audioPlayer.IsMuted = isMute;
             _vm.PageSettings.IsMuted = isMute;
         }
         finally
@@ -1303,6 +1402,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     void BackNavigationRequest()
     {
         MediaPlayer.Pause();
+        _audioPlayer.Pause();
         _messenger.Send(new BackNavigationRequestMessage());
     }
 
