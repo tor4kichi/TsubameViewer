@@ -1266,13 +1266,21 @@ public sealed class ThumbnailImageManager
         }
         catch
         {
-            ThumbnailOptions options = ThumbnailOptions.None;
+            try
             {
-                await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
-                {
-                    return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
-                }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                await FFMpeg_MovieFileThubnailImageWriteToStreamAsync(file, outputStream, ct);
                 return true;
+            }
+            catch
+            {
+                ThumbnailOptions options = ThumbnailOptions.None;
+                {
+                    await TranscodeThumbnailImageToStreamAsync(file.Path, async () =>
+                    {
+                        return (await file.GetScaledImageAsThumbnailAsync(ThumbnailMode.VideosView, requestedSize, options).AsTask(ct)).AsStreamForRead();
+                    }, outputStream, EncodingForFolderOrArchiveFileThumbnailBitmap, ct);
+                    return true;
+                }
             }
         }
     }
