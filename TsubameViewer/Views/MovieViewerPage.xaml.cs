@@ -744,9 +744,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             }
             catch
             {
-                var fileStream = await audioFile.OpenReadAsync();
-                var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
-                _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+                try
+                {
+                    var fileStream = await audioFile.OpenReadAsync();
+                    var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+                    _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+                }
+                catch { }
             }
         }
 
