@@ -664,7 +664,8 @@
                     DragEnter="ListView_DragEnter"
                     SelectionMode="Single"
                     x:Name="MoveToFolderTargetSelector"
-                    Padding="0 0 8 48">
+                    Padding="0 0 8 48"
+                    FlowDirection="RightToLeft">
             <ListView.ItemTemplate>
               <DataTemplate x:DataType="storage:StorageFolder">
                 <TextBlock Text="{x:Bind Name}" />
