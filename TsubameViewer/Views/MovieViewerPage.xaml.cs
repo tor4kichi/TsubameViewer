@@ -191,9 +191,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _messenger = Ioc.Default.GetRequiredService<IMessenger>();
         Loaded += MovieViewerPage_Loaded;
         Unloaded += MovieViewerPage_Unloaded;
+        _audioPlayer.PlaybackSession.PlaybackStateChanged += SyncPlayingPosition_PlaybackSession_PlaybackStateChanged;
 
         _vm.ToggleFullScreenCommand = ToggleFullScreenCommand;
     }
+
     DirectConnectedAnimationConfiguration _animConfig = new();
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
@@ -250,6 +252,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _playbackResources?.Dispose();
         _playbackResources = null;
+
+        ClearExternalAudioTracks();
 
         PlayerContainer.Width = double.NaN;
         PlayerContainer.Height = double.NaN;
@@ -607,16 +611,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.Source = playbackItem;
         ct.ThrowIfCancellationRequested();
 
-        if (playbackItem.AudioTracks.Count == 0 && mediaSource.Duration != null && mediaSource.Duration.Value != TimeSpan.Zero && mediaSource.Duration.Value != TimeSpan.MaxValue)
+        var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
+        if (playbackItem.AudioTracks.Count == 0)
         {
             Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
-            _audioPlayer.Source = await LoadSameNameAudioTrackAsync(x, mediaSource.Duration.Value, db); ;
+            _audioPlayer.Source = extenrnalAudio;
             Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
         }
         else
         {
             _audioPlayer.Source = null;
         }
+        
 
         var props = playbackItem.GetDisplayProperties();
         props.Type = Windows.Media.MediaPlaybackType.Video;
@@ -640,37 +646,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         playbackItem.ApplyDisplayProperties(props);
     }
 
-    async Task<MediaPlaybackItem?> LoadSameNameAudioTrackAsync(
-        StorageFile videoFile, 
-        TimeSpan videoDuration,
-        ICollection<IDisposable> db)
-    {
-        var folder = await videoFile.GetParentAsync();
-        string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
-        var query = folder.CreateFileQueryWithOptions(
-            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
-        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
-        foreach (var audioFile in await query.GetFilesAsync())
-        {
-            try
-            {
-                if (!audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)) { continue; }
-
-                var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
-                db.Add(audioMediaSource);
-                Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
-                return new MediaPlaybackItem(audioMediaSource); ;
-            }
-            catch 
-            {
-                var fileStream = await audioFile.OpenReadAsync();
-                var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
-                return ms.CreateMediaPlaybackItem();
-            }
-        }
-
-        return null;
-    }
 
     [ObservableProperty]
     bool _nowPlayingWithFFmpegMediaSource;
@@ -691,12 +666,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             mss.MaxSupportedPlaybackRate = 4.0;
         }
         catch { }
-
-        (_audioPlayer.Source as IDisposable)?.Dispose();
+        
+        var extenrnalAudio = await LoadSameNameAudioTrackAsync(x, db);
         if (ms.AudioStreams.Count == 0 && ms.Duration != TimeSpan.Zero && ms.Duration != TimeSpan.MaxValue)
         {
             Debug.WriteLine($"video NO AUDIO. TRY find alt audio source.");
-            _audioPlayer.Source = await LoadSameNameAudioTrackAsync(x, ms.Duration, db);
+            _audioPlayer.Source = extenrnalAudio;
             Debug.WriteLine($"vidoe ALT AUDIO: {_audioPlayer.Source != null}");
         }
         else
@@ -706,6 +681,48 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _oneFrameTime = TimeSpan.FromSeconds(1d / ms.CurrentVideoStream.FramesPerSecond);
     }
+
+    void ClearExternalAudioTracks()
+    {
+        foreach (var (item, file) in _externalAudioTrackFiles)
+        {
+            (item.Source as IDisposable)?.Dispose();
+        }
+        _externalAudioTrackFiles.Clear();
+    }
+
+    List<(MediaPlaybackItem PlaybackItem, StorageFile SourceFile)> _externalAudioTrackFiles = [];
+    async Task<MediaPlaybackItem?> LoadSameNameAudioTrackAsync(
+        StorageFile videoFile,
+        ICollection<IDisposable> db)
+    {
+        var folder = await videoFile.GetParentAsync();
+        string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
+        var query = folder.CreateFileQueryWithOptions(
+            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+        ClearExternalAudioTracks();
+        foreach (var audioFile in (await query.GetFilesAsync()).Where(audioFile => audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)))
+        {
+            try
+            {
+                var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
+                db.Add(audioMediaSource);
+                Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
+                _externalAudioTrackFiles.Add((new MediaPlaybackItem(audioMediaSource), audioFile));
+            }
+            catch
+            {
+                var fileStream = await audioFile.OpenReadAsync();
+                var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+                _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+            }
+        }
+
+        return _externalAudioTrackFiles.ElementAtOrDefault(0).PlaybackItem;
+    }
+
+
 
     void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
     {
@@ -2085,6 +2102,146 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         await Launcher.LaunchFolderPathAsync(
             Path.GetDirectoryName(SavedVideoFrameFile.Path),
             new () { ItemsToSelect = { SavedVideoFrameFile } });
+    }
+
+
+    string? _initializeForFilePath;
+
+    private void TracksAndSubtitleSelectFlyout_Opening(object sender, object e)
+    {
+        if (_vm.MovieFile == null) { return; }
+        if (MediaPlayer.Source is not MediaPlaybackItem playbackItem) { return; }
+        if (_initializeForFilePath != null && _initializeForFilePath == _vm.MovieFile.Path) 
+        {
+            foreach (var (index, menuItem) in VideoTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            {
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.VideoTracks.SelectedIndex == index;
+            }
+
+            foreach (var (index, menuItem) in AudioTracksMenuSubItem.Items.AsValueEnumerable().Index())
+            {
+                (menuItem as ToggleMenuFlyoutItem)?.IsChecked = playbackItem.AudioTracks.SelectedIndex == index 
+                    ||  _audioPlayer.Source == menuItem.DataContext;
+            }
+
+            return; 
+        }
+
+        _initializeForFilePath = _vm.MovieFile.Path;
+        VideoTracksMenuSubItem.Items.Clear();
+        AudioTracksMenuSubItem.Items.Clear();
+        SubtitlesMenuSubItem.Items.Clear();
+
+        foreach (var (index, videoTrack) in playbackItem.VideoTracks.AsValueEnumerable().Index())
+        {
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrEmpty(videoTrack.Language) ? $"{index+1}. {videoTrack.Name} ({videoTrack.Language})" : videoTrack.Name,
+                DataContext = videoTrack,
+                IsChecked = playbackItem.VideoTracks.SelectedIndex == index,
+                Command = SetVideoTrackCommand,
+                CommandParameter = videoTrack,
+            };
+
+            VideoTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        bool isVideoTracksChangeEnabled = VideoTracksMenuSubItem.Items.Count >= 2;
+        foreach (var menuItem in VideoTracksMenuSubItem.Items)
+        {
+            menuItem.IsEnabled = isVideoTracksChangeEnabled;
+        }
+        
+        foreach (var (index, audioTrack) in playbackItem.AudioTracks.AsValueEnumerable().Index())
+        {
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = !string.IsNullOrEmpty(audioTrack.Language) ? $"{index+1}. {audioTrack.Name} ({audioTrack.Language})" : audioTrack.Name,
+                DataContext = audioTrack,
+                IsChecked = playbackItem.AudioTracks.SelectedIndex == index,
+                Command = SetAudioTrackCommand,
+                CommandParameter = audioTrack,
+            };
+
+            AudioTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        foreach (var (audioItem, file) in _externalAudioTrackFiles)
+        {
+            var audioTrack = audioItem.AudioTracks.ElementAtOrDefault(0);
+            var menuItem = new ToggleMenuFlyoutItem()
+            {
+                Text = $"{file.Name}",
+                DataContext = audioItem,
+                IsChecked = _audioPlayer.Source == audioItem,
+                Command = SetExternalAudioTrackCommand,
+                CommandParameter = audioItem,
+            };
+
+            AudioTracksMenuSubItem.Items.Add(menuItem);
+        }
+
+        bool isAudioTracksChangeEnabled = AudioTracksMenuSubItem.Items.Count >= 2;
+        foreach (var menuItem in AudioTracksMenuSubItem.Items)
+        {
+            menuItem.IsEnabled = isAudioTracksChangeEnabled;
+        }
+    }
+
+    [RelayCommand]
+    void SetVideoTrack(VideoTrack videoTrack)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            var index = playbackItem.VideoTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == videoTrack.Id).Index;
+            playbackItem.VideoTracks.SelectedIndex = index;
+            _messenger.SendShowTextNotificationMessage("MovieViewer_VideoTrackChanged".Translate($"{index+1}. {videoTrack.Name}"));
+        }
+    }
+
+    [RelayCommand]
+    void SetAudioTrack(AudioTrack audioTrack)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem)
+        {
+            _audioPlayer.Source = null;
+            var index = playbackItem.AudioTracks.AsValueEnumerable().Index().FirstOrDefault(x => x.Item.Id == audioTrack.Id).Index;
+            playbackItem.AudioTracks.SelectedIndex = index;
+            _messenger.SendShowTextNotificationMessage("MovieViewer_AudioTrackChanged".Translate($"{index+1}. {audioTrack.Name}"));
+        }
+    }
+
+    [RelayCommand]
+    void SetExternalAudioTrack(MediaPlaybackItem audioPlaybackItem)
+    {
+        if (MediaPlayer.Source is MediaPlaybackItem playbackItem
+            && playbackItem.AudioTracks.SelectedIndex >= 0)
+        {
+            playbackItem.AudioTracks.SelectedIndex = -1;
+        }
+        _audioPlayer.Source = audioPlaybackItem;
+        _audioPlayer.Volume = 0;
+        if (MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        {
+            _audioPlayer.Play();
+        }
+        
+        if (_externalAudioTrackFiles.FirstOrDefault(x => x.PlaybackItem == audioPlaybackItem).SourceFile is { } file)
+        _messenger.SendShowTextNotificationMessage($"音声トラックを変更：{file.Name}");
+    }
+
+    private void SyncPlayingPosition_PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        if (sender.PlaybackState == MediaPlaybackState.Playing)
+        {
+            Observable.NextFrame()
+                .Subscribe((this, sender), (_, s) =>
+                {
+                    s.Item1._audioPlayer.PlaybackSession.PlaybackRate = s.Item1.MediaPlayer.PlaybackSession.PlaybackRate;
+                    s.sender.Position = s.Item1.MediaPlayer.PlaybackSession.Position;
+                    s.Item1._audioPlayer.Volume = s.Item1.MediaPlayer.Volume;
+                });
+        }
     }
 }
 

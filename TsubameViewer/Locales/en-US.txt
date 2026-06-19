@@ -249,6 +249,12 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = Play from {0}%
 MovieViewer_SoundVolume = Volume
 NowPlayingWithFFmpegMediaSource = Playing using FFmpeg
 IsFFmpegUseFirstToMediaSourceFactory = Prioritize playback using FFmpeg.
+MovieViewer_VideoTrack = Video Track
+MovieViewer_VideoTrackChanged = Change video track: {0}
+MovieViewer_AudioTrack = Audio Track
+MovieViewer_AudioTrackChanged = Change audio track: {0}
+
+
 
 
 #### SearchResult

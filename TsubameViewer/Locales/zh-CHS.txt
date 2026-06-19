@@ -249,6 +249,12 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = 从 {0}% 处开始播放
 MovieViewer_SoundVolume = 体积
 NowPlayingWithFFmpegMediaSource = 使用 FFmpeg 播放
 IsFFmpegUseFirstToMediaSourceFactory = 优先使用 FFmpeg 进行播放。
+MovieViewer_VideoTrack = 视频轨道
+MovieViewer_VideoTrackChanged = 切换视频轨道：{0}
+MovieViewer_AudioTrack = 音频轨道
+MovieViewer_AudioTrackChanged = 切换音轨：{0}
+
+
 
 
 #### SearchResult

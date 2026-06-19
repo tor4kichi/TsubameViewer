@@ -249,6 +249,12 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = {0}%の位置から再生
 MovieViewer_SoundVolume = 音量
 NowPlayingWithFFmpegMediaSource = FFmpegを利用して再生中
 IsFFmpegUseFirstToMediaSourceFactory = FFmpegを優先して再生する
+MovieViewer_VideoTrack = 映像トラック
+MovieViewer_VideoTrackChanged = 映像トラックを変更：{0}
+MovieViewer_AudioTrack = 音声トラック
+MovieViewer_AudioTrackChanged = 音声トラックを変更：{0}
+
+
 
 
 #### SearchResult

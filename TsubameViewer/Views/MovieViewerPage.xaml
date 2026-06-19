@@ -674,8 +674,10 @@
               <SymbolIcon Symbol="Setting" />
 
               <Button.Flyout>
-                <MenuFlyout Opened="MenuFlyout_Opened"
-                            Closed="MenuFlyout_Closed">
+                <MenuFlyout Opening="TracksAndSubtitleSelectFlyout_Opening" 
+                            Opened="MenuFlyout_Opened"
+                            Closed="MenuFlyout_Closed"
+                            Placement="TopEdgeAlignedRight">
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=NowPlayingWithFFmpegMediaSource}"
                                         IsChecked="{x:Bind NowPlayingWithFFmpegMediaSource, Mode=OneWay}"
                                   IsEnabled="False" />
@@ -726,6 +728,14 @@
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                  <MenuFlyoutSeparator />
+                  <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
+                  <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
+                  <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
+                                     Text="字幕"
+                                     Visibility="Collapsed" />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>

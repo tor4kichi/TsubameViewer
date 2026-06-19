@@ -249,6 +249,12 @@ MovieViewer_SC_SetPlaybackPositionWithPercent = Lire à partir de {0} %
 MovieViewer_SoundVolume = Volume
 NowPlayingWithFFmpegMediaSource = Lecture avec FFmpeg
 IsFFmpegUseFirstToMediaSourceFactory = Prioriser la lecture à l'aide de FFmpeg.
+MovieViewer_VideoTrack = Piste vidéo
+MovieViewer_VideoTrackChanged = Changer la piste vidéo : {0}
+MovieViewer_AudioTrack = Piste audio
+MovieViewer_AudioTrackChanged = Changer la piste audio : {0}
+
+
 
 
 #### SearchResult
