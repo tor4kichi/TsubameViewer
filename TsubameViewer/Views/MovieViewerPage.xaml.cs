@@ -8,12 +8,14 @@ using DryIoc.ImTools;
 using FFmpegInteropX;
 using I18NPortable;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.VisualBasic;
 using PDFtoImage;
 using R3;
 using R3.Extensions;
 using SharpCompress.Common;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -38,6 +40,7 @@ using TsubameViewer.Views.Helpers;
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.DirectX;
 using Windows.Graphics.Display;
 using Windows.Media.Audio;
 using Windows.Media.Core;
@@ -49,6 +52,7 @@ using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.System;
 using Windows.System.Display;
+using Windows.UI;
 using Windows.UI.Composition;
 using Windows.UI.Core;
 using Windows.UI.Notifications;
@@ -252,6 +256,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         _playbackResources?.Dispose();
         _playbackResources = null;
+        _frameGrabber = null;
+        SeekbarFrameImageSource = null;
+        _videoFrameBitmap?.Dispose();
+        _videoFrameBitmap = null;
 
         ClearExternalAudioTracks();
 
@@ -314,6 +322,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
         Window.Current.CoreWindow.PointerMoved += CoreWindow_VideoPositionSlider_PointerMoved;
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
 
         DisposableBuilder db = new();
         
@@ -379,7 +388,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 var lastPlayPosition = s.VideoPosition;
                 s.MediaPlayer.Source = null;
                 s._audioPlayer.Source = null;
-
+                s._frameGrabber = null;
                 if (x == null) { return; }
 
                 bool isFirstPlay = s._playbackResources == null;
@@ -423,6 +432,17 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     db.Dispose();
                     throw;
                 }
+
+                try
+                {
+                    var stream = await x.OpenReadAsync();
+                    var fg = await FrameGrabber.CreateFromStreamAsync(stream);
+                    fg.DecodePixelHeight = 64;
+                    s._frameGrabber = fg;
+                    db.Add(stream);
+                    db.Add(fg);
+                }
+                catch { }
 
                 ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
                     h => s.MediaPlayer.PlaybackSession.PositionChanged += h,
@@ -596,13 +616,84 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        this.ObservePropertyChanged(x => x.SeekbarFrameTime, false)
+            .Debounce(TimeSpan.FromMilliseconds(10))
+            .IgnoreOnErrorResume()
+            .SubscribeAwait(this, static async (videoPos, s, ct) =>
+            {
+                if (s._frameGrabber == null) { return; }
+                if (s._lastPointerDeviceType == PointerDeviceType.Touch)
+                {
+                    return; 
+                }
+
+                long ts = TimeProvider.System.GetTimestamp();
+                if (s.SeekbarFrameImageSource == null)
+                {
+                    float imageWidth;
+                    float imageHeight;
+                    if (s.MediaPlayer.PlaybackSession.NaturalVideoWidth > s.MediaPlayer.PlaybackSession.NaturalVideoHeight)
+                    {
+                        // 横長
+                        imageWidth = s._vm.PageSettings.VideoFrameThumbnailSize;
+                        imageHeight = (float)Math.Floor(s.MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth));
+                        s.MovieSeekbarTooltipImage.Width = imageWidth;
+                        s.MovieSeekbarTooltipImage.Height = double.NaN;
+                    }
+                    else
+                    {
+                        // 縦長
+                        imageHeight = s._vm.PageSettings.VideoFrameThumbnailSize;
+                        imageWidth = (float)Math.Floor(s.MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / s.MediaPlayer.PlaybackSession.NaturalVideoHeight));
+                        s.MovieSeekbarTooltipImage.Width = double.NaN;
+                        s.MovieSeekbarTooltipImage.Height = imageHeight;
+                    }
+
+                    s.SeekbarFrameImageSource = new CanvasImageSource(
+                        CanvasDevice.GetSharedDevice(),
+                        imageWidth,
+                        imageHeight,
+                        DisplayInformation.GetForCurrentView().LogicalDpi);
+                }
+
+                if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
+                {                    
+                    using var frame = await s._frameGrabber.ExtractVideoFrameAsync(pos).AsTask(ct);
+                    if (s._videoFrameBitmap == null)
+                    {
+                        s._videoFrameBitmap = CanvasBitmap.CreateFromBytes(
+                            CanvasDevice.GetSharedDevice(),
+                            frame.PixelData,
+                            (int)frame.PixelWidth,
+                            (int)frame.PixelHeight,
+                            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+                    }
+                    else
+                    {
+                        s._videoFrameBitmap.SetPixelBytes(frame.PixelData);
+                    }
+                    ct.ThrowIfCancellationRequested();
+                    using (var ds = s.SeekbarFrameImageSource.CreateDrawingSession(Colors.Transparent))
+                    {
+                        ds.Antialiasing = CanvasAntialiasing.Aliased;
+                        ds.Transform = Matrix3x2.CreateScale((float)s.MovieSeekbarTooltipImage.ActualWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth);                        
+                        ds.DrawImage(s._videoFrameBitmap);
+                    }
+                }
+
+                s.MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+                Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
+            }, AwaitOperation.Drop)            
+            .AddTo(ref db);
+
+
         HandleWindowDisplayState(ref db);
         HandleSoundVolumeChanged(ref db);
         HandleLoopingChanged(ref db);
         HandlePlaybackRateChanged(ref db);
 
         db.Build().RegisterTo(this.GetCancellationTokenOnUnloaded());
-    }
+    }    
 
     async Task OpenMediaWithDefaultAsync(StorageFile x, ICollection<IDisposable> db, CancellationToken ct)
     {
@@ -1054,35 +1145,88 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void VideoPositionSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
-        if (((FrameworkElement)sender).IsLoaded == false) { return; }
-        if (_videoPositionChangingFromCode) 
-        {
-            return; 
-        }
+        //if (((FrameworkElement)sender).IsLoaded == false) { return; }
+        //if (_videoPositionChangingFromCode) 
+        //{
+        //    return; 
+        //}
 
-        var ts = TimeSpan.FromSeconds((double)e.NewValue);
-        _videoPositionChangingFromCode = true;
-        MediaPlayer.PlaybackSession.Position = ts;
-        _audioPlayer.PlaybackSession.Position = ts;
+        //var ts = TimeSpan.FromSeconds((double)e.NewValue);
+        //_videoPositionChangingFromCode = true;
+        //MediaPlayer.PlaybackSession.Position = ts;
+        //_audioPlayer.PlaybackSession.Position = ts;
     }
 
+
+    void RefreshSeekbarThumbnailContainerPosition(Vector2 pos)
+    {
+
+        var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+        var offset = ts.TransformPoint(new Point()).ToVector2();
+        var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+        var videoPos = VideoDuration * posRatio;
+        var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+        SeekbarFrameTime = videoPos;
+        var timeText = TimeSpanHelper.FormatTimeSpan(videoPosAligned);
+        if (!MovieSeekbarTooltipText.Text.Equals(timeText, StringComparison.Ordinal))
+        {
+            MovieSeekbarTooltipText.Text = timeText;
+        }
+
+        float imageWidth = 0;
+        float imageHeight = 0;
+        if (MovieSeekbarTooltipContainer.ActualWidth == 0 && _lastPointerDeviceType != PointerDeviceType.Touch)
+        {
+            if (MediaPlayer.PlaybackSession.NaturalVideoWidth > MediaPlayer.PlaybackSession.NaturalVideoHeight)
+            {
+                // 横長
+                imageWidth = _vm.PageSettings.VideoFrameThumbnailSize;
+                imageHeight = (float)Math.Floor(MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / MediaPlayer.PlaybackSession.NaturalVideoWidth));
+                MovieSeekbarTooltipImage.Width = imageWidth;
+                MovieSeekbarTooltipImage.Height = double.NaN;
+            }
+            else
+            {
+                // 縦長
+                imageHeight = _vm.PageSettings.VideoFrameThumbnailSize;
+                imageWidth = (float)Math.Floor(MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / MediaPlayer.PlaybackSession.NaturalVideoHeight));
+                MovieSeekbarTooltipImage.Width = double.NaN;
+                MovieSeekbarTooltipImage.Height = imageHeight;
+            }
+
+            imageWidth += (float)MovieSeekbarTooltipContainer.Padding.Left + (float)MovieSeekbarTooltipContainer.Padding.Right;
+            imageHeight += (float)MovieSeekbarTooltipContainer.Padding.Top + (float)MovieSeekbarTooltipContainer.Padding.Bottom;
+        }
+        else
+        {
+            imageWidth = (float)MovieSeekbarTooltipContainer.ActualWidth;
+            imageHeight = (float)MovieSeekbarTooltipContainer.ActualHeight;
+        }
+
+        MovieSeekbarTooltipContainer.Translation = new Vector3(
+            pos.X - offset.X - imageWidth * 0.5f,
+            -offset.Y - 48 - imageHeight,
+            0);
+
+        if (_videoPositionsliderPointerPressed)
+        {
+            _videoPositionChangingFromCode = true;
+            MediaPlayer.PlaybackSession.Position = videoPos;
+            _audioPlayer.PlaybackSession.Position = videoPos;
+            VideoPosition = videoPos;
+        }
+    }
+
+    FrameGrabber? _frameGrabber;
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
         {
-            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
-            var offset = ts.TransformPoint(new Point()).ToVector2();
-            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-            var videoPos = VideoDuration * posRatio;
-            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+            _mouseCursorAutoHideTimer?.Stop();
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
 
-            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-            var timeText = TimeSpanHelper.FormatTimeSpan(videoPosAligned);
-            MovieSeekbarTooltipText.Text = timeText;
-            MovieSeekbarTooltipContainer.Translation = new Vector3(
-                pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
-                -offset.Y - 48 - 32, 
-                0);
+            RefreshSeekbarThumbnailContainerPosition(pos);
         }
         else
         {
@@ -1090,15 +1234,33 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    [ObservableProperty]
+    TimeSpan? _seekbarFrameTime;
+
+    [ObservableProperty]
+    CanvasImageSource? _seekbarFrameImageSource;
+
+    CanvasBitmap? _videoFrameBitmap;
     bool _prevPlaying;
+    bool _videoPositionsliderPointerPressed;
+    PointerDeviceType _lastPointerDeviceType;
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out var pos))
         {
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
             Debug.WriteLine("IsContactUIElement(PlaybackRateSlider)");
             _prevPlaying = PlayerState is MediaPlaybackState.Playing;
             MediaPlayer.Pause();
             _audioPlayer.Pause();
+            _videoPositionsliderPointerPressed = true;
+
+            RefreshSeekbarThumbnailContainerPosition(pos);
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            _videoPositionsliderPointerPressed = false;
         }
     }
 
@@ -1119,10 +1281,24 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 MediaPlayer.StepForwardOneFrame();
                 _audioPlayer.PlaybackSession.Position += _oneFrameTime;                
             }
-            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
-            var videoPos = VideoDuration * posRatio;
-            VideoPosition = videoPos;
+
+            if (_videoPositionsliderPointerPressed)
+            {
+                var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+                var offset = ts.TransformPoint(new Point()).ToVector2();
+                var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+                var videoPos = VideoDuration * posRatio;
+                //var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+                _videoPositionChangingFromCode = true;
+                MediaPlayer.PlaybackSession.Position = videoPos;
+                _audioPlayer.PlaybackSession.Position = videoPos;
+                VideoPosition = videoPos;
+            }
         }
+
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        _videoPositionsliderPointerPressed = false;
     }
 
     [RelayCommand]

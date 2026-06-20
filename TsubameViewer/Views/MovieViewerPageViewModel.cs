@@ -45,6 +45,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _isPlayerStretchEnabled = Read(false, nameof(IsPlayerStretchEnabled));
         _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
         _isFFmpegUseFirstToMediaSourceFactory = Read(false, nameof(IsFFmpegUseFirstToMediaSourceFactory));
+        _videoFrameThumbnailSize = Read(200, nameof(VideoFrameThumbnailSize));
     }
     
     bool _isRepeat;
@@ -117,6 +118,13 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         set => SetProperty(ref _isFFmpegUseFirstToMediaSourceFactory, value);
     }
 
+
+    int _videoFrameThumbnailSize;
+    public int VideoFrameThumbnailSize
+    {
+        get => _videoFrameThumbnailSize;
+        set => SetProperty(ref _videoFrameThumbnailSize, value);
+    }
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase

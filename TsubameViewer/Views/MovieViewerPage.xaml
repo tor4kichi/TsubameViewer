@@ -530,7 +530,8 @@
                   AccessKey="B"
                   IsEnabled="{x:Bind IsDurationAvairable, Mode=OneWay}"
                   KeyboardAcceleratorPlacementMode="Hidden"
-                  KeyTipPlacementMode="Hidden">
+                  KeyTipPlacementMode="Hidden"
+                  uwpUIExtensions:FrameworkElementExtensions.Cursor="Hand">
             <Slider.KeyboardAccelerators>
               <KeyboardAccelerator Key="4" />
             </Slider.KeyboardAccelerators>
@@ -1003,10 +1004,22 @@
           Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
-          Padding="8"
+          Padding="4 2"
           CornerRadius="4"
           >
-      <TextBlock x:Name="MovieSeekbarTooltipText" />
+      <Border CornerRadius="4">
+        <Image x:Name="MovieSeekbarTooltipImage"
+               Source="{x:Bind SeekbarFrameImageSource, Mode=OneWay}"               
+               Stretch="Uniform"/>
+      </Border>
+      <Border Background="{ThemeResource SystemAltMediumColor}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Padding="4 0">
+        <TextBlock x:Name="MovieSeekbarTooltipText"
+                   Text="{x:Bind SeekbarFrameTime, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}"
+                   FontSize="18" />
+      </Border>
     </Grid>
   </Grid>
 </Page>
