@@ -118,14 +118,14 @@
 
     
 
-    <MenuFlyout x:Key="DesktopViewManagementFlyout">
+    <!--<MenuFlyout x:Key="DesktopViewManagementFlyout">
       <MenuFlyoutItem Command="{x:Bind _vm.ToggleFullScreenCommand}"
                       x:Name="SwitchFullScreeMenuItem"
                       Visibility="Collapsed"
                       >
         
       </MenuFlyoutItem>
-    </MenuFlyout>
+    </MenuFlyout>-->
 
     <!-- 動画ビューアでXキーが使えない問題が生じるため使わない -->
     <!--<XamlUICommand x:Key="ZoomResetUICommand" Command="{x:Bind ZoomResetCommand}"
@@ -234,7 +234,6 @@
   -->
   <Grid x:Name="RootGrid" uwpUIExtensions:FrameworkElementExtensions.EnableActualSizeBinding="True"
         IsHitTestVisible="True" Background="Transparent"
-        ContextFlyout="{StaticResource DesktopViewManagementFlyout}"
         >
     
     <i:Interaction.Behaviors>
@@ -998,12 +997,28 @@
     <Grid x:Name="PageSelectorTooltipContainer"
           Visibility="Collapsed"
           IsHitTestVisible="False"
-          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
-          Padding="8"
-          CornerRadius="4">
-      <TextBlock x:Name="PageSelectorTooltipText" />
+          CornerRadius="4"
+          Width="200"
+          Height="200">
+      <Border CornerRadius="4"
+              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Padding="4">
+        <Image x:Name="MovieSeekbarTooltipImage"       
+               Stretch="Uniform"               
+               />
+      </Border>
+      <Border Background="{ThemeResource SystemAltMediumColor}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Padding="4 0"
+              CornerRadius="4 4 0 0">
+        <TextBlock x:Name="PageSelectorTooltipText"
+                   FontSize="18" />
+      </Border>
     </Grid>
 
     <VisualStateManager.VisualStateGroups>

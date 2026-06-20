@@ -1,13 +1,18 @@
-﻿using CommunityToolkit.Mvvm.DependencyInjection;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
+using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using Microsoft.Toolkit.Uwp.UI.Controls;
 using R3;
 using R3.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reactive;
@@ -18,6 +23,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
 using TsubameViewer.ViewModels;
 using TsubameViewer.ViewModels.Albam.Commands;
@@ -26,6 +32,8 @@ using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
 using Windows.Foundation;
+using Windows.Graphics.DirectX;
+using Windows.Graphics.Display;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
@@ -37,6 +45,7 @@ using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 #nullable enable
 namespace TsubameViewer.Views;
@@ -54,6 +63,7 @@ public sealed class RequestConnectedAnimationMessage : AsyncRequestMessage<UIEle
     public string TargetItemPath { get; }
 }
 
+[ObservableObject]
 public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
 {
     public DataTemplate? GetContent()
@@ -132,48 +142,124 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
         Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
+
+        var thumbnailManager = Ioc.Default.GetRequiredService<ThumbnailImageManager>();
+        this.ObservePropertyChanged(x => x.PageSelectorCandidateImageIndex, false)
+            .DistinctUntilChanged()
+            .Debounce(TimeSpan.FromMilliseconds(10))
+            .SubscribeAwait((this, thumbnailManager), static async (x, state, ct) => 
+            {
+                var (s, thumbnailManager) = state;
+                //if (s._lastPointerDeviceType == PointerDeviceType.Touch)
+                {
+                    //s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    //return;
+                }
+
+                long ts = TimeProvider.System.GetTimestamp();
+
+                var imageSource = await s._vm.GetImageSourceWithCacheAsync(s.PageSelectorCandidateImageIndex, ct);
+                using (var imageStream = await thumbnailManager.GetThumbnailImageStreamAsync(imageSource, ct: ct))
+                {
+                    if (s.MovieSeekbarTooltipImage.Source is not BitmapImage image)
+                    {
+                        s.MovieSeekbarTooltipImage.Source  = image = new BitmapImage();
+                    }
+
+                    await image.SetSourceAsync(imageStream.AsRandomAccessStream());
+
+                    s.MovieSeekbarTooltipImage.Source = image;                    
+                }
+
+                s.MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+                Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
+            }, AwaitOperation.Drop)
+            .RegisterTo(this.GetCancellationTokenOnUnloaded());
     }
+
+    [ObservableProperty]
+    int _pageSelectorCandidateImageIndex;
+
+    [ObservableProperty]
+    CanvasImageSource? _seekbarFrameImageSource;
+
+    CanvasBitmap? _videoFrameBitmap;
+
+    PointerDeviceType _lastPointerDeviceType;
 
     bool _nowPressedOnPageSlider;
     private void CoreWindow_PageSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
-        _nowPressedOnPageSlider = args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos);
+        _nowPressedOnPageSlider = args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos) 
+            && ImageSelectorContainer.Visibility == Visibility.Visible;
         if (_nowPressedOnPageSlider)
         {
-            var ts = Window.Current.Content.TransformToVisual(PageSelector);
-            var offset = ts.TransformPoint(new Point()).ToVector2();
-            var posRatio = pos.X / (PageSelector.ActualWidth - 1);
-            var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;
-            _vm.ChangePageCommand.Execute(pagePos);
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            _lastPointerPosition = pos;
+            RefreshPageSelectorTooltipContainerTranslation();
+            if (_nowPressedOnPageSlider)
+            {
+                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
+                {
+                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
+                }
+                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+            }
         }
     }
     private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
+        MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
         _nowPressedOnPageSlider = false;
+    }
+
+    Vector2 _lastPointerPosition;
+    int _lastPageChangeRequestImageIndex;
+    void RefreshPageSelectorTooltipContainerTranslation()
+    {
+        var pos = _lastPointerPosition;
+        bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
+        var ts = Window.Current.Content.TransformToVisual(PageSelector);
+        var offset = ts.TransformPoint(new Point()).ToVector2();
+        var posRatio = pos.X / (PageSelector.ActualWidth - 1);
+        var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;
+        PageSelectorTooltipText.Text = (pagePos + 1).ToString();        
+        PageSelectorTooltipContainer.Translation = new Vector3(
+            isRightToLeft
+                ? -pos.X + offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f
+                : pos.X - offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f,
+            -offset.Y - 48  - (float)PageSelectorTooltipContainer.ActualHeight,
+            0);
+
+        PageSelectorCandidateImageIndex = pagePos;
     }
 
     private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
+        if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos)
+            && ImageSelectorContainer.Visibility == Visibility.Visible)
         {
-            bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
-            var ts = Window.Current.Content.TransformToVisual(PageSelector);
-            var offset = ts.TransformPoint(new Point()).ToVector2();
-            var posRatio = pos.X / (PageSelector.ActualWidth - 1);
-            var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;            
-            PageSelectorTooltipText.Text = pagePos.ToString();
-            PageSelectorTooltipContainer.Translation = new Vector3(
-                isRightToLeft  
-                    ? - pos.X + offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f
-                    : pos.X - offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f,
-                -offset.Y - 48 - 32,
-                0);
-
+            _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;
+            _lastPointerPosition = pos;
+            RefreshPageSelectorTooltipContainerTranslation();
             if (_nowPressedOnPageSlider)
             {
-                _vm.ChangePageCommand.Execute(pagePos);
+                if (_lastPageChangeRequestImageIndex != PageSelectorCandidateImageIndex)
+                {
+                    _vm.ChangePageCommand.Execute(PageSelectorCandidateImageIndex);
+                    _lastPageChangeRequestImageIndex = PageSelectorCandidateImageIndex;
+                }
+                PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
             }
-            PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+            else
+            {
+                PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+            }
         }
         else
         {
