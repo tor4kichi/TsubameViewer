@@ -244,6 +244,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     {
         Window.Current.CoreWindow.PointerPressed -= CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased -= CoreWindow_VideoPositionSlider_PointerReleased;
+        Window.Current.CoreWindow.PointerMoved -= CoreWindow_VideoPositionSlider_PointerMoved;
 
         MediaPlayer.PlaybackSession.PlaybackStateChanged -= PlaybackSession_PlaybackStateChanged;
         MediaPlayer.PlaybackSession.NaturalDurationChanged -= PlaybackSession_NaturalDurationChanged;
@@ -312,6 +313,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
         Window.Current.CoreWindow.PointerPressed += CoreWindow_VideoPositionSlider_PointerPressed;
         Window.Current.CoreWindow.PointerReleased += CoreWindow_VideoPositionSlider_PointerReleased;
+        Window.Current.CoreWindow.PointerMoved += CoreWindow_VideoPositionSlider_PointerMoved;
 
         DisposableBuilder db = new();
         
@@ -1064,6 +1066,30 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _audioPlayer.PlaybackSession.Position = ts;
     }
 
+    private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    {
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
+        {
+            var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
+            var offset = ts.TransformPoint(new Point()).ToVector2();
+            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+            var videoPos = VideoDuration * posRatio;
+            var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
+
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
+            var timeText = TimeSpanHelper.FormatTimeSpan(videoPosAligned);
+            MovieSeekbarTooltipText.Text = timeText;
+            MovieSeekbarTooltipContainer.Translation = new Vector3(
+                pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
+                -offset.Y - 48 - 32, 
+                0);
+        }
+        else
+        {
+            MovieSeekbarTooltipContainer.Visibility = Visibility.Collapsed;
+        }
+    }
+
     bool _prevPlaying;
     void CoreWindow_VideoPositionSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
     {
@@ -1078,7 +1104,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void CoreWindow_VideoPositionSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
         {
             if (_prevPlaying)
             {
@@ -1091,8 +1117,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 // おまじない：一時停止中の再生位置移動後にフレームが更新されない問題への対処
                 //MediaPlayer.StepBackwardOneFrame();
                 MediaPlayer.StepForwardOneFrame();
-                _audioPlayer.PlaybackSession.Position += _oneFrameTime;
+                _audioPlayer.PlaybackSession.Position += _oneFrameTime;                
             }
+            var posRatio = pos.X / VideoPositionSlider.ActualWidth;
+            var videoPos = VideoDuration * posRatio;
+            VideoPosition = videoPos;
         }
     }
 

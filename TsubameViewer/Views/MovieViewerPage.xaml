@@ -521,6 +521,7 @@
                   Value="{x:Bind ToTotalSeconds(VideoPosition), Mode=OneWay}"
                   ValueChanged="VideoPositionSlider_ValueChanged"
                   ThumbToolTipValueConverter="{StaticResource SecondsToVideoTimeConverter}"
+                  IsThumbToolTipEnabled="False"
                   TickFrequency="1"
                   StepFrequency="1"
                   Padding="0"
@@ -995,5 +996,17 @@
         </uwpControls:WrapPanel>
       </uwpControls:DockPanel>
     </uwpControls:InAppNotification>
+
+    <Grid x:Name="MovieSeekbarTooltipContainer" 
+          Visibility="Collapsed"
+          IsHitTestVisible="False"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Top"
+          Padding="8"
+          CornerRadius="4"
+          >
+      <TextBlock x:Name="MovieSeekbarTooltipText" />
+    </Grid>
   </Grid>
 </Page>
