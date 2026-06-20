@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CommunityToolkit.Mvvm.Messaging.Messages;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using Microsoft.Toolkit.Uwp.UI.Controls;
 using R3;
 using R3.Extensions;
 using System;
@@ -24,8 +25,10 @@ using TsubameViewer.ViewModels.PageNavigation;
 using TsubameViewer.Views.Helpers;
 using Windows.ApplicationModel.Core;
 using Windows.Devices.Input;
+using Windows.Foundation;
 using Windows.System;
 using Windows.UI;
+using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -108,6 +111,8 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.ManipulationCompleted -= IntaractionWall_ManipulationCompleted;
 
         KeyDown -= ImageViewerPage_KeyDown;
+
+        Window.Current.CoreWindow.PointerMoved -= CoreWindow_PageSlider_PointerMoved;
     }
 
     void OnLoaded(object sender, RoutedEventArgs e)
@@ -123,6 +128,57 @@ public sealed partial class ImageViewerPage : Page, ITitlebarContentAware
         IntaractionWall.ManipulationCompleted += IntaractionWall_ManipulationCompleted;
 
         KeyDown += ImageViewerPage_KeyDown;
+
+        Window.Current.CoreWindow.PointerPressed += CoreWindow_PageSlider_PointerPressed;
+        Window.Current.CoreWindow.PointerReleased += CoreWindow_PageSlider_PointerReleased;
+        Window.Current.CoreWindow.PointerMoved += CoreWindow_PageSlider_PointerMoved;
+    }
+
+    bool _nowPressedOnPageSlider;
+    private void CoreWindow_PageSlider_PointerPressed(CoreWindow sender, PointerEventArgs args)
+    {
+        _nowPressedOnPageSlider = args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos);
+        if (_nowPressedOnPageSlider)
+        {
+            var ts = Window.Current.Content.TransformToVisual(PageSelector);
+            var offset = ts.TransformPoint(new Point()).ToVector2();
+            var posRatio = pos.X / (PageSelector.ActualWidth - 1);
+            var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;
+            _vm.ChangePageCommand.Execute(pagePos);
+        }
+    }
+    private void CoreWindow_PageSlider_PointerReleased(CoreWindow sender, PointerEventArgs args)
+    {
+        _nowPressedOnPageSlider = false;
+    }
+
+    private void CoreWindow_PageSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
+    {
+        if (args.IsContactUIElement(PageSelector, Window.Current.Content, out Vector2 pos))
+        {
+            bool isRightToLeft = PageSelector.FlowDirection == FlowDirection.RightToLeft;
+            var ts = Window.Current.Content.TransformToVisual(PageSelector);
+            var offset = ts.TransformPoint(new Point()).ToVector2();
+            var posRatio = pos.X / (PageSelector.ActualWidth - 1);
+            var pagePos = (int)((_vm.ImageCount) * posRatio) - 1;            
+            PageSelectorTooltipText.Text = pagePos.ToString();
+            PageSelectorTooltipContainer.Translation = new Vector3(
+                isRightToLeft  
+                    ? - pos.X + offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f
+                    : pos.X - offset.X - (float)PageSelectorTooltipContainer.ActualWidth * 0.5f,
+                -offset.Y - 48 - 32,
+                0);
+
+            if (_nowPressedOnPageSlider)
+            {
+                _vm.ChangePageCommand.Execute(pagePos);
+            }
+            PageSelectorTooltipContainer.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            PageSelectorTooltipContainer.Visibility = Visibility.Collapsed;
+        }
     }
 
     public bool IsReadyToImageDisplay
