@@ -1001,21 +1001,29 @@
     <Grid x:Name="MovieSeekbarTooltipContainer" 
           Visibility="Collapsed"
           IsHitTestVisible="False"
-          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
-          Padding="4 2"
-          CornerRadius="4"
-          >
-      <Border CornerRadius="4">
+          Width="200"
+          Height="200">
+      <Border CornerRadius="4"
+              Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              BorderThickness="1"
+              BorderBrush="{ThemeResource SystemChromeWhiteColor}"
+              Translation="0, 0, 8">
+        <Border.Shadow>
+          <ThemeShadow />
+        </Border.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"
                Source="{x:Bind SeekbarFrameImageSource, Mode=OneWay}"               
-               Stretch="Uniform"/>
+               Stretch="None"/>
       </Border>
       <Border Background="{ThemeResource SystemAltMediumColor}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
-              Padding="4 0">
+              Padding="4 0"
+              CornerRadius="4 4 0 0">
         <TextBlock x:Name="MovieSeekbarTooltipText"
                    Text="{x:Bind SeekbarFrameTime, Mode=OneWay, Converter={StaticResource TimeSpanToSimpleTextConverter}}"
                    FontSize="18" />

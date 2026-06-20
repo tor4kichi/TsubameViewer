@@ -1006,7 +1006,12 @@
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
-              Padding="4">
+              BorderThickness="1"
+              BorderBrush="{ThemeResource SystemChromeWhiteColor}"
+              Translation="0, 0, 8">
+        <Border.Shadow>
+          <ThemeShadow />
+        </Border.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"       
                Stretch="Uniform"               
                />

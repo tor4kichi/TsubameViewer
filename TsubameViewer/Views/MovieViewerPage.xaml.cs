@@ -636,17 +636,13 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     {
                         // 横長
                         imageWidth = s._vm.PageSettings.VideoFrameThumbnailSize;
-                        imageHeight = (float)Math.Floor(s.MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth));
-                        s.MovieSeekbarTooltipImage.Width = imageWidth;
-                        s.MovieSeekbarTooltipImage.Height = double.NaN;
+                        imageHeight = (float)Math.Ceiling(s.MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth));
                     }
                     else
                     {
                         // 縦長
                         imageHeight = s._vm.PageSettings.VideoFrameThumbnailSize;
-                        imageWidth = (float)Math.Floor(s.MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / s.MediaPlayer.PlaybackSession.NaturalVideoHeight));
-                        s.MovieSeekbarTooltipImage.Width = double.NaN;
-                        s.MovieSeekbarTooltipImage.Height = imageHeight;
+                        imageWidth = (float)Math.Ceiling(s.MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / s.MediaPlayer.PlaybackSession.NaturalVideoHeight));
                     }
 
                     s.SeekbarFrameImageSource = new CanvasImageSource(
@@ -1160,7 +1156,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
     void RefreshSeekbarThumbnailContainerPosition(Vector2 pos)
     {
-
         var ts = Window.Current.Content.TransformToVisual(VideoPositionSlider);
         var offset = ts.TransformPoint(new Point()).ToVector2();
         var posRatio = pos.X / VideoPositionSlider.ActualWidth;
@@ -1174,40 +1169,10 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MovieSeekbarTooltipText.Text = timeText;
         }
 
-        float imageWidth = 0;
-        float imageHeight = 0;
-        if (MovieSeekbarTooltipContainer.ActualWidth == 0 && _lastPointerDeviceType != PointerDeviceType.Touch)
-        {
-            if (MediaPlayer.PlaybackSession.NaturalVideoWidth > MediaPlayer.PlaybackSession.NaturalVideoHeight)
-            {
-                // 横長
-                imageWidth = _vm.PageSettings.VideoFrameThumbnailSize;
-                imageHeight = (float)Math.Floor(MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / MediaPlayer.PlaybackSession.NaturalVideoWidth));
-                MovieSeekbarTooltipImage.Width = imageWidth;
-                MovieSeekbarTooltipImage.Height = double.NaN;
-            }
-            else
-            {
-                // 縦長
-                imageHeight = _vm.PageSettings.VideoFrameThumbnailSize;
-                imageWidth = (float)Math.Floor(MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / MediaPlayer.PlaybackSession.NaturalVideoHeight));
-                MovieSeekbarTooltipImage.Width = double.NaN;
-                MovieSeekbarTooltipImage.Height = imageHeight;
-            }
-
-            imageWidth += (float)MovieSeekbarTooltipContainer.Padding.Left + (float)MovieSeekbarTooltipContainer.Padding.Right;
-            imageHeight += (float)MovieSeekbarTooltipContainer.Padding.Top + (float)MovieSeekbarTooltipContainer.Padding.Bottom;
-        }
-        else
-        {
-            imageWidth = (float)MovieSeekbarTooltipContainer.ActualWidth;
-            imageHeight = (float)MovieSeekbarTooltipContainer.ActualHeight;
-        }
-
         MovieSeekbarTooltipContainer.Translation = new Vector3(
-            pos.X - offset.X - imageWidth * 0.5f,
-            -offset.Y - 48 - imageHeight,
-            0);
+            pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
+            -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight,
+            8);
 
         if (_videoPositionsliderPointerPressed)
         {
