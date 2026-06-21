@@ -256,11 +256,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         MediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
 
         _playbackResources?.Dispose();
-        _playbackResources = null;
-        _frameGrabber = null;
-        SeekbarFrameImageSource = null;
-        _videoFrameBitmap?.Dispose();
-        _videoFrameBitmap = null;
+        _playbackResources = null;        
 
         ClearExternalAudioTracks();
 
@@ -658,6 +654,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
                 {                    
                     using var frame = await s._frameGrabber.ExtractVideoFrameAsync(pos, true).AsTask(ct);
+                    ct.ThrowIfCancellationRequested();
                     if (s._videoFrameBitmap == null)
                     {
                         s._videoFrameBitmap = CanvasBitmap.CreateFromBytes(
@@ -680,9 +677,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     }
                 }
 
-                s.MovieSeekbarTooltipContainer.Visibility = (s.IsDisplayControlUI.TrueToVisible());
                 Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
-            }, AwaitOperation.Switch)            
+            }, onCompleted: static async (x, state) => 
+            {
+                var (s, asyncLock) = state;
+                using (await asyncLock.LockAsync(default))
+                {
+                    s._frameGrabber = null;
+                    s.SeekbarFrameImageSource = null;
+                    s._videoFrameBitmap?.Dispose();
+                    s._videoFrameBitmap = null;
+                }
+            },  AwaitOperation.Switch)            
             .AddTo(ref db);
 
 
@@ -1172,11 +1178,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             MovieSeekbarTooltipText.Text = timeText;
         }
 
+        MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
         MovieSeekbarTooltipContainer.Translation = new Vector3(
             pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
             -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight,
             8);
-
+        MovieSeekbarTooltipContainer.Opacity = 1;
         if (_videoPositionsliderPointerPressed)
         {
             _videoPositionChangingFromCode = true;
@@ -1184,6 +1191,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             _audioPlayer.PlaybackSession.Position = videoPos;
             VideoPosition = videoPos;
         }
+
+        _lastPointerPosition = pos;
     }
 
     FrameGrabber? _frameGrabber;
@@ -1202,6 +1211,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         }
     }
 
+    Vector2 _lastPointerPosition;
     [ObservableProperty]
     TimeSpan? _seekbarFrameTime;
 

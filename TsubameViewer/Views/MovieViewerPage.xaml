@@ -1000,6 +1000,7 @@
 
     <Grid x:Name="MovieSeekbarTooltipContainer" 
           Visibility="Collapsed"
+          Opacity="0.0001"
           IsHitTestVisible="False"
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
