@@ -209,8 +209,6 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
             _canvasBitmap.SetPixelBytes(frame.PixelData);
         }
        
-        // 動画フレーム自体はソフトウェアデコードされるのでリサイズを処理させると重い
-        // 画像サイズの縮小はWin2D（GPU）でやる
         using (var ds = _source.CreateDrawingSession(Colors.Transparent, _source.Size.ToRect()))
         {
             ds.Transform = Matrix3x2.CreateScale((float)(_source.Size.Width / _canvasBitmap.Size.Width));
@@ -912,7 +910,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                 try
                 {
-                    //s.MovieSeekbarTooltipImage.Opacity = 0.5;
                     if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
                     {
                         long ts = TimeProvider.System.GetTimestamp();
@@ -922,7 +919,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         // Note: Width=1920の映像が元は1440となっているケースに対応する
                         s.MovieSeekbarTooltipImage.Width = size.Width;
                         s.MovieSeekbarTooltipImage.Height = size.Height;
-                        //s.MovieSeekbarTooltipImage.Opacity = 1;
                         Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
                     }
                 }
