@@ -569,23 +569,6 @@
           <StackPanel Orientation="Horizontal"
                       uwpControls:DockPanel.Dock="Right"
                       Spacing="8">
-
-            <Button>
-              <Button.Flyout>
-                <MenuFlyout Opening="TracksAndSubtitleSelectFlyout_Opening"
-                            Opened="MenuFlyout_Opened"
-                            Closed="MenuFlyout_Closed">
-                  <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
-                  <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
-                  <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
-                                     Text="{i18nExt:Localize Key=MovieViewer_Subtitles}" />
-                </MenuFlyout>
-              </Button.Flyout>
-
-              <SymbolIcon Symbol="ShowBcc" />
-            </Button>
             <Button Content="{x:Bind ToPlaybackRateString(_vm.PageSettings.PlaybackRate), Mode=OneWay}"
                     MinWidth="60"
                     Height="40">
@@ -753,6 +736,14 @@
                   </MenuFlyoutSubItem>
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_IsHorizontalMirror}" 
                                         IsChecked="{x:Bind _vm.PageSettings.IsHorizontalMirror, Mode=TwoWay}" />
+                  <MenuFlyoutSeparator />
+                  <MenuFlyoutSubItem x:Name="VideoTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_VideoTrack}" />
+                  <MenuFlyoutSubItem x:Name="AudioTracksMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_AudioTrack}" />
+                  <MenuFlyoutSubItem x:Name="SubtitlesMenuSubItem"
+                                     Text="{i18nExt:Localize Key=MovieViewer_Subtitles}" />
+
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
