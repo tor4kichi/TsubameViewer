@@ -257,6 +257,10 @@ MovieViewer_Subtitles = 字幕({0})
 MovieViewer_Subtitles_OpenSettings = 字幕設定
 MovieViewer_Subtitles_HideAll = 字幕 無し
 MovieViewer_Subtitles_Avairable = 字幕あり
+MovieViewer_NotSupportedCodec = 動画コーデック {0} はプレビュー画像が表示できません
+MovieViewer_NotSupportedCodec_OnceClear = プレビュー画像の表示を再試行
+MovieViewer_CheckCodec_ReEnabled = プレビュー画像が利用可能です
+
 
 #### SearchResult
 SearchResultWith = "{0}"の検索結果

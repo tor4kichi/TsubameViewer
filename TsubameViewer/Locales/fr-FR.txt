@@ -257,6 +257,10 @@ MovieViewer_Subtitles = Sous-titre({0})
 MovieViewer_Subtitles_OpenSettings = Paramètres des sous-titres
 MovieViewer_Subtitles_HideAll = Pas de sous-titres
 MovieViewer_Subtitles_Avairable = Sous-titres disponibles
+MovieViewer_NotSupportedCodec = Le codec vidéo {0} ne peut pas afficher les images d'aperçu.
+MovieViewer_NotSupportedCodec_OnceClear = Réessayez d'afficher l'image d'aperçu.
+MovieViewer_CheckCodec_ReEnabled = Des images d'aperçu sont disponibles.
+
 
 #### SearchResult
 SearchResultWith = Résultats de la recherche pour {0}

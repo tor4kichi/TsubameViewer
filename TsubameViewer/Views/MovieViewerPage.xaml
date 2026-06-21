@@ -680,6 +680,12 @@
                             Opened="MenuFlyout_Opened"
                             Closed="MenuFlyout_Closed"
                             Placement="TopEdgeAlignedRight">
+                  <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_NotSupportedCodec_OnceClear}"
+                                  Command="{x:Bind ClearThumnailGenerationIssueCommand}"
+                                  x:Name="NotSupportedCodec_OnceClear_MenuItem"
+                                  Visibility="Collapsed">
+                  </MenuFlyoutItem>
+
                   <ToggleMenuFlyoutItem Text="{i18nExt:Localize Key=NowPlayingWithFFmpegMediaSource}"
                                         IsChecked="{x:Bind NowPlayingWithFFmpegMediaSource, Mode=OneWay}"
                                   IsEnabled="False" />
@@ -687,6 +693,7 @@
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_DisplayShortcutKeysGuide}"
                                   Command="{x:Bind ToggleDisplayShortcutKeyGuideUICommand}" />
                   <MenuFlyoutSeparator />
+                  
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=SetThumbnailImage}"
                                   Command="{x:Bind SetThumbnailImageCommand}"
                                   AccessKey="T">
@@ -1005,20 +1012,27 @@
           VerticalAlignment="Top"
           Width="200"
           Height="200">
-      <Border CornerRadius="4"
+      <Grid CornerRadius="4"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
               BorderThickness="1"
               BorderBrush="{ThemeResource SystemChromeWhiteColor}"
               Translation="0, 0, 8">
-        <Border.Shadow>
+        <Grid.Shadow>
           <ThemeShadow />
-        </Border.Shadow>
+        </Grid.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"
                Source="{x:Bind SeekbarFrameImageSource, Mode=OneWay}"               
                Stretch="None"/>
-      </Border>
+        <TextBlock x:Name="MovieSeekbarTooltipNotSupported"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Opacity="0.7"
+                   TextWrapping="Wrap"
+                   Margin="8 8 8 28"
+                   Visibility="Collapsed"
+                   />
+      </Grid>
       <Border Background="{ThemeResource SystemAltMediumColor}"
               HorizontalAlignment="Center"
               VerticalAlignment="Bottom"
