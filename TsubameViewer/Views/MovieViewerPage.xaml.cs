@@ -98,15 +98,15 @@ interface IFrameExtracter
 {
     string CodecName { get; }
     Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct);
-    Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct);
+    Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct);
     ImageSource Source { get; }
 }
 
 public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
 {
     public string CodecName => _frameGrabber.CurrentVideoStream.CodecName;
-    public ImageSource Source => _source;
-    private CanvasImageSource _source;
+    public ImageSource Source => _source.Source;
+    private CanvasVirtualImageSource _source;
     public static async Task<FFmpegFrameGrabberFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
     {
         var stream = await movieFile.OpenReadAsync();
@@ -124,29 +124,11 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
         _movieStream = movieStream;
         _frameGrabber = frameGrabber;
         _decodeHeight = decodeHeight;
-        float imageWidth;
-        float imageHeight;
-        float videoWidth = _frameGrabber.CurrentVideoStream.PixelWidth;
-        float videoHeight = _frameGrabber.CurrentVideoStream.PixelHeight;
-        if (videoWidth > videoHeight)
-        {
-            _frameGrabber.DecodePixelWidth = decodeHeight;
-            // 横長
-            imageWidth = _frameGrabber.DecodePixelWidth;
-            imageHeight = (float)Math.Ceiling(videoHeight * (imageWidth / videoWidth));
-        }
-        else
-        {
-            _frameGrabber.DecodePixelHeight = decodeHeight;
-            // 縦長
-            imageHeight = _frameGrabber.DecodePixelHeight;
-            imageWidth = (float)Math.Ceiling(videoWidth * (imageHeight / videoHeight));
-        }
-        _source = new CanvasImageSource(
-            CanvasDevice.GetSharedDevice(),
-            imageWidth,
-            imageHeight,
-            DisplayInformation.GetForCurrentView().LogicalDpi);
+        _source = new CanvasVirtualImageSource(
+                CanvasDevice.GetSharedDevice(),
+                1,
+                1,
+                DisplayInformation.GetForCurrentView().LogicalDpi);
     }
 
     bool _isDisposed;
@@ -176,27 +158,66 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
         }
     }
     CanvasBitmap? _canvasBitmap;
-    public async Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    TimeSpan _lastFrameTime;
+    public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
     {
-        using var frame = await _frameGrabber.ExtractVideoFrameAsync(time);
+        if (_canvasBitmap == null)
+        {
+            using (var sample = await _frameGrabber.ExtractVideoFrameAsync(time).AsTask(ct))
+            {
+                float imageWidth;
+                float imageHeight;
+                float videoWidth = sample.DisplayWidth; // = DAR(Display Aspect Ratio) frame.PixelWidth = PAR (Pixel Aspect Ratio)
+                float videoHeight = sample.DisplayHeight;
+                if (videoWidth > videoHeight)
+                {
+                    // 横長
+                    imageWidth = _decodeHeight;
+                    imageHeight = (float)Math.Ceiling(videoHeight * (imageWidth / videoWidth));
+                }
+                else
+                {
+                    // 縦長
+                    imageHeight = _decodeHeight;
+                    imageWidth = (float)Math.Ceiling(videoWidth * (imageHeight / videoHeight));
+                }
+
+                _frameGrabber.DecodePixelWidth = (int)imageWidth;
+                _frameGrabber.DecodePixelHeight = (int)imageHeight;
+
+                _source.Resize(imageWidth, imageHeight);
+            }
+        }
+
+        using var frame = await _frameGrabber.ExtractVideoFrameAsync(time, true, (int)Math.Round(_frameGrabber.CurrentVideoStream.FramesPerSecond) * 1).AsTask(ct);
         if (_canvasBitmap == null)
         {
             _canvasBitmap = CanvasBitmap.CreateFromBytes(
-            CanvasDevice.GetSharedDevice(),
-            frame.PixelData,
-            (int)frame.PixelWidth,
-            (int)frame.PixelHeight,
-            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+                CanvasDevice.GetSharedDevice(),
+                frame.PixelData,
+                (int)_frameGrabber.DecodePixelWidth,
+                (int)_frameGrabber.DecodePixelHeight,
+                DirectXPixelFormat.B8G8R8A8UIntNormalized);
         }
         else
         {
+            if (_lastFrameTime == frame.Timestamp)
+            {
+                return _source.Size;
+            }
+            _lastFrameTime = frame.Timestamp;
             _canvasBitmap.SetPixelBytes(frame.PixelData);
         }
-        using (var ds = _source.CreateDrawingSession(Colors.Transparent))
+       
+        // 動画フレーム自体はソフトウェアデコードされるのでリサイズを処理させると重い
+        // 画像サイズの縮小はWin2D（GPU）でやる
+        using (var ds = _source.CreateDrawingSession(Colors.Transparent, _source.Size.ToRect()))
         {
-            ds.Transform = Matrix3x2.CreateScale((float)_source.Size.Width / _frameGrabber.CurrentVideoStream.PixelWidth);
+            ds.Transform = Matrix3x2.CreateScale((float)(_source.Size.Width / _canvasBitmap.Size.Width));
             ds.DrawImage(_canvasBitmap);
         }
+
+        return _source.Size;
     }
 }
 
@@ -206,7 +227,8 @@ public class MediaCompositionFrameExtracter : IFrameExtracter, IDisposable
     public string CodecName { get; }    
     public ImageSource Source => _imageSource;
     private BitmapImage _imageSource;
-
+    public double ImageWidth => _imageSource.DecodePixelWidth;
+    public double ImageHeight => _imageSource.DecodePixelHeight;
     public static async Task<MediaCompositionFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
     {
         var mc = new MediaComposition();
@@ -263,10 +285,11 @@ public class MediaCompositionFrameExtracter : IFrameExtracter, IDisposable
             return false;
         }
     }
-    public async Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    public async Task<Size> RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
     {
-        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestKeyFrame);
+        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestFrame);
         await _imageSource.SetSourceAsync(frame).AsTask(ct);
+        return new(_imageSource.PixelWidth, _imageSource.PixelHeight);
     }
 }
 
@@ -883,19 +906,23 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     return; 
                 }
 
-                using CancellationTokenSource timeoutCts = new CancellationTokenSource(3000);
+                using CancellationTokenSource timeoutCts = new CancellationTokenSource(5000);
                 using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, ct);
                 var linkedCt = linkedCts.Token;
 
                 try
                 {
-                    fadeOutAnim.Start(s.MovieSeekbarTooltipImage);
+                    //s.MovieSeekbarTooltipImage.Opacity = 0.5;
                     if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
                     {
                         long ts = TimeProvider.System.GetTimestamp();
                         linkedCt.ThrowIfCancellationRequested();
-                        await s._frameGrabber.RenderFrameToSourceAsync(pos, linkedCt);
-                        fadeInAnim.Start(s.MovieSeekbarTooltipImage);
+                        var size = await s._frameGrabber.RenderFrameToSourceAsync(pos, linkedCt);
+
+                        // Note: Width=1920の映像が元は1440となっているケースに対応する
+                        s.MovieSeekbarTooltipImage.Width = size.Width;
+                        s.MovieSeekbarTooltipImage.Height = size.Height;
+                        //s.MovieSeekbarTooltipImage.Opacity = 1;
                         Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
                     }
                 }
