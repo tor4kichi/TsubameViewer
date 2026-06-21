@@ -14,6 +14,7 @@ using PDFtoImage;
 using R3;
 using R3.Extensions;
 using SharpCompress.Common;
+using SharpCompress.Compressors.Xz;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -65,6 +66,7 @@ using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using ZLinq;
 using static TsubameViewer.Core.Models.FolderItemListing.ThumbnailImageManager;
@@ -90,6 +92,184 @@ public sealed class ShortcutKeyInfo
         }
     }
 }
+
+
+interface IFrameExtracter
+{
+    string CodecName { get; }
+    Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct);
+    Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct);
+    ImageSource Source { get; }
+}
+
+public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
+{
+    public string CodecName => _frameGrabber.CurrentVideoStream.CodecName;
+    public ImageSource Source => _source;
+    private CanvasImageSource _source;
+    public static async Task<FFmpegFrameGrabberFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
+    {
+        var stream = await movieFile.OpenReadAsync();
+        var fg = await FrameGrabber.CreateFromStreamAsync(stream);
+        
+        return new FFmpegFrameGrabberFrameExtracter(stream, fg, decodeHeight);
+    }
+
+    private readonly IRandomAccessStreamWithContentType _movieStream;
+    private readonly FrameGrabber _frameGrabber;
+    private readonly int _decodeHeight;
+
+    public FFmpegFrameGrabberFrameExtracter(IRandomAccessStreamWithContentType movieStream, FrameGrabber frameGrabber, int decodeHeight)
+    {
+        _movieStream = movieStream;
+        _frameGrabber = frameGrabber;
+        _decodeHeight = decodeHeight;
+        float imageWidth;
+        float imageHeight;
+        float videoWidth = _frameGrabber.CurrentVideoStream.PixelWidth;
+        float videoHeight = _frameGrabber.CurrentVideoStream.PixelHeight;
+        if (videoWidth > videoHeight)
+        {
+            _frameGrabber.DecodePixelWidth = decodeHeight;
+            // 横長
+            imageWidth = _frameGrabber.DecodePixelWidth;
+            imageHeight = (float)Math.Ceiling(videoHeight * (imageWidth / videoWidth));
+        }
+        else
+        {
+            _frameGrabber.DecodePixelHeight = decodeHeight;
+            // 縦長
+            imageHeight = _frameGrabber.DecodePixelHeight;
+            imageWidth = (float)Math.Ceiling(videoWidth * (imageHeight / videoHeight));
+        }
+        _source = new CanvasImageSource(
+            CanvasDevice.GetSharedDevice(),
+            imageWidth,
+            imageHeight,
+            DisplayInformation.GetForCurrentView().LogicalDpi);
+    }
+
+    bool _isDisposed;
+    public void Dispose()
+    {
+        if (_isDisposed) { return; }
+        _isDisposed = true;
+        _frameGrabber.Dispose();
+        _movieStream.Dispose();
+        _canvasBitmap?.Dispose();
+    }
+
+    public async Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        try
+        {
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                using var frame = await _frameGrabber.ExtractVideoFrameAsync(TimeSpan.FromSeconds(1), true).AsTask(cts.Token);                
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+    CanvasBitmap? _canvasBitmap;
+    public async Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    {
+        using var frame = await _frameGrabber.ExtractVideoFrameAsync(time);
+        if (_canvasBitmap == null)
+        {
+            _canvasBitmap = CanvasBitmap.CreateFromBytes(
+            CanvasDevice.GetSharedDevice(),
+            frame.PixelData,
+            (int)frame.PixelWidth,
+            (int)frame.PixelHeight,
+            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+        }
+        else
+        {
+            _canvasBitmap.SetPixelBytes(frame.PixelData);
+        }
+        using (var ds = _source.CreateDrawingSession(Colors.Transparent))
+        {
+            ds.Transform = Matrix3x2.CreateScale((float)_source.Size.Width / _frameGrabber.CurrentVideoStream.PixelWidth);
+            ds.DrawImage(_canvasBitmap);
+        }
+    }
+}
+
+
+public class MediaCompositionFrameExtracter : IFrameExtracter, IDisposable
+{
+    public string CodecName { get; }    
+    public ImageSource Source => _imageSource;
+    private BitmapImage _imageSource;
+
+    public static async Task<MediaCompositionFrameExtracter> CreateAsync(StorageFile movieFile, int decodeHeight)
+    {
+        var mc = new MediaComposition();
+        var clip = await MediaClip.CreateFromFileAsync(movieFile);        
+        mc.Clips.Add(clip);        
+        return new MediaCompositionFrameExtracter(mc, clip, decodeHeight);
+    }
+
+    private readonly MediaComposition _mc;
+    private readonly MediaClip _clip;
+    private readonly int _decodeHeight;
+    private readonly int _decodeWidth;
+
+    public MediaCompositionFrameExtracter(MediaComposition mc, MediaClip clip, int decodeHeight)
+    {
+        _mc = mc;
+        _clip = clip;
+        var props = _clip.GetVideoEncodingProperties();
+        if (props.Width > props.Height)
+        {
+            _decodeWidth = decodeHeight;
+            _decodeHeight = 0;
+        }
+        else
+        {
+            _decodeWidth = 0;
+            _decodeHeight = decodeHeight;        
+        }
+        _imageSource = new BitmapImage();
+        CodecName = _clip.GetVideoEncodingProperties().Subtype.ToLowerInvariant();
+    }
+
+
+    bool _isDisposed;
+    public void Dispose()
+    {
+        if (_isDisposed) { return; }
+        _isDisposed = true;
+    }
+
+    public async Task<bool> CanExtractFrameAsync(TimeSpan timeout, CancellationToken ct)
+    {
+        try
+        {
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                using var frame = await _mc.GetThumbnailAsync(TimeSpan.FromSeconds(1), 0, _decodeHeight, VideoFramePrecision.NearestFrame);
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+    }
+    public async Task RenderFrameToSourceAsync(TimeSpan time, CancellationToken ct)
+    {
+        using var frame = await _mc.GetThumbnailAsync(time, _decodeWidth, _decodeHeight, VideoFramePrecision.NearestKeyFrame);
+        await _imageSource.SetSourceAsync(frame).AsTask(ct);
+    }
+}
+
 
 [ObservableObject]
 public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
@@ -431,49 +611,81 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     throw;
                 }
 
+                string codecName = "";
+                bool nowFailed = false;
                 try
-                {                    
-                    var stream = await x.OpenReadAsync();
-                    var fg = await FrameGrabber.CreateFromStreamAsync(stream);
-                    var codecName = fg.CurrentVideoStream.CodecName;
-                    if (s._thumbanilManager.GetThumbanilGenerationStatusIfProgressAsFailed(codecName, out bool nowFailed) != ThumbnailGenerationStatus.Failed)
+                {
+                    var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                    codecName = ffmepgExt.CodecName;
+                    var status = s._thumbanilManager.GetThumbanilGenerationStatusIfProgressAsFailed(ffmepgExt.CodecName, out nowFailed);
+                    Debug.WriteLine($"ThumbnailGenerationStatus: {status }");
+                    if (status == ThumbnailGenerationStatus.Checked_FFmpeg)
                     {
-                        s._thumbanilManager.SetThumbnailGenerationProgress(codecName);
-                        try
+                        s._frameGrabber = ffmepgExt;
+                        db.Add(ffmepgExt);                        
+                    }
+                    else if (status == ThumbnailGenerationStatus.Checked_MediaComposition)
+                    {
+                        ffmepgExt.Dispose();
+                        var mcExt = await MediaCompositionFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                        s._frameGrabber = mcExt;
+                        db.Add(mcExt);
+                        s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        s._thumbanilManager.SetThumbnailGenerationProgress(ffmepgExt.CodecName);
+                        if (await ffmepgExt.CanExtractFrameAsync(TimeSpan.FromSeconds(1), ct))
                         {
-                            using (var cts = new CancellationTokenSource(1000))
-                            {
-                                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(1), true).AsTask(cts.Token);
-                            }
-
-                            fg.DecodePixelHeight = 64;
-                            s._frameGrabber = fg;
-                            db.Add(stream);
-                            db.Add(fg);
-                            s._thumbanilManager.SetThumbnailGenerationChecked(codecName);
+                            s._thumbanilManager.SetThumbnailGenerationCheckedFFmpeg(ffmepgExt.CodecName);
+                            s._frameGrabber = ffmepgExt;
+                            db.Add(ffmepgExt);                              
+                            Debug.WriteLine("ThumbGeneration use FFmpegFrameGrabber");
                         }
-                        catch (OperationCanceledException) 
+                        else
                         {
-                            s._thumbanilManager.ThumbnailGenerationFailed(codecName);
+                            ffmepgExt.Dispose();
+                            var mcExt = await MediaCompositionFrameExtracter.CreateAsync(x, s._vm.PageSettings.VideoFrameThumbnailSize);
+                            if (await mcExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
+                            {
+                                Guard.IsEqualTo(mcExt.CodecName.ToLowerInvariant(), ffmepgExt.CodecName.ToLowerInvariant());
+                                s._thumbanilManager.SetThumbnailGenerationCheckedMediaComposition(ffmepgExt.CodecName);
+                                s._frameGrabber = mcExt;                                
+                                db.Add(mcExt);
+                                Debug.WriteLine("ThumbGeneration use MediaComposition");
+                                s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                            }
+                            else
+                            {
+                                Debug.WriteLine("ThumbGeneration not supported");
+                                mcExt.Dispose();
+                            }
                         }
                     }
-                    
-                    if (s._frameGrabber == null)
+                }
+                catch { }
+
+                if (s._frameGrabber == null)
+                {
+                    if (!string.IsNullOrEmpty(codecName))
                     {
-                        fg.Dispose();
-                        stream.Dispose();
-                        string notifyText = $"MovieViewer_NotSupportedCodec".Translate(fg.CurrentVideoStream.CodecName);
+                        s._thumbanilManager.ThumbnailGenerationFailed(codecName);
+                        string notifyText = $"MovieViewer_NotSupportedCodec".Translate(codecName);
                         if (nowFailed)
                         {
                             s._messenger.SendShowTextNotificationMessage(notifyText);
                         }
-                        s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
                         s.MovieSeekbarTooltipNotSupported.Text = notifyText;
-                        s.MovieSeekbarTooltipNotSupported.Visibility = Visibility.Visible;
-                        s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
                     }
+                    s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
+                    s.MovieSeekbarTooltipNotSupported.Visibility = Visibility.Visible;
+                    s.NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Visible;
+                    s.MovieSeekbarTooltipImage.Source = null;
                 }
-                catch { }
+                else
+                {
+                    s.MovieSeekbarTooltipImage.Source = s._frameGrabber.Source;
+                }
 
                 ObservableEventExtensions.FromTypedEvent<MediaPlaybackSession, object>(
                     h => s.MediaPlayer.PlaybackSession.PositionChanged += h,
@@ -681,52 +893,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
                     {
                         long ts = TimeProvider.System.GetTimestamp();
-                        if (s.SeekbarFrameImageSource == null)
-                        {
-                            float imageWidth;
-                            float imageHeight;
-                            if (s.MediaPlayer.PlaybackSession.NaturalVideoWidth > s.MediaPlayer.PlaybackSession.NaturalVideoHeight)
-                            {
-                                // 横長
-                                imageWidth = s._vm.PageSettings.VideoFrameThumbnailSize;
-                                imageHeight = (float)Math.Ceiling(s.MediaPlayer.PlaybackSession.NaturalVideoHeight * (imageWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth));
-                            }
-                            else
-                            {
-                                // 縦長
-                                imageHeight = s._vm.PageSettings.VideoFrameThumbnailSize;
-                                imageWidth = (float)Math.Ceiling(s.MediaPlayer.PlaybackSession.NaturalVideoWidth * (imageHeight / s.MediaPlayer.PlaybackSession.NaturalVideoHeight));
-                            }
-
-                            s.SeekbarFrameImageSource = new CanvasImageSource(
-                                CanvasDevice.GetSharedDevice(),
-                                imageWidth,
-                                imageHeight,
-                                DisplayInformation.GetForCurrentView().LogicalDpi);
-                        }
-
-                        using var frame = await s._frameGrabber.ExtractVideoFrameAsync(pos, true).AsTask(linkedCt);
                         linkedCt.ThrowIfCancellationRequested();
-                        if (s._videoFrameBitmap == null)
-                        {
-                            s._videoFrameBitmap = CanvasBitmap.CreateFromBytes(
-                                CanvasDevice.GetSharedDevice(),
-                                frame.PixelData,
-                                (int)frame.PixelWidth,
-                                (int)frame.PixelHeight,
-                                DirectXPixelFormat.B8G8R8A8UIntNormalized);
-                        }
-                        else
-                        {
-                            s._videoFrameBitmap.SetPixelBytes(frame.PixelData);
-                        }
-                        linkedCt.ThrowIfCancellationRequested();
-                        using (var ds = s.SeekbarFrameImageSource.CreateDrawingSession(Colors.Transparent))
-                        {
-                            ds.Transform = Matrix3x2.CreateScale((float)s.MovieSeekbarTooltipImage.ActualWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth);
-                            ds.DrawImage(s._videoFrameBitmap);
-                        }
-
+                        await s._frameGrabber.RenderFrameToSourceAsync(pos, linkedCt);
                         fadeInAnim.Start(s.MovieSeekbarTooltipImage);
                         Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
                     }
@@ -737,18 +905,15 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 catch
                 {
                     s.MovieSeekbarTooltipImage.Visibility = Visibility.Collapsed;
-                    s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CurrentVideoStream.CodecName);
+                    s._thumbanilManager.ThumbnailGenerationFailed(s._frameGrabber.CodecName);
                     throw;
                 }
            }, onCompleted: static async (x, state) => 
             {
                 var (s, asyncLock, _, _) = state;
                 using (await asyncLock.LockAsync(default))
-                {
+                {                    
                     s._frameGrabber = null;
-                    s.SeekbarFrameImageSource = null;
-                    s._videoFrameBitmap?.Dispose();
-                    s._videoFrameBitmap = null;
                 }
             },  AwaitOperation.Switch)            
             .AddTo(ref db);
@@ -951,47 +1116,73 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     async Task ClearThumnailGenerationIssue()
     {
         if (_vm.MovieFile == null) { return; }
-        if (_frameGrabber != null) { return; }
+        if (_frameGrabber is FFmpegFrameGrabberFrameExtracter) { return; }
 
-        var stream = await _vm.MovieFile.OpenReadAsync();
-        var fg = await FrameGrabber.CreateFromStreamAsync(stream);
         _messenger.SendShowTextNotificationMessage("MovieViewer_NotSupportedCodec_OnceClear".Translate());
-        var codecName = fg.CurrentVideoStream.CodecName;
-        _thumbanilManager.SetThumbnailGenerationProgress(codecName);
+        var ct = this.GetCancellationTokenOnUnloaded();
+        var ffmepgExt = await FFmpegFrameGrabberFrameExtracter.CreateAsync(_vm.MovieFile, _vm.PageSettings.VideoFrameThumbnailSize);
+        CompositeDisposable cd = new();
         try
         {
-            using (var cts = new CancellationTokenSource(3000))
+            var codecName = ffmepgExt.CodecName;
+            _thumbanilManager.SetThumbnailGenerationProgress(codecName);
+            if (await ffmepgExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
             {
-                using var frame = await fg.ExtractVideoFrameAsync(TimeSpan.FromSeconds(1), true).AsTask(cts.Token);
-            }
-
-            fg.DecodePixelHeight = 64;
-            _frameGrabber = fg;
-            _thumbanilManager.ClearThumbnailGenerationIssue(fg.CurrentVideoStream.CodecName);
-            MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
-            MovieSeekbarTooltipNotSupported.Visibility = Visibility.Collapsed;
-            NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Collapsed;
-            if (_playbackResources is CompositeDisposable cd)
-            {
-                cd.Add(stream);
-                cd.Add(fg);
+                _frameGrabber = ffmepgExt;
+                _thumbanilManager.SetThumbnailGenerationCheckedFFmpeg(codecName);
             }
             else
             {
-                DisposableBuilder db = new();
-                db.Add(stream);
-                db.Add(fg);
-                db.RegisterTo(this.GetCancellationTokenOnUnloaded());
+                cd.Add(ffmepgExt);
+                var mcExt = await MediaCompositionFrameExtracter.CreateAsync(_vm.MovieFile, _vm.PageSettings.VideoFrameThumbnailSize);
+                try
+                {
+                    if (await mcExt.CanExtractFrameAsync(TimeSpan.FromSeconds(3), ct))
+                    {
+                        Guard.IsEqualTo(mcExt.CodecName, ffmepgExt.CodecName);
+                        _thumbanilManager.SetThumbnailGenerationCheckedMediaComposition(ffmepgExt.CodecName);
+                        _frameGrabber = mcExt;
+                    }
+                    else
+                    {
+                        _thumbanilManager.ThumbnailGenerationFailed(codecName);
+                        cd.Add(mcExt);
+                    }
+                }
+                catch
+                {
+                    cd.Add(mcExt);
+                    throw;
+                }
             }
-            _thumbanilManager.SetThumbnailGenerationChecked(codecName);
+        }
+        finally
+        {
+            cd.Dispose();
+        }
+
+        if (_frameGrabber != null)
+        {
+            if (_playbackResources is CompositeDisposable disposable)
+            {
+                (_frameGrabber as IDisposable)?.AddTo(disposable);
+            }
+            else
+            {
+                (_frameGrabber as IDisposable)?.RegisterTo(ct);
+            }
+            MovieSeekbarTooltipImage.Source = _frameGrabber.Source;
+            MovieSeekbarTooltipImage.Visibility = Visibility.Visible;
+            MovieSeekbarTooltipNotSupported.Visibility = Visibility.Collapsed;
+            if (_frameGrabber is FFmpegFrameGrabberFrameExtracter)
+            {
+                NotSupportedCodec_OnceClear_MenuItem.Visibility = Visibility.Collapsed;
+            }
             _messenger.SendShowTextNotificationMessage("MovieViewer_CheckCodec_ReEnabled".Translate());
         }
-        catch (OperationCanceledException)
+        else
         {
-            stream.Dispose();
-            fg.Dispose();
-            _thumbanilManager.ThumbnailGenerationFailed(codecName);
-            string notifyText = $"MovieViewer_NotSupportedCodec".Translate(fg.CurrentVideoStream.CodecName);
+            string notifyText = $"MovieViewer_NotSupportedCodec".Translate(ffmepgExt.CodecName);
             _messenger.SendShowTextNotificationMessage(notifyText);
         }
     }
@@ -1308,7 +1499,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         _lastPointerPosition = pos;
     }
 
-    FrameGrabber? _frameGrabber;
+    IFrameExtracter? _frameGrabber;
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
         if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
@@ -1328,10 +1519,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     [ObservableProperty]
     TimeSpan? _seekbarFrameTime;
 
-    [ObservableProperty]
-    CanvasImageSource? _seekbarFrameImageSource;
-
-    CanvasBitmap? _videoFrameBitmap;
     bool _prevPlaying;
     bool _videoPositionsliderPointerPressed;
     PointerDeviceType _lastPointerDeviceType;

@@ -1023,7 +1023,6 @@
           <ThemeShadow />
         </Grid.Shadow>
         <Image x:Name="MovieSeekbarTooltipImage"
-               Source="{x:Bind SeekbarFrameImageSource, Mode=OneWay}"               
                Stretch="None"/>
         <TextBlock x:Name="MovieSeekbarTooltipNotSupported"
                    Style="{StaticResource CaptionTextBlockStyle}"
