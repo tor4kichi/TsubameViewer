@@ -613,12 +613,18 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             })
             .AddTo(ref db);
 
+        AnimationBuilder fadeInAnim = AnimationBuilder.Create()
+            .Opacity(1, duration: TimeSpan.FromMilliseconds(16 * 5));
+        AnimationBuilder fadeOutAnim = AnimationBuilder.Create()
+            .Opacity(0.5, duration: TimeSpan.FromMilliseconds(16 * 5));
+
+
         this.ObservePropertyChanged(x => x.SeekbarFrameTime, false)
             .DistinctUntilChanged()
             .Debounce(TimeSpan.FromMilliseconds(10))
-            .SubscribeAwait((this, new AsyncLock()), static async (videoPos, state, ct) =>
+            .SubscribeAwait((this, new AsyncLock(), fadeInAnim, fadeOutAnim), static async (videoPos, state, ct) =>
             {
-                var (s, asyncLock) = state;
+                var (s, asyncLock, fadeInAnim, fadeOutAnim) = state;
                 using var _ = await asyncLock.LockAsync(ct);
                 if (s._frameGrabber == null) { return; }
                 if (s._lastPointerDeviceType == PointerDeviceType.Touch)
@@ -626,6 +632,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     return; 
                 }
 
+                fadeOutAnim.Start(s.MovieSeekbarTooltipImage);
                 long ts = TimeProvider.System.GetTimestamp();
                 if (s.SeekbarFrameImageSource == null)
                 {
@@ -675,12 +682,14 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         ds.Transform = Matrix3x2.CreateScale((float)s.MovieSeekbarTooltipImage.ActualWidth / s.MediaPlayer.PlaybackSession.NaturalVideoWidth);                        
                         ds.DrawImage(s._videoFrameBitmap);
                     }
+
+                    fadeInAnim.Start(s.MovieSeekbarTooltipImage);
                 }
 
                 Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
             }, onCompleted: static async (x, state) => 
             {
-                var (s, asyncLock) = state;
+                var (s, asyncLock, _, _) = state;
                 using (await asyncLock.LockAsync(default))
                 {
                     s._frameGrabber = null;
@@ -1183,7 +1192,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
             -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight,
             8);
-        MovieSeekbarTooltipContainer.Opacity = 1;
         if (_videoPositionsliderPointerPressed)
         {
             _videoPositionChangingFromCode = true;
