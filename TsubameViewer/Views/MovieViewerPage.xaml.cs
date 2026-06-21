@@ -28,6 +28,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using TsubameViewer.Contracts.Notification;
+using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer;
@@ -617,10 +618,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             .AddTo(ref db);
 
         this.ObservePropertyChanged(x => x.SeekbarFrameTime, false)
+            .DistinctUntilChanged()
             .Debounce(TimeSpan.FromMilliseconds(10))
-            .IgnoreOnErrorResume()
-            .SubscribeAwait(this, static async (videoPos, s, ct) =>
+            .SubscribeAwait((this, new AsyncLock()), static async (videoPos, state, ct) =>
             {
+                var (s, asyncLock) = state;
+                using var _ = await asyncLock.LockAsync(ct);
                 if (s._frameGrabber == null) { return; }
                 if (s._lastPointerDeviceType == PointerDeviceType.Touch)
                 {
@@ -654,7 +657,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                 if (videoPos is { } pos && s.MediaPlayer.PlaybackSession.NaturalVideoHeight != 0)
                 {                    
-                    using var frame = await s._frameGrabber.ExtractVideoFrameAsync(pos).AsTask(ct);
+                    using var frame = await s._frameGrabber.ExtractVideoFrameAsync(pos, true).AsTask(ct);
                     if (s._videoFrameBitmap == null)
                     {
                         s._videoFrameBitmap = CanvasBitmap.CreateFromBytes(
@@ -677,9 +680,9 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     }
                 }
 
-                s.MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-                Debug.WriteLine($"SeekBarFrameRenderTime: {TimeProvider.System.GetElapsedTime(ts)}");
-            }, AwaitOperation.Drop)            
+                s.MovieSeekbarTooltipContainer.Visibility = (s.IsDisplayControlUI.TrueToVisible());
+                Debug.WriteLine($"SeekBarFrameRenderTime: {pos} {TimeProvider.System.GetElapsedTime(ts)}");
+            }, AwaitOperation.Switch)            
             .AddTo(ref db);
 
 
@@ -1162,7 +1165,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var videoPos = VideoDuration * posRatio;
         var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
 
-        SeekbarFrameTime = videoPos;
+        SeekbarFrameTime = videoPosAligned;
         var timeText = TimeSpanHelper.FormatTimeSpan(videoPosAligned);
         if (!MovieSeekbarTooltipText.Text.Equals(timeText, StringComparison.Ordinal))
         {
