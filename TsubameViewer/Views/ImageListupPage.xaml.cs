@@ -321,7 +321,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
     #region 初期フォーカス設定
 
     CancellationTokenSource? _navigationCts;
-    CancellationToken _ct;
+    CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _messenger.Unregister<StartMultiSelectionMessage>(this);
@@ -342,9 +342,8 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
         d().FireAndForgetSafe();
         async Task d()
         {
-
             _navigationCts = new CancellationTokenSource();
-            var ct = _ct = _navigationCts.Token;
+            var ct = _navigationCt = _navigationCts.Token;
 
             StartLoadingTaskMonitor(ct);
 
@@ -518,7 +517,7 @@ public sealed partial class ImageListupPage : Page, ITitlebarContentAware
             _realizedItems.Add(fe);
             if (fe.DataContext is IStorageItemViewModel itemVM)
             {
-                itemVM.EnsureImageSizeRatioAsync(_ct).FireAndForgetSafe();
+                itemVM.EnsureImageSizeRatioAsync(_navigationCt).FireAndForgetSafe();
             }
         }
     }

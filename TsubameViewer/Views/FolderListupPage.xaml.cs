@@ -76,6 +76,9 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
+        var ct = this.GetCancellationTokenOnUnloaded();
+        _navigationCt = ct;
+
         ContentViewTypeSelector.SelectedIndex = 0;
 
         _messenger.Register<RequestConnectedAnimationMessage>(this, (r, m) =>
@@ -101,7 +104,6 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             itemVM?.UpdateLastReadPosition();
         });
 
-        var ct = this.GetCancellationTokenOnUnloaded();
         DisposableBuilder db = new();
         HandleCreateFolderDialogTextChanging(ref db);        
         db.Build().RegisterTo(ct);
@@ -136,7 +138,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             if (args.Item is IStorageItemViewModel itemVM)
             {
                 // Note: x:Bindの変更適用とToolTipService.SetToolTipが同時に実行されると正常に表示されない
-                await itemVM.InitializeAsync(_ct);
+                await itemVM.InitializeAsync(_navigationCt);
                 if (itemVM.Item != null)
                 {
                     var size = args.ItemContainer.ActualSize.Y != 0 ? args.ItemContainer.ActualSize : args.ItemContainer.DesiredSize.ToVector2();
@@ -161,7 +163,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     }
 
     CancellationTokenSource? _navigationCts;
-    CancellationToken _ct;
+    CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         if (_navigationCts != null)
@@ -194,7 +196,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         _navigationCts = new CancellationTokenSource();
-        var ct = _ct = _navigationCts.Token;
+        var ct = _navigationCt = _navigationCts.Token;
         
         d().FireAndForgetSafe();
         async Task d()
@@ -576,7 +578,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
                 {
                     var newfodler = await folder.CreateFolderAsync(CreateFolderDialogTextBox.Text, CreationCollisionOption.FailIfExists);
                     var itemVM = _vm.ToStorageItemVM(newfodler);
-                    itemVM.InitializeAsync(_ct).FireAndForgetSafe();
+                    itemVM.InitializeAsync(_navigationCt).FireAndForgetSafe();
                     _vm.FileItemsView.Insert(0, itemVM);
                     return;
                 }
@@ -707,7 +709,7 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
             _isItemsForceInfoLoaded = true;
             foreach (var itemVM in _vm.FolderItems)
             {
-                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_ct).FireAndForgetSafe();
+                (itemVM as LazyFolderOrArchiveFileViewModel)?.EnsureStorageItemAsync(_navigationCt).FireAndForgetSafe();
             }
         }
     }
