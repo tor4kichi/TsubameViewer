@@ -126,8 +126,11 @@ FileSortType.UpdateTimeDecending = 新命令
 Sort_InheritancePath = 排序继承源
 Sort_Unselected = 未指定
 Sort_DefaultChildItemSort = 子文件夹中项目的排序顺序
+ChildImagesFolderOpenMode = 如何打开子文件夹（图片）
 OpenImageViewer = 在查看器中打开
-OpenFolderListup = 列出档案
+OpenFolderListup = 列出文件
+DefaultFolderOrArchiveOpenMode.Viewer = 在查看器中打开
+DefaultFolderOrArchiveOpenMode.Listup = 列出文件
 OpenWithExplorer = 在资源管理器中打开
 OpenWithExternalApplication = 在另一个应用程序中打开
 AddSecondaryTile = 固定即可开始
@@ -260,7 +263,6 @@ MovieViewer_Subtitles_Avairable = 提供字幕
 MovieViewer_NotSupportedCodec = 视频编解码器{0}无法显示预览图像。
 MovieViewer_NotSupportedCodec_OnceClear = 请重试显示预览图像。
 MovieViewer_CheckCodec_ReEnabled = 提供预览图片。
-
 
 #### SearchResult
 SearchResultWith = 搜索结果：{0}

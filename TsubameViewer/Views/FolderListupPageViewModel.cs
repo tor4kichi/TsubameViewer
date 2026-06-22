@@ -166,6 +166,14 @@ public sealed partial class FolderListupPageViewModel
     [ObservableProperty]
     FileSortType? _selectedChildFileSortType;
     [ObservableProperty]
+    DefaultFolderOrArchiveOpenMode _selectedChildImagesFolderOpenMode;
+    public DefaultFolderOrArchiveOpenMode[] ChildImagesFolderOpenModeItems { get; } = 
+        [
+            DefaultFolderOrArchiveOpenMode.Viewer,
+            DefaultFolderOrArchiveOpenMode.Listup,
+        ];
+
+    [ObservableProperty]
     string? _displaySortTypeInheritancePath;
     [ObservableProperty]
     IStorageItemViewModel? _folderLastIntractItem;
@@ -433,6 +441,12 @@ public sealed partial class FolderListupPageViewModel
             .Subscribe(_ => FileItemsView.RefreshFilter())
             .AddTo(ref db);
 
+        this.ObservePropertyChanged(x => x.SelectedChildImagesFolderOpenMode, false)
+            .Subscribe((_displaySettingsByPathRepository, _currentImageSource!.Path), (x, s) => s._displaySettingsByPathRepository.SetParentFolderImagesOpenMode(s.Path, x))
+            .AddTo(ref db);
+
+
+
         // Note: IsSupportFolderOrArchiveFilesIndexAccess == trueの際、
         // 意図しないFileChangedが発生し無駄更新が掛かるため変更監視を無効にしている
         if (_imageCollectionContext != null
@@ -595,7 +609,9 @@ public sealed partial class FolderListupPageViewModel
             }
         }
 
-        SelectedChildFileSortType = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path)?.ChildItemDefaultSort;
+        var parentSettings = _displaySettingsByPathRepository.GetFileParentSettingsEntry(path);
+        SelectedChildImagesFolderOpenMode = parentSettings?.ChildImagesFolderOpenMode ?? DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+        SelectedChildFileSortType = parentSettings?.ChildItemDefaultSort;
 
         try
         {
@@ -944,6 +960,26 @@ public sealed partial class FolderListupPageViewModel
 
         SelectedChildFileSortType = sortType;
         _displaySettingsByPathRepository.SetParentFolderImagesSortSettings(_currentImageSource.Path, sortType);
+    }
+
+
+    [RelayCommand]
+    void ChangeChildImagesFolderOpenMode(object sort)
+    {
+        if (_currentImageSource == null) { throw new NullReferenceException(nameof(_currentImageSource.Path)); }
+
+        DefaultFolderOrArchiveOpenMode openMode = DisplaySettingsByPathRepository.DefaultChildImagesFolderOpenMode;
+        if (sort is int num)
+        {
+            openMode = (DefaultFolderOrArchiveOpenMode)num;
+        }
+        else if (sort is DefaultFolderOrArchiveOpenMode mode)
+        {
+            openMode = mode;
+        }
+
+        SelectedChildImagesFolderOpenMode = openMode;
+        _displaySettingsByPathRepository.SetParentFolderImagesOpenMode(_currentImageSource.Path, openMode);
     }
 
     #endregion

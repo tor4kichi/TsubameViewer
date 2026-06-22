@@ -25,6 +25,7 @@ using TsubameViewer.Contracts.Notification;
 using TsubameViewer.Core;
 using TsubameViewer.Core.Models;
 using TsubameViewer.Core.Models.Albam;
+using TsubameViewer.Core.Models.FolderItemListing;
 using TsubameViewer.Core.Models.ImageViewer.ImageSource;
 using TsubameViewer.Helpers;
 using TsubameViewer.Services;
@@ -730,4 +731,15 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
 
     #endregion
+
+    private void ChildImageFolderOpenModeButton_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count == 0) { return; }
+        _vm.SelectedChildImagesFolderOpenMode = (DefaultFolderOrArchiveOpenMode)e.AddedItems[0];
+    }
+
+    private void ChildFolderSettingsFlyout_Opened(object sender, object e)
+    {
+        
+    }
 }
