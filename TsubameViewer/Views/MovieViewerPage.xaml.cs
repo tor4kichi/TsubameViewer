@@ -201,14 +201,16 @@ public class FFmpegFrameGrabberFrameExtracter : IFrameExtracter, IDisposable
         }
         else
         {
-            if (_lastFrameTime == frame.Timestamp)
+            if (_lastFrameTime == time)
             {
                 return _source.Size;
             }
-            _lastFrameTime = frame.Timestamp;
+            _lastFrameTime = time;
             _canvasBitmap.SetPixelBytes(frame.PixelData);
         }
-       
+
+        // Note: ここでキャンセル対応しないと表示反映されずグレーアウトするケースが頻発する
+        ct.ThrowIfCancellationRequested();
         using (var ds = _source.CreateDrawingSession(Colors.Transparent, _source.Size.ToRect()))
         {
             ds.Transform = Matrix3x2.CreateScale((float)(_source.Size.Width / _canvasBitmap.Size.Width));
@@ -938,7 +940,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                 {                    
                     s._frameGrabber = null;
                 }
-            },  AwaitOperation.Switch)            
+            },  AwaitOperation.Drop) // Switchだと応答性が悪く見える。Dropなら先行する描画処理を優先できてGood           
             .AddTo(ref db);
 
 
@@ -1499,18 +1501,12 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         var videoPos = VideoDuration * posRatio;
         var videoPosAligned = TimeSpan.FromSeconds(Math.Round(videoPos.TotalSeconds));
 
-        SeekbarFrameTime = videoPosAligned;
-        var timeText = TimeSpanHelper.FormatTimeSpan(videoPosAligned);
-        if (!MovieSeekbarTooltipText.Text.Equals(timeText, StringComparison.Ordinal))
-        {
-            MovieSeekbarTooltipText.Text = timeText;
-        }
+        if (SeekbarFrameTime == videoPosAligned) { return; }
+
+        MovieSeekbarTooltipContainerTransform.TranslateX = pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f;
+        MovieSeekbarTooltipContainerTransform.TranslateY = -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight;
 
         MovieSeekbarTooltipContainer.Visibility = Visibility.Visible;
-        MovieSeekbarTooltipContainer.Translation = new Vector3(
-            pos.X - offset.X - (float)MovieSeekbarTooltipContainer.ActualWidth * 0.5f,
-            -offset.Y - 48 - (float)MovieSeekbarTooltipContainer.ActualHeight,
-            8);
         if (_videoPositionsliderPointerPressed)
         {
             _videoPositionChangingFromCode = true;
@@ -1519,6 +1515,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             VideoPosition = videoPos;
         }
 
+        SeekbarFrameTime = videoPosAligned;
         _lastPointerPosition = pos;
     }
 

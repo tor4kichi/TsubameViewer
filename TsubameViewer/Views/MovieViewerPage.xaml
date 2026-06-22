@@ -678,6 +678,7 @@
               <Button.Flyout>
                 <MenuFlyout Opened="MenuFlyout_Opened"
                             Closed="MenuFlyout_Closed"
+                            Opening="TracksAndSubtitleSelectFlyout_Opening"
                             Placement="TopEdgeAlignedRight">
                   <MenuFlyoutItem Text="{i18nExt:Localize Key=MovieViewer_NotSupportedCodec_OnceClear}"
                                   Command="{x:Bind ClearThumnailGenerationIssueCommand}"
@@ -1011,7 +1012,11 @@
           HorizontalAlignment="Left"
           VerticalAlignment="Top"
           Width="200"
-          Height="200">
+          Height="200"
+          RenderTransformOrigin="0.5, 0.5">
+      <Grid.RenderTransform>
+        <CompositeTransform x:Name="MovieSeekbarTooltipContainerTransform" />
+      </Grid.RenderTransform>
       <Grid CornerRadius="4"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               HorizontalAlignment="Center"
