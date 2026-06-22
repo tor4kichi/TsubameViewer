@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using I18NPortable;
@@ -46,6 +47,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
         _isFFmpegUseFirstToMediaSourceFactory = Read(false, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(200, nameof(VideoFrameThumbnailSize));
+        _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
     }
     
     bool _isRepeat;
@@ -125,6 +127,25 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         get => _videoFrameThumbnailSize;
         set => SetProperty(ref _videoFrameThumbnailSize, value);
     }
+
+    Dictionary<string, bool> _subtitleEnabledByLanguage;
+    public bool GetSubtitleLanguageEnabled(string language)
+    {
+        var lower = language.ToLowerInvariant();
+        return _subtitleEnabledByLanguage.TryGetValue(language, out bool isEnabeld) ? isEnabeld : false;
+    }
+
+    public void SetSubtitleLanguageEnabled(string language, bool isEnabled)
+    {
+        _subtitleEnabledByLanguage[language] = isEnabled;
+        Save(_subtitleEnabledByLanguage, "SubtitleEnabledByLanguage");
+    }
+
+    public void ClearSubtitleLanguageEnabled()
+    {
+        _subtitleEnabledByLanguage.Clear();
+        Save(_subtitleEnabledByLanguage, "SubtitleEnabledByLanguage");
+    }
 }
 
 public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelBase
@@ -195,7 +216,7 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
     bool _isFavoriteCurrentFolderOrArchive;
 
     [ObservableProperty]
-    IImageSource _currentImageSource;
+    IImageSource? _currentImageSource;
 
     public override async Task OnNavigatedToAsync(INavigationParameters parameters, CancellationToken ct)
     {
@@ -233,7 +254,8 @@ public sealed partial class MovieViewerPageViewModel : NavigationAwareViewModelB
                 CurrentImageSource = imageSource;
             }, ct);
 
-            IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(_currentImageSource.Path);
+            Guard.IsNotNull(CurrentImageSource);
+            IsFavoriteCurrentFolderOrArchive = _favoriteAlbam.IsFavorite(CurrentImageSource.Path);
             this.ObservePropertyChanged(x => x.IsFavoriteCurrentFolderOrArchive, false)
                 .Subscribe((_favoriteAlbam, CurrentImageSource, _messenger), static (isFavorite, s) =>
                 {                    

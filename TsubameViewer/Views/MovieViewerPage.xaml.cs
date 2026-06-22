@@ -804,6 +804,29 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
 
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         _this.PlayerContainer.Opacity = 1;
+
+                        // 字幕の表示設定を反映
+                        if (_this.MediaPlayer.Source is MediaPlaybackItem item)
+                        {
+                            uint index = 0;
+                            HashSet<string> _enabeldTracks = [];
+                            foreach (var subtitle in item.TimedMetadataTracks)
+                            {
+                                var key = _this.GetSubtitleKey(subtitle);
+                                if (_enabeldTracks.Contains(key)) { continue; }
+
+                                var isEnabeld = _this._vm.PageSettings.GetSubtitleLanguageEnabled(key);
+                                item.TimedMetadataTracks.SetPresentationMode(index,
+                                    isEnabeld
+                                    ? TimedMetadataTrackPresentationMode.PlatformPresented
+                                    : TimedMetadataTrackPresentationMode.Hidden);
+                                if (isEnabeld)
+                                {
+                                    _enabeldTracks.Add(key);
+                                }
+                                index++;
+                            }
+                        }
                     });
             })
             .AddTo(ref db);
@@ -2854,6 +2877,7 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                     if (mode == TimedMetadataTrackPresentationMode.PlatformPresented)
                     {
                         playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(timed), false);
                     }
                 }
             }
@@ -2861,14 +2885,36 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
             {
                 foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
                 {
-                    if (subtitle.Id != timed.Id) { continue; }
-                    var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
-                    playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, mode == TimedMetadataTrackPresentationMode.PlatformPresented 
-                        ? TimedMetadataTrackPresentationMode.Hidden
-                        : TimedMetadataTrackPresentationMode.PlatformPresented);
+                    if (subtitle.Id == timed.Id)
+                    {
+                        var mode = playbackItem.TimedMetadataTracks.GetPresentationMode((uint)index);
+                        var nextMode = mode == TimedMetadataTrackPresentationMode.PlatformPresented
+                            ? TimedMetadataTrackPresentationMode.Hidden
+                            : TimedMetadataTrackPresentationMode.PlatformPresented;
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, nextMode);                        
+                        _vm.PageSettings.SetSubtitleLanguageEnabled(GetSubtitleKey(subtitle), nextMode == TimedMetadataTrackPresentationMode.PlatformPresented);
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(subtitle.Language))
+                {
+                    foreach (var (index, timed) in playbackItem.TimedMetadataTracks.AsValueEnumerable().Index())
+                    {
+                        if (timed.Language == subtitle.Language
+                            && timed.Id != subtitle.Id)
+                        {
+                            playbackItem.TimedMetadataTracks.SetPresentationMode((uint)index, TimedMetadataTrackPresentationMode.Hidden);
+                        }
+                    }
                 }
             }
         }
+    }
+
+    string GetSubtitleKey(TimedMetadataTrack subtitle)
+    {
+        return !string.IsNullOrEmpty(subtitle.Language) ? subtitle.Language : subtitle.Id;
     }
 
     private void PlaybackItem_TimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
