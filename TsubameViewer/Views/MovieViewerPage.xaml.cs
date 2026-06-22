@@ -805,8 +805,6 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                         // FFmpeg利用時にゼロ位置の映像フレームが表示されないように
                         _this.PlayerContainer.Opacity = 1;
 
-                        await Task.Delay(1000);
-
                         // 字幕の表示設定を反映
                         if (_this.MediaPlayer.Source is MediaPlaybackItem item)
                         {
@@ -824,7 +822,11 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
                                     : TimedMetadataTrackPresentationMode.Hidden);
                                 if (isEnabeld)
                                 {
-                                    _enabeldTracks.Add(_this.GetSubtitleKey(subtitle));
+                                    _enabeldTracks.Add(key);
+                                    if (!string.IsNullOrEmpty(subtitle.Language))
+                                    {
+                                        _enabeldTracks.Add(subtitle.Language);
+                                    }
                                 }
                             }
 
@@ -1562,7 +1564,8 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
     IFrameExtracter? _frameGrabber;
     private void CoreWindow_VideoPositionSlider_PointerMoved(CoreWindow sender, PointerEventArgs args)
     {
-        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos))
+        if (args.IsContactUIElement(VideoPositionSlider, Window.Current.Content, out Vector2 pos)
+            && IsDisplayControlUI)
         {
             _mouseCursorAutoHideTimer?.Stop();
             _lastPointerDeviceType = args.CurrentPoint.PointerDevice.PointerDeviceType;

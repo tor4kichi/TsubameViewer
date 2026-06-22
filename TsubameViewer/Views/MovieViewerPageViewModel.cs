@@ -132,7 +132,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
     public bool GetSubtitleLanguageEnabled(string language)
     {
         var lower = language.ToLowerInvariant();
-        return _subtitleEnabledByLanguage.TryGetValue(language, out bool isEnabeld) ? isEnabeld : false;
+        return _subtitleEnabledByLanguage.TryGetValue(lower, out bool isEnabeld) ? isEnabeld : false;
     }
 
     public void SetSubtitleLanguageEnabled(string language, bool isEnabled)
