@@ -76,7 +76,10 @@ public sealed partial class FolderListupPage : Page, ITitlebarContentAware
 
     void FolderListupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        var ct = this.GetCancellationTokenOnUnloaded();
+        // Note: GetCancellationTokenOnUnloadedは使わない
+        // 　Unlaodedは次ページのナビゲーション後に呼ばれてしまい
+        // 　前ページのアイテム読み込みが残るケースが出ていた
+        var ct = this.GetCancellationTokenOnNavigatingFrom();
         _navigationCt = ct;
 
         ContentViewTypeSelector.SelectedIndex = 0;

@@ -80,7 +80,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
                     });
             }
 
-            itemVM.InitializeAsync(_ct);
+            itemVM.InitializeAsync(_navigationCt);
 
             if (_isFirstItem )
             {
@@ -94,11 +94,12 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
     }
 
     CancellationTokenSource? _navigationCts;
-    CancellationToken _ct;
+    CancellationToken _navigationCt;
     protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
     {
         _navigationCts?.Cancel();
         _navigationCts?.Dispose();
+        _navigationCts = null;
 
         _messenger.Unregister<LatestContentViewUpdateMessage>(this);
         base.OnNavigatingFrom(e);
@@ -111,7 +112,7 @@ public sealed partial class SourceStorageItemsPage : Page, ITitlebarContentAware
         base.OnNavigatedTo(e);
 
         _navigationCts = new CancellationTokenSource();
-        _ct = _navigationCts.Token;
+        _navigationCt = _navigationCts.Token;
         _isFirstItem = true;
 
         _messenger.Register<LatestContentViewUpdateMessage>(this, (r, m) =>
