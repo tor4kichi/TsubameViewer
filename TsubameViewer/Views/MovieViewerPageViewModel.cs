@@ -45,7 +45,7 @@ public sealed class MovieViewerPageSettings : FlagsRepositoryBase
         _mediaRotate = (MediaRotation)Read((int)MediaRotation.Clockwise90Degrees, nameof(PlayerRotate));
         _isPlayerStretchEnabled = Read(false, nameof(IsPlayerStretchEnabled));
         _playerStretch = (Stretch)Read((int)Stretch.UniformToFill, nameof(PlayerStretch));
-        _isFFmpegUseFirstToMediaSourceFactory = Read(false, nameof(IsFFmpegUseFirstToMediaSourceFactory));
+        _isFFmpegUseFirstToMediaSourceFactory = Read(true, nameof(IsFFmpegUseFirstToMediaSourceFactory));
         _videoFrameThumbnailSize = Read(200, nameof(VideoFrameThumbnailSize));
         _subtitleEnabledByLanguage = Read(new Dictionary<string, bool>(), "SubtitleEnabledByLanguage");
     }
