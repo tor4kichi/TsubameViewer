@@ -1121,45 +1121,59 @@ public sealed partial class MovieViewerPage : Page, ITitlebarContentAware
         StorageFile videoFile,
         ICollection<IDisposable> db)
     {
-        var folder = await videoFile.GetParentAsync();
-        string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
-        var query = folder.CreateFileQueryWithOptions(
-            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
-        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
-        ClearExternalAudioTracks();
-        foreach (var audioFile in (await query.GetFilesAsync()).Where(audioFile => audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)))
+        try
         {
-            try
-            {
-                var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
-                db.Add(audioMediaSource);
-                Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
-                _externalAudioTrackFiles.Add((new MediaPlaybackItem(audioMediaSource), audioFile));
-            }
-            catch
+            var folder = await videoFile.GetParentAsync();
+            string[] fileTypes = [".mp3", ".m4a", ".wma", ".wav", ".aac", ".adts", ".flac", ".ogg", ".oga", ".opus"];
+            var query = folder.CreateFileQueryWithOptions(
+                new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+            var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+            ClearExternalAudioTracks();
+            foreach (var audioFile in (await query.GetFilesAsync()).Where(audioFile => audioFile.Name.StartsWith(fileName, StringComparison.Ordinal)))
             {
                 try
                 {
-                    var fileStream = await audioFile.OpenReadAsync();
-                    var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
-                    _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+                    var audioMediaSource = MediaSource.CreateFromStorageFile(audioFile);
+                    db.Add(audioMediaSource);
+                    Debug.WriteLine($"video ALT AUDIO use: {audioFile.Name}");
+                    _externalAudioTrackFiles.Add((new MediaPlaybackItem(audioMediaSource), audioFile));
                 }
-                catch { }
+                catch
+                {
+                    try
+                    {
+                        var fileStream = await audioFile.OpenReadAsync();
+                        var ms = await FFmpegMediaSource.CreateFromStreamAsync(fileStream);
+                        _externalAudioTrackFiles.Add((ms.CreateMediaPlaybackItem(), audioFile));
+                    }
+                    catch { }
+                }
             }
-        }
 
-        return _externalAudioTrackFiles.ElementAtOrDefault(0).PlaybackItem;
+            return _externalAudioTrackFiles.ElementAtOrDefault(0).PlaybackItem;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     async Task<List<StorageFile>> LoadSameNameSubtitleFilesAsync(
         StorageFile videoFile)
     {
-        var folder = await videoFile.GetParentAsync();
-        string[] fileTypes = [".srt", ".vtt", ".ass", ".ssa", ".txt", ".lrc"];
-        var query = folder.CreateFileQueryWithOptions(
-            new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
-        var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
-        return (await query.GetFilesAsync()).Where(subsFile => subsFile.Name.StartsWith(fileName, StringComparison.Ordinal)).ToList();
+        try
+        {
+            var folder = await videoFile.GetParentAsync();
+            string[] fileTypes = [".srt", ".vtt", ".ass", ".ssa", ".txt", ".lrc"];
+            var query = folder.CreateFileQueryWithOptions(
+                new Windows.Storage.Search.QueryOptions(Windows.Storage.Search.CommonFileQuery.DefaultQuery, fileTypes));
+            var fileName = Path.GetFileNameWithoutExtension(videoFile.Name);
+            return (await query.GetFilesAsync()).Where(subsFile => subsFile.Name.StartsWith(fileName, StringComparison.Ordinal)).ToList();
+        }
+        catch
+        {
+            return [];
+        }
     }
 
 
